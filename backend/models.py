@@ -6,7 +6,9 @@ class Brdge(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     presentation_filename = db.Column(db.String(255), nullable=False)
-    audio_filename = db.Column(db.String(255), nullable=False)
+    audio_filename = db.Column(
+        db.String(255), nullable=False, default=""
+    )  # Allow empty string as default
     folder = db.Column(db.String(255), nullable=False)
 
     def to_dict(self):

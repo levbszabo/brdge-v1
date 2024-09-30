@@ -184,6 +184,23 @@ def create_brdge():
     )
 
 
+@app.route("/api/brdges/<int:brdge_id>/audio", methods=["GET"])
+def get_audio(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    if not brdge.audio_filename:
+        abort(404)
+
+    s3_key = f"{brdge.folder}/audio/{brdge.audio_filename}"
+
+    try:
+        s3_object = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+        audio_data = s3_object["Body"].read()
+        return send_file(BytesIO(audio_data), mimetype="audio/mpeg")
+    except Exception as e:
+        print(f"Error fetching audio from S3: {e}")
+        abort(404)
+
+
 @app.route("/api/brdges/<int:brdge_id>/audio", methods=["POST"])
 def upload_audio(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
@@ -193,7 +210,7 @@ def upload_audio(brdge_id):
         return jsonify({"error": "No audio file provided"}), 400
 
     # Generate unique filename for the audio file
-    audio_filename = secure_filename(f"{uuid.uuid4()}_{audio_file.filename}")
+    audio_filename = secure_filename(audio_file.filename)
     s3_folder = brdge.folder
     s3_audio_key = f"{s3_folder}/audio/{audio_filename}"
 
@@ -205,3 +222,49 @@ def upload_audio(brdge_id):
     db.session.commit()
 
     return jsonify({"message": "Audio uploaded successfully"}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio", methods=["DELETE"])
+def delete_audio(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    if not brdge.audio_filename:
+        return jsonify({"error": "No audio file to delete"}), 400
+
+    s3_key = f"{brdge.folder}/audio/{brdge.audio_filename}"
+
+    try:
+        s3_client.delete_object(Bucket=S3_BUCKET, Key=s3_key)
+        brdge.audio_filename = ""  # Set to empty string instead of None
+        db.session.commit()
+        return jsonify({"message": "Audio deleted successfully"}), 200
+    except Exception as e:
+        print(f"Error deleting audio from S3: {e}")
+        return jsonify({"error": "Error deleting audio"}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/rename", methods=["PUT"])
+def rename_audio(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    data = request.get_json()
+    new_name = data.get("new_name")
+
+    if not new_name:
+        return jsonify({"error": "New name not provided"}), 400
+
+    old_key = f"{brdge.folder}/audio/{brdge.audio_filename}"
+    new_key = f"{brdge.folder}/audio/{secure_filename(new_name)}"
+
+    try:
+        # Copy the object to a new key and delete the old one
+        s3_client.copy_object(
+            Bucket=S3_BUCKET,
+            CopySource={"Bucket": S3_BUCKET, "Key": old_key},
+            Key=new_key,
+        )
+        s3_client.delete_object(Bucket=S3_BUCKET, Key=old_key)
+        brdge.audio_filename = secure_filename(new_name)
+        db.session.commit()
+        return jsonify({"message": "Audio renamed successfully"}), 200
+    except Exception as e:
+        print(f"Error renaming audio in S3: {e}")
+        return jsonify({"error": "Error renaming audio"}), 500
