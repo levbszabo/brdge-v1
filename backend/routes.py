@@ -182,3 +182,26 @@ def create_brdge():
         ),
         201,
     )
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio", methods=["POST"])
+def upload_audio(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    audio_file = request.files.get("audio")
+
+    if not audio_file:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    # Generate unique filename for the audio file
+    audio_filename = secure_filename(f"{uuid.uuid4()}_{audio_file.filename}")
+    s3_folder = brdge.folder
+    s3_audio_key = f"{s3_folder}/audio/{audio_filename}"
+
+    # Upload audio file to S3
+    s3_client.upload_fileobj(audio_file, S3_BUCKET, s3_audio_key)
+
+    # Update brdge record with audio filename
+    brdge.audio_filename = audio_filename
+    db.session.commit()
+
+    return jsonify({"message": "Audio uploaded successfully"}), 200
