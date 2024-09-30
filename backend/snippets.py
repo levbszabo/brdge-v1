@@ -33,9 +33,9 @@ if __name__ == "__main__":
 
     # For create_brdge, you need to provide an actual file path
     # Replace this with a real file path on your system
-    sample_presentation = "123.pdf"
+    # sample_presentation = "123.pdf"
 
-    if os.path.exists(sample_presentation):
-        create_brdge("Sample Brdge", sample_presentation)
-    else:
-        print("Please provide a valid file path for the presentation file.")
+    # if os.path.exists(sample_presentation):
+    #     create_brdge("Sample Brdge", sample_presentation)
+    # else:
+    #     print("Please provide a valid file path for the presentation file.")

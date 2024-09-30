@@ -10,6 +10,7 @@ function App() {
       <Routes>
         <Route path="/" element={<BrdgeListPage />} />
         <Route path="/create" element={<CreateBrdgePage />} />
+        <Route path="/edit/:id" element={<CreateBrdgePage />} /> {/* New edit route */}
       </Routes>
     </Router>
   );
