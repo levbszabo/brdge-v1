@@ -20,5 +20,9 @@ class Brdge(db.Model):
             "folder": self.folder,
             # Include the S3 keys for the files
             "presentation_s3_key": f"{self.folder}/{self.presentation_filename}",
-            "audio_s3_key": f"{self.folder}/{self.audio_filename}",
+            "audio_s3_key": (
+                f"{self.folder}/audio/{self.audio_filename}"
+                if self.audio_filename
+                else None
+            ),
         }

@@ -6,8 +6,9 @@ import os
 import boto3
 import uuid
 from models import Brdge
-from utils import pdf_to_images
+from utils import pdf_to_images, transcribe_audio_helper, align_transcript_with_slides
 from io import BytesIO
+import botocore
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -268,3 +269,86 @@ def rename_audio(brdge_id):
     except Exception as e:
         print(f"Error renaming audio in S3: {e}")
         return jsonify({"error": "Error renaming audio"}), 500
+
+
+# create a route to transcribe the audio we will use a utils function called transcribe_audio to do this
+# we need to pull the audio to a local file first, transcribe and then upload to s3
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/transcribe", methods=["POST"])
+def transcribe_audio(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    if not brdge.audio_filename:
+        return jsonify({"error": "No audio file associated with this brdge"}), 400
+
+    brdge_data = brdge.to_dict()
+    audio_s3_key = brdge_data["audio_s3_key"]
+    audio_local_path = f"/tmp/{brdge.audio_filename}"
+
+    try:
+        # Check if the object exists before attempting to download
+        s3_client.head_object(Bucket=S3_BUCKET, Key=audio_s3_key)
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            return (
+                jsonify({"error": f"Audio file not found in S3: {audio_s3_key}"}),
+                404,
+            )
+        else:
+            # Something else has gone wrong
+            return jsonify({"error": f"Error accessing S3: {str(e)}"}), 500
+
+    try:
+        s3_client.download_file(S3_BUCKET, audio_s3_key, audio_local_path)
+    except Exception as e:
+        return jsonify({"error": f"Error downloading audio file: {str(e)}"}), 500
+
+    transcript_local = f"/tmp/transcript_{brdge_id}.txt"
+    try:
+        transcribed_transcript = transcribe_audio_helper(
+            audio_local_path, transcript_local
+        )
+    except Exception as e:
+        return jsonify({"error": f"Error transcribing audio: {str(e)}"}), 500
+
+    transcript_s3_key = f"{brdge.folder}/transcripts/transcript.txt"
+    try:
+        s3_client.upload_file(transcript_local, S3_BUCKET, transcript_s3_key)
+    except Exception as e:
+        return jsonify({"error": f"Error uploading transcript to S3: {str(e)}"}), 500
+
+    # Clean up local files
+    os.remove(audio_local_path)
+    # os.remove(transcript_local)
+
+    return jsonify({"transcript": transcribed_transcript}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/align_transcript", methods=["POST"])
+def align_transcript(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    # check in cache for transcript
+    if not os.path.exists(f"/tmp/transcript_{brdge_id}.txt"):
+        s3_client.download_file(
+            S3_BUCKET,
+            f"{brdge.folder}/transcripts/transcript.txt",
+            f"/tmp/transcript_{brdge_id}.txt",
+        )
+    with open(f"/tmp/transcript_{brdge_id}.txt", "r") as f:
+        transcript = f.read()
+    slides_dir_local = f"/tmp/slides_{brdge_id}"
+    os.makedirs(slides_dir_local, exist_ok=True)
+
+    # List all objects in the S3 folder
+    s3_prefix = f"{brdge.folder}/slides/"
+    s3_objects = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_prefix)
+
+    # Download each file in the folder
+    for obj in s3_objects.get("Contents", []):
+        file_key = obj["Key"]
+        file_name = os.path.basename(file_key)
+        local_file_path = os.path.join(slides_dir_local, file_name)
+        s3_client.download_file(S3_BUCKET, file_key, local_file_path)
+
+    image_transcripts = align_transcript_with_slides(transcript, slides_dir_local)
+    return jsonify(image_transcripts), 200
