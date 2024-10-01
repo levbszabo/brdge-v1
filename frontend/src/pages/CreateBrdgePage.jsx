@@ -24,6 +24,10 @@ function CreateBrdgePage() {
     const [isRenaming, setIsRenaming] = useState(false);
     const [loadingOverlay, setLoadingOverlay] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
+    const [isVoiceCloning, setIsVoiceCloning] = useState(false);
+    const [isVoiceGenerating, setIsVoiceGenerating] = useState(false);
+    const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
+    const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -182,17 +186,45 @@ function CreateBrdgePage() {
             }
 
             setTranscripts(updatedTranscripts);
-            setLoadingMessage('Transcripts aligned successfully.');
+            setLoadingMessage('Cloning voice...');
+            setIsVoiceCloning(true);
+
+            // Step 3: Clone voice
+            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/clone_voice`);
+
+            setLoadingMessage('Generating voice...');
+            setIsVoiceCloning(false);
+            setIsVoiceGenerating(true);
+
+            // Step 4: Generate voice
+            const generateResponse = await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`);
+            setGeneratedAudioDir(generateResponse.data.outdir);
+
+            setIsVoiceGenerating(false);
+            setLoadingMessage('Voice generation complete!');
         } catch (error) {
-            console.error('Error during transcription and alignment:', error);
-            setMessage('Error during transcription and alignment.');
+            console.error('Error during processing:', error);
+            setMessage('Error during processing.');
         } finally {
             setTimeout(() => {
                 setLoadingOverlay(false);
                 setLoadingMessage('');
-            }, 2000); // Hide loading overlay after 2 seconds
+            }, 2000);
         }
     };
+
+    useEffect(() => {
+        if (generatedAudioDir) {
+            // Fetch the list of generated audio files
+            axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`)
+                .then(response => {
+                    setGeneratedAudioFiles(response.data.files);
+                })
+                .catch(error => {
+                    console.error('Error fetching generated audio files:', error);
+                });
+        }
+    }, [generatedAudioDir, brdgeId]);
 
     const handleOptionChange = (option) => {
         setSelectedOption(option);
@@ -483,8 +515,8 @@ function CreateBrdgePage() {
                                     <button
                                         onClick={() => handleOptionChange('upload')}
                                         className={`px-4 py-2 ${selectedOption === 'upload'
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-gray-300 text-gray-800'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-300 text-gray-800'
                                             } font-semibold rounded-lg hover:bg-indigo-700`}
                                     >
                                         Upload Audio
@@ -492,8 +524,8 @@ function CreateBrdgePage() {
                                     <button
                                         onClick={() => handleOptionChange('record')}
                                         className={`px-4 py-2 ${selectedOption === 'record'
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-gray-300 text-gray-800'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-gray-300 text-gray-800'
                                             } font-semibold rounded-lg hover:bg-indigo-700`}
                                     >
                                         Record Walkthrough
@@ -605,14 +637,42 @@ function CreateBrdgePage() {
                             </div>
                         </div>
 
+                        {/* Voice Cloning and Generation Status */}
+                        {isVoiceCloning && (
+                            <div className="mt-6">
+                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Cloning Voice...</h2>
+                                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+                            </div>
+                        )}
+
+                        {isVoiceGenerating && (
+                            <div className="mt-6">
+                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Generating Voice...</h2>
+                                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+                            </div>
+                        )}
+
+                        {/* Generated Audio Files */}
+                        {generatedAudioFiles.length > 0 && (
+                            <div className="mt-6">
+                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Generated Audio Files</h2>
+                                {generatedAudioFiles.map((file, index) => (
+                                    <div key={index} className="mb-4">
+                                        <p className="text-gray-700 font-semibold">{file}</p>
+                                        <audio controls src={`http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${file}`} className="w-full mt-2 rounded-lg"></audio>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         {/* Proceed Button */}
-                        {!isRecording && (
+                        {!isRecording && !isVoiceCloning && !isVoiceGenerating && (
                             <div className="mt-6 flex justify-end">
                                 <button
                                     onClick={handleProceed}
                                     className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
                                 >
-                                    Proceed to Next Step
+                                    {generatedAudioFiles.length > 0 ? 'Regenerate Voice' : 'Proceed to Next Step'}
                                 </button>
                             </div>
                         )}

@@ -436,3 +436,45 @@ def generate_voice(brdge_id):
         )
     # we return the tmp dir to frontend so it can play the audio
     return jsonify({"message": "Voice generated successfully", "outdir": outdir}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/generated", methods=["GET"])
+def get_generated_audio_files(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    cache_dir = f"/tmp/audio/processed/{brdge_id}"
+    s3_folder = f"{brdge.folder}/audio/processed"
+
+    # Check cache first
+    if os.path.exists(cache_dir):
+        audio_files = [f for f in os.listdir(cache_dir) if f.endswith(".mp3")]
+    else:
+        # If not in cache, list files from S3
+        response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
+        audio_files = [
+            obj["Key"].split("/")[-1]
+            for obj in response.get("Contents", [])
+            if obj["Key"].endswith(".mp3")
+        ]
+
+    return jsonify({"files": audio_files}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/generated/<filename>", methods=["GET"])
+def get_generated_audio_file(brdge_id, filename):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    cache_dir = f"/tmp/audio/processed/{brdge_id}"
+    cache_file_path = os.path.join(cache_dir, filename)
+    s3_key = f"{brdge.folder}/audio/processed/{filename}"
+
+    if os.path.exists(cache_file_path):
+        # Serve from cache if available
+        return send_file(cache_file_path, mimetype="audio/mpeg")
+    else:
+        try:
+            # If not in cache, fetch from S3 and store in cache
+            os.makedirs(cache_dir, exist_ok=True)
+            s3_client.download_file(S3_BUCKET, s3_key, cache_file_path)
+            return send_file(cache_file_path, mimetype="audio/mpeg")
+        except Exception as e:
+            print(f"Error fetching audio from S3: {e}")
+            abort(404)
