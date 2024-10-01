@@ -456,6 +456,10 @@ def get_generated_audio_files(brdge_id):
             if obj["Key"].endswith(".mp3")
         ]
 
+    # Sort audio files by slide number
+    audio_files.sort(key=lambda x: int(x.split("_")[0]))
+    print(f"Sorted audio files: {audio_files}")  # Debug print
+
     return jsonify({"files": audio_files}), 200
 
 

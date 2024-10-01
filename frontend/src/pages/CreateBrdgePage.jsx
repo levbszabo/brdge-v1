@@ -32,6 +32,8 @@ function CreateBrdgePage() {
     const audioRef = useRef(null);
     const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
     const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
+    const [audioDuration, setAudioDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -230,14 +232,17 @@ function CreateBrdgePage() {
 
                 // Fetch the list of generated audio files
                 const audioFilesResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`);
+                console.log("Received audio files:", audioFilesResponse.data.files);
                 setGeneratedAudioFiles(audioFilesResponse.data.files);
 
                 setVoiceCloneGenerated(true);
                 setLoadingMessage('Voice clone generated successfully.');
             }
 
-            // Load the audio for the current slide
-            loadAudioForSlide(currentSlide);
+            // Load the audio for the first slide
+            setTimeout(() => {
+                loadAudioForSlide(1);
+            }, 0);
         } catch (error) {
             console.error('Error generating voice clone:', error);
             setMessage('Error generating voice clone.');
@@ -313,15 +318,21 @@ function CreateBrdgePage() {
 
     const handleNextSlide = () => {
         if (currentSlide < numSlides) {
-            setCurrentSlide(currentSlide + 1);
-            loadAudioForSlide(currentSlide + 1);
+            setCurrentSlide(prevSlide => {
+                const nextSlide = prevSlide + 1;
+                loadAudioForSlide(nextSlide, true);
+                return nextSlide;
+            });
         }
     };
 
     const handlePrevSlide = () => {
         if (currentSlide > 1) {
-            setCurrentSlide(currentSlide - 1);
-            loadAudioForSlide(currentSlide - 1);
+            setCurrentSlide(prevSlide => {
+                const prevSlideNumber = prevSlide - 1;
+                loadAudioForSlide(prevSlideNumber, true);
+                return prevSlideNumber;
+            });
         }
     };
 
@@ -403,41 +414,98 @@ function CreateBrdgePage() {
         stopRecording();
     };
 
+    const loadAudioForSlide = (slideNumber, autoplay = false) => {
+        console.log(`Loading audio for slide ${slideNumber}`);
+        console.log(`Generated audio files:`, generatedAudioFiles);
+
+        if (generatedAudioFiles.length >= slideNumber) {
+            const audioFile = generatedAudioFiles[slideNumber - 1];
+            console.log(`Selected audio file: ${audioFile}`);
+            const audioUrl = `http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${audioFile}`;
+            console.log(`Audio URL: ${audioUrl}`);
+            setCurrentAudio(audioUrl);
+
+            if (audioRef.current) {
+                audioRef.current.src = audioUrl;
+                audioRef.current.load();
+
+                if (autoplay) {
+                    const playPromise = audioRef.current.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(_ => {
+                            setIsPlaying(true);
+                            console.log("Audio started playing");
+                        }).catch(error => {
+                            console.error("Error playing audio:", error);
+                        });
+                    }
+                } else {
+                    setIsPlaying(false);
+                }
+            }
+        } else {
+            console.log(`No audio file for slide ${slideNumber}`);
+            setCurrentAudio(null);
+            setIsPlaying(false);
+        }
+    };
+
     const handlePlayPause = () => {
         if (audioRef.current) {
             if (isPlaying) {
                 audioRef.current.pause();
+                setIsPlaying(false);
             } else {
-                audioRef.current.play().catch(error => {
-                    console.error("Error playing audio:", error);
-                });
+                const playPromise = audioRef.current.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(_ => {
+                        setIsPlaying(true);
+                        console.log("Audio started playing");
+                    }).catch(error => {
+                        console.error("Error playing audio:", error);
+                    });
+                }
             }
-            setIsPlaying(!isPlaying);
         }
     };
 
-    const loadAudioForSlide = (slideNumber) => {
-        if (generatedAudioFiles.length >= slideNumber) {
-            const audioFile = generatedAudioFiles[slideNumber - 1];
-            setCurrentAudio(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${audioFile}`);
-            setIsPlaying(false);
-        } else {
-            setCurrentAudio(null);
+    useEffect(() => {
+        if (generatedAudioFiles.length > 0) {
+            loadAudioForSlide(currentSlide);
+        }
+    }, [generatedAudioFiles, currentSlide]);
+
+    const handleSeek = (e) => {
+        const time = parseFloat(e.target.value);
+        setCurrentTime(time);
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
         }
     };
 
     useEffect(() => {
         if (currentAudio) {
             audioRef.current.load();
+            if (isPlaying) {
+                audioRef.current.play().catch(error => {
+                    console.error("Error playing audio:", error);
+                });
+            }
         }
     }, [currentAudio]);
 
-    // Add this useEffect to load audio when generatedAudioFiles changes
-    useEffect(() => {
-        if (generatedAudioFiles.length > 0) {
-            loadAudioForSlide(currentSlide);
+    const formatTime = (time) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    };
+
+    const handleAudioEnded = () => {
+        setIsPlaying(false);
+        if (currentSlide < numSlides) {
+            handleNextSlide();
         }
-    }, [generatedAudioFiles]);
+    };
 
     const renderSlides = () => {
         const imageUrl = `http://localhost:5000/api/brdges/${brdgeId}/slides/${currentSlide}`;
@@ -456,36 +524,56 @@ function CreateBrdgePage() {
                         placeholder={`Enter transcript for slide ${currentSlide}...`}
                     />
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gray-100">
-                    <button
-                        onClick={handlePrevSlide}
-                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
-                        disabled={currentSlide === 1}
-                    >
-                        <FaChevronLeft className="mr-2" /> Previous
-                    </button>
-                    {generatedAudioFiles.length > 0 && (
+                <div className="flex flex-col p-4 bg-gray-100">
+                    <div className="flex justify-between items-center mb-2">
                         <button
-                            onClick={handlePlayPause}
-                            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 flex items-center"
+                            onClick={handlePrevSlide}
+                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
+                            disabled={currentSlide === 1}
                         >
-                            {isPlaying ? <FaPause className="mr-2" /> : <FaPlay className="mr-2" />}
-                            {isPlaying ? 'Pause' : 'Play'}
+                            <FaChevronLeft className="mr-2" /> Previous
                         </button>
+                        {currentAudio && (
+                            <button
+                                onClick={handlePlayPause}
+                                className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 flex items-center"
+                            >
+                                {isPlaying ? <FaPause className="mr-2" /> : <FaPlay className="mr-2" />}
+                                {isPlaying ? 'Pause' : 'Play'}
+                            </button>
+                        )}
+                        <button
+                            onClick={handleNextSlide}
+                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
+                            disabled={currentSlide === numSlides}
+                        >
+                            Next <FaChevronRight className="ml-2" />
+                        </button>
+                    </div>
+                    {currentAudio && (
+                        <div className="w-full">
+                            <input
+                                type="range"
+                                min="0"
+                                max={audioDuration}
+                                value={currentTime}
+                                onChange={handleSeek}
+                                className="w-full"
+                            />
+                            <div className="flex justify-between text-sm text-gray-600">
+                                <span>{formatTime(currentTime)}</span>
+                                <span>{formatTime(audioDuration)}</span>
+                            </div>
+                        </div>
                     )}
-                    <button
-                        onClick={handleNextSlide}
-                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
-                        disabled={currentSlide === numSlides}
-                    >
-                        Next <FaChevronRight className="ml-2" />
-                    </button>
                 </div>
                 {currentAudio && (
                     <audio
                         ref={audioRef}
                         src={currentAudio}
-                        onEnded={() => setIsPlaying(false)}
+                        onLoadedMetadata={(e) => setAudioDuration(e.target.duration)}
+                        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                        onEnded={handleAudioEnded}
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
                     />
