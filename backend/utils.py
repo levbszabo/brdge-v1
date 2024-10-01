@@ -114,18 +114,31 @@ def align_transcript_with_slides(
     transcript: str, slides_dir: str
 ) -> Dict[str, List[str]]:
     prompt = """
-    I've given you a slide deck of images in order. In addition we have a user transcript presenting that slide
-    deck. Your job is to align the transcript to the slides and return your response in a json format. Ensure every
-    slide has a transcript. 
+    I have given you a set of {num_slides} slides, each represented by an image, and a user transcript that describes or presents those slides. 
+    Your task is to align specific parts of the transcript with the corresponding slides, ensuring that every slide has an associated transcript segment. 
+    Each slide's transcript should capture the content or theme of the slide and should be as precise as possible. 
 
-    There are {num_slides} slides in the deck.
-    
-    return your response in json format as 
-    "image_transcripts": [
-        "image_number": [
-        "transcript"
-    ], 
-    ]
+    Please ensure:
+    - The transcript is segmented so that each portion corresponds to the correct slide based on the topic or description given in the transcript.
+    - Every slide should have a transcript, and the transcript segments should not overlap between slides.
+    - **Do not truncate** or oversimplify the transcript. If a portion of the transcript is long, retain the full detail of the content even if it seems extensive for a single slide.
+- If a large portion of the transcript is associated with a slide, include it fully rather than splitting it arbitrarily. Only split the transcript if a new topic clearly applies to a different slide.
+
+    Return the response in the following JSON format:
+    {{
+        "image_transcripts": [
+            {{
+            "image_number": 1,
+        "transcript": "..."
+        }},
+        {{
+        "image_number": 2,
+        "transcript": "..."
+        }},
+            ...
+        ]
+    }}
+
     **User Transcript:**
     {transcript}
     """.format(

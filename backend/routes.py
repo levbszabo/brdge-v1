@@ -9,6 +9,7 @@ from models import Brdge
 from utils import pdf_to_images, transcribe_audio_helper, align_transcript_with_slides
 from io import BytesIO
 import botocore
+import json
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -351,4 +352,11 @@ def align_transcript(brdge_id):
         s3_client.download_file(S3_BUCKET, file_key, local_file_path)
 
     image_transcripts = align_transcript_with_slides(transcript, slides_dir_local)
+    aligned_transcript_local = f"/tmp/aligned_transcript_{brdge_id}.json"
+    with open(aligned_transcript_local, "w") as f:
+        f.write(json.dumps(image_transcripts))
+    aligned_transcript_s3_key = f"{brdge.folder}/transcripts/aligned_transcript.json"
+    s3_client.upload_file(
+        aligned_transcript_local, S3_BUCKET, aligned_transcript_s3_key
+    )
     return jsonify(image_transcripts), 200
