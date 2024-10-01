@@ -19,6 +19,17 @@ import imghdr
 import logging
 import json
 from typing import Dict, List
+import os
+from elevenlabs import ElevenLabs
+import os
+import requests
+
+import json
+
+CHUNK_SIZE = 1024  # Size of chunks to read/write at a time
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")  # Your API key for authentication
+# ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")  # ID of the voice model to use
+
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -188,6 +199,84 @@ def align_transcript_with_slides(
 
     image_transcripts = json.loads(response.choices[0].message.content)
     return image_transcripts
+
+
+def clone_voice_helper(name, audio_file_path):
+    """
+    Clone a voice using the ElevenLabs API.
+
+    :param name: The name to identify the cloned voice.
+    :param audio_file_path: Path to the MP3 file containing the voice sample.
+    :return: The voice_id of the cloned voice.
+    """
+    client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
+
+    try:
+        response = client.clone(
+            name=name,
+            files=[audio_file_path],
+            description=f"Cloned voice for Brdge {name}",
+        )
+        voice_id = response.voice_id
+        return voice_id
+    except Exception as e:
+        print(f"Error cloning voice: {str(e)}")
+        return None
+
+
+# Function to generate audio for a single page
+def generate_audio_for_page(page_number, text, outdir, voice_id):
+    output_path = f"{outdir}/page_{page_number}.mp3"
+    if voice_id is None:
+        voice_id = "NVfYoEx7jEm8F3SG7RTC"
+    # Construct the URL for the Text-to-Speech API request
+    tts_url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
+
+    # Set up headers for the API request, including the API key for authentication
+    headers = {"Accept": "application/json", "xi-api-key": ELEVENLABS_API_KEY}
+
+    # Set up the data payload for the API request, including the text and voice settings
+    data = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.8,
+            "style": 0.15,
+            "use_speaker_boost": True,
+        },
+    }
+
+    # Make the POST request to the TTS API with headers and data, enabling streaming response
+    response = requests.post(tts_url, headers=headers, json=data, stream=True)
+
+    if response.ok:
+        # Open the output file in write-binary mode
+        with open(output_path, "wb") as f:
+            # Read the response in chunks and write to the file
+            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                f.write(chunk)
+        print(f"Audio stream for page {page_number} saved successfully.")
+    else:
+        # Print the error message if the request was not successful
+        print(f"Error generating audio for page {page_number}: {response.text}")
+
+
+# Generate audio for all pages
+
+
+def generate_voice_helper(brdge_id, transcript, voice_id):
+    transcript = transcript["image_transcripts"]
+    outdir = f"/tmp/audio/processed/{brdge_id}"
+    os.makedirs(outdir, exist_ok=True)
+
+    for page in transcript:
+        # Extract page number and transcript from the dictionary
+        page_number = page["image_number"]
+        full_text = page["transcript"]
+        generate_audio_for_page(page_number, full_text, outdir, voice_id)
+
+    return outdir
 
 
 # Example usage:

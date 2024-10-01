@@ -6,7 +6,13 @@ import os
 import boto3
 import uuid
 from models import Brdge
-from utils import pdf_to_images, transcribe_audio_helper, align_transcript_with_slides
+from utils import (
+    clone_voice_helper,
+    pdf_to_images,
+    transcribe_audio_helper,
+    align_transcript_with_slides,
+    generate_voice_helper,
+)
 from io import BytesIO
 import botocore
 import json
@@ -378,3 +384,55 @@ def get_aligned_transcript(brdge_id):
     with open(f"/tmp/aligned_transcript_{brdge_id}.json", "r") as f:
         aligned_transcript = json.load(f)
     return jsonify(aligned_transcript), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/clone_voice", methods=["POST"])
+def clone_voice(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id).to_dict()
+    if not brdge.get("audio_filename"):
+        return jsonify({"error": "No audio file associated with this brdge"}), 400
+
+    audio_s3_key = brdge.get("audio_s3_key")
+    audio_local_path = f"/tmp/audio_{brdge_id}.mp3"
+
+    try:
+        s3_client.download_file(S3_BUCKET, audio_s3_key, audio_local_path)
+    except Exception as e:
+        return jsonify({"error": f"Error downloading audio file: {str(e)}"}), 500
+
+    voice_id = clone_voice_helper(brdge.get("name"), audio_local_path)
+    with open(f"/tmp/voice_id_{brdge_id}.txt", "w") as f:
+        f.write(voice_id)
+    s3_client.upload_file(
+        f"/tmp/voice_id_{brdge_id}.txt",
+        S3_BUCKET,
+        f"{brdge.get('folder')}/audio/voice_id.txt",
+    )
+    return jsonify({"voice_id": voice_id}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/audio/generate_voice", methods=["POST"])
+def generate_voice(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id).to_dict()
+    voice_id_s3_key = f"{brdge.get('folder')}/audio/voice_id.txt"
+    s3_client.download_file(S3_BUCKET, voice_id_s3_key, f"/tmp/voice_id_{brdge_id}.txt")
+    with open(f"/tmp/voice_id_{brdge_id}.txt", "r") as f:
+        voice_id = f.read()
+    transcript_s3_key = f"{brdge.get('folder')}/transcripts/aligned_transcript.json"
+    s3_client.download_file(
+        S3_BUCKET, transcript_s3_key, f"/tmp/aligned_transcript_{brdge_id}.json"
+    )
+    with open(f"/tmp/aligned_transcript_{brdge_id}.json", "r") as f:
+        transcript = json.load(f)
+    # generate voice
+    # voice_name = brdge.get("name") + "_" + str(brdge_id)
+    outdir = generate_voice_helper(brdge_id, transcript, voice_id)
+    # upload audio to s3
+    for file in os.listdir(outdir):
+        s3_client.upload_file(
+            f"{outdir}/{file}",
+            S3_BUCKET,
+            f"{brdge.get('folder')}/audio/processed/{file}",
+        )
+    # we return the tmp dir to frontend so it can play the audio
+    return jsonify({"message": "Voice generated successfully", "outdir": outdir}), 200

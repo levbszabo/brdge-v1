@@ -47,7 +47,21 @@ def get_transcripts_algined(brdge_id):
     return response
 
 
+def clone_voice_tester(brdge_id):
+    response = requests.post(f"{BASE_URL}/api/brdges/{brdge_id}/audio/clone_voice")
+    return response
+
+
+def generate_voice_tester(brdge_id):
+    response = requests.post(f"{BASE_URL}/api/brdges/{brdge_id}/audio/generate_voice")
+    return response
+
+
 get_brdges()
+
+out = generate_voice_tester(1)
+# voice_id = clone_voice_tester(1)
+
 # response = get_transcripts_algined(1)
 # print(response.json())
 
