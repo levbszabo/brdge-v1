@@ -28,6 +28,9 @@ function CreateBrdgePage() {
     const [isVoiceGenerating, setIsVoiceGenerating] = useState(false);
     const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
     const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
+    const [step, setStep] = useState(1);
+    const [transcriptsGenerated, setTranscriptsGenerated] = useState(false);
+    const [voiceCloneGenerated, setVoiceCloneGenerated] = useState(false);
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -139,20 +142,31 @@ function CreateBrdgePage() {
         setTranscripts(updatedTranscripts);
     };
 
-    const handleProceed = async () => {
+    const handleGenerateTranscripts = async () => {
         if (!existingAudioUrl) {
             setMessage('Please upload or record audio before proceeding.');
             return;
         }
 
         setLoadingOverlay(true);
-        setLoadingMessage('Transcribing audio...');
+        setLoadingMessage('Generating and aligning transcripts...');
 
         try {
+            // Check if transcripts are already in cache
+            const cachedTranscriptsResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/transcripts/cached`);
+            if (cachedTranscriptsResponse.data.cached) {
+                setTranscripts(cachedTranscriptsResponse.data.transcripts);
+                setTranscriptsGenerated(true);
+                setLoadingMessage('Transcripts loaded from cache.');
+                setTimeout(() => {
+                    setLoadingOverlay(false);
+                    setLoadingMessage('');
+                }, 2000);
+                return;
+            }
+
             // Step 1: Transcribe audio
             await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/transcribe`);
-
-            setLoadingMessage('Aligning transcriptions with slides...');
 
             // Step 2: Align transcript with slides
             const response = await axios.post(
@@ -163,14 +177,8 @@ function CreateBrdgePage() {
             const alignedData = response.data;
             const updatedTranscripts = [];
 
-            if (
-                alignedData.image_transcripts &&
-                Array.isArray(alignedData.image_transcripts)
-            ) {
-                // Sort transcripts by image_number to ensure correct order
-                alignedData.image_transcripts.sort(
-                    (a, b) => a.image_number - b.image_number
-                );
+            if (alignedData.image_transcripts && Array.isArray(alignedData.image_transcripts)) {
+                alignedData.image_transcripts.sort((a, b) => a.image_number - b.image_number);
                 for (let i = 1; i <= numSlides; i++) {
                     const slideData = alignedData.image_transcripts.find(
                         (item) => item.image_number === i
@@ -179,32 +187,17 @@ function CreateBrdgePage() {
                     updatedTranscripts.push(slideTranscript);
                 }
             } else {
-                // If data format is different or missing, initialize empty transcripts
                 for (let i = 0; i < numSlides; i++) {
                     updatedTranscripts.push('');
                 }
             }
 
             setTranscripts(updatedTranscripts);
-            setLoadingMessage('Cloning voice...');
-            setIsVoiceCloning(true);
-
-            // Step 3: Clone voice
-            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/clone_voice`);
-
-            setLoadingMessage('Generating voice...');
-            setIsVoiceCloning(false);
-            setIsVoiceGenerating(true);
-
-            // Step 4: Generate voice
-            const generateResponse = await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`);
-            setGeneratedAudioDir(generateResponse.data.outdir);
-
-            setIsVoiceGenerating(false);
-            setLoadingMessage('Voice generation complete!');
+            setTranscriptsGenerated(true);
+            setLoadingMessage('Transcripts generated and aligned successfully.');
         } catch (error) {
-            console.error('Error during processing:', error);
-            setMessage('Error during processing.');
+            console.error('Error generating transcripts:', error);
+            setMessage('Error generating transcripts.');
         } finally {
             setTimeout(() => {
                 setLoadingOverlay(false);
@@ -213,18 +206,49 @@ function CreateBrdgePage() {
         }
     };
 
-    useEffect(() => {
-        if (generatedAudioDir) {
+    const handleGenerateVoiceClone = async () => {
+        setLoadingOverlay(true);
+        setLoadingMessage('Generating voice clone...');
+
+        try {
+            // Check if voice clone is already in cache
+            const cachedVoiceCloneResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/voice-clone/cached`);
+            if (cachedVoiceCloneResponse.data.cached) {
+                setGeneratedAudioFiles(cachedVoiceCloneResponse.data.audioFiles);
+                setVoiceCloneGenerated(true);
+                setLoadingMessage('Voice clone loaded from cache.');
+                setTimeout(() => {
+                    setLoadingOverlay(false);
+                    setLoadingMessage('');
+                }, 2000);
+                return;
+            }
+
+            // Step 1: Clone voice
+            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/clone_voice`);
+
+            setLoadingMessage('Generating voice...');
+
+            // Step 2: Generate voice
+            const generateResponse = await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`);
+            setGeneratedAudioDir(generateResponse.data.outdir);
+
             // Fetch the list of generated audio files
-            axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`)
-                .then(response => {
-                    setGeneratedAudioFiles(response.data.files);
-                })
-                .catch(error => {
-                    console.error('Error fetching generated audio files:', error);
-                });
+            const audioFilesResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`);
+            setGeneratedAudioFiles(audioFilesResponse.data.files);
+
+            setVoiceCloneGenerated(true);
+            setLoadingMessage('Voice clone generated successfully.');
+        } catch (error) {
+            console.error('Error generating voice clone:', error);
+            setMessage('Error generating voice clone.');
+        } finally {
+            setTimeout(() => {
+                setLoadingOverlay(false);
+                setLoadingMessage('');
+            }, 2000);
         }
-    }, [generatedAudioDir, brdgeId]);
+    };
 
     const handleOptionChange = (option) => {
         setSelectedOption(option);
@@ -613,47 +637,60 @@ function CreateBrdgePage() {
                             </div>
                         )}
 
-                        {/* Slides */}
-                        <div className="mt-8">
-                            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                                Slide {currentSlide} of {numSlides}
-                            </h2>
-                            {renderSlides()}
-                            <div className="mt-4 flex items-center justify-between">
-                                <button
-                                    onClick={handlePrevSlide}
-                                    className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
-                                    disabled={currentSlide === 1}
-                                >
-                                    Previous Slide
-                                </button>
-                                <button
-                                    onClick={handleNextSlide}
-                                    className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
-                                    disabled={currentSlide === numSlides}
-                                >
-                                    Next Slide
-                                </button>
-                            </div>
+                        {/* Step 1: Generate Transcripts */}
+                        <div className="mt-6">
+                            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Step 1: Generate Transcripts</h2>
+                            <button
+                                onClick={handleGenerateTranscripts}
+                                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                                disabled={transcriptsGenerated}
+                            >
+                                {transcriptsGenerated ? 'Transcripts Generated' : 'Generate Transcripts'}
+                            </button>
                         </div>
 
-                        {/* Voice Cloning and Generation Status */}
-                        {isVoiceCloning && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Cloning Voice...</h2>
-                                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+                        {/* Display Slides and Transcripts */}
+                        {brdgeId && numSlides > 0 && (
+                            <div className="mt-8">
+                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+                                    Slide {currentSlide} of {numSlides}
+                                </h2>
+                                {renderSlides()}
+                                <div className="mt-4 flex items-center justify-between">
+                                    <button
+                                        onClick={handlePrevSlide}
+                                        className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
+                                        disabled={currentSlide === 1}
+                                    >
+                                        Previous Slide
+                                    </button>
+                                    <button
+                                        onClick={handleNextSlide}
+                                        className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
+                                        disabled={currentSlide === numSlides}
+                                    >
+                                        Next Slide
+                                    </button>
+                                </div>
                             </div>
                         )}
 
-                        {isVoiceGenerating && (
+                        {/* Step 2: Generate Voice Clone */}
+                        {transcriptsGenerated && (
                             <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Generating Voice...</h2>
-                                <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Step 2: Generate Voice Clone</h2>
+                                <button
+                                    onClick={handleGenerateVoiceClone}
+                                    className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
+                                    disabled={voiceCloneGenerated}
+                                >
+                                    {voiceCloneGenerated ? 'Voice Clone Generated' : 'Generate Voice Clone'}
+                                </button>
                             </div>
                         )}
 
                         {/* Generated Audio Files */}
-                        {generatedAudioFiles.length > 0 && (
+                        {voiceCloneGenerated && generatedAudioFiles.length > 0 && (
                             <div className="mt-6">
                                 <h2 className="text-2xl font-semibold mb-4 text-gray-800">Generated Audio Files</h2>
                                 {generatedAudioFiles.map((file, index) => (
@@ -662,18 +699,6 @@ function CreateBrdgePage() {
                                         <audio controls src={`http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${file}`} className="w-full mt-2 rounded-lg"></audio>
                                     </div>
                                 ))}
-                            </div>
-                        )}
-
-                        {/* Proceed Button */}
-                        {!isRecording && !isVoiceCloning && !isVoiceGenerating && (
-                            <div className="mt-6 flex justify-end">
-                                <button
-                                    onClick={handleProceed}
-                                    className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
-                                >
-                                    {generatedAudioFiles.length > 0 ? 'Regenerate Voice' : 'Proceed to Next Step'}
-                                </button>
                             </div>
                         )}
                     </div>

@@ -478,3 +478,28 @@ def get_generated_audio_file(brdge_id, filename):
         except Exception as e:
             print(f"Error fetching audio from S3: {e}")
             abort(404)
+
+
+@app.route("/api/brdges/<int:brdge_id>/transcripts/cached", methods=["GET"])
+def get_cached_transcripts(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    cache_file = f"/tmp/transcripts_{brdge_id}.json"
+
+    if os.path.exists(cache_file):
+        with open(cache_file, "r") as f:
+            transcripts = json.load(f)
+        return jsonify({"cached": True, "transcripts": transcripts}), 200
+    else:
+        return jsonify({"cached": False}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/voice-clone/cached", methods=["GET"])
+def get_cached_voice_clone(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    cache_dir = f"/tmp/audio/processed/{brdge_id}"
+
+    if os.path.exists(cache_dir):
+        audio_files = [f for f in os.listdir(cache_dir) if f.endswith(".mp3")]
+        return jsonify({"cached": True, "audioFiles": audio_files}), 200
+    else:
+        return jsonify({"cached": False}), 200
