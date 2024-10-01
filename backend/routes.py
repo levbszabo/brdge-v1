@@ -360,3 +360,21 @@ def align_transcript(brdge_id):
         aligned_transcript_local, S3_BUCKET, aligned_transcript_s3_key
     )
     return jsonify(image_transcripts), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/transcripts/aligned", methods=["GET"])
+def get_aligned_transcript(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    # check in cache for algined transcript - would be at /tmp/aligned_transcript_{brdge_id}.json
+    if not os.path.exists(f"/tmp/aligned_transcript_{brdge_id}.json"):
+        aligned_transcript_s3_key = (
+            f"{brdge.folder}/transcripts/aligned_transcript.json"
+        )
+        s3_client.download_file(
+            S3_BUCKET,
+            aligned_transcript_s3_key,
+            f"/tmp/aligned_transcript_{brdge_id}.json",
+        )
+    with open(f"/tmp/aligned_transcript_{brdge_id}.json", "r") as f:
+        aligned_transcript = json.load(f)
+    return jsonify(aligned_transcript), 200

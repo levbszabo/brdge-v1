@@ -14,7 +14,6 @@ function CreateBrdgePage() {
     const [message, setMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
-    const [recorder, setRecorder] = useState(null);
     const [countdown, setCountdown] = useState(0);
     const [showCountdown, setShowCountdown] = useState(false);
     const [selectedOption, setSelectedOption] = useState('');
@@ -23,6 +22,8 @@ function CreateBrdgePage() {
     const [existingAudioUrl, setExistingAudioUrl] = useState(null);
     const [newAudioName, setNewAudioName] = useState('');
     const [isRenaming, setIsRenaming] = useState(false);
+    const [loadingOverlay, setLoadingOverlay] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('');
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -33,16 +34,51 @@ function CreateBrdgePage() {
             // Fetch existing brdge data when in edit mode
             axios
                 .get(`http://localhost:5000/api/brdges/${id}`)
-                .then((response) => {
+                .then(async (response) => {
                     const brdge = response.data;
                     setName(brdge.name);
                     setBrdgeId(brdge.id);
                     setNumSlides(brdge.num_slides);
-                    setTranscripts(brdge.transcripts || new Array(brdge.num_slides).fill(''));
                     if (brdge.audio_filename) {
                         const audioFileUrl = `http://localhost:5000/api/brdges/${brdge.id}/audio`;
                         setExistingAudioUrl(audioFileUrl);
                         setNewAudioName(brdge.audio_filename);
+                    }
+                    // Fetch aligned transcripts if available
+                    try {
+                        const transcriptResponse = await axios.get(
+                            `http://localhost:5000/api/brdges/${id}/transcripts/aligned`
+                        );
+                        const alignedData = transcriptResponse.data;
+                        const updatedTranscripts = [];
+
+                        // Process the aligned transcripts based on actual data format
+                        if (
+                            alignedData.image_transcripts &&
+                            Array.isArray(alignedData.image_transcripts)
+                        ) {
+                            // Sort transcripts by image_number to ensure correct order
+                            alignedData.image_transcripts.sort(
+                                (a, b) => a.image_number - b.image_number
+                            );
+                            for (let i = 1; i <= brdge.num_slides; i++) {
+                                const slideData = alignedData.image_transcripts.find(
+                                    (item) => item.image_number === i
+                                );
+                                const slideTranscript = slideData ? slideData.transcript : '';
+                                updatedTranscripts.push(slideTranscript);
+                            }
+                        } else {
+                            // If data format is different or missing, initialize empty transcripts
+                            for (let i = 0; i < brdge.num_slides; i++) {
+                                updatedTranscripts.push('');
+                            }
+                        }
+
+                        setTranscripts(updatedTranscripts);
+                    } catch (error) {
+                        console.error('No aligned transcripts found:', error);
+                        setTranscripts(new Array(brdge.num_slides).fill(''));
                     }
                 })
                 .catch((error) => {
@@ -99,9 +135,63 @@ function CreateBrdgePage() {
         setTranscripts(updatedTranscripts);
     };
 
-    const handleProceed = () => {
-        // Navigate to the next page with brdge details
-        navigate('/next-step', { state: { brdgeName: name, brdgeId, transcripts } });
+    const handleProceed = async () => {
+        if (!existingAudioUrl) {
+            setMessage('Please upload or record audio before proceeding.');
+            return;
+        }
+
+        setLoadingOverlay(true);
+        setLoadingMessage('Transcribing audio...');
+
+        try {
+            // Step 1: Transcribe audio
+            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/transcribe`);
+
+            setLoadingMessage('Aligning transcriptions with slides...');
+
+            // Step 2: Align transcript with slides
+            const response = await axios.post(
+                `http://localhost:5000/api/brdges/${brdgeId}/audio/align_transcript`
+            );
+
+            // Update the transcripts with aligned transcripts
+            const alignedData = response.data;
+            const updatedTranscripts = [];
+
+            if (
+                alignedData.image_transcripts &&
+                Array.isArray(alignedData.image_transcripts)
+            ) {
+                // Sort transcripts by image_number to ensure correct order
+                alignedData.image_transcripts.sort(
+                    (a, b) => a.image_number - b.image_number
+                );
+                for (let i = 1; i <= numSlides; i++) {
+                    const slideData = alignedData.image_transcripts.find(
+                        (item) => item.image_number === i
+                    );
+                    const slideTranscript = slideData ? slideData.transcript : '';
+                    updatedTranscripts.push(slideTranscript);
+                }
+            } else {
+                // If data format is different or missing, initialize empty transcripts
+                for (let i = 0; i < numSlides; i++) {
+                    updatedTranscripts.push('');
+                }
+            }
+
+            setTranscripts(updatedTranscripts);
+            setLoadingMessage('Transcripts aligned successfully.');
+        } catch (error) {
+            console.error('Error during transcription and alignment:', error);
+            setMessage('Error during transcription and alignment.');
+        } finally {
+            setTimeout(() => {
+                setLoadingOverlay(false);
+                setLoadingMessage('');
+            }, 2000); // Hide loading overlay after 2 seconds
+        }
     };
 
     const handleOptionChange = (option) => {
@@ -185,18 +275,18 @@ function CreateBrdgePage() {
         if (!recordedAudio || !brdgeId) return;
         const formData = new FormData();
         // Append the audio file
-        formData.append('audio', recordedAudio, newAudioName || recordedAudio.name || 'audio_file.mp3');
+        formData.append(
+            'audio',
+            recordedAudio,
+            newAudioName || recordedAudio.name || 'audio_file.mp3'
+        );
 
         try {
-            await axios.post(
-                `http://localhost:5000/api/brdges/${brdgeId}/audio`,
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                }
-            );
+            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
             setMessage('Audio uploaded successfully.');
             setExistingAudioUrl(`http://localhost:5000/api/brdges/${brdgeId}/audio`);
             setRecordedAudio(null);
@@ -267,7 +357,15 @@ function CreateBrdgePage() {
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8">
-            <div className="bg-white shadow-xl rounded-lg p-8 max-w-5xl w-full">
+            <div className="bg-white shadow-xl rounded-lg p-8 max-w-5xl w-full relative">
+                {/* Loading Overlay */}
+                {loadingOverlay && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
+                        <div className="text-white text-xl font-semibold mb-4">{loadingMessage}</div>
+                        <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+                    </div>
+                )}
+
                 <h1 className="text-3xl font-bold mb-6 text-gray-800">
                     {isEditMode ? 'Edit Brdge' : 'Create New Brdge'}
                 </h1>
@@ -305,11 +403,7 @@ function CreateBrdgePage() {
                                     } text-white font-semibold rounded-lg`}
                                 disabled={isProcessing}
                             >
-                                {isProcessing
-                                    ? 'Processing...'
-                                    : isEditMode
-                                        ? 'Update Brdge'
-                                        : 'Create Brdge'}
+                                {isProcessing ? 'Processing...' : isEditMode ? 'Update Brdge' : 'Create Brdge'}
                             </button>
                             <button
                                 type="button"
