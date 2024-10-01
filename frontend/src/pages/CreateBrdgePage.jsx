@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
+import { FaPlay, FaPause, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 function CreateBrdgePage() {
     const [name, setName] = useState('');
@@ -24,13 +25,13 @@ function CreateBrdgePage() {
     const [isRenaming, setIsRenaming] = useState(false);
     const [loadingOverlay, setLoadingOverlay] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('');
-    const [isVoiceCloning, setIsVoiceCloning] = useState(false);
-    const [isVoiceGenerating, setIsVoiceGenerating] = useState(false);
-    const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
-    const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
-    const [step, setStep] = useState(1);
     const [transcriptsGenerated, setTranscriptsGenerated] = useState(false);
     const [voiceCloneGenerated, setVoiceCloneGenerated] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentAudio, setCurrentAudio] = useState(null);
+    const audioRef = useRef(null);
+    const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
+    const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -217,28 +218,26 @@ function CreateBrdgePage() {
                 setGeneratedAudioFiles(cachedVoiceCloneResponse.data.audioFiles);
                 setVoiceCloneGenerated(true);
                 setLoadingMessage('Voice clone loaded from cache.');
-                setTimeout(() => {
-                    setLoadingOverlay(false);
-                    setLoadingMessage('');
-                }, 2000);
-                return;
+            } else {
+                // Step 1: Clone voice
+                await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/clone_voice`);
+
+                setLoadingMessage('Generating voice...');
+
+                // Step 2: Generate voice
+                const generateResponse = await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`);
+                setGeneratedAudioDir(generateResponse.data.outdir);
+
+                // Fetch the list of generated audio files
+                const audioFilesResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`);
+                setGeneratedAudioFiles(audioFilesResponse.data.files);
+
+                setVoiceCloneGenerated(true);
+                setLoadingMessage('Voice clone generated successfully.');
             }
 
-            // Step 1: Clone voice
-            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/clone_voice`);
-
-            setLoadingMessage('Generating voice...');
-
-            // Step 2: Generate voice
-            const generateResponse = await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`);
-            setGeneratedAudioDir(generateResponse.data.outdir);
-
-            // Fetch the list of generated audio files
-            const audioFilesResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`);
-            setGeneratedAudioFiles(audioFilesResponse.data.files);
-
-            setVoiceCloneGenerated(true);
-            setLoadingMessage('Voice clone generated successfully.');
+            // Load the audio for the current slide
+            loadAudioForSlide(currentSlide);
         } catch (error) {
             console.error('Error generating voice clone:', error);
             setMessage('Error generating voice clone.');
@@ -257,6 +256,11 @@ function CreateBrdgePage() {
         }
     };
 
+    const handleRecordWalkthrough = () => {
+        setSelectedOption('record');
+        startCountdown();
+    };
+
     const startCountdown = () => {
         setCountdown(3);
         setShowCountdown(true);
@@ -266,7 +270,6 @@ function CreateBrdgePage() {
                     clearInterval(countdownInterval);
                     setShowCountdown(false);
                     startRecording();
-                    setCurrentSlide(1); // Start from slide 1
                 }
                 return prev - 1;
             });
@@ -280,6 +283,7 @@ function CreateBrdgePage() {
             .start()
             .then(() => {
                 setIsRecording(true);
+                setCurrentSlide(1); // Start from slide 1
             })
             .catch((error) => {
                 console.error('Error starting recording:', error);
@@ -292,14 +296,14 @@ function CreateBrdgePage() {
             .stop()
             .getMp3()
             .then(([buffer, blob]) => {
-                const audioFile = new File(buffer, 'recording.mp3', {
+                const audioFile = new File(buffer, 'walkthrough_recording.mp3', {
                     type: blob.type,
                     lastModified: Date.now(),
                 });
                 setRecordedAudio(audioFile);
-                const audioUrl = URL.createObjectURL(blob);
-                setAudioUrl(audioUrl);
+                setAudioUrl(URL.createObjectURL(blob));
                 setIsRecording(false);
+                handleUploadAudio({ target: { files: [audioFile] } });
             })
             .catch((e) => {
                 console.error('Error stopping recording:', e);
@@ -310,12 +314,14 @@ function CreateBrdgePage() {
     const handleNextSlide = () => {
         if (currentSlide < numSlides) {
             setCurrentSlide(currentSlide + 1);
+            loadAudioForSlide(currentSlide + 1);
         }
     };
 
     const handlePrevSlide = () => {
         if (currentSlide > 1) {
             setCurrentSlide(currentSlide - 1);
+            loadAudioForSlide(currentSlide - 1);
         }
     };
 
@@ -397,10 +403,46 @@ function CreateBrdgePage() {
         stopRecording();
     };
 
+    const handlePlayPause = () => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play().catch(error => {
+                    console.error("Error playing audio:", error);
+                });
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const loadAudioForSlide = (slideNumber) => {
+        if (generatedAudioFiles.length >= slideNumber) {
+            const audioFile = generatedAudioFiles[slideNumber - 1];
+            setCurrentAudio(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${audioFile}`);
+            setIsPlaying(false);
+        } else {
+            setCurrentAudio(null);
+        }
+    };
+
+    useEffect(() => {
+        if (currentAudio) {
+            audioRef.current.load();
+        }
+    }, [currentAudio]);
+
+    // Add this useEffect to load audio when generatedAudioFiles changes
+    useEffect(() => {
+        if (generatedAudioFiles.length > 0) {
+            loadAudioForSlide(currentSlide);
+        }
+    }, [generatedAudioFiles]);
+
     const renderSlides = () => {
         const imageUrl = `http://localhost:5000/api/brdges/${brdgeId}/slides/${currentSlide}`;
         return (
-            <div className="border rounded overflow-hidden shadow-lg">
+            <div className="border rounded-lg overflow-hidden shadow-lg">
                 <img src={imageUrl} alt={`Slide ${currentSlide}`} className="w-full" />
                 <div className="p-4 bg-white">
                     <label className="block text-gray-700 font-semibold mb-2">
@@ -414,6 +456,40 @@ function CreateBrdgePage() {
                         placeholder={`Enter transcript for slide ${currentSlide}...`}
                     />
                 </div>
+                <div className="flex justify-between items-center p-4 bg-gray-100">
+                    <button
+                        onClick={handlePrevSlide}
+                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
+                        disabled={currentSlide === 1}
+                    >
+                        <FaChevronLeft className="mr-2" /> Previous
+                    </button>
+                    {generatedAudioFiles.length > 0 && (
+                        <button
+                            onClick={handlePlayPause}
+                            className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 flex items-center"
+                        >
+                            {isPlaying ? <FaPause className="mr-2" /> : <FaPlay className="mr-2" />}
+                            {isPlaying ? 'Pause' : 'Play'}
+                        </button>
+                    )}
+                    <button
+                        onClick={handleNextSlide}
+                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
+                        disabled={currentSlide === numSlides}
+                    >
+                        Next <FaChevronRight className="ml-2" />
+                    </button>
+                </div>
+                {currentAudio && (
+                    <audio
+                        ref={audioRef}
+                        src={currentAudio}
+                        onEnded={() => setIsPlaying(false)}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                    />
+                )}
             </div>
         );
     };
@@ -430,21 +506,38 @@ function CreateBrdgePage() {
                         <div>
                             <audio controls src={existingAudioUrl} className="w-full mb-2"></audio>
                             <div className="flex space-x-2">
-                                <button onClick={handleReplaceAudio} className="px-3 py-1 bg-blue-500 text-white rounded">
+                                <button onClick={handleReplaceAudio} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
                                     Replace
                                 </button>
-                                <button onClick={handleDeleteAudio} className="px-3 py-1 bg-red-500 text-white rounded">
+                                <button onClick={handleDeleteAudio} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
                                     Delete
                                 </button>
+                                {isRenaming ? (
+                                    <>
+                                        <input
+                                            type="text"
+                                            value={newAudioName}
+                                            onChange={(e) => setNewAudioName(e.target.value)}
+                                            className="px-2 py-1 border rounded"
+                                        />
+                                        <button onClick={handleSaveAudioName} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                            Save
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button onClick={handleRenameAudio} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                        Rename
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ) : (
                         <div className="flex space-x-2">
-                            <button onClick={() => handleOptionChange('upload')} className="px-3 py-1 bg-green-500 text-white rounded">
+                            <button onClick={() => handleOptionChange('upload')} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
                                 Upload Audio
                             </button>
-                            <button onClick={() => handleOptionChange('record')} className="px-3 py-1 bg-green-500 text-white rounded">
-                                Record Audio
+                            <button onClick={handleRecordWalkthrough} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                Record Walkthrough
                             </button>
                         </div>
                     )}
@@ -467,8 +560,8 @@ function CreateBrdgePage() {
                     <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 3: Voice Clone</h3>
                     <button
                         onClick={handleGenerateVoiceClone}
-                        className={`px-3 py-1 ${transcriptsGenerated ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'} text-white rounded`}
-                        disabled={!transcriptsGenerated}
+                        className={`px-3 py-1 ${transcripts.some(t => t.trim() !== '') ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'} text-white rounded`}
+                        disabled={!transcripts.some(t => t.trim() !== '')}
                     >
                         Generate Voice Clone
                     </button>
@@ -535,43 +628,7 @@ function CreateBrdgePage() {
                         )}
 
                         {/* Display Slides and Transcripts */}
-                        {brdgeId && numSlides > 0 && (
-                            <div className="mt-8">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                                    Slide {currentSlide} of {numSlides}
-                                </h2>
-                                {renderSlides()}
-                                <div className="mt-4 flex items-center justify-between">
-                                    <button
-                                        onClick={handlePrevSlide}
-                                        className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
-                                        disabled={currentSlide === 1}
-                                    >
-                                        Previous Slide
-                                    </button>
-                                    <button
-                                        onClick={handleNextSlide}
-                                        className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
-                                        disabled={currentSlide === numSlides}
-                                    >
-                                        Next Slide
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Generated Audio Files */}
-                        {voiceCloneGenerated && generatedAudioFiles.length > 0 && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Generated Audio Files</h2>
-                                {generatedAudioFiles.map((file, index) => (
-                                    <div key={index} className="mb-4">
-                                        <p className="text-gray-700 font-semibold">{file}</p>
-                                        <audio controls src={`http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${file}`} className="w-full mt-2 rounded-lg"></audio>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                        {brdgeId && numSlides > 0 && renderSlides()}
                     </div>
 
                     {/* Workflow steps */}
@@ -582,6 +639,26 @@ function CreateBrdgePage() {
                 {loadingOverlay && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                         <div className="text-white text-xl">{loadingMessage}</div>
+                    </div>
+                )}
+
+                {/* Countdown Overlay */}
+                {showCountdown && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="text-white text-6xl font-bold">{countdown}</div>
+                    </div>
+                )}
+
+                {/* Recording Indicator */}
+                {isRecording && (
+                    <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full animate-pulse">
+                        Recording...
+                        <button
+                            onClick={handleFinishRecording}
+                            className="ml-2 bg-white text-red-500 px-2 py-1 rounded-full text-sm"
+                        >
+                            Stop
+                        </button>
                     </div>
                 )}
             </div>
