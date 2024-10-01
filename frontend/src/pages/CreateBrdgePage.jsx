@@ -319,38 +319,19 @@ function CreateBrdgePage() {
         }
     };
 
-    const handleUploadAudio = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setRecordedAudio(file);
-            setAudioUrl(URL.createObjectURL(file));
-        }
-    };
+    const handleReplaceAudio = () => {
+        // Reset the audio state
+        setExistingAudioUrl(null);
+        setRecordedAudio(null);
+        setAudioUrl(null);
+        setNewAudioName('');
 
-    const handleUploadAudioFile = async () => {
-        if (!recordedAudio || !brdgeId) return;
-        const formData = new FormData();
-        // Append the audio file
-        formData.append(
-            'audio',
-            recordedAudio,
-            newAudioName || recordedAudio.name || 'audio_file.mp3'
-        );
-
-        try {
-            await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            setMessage('Audio uploaded successfully.');
-            setExistingAudioUrl(`http://localhost:5000/api/brdges/${brdgeId}/audio`);
-            setRecordedAudio(null);
-            setAudioUrl(null);
-        } catch (error) {
-            console.error('Error uploading audio:', error);
-            setMessage('Error uploading audio.');
-        }
+        // Open the file input dialog
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'audio/*';
+        fileInput.onchange = (e) => handleUploadAudio(e);
+        fileInput.click();
     };
 
     const handleDeleteAudio = async () => {
@@ -364,6 +345,32 @@ function CreateBrdgePage() {
         } catch (error) {
             console.error('Error deleting audio:', error);
             setMessage('Error deleting audio.');
+        }
+    };
+
+    const handleUploadAudio = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setRecordedAudio(file);
+            setAudioUrl(URL.createObjectURL(file));
+            setNewAudioName(file.name);
+
+            // Upload the new audio file
+            const formData = new FormData();
+            formData.append('audio', file);
+
+            try {
+                await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+                setMessage('Audio uploaded successfully.');
+                setExistingAudioUrl(`http://localhost:5000/api/brdges/${brdgeId}/audio`);
+            } catch (error) {
+                console.error('Error uploading audio:', error);
+                setMessage('Error uploading audio.');
+            }
         }
     };
 
@@ -411,243 +418,121 @@ function CreateBrdgePage() {
         );
     };
 
+    const renderWorkflow = () => {
+        return (
+            <div className="w-1/3 ml-8">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Workflow</h2>
+
+                {/* Step 1: Upload/Record Audio */}
+                <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 1: Audio</h3>
+                    {existingAudioUrl ? (
+                        <div>
+                            <audio controls src={existingAudioUrl} className="w-full mb-2"></audio>
+                            <div className="flex space-x-2">
+                                <button onClick={handleReplaceAudio} className="px-3 py-1 bg-blue-500 text-white rounded">
+                                    Replace
+                                </button>
+                                <button onClick={handleDeleteAudio} className="px-3 py-1 bg-red-500 text-white rounded">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex space-x-2">
+                            <button onClick={() => handleOptionChange('upload')} className="px-3 py-1 bg-green-500 text-white rounded">
+                                Upload Audio
+                            </button>
+                            <button onClick={() => handleOptionChange('record')} className="px-3 py-1 bg-green-500 text-white rounded">
+                                Record Audio
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Step 2: Generate Transcripts */}
+                <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 2: Transcripts</h3>
+                    <button
+                        onClick={handleGenerateTranscripts}
+                        className={`px-3 py-1 ${existingAudioUrl ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300 cursor-not-allowed'} text-white rounded`}
+                        disabled={!existingAudioUrl}
+                    >
+                        Generate Transcripts
+                    </button>
+                </div>
+
+                {/* Step 3: Generate Voice Clone */}
+                <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 3: Voice Clone</h3>
+                    <button
+                        onClick={handleGenerateVoiceClone}
+                        className={`px-3 py-1 ${transcriptsGenerated ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'} text-white rounded`}
+                        disabled={!transcriptsGenerated}
+                    >
+                        Generate Voice Clone
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8">
-            <div className="bg-white shadow-xl rounded-lg p-8 max-w-5xl w-full relative">
-                {/* Loading Overlay */}
-                {loadingOverlay && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50">
-                        <div className="text-white text-xl font-semibold mb-4">{loadingMessage}</div>
-                        <div className="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
-                    </div>
-                )}
-
+            <div className="bg-white shadow-xl rounded-lg p-8 max-w-6xl w-full relative">
                 <h1 className="text-3xl font-bold mb-6 text-gray-800">
                     {isEditMode ? 'Edit Brdge' : 'Create New Brdge'}
                 </h1>
                 {message && <p className="mb-4 text-green-600">{message}</p>}
-                {!brdgeId && (
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div>
-                            <label className="block text-gray-700 font-semibold">Brdge Name</label>
-                            <input
-                                type="text"
-                                className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-gray-700 font-semibold">Presentation (PDF)</label>
-                            <input
-                                type="file"
-                                accept=".pdf"
-                                className="w-full mt-2"
-                                onChange={(e) => setPresentation(e.target.files[0])}
-                            />
-                            {isEditMode && !presentation && (
-                                <p className="text-gray-600 mt-2">
-                                    Current presentation will be used if no new file is selected.
-                                </p>
-                            )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <button
-                                type="submit"
-                                className={`px-6 py-2 ${isProcessing ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'
-                                    } text-white font-semibold rounded-lg`}
-                                disabled={isProcessing}
-                            >
-                                {isProcessing ? 'Processing...' : isEditMode ? 'Update Brdge' : 'Create Brdge'}
-                            </button>
-                            <button
-                                type="button"
-                                className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700"
-                                onClick={() => navigate(-1)}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                )}
 
-                {/* Display Audio Options and Slide Images with Transcripts */}
-                {brdgeId && numSlides > 0 && (
-                    <div>
-                        {/* Informational Message */}
-                        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">
-                            <p className="text-gray-700">
-                                Upload an audio file or record a walkthrough to create a voice clone and
-                                transcription. This will allow us to make a 'brdge' of communication to others.
-                            </p>
-                        </div>
-
-                        {/* Existing Audio */}
-                        {existingAudioUrl && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Existing Audio</h2>
-                                <audio controls src={existingAudioUrl} className="w-full mt-2 rounded-lg"></audio>
-                                <div className="mt-4 flex items-center space-x-4">
-                                    {isRenaming ? (
-                                        <>
-                                            <input
-                                                type="text"
-                                                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                value={newAudioName}
-                                                onChange={(e) => setNewAudioName(e.target.value)}
-                                            />
-                                            <button
-                                                onClick={handleSaveAudioName}
-                                                className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700"
-                                            >
-                                                Save Name
-                                            </button>
-                                            <button
-                                                onClick={() => setIsRenaming(false)}
-                                                className="px-4 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p className="text-gray-700 font-semibold">{newAudioName}</p>
-                                            <button
-                                                onClick={handleRenameAudio}
-                                                className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700"
-                                            >
-                                                Rename Audio
-                                            </button>
-                                            <button
-                                                onClick={handleDeleteAudio}
-                                                className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700"
-                                            >
-                                                Delete Audio
-                                            </button>
-                                        </>
+                <div className="flex">
+                    <div className="w-2/3">
+                        {/* Brdge creation form */}
+                        {!brdgeId && (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div>
+                                    <label className="block text-gray-700 font-semibold">Brdge Name</label>
+                                    <input
+                                        type="text"
+                                        className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-gray-700 font-semibold">Presentation (PDF)</label>
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        className="w-full mt-2"
+                                        onChange={(e) => setPresentation(e.target.files[0])}
+                                    />
+                                    {isEditMode && !presentation && (
+                                        <p className="text-gray-600 mt-2">
+                                            Current presentation will be used if no new file is selected.
+                                        </p>
                                     )}
                                 </div>
-                            </div>
-                        )}
-
-                        {/* Audio Options */}
-                        {!existingAudioUrl && !isRecording && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Audio Options</h2>
-                                <div className="flex items-center space-x-4">
+                                <div className="flex items-center justify-between">
                                     <button
-                                        onClick={() => handleOptionChange('upload')}
-                                        className={`px-4 py-2 ${selectedOption === 'upload'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-300 text-gray-800'
-                                            } font-semibold rounded-lg hover:bg-indigo-700`}
+                                        type="submit"
+                                        className={`px-6 py-2 ${isProcessing ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                                            } text-white font-semibold rounded-lg`}
+                                        disabled={isProcessing}
                                     >
-                                        Upload Audio
+                                        {isProcessing ? 'Processing...' : isEditMode ? 'Update Brdge' : 'Create Brdge'}
                                     </button>
                                     <button
-                                        onClick={() => handleOptionChange('record')}
-                                        className={`px-4 py-2 ${selectedOption === 'record'
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-gray-300 text-gray-800'
-                                            } font-semibold rounded-lg hover:bg-indigo-700`}
+                                        type="button"
+                                        className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700"
+                                        onClick={() => navigate(-1)}
                                     >
-                                        Record Walkthrough
+                                        Cancel
                                     </button>
                                 </div>
-                                {/* Upload Audio Option */}
-                                {selectedOption === 'upload' && (
-                                    <div className="mt-4">
-                                        <label className="block text-gray-700 font-semibold">Select Audio File</label>
-                                        <input
-                                            type="file"
-                                            accept="audio/*"
-                                            className="w-full mt-2"
-                                            onChange={handleUploadAudio}
-                                        />
-                                        {recordedAudio && (
-                                            <div className="mt-4">
-                                                <p className="text-gray-700 font-semibold">
-                                                    Selected File: {recordedAudio.name}
-                                                </p>
-                                                <input
-                                                    type="text"
-                                                    className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                                    placeholder="Enter audio name"
-                                                    value={newAudioName}
-                                                    onChange={(e) => setNewAudioName(e.target.value)}
-                                                />
-                                                <audio controls src={audioUrl} className="w-full mt-2 rounded-lg"></audio>
-                                                <button
-                                                    onClick={handleUploadAudioFile}
-                                                    className="px-4 py-2 mt-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700"
-                                                >
-                                                    Upload Audio File
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
+                            </form>
                         )}
-
-                        {/* Recording Walkthrough */}
-                        {isRecording && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Recording...</h2>
-                                <p className="text-gray-600 mb-4">
-                                    Navigate through the slides as you record your walkthrough.
-                                </p>
-                                <button
-                                    onClick={handleFinishRecording}
-                                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700"
-                                >
-                                    Stop Recording
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Display Recorded Audio */}
-                        {!isRecording && recordedAudio && selectedOption === 'record' && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Recorded Audio</h2>
-                                <input
-                                    type="text"
-                                    className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                    placeholder="Enter audio name"
-                                    value={newAudioName}
-                                    onChange={(e) => setNewAudioName(e.target.value)}
-                                />
-                                <audio controls src={audioUrl} className="w-full mt-2 rounded-lg"></audio>
-                                <div className="mt-4">
-                                    <button
-                                        onClick={handleUploadAudioFile}
-                                        className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700"
-                                    >
-                                        Upload Recorded Audio
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Countdown Display */}
-                        {showCountdown && (
-                            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
-                                <div className="text-white text-6xl font-bold animate-pulse">{countdown}</div>
-                            </div>
-                        )}
-
-                        {/* Step 1: Generate Transcripts */}
-                        <div className="mt-6">
-                            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Step 1: Generate Transcripts</h2>
-                            <button
-                                onClick={handleGenerateTranscripts}
-                                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-                                disabled={transcriptsGenerated}
-                            >
-                                {transcriptsGenerated ? 'Transcripts Generated' : 'Generate Transcripts'}
-                            </button>
-                        </div>
 
                         {/* Display Slides and Transcripts */}
                         {brdgeId && numSlides > 0 && (
@@ -675,20 +560,6 @@ function CreateBrdgePage() {
                             </div>
                         )}
 
-                        {/* Step 2: Generate Voice Clone */}
-                        {transcriptsGenerated && (
-                            <div className="mt-6">
-                                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Step 2: Generate Voice Clone</h2>
-                                <button
-                                    onClick={handleGenerateVoiceClone}
-                                    className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700"
-                                    disabled={voiceCloneGenerated}
-                                >
-                                    {voiceCloneGenerated ? 'Voice Clone Generated' : 'Generate Voice Clone'}
-                                </button>
-                            </div>
-                        )}
-
                         {/* Generated Audio Files */}
                         {voiceCloneGenerated && generatedAudioFiles.length > 0 && (
                             <div className="mt-6">
@@ -701,6 +572,16 @@ function CreateBrdgePage() {
                                 ))}
                             </div>
                         )}
+                    </div>
+
+                    {/* Workflow steps */}
+                    {renderWorkflow()}
+                </div>
+
+                {/* Loading Overlay */}
+                {loadingOverlay && (
+                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <div className="text-white text-xl">{loadingMessage}</div>
                     </div>
                 )}
             </div>
