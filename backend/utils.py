@@ -226,7 +226,7 @@ def clone_voice_helper(name, audio_file_path):
 
 # Function to generate audio for a single page
 def generate_audio_for_page(page_number, text, outdir, voice_id):
-    output_path = f"{outdir}/page_{page_number}.mp3"
+    output_path = f"{outdir}/slide_{page_number}.mp3"
     if voice_id is None:
         voice_id = "NVfYoEx7jEm8F3SG7RTC"
     # Construct the URL for the Text-to-Speech API request

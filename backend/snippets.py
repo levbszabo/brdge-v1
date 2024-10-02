@@ -57,9 +57,14 @@ def generate_voice_tester(brdge_id):
     return response
 
 
-get_brdges()
+def get_audio_files(brdge_id):
+    response = requests.get(f"{BASE_URL}/api/brdges/{brdge_id}/audio/generated")
+    return response
 
-out = generate_voice_tester(1)
+
+get_brdges()
+response = get_audio_files(1)
+# out = generate_voice_tester(1)
 # voice_id = clone_voice_tester(1)
 
 # response = get_transcripts_algined(1)
