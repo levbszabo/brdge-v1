@@ -52,8 +52,12 @@ def clone_voice_tester(brdge_id):
     return response
 
 
-def generate_voice_tester(brdge_id):
-    response = requests.post(f"{BASE_URL}/api/brdges/{brdge_id}/audio/generate_voice")
+def generate_voice_tester(brdge_id, voice_id=None):
+    url = f"{BASE_URL}/api/brdges/{brdge_id}/audio/generate_voice"
+    headers = {"Content-Type": "application/json"}
+    data = {"voice_id": voice_id} if voice_id else {}
+
+    response = requests.post(url, headers=headers, json=data)
     return response
 
 
@@ -63,8 +67,8 @@ def get_audio_files(brdge_id):
 
 
 get_brdges()
-response = get_audio_files(1)
-# out = generate_voice_tester(1)
+# response = get_audio_files(1)
+out = generate_voice_tester(1, "nPczCjzI2devNBz1zQrb")
 # voice_id = clone_voice_tester(1)
 
 # response = get_transcripts_algined(1)

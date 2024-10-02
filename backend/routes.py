@@ -627,36 +627,16 @@ def generate_voice(brdge_id):
         print(f"Error generating voice: {e}")
         return jsonify({"error": "Error generating voice"}), 500
 
-    # Ensure audio files are named consistently as slide_{number}.mp3 and upload to S3
-    for idx, file in enumerate(os.listdir(outdir)):
-        old_path = os.path.join(outdir, file)
-        new_filename = f"slide_{idx + 1}.mp3"
-        new_path = os.path.join(outdir, new_filename)
+    # Upload all generated audio files to S3
+    for file in os.listdir(outdir):
+        local_file_path = os.path.join(outdir, file)
+        s3_key = f"{brdge.get('folder')}/audio/processed/{file}"
         try:
-            os.rename(old_path, new_path)
+            s3_client.upload_file(local_file_path, S3_BUCKET, s3_key)
+            print(f"Successfully uploaded {file} to S3")
         except Exception as e:
-            print(f"Error renaming audio file {file} to {new_filename}: {e}")
-            return jsonify({"error": f"Error renaming audio file {file}"}), 500
-
-        s3_key = f"{brdge.get('folder')}/audio/processed/{new_filename}"
-        try:
-            s3_client.upload_file(
-                new_path,
-                S3_BUCKET,
-                s3_key,
-            )
-        except Exception as e:
-            print(f"Error uploading generated audio to S3: {e}")
-            return jsonify({"error": "Error uploading generated audio"}), 500
-
-    # Clean up local generated files
-    try:
-        for file in os.listdir(outdir):
-            os.remove(os.path.join(outdir, file))
-        os.rmdir(outdir)
-        os.remove(aligned_transcript_local)
-    except Exception as e:
-        print(f"Error cleaning up generated audio files: {e}")
+            print(f"Error uploading {file} to S3: {e}")
+            return jsonify({"error": f"Error uploading {file} to S3"}), 500
 
     return jsonify({"message": "Voice generated successfully"}), 200
 
