@@ -1,7 +1,7 @@
 # routes.py
 # brian voice :nPczCjzI2devNBz1zQrb
 import re
-from flask import request, jsonify, send_file, abort
+from flask import request, jsonify, send_file, abort, url_for
 from flask_cors import CORS
 from app import app, db
 from werkzeug.utils import secure_filename
@@ -733,3 +733,14 @@ def get_cached_voice_clone(brdge_id):
             )
     else:
         return jsonify({"cached": False}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/deploy", methods=["POST"])
+def deploy_brdge(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    # Assuming deploying involves making the Brdge publicly accessible
+    # You might need to set a flag in the database or generate a unique token
+    # For simplicity, we'll return the shareable link
+
+    shareable_link = url_for("get_brdge", brdge_id=brdge_id, _external=True)
+    return jsonify({"shareable_link": shareable_link}), 200

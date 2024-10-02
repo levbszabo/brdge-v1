@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
-import { FaPlay, FaPause, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaShareAlt } from 'react-icons/fa';
 
 function CreateBrdgePage() {
     // State variables
@@ -38,6 +38,7 @@ function CreateBrdgePage() {
     const [currentTime, setCurrentTime] = useState(0);
     const [isTranscriptModified, setIsTranscriptModified] = useState(false); // Tracks transcript changes
     const [voiceId, setVoiceId] = useState(''); // Stores the voice ID input by the user
+    const [deployLink, setDeployLink] = useState('');
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -102,6 +103,29 @@ function CreateBrdgePage() {
                 });
         }
     }, [id, isEditMode]);
+
+    useEffect(() => {
+        if (brdgeId) {
+            // Fetch generated audio files
+            axios
+                .get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`)
+                .then((response) => {
+                    setGeneratedAudioFiles(response.data.files);
+                })
+                .catch((error) => {
+                    console.error('Error fetching generated audio files:', error);
+                    setMessage('Error fetching generated audio files.');
+                });
+        }
+    }, [brdgeId]);
+
+    // Function to handle deploying Brdge
+    const handleDeployBrdge = () => {
+        const link = `${window.location.origin}/viewBrdge/${brdgeId}`;
+        setDeployLink(link);
+        navigator.clipboard.writeText(link);
+        setMessage('Brdge deployed! Link copied to clipboard.');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -692,8 +716,8 @@ function CreateBrdgePage() {
                     <button
                         onClick={handleGenerateTranscripts}
                         className={`px-3 py-1 ${existingAudioUrl
-                                ? 'bg-blue-500 hover:bg-blue-600'
-                                : 'bg-gray-300 cursor-not-allowed'
+                            ? 'bg-blue-500 hover:bg-blue-600'
+                            : 'bg-gray-300 cursor-not-allowed'
                             } text-white rounded`}
                         disabled={!existingAudioUrl}
                     >
@@ -707,8 +731,8 @@ function CreateBrdgePage() {
                     <button
                         onClick={handleGenerateVoiceClone}
                         className={`px-3 py-1 ${transcripts.some((t) => t.trim() !== '')
-                                ? 'bg-green-500 hover:bg-green-600'
-                                : 'bg-gray-300 cursor-not-allowed'
+                            ? 'bg-green-500 hover:bg-green-600'
+                            : 'bg-gray-300 cursor-not-allowed'
                             } text-white rounded`}
                         disabled={!transcripts.some((t) => t.trim() !== '')}
                     >
@@ -774,8 +798,8 @@ function CreateBrdgePage() {
                                     <button
                                         type="submit"
                                         className={`px-6 py-2 ${isProcessing
-                                                ? 'bg-gray-400'
-                                                : 'bg-indigo-600 hover:bg-indigo-700'
+                                            ? 'bg-gray-400'
+                                            : 'bg-indigo-600 hover:bg-indigo-700'
                                             } text-white font-semibold rounded-lg`}
                                         disabled={isProcessing}
                                     >
@@ -812,40 +836,70 @@ function CreateBrdgePage() {
                                         </button>
                                     </div>
                                 )}
+
+                                {/* Regenerate Audio Button */}
+                                <div className="mt-4">
+                                    <button
+                                        onClick={handleGenerateVoiceClone}
+                                        className={`px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 ${!transcriptsGenerated ? 'cursor-not-allowed opacity-50' : ''
+                                            }`}
+                                        disabled={!transcriptsGenerated}
+                                    >
+                                        Regenerate Audio
+                                    </button>
+                                </div>
+
+                                {/* Deploy Brdge Button */}
+                                <div className="mt-4">
+                                    <button
+                                        onClick={handleDeployBrdge}
+                                        className={`px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 ${!transcriptsGenerated || generatedAudioFiles.length === 0 ? 'cursor-not-allowed opacity-50' : ''
+                                            }`}
+                                        disabled={!transcriptsGenerated || generatedAudioFiles.length === 0}
+                                    >
+                                        <FaShareAlt className="inline mr-2" />
+                                        Deploy Brdge
+                                    </button>
+                                    {deployLink && (
+                                        <p className="mt-2 text-blue-600 break-all">
+                                            Shareable Link: <a href={deployLink} target="_blank" rel="noopener noreferrer">{deployLink}</a>
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Workflow steps */}
+                                {renderWorkflow()}
                             </>
                         )}
                     </div>
 
-                    {/* Workflow steps */}
-                    {renderWorkflow()}
+                    {/* Loading Overlay */}
+                    {loadingOverlay && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                            <div className="text-white text-xl">{loadingMessage}</div>
+                        </div>
+                    )}
+
+                    {/* Countdown Overlay */}
+                    {showCountdown && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                            <div className="text-white text-6xl font-bold">{countdown}</div>
+                        </div>
+                    )}
+
+                    {/* Recording Indicator */}
+                    {isRecording && (
+                        <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full animate-pulse">
+                            Recording...
+                            <button
+                                onClick={handleFinishRecording}
+                                className="ml-2 bg-white text-red-500 px-2 py-1 rounded-full text-sm"
+                            >
+                                Stop
+                            </button>
+                        </div>
+                    )}
                 </div>
-
-                {/* Loading Overlay */}
-                {loadingOverlay && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                        <div className="text-white text-xl">{loadingMessage}</div>
-                    </div>
-                )}
-
-                {/* Countdown Overlay */}
-                {showCountdown && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="text-white text-6xl font-bold">{countdown}</div>
-                    </div>
-                )}
-
-                {/* Recording Indicator */}
-                {isRecording && (
-                    <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full animate-pulse">
-                        Recording...
-                        <button
-                            onClick={handleFinishRecording}
-                            className="ml-2 bg-white text-red-500 px-2 py-1 rounded-full text-sm"
-                        >
-                            Stop
-                        </button>
-                    </div>
-                )}
             </div>
         </div>
     );
