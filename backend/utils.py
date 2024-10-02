@@ -267,7 +267,7 @@ def generate_audio_for_page(page_number, text, outdir, voice_id):
 
 def generate_voice_helper(brdge_id, transcript, voice_id):
     transcript = transcript["image_transcripts"]
-    outdir = f"/tmp/audio/processed/{brdge_id}"
+    outdir = f"/tmp/brdge/audio/processed/{brdge_id}"
     os.makedirs(outdir, exist_ok=True)
 
     for page in transcript:

@@ -1,6 +1,9 @@
 # routes.py
-from app import app, db
+
+import re
 from flask import request, jsonify, send_file, abort
+from flask_cors import CORS
+from app import app, db
 from werkzeug.utils import secure_filename
 import os
 import boto3
@@ -24,6 +27,9 @@ S3_REGION = os.getenv("S3_REGION", "us-east-1")  # Default to 'us-east-1' if not
 # Initialize S3 client with the correct region
 s3_client = boto3.client("s3", region_name=S3_REGION)
 
+# Enable CORS for the Flask app
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["PUT"])
 def update_brdge(brdge_id):
@@ -39,7 +45,8 @@ def update_brdge(brdge_id):
         presentation_filename = secure_filename(
             f"{uuid.uuid4()}_{presentation.filename}"
         )
-        pdf_temp_path = os.path.join("/tmp", presentation_filename)
+        pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
+        os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
         presentation.save(pdf_temp_path)
 
         # Convert PDF to images
@@ -80,10 +87,8 @@ def update_brdge(brdge_id):
 def get_brdge(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
 
-    # Assuming you have a way to get the number of slides and transcripts
-    # For now, we'll assume num_slides is stored or can be calculated
-    s3_folder = brdge.folder
     # Count the number of slide images in the S3 folder
+    s3_folder = brdge.folder
     response = s3_client.list_objects_v2(
         Bucket=S3_BUCKET,
         Prefix=f"{s3_folder}/slides/",
@@ -92,8 +97,8 @@ def get_brdge(brdge_id):
         [obj for obj in response.get("Contents", []) if obj["Key"].endswith(".png")]
     )
 
-    # Fetch transcripts if stored (you'll need to implement this part)
-    transcripts = []  # Fetch transcripts from database or storage
+    # Fetch transcripts if stored
+    transcripts = []  # Implement fetching transcripts from storage if applicable
 
     brdge_data = brdge.to_dict()
     brdge_data["num_slides"] = num_slides
@@ -144,7 +149,8 @@ def create_brdge():
     presentation_filename = secure_filename(f"{uuid.uuid4()}_{presentation.filename}")
 
     # Save the PDF locally for processing
-    pdf_temp_path = os.path.join("/tmp", presentation_filename)
+    pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
+    os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
     presentation.save(pdf_temp_path)
 
     # Convert PDF to images
@@ -223,7 +229,11 @@ def upload_audio(brdge_id):
     s3_audio_key = f"{s3_folder}/audio/{audio_filename}"
 
     # Upload audio file to S3
-    s3_client.upload_fileobj(audio_file, S3_BUCKET, s3_audio_key)
+    try:
+        s3_client.upload_fileobj(audio_file, S3_BUCKET, s3_audio_key)
+    except Exception as e:
+        print(f"Error uploading audio to S3: {e}")
+        return jsonify({"error": "Error uploading audio"}), 500
 
     # Update brdge record with audio filename
     brdge.audio_filename = audio_filename
@@ -263,23 +273,21 @@ def rename_audio(brdge_id):
     new_key = f"{brdge.folder}/audio/{secure_filename(new_name)}"
 
     try:
-        # Copy the object to a new key and delete the old one
+        # Copy the object to a new key
         s3_client.copy_object(
             Bucket=S3_BUCKET,
             CopySource={"Bucket": S3_BUCKET, "Key": old_key},
             Key=new_key,
         )
+        # Delete the old object
         s3_client.delete_object(Bucket=S3_BUCKET, Key=old_key)
+        # Update the brdge record
         brdge.audio_filename = secure_filename(new_name)
         db.session.commit()
         return jsonify({"message": "Audio renamed successfully"}), 200
     except Exception as e:
         print(f"Error renaming audio in S3: {e}")
         return jsonify({"error": "Error renaming audio"}), 500
-
-
-# create a route to transcribe the audio we will use a utils function called transcribe_audio to do this
-# we need to pull the audio to a local file first, transcribe and then upload to s3
 
 
 @app.route("/api/brdges/<int:brdge_id>/audio/transcribe", methods=["POST"])
@@ -289,8 +297,9 @@ def transcribe_audio(brdge_id):
         return jsonify({"error": "No audio file associated with this brdge"}), 400
 
     brdge_data = brdge.to_dict()
-    audio_s3_key = brdge_data["audio_s3_key"]
-    audio_local_path = f"/tmp/{brdge.audio_filename}"
+    audio_s3_key = f"{brdge.folder}/audio/{brdge.audio_filename}"
+    audio_local_path = f"/tmp/brdge/{brdge.audio_filename}"
+    os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
 
     try:
         # Check if the object exists before attempting to download
@@ -308,25 +317,28 @@ def transcribe_audio(brdge_id):
     try:
         s3_client.download_file(S3_BUCKET, audio_s3_key, audio_local_path)
     except Exception as e:
+        print(f"Error downloading audio from S3: {e}")
         return jsonify({"error": f"Error downloading audio file: {str(e)}"}), 500
 
-    transcript_local = f"/tmp/transcript_{brdge_id}.txt"
+    transcript_local = f"/tmp/brdge/transcript_{brdge_id}.txt"
     try:
         transcribed_transcript = transcribe_audio_helper(
             audio_local_path, transcript_local
         )
     except Exception as e:
+        print(f"Error transcribing audio: {e}")
         return jsonify({"error": f"Error transcribing audio: {str(e)}"}), 500
 
     transcript_s3_key = f"{brdge.folder}/transcripts/transcript.txt"
     try:
         s3_client.upload_file(transcript_local, S3_BUCKET, transcript_s3_key)
     except Exception as e:
+        print(f"Error uploading transcript to S3: {e}")
         return jsonify({"error": f"Error uploading transcript to S3: {str(e)}"}), 500
 
     # Clean up local files
     os.remove(audio_local_path)
-    # os.remove(transcript_local)
+    os.remove(transcript_local)
 
     return jsonify({"transcript": transcribed_transcript}), 200
 
@@ -334,56 +346,180 @@ def transcribe_audio(brdge_id):
 @app.route("/api/brdges/<int:brdge_id>/audio/align_transcript", methods=["POST"])
 def align_transcript(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
-    # check in cache for transcript
-    if not os.path.exists(f"/tmp/transcript_{brdge_id}.txt"):
-        s3_client.download_file(
-            S3_BUCKET,
-            f"{brdge.folder}/transcripts/transcript.txt",
-            f"/tmp/transcript_{brdge_id}.txt",
-        )
-    with open(f"/tmp/transcript_{brdge_id}.txt", "r") as f:
+    # Check in cache for transcript
+    transcript_local_path = f"/tmp/brdge/transcript_{brdge_id}.txt"
+    if not os.path.exists(transcript_local_path):
+        try:
+            s3_client.download_file(
+                S3_BUCKET,
+                f"{brdge.folder}/transcripts/transcript.txt",
+                transcript_local_path,
+            )
+        except Exception as e:
+            print(f"Error downloading transcript from S3: {e}")
+            return jsonify({"error": "Transcript not found"}), 404
+
+    with open(transcript_local_path, "r") as f:
         transcript = f.read()
-    slides_dir_local = f"/tmp/slides_{brdge_id}"
+
+    slides_dir_local = f"/tmp/brdge/slides_{brdge_id}"
     os.makedirs(slides_dir_local, exist_ok=True)
 
-    # List all objects in the S3 folder
+    # List all objects in the S3 slides folder
     s3_prefix = f"{brdge.folder}/slides/"
-    s3_objects = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_prefix)
+    try:
+        s3_objects = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_prefix)
+    except Exception as e:
+        print(f"Error listing slides in S3: {e}")
+        return jsonify({"error": "Error accessing slides in S3"}), 500
 
-    # Download each file in the folder
+    if "Contents" not in s3_objects:
+        return jsonify({"error": "No slides found in S3"}), 404
+
+    # Download each slide image
     for obj in s3_objects.get("Contents", []):
         file_key = obj["Key"]
         file_name = os.path.basename(file_key)
         local_file_path = os.path.join(slides_dir_local, file_name)
-        s3_client.download_file(S3_BUCKET, file_key, local_file_path)
+        try:
+            s3_client.download_file(S3_BUCKET, file_key, local_file_path)
+        except Exception as e:
+            print(f"Error downloading slide {file_name} from S3: {e}")
+            return jsonify({"error": f"Error downloading slide {file_name}"}), 500
 
-    image_transcripts = align_transcript_with_slides(transcript, slides_dir_local)
-    aligned_transcript_local = f"/tmp/aligned_transcript_{brdge_id}.json"
-    with open(aligned_transcript_local, "w") as f:
-        f.write(json.dumps(image_transcripts))
+    # Align transcript with slides
+    try:
+        image_transcripts = align_transcript_with_slides(transcript, slides_dir_local)
+    except Exception as e:
+        print(f"Error aligning transcript with slides: {e}")
+        return jsonify({"error": "Error aligning transcript with slides"}), 500
+
+    # Save aligned transcript locally
+    aligned_transcript_local = f"/tmp/brdge/aligned_transcript_{brdge_id}.json"
+    try:
+        with open(aligned_transcript_local, "w") as f:
+            json.dump(image_transcripts, f)
+    except Exception as e:
+        print(f"Error saving aligned transcript locally: {e}")
+        return jsonify({"error": "Error saving aligned transcript"}), 500
+
+    # Upload aligned transcript to S3
     aligned_transcript_s3_key = f"{brdge.folder}/transcripts/aligned_transcript.json"
-    s3_client.upload_file(
-        aligned_transcript_local, S3_BUCKET, aligned_transcript_s3_key
-    )
+    try:
+        s3_client.upload_file(
+            aligned_transcript_local, S3_BUCKET, aligned_transcript_s3_key
+        )
+    except Exception as e:
+        print(f"Error uploading aligned transcript to S3: {e}")
+        return jsonify({"error": "Error uploading aligned transcript to S3"}), 500
+
+    # Clean up local files
+    try:
+        os.remove(transcript_local_path)
+        os.remove(aligned_transcript_local)
+        # Optionally, remove downloaded slides
+        for file in os.listdir(slides_dir_local):
+            os.remove(os.path.join(slides_dir_local, file))
+        os.rmdir(slides_dir_local)
+    except Exception as e:
+        print(f"Error cleaning up local files: {e}")
+
     return jsonify(image_transcripts), 200
 
 
 @app.route("/api/brdges/<int:brdge_id>/transcripts/aligned", methods=["GET"])
 def get_aligned_transcript(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
-    # check in cache for algined transcript - would be at /tmp/aligned_transcript_{brdge_id}.json
-    if not os.path.exists(f"/tmp/aligned_transcript_{brdge_id}.json"):
-        aligned_transcript_s3_key = (
-            f"{brdge.folder}/transcripts/aligned_transcript.json"
-        )
-        s3_client.download_file(
+    # Check in cache for aligned transcript
+    aligned_transcript_local = f"/tmp/brdge/aligned_transcript_{brdge_id}.json"
+    aligned_transcript_s3_key = f"{brdge.folder}/transcripts/aligned_transcript.json"
+
+    if not os.path.exists(aligned_transcript_local):
+        try:
+            s3_client.download_file(
+                S3_BUCKET,
+                aligned_transcript_s3_key,
+                aligned_transcript_local,
+            )
+        except Exception as e:
+            print(f"Error downloading aligned transcript from S3: {e}")
+            abort(404)
+
+    try:
+        with open(aligned_transcript_local, "r") as f:
+            aligned_transcript = json.load(f)
+    except Exception as e:
+        print(f"Error reading aligned transcript file: {e}")
+        abort(500)
+
+    return jsonify(aligned_transcript), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/transcripts/aligned", methods=["PUT"])
+def update_aligned_transcript(brdge_id):
+    brdge = Brdge.query.get_or_404(brdge_id)
+    data = request.get_json()
+    updated_transcripts = data.get("transcripts")
+
+    if not updated_transcripts:
+        return jsonify({"error": "No transcripts provided"}), 400
+
+    # Load existing aligned transcript
+    aligned_transcript_local = f"/tmp/brdge/aligned_transcript_{brdge_id}.json"
+    aligned_transcript_s3_key = f"{brdge.folder}/transcripts/aligned_transcript.json"
+
+    if not os.path.exists(aligned_transcript_local):
+        try:
+            s3_client.download_file(
+                S3_BUCKET,
+                aligned_transcript_s3_key,
+                aligned_transcript_local,
+            )
+        except Exception as e:
+            print(f"Error downloading aligned transcript from S3: {e}")
+            return jsonify({"error": "Aligned transcript not found"}), 404
+
+    try:
+        with open(aligned_transcript_local, "r") as f:
+            aligned_transcript = json.load(f)
+    except Exception as e:
+        print(f"Error reading aligned transcript file: {e}")
+        return jsonify({"error": "Error reading aligned transcript"}), 500
+
+    # Update the transcripts
+    image_transcripts = aligned_transcript.get("image_transcripts", [])
+    if len(image_transcripts) != len(updated_transcripts):
+        return jsonify({"error": "Transcript length mismatch"}), 400
+
+    for i, text in enumerate(updated_transcripts):
+        image_transcripts[i]["transcript"] = text
+
+    # Save updated aligned transcript
+    try:
+        with open(aligned_transcript_local, "w") as f:
+            json.dump(aligned_transcript, f)
+    except Exception as e:
+        print(f"Error writing updated aligned transcript: {e}")
+        return jsonify({"error": "Error saving updated transcript"}), 500
+
+    # Upload updated transcript to S3
+    try:
+        s3_client.upload_file(
+            aligned_transcript_local,
             S3_BUCKET,
             aligned_transcript_s3_key,
-            f"/tmp/aligned_transcript_{brdge_id}.json",
         )
-    with open(f"/tmp/aligned_transcript_{brdge_id}.json", "r") as f:
-        aligned_transcript = json.load(f)
-    return jsonify(aligned_transcript), 200
+    except Exception as e:
+        print(f"Error uploading updated aligned transcript to S3: {e}")
+        return jsonify({"error": "Error uploading updated transcript"}), 500
+
+    # Clean up local file
+    try:
+        os.remove(aligned_transcript_local)
+    except Exception as e:
+        print(f"Error cleaning up local aligned transcript file: {e}")
+
+    return jsonify({"message": "Transcripts updated successfully"}), 200
 
 
 @app.route("/api/brdges/<int:brdge_id>/audio/clone_voice", methods=["POST"])
@@ -392,56 +528,143 @@ def clone_voice(brdge_id):
     if not brdge.get("audio_filename"):
         return jsonify({"error": "No audio file associated with this brdge"}), 400
 
-    audio_s3_key = brdge.get("audio_s3_key")
-    audio_local_path = f"/tmp/audio_{brdge_id}.mp3"
+    audio_s3_key = f"{brdge.get('folder')}/audio/{brdge.get('audio_filename')}"
+    audio_local_path = f"/tmp/brdge/audio_{brdge_id}.mp3"
+    os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
 
     try:
         s3_client.download_file(S3_BUCKET, audio_s3_key, audio_local_path)
     except Exception as e:
+        print(f"Error downloading audio file from S3: {e}")
         return jsonify({"error": f"Error downloading audio file: {str(e)}"}), 500
 
-    voice_id = clone_voice_helper(brdge.get("name"), audio_local_path)
-    with open(f"/tmp/voice_id_{brdge_id}.txt", "w") as f:
-        f.write(voice_id)
-    s3_client.upload_file(
-        f"/tmp/voice_id_{brdge_id}.txt",
-        S3_BUCKET,
-        f"{brdge.get('folder')}/audio/voice_id.txt",
-    )
+    try:
+        voice_id = clone_voice_helper(brdge.get("name"), audio_local_path)
+    except Exception as e:
+        print(f"Error cloning voice: {e}")
+        return jsonify({"error": f"Error cloning voice: {str(e)}"}), 500
+
+    voice_id_local_path = f"/tmp/brdge/voice_id_{brdge_id}.txt"
+    try:
+        with open(voice_id_local_path, "w") as f:
+            f.write(voice_id)
+    except Exception as e:
+        print(f"Error writing voice ID to local file: {e}")
+        return jsonify({"error": "Error saving voice ID locally"}), 500
+
+    voice_id_s3_key = f"{brdge.get('folder')}/audio/voice_id.txt"
+    try:
+        s3_client.upload_file(
+            voice_id_local_path,
+            S3_BUCKET,
+            voice_id_s3_key,
+        )
+    except Exception as e:
+        print(f"Error uploading voice ID to S3: {e}")
+        return jsonify({"error": "Error uploading voice ID to S3"}), 500
+
+    # Clean up local files
+    try:
+        os.remove(audio_local_path)
+        os.remove(voice_id_local_path)
+    except Exception as e:
+        print(f"Error cleaning up local files after cloning voice: {e}")
+
     return jsonify({"voice_id": voice_id}), 200
 
 
 @app.route("/api/brdges/<int:brdge_id>/audio/generate_voice", methods=["POST"])
 def generate_voice(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id).to_dict()
-    voice_id_s3_key = f"{brdge.get('folder')}/audio/voice_id.txt"
-    s3_client.download_file(S3_BUCKET, voice_id_s3_key, f"/tmp/voice_id_{brdge_id}.txt")
-    with open(f"/tmp/voice_id_{brdge_id}.txt", "r") as f:
-        voice_id = f.read()
+
+    # Get voice_id from request data
+    data = request.get_json()
+    voice_id = data.get("voice_id") if data else None
+
+    if not voice_id:
+        # Retrieve voice_id from cloned voice
+        voice_id_s3_key = f"{brdge.get('folder')}/audio/voice_id.txt"
+        voice_id_local_path = f"/tmp/brdge/voice_id_{brdge_id}.txt"
+        os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
+
+        try:
+            s3_client.download_file(S3_BUCKET, voice_id_s3_key, voice_id_local_path)
+            with open(voice_id_local_path, "r") as f:
+                voice_id = f.read().strip()
+        except Exception as e:
+            print(f"Error retrieving voice ID from S3: {e}")
+            return (
+                jsonify(
+                    {
+                        "error": "Voice ID not found. Please clone a voice or provide a voice ID."
+                    }
+                ),
+                400,
+            )
+
+    # Proceed with voice generation
     transcript_s3_key = f"{brdge.get('folder')}/transcripts/aligned_transcript.json"
-    s3_client.download_file(
-        S3_BUCKET, transcript_s3_key, f"/tmp/aligned_transcript_{brdge_id}.json"
-    )
-    with open(f"/tmp/aligned_transcript_{brdge_id}.json", "r") as f:
-        transcript = json.load(f)
-    # generate voice
-    # voice_name = brdge.get("name") + "_" + str(brdge_id)
-    outdir = generate_voice_helper(brdge_id, transcript, voice_id)
-    # upload audio to s3
-    for file in os.listdir(outdir):
-        s3_client.upload_file(
-            f"{outdir}/{file}",
-            S3_BUCKET,
-            f"{brdge.get('folder')}/audio/processed/{file}",
-        )
-    # we return the tmp dir to frontend so it can play the audio
-    return jsonify({"message": "Voice generated successfully", "outdir": outdir}), 200
+    aligned_transcript_local = f"/tmp/brdge/aligned_transcript_{brdge_id}.json"
+    os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
+
+    try:
+        s3_client.download_file(S3_BUCKET, transcript_s3_key, aligned_transcript_local)
+    except Exception as e:
+        print(f"Error downloading aligned transcript from S3: {e}")
+        return jsonify({"error": "Aligned transcript not found"}), 404
+
+    try:
+        with open(aligned_transcript_local, "r") as f:
+            transcript = json.load(f)
+    except Exception as e:
+        print(f"Error reading aligned transcript file: {e}")
+        return jsonify({"error": "Error reading aligned transcript"}), 500
+
+    # Generate voice
+    try:
+        outdir = generate_voice_helper(brdge_id, transcript, voice_id)
+    except Exception as e:
+        print(f"Error generating voice: {e}")
+        return jsonify({"error": "Error generating voice"}), 500
+
+    # Ensure audio files are named consistently as slide_{number}.mp3 and upload to S3
+    for idx, file in enumerate(os.listdir(outdir)):
+        old_path = os.path.join(outdir, file)
+        new_filename = f"slide_{idx + 1}.mp3"
+        new_path = os.path.join(outdir, new_filename)
+        try:
+            os.rename(old_path, new_path)
+        except Exception as e:
+            print(f"Error renaming audio file {file} to {new_filename}: {e}")
+            return jsonify({"error": f"Error renaming audio file {file}"}), 500
+
+        s3_key = f"{brdge.get('folder')}/audio/processed/{new_filename}"
+        try:
+            s3_client.upload_file(
+                new_path,
+                S3_BUCKET,
+                s3_key,
+            )
+        except Exception as e:
+            print(f"Error uploading generated audio to S3: {e}")
+            return jsonify({"error": "Error uploading generated audio"}), 500
+
+    # Clean up local generated files
+    try:
+        for file in os.listdir(outdir):
+            os.remove(os.path.join(outdir, file))
+        os.rmdir(outdir)
+        os.remove(aligned_transcript_local)
+    except Exception as e:
+        print(f"Error cleaning up generated audio files: {e}")
+
+    return jsonify({"message": "Voice generated successfully"}), 200
 
 
 @app.route("/api/brdges/<int:brdge_id>/audio/generated", methods=["GET"])
 def get_generated_audio_files(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
-    cache_dir = f"/tmp/audio/processed/{brdge_id}"
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge_id}"
     s3_folder = f"{brdge.folder}/audio/processed"
 
     # Check cache first
@@ -449,15 +672,27 @@ def get_generated_audio_files(brdge_id):
         audio_files = [f for f in os.listdir(cache_dir) if f.endswith(".mp3")]
     else:
         # If not in cache, list files from S3
-        response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
+        try:
+            response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
+        except Exception as e:
+            print(f"Error listing generated audio files in S3: {e}")
+            return jsonify({"error": "Error accessing generated audio files"}), 500
+
         audio_files = [
             obj["Key"].split("/")[-1]
             for obj in response.get("Contents", [])
             if obj["Key"].endswith(".mp3")
         ]
 
-    # Sort audio files by slide number
-    audio_files.sort(key=lambda x: int(x.split("_")[0]))
+    # Sort audio files by slide number using precise regex
+    def extract_slide_number(filename):
+        match = re.match(r"slide_(\d+)\.mp3$", filename)
+        if match:
+            return int(match.group(1))
+        else:
+            return float("inf")
+
+    audio_files.sort(key=extract_slide_number)
     print(f"Sorted audio files: {audio_files}")  # Debug print
 
     return jsonify({"files": audio_files}), 200
@@ -466,7 +701,7 @@ def get_generated_audio_files(brdge_id):
 @app.route("/api/brdges/<int:brdge_id>/audio/generated/<filename>", methods=["GET"])
 def get_generated_audio_file(brdge_id, filename):
     brdge = Brdge.query.get_or_404(brdge_id)
-    cache_dir = f"/tmp/audio/processed/{brdge_id}"
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge_id}"
     cache_file_path = os.path.join(cache_dir, filename)
     s3_key = f"{brdge.folder}/audio/processed/{filename}"
 
@@ -487,12 +722,16 @@ def get_generated_audio_file(brdge_id, filename):
 @app.route("/api/brdges/<int:brdge_id>/transcripts/cached", methods=["GET"])
 def get_cached_transcripts(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
-    cache_file = f"/tmp/transcripts_{brdge_id}.json"
+    cache_file = f"/tmp/brdge/transcripts_{brdge_id}.json"
 
     if os.path.exists(cache_file):
-        with open(cache_file, "r") as f:
-            transcripts = json.load(f)
-        return jsonify({"cached": True, "transcripts": transcripts}), 200
+        try:
+            with open(cache_file, "r") as f:
+                transcripts = json.load(f)
+            return jsonify({"cached": True, "transcripts": transcripts}), 200
+        except Exception as e:
+            print(f"Error reading cached transcripts: {e}")
+            return jsonify({"error": "Error reading cached transcripts"}), 500
     else:
         return jsonify({"cached": False}), 200
 
@@ -500,10 +739,17 @@ def get_cached_transcripts(brdge_id):
 @app.route("/api/brdges/<int:brdge_id>/voice-clone/cached", methods=["GET"])
 def get_cached_voice_clone(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
-    cache_dir = f"/tmp/audio/processed/{brdge_id}"
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge_id}"
 
     if os.path.exists(cache_dir):
-        audio_files = [f for f in os.listdir(cache_dir) if f.endswith(".mp3")]
-        return jsonify({"cached": True, "audioFiles": audio_files}), 200
+        try:
+            audio_files = [f for f in os.listdir(cache_dir) if f.endswith(".mp3")]
+            return jsonify({"cached": True, "audioFiles": audio_files}), 200
+        except Exception as e:
+            print(f"Error reading cached voice clone audio files: {e}")
+            return (
+                jsonify({"error": "Error reading cached voice clone audio files"}),
+                500,
+            )
     else:
         return jsonify({"cached": False}), 200

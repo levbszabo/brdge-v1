@@ -1,4 +1,5 @@
-// src/pages/CreateBrdgePage.jsx
+// CreateBrdgePage.jsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -6,6 +7,7 @@ import MicRecorder from 'mic-recorder-to-mp3';
 import { FaPlay, FaPause, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 function CreateBrdgePage() {
+    // State variables
     const [name, setName] = useState('');
     const [presentation, setPresentation] = useState(null);
     const [brdgeId, setBrdgeId] = useState(null);
@@ -34,6 +36,8 @@ function CreateBrdgePage() {
     const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
     const [audioDuration, setAudioDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const [isTranscriptModified, setIsTranscriptModified] = useState(false); // Tracks transcript changes
+    const [voiceId, setVoiceId] = useState(''); // Stores the voice ID input by the user
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -62,7 +66,7 @@ function CreateBrdgePage() {
                         const alignedData = transcriptResponse.data;
                         const updatedTranscripts = [];
 
-                        // Process the aligned transcripts based on actual data format
+                        // Process the aligned transcripts
                         if (
                             alignedData.image_transcripts &&
                             Array.isArray(alignedData.image_transcripts)
@@ -87,7 +91,8 @@ function CreateBrdgePage() {
 
                         setTranscripts(updatedTranscripts);
                     } catch (error) {
-                        console.error('No aligned transcripts found:', error);
+                        console.error('Error fetching aligned transcripts:', error);
+                        setMessage('Error fetching aligned transcripts.');
                         setTranscripts(new Array(brdge.num_slides).fill(''));
                     }
                 })
@@ -143,6 +148,29 @@ function CreateBrdgePage() {
         const updatedTranscripts = [...transcripts];
         updatedTranscripts[index] = value;
         setTranscripts(updatedTranscripts);
+        setIsTranscriptModified(true); // Mark transcripts as modified
+    };
+
+    // Save updated transcripts to the backend
+    const handleSaveTranscripts = async () => {
+        setLoadingOverlay(true);
+        setLoadingMessage('Saving transcripts...');
+        try {
+            await axios.put(
+                `http://localhost:5000/api/brdges/${brdgeId}/transcripts/aligned`,
+                { transcripts }
+            );
+            setLoadingMessage('Transcripts saved successfully.');
+            setIsTranscriptModified(false);
+        } catch (error) {
+            console.error('Error saving transcripts:', error);
+            setMessage('Error saving transcripts.');
+        } finally {
+            setTimeout(() => {
+                setLoadingOverlay(false);
+                setLoadingMessage('');
+            }, 2000);
+        }
     };
 
     const handleGenerateTranscripts = async () => {
@@ -155,19 +183,6 @@ function CreateBrdgePage() {
         setLoadingMessage('Generating and aligning transcripts...');
 
         try {
-            // Check if transcripts are already in cache
-            const cachedTranscriptsResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/transcripts/cached`);
-            if (cachedTranscriptsResponse.data.cached) {
-                setTranscripts(cachedTranscriptsResponse.data.transcripts);
-                setTranscriptsGenerated(true);
-                setLoadingMessage('Transcripts loaded from cache.');
-                setTimeout(() => {
-                    setLoadingOverlay(false);
-                    setLoadingMessage('');
-                }, 2000);
-                return;
-            }
-
             // Step 1: Transcribe audio
             await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/transcribe`);
 
@@ -214,38 +229,49 @@ function CreateBrdgePage() {
         setLoadingMessage('Generating voice clone...');
 
         try {
-            // Check if voice clone is already in cache
-            const cachedVoiceCloneResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/voice-clone/cached`);
-            if (cachedVoiceCloneResponse.data.cached) {
-                setGeneratedAudioFiles(cachedVoiceCloneResponse.data.audioFiles);
-                setVoiceCloneGenerated(true);
-                setLoadingMessage('Voice clone loaded from cache.');
+            // Check if voice ID is provided
+            if (voiceId) {
+                // Skip voice cloning and proceed to generate voice
+                await handleGenerateVoice();
             } else {
-                // Step 1: Clone voice
+                // Clone voice first
                 await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/clone_voice`);
-
-                setLoadingMessage('Generating voice...');
-
-                // Step 2: Generate voice
-                const generateResponse = await axios.post(`http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`);
-                setGeneratedAudioDir(generateResponse.data.outdir);
-
-                // Fetch the list of generated audio files
-                const audioFilesResponse = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`);
-                console.log("Received audio files:", audioFilesResponse.data.files);
-                setGeneratedAudioFiles(audioFilesResponse.data.files);
-
-                setVoiceCloneGenerated(true);
-                setLoadingMessage('Voice clone generated successfully.');
+                // Then generate voice
+                await handleGenerateVoice();
             }
-
-            // Load the audio for the first slide
-            setTimeout(() => {
-                loadAudioForSlide(1);
-            }, 0);
         } catch (error) {
             console.error('Error generating voice clone:', error);
             setMessage('Error generating voice clone.');
+        } finally {
+            setTimeout(() => {
+                setLoadingOverlay(false);
+                setLoadingMessage('');
+            }, 2000);
+        }
+    };
+
+    const handleGenerateVoice = async () => {
+        setLoadingOverlay(true);
+        setLoadingMessage('Generating voice...');
+
+        try {
+            const response = await axios.post(
+                `http://localhost:5000/api/brdges/${brdgeId}/audio/generate_voice`,
+                { voice_id: voiceId } // Include voice ID if provided
+            );
+
+            // Fetch the list of generated audio files
+            const audioFilesResponse = await axios.get(
+                `http://localhost:5000/api/brdges/${brdgeId}/audio/generated`
+            );
+            console.log('Received audio files:', audioFilesResponse.data.files);
+            setGeneratedAudioFiles(audioFilesResponse.data.files);
+
+            setVoiceCloneGenerated(true);
+            setLoadingMessage('Voice generated successfully.');
+        } catch (error) {
+            console.error('Error generating voice:', error);
+            setMessage('Error generating voice.');
         } finally {
             setTimeout(() => {
                 setLoadingOverlay(false);
@@ -258,6 +284,13 @@ function CreateBrdgePage() {
         setSelectedOption(option);
         if (option === 'record') {
             startCountdown();
+        } else if (option === 'upload') {
+            // Open the file input dialog
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'audio/*';
+            fileInput.onchange = (e) => handleUploadAudio(e);
+            fileInput.click();
         }
     };
 
@@ -318,7 +351,7 @@ function CreateBrdgePage() {
 
     const handleNextSlide = () => {
         if (currentSlide < numSlides) {
-            setCurrentSlide(prevSlide => {
+            setCurrentSlide((prevSlide) => {
                 const nextSlide = prevSlide + 1;
                 loadAudioForSlide(nextSlide, true);
                 return nextSlide;
@@ -328,7 +361,7 @@ function CreateBrdgePage() {
 
     const handlePrevSlide = () => {
         if (currentSlide > 1) {
-            setCurrentSlide(prevSlide => {
+            setCurrentSlide((prevSlide) => {
                 const prevSlideNumber = prevSlide - 1;
                 loadAudioForSlide(prevSlideNumber, true);
                 return prevSlideNumber;
@@ -432,12 +465,14 @@ function CreateBrdgePage() {
                 if (autoplay) {
                     const playPromise = audioRef.current.play();
                     if (playPromise !== undefined) {
-                        playPromise.then(_ => {
-                            setIsPlaying(true);
-                            console.log("Audio started playing");
-                        }).catch(error => {
-                            console.error("Error playing audio:", error);
-                        });
+                        playPromise
+                            .then(() => {
+                                setIsPlaying(true);
+                                console.log('Audio started playing');
+                            })
+                            .catch((error) => {
+                                console.error('Error playing audio:', error);
+                            });
                     }
                 } else {
                     setIsPlaying(false);
@@ -458,12 +493,14 @@ function CreateBrdgePage() {
             } else {
                 const playPromise = audioRef.current.play();
                 if (playPromise !== undefined) {
-                    playPromise.then(_ => {
-                        setIsPlaying(true);
-                        console.log("Audio started playing");
-                    }).catch(error => {
-                        console.error("Error playing audio:", error);
-                    });
+                    playPromise
+                        .then(() => {
+                            setIsPlaying(true);
+                            console.log('Audio started playing');
+                        })
+                        .catch((error) => {
+                            console.error('Error playing audio:', error);
+                        });
                 }
             }
         }
@@ -487,8 +524,8 @@ function CreateBrdgePage() {
         if (currentAudio) {
             audioRef.current.load();
             if (isPlaying) {
-                audioRef.current.play().catch(error => {
-                    console.error("Error playing audio:", error);
+                audioRef.current.play().catch((error) => {
+                    console.error('Error playing audio:', error);
                 });
             }
         }
@@ -594,10 +631,16 @@ function CreateBrdgePage() {
                         <div>
                             <audio controls src={existingAudioUrl} className="w-full mb-2"></audio>
                             <div className="flex space-x-2">
-                                <button onClick={handleReplaceAudio} className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                <button
+                                    onClick={handleReplaceAudio}
+                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                >
                                     Replace
                                 </button>
-                                <button onClick={handleDeleteAudio} className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600">
+                                <button
+                                    onClick={handleDeleteAudio}
+                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                >
                                     Delete
                                 </button>
                                 {isRenaming ? (
@@ -608,12 +651,18 @@ function CreateBrdgePage() {
                                             onChange={(e) => setNewAudioName(e.target.value)}
                                             className="px-2 py-1 border rounded"
                                         />
-                                        <button onClick={handleSaveAudioName} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                        <button
+                                            onClick={handleSaveAudioName}
+                                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                                        >
                                             Save
                                         </button>
                                     </>
                                 ) : (
-                                    <button onClick={handleRenameAudio} className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                    <button
+                                        onClick={handleRenameAudio}
+                                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                                    >
                                         Rename
                                     </button>
                                 )}
@@ -621,10 +670,16 @@ function CreateBrdgePage() {
                         </div>
                     ) : (
                         <div className="flex space-x-2">
-                            <button onClick={() => handleOptionChange('upload')} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                            <button
+                                onClick={() => handleOptionChange('upload')}
+                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                            >
                                 Upload Audio
                             </button>
-                            <button onClick={handleRecordWalkthrough} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
+                            <button
+                                onClick={handleRecordWalkthrough}
+                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
+                            >
                                 Record Walkthrough
                             </button>
                         </div>
@@ -636,7 +691,10 @@ function CreateBrdgePage() {
                     <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 2: Transcripts</h3>
                     <button
                         onClick={handleGenerateTranscripts}
-                        className={`px-3 py-1 ${existingAudioUrl ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-300 cursor-not-allowed'} text-white rounded`}
+                        className={`px-3 py-1 ${existingAudioUrl
+                                ? 'bg-blue-500 hover:bg-blue-600'
+                                : 'bg-gray-300 cursor-not-allowed'
+                            } text-white rounded`}
                         disabled={!existingAudioUrl}
                     >
                         Generate Transcripts
@@ -645,14 +703,29 @@ function CreateBrdgePage() {
 
                 {/* Step 3: Generate Voice Clone */}
                 <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 3: Voice Clone</h3>
+                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 3: Voice Generation</h3>
                     <button
                         onClick={handleGenerateVoiceClone}
-                        className={`px-3 py-1 ${transcripts.some(t => t.trim() !== '') ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'} text-white rounded`}
-                        disabled={!transcripts.some(t => t.trim() !== '')}
+                        className={`px-3 py-1 ${transcripts.some((t) => t.trim() !== '')
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : 'bg-gray-300 cursor-not-allowed'
+                            } text-white rounded`}
+                        disabled={!transcripts.some((t) => t.trim() !== '')}
                     >
-                        Generate Voice Clone
+                        Generate Voice
                     </button>
+                </div>
+
+                {/* Voice ID Input */}
+                <div className="mb-6">
+                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Voice ID (optional)</h3>
+                    <input
+                        type="text"
+                        value={voiceId}
+                        onChange={(e) => setVoiceId(e.target.value)}
+                        className="w-full mt-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Enter voice ID to use for voice generation"
+                    />
                 </div>
             </div>
         );
@@ -682,7 +755,9 @@ function CreateBrdgePage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-gray-700 font-semibold">Presentation (PDF)</label>
+                                    <label className="block text-gray-700 font-semibold">
+                                        Presentation (PDF)
+                                    </label>
                                     <input
                                         type="file"
                                         accept=".pdf"
@@ -698,11 +773,17 @@ function CreateBrdgePage() {
                                 <div className="flex items-center justify-between">
                                     <button
                                         type="submit"
-                                        className={`px-6 py-2 ${isProcessing ? 'bg-gray-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                                        className={`px-6 py-2 ${isProcessing
+                                                ? 'bg-gray-400'
+                                                : 'bg-indigo-600 hover:bg-indigo-700'
                                             } text-white font-semibold rounded-lg`}
                                         disabled={isProcessing}
                                     >
-                                        {isProcessing ? 'Processing...' : isEditMode ? 'Update Brdge' : 'Create Brdge'}
+                                        {isProcessing
+                                            ? 'Processing...'
+                                            : isEditMode
+                                                ? 'Update Brdge'
+                                                : 'Create Brdge'}
                                     </button>
                                     <button
                                         type="button"
@@ -716,7 +797,23 @@ function CreateBrdgePage() {
                         )}
 
                         {/* Display Slides and Transcripts */}
-                        {brdgeId && numSlides > 0 && renderSlides()}
+                        {brdgeId && numSlides > 0 && (
+                            <>
+                                {renderSlides()}
+
+                                {/* Save Transcripts Button */}
+                                {isTranscriptModified && (
+                                    <div className="mt-4">
+                                        <button
+                                            onClick={handleSaveTranscripts}
+                                            className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600"
+                                        >
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {/* Workflow steps */}
