@@ -2,11 +2,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-    AppBar, Toolbar, Typography, Button, Container, Grid, Box,
-    useMediaQuery, useTheme, IconButton, Paper
+    Typography, Button, Container, Grid, Box,
+    useTheme, Paper
 } from '@mui/material';
 import {
-    Menu as MenuIcon, CloudUpload, RecordVoiceOver, Slideshow,
+    CloudUpload, RecordVoiceOver, Slideshow,
     Group, Support, ArrowForward, School, Refresh
 } from '@mui/icons-material';
 import { motion, useAnimation } from 'framer-motion';
@@ -63,7 +63,6 @@ const UseCase = ({ icon, title, description }) => (
 
 function LandingPage() {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const controls = useAnimation();
     const [ref, inView] = useInView({
         triggerOnce: true,
@@ -101,28 +100,6 @@ function LandingPage() {
 
     return (
         <Box sx={{ flexGrow: 1 }}>
-            <AppBar position="static" color="transparent" elevation={0}>
-                <Toolbar>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Brdge AI
-                    </Typography>
-                    {isMobile ? (
-                        <IconButton color="inherit">
-                            <MenuIcon />
-                        </IconButton>
-                    ) : (
-                        <>
-                            <Button color="inherit" component={Link} to="/features">Features</Button>
-                            <Button color="inherit" component={Link} to="/pricing">Pricing</Button>
-                            <Button color="inherit" component={Link} to="/about">About</Button>
-                            <Button color="primary" variant="contained" component={Link} to="/demo">
-                                Try Brdge AI
-                            </Button>
-                        </>
-                    )}
-                </Toolbar>
-            </AppBar>
-
             <Container maxWidth="lg">
                 <Box sx={{ my: 12, textAlign: 'center' }}>
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
@@ -239,11 +216,11 @@ function LandingPage() {
                             Ready to Transform Your Knowledge Sharing?
                         </Typography>
                         <Typography variant="h6" component="p" gutterBottom color="text.secondary" sx={{ mb: 6, maxWidth: '800px', mx: 'auto' }}>
-                            Experience Brdge AI today and revolutionize how you share information.
+                            Try Brdge AI today and revolutionize how you share information.
                         </Typography>
                         <Button
                             component={Link}
-                            to="/demo"
+                            to="/waitlist"
                             variant="contained"
                             color="primary"
                             size="large"
@@ -257,7 +234,7 @@ function LandingPage() {
                                 }
                             }}
                         >
-                            Try Brdge AI
+                            Join Waitlist
                         </Button>
                     </motion.div>
                 </Box>
