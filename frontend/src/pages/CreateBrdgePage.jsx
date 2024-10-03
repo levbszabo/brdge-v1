@@ -853,9 +853,8 @@ function CreateBrdgePage() {
                                 <div className="mt-4">
                                     <button
                                         onClick={handleDeployBrdge}
-                                        className={`px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 ${!transcriptsGenerated || generatedAudioFiles.length === 0 ? 'cursor-not-allowed opacity-50' : ''
-                                            }`}
-                                        disabled={!transcriptsGenerated || generatedAudioFiles.length === 0}
+                                        className={`px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 ${generatedAudioFiles.length === 0 ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        disabled={generatedAudioFiles.length === 0} // Updated condition
                                     >
                                         <FaShareAlt className="inline mr-2" />
                                         Deploy Brdge

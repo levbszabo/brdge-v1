@@ -47,8 +47,11 @@ function BrdgeListPage() {
                                     >
                                         Edit
                                     </button>
-                                    <button className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-                                        Continue with AI Workflow
+                                    <button
+                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                        onClick={() => navigate(`/viewBrdge/${brdge.id}`)} // Navigate to view Brdge page
+                                    >
+                                        View
                                     </button>
                                 </div>
                             </div>
