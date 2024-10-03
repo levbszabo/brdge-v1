@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { FaPlay, FaPause, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { Box, Card, CardMedia, CardContent, Typography, Grid, Button, Slider, Container } from '@mui/material';
+import { PlayArrow, Pause, ChevronLeft, ChevronRight } from '@mui/icons-material';
 
 function ViewBrdgePage() {
     const { id } = useParams();
@@ -118,59 +119,87 @@ function ViewBrdgePage() {
         const transcript = brdge && brdge.transcripts ? brdge.transcripts[currentSlide - 1] : '';
 
         return (
-            <div className="border rounded-lg overflow-hidden shadow-lg">
-                <img src={imageUrl} alt={`Slide ${currentSlide}`} className="w-full" />
-                <div className="p-4 bg-white">
-                    <label className="block text-gray-700 font-semibold mb-2">
+            <Card elevation={3} sx={{ mb: 4, borderRadius: 2 }}>
+                <CardMedia
+                    component="img"
+                    image={imageUrl}
+                    alt={`Slide ${currentSlide}`}
+                    sx={{
+                        width: '100%',
+                        height: 'auto',
+                        maxHeight: { xs: 300, md: 500 },
+                        objectFit: 'contain',
+                        backgroundColor: 'background.paper',
+                    }}
+                />
+                <CardContent>
+                    <Typography variant="subtitle1" color="textSecondary" gutterBottom>
                         Transcript for Slide {currentSlide}
-                    </label>
-                    <p className="w-full mt-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </Typography>
+                    <Typography variant="body2" color="textPrimary">
                         {transcript}
-                    </p>
-                </div>
-                <div className="flex flex-col p-4 bg-gray-100">
-                    <div className="flex justify-between items-center mb-2">
-                        <button
-                            onClick={handlePrevSlide}
-                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
-                            disabled={currentSlide === 1}
-                        >
-                            <FaChevronLeft className="mr-2" /> Previous
-                        </button>
-                        {currentAudio && (
-                            <button
-                                onClick={handlePlayPause}
-                                className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 flex items-center"
+                    </Typography>
+                </CardContent>
+                <Box p={2} bgcolor="grey.100" borderRadius="0 0 8px 8px">
+                    <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={12} sm="auto">
+                            <Button
+                                onClick={handlePrevSlide}
+                                variant="contained"
+                                color="primary"
+                                disabled={currentSlide === 1}
+                                startIcon={<ChevronLeft />}
+                                fullWidth
+                                sx={{ mr: { sm: 2, xs: 0 }, mb: { xs: 2, sm: 0 } }}
                             >
-                                {isPlaying ? <FaPause className="mr-2" /> : <FaPlay className="mr-2" />}
-                                {isPlaying ? 'Pause' : 'Play'}
-                            </button>
-                        )}
-                        <button
-                            onClick={handleNextSlide}
-                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
-                            disabled={currentSlide === numSlides}
-                        >
-                            Next <FaChevronRight className="ml-2" />
-                        </button>
-                    </div>
+                                Previous
+                            </Button>
+                        </Grid>
+                        <Grid item xs={12} sm="auto">
+                            {currentAudio && (
+                                <Button
+                                    onClick={handlePlayPause}
+                                    variant="contained"
+                                    color="secondary"
+                                    startIcon={isPlaying ? <Pause /> : <PlayArrow />}
+                                    fullWidth
+                                    sx={{ mx: { sm: 2, xs: 0 }, mb: { xs: 2, sm: 0 } }}
+                                >
+                                    {isPlaying ? 'Pause' : 'Play'}
+                                </Button>
+                            )}
+                        </Grid>
+                        <Grid item xs={12} sm="auto">
+                            <Button
+                                onClick={handleNextSlide}
+                                variant="contained"
+                                color="primary"
+                                disabled={currentSlide === numSlides}
+                                endIcon={<ChevronRight />}
+                                fullWidth
+                                sx={{ ml: { sm: 2, xs: 0 } }}
+                            >
+                                Next
+                            </Button>
+                        </Grid>
+                    </Grid>
                     {currentAudio && (
-                        <div className="w-full">
-                            <input
-                                type="range"
-                                min="0"
-                                max={audioDuration}
+                        <Box mt={2}>
+                            <Slider
                                 value={currentTime}
+                                min={0}
+                                max={audioDuration}
                                 onChange={handleSeek}
-                                className="w-full"
+                                aria-labelledby="audio-slider"
+                                sx={{ color: 'primary.main' }}
                             />
-                            <div className="flex justify-between text-sm text-gray-600">
-                                <span>{formatTime(currentTime)}</span>
-                                <span>{formatTime(audioDuration)}</span>
-                            </div>
-                        </div>
+                            <Grid container justifyContent="space-between">
+                                <Typography variant="caption">{formatTime(currentTime)}</Typography>
+                                <Typography variant="caption">{formatTime(audioDuration)}</Typography>
+                            </Grid>
+                        </Box>
                     )}
-                </div>
+                </Box>
                 {currentAudio && (
                     <audio
                         ref={audioRef}
@@ -182,25 +211,32 @@ function ViewBrdgePage() {
                         onPause={() => setIsPlaying(false)}
                     />
                 )}
-            </div>
+            </Card>
         );
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8">
-            <div className="bg-white shadow-xl rounded-lg p-8 max-w-4xl w-full">
-                <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                    View Brdge: {brdge ? brdge.name : ''}
-                </h1>
+        <Container maxWidth="md" sx={{ py: 4, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 3 }}>
+            <Box display="flex" flexDirection="column" alignItems="center">
+                <Typography
+                    variant="h5"
+                    gutterBottom
+                    align="center"
+                    sx={{ fontWeight: 500, color: 'text.primary', mb: 2, fontFamily: 'Roboto, Helvetica, Arial, sans-serif' }}
+                >
+                    {brdge ? `Viewing Brdge: ${brdge.name}` : 'View Brdge'}
+                </Typography>
                 {!brdge ? (
-                    <p>Loading...</p>
+                    <Typography variant="body2" color="text.secondary" align="center">
+                        Loading...
+                    </Typography>
                 ) : (
-                    <>
+                    <Box width="100%">
                         {renderSlides()}
-                    </>
+                    </Box>
                 )}
-            </div>
-        </div>
+            </Box>
+        </Container>
     );
 }
 
