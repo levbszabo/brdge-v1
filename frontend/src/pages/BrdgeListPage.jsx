@@ -1,64 +1,138 @@
 // src/pages/BrdgeListPage.jsx
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import {
+    List,
+    ListItem,
+    ListItemText,
+    ListItemSecondaryAction,
+    IconButton,
+    Divider,
+    TextField,
+    InputAdornment,
+    Button,        // {{ edit_1 }} Import Button
+    Box,           // {{ edit_1 }} Import Box for layout
+    Typography,   // {{ edit_1 }} Import Typography for label
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
+    const [searchTerm, setSearchTerm] = useState(''); // Add search term state
     const navigate = useNavigate();
+
     useEffect(() => {
-        axios.get('http://localhost:5000/api/brdges')
-            .then(response => setBrdges(response.data))
-            .catch(error => console.error('Error fetching brdges:', error));
+        axios
+            .get('http://localhost:5000/api/brdges')
+            .then((response) => setBrdges(response.data))
+            .catch((error) => console.error('Error fetching brdges:', error));
     }, []);
+
+    const filteredBrdges = brdges.filter((brdge) =>
+        brdge.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ); // Filter brdges based on search term
 
     return (
         <div className="min-h-screen bg-gray-50">
-            <nav className="bg-white shadow">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-800">Brdges</h1>
-                    <Link to="/create" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                        Create New Brdge
-                    </Link>
-                </div>
-            </nav>
-
             <main className="container mx-auto px-4 py-8">
-                {brdges.length === 0 ? (
-                    <p className="text-gray-600">No brdges found. Click "Create New Brdge" to get started.</p>
+                {/* Header with "Brdges" Title and "Create New Brdge" Button */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mb: 4,
+                    }}
+                >
+                    <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold' }}>
+                        Brdges
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        onClick={() => navigate('/create')}
+                        sx={{
+                            textTransform: 'none',
+                            fontSize: '1rem',
+                        }}
+                    >
+                        Create New Brdge
+                    </Button>
+                </Box>
+
+                {/* Search Bar */}
+                <TextField
+                    variant="outlined"
+                    placeholder="Search Brdges"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    fullWidth
+                    margin="normal"
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+
+                {filteredBrdges.length === 0 ? (
+                    <Typography variant="body1" color="text.secondary" align="center">
+                        No brdges found. Click the "Create New Brdge" button above to get started.
+                    </Typography>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {brdges.map(brdge => (
-                            <div key={brdge.id} className="bg-white shadow rounded overflow-hidden">
-                                <div className="p-4">
-                                    <h2 className="text-xl font-semibold mb-2 text-gray-800">{brdge.name}</h2>
-                                    <p className="text-gray-600 mb-1">
-                                        Presentation: {brdge.presentation_filename}
-                                    </p>
-                                    <p className="text-gray-600">
-                                        Audio: {brdge.audio_filename || 'N/A'}
-                                    </p>
-                                </div>
-                                <div className="p-4 border-t">
-                                    <button
-                                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
-                                        onClick={() => navigate(`/edit/${brdge.id}`)} // Navigate to edit route
-                                    >
-                                        Edit
-                                    </button>
-                                    <button
-                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                        onClick={() => navigate(`/viewBrdge/${brdge.id}`)} // Navigate to view Brdge page
-                                    >
-                                        View
-                                    </button>
-                                </div>
-                            </div>
+                    <List>
+                        {filteredBrdges.map((brdge) => (
+                            <React.Fragment key={brdge.id}>
+                                <ListItem
+                                    button
+                                    onClick={() => navigate(`/viewBrdge/${brdge.id}`)}
+                                    sx={{
+                                        '&:hover': {
+                                            backgroundColor: 'action.hover',
+                                        },
+                                    }}
+                                >
+                                    <ListItemText
+                                        primary={brdge.name}
+                                        secondary={
+                                            <>
+                                                Presentation: {brdge.presentation_filename} <br />
+                                                Audio: {brdge.audio_filename || 'N/A'}
+                                            </>
+                                        }
+                                    />
+                                    <ListItemSecondaryAction>
+                                        <IconButton
+                                            edge="end"
+                                            aria-label="edit"
+                                            onClick={() => navigate(`/edit/${brdge.id}`)}
+                                        >
+                                            <EditIcon />
+                                        </IconButton>
+                                        <IconButton
+                                            edge="end"
+                                            aria-label="view"
+                                            onClick={() => navigate(`/viewBrdge/${brdge.id}`)}
+                                        >
+                                            <VisibilityIcon />
+                                        </IconButton>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+                                <Divider />
+                            </React.Fragment>
                         ))}
-                    </div>
+                    </List>
                 )}
             </main>
+
+            {/* Removed the Floating Action Button (FAB) */}
         </div>
     );
 }

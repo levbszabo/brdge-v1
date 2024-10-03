@@ -101,12 +101,25 @@ function LandingPage() {
     return (
         <Box sx={{ flexGrow: 1 }}>
             <Container maxWidth="lg">
-                <Box sx={{ my: 12, textAlign: 'center' }}>
+                <Box sx={{ my: 6, textAlign: 'center' }}> {/* Reduced my from 12 to 6 */}
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                        <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', mb: 4 }}>
+                        <Typography
+                            variant="h3" /* Changed from h2 to h3 */
+                            component="h1"
+                            gutterBottom
+                            align="center"
+                            sx={{ fontWeight: 'bold', mb: 2 }} /* Reduced mb from 4 to 2 */
+                        >
                             Unlock Knowledge with AI-Powered Presentations
                         </Typography>
-                        <Typography variant="h5" component="h2" gutterBottom align="center" color="text.secondary" sx={{ mb: 6, maxWidth: '800px', mx: 'auto' }}>
+                        <Typography
+                            variant="h5"
+                            component="h2"
+                            gutterBottom
+                            align="center"
+                            color="text.secondary"
+                            sx={{ mb: 6, maxWidth: '800px', mx: 'auto' }}
+                        >
                             Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool.
                         </Typography>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -115,12 +128,12 @@ function LandingPage() {
                                 to="/demo"
                                 variant="contained"
                                 color="primary"
-                                size="large"
+                                size="large" /* Consider changing to "medium" for a smaller button */
                                 endIcon={<ArrowForward />}
                                 sx={{
-                                    py: 2,
-                                    px: 6,
-                                    fontSize: '1.2rem',
+                                    py: 1.5, /* Reduced padding y from 2 to 1.5 */
+                                    px: 5,    /* Reduced padding x from 6 to 5 */
+                                    fontSize: '1.1rem', /* Slightly smaller font size */
                                     '&:hover': {
                                         backgroundColor: theme.palette.primary.dark,
                                     }
