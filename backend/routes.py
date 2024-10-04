@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 import os
 import boto3
 import uuid
-from models import Brdge
+from models import Brdge, User
 from utils import (
     clone_voice_helper,
     pdf_to_images,
@@ -20,6 +20,9 @@ from io import BytesIO
 import botocore
 import json
 from werkzeug.security import check_password_hash, generate_password_hash
+from jwt import encode, decode, ExpiredSignatureError, InvalidTokenError
+from datetime import datetime, timedelta
+from flask import current_app
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -753,12 +756,28 @@ def login():
     email = data.get("email")
     password = data.get("password")
 
-    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
-    ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH")
-
-    if email == ADMIN_EMAIL and check_password_hash(ADMIN_PASSWORD_HASH, password):
-        # Generate a token here if you're using token-based authentication
-        token = "your-auth-token"  # Replace with actual token generation
+    user = User.query.filter_by(email=email).first()
+    if user and user.check_password(password):
+        token = encode(
+            {"user_id": user.id, "exp": datetime.utcnow() + timedelta(hours=24)},
+            current_app.config["SECRET_KEY"],
+            algorithm="HS256",
+        )
         return jsonify({"message": "Login successful", "token": token}), 200
     else:
         return jsonify({"error": "Invalid credentials"}), 401
+
+
+# Add a route to check if a token is valid
+@app.route("/api/check-auth", methods=["GET"])
+def check_auth():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"error": "No token provided"}), 401
+    try:
+        decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+        return jsonify({"message": "Token is valid"}), 200
+    except ExpiredSignatureError:
+        return jsonify({"error": "Token has expired"}), 401
+    except InvalidTokenError:
+        return jsonify({"error": "Invalid token"}), 401

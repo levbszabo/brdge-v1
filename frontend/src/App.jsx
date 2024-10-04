@@ -9,6 +9,7 @@ import CreateBrdgePage from './pages/CreateBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
 import DemoPage from './pages/DemoPage';
 import WaitlistPage from './pages/WaitlistPage';
+import AboutPage from './pages/AboutPage';  // Import the new AboutPage
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 
@@ -56,6 +57,11 @@ function Header() {
             <Button color="primary" variant="contained" component={Link} to="/demo">
               Try Brdge AI
             </Button>
+            {isLoggedIn && (
+              <Button color="inherit" component={Link} to="/brdges">
+                My Brdges
+              </Button>
+            )}
             {isLoggedIn ? (
               <Button color="inherit" onClick={handleLogout}>
                 Logout
@@ -83,6 +89,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
+          <Route path="/about" element={<AboutPage />} />  {/* Add this line */}
           <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
           <Route
             path="/brdges"

@@ -1,14 +1,13 @@
 # app.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
+import os
 
 app = Flask(__name__)
-CORS(app)
-
-# Configure the SQLite database
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///brdges.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+# Use an environment variable in production
 
 db = SQLAlchemy(app)
 

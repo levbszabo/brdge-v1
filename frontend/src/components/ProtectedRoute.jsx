@@ -1,23 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 
-// Replace this with your actual authentication check
-const isAuthenticated = () => {
-    // Implement your actual authentication check
-    // For example, verify if the auth token is valid
-    const token = localStorage.getItem('authToken');
-    // Optionally, add more checks (e.g., token expiry)
-    return !!token; // Return true if authenticated
-};
-
 const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated()) {
-        // Redirect to the login page if not authenticated
-        return <Navigate to="/login" />;
+    const [isAuthenticated, setIsAuthenticated] = useState(null);
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                setIsAuthenticated(false);
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/check-auth', {
+                    headers: {
+                        'Authorization': token
+                    }
+                });
+
+                if (response.ok) {
+                    setIsAuthenticated(true);
+                } else {
+                    setIsAuthenticated(false);
+                    localStorage.removeItem('authToken');
+                }
+            } catch (error) {
+                console.error('Error checking authentication:', error);
+                setIsAuthenticated(false);
+            }
+        };
+
+        checkAuth();
+    }, []);
+
+    if (isAuthenticated === null) {
+        return <div>Loading...</div>; // Or some loading spinner
     }
 
-    // Render the children if authenticated
-    return children;
+    return isAuthenticated ? children : <Navigate to="/login" />;
 };
 
 export default ProtectedRoute;

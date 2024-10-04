@@ -9,21 +9,24 @@ function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Replace this with your actual authentication API call
-        const response = await fetch('http://localhost:5000/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
-        });
+        try {
+            const response = await fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            });
 
-        if (response.ok) {
-            const data = await response.json();
-            // Store the auth token (adjust as needed)
-            localStorage.setItem('authToken', data.token);
-            navigate('/brdges');
-        } else {
-            // Handle login error (e.g., show a message)
-            alert('Login failed!');
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('authToken', data.token);
+                navigate('/brdges');  // Redirect to /brdges after successful login
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || 'Login failed!');
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+            alert('An error occurred during login. Please try again.');
         }
     };
 
