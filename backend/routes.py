@@ -19,6 +19,7 @@ from utils import (
 from io import BytesIO
 import botocore
 import json
+from werkzeug.security import check_password_hash, generate_password_hash
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -744,3 +745,20 @@ def deploy_brdge(brdge_id):
 
     shareable_link = url_for("get_brdge", brdge_id=brdge_id, _external=True)
     return jsonify({"shareable_link": shareable_link}), 200
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+    ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH")
+
+    if email == ADMIN_EMAIL and check_password_hash(ADMIN_PASSWORD_HASH, password):
+        # Generate a token here if you're using token-based authentication
+        token = "your-auth-token"  # Replace with actual token generation
+        return jsonify({"message": "Login successful", "token": token}), 200
+    else:
+        return jsonify({"error": "Invalid credentials"}), 401

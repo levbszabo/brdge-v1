@@ -4,7 +4,62 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
-import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaShareAlt } from 'react-icons/fa';
+import {
+    FaPlay,
+    FaPause,
+    FaChevronLeft,
+    FaChevronRight,
+    FaShareAlt,
+} from 'react-icons/fa';
+import {
+    Grid,
+    Card,
+    CardHeader,
+    CardContent,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Typography,
+    Button,
+    TextField,
+    Box,
+    Stepper,
+    Step,
+    StepLabel,
+    StepContent,
+    IconButton,
+    Tooltip,
+    CircularProgress,
+    Snackbar,
+    Alert,
+    Collapse,
+    Paper,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import SaveIcon from '@mui/icons-material/Save';
+import { styled } from '@mui/material/styles';
+
+const StyledAccordion = styled(Accordion)(({ theme }) => ({
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    '&:before': {
+        display: 'none',
+    },
+    '&.Mui-expanded': {
+        margin: theme.spacing(1, 0),
+    },
+}));
+
+const StyledAccordionSummary = styled(AccordionSummary)(({ theme }) => ({
+    backgroundColor: theme.palette.grey[100],
+    '&.Mui-expanded': {
+        minHeight: 48,
+    },
+}));
+
+const StyledAccordionDetails = styled(AccordionDetails)(({ theme }) => ({
+    padding: theme.spacing(2),
+    borderTop: '1px solid rgba(0, 0, 0, .125)',
+}));
 
 function CreateBrdgePage() {
     // State variables
@@ -33,105 +88,112 @@ function CreateBrdgePage() {
     const [currentAudio, setCurrentAudio] = useState(null);
     const audioRef = useRef(null);
     const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
-    const [generatedAudioDir, setGeneratedAudioDir] = useState(null);
     const [audioDuration, setAudioDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isTranscriptModified, setIsTranscriptModified] = useState(false); // Tracks transcript changes
     const [voiceId, setVoiceId] = useState(''); // Stores the voice ID input by the user
     const [deployLink, setDeployLink] = useState('');
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+    const [isAudioLoaded, setIsAudioLoaded] = useState(false);
+    const [isAudioUploaded, setIsAudioUploaded] = useState(false);
+    const [expandedStep, setExpandedStep] = useState(0);
 
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditMode = Boolean(id);
 
+    // Initialize MicRecorder
+    const mp3Recorder = useRef(new MicRecorder({ bitRate: 128 }));
+
+    // Modify this useEffect to check for existing audio when the component mounts
     useEffect(() => {
         if (isEditMode) {
-            // Fetch existing brdge data when in edit mode
-            axios
-                .get(`http://localhost:5000/api/brdges/${id}`)
-                .then(async (response) => {
-                    const brdge = response.data;
-                    setName(brdge.name);
-                    setBrdgeId(brdge.id);
-                    setNumSlides(brdge.num_slides);
-                    if (brdge.audio_filename) {
-                        const audioFileUrl = `http://localhost:5000/api/brdges/${brdge.id}/audio`;
-                        setExistingAudioUrl(audioFileUrl);
-                        setNewAudioName(brdge.audio_filename);
-                    }
-                    // Fetch aligned transcripts if available
-                    try {
-                        const transcriptResponse = await axios.get(
-                            `http://localhost:5000/api/brdges/${id}/transcripts/aligned`
-                        );
-                        const alignedData = transcriptResponse.data;
-                        const updatedTranscripts = [];
-
-                        // Process the aligned transcripts
-                        if (
-                            alignedData.image_transcripts &&
-                            Array.isArray(alignedData.image_transcripts)
-                        ) {
-                            // Sort transcripts by image_number to ensure correct order
-                            alignedData.image_transcripts.sort(
-                                (a, b) => a.image_number - b.image_number
-                            );
-                            for (let i = 1; i <= brdge.num_slides; i++) {
-                                const slideData = alignedData.image_transcripts.find(
-                                    (item) => item.image_number === i
-                                );
-                                const slideTranscript = slideData ? slideData.transcript : '';
-                                updatedTranscripts.push(slideTranscript);
-                            }
-                        } else {
-                            // If data format is different or missing, initialize empty transcripts
-                            for (let i = 0; i < brdge.num_slides; i++) {
-                                updatedTranscripts.push('');
-                            }
-                        }
-
-                        setTranscripts(updatedTranscripts);
-                    } catch (error) {
-                        console.error('Error fetching aligned transcripts:', error);
-                        setMessage('Error fetching aligned transcripts.');
-                        setTranscripts(new Array(brdge.num_slides).fill(''));
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error fetching brdge data:', error);
-                    setMessage('Error loading brdge data.');
-                });
+            fetchBrdgeData();
         }
     }, [id, isEditMode]);
 
+    const fetchBrdgeData = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/brdges/${id}`);
+            const brdge = response.data;
+            console.log('Fetched brdge data:', brdge);
+            setName(brdge.name);
+            setBrdgeId(brdge.id);
+            setNumSlides(brdge.num_slides);
+            if (brdge.audio_filename) {
+                const audioFileUrl = `http://localhost:5000/api/brdges/${brdge.id}/audio`;
+                setExistingAudioUrl(audioFileUrl);
+                setNewAudioName(brdge.audio_filename);
+                setIsAudioUploaded(true); // Set this to true if audio exists
+                setCurrentStep(1); // Move to the Transcripts step if audio exists
+            }
+
+            // Attempt to fetch aligned transcripts
+            try {
+                const transcriptsResponse = await axios.get(`http://localhost:5000/api/brdges/${id}/transcripts/aligned`);
+                const alignedData = transcriptsResponse.data;
+                const updatedTranscripts = alignedData.image_transcripts.map(item => item.transcript);
+                setTranscripts(updatedTranscripts);
+                setTranscriptsGenerated(true);
+            } catch (error) {
+                if (error.response && error.response.status === 404) {
+                    console.log('Aligned transcripts not found. They need to be generated.');
+                    setTranscriptsGenerated(false); // Indicate that transcripts are not yet generated
+                } else {
+                    console.error('Error fetching aligned transcripts:', error);
+                    showSnackbar('Error fetching aligned transcripts.', 'error');
+                }
+            }
+
+        } catch (error) {
+            console.error('Error fetching brdge data:', error);
+            showSnackbar('Error loading brdge data.', 'error');
+        }
+    };
+
     useEffect(() => {
         if (brdgeId) {
-            // Fetch generated audio files
-            axios
-                .get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`)
-                .then((response) => {
-                    setGeneratedAudioFiles(response.data.files);
-                })
-                .catch((error) => {
-                    console.error('Error fetching generated audio files:', error);
-                    setMessage('Error fetching generated audio files.');
-                });
+            fetchGeneratedAudioFiles();
         }
     }, [brdgeId]);
+
+    const fetchGeneratedAudioFiles = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/brdges/${brdgeId}/audio/generated`);
+            setGeneratedAudioFiles(response.data.files);
+            console.log('Fetched generated audio files:', response.data.files);
+        } catch (error) {
+            console.error('Error fetching generated audio files:', error);
+            showSnackbar('Error fetching generated audio files.', 'error');
+        }
+    };
+
+    // Snackbar for notifications
+    const showSnackbar = (message, severity = 'success') => {
+        setSnackbarMessage(message);
+        setSnackbarSeverity(severity);
+        setSnackbarOpen(true);
+    };
+
+    const handleCloseSnackbar = () => {
+        setSnackbarOpen(false);
+    };
 
     // Function to handle deploying Brdge
     const handleDeployBrdge = () => {
         const link = `${window.location.origin}/viewBrdge/${brdgeId}`;
         setDeployLink(link);
         navigator.clipboard.writeText(link);
-        setMessage('Brdge deployed! Link copied to clipboard.');
+        showSnackbar('Brdge deployed! Link copied to clipboard.', 'success');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!name) {
-            setMessage('Please provide a name.');
+            showSnackbar('Please provide a name.', 'warning');
             return;
         }
 
@@ -154,7 +216,7 @@ function CreateBrdgePage() {
                 response = await axios.post('http://localhost:5000/api/brdges', formData);
             }
 
-            setMessage(response.data.message);
+            showSnackbar(response.data.message, 'success');
             const { brdge, num_slides } = response.data;
             setBrdgeId(brdge.id);
             setNumSlides(num_slides);
@@ -162,7 +224,7 @@ function CreateBrdgePage() {
             setIsProcessing(false);
         } catch (error) {
             console.error('Error saving brdge:', error);
-            setMessage('Error saving brdge.');
+            showSnackbar('Error saving brdge.', 'error');
             setIsProcessing(false);
         }
     };
@@ -184,11 +246,11 @@ function CreateBrdgePage() {
                 `http://localhost:5000/api/brdges/${brdgeId}/transcripts/aligned`,
                 { transcripts }
             );
-            setLoadingMessage('Transcripts saved successfully.');
+            showSnackbar('Transcripts saved successfully.', 'success');
             setIsTranscriptModified(false);
         } catch (error) {
             console.error('Error saving transcripts:', error);
-            setMessage('Error saving transcripts.');
+            showSnackbar('Error saving transcripts.', 'error');
         } finally {
             setTimeout(() => {
                 setLoadingOverlay(false);
@@ -199,7 +261,7 @@ function CreateBrdgePage() {
 
     const handleGenerateTranscripts = async () => {
         if (!existingAudioUrl) {
-            setMessage('Please upload or record audio before proceeding.');
+            showSnackbar('Please upload or record audio before generating transcripts.', 'warning');
             return;
         }
 
@@ -236,15 +298,18 @@ function CreateBrdgePage() {
 
             setTranscripts(updatedTranscripts);
             setTranscriptsGenerated(true);
-            setLoadingMessage('Transcripts generated and aligned successfully.');
+            setCurrentStep(2); // Move to Voice Generation step
+            showSnackbar('Transcripts generated and aligned successfully.', 'success');
         } catch (error) {
             console.error('Error generating transcripts:', error);
-            setMessage('Error generating transcripts.');
+            if (error.response && error.response.status === 404) {
+                showSnackbar('Transcripts not found. Please ensure audio is uploaded correctly.', 'error');
+            } else {
+                showSnackbar('Error generating transcripts.', 'error');
+            }
         } finally {
-            setTimeout(() => {
-                setLoadingOverlay(false);
-                setLoadingMessage('');
-            }, 2000);
+            setLoadingOverlay(false);
+            setLoadingMessage('');
         }
     };
 
@@ -265,7 +330,7 @@ function CreateBrdgePage() {
             }
         } catch (error) {
             console.error('Error generating voice clone:', error);
-            setMessage('Error generating voice clone.');
+            showSnackbar('Error generating voice clone.', 'error');
         } finally {
             setTimeout(() => {
                 setLoadingOverlay(false);
@@ -292,10 +357,10 @@ function CreateBrdgePage() {
             setGeneratedAudioFiles(audioFilesResponse.data.files);
 
             setVoiceCloneGenerated(true);
-            setLoadingMessage('Voice generated successfully.');
+            showSnackbar('Voice generated successfully.', 'success');
         } catch (error) {
             console.error('Error generating voice:', error);
-            setMessage('Error generating voice.');
+            showSnackbar('Error generating voice.', 'error');
         } finally {
             setTimeout(() => {
                 setLoadingOverlay(false);
@@ -338,8 +403,6 @@ function CreateBrdgePage() {
         }, 1000);
     };
 
-    const mp3Recorder = useRef(new MicRecorder({ bitRate: 128 }));
-
     const startRecording = () => {
         mp3Recorder.current
             .start()
@@ -349,7 +412,7 @@ function CreateBrdgePage() {
             })
             .catch((error) => {
                 console.error('Error starting recording:', error);
-                setMessage('Microphone access is required to record audio.');
+                showSnackbar('Microphone access is required to record audio.', 'error');
             });
     };
 
@@ -370,6 +433,7 @@ function CreateBrdgePage() {
             .catch((e) => {
                 console.error('Error stopping recording:', e);
                 setIsRecording(false);
+                showSnackbar('Error stopping recording.', 'error');
             });
     };
 
@@ -413,12 +477,12 @@ function CreateBrdgePage() {
 
         try {
             await axios.delete(`http://localhost:5000/api/brdges/${brdgeId}/audio`);
-            setMessage('Audio deleted successfully.');
+            showSnackbar('Audio deleted successfully.', 'success');
             setExistingAudioUrl(null);
             setNewAudioName('');
         } catch (error) {
             console.error('Error deleting audio:', error);
-            setMessage('Error deleting audio.');
+            showSnackbar('Error deleting audio.', 'error');
         }
     };
 
@@ -429,7 +493,6 @@ function CreateBrdgePage() {
             setAudioUrl(URL.createObjectURL(file));
             setNewAudioName(file.name);
 
-            // Upload the new audio file
             const formData = new FormData();
             formData.append('audio', file);
 
@@ -439,11 +502,13 @@ function CreateBrdgePage() {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
-                setMessage('Audio uploaded successfully.');
+                showSnackbar('Audio uploaded successfully.', 'success');
                 setExistingAudioUrl(`http://localhost:5000/api/brdges/${brdgeId}/audio`);
+                setIsAudioUploaded(true);
+                setCurrentStep(1); // Move to the Transcripts step
             } catch (error) {
                 console.error('Error uploading audio:', error);
-                setMessage('Error uploading audio.');
+                showSnackbar('Error uploading audio.', 'error');
             }
         }
     };
@@ -459,11 +524,11 @@ function CreateBrdgePage() {
             await axios.put(`http://localhost:5000/api/brdges/${brdgeId}/audio/rename`, {
                 new_name: newAudioName,
             });
-            setMessage('Audio renamed successfully.');
+            showSnackbar('Audio renamed successfully.', 'success');
             setIsRenaming(false);
         } catch (error) {
             console.error('Error renaming audio:', error);
-            setMessage('Error renaming audio.');
+            showSnackbar('Error renaming audio.', 'error');
         }
     };
 
@@ -481,6 +546,7 @@ function CreateBrdgePage() {
             const audioUrl = `http://localhost:5000/api/brdges/${brdgeId}/audio/generated/${audioFile}`;
             console.log(`Audio URL: ${audioUrl}`);
             setCurrentAudio(audioUrl);
+            setIsAudioLoaded(false);
 
             if (audioRef.current) {
                 audioRef.current.src = audioUrl;
@@ -545,15 +611,17 @@ function CreateBrdgePage() {
     };
 
     useEffect(() => {
-        if (currentAudio) {
-            audioRef.current.load();
+        if (currentAudio && audioRef.current) {
             if (isPlaying) {
                 audioRef.current.play().catch((error) => {
                     console.error('Error playing audio:', error);
+                    setIsPlaying(false);
                 });
+            } else {
+                audioRef.current.pause();
             }
         }
-    }, [currentAudio]);
+    }, [isPlaying, currentAudio]);
 
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
@@ -568,339 +636,473 @@ function CreateBrdgePage() {
         }
     };
 
+    // Define steps for Stepper
+    const steps = ['Audio', 'Transcripts', 'Voice Generation'];
+    const [currentStep, setCurrentStep] = useState(0); // Track current step
+
+    const handleStepChange = (step) => {
+        setExpandedStep(expandedStep === step ? -1 : step);
+    };
+
     const renderSlides = () => {
         const imageUrl = `http://localhost:5000/api/brdges/${brdgeId}/slides/${currentSlide}`;
         return (
-            <div className="border rounded-lg overflow-hidden shadow-lg">
-                <img src={imageUrl} alt={`Slide ${currentSlide}`} className="w-full" />
-                <div className="p-4 bg-white">
-                    <label className="block text-gray-700 font-semibold mb-2">
-                        Transcript for Slide {currentSlide}
-                    </label>
-                    <textarea
-                        className="w-full mt-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        rows="4"
-                        value={transcripts[currentSlide - 1] || ''}
-                        onChange={(e) => handleTranscriptChange(currentSlide - 1, e.target.value)}
-                        placeholder={`Enter transcript for slide ${currentSlide}...`}
-                    />
-                </div>
-                <div className="flex flex-col p-4 bg-gray-100">
-                    <div className="flex justify-between items-center mb-2">
-                        <button
+            <Card variant="outlined" sx={{ mb: 4 }}>
+                <CardHeader title={`Slide ${currentSlide}`} />
+                <CardContent>
+                    <Box sx={{ textAlign: 'center' }}>
+                        <img
+                            src={imageUrl}
+                            alt={`Slide ${currentSlide}`}
+                            style={{ maxWidth: '100%', maxHeight: '400px' }}
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://via.placeholder.com/600x400?text=No+Slide+Available';
+                            }}
+                        />
+                    </Box>
+                    <Box sx={{ mt: 2 }}>
+                        <TextField
+                            label={`Transcript for Slide ${currentSlide}`}
+                            multiline
+                            fullWidth
+                            minRows={4}
+                            variant="outlined"
+                            value={transcripts[currentSlide - 1] || ''}
+                            onChange={(e) => handleTranscriptChange(currentSlide - 1, e.target.value)}
+                            placeholder={`Enter transcript for slide ${currentSlide}...`}
+                        />
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<FaChevronLeft />}
                             onClick={handlePrevSlide}
-                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
                             disabled={currentSlide === 1}
                         >
-                            <FaChevronLeft className="mr-2" /> Previous
-                        </button>
+                            Previous
+                        </Button>
                         {currentAudio && (
-                            <button
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                startIcon={isPlaying ? <FaPause /> : <FaPlay />}
                                 onClick={handlePlayPause}
-                                className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600 flex items-center"
                             >
-                                {isPlaying ? <FaPause className="mr-2" /> : <FaPlay className="mr-2" />}
                                 {isPlaying ? 'Pause' : 'Play'}
-                            </button>
+                            </Button>
                         )}
-                        <button
+                        <Button
+                            variant="contained"
+                            endIcon={<FaChevronRight />}
                             onClick={handleNextSlide}
-                            className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 flex items-center"
                             disabled={currentSlide === numSlides}
                         >
-                            Next <FaChevronRight className="ml-2" />
-                        </button>
-                    </div>
+                            Next
+                        </Button>
+                    </Box>
                     {currentAudio && (
-                        <div className="w-full">
-                            <input
+                        <Box sx={{ mt: 2 }}>
+                            <TextField
                                 type="range"
-                                min="0"
-                                max={audioDuration}
+                                inputProps={{ min: 0, max: audioDuration, step: 1 }}
                                 value={currentTime}
                                 onChange={handleSeek}
-                                className="w-full"
+                                fullWidth
                             />
-                            <div className="flex justify-between text-sm text-gray-600">
-                                <span>{formatTime(currentTime)}</span>
-                                <span>{formatTime(audioDuration)}</span>
-                            </div>
-                        </div>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="caption">{formatTime(currentTime)}</Typography>
+                                <Typography variant="caption">{formatTime(audioDuration)}</Typography>
+                            </Box>
+                        </Box>
                     )}
-                </div>
-                {currentAudio && (
-                    <audio
-                        ref={audioRef}
-                        src={currentAudio}
-                        onLoadedMetadata={(e) => setAudioDuration(e.target.duration)}
-                        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
-                        onEnded={handleAudioEnded}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                    />
-                )}
-            </div>
+                </CardContent>
+            </Card>
         );
     };
 
     const renderWorkflow = () => {
         return (
-            <div className="w-1/3 ml-8">
-                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Workflow</h2>
+            <Paper elevation={3} sx={{ ml: 4, p: 2, borderRadius: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                    Workflow
+                </Typography>
+                <Stepper orientation="vertical" activeStep={currentStep}>
+                    {/* Step 1: Audio */}
+                    <Step key="Audio" completed={isAudioUploaded}>
+                        <StepLabel onClick={() => handleStepChange(0)}>Audio</StepLabel>
+                        <StepContent TransitionComponent={Collapse} TransitionProps={{ unmountOnExit: true }}>
+                            <StyledAccordion expanded={expandedStep === 0} onChange={() => handleStepChange(0)}>
+                                <StyledAccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography>Manage Audio</Typography>
+                                </StyledAccordionSummary>
+                                <StyledAccordionDetails>
+                                    {existingAudioUrl ? (
+                                        <Box>
+                                            <audio controls src={existingAudioUrl} style={{ width: '100%' }}></audio>
+                                            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                                                <Button
+                                                    variant="contained"
+                                                    color="primary"
+                                                    onClick={handleReplaceAudio}
+                                                >
+                                                    Replace
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    color="error"
+                                                    onClick={handleDeleteAudio}
+                                                >
+                                                    Delete
+                                                </Button>
+                                                {isRenaming ? (
+                                                    <>
+                                                        <TextField
+                                                            label="New Audio Name"
+                                                            value={newAudioName}
+                                                            onChange={(e) => setNewAudioName(e.target.value)}
+                                                            variant="outlined"
+                                                        />
+                                                        <Button
+                                                            variant="contained"
+                                                            color="success"
+                                                            onClick={handleSaveAudioName}
+                                                            startIcon={<SaveIcon />}
+                                                        >
+                                                            Save
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <Button
+                                                        variant="contained"
+                                                        color="warning"
+                                                        onClick={handleRenameAudio}
+                                                    >
+                                                        Rename
+                                                    </Button>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    ) : (
+                                        <Box sx={{ display: 'flex', gap: 2 }}>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                onClick={() => handleOptionChange('upload')}
+                                            >
+                                                Upload Audio
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                onClick={handleRecordWalkthrough}
+                                            >
+                                                Record Walkthrough
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </StyledAccordionDetails>
+                            </StyledAccordion>
+                        </StepContent>
+                    </Step>
 
-                {/* Step 1: Upload/Record Audio */}
-                <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 1: Audio</h3>
-                    {existingAudioUrl ? (
-                        <div>
-                            <audio controls src={existingAudioUrl} className="w-full mb-2"></audio>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={handleReplaceAudio}
-                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                                >
-                                    Replace
-                                </button>
-                                <button
-                                    onClick={handleDeleteAudio}
-                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                >
-                                    Delete
-                                </button>
-                                {isRenaming ? (
-                                    <>
-                                        <input
-                                            type="text"
-                                            value={newAudioName}
-                                            onChange={(e) => setNewAudioName(e.target.value)}
-                                            className="px-2 py-1 border rounded"
-                                        />
-                                        <button
-                                            onClick={handleSaveAudioName}
-                                            className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                                        >
-                                            Save
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={handleRenameAudio}
-                                        className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                    {/* Step 2: Transcripts */}
+                    <Step key="Transcripts" completed={transcriptsGenerated}>
+                        <StepLabel onClick={() => handleStepChange(1)}>Transcripts</StepLabel>
+                        <StepContent TransitionComponent={Collapse} TransitionProps={{ unmountOnExit: true }}>
+                            <StyledAccordion expanded={expandedStep === 1} onChange={() => handleStepChange(1)}>
+                                <StyledAccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography>Manage Transcripts</Typography>
+                                </StyledAccordionSummary>
+                                <StyledAccordionDetails>
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={handleGenerateTranscripts}
+                                        disabled={!isAudioUploaded}
                                     >
-                                        Rename
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex space-x-2">
-                            <button
-                                onClick={() => handleOptionChange('upload')}
-                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                            >
-                                Upload Audio
-                            </button>
-                            <button
-                                onClick={handleRecordWalkthrough}
-                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                            >
-                                Record Walkthrough
-                            </button>
-                        </div>
-                    )}
-                </div>
+                                        Generate Transcripts
+                                    </Button>
+                                    {transcriptsGenerated && (
+                                        <Box sx={{ mt: 2 }}>
+                                            {/* Transcript editing UI */}
+                                            <Button
+                                                variant="contained"
+                                                color="primary"
+                                                startIcon={<SaveIcon />}
+                                                onClick={handleSaveTranscripts}
+                                                disabled={!isTranscriptModified}
+                                            >
+                                                Save Transcripts
+                                            </Button>
+                                        </Box>
+                                    )}
+                                </StyledAccordionDetails>
+                            </StyledAccordion>
+                        </StepContent>
+                    </Step>
 
-                {/* Step 2: Generate Transcripts */}
-                <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 2: Transcripts</h3>
-                    <button
-                        onClick={handleGenerateTranscripts}
-                        className={`px-3 py-1 ${existingAudioUrl
-                            ? 'bg-blue-500 hover:bg-blue-600'
-                            : 'bg-gray-300 cursor-not-allowed'
-                            } text-white rounded`}
-                        disabled={!existingAudioUrl}
-                    >
-                        Generate Transcripts
-                    </button>
-                </div>
-
-                {/* Step 3: Generate Voice Clone */}
-                <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Step 3: Voice Generation</h3>
-                    <button
-                        onClick={handleGenerateVoiceClone}
-                        className={`px-3 py-1 ${transcripts.some((t) => t.trim() !== '')
-                            ? 'bg-green-500 hover:bg-green-600'
-                            : 'bg-gray-300 cursor-not-allowed'
-                            } text-white rounded`}
-                        disabled={!transcripts.some((t) => t.trim() !== '')}
-                    >
-                        Generate Voice
-                    </button>
-                </div>
-
-                {/* Voice ID Input */}
-                <div className="mb-6">
-                    <h3 className="text-xl font-semibold mb-2 text-gray-700">Voice ID (optional)</h3>
-                    <input
-                        type="text"
-                        value={voiceId}
-                        onChange={(e) => setVoiceId(e.target.value)}
-                        className="w-full mt-1 px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        placeholder="Enter voice ID to use for voice generation"
-                    />
-                </div>
-            </div>
+                    {/* Step 3: Voice Generation */}
+                    <Step key="Voice Generation" completed={voiceCloneGenerated}>
+                        <StepLabel onClick={() => handleStepChange(2)}>Voice Generation</StepLabel>
+                        <StepContent TransitionComponent={Collapse} TransitionProps={{ unmountOnExit: true }}>
+                            <StyledAccordion expanded={expandedStep === 2} onChange={() => handleStepChange(2)}>
+                                <StyledAccordionSummary expandIcon={<ExpandMoreIcon />}>
+                                    <Typography>Manage Voice Generation</Typography>
+                                </StyledAccordionSummary>
+                                <StyledAccordionDetails>
+                                    <Box sx={{ mb: 2 }}>
+                                        <TextField
+                                            label="Voice ID (optional)"
+                                            variant="outlined"
+                                            fullWidth
+                                            value={voiceId}
+                                            onChange={(e) => setVoiceId(e.target.value)}
+                                            placeholder="Enter voice ID for voice generation"
+                                        />
+                                    </Box>
+                                    <Button
+                                        variant="contained"
+                                        color="secondary"
+                                        onClick={handleGenerateVoiceClone}
+                                        disabled={!transcriptsGenerated}
+                                    >
+                                        Generate Voice
+                                    </Button>
+                                </StyledAccordionDetails>
+                            </StyledAccordion>
+                        </StepContent>
+                    </Step>
+                </Stepper>
+            </Paper>
         );
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center py-8">
-            <div className="bg-white shadow-xl rounded-lg p-8 max-w-6xl w-full relative">
-                <h1 className="text-3xl font-bold mb-6 text-gray-800">
-                    {isEditMode ? 'Edit Brdge' : 'Create New Brdge'}
-                </h1>
-                {message && <p className="mb-4 text-green-600">{message}</p>}
+        <Grid container justifyContent="center" sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', py: 4 }}>
+            <Grid item xs={12} md={10} lg={8}>
+                <Card sx={{ p: 4, position: 'relative' }}>
+                    <Typography variant="h4" gutterBottom>
+                        {isEditMode ? 'Edit Brdge' : 'Create New Brdge'}
+                    </Typography>
+                    {message && (
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                            {message}
+                        </Alert>
+                    )}
 
-                <div className="flex">
-                    <div className="w-2/3">
-                        {/* Brdge creation form */}
-                        {!brdgeId && (
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div>
-                                    <label className="block text-gray-700 font-semibold">Brdge Name</label>
-                                    <input
-                                        type="text"
-                                        className="w-full mt-2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    <Grid container spacing={4}>
+                        <Grid item xs={12} md={6}>
+                            {/* Brdge creation form */}
+                            {!brdgeId && (
+                                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                    <TextField
+                                        label="Brdge Name"
+                                        variant="outlined"
+                                        fullWidth
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         required
                                     />
-                                </div>
-                                <div>
-                                    <label className="block text-gray-700 font-semibold">
-                                        Presentation (PDF)
-                                    </label>
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        className="w-full mt-2"
-                                        onChange={(e) => setPresentation(e.target.files[0])}
-                                    />
+                                    <Button variant="contained" component="label">
+                                        Upload Presentation (PDF)
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            hidden
+                                            onChange={(e) => setPresentation(e.target.files[0])}
+                                        />
+                                    </Button>
                                     {isEditMode && !presentation && (
-                                        <p className="text-gray-600 mt-2">
+                                        <Typography variant="body2" color="textSecondary">
                                             Current presentation will be used if no new file is selected.
-                                        </p>
+                                        </Typography>
                                     )}
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <button
-                                        type="submit"
-                                        className={`px-6 py-2 ${isProcessing
-                                            ? 'bg-gray-400'
-                                            : 'bg-indigo-600 hover:bg-indigo-700'
-                                            } text-white font-semibold rounded-lg`}
-                                        disabled={isProcessing}
-                                    >
-                                        {isProcessing
-                                            ? 'Processing...'
-                                            : isEditMode
-                                                ? 'Update Brdge'
-                                                : 'Create Brdge'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-700"
-                                        onClick={() => navigate(-1)}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        {/* Display Slides and Transcripts */}
-                        {brdgeId && numSlides > 0 && (
-                            <>
-                                {renderSlides()}
-
-                                {/* Save Transcripts Button */}
-                                {isTranscriptModified && (
-                                    <div className="mt-4">
-                                        <button
-                                            onClick={handleSaveTranscripts}
-                                            className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600"
+                                    <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                                        <Button
+                                            type="submit"
+                                            variant="contained"
+                                            color="primary"
+                                            disabled={isProcessing}
+                                            startIcon={isProcessing && <CircularProgress size={20} />}
                                         >
-                                            Save Changes
-                                        </button>
-                                    </div>
-                                )}
+                                            {isProcessing ? 'Processing...' : isEditMode ? 'Update Brdge' : 'Create Brdge'}
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            color="secondary"
+                                            onClick={() => navigate(-1)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </Box>
+                                </Box>
+                            )}
 
-                                {/* Regenerate Audio Button */}
-                                <div className="mt-4">
-                                    <button
-                                        onClick={handleGenerateVoiceClone}
-                                        className={`px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 ${!transcriptsGenerated ? 'cursor-not-allowed opacity-50' : ''
-                                            }`}
-                                        disabled={!transcriptsGenerated}
-                                    >
-                                        Regenerate Audio
-                                    </button>
-                                </div>
+                            {/* Display Slides and Transcripts */}
+                            {brdgeId && numSlides > 0 && (
+                                <>
+                                    {renderSlides()}
 
-                                {/* Deploy Brdge Button */}
-                                <div className="mt-4">
-                                    <button
-                                        onClick={handleDeployBrdge}
-                                        className={`px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 ${generatedAudioFiles.length === 0 ? 'cursor-not-allowed opacity-50' : ''}`}
-                                        disabled={generatedAudioFiles.length === 0} // Updated condition
-                                    >
-                                        <FaShareAlt className="inline mr-2" />
-                                        Deploy Brdge
-                                    </button>
-                                    {deployLink && (
-                                        <p className="mt-2 text-blue-600 break-all">
-                                            Shareable Link: <a href={deployLink} target="_blank" rel="noopener noreferrer">{deployLink}</a>
-                                        </p>
+                                    {/* Save Transcripts Button */}
+                                    {isTranscriptModified && (
+                                        <Box sx={{ mt: 2 }}>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                onClick={handleSaveTranscripts}
+                                                startIcon={<SaveIcon />}
+                                            >
+                                                Save Changes
+                                            </Button>
+                                        </Box>
                                     )}
-                                </div>
 
-                                {/* Workflow steps */}
-                                {renderWorkflow()}
-                            </>
-                        )}
-                    </div>
+                                    {/* Regenerate Audio Button */}
+                                    <Box sx={{ mt: 2 }}>
+                                        <Button
+                                            variant="contained"
+                                            color="warning"
+                                            onClick={handleGenerateVoiceClone}
+                                            disabled={!transcriptsGenerated}
+                                        >
+                                            Regenerate Audio
+                                        </Button>
+                                    </Box>
+
+                                    {/* Deploy Brdge Button */}
+                                    <Box sx={{ mt: 2 }}>
+                                        <Button
+                                            variant="contained"
+                                            color="info"
+                                            startIcon={<FaShareAlt />}
+                                            onClick={handleDeployBrdge}
+                                            disabled={generatedAudioFiles.length === 0}
+                                        >
+                                            Deploy Brdge
+                                        </Button>
+                                        {deployLink && (
+                                            <Typography variant="body2" color="primary" sx={{ mt: 1 }}>
+                                                Shareable Link:{' '}
+                                                <a href={deployLink} target="_blank" rel="noopener noreferrer">
+                                                    {deployLink}
+                                                </a>
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                </>
+                            )}
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            {/* Workflow steps */}
+                            {brdgeId && renderWorkflow()}
+                        </Grid>
+                    </Grid>
 
                     {/* Loading Overlay */}
                     {loadingOverlay && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <div className="text-white text-xl">{loadingMessage}</div>
-                        </div>
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 1300,
+                            }}
+                        >
+                            <CircularProgress color="inherit" />
+                            <Typography variant="h6" color="white" sx={{ mt: 2 }}>
+                                {loadingMessage}
+                            </Typography>
+                        </Box>
                     )}
 
                     {/* Countdown Overlay */}
                     {showCountdown && (
-                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                            <div className="text-white text-6xl font-bold">{countdown}</div>
-                        </div>
+                        <Box
+                            sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                backgroundColor: 'rgba(0,0,0,0.7)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 1400,
+                            }}
+                        >
+                            <Typography variant="h1" color="white">
+                                {countdown}
+                            </Typography>
+                        </Box>
                     )}
 
                     {/* Recording Indicator */}
                     {isRecording && (
-                        <div className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full animate-pulse">
-                            Recording...
-                            <button
+                        <Box
+                            sx={{
+                                position: 'fixed',
+                                top: 16,
+                                right: 16,
+                                backgroundColor: 'error.main',
+                                color: 'white',
+                                px: 3,
+                                py: 1,
+                                borderRadius: '50px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                zIndex: 1500,
+                            }}
+                        >
+                            <Typography variant="body1">Recording...</Typography>
+                            <Button
+                                variant="contained"
+                                color="inherit"
+                                size="small"
                                 onClick={handleFinishRecording}
-                                className="ml-2 bg-white text-red-500 px-2 py-1 rounded-full text-sm"
                             >
                                 Stop
-                            </button>
-                        </div>
+                            </Button>
+                        </Box>
                     )}
-                </div>
-            </div>
-        </div>
+
+                    {/* Audio Element */}
+                    {currentAudio && (
+                        <audio
+                            ref={audioRef}
+                            src={currentAudio}
+                            onLoadedMetadata={(e) => setAudioDuration(e.target.duration)}
+                            onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                            onEnded={handleAudioEnded}
+                            onPlay={() => setIsPlaying(true)}
+                            onPause={() => setIsPlaying(false)}
+                        />
+                    )}
+
+                    {/* Snackbar for notifications */}
+                    <Snackbar
+                        open={snackbarOpen}
+                        autoHideDuration={6000}
+                        onClose={handleCloseSnackbar}
+                        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                    >
+                        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+                            {snackbarMessage}
+                        </Alert>
+                    </Snackbar>
+                </Card>
+            </Grid>
+        </Grid>
     );
 }
 

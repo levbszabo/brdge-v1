@@ -91,11 +91,12 @@ function BrdgeListPage() {
                         {filteredBrdges.map((brdge) => (
                             <React.Fragment key={brdge.id}>
                                 <ListItem
-                                    button
+                                    component="div"
                                     onClick={() => navigate(`/viewBrdge/${brdge.id}`)}
                                     sx={{
                                         '&:hover': {
                                             backgroundColor: 'action.hover',
+                                            cursor: 'pointer',
                                         },
                                     }}
                                 >
