@@ -3,8 +3,16 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import os
 
+DB_USER = os.getenv("DB_USER")
+DB_HOST = os.getenv("DB_HOST")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///brdges.db"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///brdges.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    f"mysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 # Use an environment variable in production

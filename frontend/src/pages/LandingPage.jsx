@@ -247,7 +247,7 @@ function LandingPage() {
                                 }
                             }}
                         >
-                            Join Waitlist
+                            Join Beta
                         </Button>
                     </motion.div>
                 </Box>
