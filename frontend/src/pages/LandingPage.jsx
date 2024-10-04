@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
+import { BACKEND_URL } from '../config';
 
 const StepIcon = ({ icon }) => {
     const [ref, inView] = useInView({
@@ -97,6 +98,17 @@ function LandingPage() {
             description: "Easily update and improve based on feedback and new information."
         }
     ];
+
+    // Updated fetchData function with correct endpoint
+    const fetchData = async () => {
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/brdges`); // Replaced 'your-endpoint' with actual endpoint
+            const data = await response.json();
+            // ... handle data ...
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
 
     return (
         <Box sx={{ flexGrow: 1 }}>

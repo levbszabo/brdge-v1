@@ -19,6 +19,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import { BACKEND_URL } from '../config';
 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
@@ -26,10 +27,16 @@ function BrdgeListPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        axios
-            .get('http://localhost:5000/api/brdges')
-            .then((response) => setBrdges(response.data))
-            .catch((error) => console.error('Error fetching brdges:', error));
+        const getBrdges = async () => {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/brdges`);
+                const brdges = await response.json();
+                setBrdges(brdges);
+            } catch (error) {
+                console.error('Error fetching brdges:', error);
+            }
+        };
+        getBrdges();
     }, []);
 
     const filteredBrdges = brdges.filter((brdge) =>
