@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 import os
 
 DB_USER = os.getenv("DB_USER")
@@ -16,6 +17,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = (
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 # Use an environment variable in production
+
+# Enable CORS for all origins
+CORS(app)
 
 db = SQLAlchemy(app)
 
