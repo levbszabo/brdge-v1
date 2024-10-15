@@ -1,6 +1,7 @@
 import React from 'react';
 import { Container, Typography, Grid, Card, CardContent, CardActions, Button } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { BACKEND_URL } from '../config';
 
 const demoData = [
     { id: 1, title: 'Employee Onboarding', description: 'Interactive AI-powered onboarding presentation' },

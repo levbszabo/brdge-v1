@@ -102,7 +102,7 @@ function LandingPage() {
     // Updated fetchData function with correct endpoint
     const fetchData = async () => {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/brdges`); // Replaced 'your-endpoint' with actual endpoint
+            const response = await fetch(`${BACKEND_URL}/brdges`);
             const data = await response.json();
             // ... handle data ...
         } catch (error) {

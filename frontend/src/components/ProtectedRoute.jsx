@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
+import { BACKEND_URL } from '../config';
 
 const ProtectedRoute = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -13,7 +14,7 @@ const ProtectedRoute = ({ children }) => {
             }
 
             try {
-                const response = await fetch('http://localhost:5000/api/check-auth', {
+                const response = await fetch(`${BACKEND_URL}/check-auth`, {
                     headers: {
                         'Authorization': token
                     }

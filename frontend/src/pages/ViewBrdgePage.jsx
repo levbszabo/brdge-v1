@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { Box, Card, CardMedia, CardContent, Typography, Grid, Button, Slider, Container } from '@mui/material';
 import { PlayArrow, Pause, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { BACKEND_URL } from '../config';
 
 function ViewBrdgePage() {
     const { id } = useParams();
@@ -19,7 +20,7 @@ function ViewBrdgePage() {
     useEffect(() => {
         // Fetch Brdge data
         axios
-            .get(`http://localhost:5000/api/brdges/${id}`)
+            .get(`${BACKEND_URL}/brdges/${id}`)
             .then((response) => {
                 setBrdge(response.data);
                 setNumSlides(response.data.num_slides);
@@ -30,7 +31,7 @@ function ViewBrdgePage() {
 
         // Fetch generated audio files
         axios
-            .get(`http://localhost:5000/api/brdges/${id}/audio/generated`)
+            .get(`${BACKEND_URL}/brdges/${id}/audio/generated`)
             .then((response) => {
                 setGeneratedAudioFiles(response.data.files);
             })
@@ -48,7 +49,7 @@ function ViewBrdgePage() {
     const loadAudioForSlide = (slideNumber) => {
         if (generatedAudioFiles.length >= slideNumber) {
             const audioFile = generatedAudioFiles[slideNumber - 1];
-            const audioUrl = `http://localhost:5000/api/brdges/${id}/audio/generated/${audioFile}`;
+            const audioUrl = `${BACKEND_URL}/brdges/${id}/audio/generated/${audioFile}`;
             setCurrentAudio(audioUrl);
 
             if (audioRef.current) {
@@ -114,7 +115,7 @@ function ViewBrdgePage() {
 
     const renderSlides = () => {
         const imageUrl = brdge
-            ? `http://localhost:5000/api/brdges/${id}/slides/${currentSlide}`
+            ? `${BACKEND_URL}/brdges/${id}/slides/${currentSlide}`
             : '';
         const transcript = brdge && brdge.transcripts ? brdge.transcripts[currentSlide - 1] : '';
 

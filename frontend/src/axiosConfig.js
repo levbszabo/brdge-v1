@@ -1,8 +1,9 @@
 // src/axiosConfig.js
 import axios from 'axios';
+import { BACKEND_URL } from './config';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5000', // Update this if needed
+    baseURL: BACKEND_URL,
 });
 
 export default axiosInstance;

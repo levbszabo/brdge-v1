@@ -29,7 +29,7 @@ function BrdgeListPage() {
     useEffect(() => {
         const getBrdges = async () => {
             try {
-                const response = await fetch(`${BACKEND_URL}/api/brdges`);
+                const response = await fetch(`${BACKEND_URL}/brdges`);
                 const brdges = await response.json();
                 setBrdges(brdges);
             } catch (error) {

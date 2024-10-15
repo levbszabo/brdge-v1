@@ -32,7 +32,7 @@ S3_REGION = os.getenv("S3_REGION", "us-east-1")  # Default to 'us-east-1' if not
 s3_client = boto3.client("s3", region_name=S3_REGION)
 
 # Enable CORS for the Flask app
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["PUT"])
@@ -781,3 +781,9 @@ def check_auth():
         return jsonify({"error": "Token has expired"}), 401
     except InvalidTokenError:
         return jsonify({"error": "Invalid token"}), 401
+
+
+@app.route("/api/your-endpoint", methods=["GET"])
+def your_endpoint():
+    data = {"message": "Hello from the backend!"}
+    return jsonify(data)

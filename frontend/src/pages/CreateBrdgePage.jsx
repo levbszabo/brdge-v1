@@ -117,14 +117,14 @@ function CreateBrdgePage() {
 
     const fetchBrdgeData = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/api/brdges/${id}`);
+            const response = await axios.get(`${BACKEND_URL}/brdges/${id}`);
             const brdge = response.data;
             console.log('Fetched brdge data:', brdge);
             setName(brdge.name);
             setBrdgeId(brdge.id);
             setNumSlides(brdge.num_slides);
             if (brdge.audio_filename) {
-                const audioFileUrl = `${BACKEND_URL}/api/brdges/${brdge.id}/audio`;
+                const audioFileUrl = `${BACKEND_URL}/brdges/${brdge.id}/audio`;
                 setExistingAudioUrl(audioFileUrl);
                 setNewAudioName(brdge.audio_filename);
                 setIsAudioUploaded(true); // Set this to true if audio exists
@@ -133,7 +133,7 @@ function CreateBrdgePage() {
 
             // Attempt to fetch aligned transcripts
             try {
-                const transcriptsResponse = await axios.get(`${BACKEND_URL}/api/brdges/${id}/transcripts/aligned`);
+                const transcriptsResponse = await axios.get(`${BACKEND_URL}/brdges/${id}/transcripts/aligned`);
                 const alignedData = transcriptsResponse.data;
                 const updatedTranscripts = alignedData.image_transcripts.map(item => item.transcript);
                 setTranscripts(updatedTranscripts);
@@ -162,7 +162,7 @@ function CreateBrdgePage() {
 
     const fetchGeneratedAudioFiles = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/api/brdges/${brdgeId}/audio/generated`);
+            const response = await axios.get(`${BACKEND_URL}/brdges/${brdgeId}/audio/generated`);
             setGeneratedAudioFiles(response.data.files);
             console.log('Fetched generated audio files:', response.data.files);
         } catch (error) {
@@ -211,10 +211,10 @@ function CreateBrdgePage() {
 
             if (isEditMode) {
                 // Update existing brdge
-                response = await axios.put(`${BACKEND_URL}/api/brdges/${id}`, formData);
+                response = await axios.put(`${BACKEND_URL}/brdges/${id}`, formData);
             } else {
                 // Create new brdge
-                response = await axios.post(`${BACKEND_URL}/api/brdges`, formData);
+                response = await axios.post(`${BACKEND_URL}/brdges`, formData);
             }
 
             showSnackbar(response.data.message, 'success');
@@ -244,7 +244,7 @@ function CreateBrdgePage() {
         setLoadingMessage('Saving transcripts...');
         try {
             await axios.put(
-                `${BACKEND_URL}/api/brdges/${brdgeId}/transcripts/aligned`,
+                `${BACKEND_URL}/brdges/${brdgeId}/transcripts/aligned`,
                 { transcripts }
             );
             showSnackbar('Transcripts saved successfully.', 'success');
@@ -271,11 +271,11 @@ function CreateBrdgePage() {
 
         try {
             // Step 1: Transcribe audio
-            await axios.post(`${BACKEND_URL}/api/brdges/${brdgeId}/audio/transcribe`);
+            await axios.post(`${BACKEND_URL}/brdges/${brdgeId}/audio/transcribe`);
 
             // Step 2: Align transcript with slides
             const response = await axios.post(
-                `${BACKEND_URL}/api/brdges/${brdgeId}/audio/align_transcript`
+                `${BACKEND_URL}/brdges/${brdgeId}/audio/align_transcript`
             );
 
             // Update the transcripts with aligned transcripts
@@ -325,7 +325,7 @@ function CreateBrdgePage() {
                 await handleGenerateVoice();
             } else {
                 // Clone voice first
-                await axios.post(`${BACKEND_URL}/api/brdges/${brdgeId}/audio/clone_voice`);
+                await axios.post(`${BACKEND_URL}/brdges/${brdgeId}/audio/clone_voice`);
                 // Then generate voice
                 await handleGenerateVoice();
             }
@@ -346,13 +346,13 @@ function CreateBrdgePage() {
 
         try {
             const response = await axios.post(
-                `${BACKEND_URL}/api/brdges/${brdgeId}/audio/generate_voice`,
+                `${BACKEND_URL}/brdges/${brdgeId}/audio/generate_voice`,
                 { voice_id: voiceId } // Include voice ID if provided
             );
 
             // Fetch the list of generated audio files
             const audioFilesResponse = await axios.get(
-                `${BACKEND_URL}/api/brdges/${brdgeId}/audio/generated`
+                `${BACKEND_URL}/brdges/${brdgeId}/audio/generated`
             );
             console.log('Received audio files:', audioFilesResponse.data.files);
             setGeneratedAudioFiles(audioFilesResponse.data.files);
@@ -477,7 +477,7 @@ function CreateBrdgePage() {
         if (!brdgeId) return;
 
         try {
-            await axios.delete(`${BACKEND_URL}/api/brdges/${brdgeId}/audio`);
+            await axios.delete(`${BACKEND_URL}/brdges/${brdgeId}/audio`);
             showSnackbar('Audio deleted successfully.', 'success');
             setExistingAudioUrl(null);
             setNewAudioName('');
@@ -498,13 +498,13 @@ function CreateBrdgePage() {
             formData.append('audio', file);
 
             try {
-                await axios.post(`${BACKEND_URL}/api/brdges/${brdgeId}/audio`, formData, {
+                await axios.post(`${BACKEND_URL}/brdges/${brdgeId}/audio`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
                 showSnackbar('Audio uploaded successfully.', 'success');
-                setExistingAudioUrl(`${BACKEND_URL}/api/brdges/${brdgeId}/audio`);
+                setExistingAudioUrl(`${BACKEND_URL}/brdges/${brdgeId}/audio`);
                 setIsAudioUploaded(true);
                 setCurrentStep(1); // Move to the Transcripts step
             } catch (error) {
@@ -522,7 +522,7 @@ function CreateBrdgePage() {
         if (!brdgeId || !newAudioName) return;
 
         try {
-            await axios.put(`${BACKEND_URL}/api/brdges/${brdgeId}/audio/rename`, {
+            await axios.put(`${BACKEND_URL}/brdges/${brdgeId}/audio/rename`, {
                 new_name: newAudioName,
             });
             showSnackbar('Audio renamed successfully.', 'success');
@@ -544,7 +544,7 @@ function CreateBrdgePage() {
         if (generatedAudioFiles.length >= slideNumber) {
             const audioFile = generatedAudioFiles[slideNumber - 1];
             console.log(`Selected audio file: ${audioFile}`);
-            const audioUrl = `${BACKEND_URL}/api/brdges/${brdgeId}/audio/generated/${audioFile}`;
+            const audioUrl = `${BACKEND_URL}/brdges/${brdgeId}/audio/generated/${audioFile}`;
             console.log(`Audio URL: ${audioUrl}`);
             setCurrentAudio(audioUrl);
             setIsAudioLoaded(false);
@@ -646,7 +646,7 @@ function CreateBrdgePage() {
     };
 
     const renderSlides = () => {
-        const imageUrl = `${BACKEND_URL}/api/brdges/${brdgeId}/slides/${currentSlide}`;
+        const imageUrl = `${BACKEND_URL}/brdges/${brdgeId}/slides/${currentSlide}`;
         return (
             <Card variant="outlined" sx={{ mb: 4 }}>
                 <CardHeader title={`Slide ${currentSlide}`} />
