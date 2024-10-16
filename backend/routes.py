@@ -1,7 +1,7 @@
 # routes.py
 # brian voice :nPczCjzI2devNBz1zQrb
 import re
-from flask import request, jsonify, send_file, abort, url_for
+from flask import request, jsonify, send_file, abort, url_for, current_app
 from flask_cors import CORS
 from app import app, db
 from werkzeug.utils import secure_filename
@@ -22,7 +22,7 @@ import json
 from werkzeug.security import check_password_hash, generate_password_hash
 from jwt import encode, decode, ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timedelta
-from flask import current_app
+from werkzeug.exceptions import RequestEntityTooLarge
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -133,73 +133,82 @@ def get_brdges():
 
 @app.route("/api/brdges", methods=["POST"])
 def create_brdge():
-    name = request.form.get("name")
-    presentation = request.files.get("presentation")
+    try:
+        name = request.form.get("name")
+        presentation = request.files.get("presentation")
 
-    if not all([name, presentation]):
-        return jsonify({"error": "Missing data"}), 400
+        if not all([name, presentation]):
+            return jsonify({"error": "Missing data"}), 400
 
-    # Create brdge data first to get the ID
-    brdge = Brdge(
-        name=name,
-        presentation_filename="",  # Will update after S3 upload
-        audio_filename="",  # Placeholder for now
-        folder="",  # Will update after S3 upload
-    )
-    db.session.add(brdge)
-    db.session.flush()  # Assigns an ID without committing
+        # Create brdge data first to get the ID
+        brdge = Brdge(
+            name=name,
+            presentation_filename="",  # Will update after S3 upload
+            audio_filename="",  # Placeholder for now
+            folder="",  # Will update after S3 upload
+        )
+        db.session.add(brdge)
+        db.session.flush()  # Assigns an ID without committing
 
-    # Generate unique filename for the PDF
-    presentation_filename = secure_filename(f"{uuid.uuid4()}_{presentation.filename}")
+        # Generate unique filename for the PDF
+        presentation_filename = secure_filename(
+            f"{uuid.uuid4()}_{presentation.filename}"
+        )
 
-    # Save the PDF locally for processing
-    pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
-    os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
-    presentation.save(pdf_temp_path)
+        # Save the PDF locally for processing
+        pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
+        os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
+        presentation.save(pdf_temp_path)
 
-    # Convert PDF to images
-    slide_images = pdf_to_images(pdf_temp_path)
+        # Convert PDF to images
+        slide_images = pdf_to_images(pdf_temp_path)
 
-    # Upload PDF and images to S3
-    s3_folder = f"brdges/{brdge.id}"
-    s3_presentation_key = f"{s3_folder}/{presentation_filename}"
+        # Upload PDF and images to S3
+        s3_folder = f"brdges/{brdge.id}"
+        s3_presentation_key = f"{s3_folder}/{presentation_filename}"
 
-    # Upload the original PDF to S3
-    s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
+        # Upload the original PDF to S3
+        s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
 
-    # Update brdge data with S3 information
-    brdge.presentation_filename = presentation_filename
-    brdge.folder = s3_folder
+        # Update brdge data with S3 information
+        brdge.presentation_filename = presentation_filename
+        brdge.folder = s3_folder
 
-    # Upload slide images to S3
-    num_slides = len(slide_images)
-    for idx, image in enumerate(slide_images):
-        image_filename = f"slide_{idx+1}.png"
-        s3_image_key = f"{s3_folder}/slides/{image_filename}"
+        # Upload slide images to S3
+        num_slides = len(slide_images)
+        for idx, image in enumerate(slide_images):
+            image_filename = f"slide_{idx+1}.png"
+            s3_image_key = f"{s3_folder}/slides/{image_filename}"
 
-        # Save image to a bytes buffer
-        img_byte_arr = BytesIO()
-        image.save(img_byte_arr, format="PNG")
-        img_byte_arr.seek(0)
+            # Save image to a bytes buffer
+            img_byte_arr = BytesIO()
+            image.save(img_byte_arr, format="PNG")
+            img_byte_arr.seek(0)
 
-        # Upload image to S3
-        s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
+            # Upload image to S3
+            s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
 
-    # Clean up temporary PDF file
-    os.remove(pdf_temp_path)
+        # Clean up temporary PDF file
+        os.remove(pdf_temp_path)
 
-    db.session.commit()
+        db.session.commit()
 
-    return (
-        jsonify(
-            {
-                "message": "Brdge created successfully",
-                "brdge": brdge.to_dict(),
-                "num_slides": num_slides,  # Return the number of slides instead of URLs
-            }
-        ),
-        201,
-    )
+        return (
+            jsonify(
+                {
+                    "message": "Brdge created successfully",
+                    "brdge": brdge.to_dict(),
+                    "num_slides": num_slides,  # Return the number of slides instead of URLs
+                }
+            ),
+            201,
+        )
+
+    except RequestEntityTooLarge:
+        return jsonify({"error": "File too large. Maximum size is 16 MB."}), 413
+    except Exception as e:
+        print(f"Error creating brdge: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/audio", methods=["GET"])

@@ -1,0 +1,80 @@
+.brdge-player {
+    margin: 20px auto;
+    max-width: 800px;
+    width: 100%;
+}
+
+.brdge-player-card {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.brdge-player-image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+}
+
+.brdge-player-controls {
+    padding: 16px;
+    background-color: #f5f5f5;
+}
+
+.brdge-player-buttons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.brdge-player-slider {
+    padding: 0 16px;
+}
+
+.brdge-player-time {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.brdge-player-loading,
+.brdge-player-error {
+    text-align: center;
+    padding: 20px;
+    font-size: 18px;
+    color: #666;
+}
+
+.brdge-player-error {
+    color: #d32f2f;
+}
+
+/* Add styles for larger buttons */
+.brdge-player .MuiButton-root {
+    font-size: 1rem;
+    padding: 10px 20px;
+}
+
+/* Ensure buttons are spaced evenly on smaller screens */
+@media (max-width: 600px) {
+    .brdge-player {
+        margin: 10px auto;
+    }
+
+    .brdge-player-card {
+        border-radius: 8px;
+    }
+
+    .brdge-player-controls {
+        padding: 12px;
+    }
+
+    .brdge-player-buttons {
+        margin-bottom: 12px;
+    }
+
+    .brdge-player-slider {
+        padding: 0 12px;
+    }
+}

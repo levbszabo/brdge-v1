@@ -1,60 +1,91 @@
 import React, { useState } from 'react';
-import { Container, Typography, TextField, Button, Box, Snackbar } from '@mui/material';
-import { motion } from 'framer-motion';
+import {
+    Box,
+    Container,
+    Typography,
+    TextField,
+    Button,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    Paper,
+} from '@mui/material';
+import { CheckCircleOutline } from '@mui/icons-material';
 
 function WaitlistPage() {
     const [email, setEmail] = useState('');
-    const [openSnackbar, setOpenSnackbar] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Here you would typically send the email to your backend
-        console.log('Email submitted:', email);
-        setOpenSnackbar(true);
-        setEmail('');
+        // Handle form submission here
+        console.log('Submitted email:', email);
+        // You would typically send this to your backend or a service like Mailchimp
     };
 
+    const benefits = [
+        "Early access to Brdge AI's cutting-edge features",
+        "Exclusive onboarding and personalized support",
+        "Opportunity to shape the future of AI-powered presentations",
+        "Special pricing for early adopters",
+    ];
+
     return (
-        <Container maxWidth="md">
-            <Box sx={{ my: 8, textAlign: 'center' }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <Typography variant="h2" component="h1" gutterBottom>
-                        Join the Waitlist
-                    </Typography>
-                    <Typography variant="h5" component="p" color="text.secondary" sx={{ mb: 4 }}>
-                        Be the first to experience Brdge AI and transform your knowledge sharing.
-                    </Typography>
-                    <form onSubmit={handleSubmit}>
-                        <TextField
-                            fullWidth
-                            label="Email Address"
-                            variant="outlined"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            sx={{ mb: 2 }}
-                        />
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            color="primary"
-                            size="large"
-                            sx={{ py: 1.5, px: 4 }}
-                        >
-                            Join Waitlist
-                        </Button>
-                    </form>
-                </motion.div>
+        <Container maxWidth="md" sx={{ py: 8 }}>
+            <Box textAlign="center" mb={6}>
+                <Typography variant="h3" component="h1" gutterBottom>
+                    Join the Brdge AI Waitlist
+                </Typography>
+                <Typography variant="h5" color="text.secondary" paragraph>
+                    Be among the first to revolutionize your knowledge sharing with AI-powered presentations.
+                </Typography>
             </Box>
-            <Snackbar
-                open={openSnackbar}
-                autoHideDuration={6000}
-                onClose={() => setOpenSnackbar(false)}
-                message="Thank you for joining our waitlist!"
-            />
+
+            <Paper elevation={3} sx={{ p: 4, mb: 6 }}>
+                <Typography variant="h6" gutterBottom>
+                    Why Join Our Waitlist?
+                </Typography>
+                <List>
+                    {benefits.map((benefit, index) => (
+                        <ListItem key={index}>
+                            <ListItemIcon>
+                                <CheckCircleOutline color="primary" />
+                            </ListItemIcon>
+                            <ListItemText primary={benefit} />
+                        </ListItem>
+                    ))}
+                </List>
+            </Paper>
+
+            <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+                <TextField
+                    margin="normal"
+                    required
+                    fullWidth
+                    id="email"
+                    label="Email Address"
+                    name="email"
+                    autoComplete="email"
+                    autoFocus
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+                <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                >
+                    Join Waitlist
+                </Button>
+            </Box>
+
+            <Box mt={4} textAlign="center">
+                <Typography variant="body2" color="text.secondary">
+                    By joining our waitlist, you'll be the first to know when Brdge AI launches.
+                    We're excited to have you on board as we transform the way knowledge is shared and consumed.
+                </Typography>
+            </Box>
         </Container>
     );
 }

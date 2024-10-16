@@ -12,6 +12,7 @@ import {
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { BACKEND_URL } from '../config';
+import BrdgePlayer from '../components/BrdgePlayer'; // Added import
 
 const StepIcon = ({ icon }) => {
     const [ref, inView] = useInView({
@@ -112,15 +113,19 @@ function LandingPage() {
 
     return (
         <Box sx={{ flexGrow: 1 }}>
-            <Container maxWidth="lg">
-                <Box sx={{ my: 6, textAlign: 'center' }}> {/* Reduced my from 12 to 6 */}
+            <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+                <Box sx={{ my: { xs: 4, sm: 6 }, textAlign: 'center' }}>
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                         <Typography
-                            variant="h3" /* Changed from h2 to h3 */
+                            variant="h3"
                             component="h1"
                             gutterBottom
                             align="center"
-                            sx={{ fontWeight: 'bold', mb: 2 }} /* Reduced mb from 4 to 2 */
+                            sx={{
+                                fontWeight: 'bold',
+                                mb: 2,
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                            }}
                         >
                             Unlock Knowledge with AI-Powered Presentations
                         </Typography>
@@ -130,28 +135,42 @@ function LandingPage() {
                             gutterBottom
                             align="center"
                             color="text.secondary"
-                            sx={{ mb: 6, maxWidth: '800px', mx: 'auto' }}
+                            sx={{
+                                mb: 4,
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
+                            }}
                         >
-                            Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool.
+                            Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool. Try a sample below.
                         </Typography>
+
+                        {/* BrdgePlayer component */}
+                        <Box sx={{ my: 4 }}>
+                            <BrdgePlayer
+                                brdgeId={9}
+                                onError={(error) => console.error('BrdgePlayer error:', error)}
+                            />
+                        </Box>
+
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                                 component={Link}
-                                to="/demo"
+                                to="/demo" // Changed from "/use-cases" to "/demo"
                                 variant="contained"
                                 color="primary"
-                                size="large" /* Consider changing to "medium" for a smaller button */
+                                size="large"
                                 endIcon={<ArrowForward />}
                                 sx={{
-                                    py: 1.5, /* Reduced padding y from 2 to 1.5 */
-                                    px: 5,    /* Reduced padding x from 6 to 5 */
-                                    fontSize: '1.1rem', /* Slightly smaller font size */
+                                    py: 1.5,
+                                    px: 5,
+                                    fontSize: '1.1rem',
                                     '&:hover': {
                                         backgroundColor: theme.palette.primary.dark,
                                     }
                                 }}
                             >
-                                Try Brdge AI
+                                Brdge AI Use Cases
                             </Button>
                         </motion.div>
                     </motion.div>
