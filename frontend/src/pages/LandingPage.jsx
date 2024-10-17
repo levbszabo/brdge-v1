@@ -1,5 +1,5 @@
 // src/pages/LandingPage.jsx
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Typography, Button, Container, Grid, Box,
@@ -11,71 +11,76 @@ import {
 } from '@mui/icons-material';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { BACKEND_URL } from '../config';
-import BrdgePlayer from '../components/BrdgePlayer'; // Added import
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import BrdgePlayer from '../components/BrdgePlayer';
+import './LandingPage.css';
 
 const StepIcon = ({ icon }) => {
-    const [ref, inView] = useInView({
-        triggerOnce: true,
-        threshold: 0.1,
-    });
-
     return (
-        <motion.div
-            ref={ref}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0 }}
-            transition={{ duration: 0.5 }}
-            whileHover={{ scale: 1.1, transition: { duration: 0.2 } }}
-        >
-            <Box sx={{
-                backgroundColor: 'primary.main',
-                borderRadius: '50%',
-                p: 2,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                boxShadow: 3,
-                mb: 2,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                    backgroundColor: 'primary.dark',
-                    transform: 'translateY(-5px)',
-                }
-            }}>
-                {React.cloneElement(icon, { sx: { fontSize: 40, color: 'white' } })}
-            </Box>
-        </motion.div>
+        <Box sx={{
+            backgroundColor: 'primary.main',
+            borderRadius: '50%',
+            p: 2,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            boxShadow: 3,
+            mb: 2,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+                backgroundColor: 'primary.dark',
+                transform: 'translateY(-5px)',
+            }
+        }}>
+            {React.cloneElement(icon, { sx: { fontSize: 40, color: 'white' } })}
+        </Box>
     );
 };
 
-const UseCase = ({ icon, title, description }) => (
-    <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-        <Paper elevation={3} sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <StepIcon icon={icon} />
-            <Typography variant="h6" component="h3" gutterBottom align="center">
-                {title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" align="center">
-                {description}
-            </Typography>
-        </Paper>
-    </motion.div>
-);
-
-function LandingPage() {
-    const theme = useTheme();
+const UseCase = ({ icon, title, description }) => {
     const controls = useAnimation();
     const [ref, inView] = useInView({
         triggerOnce: true,
         threshold: 0.1,
     });
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (inView) {
             controls.start("visible");
         }
     }, [controls, inView]);
+
+    return (
+        <motion.div
+            ref={ref}
+            animate={controls}
+            initial="hidden"
+            variants={{
+                visible: { opacity: 1, y: 0 },
+                hidden: { opacity: 0, y: 50 }
+            }}
+            transition={{ duration: 0.5 }}
+        >
+            <Paper elevation={3} sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-10px)', boxShadow: 6 } }}>
+                <StepIcon icon={icon} />
+                <Typography variant="h6" component="h3" gutterBottom align="center">
+                    {title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" align="center">
+                    {description}
+                </Typography>
+            </Paper>
+        </motion.div>
+    );
+};
+
+function LandingPage() {
+    const theme = useTheme();
+
+    useEffect(() => {
+        AOS.init({ duration: 1000 });
+    }, []);
 
     const flowSteps = [
         {
@@ -100,16 +105,13 @@ function LandingPage() {
         }
     ];
 
-    // Updated fetchData function with correct endpoint
-    const fetchData = async () => {
-        try {
-            const response = await fetch(`${BACKEND_URL}/brdges`);
-            const data = await response.json();
-            // ... handle data ...
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        }
-    };
+    // Memoize the BrdgePlayer component to prevent re-rendering
+    const memoizedBrdgePlayer = useMemo(() => (
+        <BrdgePlayer
+            brdgeId="877a3922-4c73-451a-a058-e47e73e09931"
+            onError={(error) => console.error('BrdgePlayer error:', error)}
+        />
+    ), []);
 
     return (
         <Box sx={{ flexGrow: 1 }}>
@@ -117,14 +119,14 @@ function LandingPage() {
                 <Box sx={{ my: { xs: 4, sm: 6 }, textAlign: 'center' }}>
                     <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                         <Typography
-                            variant="h3"
+                            variant="h1"
                             component="h1"
                             gutterBottom
                             align="center"
                             sx={{
                                 fontWeight: 'bold',
                                 mb: 2,
-                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' }
                             }}
                         >
                             Unlock Knowledge with AI-Powered Presentations
@@ -142,25 +144,22 @@ function LandingPage() {
                                 fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
                             }}
                         >
-                            Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool. Try a sample below.
+                            Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool.
                         </Typography>
 
-                        {/* BrdgePlayer component */}
-                        <Box sx={{ my: 4 }}>
-                            <BrdgePlayer
-                                brdgeId={9}
-                                onError={(error) => console.error('BrdgePlayer error:', error)}
-                            />
+                        <Box sx={{ my: 4 }} data-aos="fade-up">
+                            {memoizedBrdgePlayer}
                         </Box>
 
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                                 component={Link}
-                                to="/demo" // Changed from "/use-cases" to "/demo"
+                                to="/demo"
                                 variant="contained"
                                 color="primary"
                                 size="large"
                                 endIcon={<ArrowForward />}
+                                className="glow-button"
                                 sx={{
                                     py: 1.5,
                                     px: 5,
@@ -170,45 +169,28 @@ function LandingPage() {
                                     }
                                 }}
                             >
-                                Brdge AI Use Cases
+                                Try Brdge AI Demo
                             </Button>
                         </motion.div>
                     </motion.div>
                 </Box>
 
-                <Box sx={{ my: 16, position: 'relative' }} ref={ref}>
+                <Box sx={{ my: 16, position: 'relative' }} data-aos="fade-up">
                     <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
                         How It Works
                     </Typography>
                     <Grid container spacing={4} justifyContent="center">
                         {flowSteps.map((step, index) => (
                             <Grid item xs={12} sm={6} md={3} key={index} sx={{ position: 'relative' }}>
-                                <motion.div
-                                    custom={index}
-                                    initial="hidden"
-                                    animate={controls}
-                                    variants={{
-                                        hidden: { opacity: 0, y: 50 },
-                                        visible: i => ({
-                                            opacity: 1,
-                                            y: 0,
-                                            transition: {
-                                                delay: i * 0.3,
-                                                duration: 0.5,
-                                            },
-                                        }),
-                                    }}
-                                >
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                                        <StepIcon icon={step.icon} />
-                                        <Typography variant="h6" gutterBottom>
-                                            {step.title}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            {step.description}
-                                        </Typography>
-                                    </Box>
-                                </motion.div>
+                                <Box className="use-case-card" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                                    <StepIcon icon={step.icon} />
+                                    <Typography variant="h6" gutterBottom>
+                                        {step.title}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {step.description}
+                                    </Typography>
+                                </Box>
                                 {index < flowSteps.length - 1 && (
                                     <Box sx={{
                                         position: 'absolute',
@@ -225,8 +207,8 @@ function LandingPage() {
                     </Grid>
                 </Box>
 
-                <Box sx={{ my: 16 }}>
-                    <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
+                <Box sx={{ my: 16 }} data-aos="fade-up">
+                    <Typography variant="h2" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
                         Use Cases
                     </Typography>
                     <Grid container spacing={4}>
@@ -254,7 +236,7 @@ function LandingPage() {
                     </Grid>
                 </Box>
 
-                <Box sx={{ my: 16, textAlign: 'center' }}>
+                <Box sx={{ my: 16, textAlign: 'center' }} data-aos="fade-up">
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Typography variant="h3" component="h2" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
                             Ready to Transform Your Knowledge Sharing?
@@ -269,6 +251,7 @@ function LandingPage() {
                             color="primary"
                             size="large"
                             endIcon={<ArrowForward />}
+                            className="glow-button"
                             sx={{
                                 py: 2,
                                 px: 6,

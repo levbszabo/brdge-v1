@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Container, Typography } from '@mui/material';
-import { BACKEND_URL } from '../config';
+import api from '../api';
+import { setAuthToken } from '../utils/auth';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
@@ -10,23 +11,18 @@ function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('Attempting login with:', { email, password });
         try {
-            const response = await fetch(`${BACKEND_URL}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('authToken', data.token);
-                navigate('/brdges');  // Redirect to /brdges after successful login
+            const response = await api.post('/login', { email, password });
+            console.log('Login response:', response.data);
+            if (response.data.access_token) {
+                setAuthToken(response.data.access_token);
+                navigate('/brdges');
             } else {
-                const errorData = await response.json();
-                alert(errorData.error || 'Login failed!');
+                throw new Error('No access token received');
             }
         } catch (error) {
-            console.error('Error during login:', error);
+            console.error('Error during login:', error.response || error);
             alert('An error occurred during login. Please try again.');
         }
     };

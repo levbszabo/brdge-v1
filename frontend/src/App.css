@@ -1,45 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
 .App {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.header {
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+.header.shrink {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header .MuiButton-root {
+  text-transform: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.header .MuiButton-root:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+@media (max-width: 600px) {
+  .header {
+    padding: 8px 0;
+  }
+
+  .header.shrink {
+    padding: 4px 0;
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-.App-link {
-  color: #61dafb;
+html {
+  scroll-behavior: smooth;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
+.MuiButton-root {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
-.navbar-logo {
-  height: 40px;
-  width: auto;
-  /* ... other styles ... */
+.MuiButton-root:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
+.header Typography {
+  transition: transform 0.3s ease;
+}
+
+.header Typography:hover {
+  transform: scale(1.05);
+}
+
+/* Add more global styles as needed */

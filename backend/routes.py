@@ -2,7 +2,7 @@
 # brian voice :nPczCjzI2devNBz1zQrb
 import re
 from flask import request, jsonify, send_file, abort, url_for, current_app
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from app import app, db
 from werkzeug.utils import secure_filename
 import os
@@ -23,6 +23,8 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from jwt import encode, decode, ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timedelta
 from werkzeug.exceptions import RequestEntityTooLarge
+from functools import wraps
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -31,13 +33,33 @@ S3_REGION = os.getenv("S3_REGION", "us-east-1")  # Default to 'us-east-1' if not
 # Initialize S3 client with the correct region
 s3_client = boto3.client("s3", region_name=S3_REGION)
 
-# Enable CORS for the Flask app
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# Enable CORS for all routes
+CORS(app)
+
+
+@jwt_required()
+def get_current_user():
+    current_user_id = get_jwt_identity()
+    return User.query.get(current_user_id)
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user = get_current_user()
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        return f(user, *args, **kwargs)
+
+    return decorated_function
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["PUT"])
-def update_brdge(brdge_id):
-    brdge = Brdge.query.get_or_404(brdge_id)
+@login_required
+def update_brdge(user, brdge_id):
+    brdge = Brdge.query.filter_by(
+        id=brdge_id, user_id=user.id
+    ).first_or_404()  # {{ edit_5 }} Ensure brdge belongs to user
     name = request.form.get("name")
     presentation = request.files.get("presentation")
 
@@ -88,8 +110,9 @@ def update_brdge(brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["GET"])
-def get_brdge(brdge_id):
-    brdge = Brdge.query.get_or_404(brdge_id)
+@login_required
+def get_brdge(user, brdge_id):
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
 
     # Count the number of slide images in the S3 folder
     s3_folder = brdge.folder
@@ -111,6 +134,50 @@ def get_brdge(brdge_id):
     return jsonify(brdge_data), 200
 
 
+@app.route("/api/brdges/public/<string:public_id>", methods=["GET"])
+def get_public_brdge_by_id(public_id):
+    try:
+        app.logger.debug(f"Attempting to fetch brdge with public_id: {public_id}")
+        brdge = Brdge.query.filter_by(
+            public_id=public_id, shareable=True
+        ).first_or_404()
+        app.logger.debug(f"Brdge found: {brdge}")
+
+        # Count the number of slide images in the S3 folder
+        s3_folder = brdge.folder
+        response = s3_client.list_objects_v2(
+            Bucket=S3_BUCKET,
+            Prefix=f"{s3_folder}/slides/",
+        )
+        num_slides = len(
+            [obj for obj in response.get("Contents", []) if obj["Key"].endswith(".png")]
+        )
+
+        # Fetch transcripts if stored
+        transcripts = []  # Implement fetching transcripts from storage if applicable
+
+        brdge_data = brdge.to_dict()
+        brdge_data["num_slides"] = num_slides
+        brdge_data["transcripts"] = transcripts
+
+        return jsonify(brdge_data), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching public brdge: {str(e)}")
+        return jsonify({"error": "An error occurred while fetching the brdge"}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>", methods=["DELETE"])
+@login_required
+def delete_brdge(user, brdge_id):
+    brdge = Brdge.query.filter_by(
+        id=brdge_id, user_id=user.id
+    ).first_or_404()  # {{ edit_5 }}
+
+    db.session.delete(brdge)
+    db.session.commit()
+    return jsonify({"message": "Brdge deleted successfully"}), 200
+
+
 @app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
 def get_slide_image(brdge_id, slide_number):
     brdge = Brdge.query.get_or_404(brdge_id)
@@ -125,14 +192,38 @@ def get_slide_image(brdge_id, slide_number):
         abort(404)
 
 
+@app.route("/api/brdges/<string:public_id>/slides/<int:slide_number>", methods=["GET"])
+def get_public_slide_image(public_id, slide_number):
+    brdge = Brdge.query.filter_by(public_id=public_id, shareable=True).first_or_404()
+    s3_key = f"{brdge.folder}/slides/slide_{slide_number}.png"
+
+    try:
+        s3_object = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+        image_data = s3_object["Body"].read()
+        return send_file(BytesIO(image_data), mimetype="image/png")
+    except Exception as e:
+        print(f"Error fetching image from S3: {e}")
+        abort(404)
+
+
 @app.route("/api/brdges", methods=["GET"])
+@jwt_required()
 def get_brdges():
-    brdges = Brdge.query.all()
-    return jsonify([brdge.to_dict() for brdge in brdges]), 200
+    print("Received request for /api/brdges")  # Debug log
+    print("Request headers:", request.headers)  # Debug log
+    current_user = get_current_user()
+    print(f"Current user: {current_user}")  # Debug log
+    if not current_user:
+        print("User not found")  # Debug log
+        return jsonify({"error": "User not found"}), 404
+    brdges = Brdge.query.filter_by(user_id=current_user.id).all()
+    print(f"Brdges found: {len(brdges)}")  # Debug log
+    return jsonify({"brdges": [brdge.to_dict() for brdge in brdges]}), 200
 
 
 @app.route("/api/brdges", methods=["POST"])
-def create_brdge():
+@login_required
+def create_brdge(user):
     try:
         name = request.form.get("name")
         presentation = request.files.get("presentation")
@@ -140,15 +231,15 @@ def create_brdge():
         if not all([name, presentation]):
             return jsonify({"error": "Missing data"}), 400
 
-        # Create brdge data first to get the ID
         brdge = Brdge(
             name=name,
-            presentation_filename="",  # Will update after S3 upload
-            audio_filename="",  # Placeholder for now
-            folder="",  # Will update after S3 upload
+            presentation_filename="",
+            audio_filename="",
+            folder="",
+            user_id=user.id,  # Associate the brdge with the current user
         )
         db.session.add(brdge)
-        db.session.flush()  # Assigns an ID without committing
+        db.session.flush()
 
         # Generate unique filename for the PDF
         presentation_filename = secure_filename(
@@ -654,10 +745,25 @@ def generate_voice(brdge_id):
     return jsonify({"message": "Voice generated successfully"}), 200
 
 
-@app.route("/api/brdges/<int:brdge_id>/audio/generated", methods=["GET"])
+@app.route("/api/brdges/<int:brdge_id>/audio/generated", methods=["GET", "OPTIONS"])
+@cross_origin()
 def get_generated_audio_files(brdge_id):
-    brdge = Brdge.query.get_or_404(brdge_id)
-    cache_dir = f"/tmp/brdge/audio/processed/{brdge_id}"
+    if request.method == "OPTIONS":
+        return "", 200  # Respond to preflight request
+
+    # Your existing logic to fetch audio files
+
+
+@app.route("/api/brdges/<string:public_id>/audio/generated", methods=["GET", "OPTIONS"])
+@cross_origin()
+def get_generated_audio_files_by_public_id(public_id):
+    if request.method == "OPTIONS":
+        return "", 200
+
+    # Fetch the Brdge using the public ID
+    brdge = Brdge.query.filter_by(public_id=public_id).first_or_404()
+
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge.id}"
     s3_folder = f"{brdge.folder}/audio/processed"
 
     # Check cache first
@@ -691,19 +797,20 @@ def get_generated_audio_files(brdge_id):
     return jsonify({"files": audio_files}), 200
 
 
+@app.route("/api/brdges/<string:brdge_id>/audio/generated/<filename>", methods=["GET"])
 @app.route("/api/brdges/<int:brdge_id>/audio/generated/<filename>", methods=["GET"])
 def get_generated_audio_file(brdge_id, filename):
-    brdge = Brdge.query.get_or_404(brdge_id)
-    cache_dir = f"/tmp/brdge/audio/processed/{brdge_id}"
+    brdge = Brdge.query.filter(
+        (Brdge.id == brdge_id) | (Brdge.public_id == brdge_id)
+    ).first_or_404()
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge.id}"
     cache_file_path = os.path.join(cache_dir, filename)
     s3_key = f"{brdge.folder}/audio/processed/{filename}"
 
     if os.path.exists(cache_file_path):
-        # Serve from cache if available
         return send_file(cache_file_path, mimetype="audio/mpeg")
     else:
         try:
-            # If not in cache, fetch from S3 and store in cache
             os.makedirs(cache_dir, exist_ok=True)
             s3_client.download_file(S3_BUCKET, s3_key, cache_file_path)
             return send_file(cache_file_path, mimetype="audio/mpeg")
@@ -732,7 +839,7 @@ def get_cached_transcripts(brdge_id):
 @app.route("/api/brdges/<int:brdge_id>/voice-clone/cached", methods=["GET"])
 def get_cached_voice_clone(brdge_id):
     brdge = Brdge.query.get_or_404(brdge_id)
-    cache_dir = f"/tmp/brdge/audio/processed/{brdge_id}"
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge.id}"
 
     if os.path.exists(cache_dir):
         try:
@@ -765,34 +872,102 @@ def login():
     email = data.get("email")
     password = data.get("password")
 
+    print(f"Login attempt for email: {email}")
+
     user = User.query.filter_by(email=email).first()
-    if user and user.check_password(password):
-        token = encode(
-            {"user_id": user.id, "exp": datetime.utcnow() + timedelta(hours=24)},
-            current_app.config["SECRET_KEY"],
-            algorithm="HS256",
-        )
-        return jsonify({"message": "Login successful", "token": token}), 200
+    if user:
+        print(f"User found: {user.id}, {user.email}")
+        if check_password_hash(user.password_hash, password):
+            access_token = create_access_token(
+                identity=user.id, expires_delta=timedelta(hours=24)
+            )
+            print("Password check successful, token generated")
+            return jsonify(access_token=access_token), 200
+        else:
+            print("Password check failed")
     else:
-        return jsonify({"error": "Invalid credentials"}), 401
+        print("User not found in database")
+
+    return jsonify({"error": "Invalid credentials"}), 401
 
 
-# Add a route to check if a token is valid
 @app.route("/api/check-auth", methods=["GET"])
+@jwt_required()
 def check_auth():
-    token = request.headers.get("Authorization")
-    if not token:
-        return jsonify({"error": "No token provided"}), 401
-    try:
-        decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
-        return jsonify({"message": "Token is valid"}), 200
-    except ExpiredSignatureError:
-        return jsonify({"error": "Token has expired"}), 401
-    except InvalidTokenError:
-        return jsonify({"error": "Invalid token"}), 401
+    current_user_id = get_jwt_identity()
+    return jsonify(logged_in_as=current_user_id), 200
 
 
 @app.route("/api/your-endpoint", methods=["GET"])
 def your_endpoint():
     data = {"message": "Hello from the backend!"}
     return jsonify(data)
+
+
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "User already exists"}), 400
+
+    hashed_password = generate_password_hash(password)
+    print(f"Hashed password for {email}: {hashed_password}")  # Debug print
+    new_user = User(email=email, password_hash=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "User registered successfully"}), 201
+
+
+@app.route("/api/brdges/<int:brdge_id>/toggle_shareable", methods=["POST"])
+@login_required
+def toggle_shareable(user, brdge_id):
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+    brdge.shareable = 1 if brdge.shareable == 0 else 0
+    db.session.commit()
+    return jsonify(
+        {
+            "message": "Brdge shareable status updated",
+            "shareable": bool(brdge.shareable),
+        }
+    )
+
+
+@app.route("/api/brdges/<int:brdge_id>", methods=["GET", "PUT", "DELETE"])
+@login_required
+def manage_brdge(user, brdge_id):
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    if request.method == "GET":
+        return jsonify(brdge.to_dict()), 200
+    elif request.method == "PUT":
+        # Update logic here
+        data = request.json
+        if "name" in data:
+            brdge.name = data["name"]
+        if "shareable" in data:
+            brdge.shareable = data["shareable"]
+        db.session.commit()
+        return (
+            jsonify(
+                {"message": "Brdge updated successfully", "brdge": brdge.to_dict()}
+            ),
+            200,
+        )
+    elif request.method == "DELETE":
+        db.session.delete(brdge)
+        db.session.commit()
+        return jsonify({"message": "Brdge deleted successfully"}), 200
+
+    return jsonify({"error": "Invalid method"}), 405
+
+
+@app.before_request
+def log_request_info():
+    print(f"Request: {request.method} {request.path}")

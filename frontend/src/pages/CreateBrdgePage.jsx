@@ -16,6 +16,7 @@ import {
     Card,
     CardHeader,
     CardContent,
+    CardMedia,
     Accordion,
     AccordionSummary,
     AccordionDetails,
@@ -34,11 +35,13 @@ import {
     Alert,
     Collapse,
     Paper,
+    Switch,
+    FormControlLabel,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
 import { styled } from '@mui/material/styles';
-import { BACKEND_URL } from '../config';
+import api from '../api';
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
@@ -100,6 +103,9 @@ function CreateBrdgePage() {
     const [isAudioLoaded, setIsAudioLoaded] = useState(false);
     const [isAudioUploaded, setIsAudioUploaded] = useState(false);
     const [expandedStep, setExpandedStep] = useState(0);
+    const [isShareable, setIsShareable] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [publicId, setPublicId] = useState('');
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -110,47 +116,32 @@ function CreateBrdgePage() {
 
     // Modify this useEffect to check for existing audio when the component mounts
     useEffect(() => {
-        if (isEditMode) {
+        if (id) {
             fetchBrdgeData();
         }
-    }, [id, isEditMode]);
+    }, [id]);
 
     const fetchBrdgeData = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/brdges/${id}`);
+            const response = await api.get(`/brdges/${id}`);
             const brdge = response.data;
             console.log('Fetched brdge data:', brdge);
             setName(brdge.name);
             setBrdgeId(brdge.id);
             setNumSlides(brdge.num_slides);
-            if (brdge.audio_filename) {
-                const audioFileUrl = `${BACKEND_URL}/brdges/${brdge.id}/audio`;
-                setExistingAudioUrl(audioFileUrl);
-                setNewAudioName(brdge.audio_filename);
-                setIsAudioUploaded(true); // Set this to true if audio exists
-                setCurrentStep(1); // Move to the Transcripts step if audio exists
+            setIsShareable(brdge.shareable);
+            // Fetch and set other necessary data
+
+            // Fetch slides data if available
+            if (brdge.slides) {
+                setTranscripts(brdge.slides.map(slide => slide.content || ''));
             }
 
-            // Attempt to fetch aligned transcripts
-            try {
-                const transcriptsResponse = await axios.get(`${BACKEND_URL}/brdges/${id}/transcripts/aligned`);
-                const alignedData = transcriptsResponse.data;
-                const updatedTranscripts = alignedData.image_transcripts.map(item => item.transcript);
-                setTranscripts(updatedTranscripts);
-                setTranscriptsGenerated(true);
-            } catch (error) {
-                if (error.response && error.response.status === 404) {
-                    console.log('Aligned transcripts not found. They need to be generated.');
-                    setTranscriptsGenerated(false); // Indicate that transcripts are not yet generated
-                } else {
-                    console.error('Error fetching aligned transcripts:', error);
-                    showSnackbar('Error fetching aligned transcripts.', 'error');
-                }
-            }
-
+            setLoading(false);
         } catch (error) {
             console.error('Error fetching brdge data:', error);
             showSnackbar('Error loading brdge data.', 'error');
+            setLoading(false);
         }
     };
 
@@ -162,7 +153,7 @@ function CreateBrdgePage() {
 
     const fetchGeneratedAudioFiles = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/brdges/${brdgeId}/audio/generated`);
+            const response = await api.get(`/brdges/${brdgeId}/audio/generated`);
             setGeneratedAudioFiles(response.data.files);
             console.log('Fetched generated audio files:', response.data.files);
         } catch (error) {
@@ -183,11 +174,22 @@ function CreateBrdgePage() {
     };
 
     // Function to handle deploying Brdge
-    const handleDeployBrdge = () => {
-        const link = `${window.location.origin}/viewBrdge/${brdgeId}`;
-        setDeployLink(link);
-        navigator.clipboard.writeText(link);
-        showSnackbar('Brdge deployed! Link copied to clipboard.', 'success');
+    const handleDeployBrdge = async () => {
+        if (!isShareable) {
+            showSnackbar('Please make the Brdge shareable before deploying.', 'warning');
+            return;
+        }
+        try {
+            const response = await api.post(`/brdges/${brdgeId}/deploy`);
+            setPublicId(response.data.public_id);
+            const link = `${window.location.origin}/b/${response.data.public_id}`;
+            setDeployLink(link);
+            navigator.clipboard.writeText(link);
+            showSnackbar('Brdge deployed! Link copied to clipboard.', 'success');
+        } catch (error) {
+            console.error('Error deploying Brdge:', error);
+            showSnackbar('Error deploying Brdge.', 'error');
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -211,10 +213,10 @@ function CreateBrdgePage() {
 
             if (isEditMode) {
                 // Update existing brdge
-                response = await axios.put(`${BACKEND_URL}/brdges/${id}`, formData);
+                response = await api.put(`/brdges/${id}`, formData);
             } else {
                 // Create new brdge
-                response = await axios.post(`${BACKEND_URL}/brdges`, formData);
+                response = await api.post(`/brdges`, formData);
             }
 
             showSnackbar(response.data.message, 'success');
@@ -243,8 +245,8 @@ function CreateBrdgePage() {
         setLoadingOverlay(true);
         setLoadingMessage('Saving transcripts...');
         try {
-            await axios.put(
-                `${BACKEND_URL}/brdges/${brdgeId}/transcripts/aligned`,
+            await api.put(
+                `/brdges/${brdgeId}/transcripts/aligned`,
                 { transcripts }
             );
             showSnackbar('Transcripts saved successfully.', 'success');
@@ -271,11 +273,11 @@ function CreateBrdgePage() {
 
         try {
             // Step 1: Transcribe audio
-            await axios.post(`${BACKEND_URL}/brdges/${brdgeId}/audio/transcribe`);
+            await api.post(`/brdges/${brdgeId}/audio/transcribe`);
 
             // Step 2: Align transcript with slides
-            const response = await axios.post(
-                `${BACKEND_URL}/brdges/${brdgeId}/audio/align_transcript`
+            const response = await api.post(
+                `/brdges/${brdgeId}/audio/align_transcript`
             );
 
             // Update the transcripts with aligned transcripts
@@ -325,7 +327,7 @@ function CreateBrdgePage() {
                 await handleGenerateVoice();
             } else {
                 // Clone voice first
-                await axios.post(`${BACKEND_URL}/brdges/${brdgeId}/audio/clone_voice`);
+                await api.post(`/brdges/${brdgeId}/audio/clone_voice`);
                 // Then generate voice
                 await handleGenerateVoice();
             }
@@ -345,14 +347,14 @@ function CreateBrdgePage() {
         setLoadingMessage('Generating voice...');
 
         try {
-            const response = await axios.post(
-                `${BACKEND_URL}/brdges/${brdgeId}/audio/generate_voice`,
+            const response = await api.post(
+                `/brdges/${brdgeId}/audio/generate_voice`,
                 { voice_id: voiceId } // Include voice ID if provided
             );
 
             // Fetch the list of generated audio files
-            const audioFilesResponse = await axios.get(
-                `${BACKEND_URL}/brdges/${brdgeId}/audio/generated`
+            const audioFilesResponse = await api.get(
+                `/brdges/${brdgeId}/audio/generated`
             );
             console.log('Received audio files:', audioFilesResponse.data.files);
             setGeneratedAudioFiles(audioFilesResponse.data.files);
@@ -477,7 +479,7 @@ function CreateBrdgePage() {
         if (!brdgeId) return;
 
         try {
-            await axios.delete(`${BACKEND_URL}/brdges/${brdgeId}/audio`);
+            await api.delete(`/brdges/${brdgeId}/audio`);
             showSnackbar('Audio deleted successfully.', 'success');
             setExistingAudioUrl(null);
             setNewAudioName('');
@@ -498,13 +500,13 @@ function CreateBrdgePage() {
             formData.append('audio', file);
 
             try {
-                await axios.post(`${BACKEND_URL}/brdges/${brdgeId}/audio`, formData, {
+                await api.post(`/brdges/${brdgeId}/audio`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
                 });
                 showSnackbar('Audio uploaded successfully.', 'success');
-                setExistingAudioUrl(`${BACKEND_URL}/brdges/${brdgeId}/audio`);
+                setExistingAudioUrl(`/brdges/${brdgeId}/audio`);
                 setIsAudioUploaded(true);
                 setCurrentStep(1); // Move to the Transcripts step
             } catch (error) {
@@ -522,7 +524,7 @@ function CreateBrdgePage() {
         if (!brdgeId || !newAudioName) return;
 
         try {
-            await axios.put(`${BACKEND_URL}/brdges/${brdgeId}/audio/rename`, {
+            await api.put(`/brdges/${brdgeId}/audio/rename`, {
                 new_name: newAudioName,
             });
             showSnackbar('Audio renamed successfully.', 'success');
@@ -544,7 +546,7 @@ function CreateBrdgePage() {
         if (generatedAudioFiles.length >= slideNumber) {
             const audioFile = generatedAudioFiles[slideNumber - 1];
             console.log(`Selected audio file: ${audioFile}`);
-            const audioUrl = `${BACKEND_URL}/brdges/${brdgeId}/audio/generated/${audioFile}`;
+            const audioUrl = `/brdges/${brdgeId}/audio/generated/${audioFile}`;
             console.log(`Audio URL: ${audioUrl}`);
             setCurrentAudio(audioUrl);
             setIsAudioLoaded(false);
@@ -646,16 +648,25 @@ function CreateBrdgePage() {
     };
 
     const renderSlides = () => {
-        const imageUrl = `${BACKEND_URL}/brdges/${brdgeId}/slides/${currentSlide}`;
+        const imageUrl = brdgeId
+            ? `${api.defaults.baseURL}/brdges/${brdgeId}/slides/${currentSlide}`
+            : '';
         return (
             <Card variant="outlined" sx={{ mb: 4 }}>
                 <CardHeader title={`Slide ${currentSlide}`} />
                 <CardContent>
                     <Box sx={{ textAlign: 'center' }}>
-                        <img
-                            src={imageUrl}
+                        <CardMedia
+                            component="img"
+                            image={imageUrl}
                             alt={`Slide ${currentSlide}`}
-                            style={{ maxWidth: '100%', maxHeight: '400px' }}
+                            sx={{
+                                width: '100%',
+                                height: 'auto',
+                                maxHeight: { xs: 300, md: 500 },
+                                objectFit: 'contain',
+                                backgroundColor: 'background.paper',
+                            }}
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = 'https://via.placeholder.com/600x400?text=No+Slide+Available';
@@ -677,46 +688,19 @@ function CreateBrdgePage() {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                         <Button
                             variant="contained"
-                            startIcon={<FaChevronLeft />}
                             onClick={handlePrevSlide}
                             disabled={currentSlide === 1}
                         >
                             Previous
                         </Button>
-                        {currentAudio && (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                startIcon={isPlaying ? <FaPause /> : <FaPlay />}
-                                onClick={handlePlayPause}
-                            >
-                                {isPlaying ? 'Pause' : 'Play'}
-                            </Button>
-                        )}
                         <Button
                             variant="contained"
-                            endIcon={<FaChevronRight />}
                             onClick={handleNextSlide}
                             disabled={currentSlide === numSlides}
                         >
                             Next
                         </Button>
                     </Box>
-                    {currentAudio && (
-                        <Box sx={{ mt: 2 }}>
-                            <TextField
-                                type="range"
-                                inputProps={{ min: 0, max: audioDuration, step: 1 }}
-                                value={currentTime}
-                                onChange={handleSeek}
-                                fullWidth
-                            />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Typography variant="caption">{formatTime(currentTime)}</Typography>
-                                <Typography variant="caption">{formatTime(audioDuration)}</Typography>
-                            </Box>
-                        </Box>
-                    )}
                 </CardContent>
             </Card>
         );
@@ -879,6 +863,17 @@ function CreateBrdgePage() {
         );
     };
 
+    const handleShareableToggle = async () => {
+        try {
+            const response = await api.post(`/brdges/${brdgeId}/toggle_shareable`);
+            setIsShareable(response.data.shareable);
+            showSnackbar('Shareable status updated successfully.', 'success');
+        } catch (error) {
+            console.error('Error updating shareable status:', error);
+            showSnackbar('Error updating shareable status.', 'error');
+        }
+    };
+
     return (
         <Grid container justifyContent="center" sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', py: 4 }}>
             <Grid item xs={12} md={10} lg={8}>
@@ -975,10 +970,9 @@ function CreateBrdgePage() {
                                     <Box sx={{ mt: 2 }}>
                                         <Button
                                             variant="contained"
-                                            color="info"
-                                            startIcon={<FaShareAlt />}
+                                            color="primary"
                                             onClick={handleDeployBrdge}
-                                            disabled={generatedAudioFiles.length === 0}
+                                            disabled={!isShareable || !brdgeId}
                                         >
                                             Deploy Brdge
                                         </Button>
@@ -1101,6 +1095,19 @@ function CreateBrdgePage() {
                             {snackbarMessage}
                         </Alert>
                     </Snackbar>
+
+                    {/* Shareable Toggle */}
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={isShareable}
+                                onChange={handleShareableToggle}
+                                name="shareable"
+                                color="primary"
+                            />
+                        }
+                        label="Make Brdge Shareable"
+                    />
                 </Card>
             </Grid>
         </Grid>

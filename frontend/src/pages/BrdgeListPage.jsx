@@ -1,147 +1,172 @@
 // src/pages/BrdgeListPage.jsx
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
+    Container,
+    Typography,
+    Button,
     List,
     ListItem,
     ListItemText,
-    ListItemSecondaryAction,
+    CircularProgress,
     IconButton,
-    Divider,
-    TextField,
-    InputAdornment,
-    Button,        // {{ edit_1 }} Import Button
-    Box,           // {{ edit_1 }} Import Box for layout
-    Typography,   // {{ edit_1 }} Import Typography for label
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Box,
 } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
-import { BACKEND_URL } from '../config';
+import ShareIcon from '@mui/icons-material/Share';
+import api from '../api';
+import { getAuthToken, setAuthToken } from '../utils/auth';
+import { useSnackbar } from '../utils/snackbar';
 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
-    const [searchTerm, setSearchTerm] = useState(''); // Add search term state
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [brdgeToDelete, setBrdgeToDelete] = useState(null);
     const navigate = useNavigate();
+    const { showSnackbar } = useSnackbar();
 
     useEffect(() => {
-        const getBrdges = async () => {
+        const fetchBrdges = async () => {
             try {
-                const response = await fetch(`${BACKEND_URL}/brdges`);
-                const brdges = await response.json();
-                setBrdges(brdges);
+                const token = getAuthToken();
+                if (!token) {
+                    navigate('/login');
+                    return;
+                }
+                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                const response = await api.get('/brdges');
+                setBrdges(response.data.brdges || []);
+                setLoading(false);
             } catch (error) {
-                console.error('Error fetching brdges:', error);
+                console.error('Error fetching brdges:', error.response || error);
+                if (error.response && error.response.status === 401) {
+                    setAuthToken(null);
+                    navigate('/login');
+                } else {
+                    setError('Failed to fetch Brdges. Please try again later.');
+                }
+                setLoading(false);
             }
         };
-        getBrdges();
-    }, []);
 
-    const filteredBrdges = brdges.filter((brdge) =>
-        brdge.name.toLowerCase().includes(searchTerm.toLowerCase())
-    ); // Filter brdges based on search term
+        fetchBrdges();
+    }, [navigate]);
+
+    const handleDelete = (brdge) => {
+        setBrdgeToDelete(brdge);
+        setDeleteDialogOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await api.delete(`/api/brdges/${brdgeToDelete.id}`);
+            setBrdges(brdges.filter((b) => b.id !== brdgeToDelete.id));
+            setDeleteDialogOpen(false);
+        } catch (error) {
+            console.error('Error deleting brdge:', error);
+            alert('An error occurred while deleting the brdge. Please try again.');
+        }
+    };
+
+    const handleShare = async (brdge) => {
+        try {
+            if (!brdge.public_id) {
+                const response = await api.post(`/brdges/${brdge.id}/deploy`);
+                brdge.public_id = response.data.public_id;
+            }
+            const link = `${window.location.origin}/b/${brdge.public_id}`;
+            navigator.clipboard.writeText(link);
+            showSnackbar('Shareable link copied to clipboard!', 'success');
+        } catch (error) {
+            console.error('Error sharing Brdge:', error);
+            showSnackbar('Error generating shareable link.', 'error');
+        }
+    };
+
+    if (loading) {
+        return <CircularProgress />;
+    }
+
+    if (error) {
+        return <Typography color="error">{error}</Typography>;
+    }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <main className="container mx-auto px-4 py-8">
-                {/* Header with "Brdges" Title and "Create New Brdge" Button */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        mb: 4,
-                    }}
-                >
-                    <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold' }}>
-                        Brdges
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<AddIcon />}
-                        onClick={() => navigate('/create')}
-                        sx={{
-                            textTransform: 'none',
-                            fontSize: '1rem',
-                        }}
-                    >
-                        Create New Brdge
+        <Container>
+            <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: 'primary.main', mb: 3 }}>
+                Your Brdges
+            </Typography>
+            {brdges.length === 0 ? (
+                <Typography>You haven't created any Brdges yet.</Typography>
+            ) : (
+                <List>
+                    {brdges.map((brdge) => (
+                        <ListItem
+                            key={brdge.id}
+                            sx={{
+                                transition: 'transform 0.2s',
+                                '&:hover': {
+                                    transform: 'scale(1.02)',
+                                    backgroundColor: 'grey.100',
+                                },
+                            }}
+                        >
+                            <ListItemText
+                                primary={
+                                    <Link
+                                        to={`/viewBrdge/${brdge.id}`}
+                                        style={{ textDecoration: 'none', color: 'inherit' }}
+                                    >
+                                        {brdge.name}
+                                    </Link>
+                                }
+                                sx={{ flexGrow: 1 }}
+                            />
+                            <IconButton onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/edit/${brdge.id}`);
+                            }}>
+                                <EditIcon />
+                            </IconButton>
+                            <IconButton onClick={(e) => {
+                                e.stopPropagation();
+                                handleShare(brdge);
+                            }}>
+                                <ShareIcon color={brdge.shareable ? 'primary' : 'inherit'} />
+                            </IconButton>
+                            <IconButton onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(brdge);
+                            }}>
+                                <DeleteIcon />
+                            </IconButton>
+                        </ListItem>
+                    ))}
+                </List>
+            )}
+            <Button variant="contained" color="primary" component={Link} to="/create" sx={{ mt: 3 }}>
+                Create New Brdge
+            </Button>
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Confirm Delete</DialogTitle>
+                <DialogContent>
+                    Are you sure you want to delete this brdge?
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={confirmDelete} color="error">
+                        Delete
                     </Button>
-                </Box>
-
-                {/* Search Bar */}
-                <TextField
-                    variant="outlined"
-                    placeholder="Search Brdges"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    fullWidth
-                    margin="normal"
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-
-                {filteredBrdges.length === 0 ? (
-                    <Typography variant="body1" color="text.secondary" align="center">
-                        No brdges found. Click the "Create New Brdge" button above to get started.
-                    </Typography>
-                ) : (
-                    <List>
-                        {filteredBrdges.map((brdge) => (
-                            <React.Fragment key={brdge.id}>
-                                <ListItem
-                                    component="div"
-                                    onClick={() => navigate(`/viewBrdge/${brdge.id}`)}
-                                    sx={{
-                                        '&:hover': {
-                                            backgroundColor: 'action.hover',
-                                            cursor: 'pointer',
-                                        },
-                                    }}
-                                >
-                                    <ListItemText
-                                        primary={brdge.name}
-                                        secondary={
-                                            <>
-                                                Presentation: {brdge.presentation_filename} <br />
-                                                Audio: {brdge.audio_filename || 'N/A'}
-                                            </>
-                                        }
-                                    />
-                                    <ListItemSecondaryAction>
-                                        <IconButton
-                                            edge="end"
-                                            aria-label="edit"
-                                            onClick={() => navigate(`/edit/${brdge.id}`)}
-                                        >
-                                            <EditIcon />
-                                        </IconButton>
-                                        <IconButton
-                                            edge="end"
-                                            aria-label="view"
-                                            onClick={() => navigate(`/viewBrdge/${brdge.id}`)}
-                                        >
-                                            <VisibilityIcon />
-                                        </IconButton>
-                                    </ListItemSecondaryAction>
-                                </ListItem>
-                                <Divider />
-                            </React.Fragment>
-                        ))}
-                    </List>
-                )}
-            </main>
-
-            {/* Removed the Floating Action Button (FAB) */}
-        </div>
+                </DialogActions>
+            </Dialog>
+        </Container>
     );
 }
 

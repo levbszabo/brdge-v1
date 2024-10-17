@@ -3,3 +3,35 @@
     padding: 20px;
     text-align: center;
 }
+
+.use-case-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.use-case-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.glow-button {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.glow-button:hover {
+    box-shadow: 0 0 15px 5px rgba(33, 150, 243, 0.7);
+    transform: scale(1.1);
+}
+
+@media (max-width: 600px) {
+    .use-case-card:hover {
+        transform: none;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .glow-button:hover {
+        transform: scale(1.05);
+    }
+}

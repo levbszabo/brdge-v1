@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { BACKEND_URL } from '../config';
+import api from '../api';
 
 const ProtectedRoute = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -14,21 +14,12 @@ const ProtectedRoute = ({ children }) => {
             }
 
             try {
-                const response = await fetch(`${BACKEND_URL}/check-auth`, {
-                    headers: {
-                        'Authorization': token
-                    }
-                });
-
-                if (response.ok) {
-                    setIsAuthenticated(true);
-                } else {
-                    setIsAuthenticated(false);
-                    localStorage.removeItem('authToken');
-                }
+                await api.get('/check-auth');
+                setIsAuthenticated(true);
             } catch (error) {
                 console.error('Error checking authentication:', error);
                 setIsAuthenticated(false);
+                localStorage.removeItem('authToken');
             }
         };
 
