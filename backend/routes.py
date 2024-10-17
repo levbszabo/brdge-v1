@@ -751,7 +751,40 @@ def get_generated_audio_files(brdge_id):
     if request.method == "OPTIONS":
         return "", 200  # Respond to preflight request
 
-    # Your existing logic to fetch audio files
+    brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
+
+    cache_dir = f"/tmp/brdge/audio/processed/{brdge.id}"
+    s3_folder = f"{brdge.folder}/audio/processed"
+
+    # Check cache first
+    if os.path.exists(cache_dir):
+        audio_files = [f for f in os.listdir(cache_dir) if f.endswith(".mp3")]
+    else:
+        # If not in cache, list files from S3
+        try:
+            response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
+        except Exception as e:
+            print(f"Error listing generated audio files in S3: {e}")
+            return jsonify({"error": "Error accessing generated audio files"}), 500
+
+        audio_files = [
+            obj["Key"].split("/")[-1]
+            for obj in response.get("Contents", [])
+            if obj["Key"].endswith(".mp3")
+        ]
+
+    # Sort audio files by slide number using precise regex
+    def extract_slide_number(filename):
+        match = re.match(r"slide_(\d+)\.mp3$", filename)
+        if match:
+            return int(match.group(1))
+        else:
+            return float("inf")
+
+    audio_files.sort(key=extract_slide_number)
+    print(f"Sorted audio files: {audio_files}")  # Debug print
+
+    return jsonify({"files": audio_files}), 200
 
 
 @app.route("/api/brdges/<string:public_id>/audio/generated", methods=["GET", "OPTIONS"])

@@ -61,7 +61,6 @@ function ViewBrdgePage() {
 
     const loadAudioForSlide = (slideNumber) => {
         console.log('Loading audio for slide:', slideNumber);
-        console.log('Generated audio files:', generatedAudioFiles);
         if (generatedAudioFiles.length >= slideNumber) {
             const audioFile = generatedAudioFiles[slideNumber - 1];
             const audioUrl = `${api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${audioFile}`;
@@ -72,6 +71,8 @@ function ViewBrdgePage() {
                 audioRef.current.src = audioUrl;
                 audioRef.current.load();
                 setIsPlaying(false);
+                setCurrentTime(0);
+                setAudioDuration(0);
             }
         } else {
             console.log('No audio file available for this slide');
@@ -91,9 +92,11 @@ function ViewBrdgePage() {
                     playPromise
                         .then(() => {
                             setIsPlaying(true);
+                            console.log('Audio playback started successfully');
                         })
                         .catch((error) => {
                             console.error('Error playing audio:', error);
+                            setIsPlaying(false);
                         });
                 }
             }
@@ -128,6 +131,7 @@ function ViewBrdgePage() {
 
     const handleAudioEnded = () => {
         setIsPlaying(false);
+        setCurrentTime(0);
     };
 
     const renderSlides = () => {
@@ -222,11 +226,23 @@ function ViewBrdgePage() {
                     <audio
                         ref={audioRef}
                         src={currentAudio}
-                        onLoadedMetadata={(e) => setAudioDuration(e.target.duration)}
+                        preload="auto"
+                        onLoadedMetadata={(e) => {
+                            setAudioDuration(e.target.duration);
+                            console.log('Audio metadata loaded. Duration:', e.target.duration);
+                        }}
+                        onCanPlay={() => console.log('Audio can play')}
+                        onPlay={() => {
+                            setIsPlaying(true);
+                            console.log('Audio started playing');
+                        }}
+                        onPause={() => {
+                            setIsPlaying(false);
+                            console.log('Audio paused');
+                        }}
                         onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
                         onEnded={handleAudioEnded}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
+                        onError={(e) => console.error('Audio error:', e)}
                     />
                 )}
             </Card>
