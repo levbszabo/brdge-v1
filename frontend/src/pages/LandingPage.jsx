@@ -108,7 +108,7 @@ function LandingPage() {
     // Memoize the BrdgePlayer component to prevent re-rendering
     const memoizedBrdgePlayer = useMemo(() => (
         <BrdgePlayer
-            brdgeId="877a3922-4c73-451a-a058-e47e73e09931"
+            brdgeId="1"
             onError={(error) => console.error('BrdgePlayer error:', error)}
         />
     ), []);
