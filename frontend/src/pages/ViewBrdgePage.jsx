@@ -9,10 +9,9 @@ function ViewBrdgePage() {
     const [brdge, setBrdge] = useState(null);
     const [numSlides, setNumSlides] = useState(0);
     const [currentSlide, setCurrentSlide] = useState(1);
-    const [generatedAudioFiles, setGeneratedAudioFiles] = useState([]);
-    const [currentAudio, setCurrentAudio] = useState(null);
+    const [audioUrls, setAudioUrls] = useState([]);
     const [isPlaying, setIsPlaying] = useState(false);
-    const audioRef = useRef(null);
+    const audioRef = useRef(new Audio());
     const [audioDuration, setAudioDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -41,86 +40,82 @@ function ViewBrdgePage() {
             try {
                 const response = await api.get(`/brdges/${id || publicId}/audio/generated`);
                 console.log('Fetched audio files:', response.data);
-                setGeneratedAudioFiles(response.data.files);
+                const urls = response.data.files.map(file =>
+                    `${api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${file}`
+                );
+                setAudioUrls(urls);
             } catch (err) {
                 console.error('Error fetching generated audio files:', err);
             }
         };
 
         fetchBrdgeData();
-        if (brdge) {
-            fetchGeneratedAudioFiles();
-        }
-    }, [id, publicId, brdge]);
+        fetchGeneratedAudioFiles();
+    }, [id, publicId]);
 
     useEffect(() => {
-        if (generatedAudioFiles.length > 0) {
-            loadAudioForSlide(currentSlide);
-        }
-    }, [generatedAudioFiles, currentSlide]);
+        const audio = audioRef.current;
 
-    const loadAudioForSlide = (slideNumber) => {
-        console.log('Loading audio for slide:', slideNumber);
-        if (generatedAudioFiles.length >= slideNumber) {
-            const audioFile = generatedAudioFiles[slideNumber - 1];
-            const audioUrl = `${api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${audioFile}`;
-            console.log('Setting audio URL:', audioUrl);
-            setCurrentAudio(audioUrl);
+        const handleLoadedMetadata = () => {
+            setAudioDuration(audio.duration);
+            console.log('Audio metadata loaded. Duration:', audio.duration);
+        };
 
-            if (audioRef.current) {
-                audioRef.current.src = audioUrl;
-                audioRef.current.load();
-                setIsPlaying(false);
-                setCurrentTime(0);
-                setAudioDuration(0);
-            }
-        } else {
-            console.log('No audio file available for this slide');
-            setCurrentAudio(null);
+        const handleTimeUpdate = () => {
+            setCurrentTime(audio.currentTime);
+        };
+
+        const handleEnded = () => {
             setIsPlaying(false);
+            setCurrentTime(0);
+        };
+
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.addEventListener('timeupdate', handleTimeUpdate);
+        audio.addEventListener('ended', handleEnded);
+
+        return () => {
+            audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+            audio.removeEventListener('timeupdate', handleTimeUpdate);
+            audio.removeEventListener('ended', handleEnded);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (audioUrls.length > 0 && currentSlide <= audioUrls.length) {
+            audioRef.current.src = audioUrls[currentSlide - 1];
+            audioRef.current.load();
         }
-    };
+    }, [audioUrls, currentSlide]);
 
     const handlePlayPause = () => {
-        if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-                setIsPlaying(false);
-            } else {
-                const playPromise = audioRef.current.play();
-                if (playPromise !== undefined) {
-                    playPromise
-                        .then(() => {
-                            setIsPlaying(true);
-                            console.log('Audio playback started successfully');
-                        })
-                        .catch((error) => {
-                            console.error('Error playing audio:', error);
-                            setIsPlaying(false);
-                        });
-                }
-            }
+        const audio = audioRef.current;
+        if (isPlaying) {
+            audio.pause();
+        } else {
+            audio.play().catch(error => console.error('Error playing audio:', error));
         }
+        setIsPlaying(!isPlaying);
     };
 
     const handleNextSlide = () => {
         if (currentSlide < numSlides) {
             setCurrentSlide(currentSlide + 1);
+            setIsPlaying(false);
         }
     };
 
     const handlePrevSlide = () => {
         if (currentSlide > 1) {
             setCurrentSlide(currentSlide - 1);
+            setIsPlaying(false);
         }
     };
 
-    const handleSeek = (e) => {
-        const time = parseFloat(e.target.value);
+    const handleSeek = (e, newValue) => {
+        const time = newValue;
+        audioRef.current.currentTime = time;
         setCurrentTime(time);
-        if (audioRef.current) {
-            audioRef.current.currentTime = time;
-        }
     };
 
     const formatTime = (time) => {
@@ -129,14 +124,9 @@ function ViewBrdgePage() {
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
 
-    const handleAudioEnded = () => {
-        setIsPlaying(false);
-        setCurrentTime(0);
-    };
-
     const renderSlides = () => {
         const imageUrl = brdge
-            ? `${api.defaults.baseURL}/brdges/${id}/slides/${currentSlide}`
+            ? `${api.defaults.baseURL}/brdges/${id || publicId}/slides/${currentSlide}`
             : '';
         const transcript = brdge && brdge.transcripts ? brdge.transcripts[currentSlide - 1] : '';
 
@@ -178,7 +168,7 @@ function ViewBrdgePage() {
                             </Button>
                         </Grid>
                         <Grid item xs={12} sm="auto">
-                            {currentAudio && (
+                            {audioUrls.length >= currentSlide && (
                                 <Button
                                     onClick={handlePlayPause}
                                     variant="contained"
@@ -205,7 +195,7 @@ function ViewBrdgePage() {
                             </Button>
                         </Grid>
                     </Grid>
-                    {currentAudio && (
+                    {audioUrls.length >= currentSlide && (
                         <Box mt={2}>
                             <Slider
                                 value={currentTime}
@@ -222,29 +212,6 @@ function ViewBrdgePage() {
                         </Box>
                     )}
                 </Box>
-                {currentAudio && (
-                    <audio
-                        ref={audioRef}
-                        src={currentAudio}
-                        preload="auto"
-                        onLoadedMetadata={(e) => {
-                            setAudioDuration(e.target.duration);
-                            console.log('Audio metadata loaded. Duration:', e.target.duration);
-                        }}
-                        onCanPlay={() => console.log('Audio can play')}
-                        onPlay={() => {
-                            setIsPlaying(true);
-                            console.log('Audio started playing');
-                        }}
-                        onPause={() => {
-                            setIsPlaying(false);
-                            console.log('Audio paused');
-                        }}
-                        onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
-                        onEnded={handleAudioEnded}
-                        onError={(e) => console.error('Audio error:', e)}
-                    />
-                )}
             </Card>
         );
     };
