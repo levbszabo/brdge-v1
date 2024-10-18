@@ -15,43 +15,26 @@ import SignUpPage from './pages/SignUpPage';
 import { api } from './api';
 import { getAuthToken, setAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
+import '@fontsource/poppins';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#2196f3',
-      dark: '#1976d2',
+      main: '#0072ff',
     },
     secondary: {
-      main: '#ff4081',
-    },
-    background: {
-      default: '#f5f5f5',
+      main: '#00c6ff',
     },
   },
   typography: {
-    fontFamily: '"Poppins", "Roboto", "Helvetica", "Arial", sans-serif',
+    fontFamily: 'Poppins, sans-serif',
     h1: {
       fontWeight: 700,
+      fontSize: '2.5rem',
     },
-    h2: {
-      fontWeight: 600,
-    },
-    h3: {
-      fontWeight: 600,
-    },
-    button: {
-      fontWeight: 500,
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-        },
-      },
+    body1: {
+      fontSize: '1rem',
+      lineHeight: '1.6',
     },
   },
 });
