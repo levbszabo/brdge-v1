@@ -41,7 +41,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SaveIcon from '@mui/icons-material/Save';
 import { styled } from '@mui/material/styles';
-import api from '../api';
+import { api } from '../api';
 
 const StyledAccordion = styled(Accordion)(({ theme }) => ({
     boxShadow: '0 4px 6px rgba(0,0,0,0.1)',

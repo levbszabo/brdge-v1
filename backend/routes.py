@@ -37,10 +37,10 @@ s3_client = boto3.client("s3", region_name=S3_REGION)
 CORS(app)
 
 
-@jwt_required()
+@jwt_required(optional=True)
 def get_current_user():
     current_user_id = get_jwt_identity()
-    return User.query.get(current_user_id)
+    return User.query.get(current_user_id) if current_user_id else None
 
 
 def login_required(f):
@@ -110,28 +110,32 @@ def update_brdge(user, brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["GET"])
-@login_required
-def get_brdge(user, brdge_id):
-    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+def get_brdge(brdge_id):
+    user = get_current_user()  # Attempt to get the current user
+    brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
 
-    # Count the number of slide images in the S3 folder
-    s3_folder = brdge.folder
-    response = s3_client.list_objects_v2(
-        Bucket=S3_BUCKET,
-        Prefix=f"{s3_folder}/slides/",
-    )
-    num_slides = len(
-        [obj for obj in response.get("Contents", []) if obj["Key"].endswith(".png")]
-    )
+    # Check if the user is logged in and owns the brdge, or if the brdge is shareable
+    if (user and user.id == brdge.user_id) or brdge.shareable == 1:
+        # Count the number of slide images in the S3 folder
+        s3_folder = brdge.folder
+        response = s3_client.list_objects_v2(
+            Bucket=S3_BUCKET,
+            Prefix=f"{s3_folder}/slides/",
+        )
+        num_slides = len(
+            [obj for obj in response.get("Contents", []) if obj["Key"].endswith(".png")]
+        )
 
-    # Fetch transcripts if stored
-    transcripts = []  # Implement fetching transcripts from storage if applicable
+        # Fetch transcripts if stored
+        transcripts = []  # Implement fetching transcripts from storage if applicable
 
-    brdge_data = brdge.to_dict()
-    brdge_data["num_slides"] = num_slides
-    brdge_data["transcripts"] = transcripts
+        brdge_data = brdge.to_dict()
+        brdge_data["num_slides"] = num_slides
+        brdge_data["transcripts"] = transcripts
 
-    return jsonify(brdge_data), 200
+        return jsonify(brdge_data), 200
+    else:
+        return jsonify({"error": "Unauthorized"}), 401
 
 
 @app.route("/api/brdges/public/<string:public_id>", methods=["GET"])

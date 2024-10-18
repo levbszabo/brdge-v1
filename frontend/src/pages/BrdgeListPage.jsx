@@ -19,7 +19,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ShareIcon from '@mui/icons-material/Share';
-import api from '../api';
+import { api } from '../api';
 import { getAuthToken, setAuthToken } from '../utils/auth';
 import { useSnackbar } from '../utils/snackbar';
 

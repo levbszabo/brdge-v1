@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../api';
+import { unauthenticated_api } from '../api';
 import { Box, Card, CardMedia, CardContent, Typography, Grid, Button, Slider, Container, CircularProgress } from '@mui/material';
 import { PlayArrow, Pause, ChevronLeft, ChevronRight } from '@mui/icons-material';
 
@@ -22,9 +22,9 @@ function ViewBrdgePage() {
             try {
                 let response;
                 if (publicId) {
-                    response = await api.get(`/brdges/public/${publicId}`);
+                    response = await unauthenticated_api.get(`/brdges/public/${publicId}`);
                 } else {
-                    response = await api.get(`/brdges/${id}`);
+                    response = await unauthenticated_api.get(`/brdges/${id}`);
                 }
                 setBrdge(response.data);
                 setNumSlides(response.data.num_slides);
@@ -38,10 +38,10 @@ function ViewBrdgePage() {
 
         const fetchGeneratedAudioFiles = async () => {
             try {
-                const response = await api.get(`/brdges/${id || publicId}/audio/generated`);
+                const response = await unauthenticated_api.get(`/brdges/${id || publicId}/audio/generated`);
                 console.log('Fetched audio files:', response.data);
                 const urls = response.data.files.map(file =>
-                    `${api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${file}`
+                    `${unauthenticated_api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${file}`
                 );
                 setAudioUrls(urls);
             } catch (err) {
@@ -126,7 +126,7 @@ function ViewBrdgePage() {
 
     const renderSlides = () => {
         const imageUrl = brdge
-            ? `${api.defaults.baseURL}/brdges/${id || publicId}/slides/${currentSlide}`
+            ? `${unauthenticated_api.defaults.baseURL}/brdges/${id || publicId}/slides/${currentSlide}`
             : '';
         const transcript = brdge && brdge.transcripts ? brdge.transcripts[currentSlide - 1] : '';
 

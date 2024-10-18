@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Card, CardMedia, CardContent, Typography, Grid, Button, Slider, Container, CircularProgress } from '@mui/material';
 import { PlayArrow, Pause, ChevronLeft, ChevronRight } from '@mui/icons-material';
-import api from '../api';
+import { unauthenticated_api } from '../api';
 
 function BrdgePlayer({ brdgeId, publicId }) {
     const [brdge, setBrdge] = useState(null);
@@ -20,8 +20,8 @@ function BrdgePlayer({ brdgeId, publicId }) {
         const fetchBrdgeData = async () => {
             try {
                 const response = publicId
-                    ? await api.get(`/brdges/public/${publicId}`)
-                    : await api.get(`/brdges/${brdgeId}`);
+                    ? await unauthenticated_api.get(`/brdges/public/${publicId}`)
+                    : await unauthenticated_api.get(`/brdges/${brdgeId}`);
                 setBrdge(response.data);
                 setNumSlides(response.data.num_slides);
                 setLoading(false);
@@ -35,8 +35,8 @@ function BrdgePlayer({ brdgeId, publicId }) {
         const fetchGeneratedAudioFiles = async () => {
             try {
                 const response = publicId
-                    ? await api.get(`/brdges/public/${publicId}/audio/generated`)
-                    : await api.get(`/brdges/${brdgeId}/audio/generated`);
+                    ? await unauthenticated_api.get(`/brdges/public/${publicId}/audio/generated`)
+                    : await unauthenticated_api.get(`/brdges/${brdgeId}/audio/generated`);
                 console.log('Fetched audio files:', response.data);
                 setGeneratedAudioFiles(response.data.files);
             } catch (err) {
@@ -57,7 +57,7 @@ function BrdgePlayer({ brdgeId, publicId }) {
     const loadAudioForSlide = (slideNumber) => {
         if (generatedAudioFiles.length >= slideNumber) {
             const audioFile = generatedAudioFiles[slideNumber - 1];
-            const audioUrl = `${api.defaults.baseURL}/brdges/${publicId || brdgeId}/audio/generated/${audioFile}`;
+            const audioUrl = `${unauthenticated_api.defaults.baseURL}/brdges/${publicId || brdgeId}/audio/generated/${audioFile}`;
             setCurrentAudio(audioUrl);
 
             if (audioRef.current) {
@@ -140,7 +140,7 @@ function BrdgePlayer({ brdgeId, publicId }) {
         <Card elevation={3} sx={{ borderRadius: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.02)' } }}>
             <CardMedia
                 component="img"
-                image={`${api.defaults.baseURL}/brdges/${publicId || brdgeId}/slides/${currentSlide}`}
+                image={`${unauthenticated_api.defaults.baseURL}/brdges/${publicId || brdgeId}/slides/${currentSlide}`}
                 alt={`Slide ${currentSlide}`}
                 sx={{
                     width: '100%',

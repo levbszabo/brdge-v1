@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField, Button, Container, Typography } from '@mui/material';
-import api from '../api';
+import { api } from '../api';
 import { setAuthToken } from '../utils/auth';
 
 function LoginPage() {

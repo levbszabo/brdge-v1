@@ -12,7 +12,7 @@ import AboutPage from './pages/AboutPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-import api from './api';
+import { api } from './api';
 import { getAuthToken, setAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
 

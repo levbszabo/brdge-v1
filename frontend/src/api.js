@@ -6,10 +6,14 @@ const api = axios.create({
     baseURL: API_BASE_URL,
 });
 
+const unauthenticated_api = axios.create({
+    baseURL: API_BASE_URL
+});
+
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('authToken');
-        if (token) {
+        if (token && !config.url.includes('/public/')) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
         return config;
@@ -17,4 +21,4 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-export default api;
+export { api, unauthenticated_api };
