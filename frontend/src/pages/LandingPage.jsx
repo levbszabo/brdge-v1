@@ -15,6 +15,7 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import BrdgePlayer from '../components/BrdgePlayer';
 import './LandingPage.css';
+import { styled } from '@mui/material/styles';
 
 const StepIcon = ({ icon }) => {
     return (
@@ -75,6 +76,29 @@ const UseCase = ({ icon, title, description }) => {
     );
 };
 
+const StyledBrdgePlayer = styled(BrdgePlayer)(({ theme }) => ({
+    width: '85%',
+    maxWidth: '680px',
+    margin: '0 auto',
+    borderRadius: theme.shape.borderRadius,
+    overflow: 'hidden',
+    boxShadow: theme.shadows[4],
+    '& .brdge-player-controls': {
+        opacity: 0.7,
+        transition: 'opacity 0.3s ease',
+        '&:hover': {
+            opacity: 1,
+        },
+    },
+    '& .brdge-player-button': {
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        color: theme.palette.common.white,
+        '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        },
+    },
+}));
+
 function LandingPage() {
     const theme = useTheme();
 
@@ -107,7 +131,7 @@ function LandingPage() {
 
     // Memoize the BrdgePlayer component to prevent re-rendering
     const memoizedBrdgePlayer = useMemo(() => (
-        <BrdgePlayer
+        <StyledBrdgePlayer
             brdgeId="1"
             onError={(error) => console.error('BrdgePlayer error:', error)}
         />
@@ -147,8 +171,24 @@ function LandingPage() {
                             Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool.
                         </Typography>
 
-                        <Box sx={{ my: 4 }} data-aos="fade-up">
-                            {memoizedBrdgePlayer}
+                        <Box sx={{ my: 4, display: 'flex', justifyContent: 'center' }} data-aos="fade-up">
+                            <Paper
+                                elevation={6}
+                                sx={{
+                                    width: '85%',
+                                    maxWidth: '680px',
+                                    backgroundColor: 'background.paper',
+                                    borderRadius: 2,
+                                    overflow: 'hidden',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-5px)',
+                                        boxShadow: 8,
+                                    },
+                                }}
+                            >
+                                {memoizedBrdgePlayer}
+                            </Paper>
                         </Box>
 
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
