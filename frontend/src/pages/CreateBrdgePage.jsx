@@ -48,11 +48,12 @@ function CreateBrdgePage() {
             if (id) {
                 await api.put(`/brdges/${id}`, formData);
                 showSnackbar('Brdge updated successfully', 'success');
+                navigate(`/edit/${id}`);
             } else {
-                await api.post('/brdges', formData);
+                const response = await api.post('/brdges', formData);
                 showSnackbar('Brdge created successfully', 'success');
+                navigate(`/edit/${response.data.brdge.id}`);
             }
-            navigate('/brdges');
         } catch (error) {
             console.error('Error creating/updating brdge:', error);
             setError('An error occurred. Please try again.');

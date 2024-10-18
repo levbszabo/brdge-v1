@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
 import {
     Grid, Card, CardHeader, CardContent, CardMedia, Typography, Button, TextField, Box,
-    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled
+    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled, LinearProgress, Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaStop } from 'react-icons/fa';
+import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaStop, FaMicrophone } from 'react-icons/fa';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 // Custom styled components
 const CustomStepLabel = styled(StepLabel)(({ theme, completed }) => ({
@@ -55,6 +56,9 @@ function EditBrdgePage() {
         transcriptsSaved: false,
         voiceGenerated: false,
     });
+    const [voiceId, setVoiceId] = useState('');
+    const [recordingTime, setRecordingTime] = useState(0);
+    const recordingIntervalRef = useRef(null);
 
     const audioRef = useRef(null);
     const mp3Recorder = useRef(new MicRecorder({ bitRate: 128 }));
@@ -111,13 +115,19 @@ function EditBrdgePage() {
     const fetchGeneratedAudioFiles = async () => {
         try {
             const response = await api.get(`/brdges/${id}/audio/generated`);
-            const urls = response.data.files.map(file =>
-                `${api.defaults.baseURL}/brdges/${id}/audio/generated/${file}`
-            );
-            setAudioUrls(urls);
-        } catch (err) {
-            console.error('Error fetching generated audio files:', err);
-            showSnackbar('Error fetching audio files.', 'error');
+            if (response.data && Array.isArray(response.data.files)) {
+                const urls = response.data.files.map(file =>
+                    `${api.defaults.baseURL}/brdges/${id}/audio/generated/${file}`
+                );
+                setAudioUrls(urls);
+                setBrdgeData(prev => ({ ...prev, generatedAudioFiles: response.data.files }));
+            } else {
+                console.warn('Unexpected generated audio files data format:', response.data);
+                showSnackbar('Unexpected generated audio files data format.', 'warning');
+            }
+        } catch (error) {
+            console.error('Error fetching generated audio files:', error);
+            showSnackbar('Error fetching generated audio files.', 'error');
         }
     };
 
@@ -135,19 +145,23 @@ function EditBrdgePage() {
     };
 
     const handleRecordWalkthrough = () => {
-        setCountdown(3);
-        setIsRecordingDialogOpen(true);
-        countdownIntervalRef.current = setInterval(() => {
-            setCountdown((prev) => {
-                if (prev === 1) {
-                    clearInterval(countdownIntervalRef.current);
-                    setIsRecordingDialogOpen(false);
-                    startRecording();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+        if (isRecording) {
+            stopRecording();
+        } else {
+            setCountdown(3);
+            setIsRecordingDialogOpen(true);
+            countdownIntervalRef.current = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev === 1) {
+                        clearInterval(countdownIntervalRef.current);
+                        setIsRecordingDialogOpen(false);
+                        startRecording();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
     };
 
     const startRecording = () => {
@@ -156,6 +170,9 @@ function EditBrdgePage() {
             .then(() => {
                 setIsRecording(true);
                 showSnackbar('Recording started...', 'info');
+                recordingIntervalRef.current = setInterval(() => {
+                    setRecordingTime((prevTime) => prevTime + 1);
+                }, 1000);
             })
             .catch((error) => {
                 console.error('Error starting recording:', error);
@@ -174,11 +191,15 @@ function EditBrdgePage() {
                 });
                 handleUploadAudio({ target: { files: [audioFile] } });
                 setIsRecording(false);
+                clearInterval(recordingIntervalRef.current);
+                setRecordingTime(0);
                 showSnackbar('Recording stopped and uploaded successfully.', 'success');
             })
             .catch((e) => {
                 console.error('Error stopping recording:', e);
                 setIsRecording(false);
+                clearInterval(recordingIntervalRef.current);
+                setRecordingTime(0);
                 showSnackbar('Error stopping recording.', 'error');
             });
     };
@@ -316,24 +337,61 @@ function EditBrdgePage() {
     const handleGenerateVoice = async () => {
         try {
             setIsProcessing(true);
-            const response = await api.post(`/brdges/${id}/audio/generate_voice`);
-            if (response.data && response.data.message) {
-                showSnackbar(response.data.message, 'success');
-                // Fetch the updated list of generated audio files
-                const audioFilesResponse = await api.get(`/brdges/${id}/audio/generated`);
-                if (audioFilesResponse.data && Array.isArray(audioFilesResponse.data.files)) {
-                    setBrdgeData(prev => ({ ...prev, generatedAudioFiles: audioFilesResponse.data.files }));
-                    setCompletedSteps(prev => ({ ...prev, voiceGenerated: true }));
-                    setActiveStep(prev => Math.max(prev, 3));
-                } else {
-                    showSnackbar('No generated audio files received.', 'warning');
+            if (!brdgeData.transcripts || brdgeData.transcripts.length === 0) {
+                showSnackbar('No transcripts available. Please generate transcripts first.', 'warning');
+                return;
+            }
+
+            let usedVoiceId = voiceId;
+
+            if (!usedVoiceId) {
+                console.log('Cloning voice');
+                const cloneResponse = await api.post(`/brdges/${id}/audio/clone_voice`, {}, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response from clone voice:', cloneResponse.data);
+
+                if (!cloneResponse.data || !cloneResponse.data.voice_id) {
+                    showSnackbar('Failed to clone voice. Please try again or provide a voice ID.', 'error');
+                    return;
                 }
+
+                usedVoiceId = cloneResponse.data.voice_id;
+            }
+
+            console.log('Sending request to generate voice');
+
+            const generateResponse = await api.post(`/brdges/${id}/audio/generate_voice`, { voice_id: usedVoiceId }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            console.log('Response from generate voice:', generateResponse.data);
+
+            if (generateResponse.data && generateResponse.data.message) {
+                showSnackbar(generateResponse.data.message, 'success');
+                await fetchGeneratedAudioFiles();
+                setCompletedSteps(prev => ({ ...prev, voiceGenerated: true }));
+                setActiveStep(prev => Math.max(prev, 3));
             } else {
-                showSnackbar('No response from voice generation.', 'warning');
+                showSnackbar('Unexpected response from voice generation.', 'warning');
             }
         } catch (error) {
             console.error('Error generating voice:', error);
-            showSnackbar('Error generating voice.', 'error');
+            if (error.response) {
+                console.error('Error response:', error.response.data);
+                console.error('Error status:', error.response.status);
+                console.error('Error headers:', error.response.headers);
+            } else if (error.request) {
+                console.error('Error request:', error.request);
+            } else {
+                console.error('Error message:', error.message);
+            }
+            showSnackbar(`Error generating voice: ${error.response?.data?.message || error.message}`, 'error');
         } finally {
             setIsProcessing(false);
         }
@@ -359,6 +417,13 @@ function EditBrdgePage() {
         if (audioRef.current) {
             audioRef.current.currentTime = time;
         }
+    };
+
+    // Update the formatTime function
+    const formatTime = (time) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
 
     const renderSlides = () => {
@@ -426,8 +491,9 @@ function EditBrdgePage() {
                                 onChange={handleSeek}
                                 style={{ width: '100%' }}
                             />
-                            <Typography variant="caption">
-                                {formatTime(currentTime)} / {formatTime(audioDuration)}
+                            <Typography variant="caption" sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{formatTime(currentTime)}</span>
+                                <span>{formatTime(audioDuration)}</span>
                             </Typography>
                         </Box>
                     )}
@@ -436,29 +502,115 @@ function EditBrdgePage() {
         );
     };
 
-    const formatTime = (time) => {
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    // Add this function to calculate progress
+    const calculateProgress = () => {
+        const totalSteps = 4;
+        const completedStepsCount = Object.values(completedSteps).filter(Boolean).length;
+        return (completedStepsCount / totalSteps) * 100;
     };
 
-    const renderWorkflow = () => {
-        const steps = ['Upload Audio', 'Generate Transcripts', 'Edit Transcripts', 'Generate Voice'];
-        return (
-            <Stepper activeStep={activeStep} orientation="vertical">
-                {steps.map((label, index) => {
-                    const isCompleted = completedSteps[Object.keys(completedSteps)[index]];
-                    return (
-                        <Step key={label} completed={isCompleted}>
-                            <CustomStepLabel completed={isCompleted ? true : undefined}>
-                                {label}
-                            </CustomStepLabel>
-                        </Step>
-                    );
-                })}
-            </Stepper>
-        );
-    };
+    // Replace the renderWorkflow function with LinearProgress
+    const renderProgress = () => (
+        <Box sx={{ width: '100%', mt: 2 }}>
+            <LinearProgress variant="determinate" value={calculateProgress()} />
+        </Box>
+    );
+
+    const renderToolbar = () => (
+        <Paper elevation={3} sx={{ p: 2 }}>
+            {renderProgress()}
+            <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>Input Audio</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Button
+                        onClick={handleRecordWalkthrough}
+                        fullWidth
+                        sx={{
+                            mb: 1,
+                            backgroundColor: isRecording ? 'error.main' : 'primary.main',
+                            color: 'white',
+                            '&:hover': {
+                                backgroundColor: isRecording ? 'error.dark' : 'primary.dark',
+                            },
+                        }}
+                        startIcon={isRecording ? <FaStop /> : <FaMicrophone />}
+                    >
+                        {isRecording ? `Stop Recording (${formatTime(recordingTime)})` : 'Record Walkthrough'}
+                    </Button>
+                    <Button component="label" fullWidth>
+                        Upload Audio
+                        <input type="file" hidden accept="audio/*" onChange={handleUploadAudio} />
+                    </Button>
+                </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>Transcripts</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <Tooltip title="Generate Transcripts">
+                        <span>
+                            <Button
+                                onClick={handleGenerateTranscripts}
+                                fullWidth
+                                disabled={!completedSteps.audioUploaded || isProcessing}
+                                sx={{ mb: 1 }}
+                            >
+                                {isProcessing ? <CircularProgress size={20} /> : 'Generate Transcripts'}
+                            </Button>
+                        </span>
+                    </Tooltip>
+                    <Tooltip title="Save Transcripts">
+                        <span>
+                            <Button
+                                onClick={handleSaveTranscripts}
+                                fullWidth
+                                disabled={!isTranscriptModified || isProcessing}
+                            >
+                                {isProcessing ? <CircularProgress size={20} /> : 'Save Transcripts'}
+                            </Button>
+                        </span>
+                    </Tooltip>
+                </AccordionDetails>
+            </Accordion>
+
+            <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography>Output Audio</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <TextField
+                        label="Voice ID (optional)"
+                        variant="outlined"
+                        fullWidth
+                        value={voiceId}
+                        onChange={(e) => setVoiceId(e.target.value)}
+                        sx={{ mb: 1 }}
+                    />
+                    <Tooltip title="Generate Voice">
+                        <span>
+                            <Button
+                                onClick={handleGenerateVoice}
+                                fullWidth
+                                disabled={isProcessing}
+                            >
+                                {isProcessing ? <CircularProgress size={20} /> : 'Generate Voice'}
+                            </Button>
+                        </span>
+                    </Tooltip>
+                </AccordionDetails>
+            </Accordion>
+
+            {activeStep === 3 && (
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
+                    All steps completed.
+                </Typography>
+            )}
+        </Paper>
+    );
 
     return (
         <Grid container justifyContent="center" sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', py: 4 }}>
@@ -512,57 +664,7 @@ function EditBrdgePage() {
                             {brdgeData.numSlides > 0 && renderSlides()}
                         </Grid>
                         <Grid item xs={12} md={4}>
-                            <Paper elevation={3} sx={{ p: 2 }}>
-                                {renderWorkflow()}
-                                <Box sx={{ mt: 2 }}>
-                                    <Button onClick={handleRecordWalkthrough} fullWidth sx={{ mb: 1 }}>
-                                        Record Walkthrough
-                                    </Button>
-                                    <Button component="label" fullWidth>
-                                        Upload Audio
-                                        <input type="file" hidden accept="audio/*" onChange={handleUploadAudio} />
-                                    </Button>
-                                    <Tooltip title="Generate Transcripts">
-                                        <span>
-                                            <Button
-                                                onClick={handleGenerateTranscripts}
-                                                fullWidth
-                                                disabled={!completedSteps.audioUploaded || isProcessing}
-                                            >
-                                                {isProcessing ? <CircularProgress size={20} /> : 'Generate Transcripts'}
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                    <Tooltip title="Save Transcripts">
-                                        <span>
-                                            <Button
-                                                onClick={handleSaveTranscripts}
-                                                fullWidth
-                                                disabled={!isTranscriptModified || isProcessing}
-                                                sx={{ mb: 1 }}
-                                            >
-                                                {isProcessing ? <CircularProgress size={20} /> : 'Save Transcripts'}
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                    <Tooltip title="Generate Voice">
-                                        <span>
-                                            <Button
-                                                onClick={handleGenerateVoice}
-                                                fullWidth
-                                                disabled={isProcessing}
-                                            >
-                                                {isProcessing ? <CircularProgress size={20} /> : 'Generate Voice'}
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
-                                    {activeStep === 3 && (
-                                        <Typography variant="body2" color="textSecondary">
-                                            All steps completed.
-                                        </Typography>
-                                    )}
-                                </Box>
-                            </Paper>
+                            {renderToolbar()}
                         </Grid>
                     </Grid>
                     <FormControlLabel
@@ -643,5 +745,4 @@ function EditBrdgePage() {
     );
 }
 
-// Move the export statement outside of the function
 export default EditBrdgePage;

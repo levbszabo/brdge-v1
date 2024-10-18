@@ -109,6 +109,10 @@ function BrdgeListPage() {
         showSnackbar('Shareable link copied to clipboard!', 'success');
     };
 
+    const handleCreateNewBrdge = () => {
+        navigate('/create', { state: { redirectToEdit: true } });
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -278,8 +282,7 @@ function BrdgeListPage() {
                                 <Button
                                     variant="contained"
                                     color="primary"
-                                    component={Link}
-                                    to="/create"
+                                    onClick={handleCreateNewBrdge}
                                     startIcon={<AddIcon />}
                                     sx={{
                                         py: 1.5,
