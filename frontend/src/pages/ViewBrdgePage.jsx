@@ -1,8 +1,48 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { unauthenticated_api } from '../api';
-import { Box, Card, CardMedia, CardContent, Typography, Grid, Button, Slider, Container, CircularProgress } from '@mui/material';
-import { PlayArrow, Pause, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { api, unauthenticated_api } from '../api';
+import { Box, Typography, IconButton, Container, CircularProgress, Paper, useTheme, useMediaQuery, Fade } from '@mui/material';
+import { PlayArrow, Pause, SkipPrevious, SkipNext } from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getAuthToken } from '../utils/auth';
+import styled from '@emotion/styled';
+import { keyframes } from '@emotion/react';
+
+const glowAnimation = keyframes`
+  0% { box-shadow: 0 0 5px #ffd700; }
+  50% { box-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700; }
+  100% { box-shadow: 0 0 5px #ffd700; }
+`;
+
+const PlayButton = styled(IconButton)`
+  background-color: ${props => props.theme.palette.primary.main};
+  color: white;
+  &:hover {
+    background-color: ${props => props.theme.palette.primary.dark};
+    animation: ${glowAnimation} 2s infinite;
+  }
+`;
+
+const ControlButton = styled(IconButton)`
+  color: ${props => props.theme.palette.text.secondary};
+  &:hover {
+    color: ${props => props.theme.palette.primary.main};
+  }
+`;
+
+const ProgressBar = styled.div`
+  width: 100%;
+  height: 4px;
+  background-color: ${props => props.theme.palette.grey[300]};
+  position: relative;
+  cursor: pointer;
+`;
+
+const Progress = styled.div`
+  height: 100%;
+  background-color: ${props => props.theme.palette.primary.main};
+  transition: width 0.1s linear;
+`;
 
 function ViewBrdgePage() {
     const { id, publicId } = useParams();
@@ -16,6 +56,9 @@ function ViewBrdgePage() {
     const [currentTime, setCurrentTime] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const progressBarRef = useRef(null);
 
     useEffect(() => {
         const fetchBrdgeData = async () => {
@@ -24,7 +67,13 @@ function ViewBrdgePage() {
                 if (publicId) {
                     response = await unauthenticated_api.get(`/brdges/public/${publicId}`);
                 } else {
-                    response = await unauthenticated_api.get(`/brdges/${id}`);
+                    const token = getAuthToken();
+                    if (token) {
+                        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                        response = await api.get(`/brdges/${id}`);
+                    } else {
+                        throw new Error('Authentication required');
+                    }
                 }
                 setBrdge(response.data);
                 setNumSlides(response.data.num_slides);
@@ -38,10 +87,20 @@ function ViewBrdgePage() {
 
         const fetchGeneratedAudioFiles = async () => {
             try {
-                const response = await unauthenticated_api.get(`/brdges/${id || publicId}/audio/generated`);
-                console.log('Fetched audio files:', response.data);
+                let response;
+                if (publicId) {
+                    response = await unauthenticated_api.get(`/brdges/${publicId}/audio/generated`);
+                } else {
+                    const token = getAuthToken();
+                    if (token) {
+                        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                        response = await api.get(`/brdges/${id}/audio/generated`);
+                    } else {
+                        throw new Error('Authentication required');
+                    }
+                }
                 const urls = response.data.files.map(file =>
-                    `${unauthenticated_api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${file}`
+                    `${publicId ? unauthenticated_api.defaults.baseURL : api.defaults.baseURL}/brdges/${id || publicId}/audio/generated/${file}`
                 );
                 setAudioUrls(urls);
             } catch (err) {
@@ -58,7 +117,6 @@ function ViewBrdgePage() {
 
         const handleLoadedMetadata = () => {
             setAudioDuration(audio.duration);
-            console.log('Audio metadata loaded. Duration:', audio.duration);
         };
 
         const handleTimeUpdate = () => {
@@ -68,6 +126,9 @@ function ViewBrdgePage() {
         const handleEnded = () => {
             setIsPlaying(false);
             setCurrentTime(0);
+            if (currentSlide < numSlides) {
+                setCurrentSlide(prev => prev + 1);
+            }
         };
 
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -79,7 +140,7 @@ function ViewBrdgePage() {
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('ended', handleEnded);
         };
-    }, []);
+    }, [currentSlide, numSlides]);
 
     useEffect(() => {
         if (audioUrls.length > 0 && currentSlide <= audioUrls.length) {
@@ -112,10 +173,12 @@ function ViewBrdgePage() {
         }
     };
 
-    const handleSeek = (e, newValue) => {
-        const time = newValue;
-        audioRef.current.currentTime = time;
-        setCurrentTime(time);
+    const handleProgressClick = (e) => {
+        const progressBar = progressBarRef.current;
+        const clickPosition = (e.clientX - progressBar.getBoundingClientRect().left) / progressBar.offsetWidth;
+        const newTime = clickPosition * audioDuration;
+        audioRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
     };
 
     const formatTime = (time) => {
@@ -126,133 +189,121 @@ function ViewBrdgePage() {
 
     const renderSlides = () => {
         const imageUrl = brdge
-            ? `${unauthenticated_api.defaults.baseURL}/brdges/${id || publicId}/slides/${currentSlide}`
+            ? `${publicId ? unauthenticated_api.defaults.baseURL : api.defaults.baseURL}/brdges/${id || publicId}/slides/${currentSlide}`
             : '';
         const transcript = brdge && brdge.transcripts ? brdge.transcripts[currentSlide - 1] : '';
 
         return (
-            <Card elevation={3} sx={{ mb: 4, borderRadius: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.02)' } }}>
-                <CardMedia
-                    component="img"
-                    image={imageUrl}
-                    alt={`Slide ${currentSlide}`}
-                    sx={{
-                        width: '100%',
-                        height: 'auto',
-                        maxHeight: { xs: 300, md: 500 },
-                        objectFit: 'contain',
-                        backgroundColor: 'background.paper',
-                    }}
-                />
-                <CardContent>
-                    <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-                        Transcript for Slide {currentSlide}
-                    </Typography>
-                    <Typography variant="body2" color="textPrimary">
-                        {transcript}
-                    </Typography>
-                </CardContent>
-                <Box p={2} bgcolor="grey.100" borderRadius="0 0 8px 8px">
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm="auto">
-                            <Button
-                                onClick={handlePrevSlide}
-                                variant="contained"
-                                color="primary"
-                                disabled={currentSlide === 1}
-                                startIcon={<ChevronLeft />}
-                                fullWidth
-                                sx={{ mr: { sm: 2, xs: 0 }, mb: { xs: 2, sm: 0 } }}
-                            >
-                                Previous
-                            </Button>
-                        </Grid>
-                        <Grid item xs={12} sm="auto">
-                            {audioUrls.length >= currentSlide && (
-                                <Button
-                                    onClick={handlePlayPause}
-                                    variant="contained"
-                                    color="secondary"
-                                    startIcon={isPlaying ? <Pause /> : <PlayArrow />}
-                                    fullWidth
-                                    sx={{ mx: { sm: 2, xs: 0 }, mb: { xs: 2, sm: 0 } }}
-                                >
-                                    {isPlaying ? 'Pause' : 'Play'}
-                                </Button>
-                            )}
-                        </Grid>
-                        <Grid item xs={12} sm="auto">
-                            <Button
-                                onClick={handleNextSlide}
-                                variant="contained"
-                                color="primary"
-                                disabled={currentSlide === numSlides}
-                                endIcon={<ChevronRight />}
-                                fullWidth
-                                sx={{ ml: { sm: 2, xs: 0 } }}
-                            >
-                                Next
-                            </Button>
-                        </Grid>
-                    </Grid>
-                    {audioUrls.length >= currentSlide && (
-                        <Box mt={2}>
-                            <Slider
-                                value={currentTime}
-                                min={0}
-                                max={audioDuration}
-                                onChange={handleSeek}
-                                aria-labelledby="audio-slider"
-                                sx={{ color: 'primary.main' }}
-                            />
-                            <Grid container justifyContent="space-between">
-                                <Typography variant="caption">{formatTime(currentTime)}</Typography>
-                                <Typography variant="caption">{formatTime(audioDuration)}</Typography>
-                            </Grid>
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentSlide}
+                    initial={{ opacity: 0, x: 50 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -50 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <Paper elevation={3} sx={{ borderRadius: 2, overflow: 'hidden', mb: 2 }}>
+                        <Box
+                            component="img"
+                            src={imageUrl}
+                            alt={`Slide ${currentSlide}`}
+                            sx={{
+                                width: '100%',
+                                height: 'auto',
+                                maxHeight: isMobile ? 'calc(100vh - 200px)' : 'calc(100vh - 150px)',
+                                objectFit: 'contain',
+                                backgroundColor: 'background.paper',
+                            }}
+                        />
+                        <Box p={2}>
+                            <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                                Slide {currentSlide} of {numSlides}
+                            </Typography>
+                            <Typography variant="body2" color="textPrimary">
+                                {transcript}
+                            </Typography>
                         </Box>
-                    )}
-                </Box>
-            </Card>
+                    </Paper>
+                </motion.div>
+            </AnimatePresence>
         );
     };
 
+    const renderControls = () => (
+        <Paper
+            elevation={3}
+            sx={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                p: 1,
+                borderRadius: '16px 16px 0 0',
+                zIndex: 1000,
+            }}
+        >
+            <ProgressBar ref={progressBarRef} onClick={handleProgressClick}>
+                <Progress style={{ width: `${(currentTime / audioDuration) * 100}%` }} />
+            </ProgressBar>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 0.5 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{formatTime(currentTime)}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <ControlButton onClick={handlePrevSlide} disabled={currentSlide === 1} size="small">
+                        <SkipPrevious fontSize="small" />
+                    </ControlButton>
+                    <PlayButton onClick={handlePlayPause} size="small">
+                        {isPlaying ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
+                    </PlayButton>
+                    <ControlButton onClick={handleNextSlide} disabled={currentSlide === numSlides} size="small">
+                        <SkipNext fontSize="small" />
+                    </ControlButton>
+                </Box>
+                <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>{formatTime(audioDuration)}</Typography>
+            </Box>
+        </Paper>
+    );
+
     if (loading) {
-        return <CircularProgress />;
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <CircularProgress />
+            </Box>
+        );
     }
 
     if (error) {
-        return <Typography color="error">{error}</Typography>;
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+                <Typography color="error">{error}</Typography>
+            </Box>
+        );
     }
 
     return (
-        <Container maxWidth="md" sx={{ py: 4, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 3 }}>
-            <Box display="flex" flexDirection="column" alignItems="center">
-                <Typography
-                    variant="h5"
-                    gutterBottom
-                    align="center"
-                    sx={{
-                        fontWeight: 600,
-                        color: 'primary.main',
-                        mb: 3,
-                        fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
-                        textTransform: 'uppercase',
-                        letterSpacing: 1.5,
-                    }}
-                >
-                    {brdge ? `Viewing Brdge: ${brdge.name}` : 'View Brdge'}
-                </Typography>
-                {!brdge ? (
-                    <Typography variant="body2" color="text.secondary" align="center">
-                        Loading...
+        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <Container maxWidth="lg" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', py: 1, mb: isMobile ? 6 : 8 }}>
+                <Fade in={true} timeout={1000}>
+                    <Typography
+                        variant="h4"
+                        component="h1"
+                        gutterBottom
+                        align="center"
+                        sx={{
+                            fontWeight: 600,
+                            color: 'primary.main',
+                            mb: 1,
+                            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' }
+                        }}
+                    >
+                        {brdge ? brdge.name : 'View Brdge'}
                     </Typography>
-                ) : (
-                    <Box width="100%">
-                        {renderSlides()}
-                    </Box>
-                )}
-            </Box>
-        </Container>
+                </Fade>
+                <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+                    {brdge && renderSlides()}
+                </Box>
+            </Container>
+            {renderControls()}
+        </Box>
     );
 }
 

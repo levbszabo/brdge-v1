@@ -110,12 +110,13 @@ def update_brdge(user, brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["GET"])
+@jwt_required(optional=True)
 def get_brdge(brdge_id):
-    user = get_current_user()  # Attempt to get the current user
+    current_user = get_current_user()
     brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
 
-    # Check if the user is logged in and owns the brdge, or if the brdge is shareable
-    if (user and user.id == brdge.user_id) or brdge.shareable == 1:
+    # Check if the user owns the brdge or if the brdge is shareable
+    if (current_user and current_user.id == brdge.user_id) or brdge.shareable:
         # Count the number of slide images in the S3 folder
         s3_folder = brdge.folder
         response = s3_client.list_objects_v2(
@@ -171,15 +172,27 @@ def get_public_brdge_by_id(public_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["DELETE"])
-@login_required
-def delete_brdge(user, brdge_id):
-    brdge = Brdge.query.filter_by(
-        id=brdge_id, user_id=user.id
-    ).first_or_404()  # {{ edit_5 }}
+@jwt_required()
+def delete_brdge(brdge_id):
+    current_user = get_current_user()
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first_or_404()
 
-    db.session.delete(brdge)
-    db.session.commit()
-    return jsonify({"message": "Brdge deleted successfully"}), 200
+    try:
+        # Delete associated files from S3
+        s3_folder = brdge.folder
+        s3_objects = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
+        for obj in s3_objects.get("Contents", []):
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
+
+        # Delete the brdge from the database
+        db.session.delete(brdge)
+        db.session.commit()
+
+        return jsonify({"message": "Brdge deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting brdge: {str(e)}")
+        return jsonify({"error": "An error occurred while deleting the brdge"}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
@@ -963,16 +976,26 @@ def register():
 
 
 @app.route("/api/brdges/<int:brdge_id>/toggle_shareable", methods=["POST"])
-@login_required
-def toggle_shareable(user, brdge_id):
-    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
-    brdge.shareable = 1 if brdge.shareable == 0 else 0
+@jwt_required()
+def toggle_shareable(brdge_id):
+    current_user = get_current_user()
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first_or_404()
+
+    brdge.shareable = not brdge.shareable
+    if brdge.shareable and not brdge.public_id:
+        brdge.public_id = str(uuid.uuid4())
+
     db.session.commit()
-    return jsonify(
-        {
-            "message": "Brdge shareable status updated",
-            "shareable": bool(brdge.shareable),
-        }
+
+    return (
+        jsonify(
+            {
+                "message": "Brdge shareable status updated",
+                "shareable": brdge.shareable,
+                "public_id": brdge.public_id if brdge.shareable else None,
+            }
+        ),
+        200,
     )
 
 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography, Button, Box, Container, useMediaQuery } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography, Button, Box, Container, useMediaQuery, Drawer, List, ListItem, ListItemText, IconButton } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import LandingPage from './pages/LandingPage';
 import BrdgeListPage from './pages/BrdgeListPage';
 import CreateBrdgePage from './pages/CreateBrdgePage';
@@ -41,6 +42,7 @@ const theme = createTheme({
 
 function App() {
   const [isHeaderShrunk, setIsHeaderShrunk] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -68,90 +70,158 @@ function App() {
   const handleLogout = () => {
     logout();
     setIsLoggedIn(false);
+    setIsDrawerOpen(false);
     // Optionally, redirect to the login page or home page
   };
+
+  const toggleDrawer = (open) => (event) => {
+    if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+      return;
+    }
+    setIsDrawerOpen(open);
+  };
+
+  const menuItems = [
+    { text: 'Demos', link: '/demos' },
+    { text: 'About', link: '/about' },
+    ...(isLoggedIn
+      ? [
+        { text: 'Brdges', link: '/brdges' },
+        { text: 'Logout', onClick: handleLogout },
+      ]
+      : [
+        { text: 'Login', link: '/login' },
+        { text: 'Sign Up', link: '/signup' },
+      ]),
+  ];
+
+  const drawerContent = (
+    <Box
+      sx={{ width: 250 }}
+      role="presentation"
+      onClick={toggleDrawer(false)}
+      onKeyDown={toggleDrawer(false)}
+    >
+      <List>
+        {menuItems.map((item) => (
+          <ListItem button key={item.text} component={item.link ? Link : 'button'} to={item.link} onClick={item.onClick}>
+            <ListItemText primary={item.text} />
+          </ListItem>
+        ))}
+      </List>
+    </Box>
+  );
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <SnackbarProvider>
         <Router>
-          <AppBar position="fixed" className={`header ${isHeaderShrunk ? 'shrink' : ''}`} elevation={0}>
-            <Container maxWidth="lg">
-              <Toolbar disableGutters>
-                <Typography
-                  variant="h6"
-                  component={Link}
-                  to="/"
-                  sx={{
-                    flexGrow: 1,
-                    fontWeight: 'bold',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    '&:hover': {
-                      color: theme.palette.primary.light,
-                    },
-                  }}
-                >
-                  Brdge AI
-                </Typography>
-                <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                  <Button color="inherit" component={Link} to="/demos" sx={{ mx: 1 }}>Demos</Button>
-                  <Button color="inherit" component={Link} to="/about" sx={{ mx: 1 }}>About</Button>
-                  {isLoggedIn ? (
-                    <>
-                      <Button color="inherit" component={Link} to="/brdges" sx={{ mx: 1 }}>Brdges</Button>
-                      <Button color="inherit" onClick={handleLogout} sx={{ mx: 1 }}>Logout</Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button color="inherit" component={Link} to="/login" sx={{ mx: 1 }}>Login</Button>
-                      <Button color="inherit" component={Link} to="/signup" sx={{ mx: 1 }}>Sign Up</Button>
-                    </>
+          <Box display="flex" flexDirection="column" minHeight="100vh">
+            <AppBar position="fixed" className={`header ${isHeaderShrunk ? 'shrink' : ''}`} elevation={0}>
+              <Container maxWidth="lg">
+                <Toolbar disableGutters>
+                  <Typography
+                    variant="h6"
+                    component={Link}
+                    to="/"
+                    sx={{
+                      flexGrow: 1,
+                      fontWeight: 'bold',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      '&:hover': {
+                        color: theme.palette.primary.light,
+                      },
+                    }}
+                  >
+                    Brdge AI
+                  </Typography>
+                  <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                    {menuItems.map((item) => (
+                      item.link ? (
+                        <Button key={item.text} color="inherit" component={Link} to={item.link} sx={{ mx: 1 }}>
+                          {item.text}
+                        </Button>
+                      ) : (
+                        <Button key={item.text} color="inherit" onClick={item.onClick} sx={{ mx: 1 }}>
+                          {item.text}
+                        </Button>
+                      )
+                    ))}
+                  </Box>
+                  {isMobile && (
+                    <IconButton
+                      color="inherit"
+                      aria-label="open drawer"
+                      edge="start"
+                      onClick={toggleDrawer(true)}
+                      sx={{ ml: 1 }}
+                    >
+                      <MenuIcon />
+                    </IconButton>
                   )}
-                </Box>
-                {isMobile && (
-                  <Button color="inherit" sx={{ ml: 1 }}>
-                    <MenuIcon />
-                  </Button>
-                )}
-              </Toolbar>
-            </Container>
-          </AppBar>
-          <Box component="main" sx={{ pt: { xs: '56px', sm: '64px' }, minHeight: '100vh' }}>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/demos" element={<DemoPage />} />
-              <Route path="/signup" element={<SignUpPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
-              <Route path="/b/:publicId" element={<ViewBrdgePage />} /> {/* New route for public ID */}
-              <Route
-                path="/brdges"
-                element={
-                  <ProtectedRoute>
-                    <BrdgeListPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/create"
-                element={
-                  <ProtectedRoute>
-                    <CreateBrdgePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/edit/:id"
-                element={
-                  <ProtectedRoute>
-                    <CreateBrdgePage />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
+                </Toolbar>
+              </Container>
+            </AppBar>
+            <Drawer
+              anchor="right"
+              open={isDrawerOpen}
+              onClose={toggleDrawer(false)}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+                <IconButton onClick={toggleDrawer(false)}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+              {drawerContent}
+            </Drawer>
+            <Box component="main" sx={{ flexGrow: 1, pt: { xs: '56px', sm: '64px' } }}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/demos" element={<DemoPage />} />
+                <Route path="/signup" element={<SignUpPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
+                <Route path="/b/:publicId" element={<ViewBrdgePage />} />
+                <Route
+                  path="/brdges"
+                  element={
+                    <ProtectedRoute>
+                      <BrdgeListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/create"
+                  element={
+                    <ProtectedRoute>
+                      <CreateBrdgePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/edit/:id"
+                  element={
+                    <ProtectedRoute>
+                      <CreateBrdgePage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Box>
+            <Box sx={{
+              py: 3,
+              textAlign: 'center',
+              bgcolor: 'background.paper',
+              borderTop: '1px solid',
+              borderColor: 'divider'
+            }}>
+              <Typography variant="body2" color="text.secondary">
+                © 2024 Journeyman AI LLC. All rights reserved.
+              </Typography>
+            </Box>
           </Box>
         </Router>
       </SnackbarProvider>
