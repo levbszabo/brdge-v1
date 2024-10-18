@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
 import {
     Grid, Card, CardHeader, CardContent, CardMedia, Typography, Button, TextField, Box,
-    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop
+    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -11,16 +11,16 @@ import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaStop } from 'react-ic
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 
-// Suppress ResizeObserver loop warning in development
-if (process.env.NODE_ENV === 'development') {
-    const originalWarn = console.warn;
-    console.warn = (message, ...args) => {
-        if (message.includes('ResizeObserver loop completed with undelivered notifications')) {
-            return;
-        }
-        originalWarn(message, ...args);
-    };
-}
+// Custom styled components
+const CustomStepLabel = styled(StepLabel)(({ theme, completed }) => ({
+    '& .MuiStepLabel-label': {
+        color: completed ? theme.palette.primary.main : theme.palette.text.secondary,
+        fontWeight: completed ? 'bold' : 'normal',
+    },
+    '& .MuiStepIcon-root': {
+        color: completed ? theme.palette.primary.main : theme.palette.text.disabled,
+    },
+}));
 
 function EditBrdgePage() {
     const { id } = useParams();
@@ -49,6 +49,12 @@ function EditBrdgePage() {
     const [countdown, setCountdown] = useState(0);
     const [isRecordingDialogOpen, setIsRecordingDialogOpen] = useState(false);
     const [audioUrls, setAudioUrls] = useState([]);
+    const [completedSteps, setCompletedSteps] = useState({
+        audioUploaded: false,
+        transcriptsGenerated: false,
+        transcriptsSaved: false,
+        voiceGenerated: false,
+    });
 
     const audioRef = useRef(null);
     const mp3Recorder = useRef(new MicRecorder({ bitRate: 128 }));
@@ -192,6 +198,7 @@ function EditBrdgePage() {
                 });
                 showSnackbar('Audio uploaded successfully.', 'success');
                 setIsAudioUploaded(true);
+                setCompletedSteps(prev => ({ ...prev, audioUploaded: true }));
                 setActiveStep(prev => Math.max(prev, 1));
                 // Optionally, refetch brdge data to get updated generatedAudioFiles
                 fetchBrdgeData();
@@ -237,6 +244,7 @@ function EditBrdgePage() {
                     ...prev,
                     transcripts: transcriptsArray
                 }));
+                setCompletedSteps(prev => ({ ...prev, transcriptsGenerated: true }));
                 setActiveStep(prev => Math.max(prev, 2));
                 showSnackbar('Transcripts fetched successfully.', 'success');
             } else {
@@ -295,6 +303,7 @@ function EditBrdgePage() {
             setIsProcessing(true);
             await api.put(`/brdges/${id}/transcripts/aligned`, { transcripts: brdgeData.transcripts });
             setIsTranscriptModified(false);
+            setCompletedSteps(prev => ({ ...prev, transcriptsSaved: true }));
             showSnackbar('Transcripts saved successfully.', 'success');
         } catch (error) {
             console.error('Error saving transcripts:', error);
@@ -314,6 +323,7 @@ function EditBrdgePage() {
                 const audioFilesResponse = await api.get(`/brdges/${id}/audio/generated`);
                 if (audioFilesResponse.data && Array.isArray(audioFilesResponse.data.files)) {
                     setBrdgeData(prev => ({ ...prev, generatedAudioFiles: audioFilesResponse.data.files }));
+                    setCompletedSteps(prev => ({ ...prev, voiceGenerated: true }));
                     setActiveStep(prev => Math.max(prev, 3));
                 } else {
                     showSnackbar('No generated audio files received.', 'warning');
@@ -436,11 +446,16 @@ function EditBrdgePage() {
         const steps = ['Upload Audio', 'Generate Transcripts', 'Edit Transcripts', 'Generate Voice'];
         return (
             <Stepper activeStep={activeStep} orientation="vertical">
-                {steps.map((label, index) => (
-                    <Step key={label}>
-                        <StepLabel>{label}</StepLabel>
-                    </Step>
-                ))}
+                {steps.map((label, index) => {
+                    const isCompleted = completedSteps[Object.keys(completedSteps)[index]];
+                    return (
+                        <Step key={label} completed={isCompleted}>
+                            <CustomStepLabel completed={isCompleted ? true : undefined}>
+                                {label}
+                            </CustomStepLabel>
+                        </Step>
+                    );
+                })}
             </Stepper>
         );
     };
@@ -500,32 +515,47 @@ function EditBrdgePage() {
                             <Paper elevation={3} sx={{ p: 2 }}>
                                 {renderWorkflow()}
                                 <Box sx={{ mt: 2 }}>
-                                    {activeStep === 0 && (
-                                        <>
-                                            <Button onClick={handleRecordWalkthrough} fullWidth sx={{ mb: 1 }}>
-                                                Record Walkthrough
+                                    <Button onClick={handleRecordWalkthrough} fullWidth sx={{ mb: 1 }}>
+                                        Record Walkthrough
+                                    </Button>
+                                    <Button component="label" fullWidth>
+                                        Upload Audio
+                                        <input type="file" hidden accept="audio/*" onChange={handleUploadAudio} />
+                                    </Button>
+                                    <Tooltip title="Generate Transcripts">
+                                        <span>
+                                            <Button
+                                                onClick={handleGenerateTranscripts}
+                                                fullWidth
+                                                disabled={!completedSteps.audioUploaded || isProcessing}
+                                            >
+                                                {isProcessing ? <CircularProgress size={20} /> : 'Generate Transcripts'}
                                             </Button>
-                                            <Button component="label" fullWidth>
-                                                Upload Audio
-                                                <input type="file" hidden accept="audio/*" onChange={handleUploadAudio} />
-                                            </Button>
-                                        </>
-                                    )}
-                                    {activeStep === 1 && (
-                                        <Button onClick={handleGenerateTranscripts} fullWidth disabled={!isAudioUploaded || isProcessing}>
-                                            {isProcessing ? <CircularProgress size={20} /> : 'Generate Transcripts'}
-                                        </Button>
-                                    )}
-                                    {activeStep === 2 && (
-                                        <>
-                                            <Button onClick={handleSaveTranscripts} fullWidth disabled={!isTranscriptModified || isProcessing} sx={{ mb: 1 }}>
+                                        </span>
+                                    </Tooltip>
+                                    <Tooltip title="Save Transcripts">
+                                        <span>
+                                            <Button
+                                                onClick={handleSaveTranscripts}
+                                                fullWidth
+                                                disabled={!isTranscriptModified || isProcessing}
+                                                sx={{ mb: 1 }}
+                                            >
                                                 {isProcessing ? <CircularProgress size={20} /> : 'Save Transcripts'}
                                             </Button>
-                                            <Button onClick={handleGenerateVoice} fullWidth disabled={isProcessing}>
+                                        </span>
+                                    </Tooltip>
+                                    <Tooltip title="Generate Voice">
+                                        <span>
+                                            <Button
+                                                onClick={handleGenerateVoice}
+                                                fullWidth
+                                                disabled={isProcessing}
+                                            >
                                                 {isProcessing ? <CircularProgress size={20} /> : 'Generate Voice'}
                                             </Button>
-                                        </>
-                                    )}
+                                        </span>
+                                    </Tooltip>
                                     {activeStep === 3 && (
                                         <Typography variant="body2" color="textSecondary">
                                             All steps completed.
