@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
 import {
     Grid, Card, CardHeader, CardContent, CardMedia, Typography, Button, TextField, Box,
-    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled, LinearProgress, Accordion, AccordionSummary, AccordionDetails
+    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled, LinearProgress, Accordion, AccordionSummary, AccordionDetails, InputAdornment, useTheme, useMediaQuery, Container
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -11,6 +11,9 @@ import { FaPlay, FaPause, FaChevronLeft, FaChevronRight, FaStop, FaMicrophone } 
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LinkIcon from '@mui/icons-material/Link';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 // Custom styled components
 const CustomStepLabel = styled(StepLabel)(({ theme, completed }) => ({
@@ -23,10 +26,31 @@ const CustomStepLabel = styled(StepLabel)(({ theme, completed }) => ({
     },
 }));
 
+const StyledCard = styled(Card)(({ theme }) => ({
+    background: 'linear-gradient(145deg, #f3f4f6 0%, #fff 100%)',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    borderRadius: theme.spacing(2),
+    overflow: 'hidden',
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+    borderRadius: theme.spacing(3),
+    textTransform: 'none',
+    fontWeight: 600,
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    },
+}));
+
 function EditBrdgePage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [brdgeData, setBrdgeData] = useState({
         name: '',
@@ -59,6 +83,7 @@ function EditBrdgePage() {
     const [voiceId, setVoiceId] = useState('');
     const [recordingTime, setRecordingTime] = useState(0);
     const recordingIntervalRef = useRef(null);
+    const [shareableLink, setShareableLink] = useState('');
 
     const audioRef = useRef(null);
     const mp3Recorder = useRef(new MicRecorder({ bitRate: 128 }));
@@ -517,61 +542,68 @@ function EditBrdgePage() {
     );
 
     const renderToolbar = () => (
-        <Paper elevation={3} sx={{ p: 2 }}>
+        <Paper elevation={3} sx={{ p: 2, borderRadius: theme.spacing(2) }}>
             {renderProgress()}
             <Accordion defaultExpanded>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography>Input Audio</Typography>
+                    <Typography variant="h6">Input Audio</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                    <Button
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Record your walkthrough or upload an existing audio file to get started.
+                    </Typography>
+                    <StyledButton
                         onClick={handleRecordWalkthrough}
                         fullWidth
                         sx={{
                             mb: 1,
-                            backgroundColor: isRecording ? 'error.main' : 'primary.main',
+                            backgroundColor: isRecording ? theme.palette.error.main : theme.palette.primary.main,
                             color: 'white',
                             '&:hover': {
-                                backgroundColor: isRecording ? 'error.dark' : 'primary.dark',
+                                backgroundColor: isRecording ? theme.palette.error.dark : theme.palette.primary.dark,
                             },
                         }}
                         startIcon={isRecording ? <FaStop /> : <FaMicrophone />}
                     >
                         {isRecording ? `Stop Recording (${formatTime(recordingTime)})` : 'Record Walkthrough'}
-                    </Button>
-                    <Button component="label" fullWidth>
+                    </StyledButton>
+                    <StyledButton component="label" fullWidth variant="outlined">
                         Upload Audio
                         <input type="file" hidden accept="audio/*" onChange={handleUploadAudio} />
-                    </Button>
+                    </StyledButton>
                 </AccordionDetails>
             </Accordion>
 
             <Accordion>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography>Transcripts</Typography>
+                    <Typography variant="h6">Transcripts</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Generate and edit transcripts for your audio.
+                    </Typography>
                     <Tooltip title="Generate Transcripts">
                         <span>
-                            <Button
+                            <StyledButton
                                 onClick={handleGenerateTranscripts}
                                 fullWidth
                                 disabled={!completedSteps.audioUploaded || isProcessing}
                                 sx={{ mb: 1 }}
                             >
                                 {isProcessing ? <CircularProgress size={20} /> : 'Generate Transcripts'}
-                            </Button>
+                            </StyledButton>
                         </span>
                     </Tooltip>
                     <Tooltip title="Save Transcripts">
                         <span>
-                            <Button
+                            <StyledButton
                                 onClick={handleSaveTranscripts}
                                 fullWidth
                                 disabled={!isTranscriptModified || isProcessing}
+                                variant="outlined"
                             >
                                 {isProcessing ? <CircularProgress size={20} /> : 'Save Transcripts'}
-                            </Button>
+                            </StyledButton>
                         </span>
                     </Tooltip>
                 </AccordionDetails>
@@ -579,9 +611,12 @@ function EditBrdgePage() {
 
             <Accordion>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography>Output Audio</Typography>
+                    <Typography variant="h6">Output Audio</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                        Generate voice output based on your transcripts.
+                    </Typography>
                     <TextField
                         label="Voice ID (optional)"
                         variant="outlined"
@@ -589,16 +624,25 @@ function EditBrdgePage() {
                         value={voiceId}
                         onChange={(e) => setVoiceId(e.target.value)}
                         sx={{ mb: 1 }}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <Tooltip title="Enter a specific voice ID or leave blank for default">
+                                        <HelpOutlineIcon color="action" />
+                                    </Tooltip>
+                                </InputAdornment>
+                            ),
+                        }}
                     />
                     <Tooltip title="Generate Voice">
                         <span>
-                            <Button
+                            <StyledButton
                                 onClick={handleGenerateVoice}
                                 fullWidth
                                 disabled={isProcessing}
                             >
                                 {isProcessing ? <CircularProgress size={20} /> : 'Generate Voice'}
-                            </Button>
+                            </StyledButton>
                         </span>
                     </Tooltip>
                 </AccordionDetails>
@@ -606,17 +650,77 @@ function EditBrdgePage() {
 
             {activeStep === 3 && (
                 <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-                    All steps completed.
+                    All steps completed. Your Brdge is ready!
                 </Typography>
             )}
         </Paper>
     );
 
+    const handleToggleShareable = async () => {
+        try {
+            const response = await api.post(`/brdges/${id}/toggle_shareable`);
+            setBrdgeData(prev => ({ ...prev, isShareable: response.data.shareable }));
+            if (response.data.shareable) {
+                setShareableLink(`${window.location.origin}/b/${response.data.public_id}`);
+            } else {
+                setShareableLink('');
+            }
+            showSnackbar('Shareable status updated successfully.', 'success');
+        } catch (error) {
+            console.error('Error updating shareable status:', error);
+            showSnackbar('Error updating shareable status.', 'error');
+        }
+    };
+
+    const copyShareableLink = () => {
+        navigator.clipboard.writeText(shareableLink);
+        showSnackbar('Shareable link copied to clipboard!', 'success');
+    };
+
     return (
-        <Grid container justifyContent="center" sx={{ minHeight: '100vh', backgroundColor: '#f5f5f5', py: 4 }}>
-            <Grid item xs={12} md={10} lg={8}>
-                <Card sx={{ p: 4, position: 'relative' }}>
-                    <Typography variant="h4" gutterBottom>Edit Brdge</Typography>
+        <Box sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
+            <Container maxWidth="lg">
+                <StyledCard sx={{ p: { xs: 2, md: 4 } }}>
+                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+                        Edit Brdge
+                    </Typography>
+
+                    <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', mb: 2 }}>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={brdgeData.isShareable}
+                                    onChange={handleToggleShareable}
+                                    name="shareable"
+                                    color="primary"
+                                />
+                            }
+                            label="Make Brdge Shareable"
+                        />
+                        {brdgeData.isShareable && shareableLink && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', ml: isMobile ? 0 : 2, mt: isMobile ? 2 : 0, width: isMobile ? '100%' : 'auto' }}>
+                                <TextField
+                                    value={shareableLink}
+                                    variant="outlined"
+                                    size="small"
+                                    fullWidth={isMobile}
+                                    InputProps={{
+                                        readOnly: true,
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <LinkIcon />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                    sx={{ mr: 1 }}
+                                />
+                                <IconButton onClick={copyShareableLink} size="small">
+                                    <ContentCopyIcon />
+                                </IconButton>
+                            </Box>
+                        )}
+                    </Box>
+
                     <Grid container spacing={4}>
                         <Grid item xs={12} md={8}>
                             <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -628,7 +732,7 @@ function EditBrdgePage() {
                                     onChange={(e) => setBrdgeData(prev => ({ ...prev, name: e.target.value }))}
                                     required
                                 />
-                                <Button variant="contained" component="label" startIcon={<CloudUploadIcon />}>
+                                <StyledButton variant="contained" component="label" startIcon={<CloudUploadIcon />}>
                                     Upload New Presentation (PDF)
                                     <input
                                         type="file"
@@ -636,14 +740,14 @@ function EditBrdgePage() {
                                         hidden
                                         onChange={(e) => setPresentation(e.target.files[0])}
                                     />
-                                </Button>
+                                </StyledButton>
                                 {!presentation && (
                                     <Typography variant="body2" color="textSecondary">
                                         Current presentation will be used if no new file is selected.
                                     </Typography>
                                 )}
                                 <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                                    <Button
+                                    <StyledButton
                                         type="submit"
                                         variant="contained"
                                         color="primary"
@@ -651,14 +755,14 @@ function EditBrdgePage() {
                                         startIcon={isProcessing ? <CircularProgress size={20} /> : <SaveIcon />}
                                     >
                                         {isProcessing ? 'Updating...' : 'Update Brdge'}
-                                    </Button>
-                                    <Button
+                                    </StyledButton>
+                                    <StyledButton
                                         variant="outlined"
                                         color="secondary"
                                         onClick={() => navigate(-1)}
                                     >
                                         Cancel
-                                    </Button>
+                                    </StyledButton>
                                 </Box>
                             </Box>
                             {brdgeData.numSlides > 0 && renderSlides()}
@@ -667,29 +771,8 @@ function EditBrdgePage() {
                             {renderToolbar()}
                         </Grid>
                     </Grid>
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={brdgeData.isShareable}
-                                onChange={async () => {
-                                    try {
-                                        const response = await api.post(`/brdges/${id}/toggle_shareable`);
-                                        setBrdgeData(prev => ({ ...prev, isShareable: response.data.shareable }));
-                                        showSnackbar('Shareable status updated successfully.', 'success');
-                                    } catch (error) {
-                                        console.error('Error updating shareable status:', error);
-                                        showSnackbar('Error updating shareable status.', 'error');
-                                    }
-                                }}
-                                name="shareable"
-                                color="primary"
-                            />
-                        }
-                        label="Make Brdge Shareable"
-                        sx={{ mt: 2 }}
-                    />
-                </Card>
-            </Grid>
+                </StyledCard>
+            </Container>
 
             {/* Audio Element */}
             {currentAudio && (
@@ -741,7 +824,7 @@ function EditBrdgePage() {
             >
                 <Typography variant="h4">{`Recording starts in ${countdown}`}</Typography>
             </Backdrop>
-        </Grid>
+        </Box>
     );
 }
 
