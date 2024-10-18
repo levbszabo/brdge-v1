@@ -6,6 +6,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import LandingPage from './pages/LandingPage';
 import BrdgeListPage from './pages/BrdgeListPage';
 import CreateBrdgePage from './pages/CreateBrdgePage';
+import EditBrdgePage from './pages/EditBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
 import DemoPage from './pages/DemoPage';
 import WaitlistPage from './pages/WaitlistPage';
@@ -205,7 +206,7 @@ function App() {
                   path="/edit/:id"
                   element={
                     <ProtectedRoute>
-                      <CreateBrdgePage />
+                      <EditBrdgePage />
                     </ProtectedRoute>
                   }
                 />

@@ -999,7 +999,7 @@ def toggle_shareable(brdge_id):
     )
 
 
-@app.route("/api/brdges/<int:brdge_id>", methods=["GET", "PUT", "DELETE"])
+@app.route("/api/brdges/<int:brdge_id>", methods=["GET", "PUT"])
 @login_required
 def manage_brdge(user, brdge_id):
     brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
@@ -1007,12 +1007,36 @@ def manage_brdge(user, brdge_id):
     if request.method == "GET":
         return jsonify(brdge.to_dict()), 200
     elif request.method == "PUT":
-        # Update logic here
-        data = request.json
+        data = request.form
         if "name" in data:
             brdge.name = data["name"]
-        if "shareable" in data:
-            brdge.shareable = data["shareable"]
+        if "presentation" in request.files:
+            presentation = request.files["presentation"]
+            # Process new presentation
+            presentation_filename = secure_filename(
+                f"{uuid.uuid4()}_{presentation.filename}"
+            )
+            pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
+            os.makedirs("/tmp/brdge", exist_ok=True)
+            presentation.save(pdf_temp_path)
+
+            # Convert PDF to images and upload to S3
+            slide_images = pdf_to_images(pdf_temp_path)
+            s3_folder = brdge.folder
+            s3_presentation_key = f"{s3_folder}/{presentation_filename}"
+            s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
+            brdge.presentation_filename = presentation_filename
+
+            for idx, image in enumerate(slide_images):
+                image_filename = f"slide_{idx+1}.png"
+                s3_image_key = f"{s3_folder}/slides/{image_filename}"
+                img_byte_arr = BytesIO()
+                image.save(img_byte_arr, format="PNG")
+                img_byte_arr.seek(0)
+                s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
+
+            os.remove(pdf_temp_path)
+
         db.session.commit()
         return (
             jsonify(
@@ -1020,10 +1044,6 @@ def manage_brdge(user, brdge_id):
             ),
             200,
         )
-    elif request.method == "DELETE":
-        db.session.delete(brdge)
-        db.session.commit()
-        return jsonify({"message": "Brdge deleted successfully"}), 200
 
     return jsonify({"error": "Invalid method"}), 405
 
