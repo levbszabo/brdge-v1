@@ -1,7 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Card, CardMedia, CardContent, Typography, Grid, Button, Slider, Container, CircularProgress } from '@mui/material';
-import { PlayArrow, Pause, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Box, Card, CardMedia, CardContent, Typography, Button, Slider, CircularProgress } from '@mui/material';
+import { PlayArrow, Pause } from '@mui/icons-material';
 import { unauthenticated_api } from '../api';
+import { styled } from '@mui/material/styles';
+
+const PlayerCard = styled(Card)(({ theme }) => ({
+    borderRadius: '8px',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)',
+    overflow: 'hidden',
+    background: '#ffffff',
+    width: '100%',
+    maxWidth: '90vw',
+    margin: 'auto',
+    transition: 'all 0.3s ease-in-out',
+    '&:hover': {
+        transform: 'scale(1.05)',
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.1)',
+    },
+}));
+
+const ControlPanel = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: theme.spacing(1, 2),
+}));
+
+const StyledButton = styled(Button)(({ theme }) => ({
+    minWidth: 'auto',
+    padding: theme.spacing(0.5, 1),
+}));
+
+const StyledSlider = styled(Slider)(({ theme }) => ({
+    color: theme.palette.primary.main,
+    height: 4,
+    '& .MuiSlider-thumb': {
+        width: 8,
+        height: 8,
+        transition: '0.3s cubic-bezier(.47,1.64,.41,.8)',
+        '&:hover, &.Mui-focusVisible': {
+            boxShadow: `0px 0px 0px 8px ${theme.palette.primary.main}33`,
+        },
+        '&.Mui-active': {
+            width: 12,
+            height: 12,
+        },
+    },
+    '& .MuiSlider-rail': {
+        opacity: 0.28,
+    },
+}));
 
 function BrdgePlayer({ brdgeId, publicId }) {
     const [brdge, setBrdge] = useState(null);
@@ -137,7 +185,7 @@ function BrdgePlayer({ brdgeId, publicId }) {
     }
 
     return (
-        <Card elevation={3} sx={{ borderRadius: 2, transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.02)' } }}>
+        <PlayerCard>
             <CardMedia
                 component="img"
                 image={`${unauthenticated_api.defaults.baseURL}/brdges/${publicId || brdgeId}/slides/${currentSlide}`}
@@ -145,76 +193,73 @@ function BrdgePlayer({ brdgeId, publicId }) {
                 sx={{
                     width: '100%',
                     height: 'auto',
-                    maxHeight: { xs: 300, md: 500 },
+                    aspectRatio: '16 / 9',
                     objectFit: 'contain',
-                    backgroundColor: 'background.paper',
+                    backgroundColor: '#f0f0f0',
                 }}
                 onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = 'https://via.placeholder.com/600x400?text=No+Slide+Available';
                 }}
             />
-            <CardContent>
-                <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ pb: 1 }}>
+                <Typography
+                    variant="h5"
+                    gutterBottom
+                    align="center"
+                    sx={{
+                        fontWeight: 600,
+                        color: 'text.primary',
+                        fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                        marginBottom: '16px'
+                    }}
+                >
                     {brdge ? brdge.name : 'Loading...'}
                 </Typography>
-                <Box p={2} bgcolor="grey.100" borderRadius="8px">
-                    <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm="auto">
-                            <Button
-                                onClick={handlePrevSlide}
-                                variant="contained"
-                                color="primary"
-                                disabled={currentSlide === 1}
-                                startIcon={<ChevronLeft />}
-                                fullWidth
-                            >
-                                Previous
-                            </Button>
-                        </Grid>
-                        <Grid item xs={12} sm="auto">
-                            {currentAudio && (
-                                <Button
-                                    onClick={handlePlayPause}
-                                    variant="contained"
-                                    color="secondary"
-                                    startIcon={isPlaying ? <Pause /> : <PlayArrow />}
-                                    fullWidth
-                                >
-                                    {isPlaying ? 'Pause' : 'Play'}
-                                </Button>
-                            )}
-                        </Grid>
-                        <Grid item xs={12} sm="auto">
-                            <Button
-                                onClick={handleNextSlide}
-                                variant="contained"
-                                color="primary"
-                                disabled={currentSlide === numSlides}
-                                endIcon={<ChevronRight />}
-                                fullWidth
-                            >
-                                Next
-                            </Button>
-                        </Grid>
-                    </Grid>
-                    {currentAudio && (
-                        <Box mt={2}>
-                            <Slider
-                                value={currentTime}
-                                min={0}
-                                max={audioDuration}
-                                onChange={handleSeek}
-                                aria-labelledby="audio-slider"
-                                sx={{ color: 'primary.main' }}
-                            />
-                            <Grid container justifyContent="space-between">
-                                <Typography variant="caption">{formatTime(currentTime)}</Typography>
-                                <Typography variant="caption">{formatTime(audioDuration)}</Typography>
-                            </Grid>
+                <ControlPanel>
+                    <StyledButton
+                        onClick={handlePrevSlide}
+                        disabled={currentSlide === 1}
+                        variant="outlined"
+                        size="small"
+                    >
+                        Previous
+                    </StyledButton>
+                    <StyledButton
+                        onClick={handlePlayPause}
+                        disabled={!currentAudio}
+                        variant="contained"
+                        size="small"
+                        startIcon={isPlaying ? <Pause /> : <PlayArrow />}
+                    >
+                        {isPlaying ? 'Pause' : 'Play'}
+                    </StyledButton>
+                    <StyledButton
+                        onClick={handleNextSlide}
+                        disabled={currentSlide === numSlides}
+                        variant="outlined"
+                        size="small"
+                    >
+                        Next
+                    </StyledButton>
+                </ControlPanel>
+                {currentAudio && (
+                    <Box sx={{ px: 2, pt: 1 }}>
+                        <StyledSlider
+                            value={currentTime}
+                            min={0}
+                            max={audioDuration}
+                            onChange={handleSeek}
+                            aria-labelledby="audio-slider"
+                        />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{formatTime(currentTime)}</Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{formatTime(audioDuration)}</Typography>
                         </Box>
-                    )}
-                </Box>
+                    </Box>
+                )}
             </CardContent>
             {currentAudio && (
                 <audio
@@ -231,7 +276,7 @@ function BrdgePlayer({ brdgeId, publicId }) {
                     onError={(e) => console.error('Audio error:', e)}
                 />
             )}
-        </Card>
+        </PlayerCard>
     );
 }
 

@@ -9,13 +9,14 @@ import {
     CloudUpload, RecordVoiceOver, Slideshow,
     Group, Support, ArrowForward, School, Refresh
 } from '@mui/icons-material';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import BrdgePlayer from '../components/BrdgePlayer';
 import './LandingPage.css';
 import { styled } from '@mui/material/styles';
+import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 
 const StepIcon = ({ icon }) => {
     return (
@@ -39,34 +40,49 @@ const StepIcon = ({ icon }) => {
     );
 };
 
-const UseCase = ({ icon, title, description }) => {
-    const controls = useAnimation();
+const UseCase = ({ icon, title, subheading, description }) => {
     const [ref, inView] = useInView({
         triggerOnce: true,
         threshold: 0.1,
     });
 
-    useEffect(() => {
-        if (inView) {
-            controls.start("visible");
-        }
-    }, [controls, inView]);
-
     return (
         <motion.div
             ref={ref}
-            animate={controls}
-            initial="hidden"
-            variants={{
-                visible: { opacity: 1, y: 0 },
-                hidden: { opacity: 0, y: 50 }
-            }}
+            initial={{ opacity: 0, y: 50 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5 }}
         >
-            <Paper elevation={3} sx={{ p: 4, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-10px)', boxShadow: 6 } }}>
+            <Paper elevation={3} sx={{
+                p: 4,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                transition: 'all 0.3s ease',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                position: 'relative',
+                '&:hover': {
+                    transform: 'translateY(-10px)',
+                    boxShadow: 6,
+                },
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '4px',
+                    background: 'linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%)',
+                }
+            }}>
                 <StepIcon icon={icon} />
-                <Typography variant="h6" component="h3" gutterBottom align="center">
+                <Typography variant="h6" component="h3" gutterBottom align="center" sx={{ fontWeight: 'bold' }}>
                     {title}
+                </Typography>
+                <Typography variant="subtitle1" color="primary" align="center" sx={{ mb: 2 }}>
+                    {subheading}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" align="center">
                     {description}
@@ -77,7 +93,7 @@ const UseCase = ({ icon, title, description }) => {
 };
 
 const StyledBrdgePlayer = styled(BrdgePlayer)(({ theme }) => ({
-    width: '85%',
+    width: '100%',
     maxWidth: '680px',
     margin: '0 auto',
     borderRadius: theme.shape.borderRadius,
@@ -96,6 +112,14 @@ const StyledBrdgePlayer = styled(BrdgePlayer)(({ theme }) => ({
         '&:hover': {
             backgroundColor: 'rgba(255, 255, 255, 0.3)',
         },
+    },
+    '& .track-title': {
+        fontSize: '1.5rem',
+        fontWeight: 600,
+    },
+    '& .progress-bar': {
+        height: '8px',
+        background: 'linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%)',
     },
 }));
 
@@ -129,7 +153,6 @@ function LandingPage() {
         }
     ];
 
-    // Memoize the BrdgePlayer component to prevent re-rendering
     const memoizedBrdgePlayer = useMemo(() => (
         <StyledBrdgePlayer
             brdgeId="1"
@@ -138,23 +161,32 @@ function LandingPage() {
     ), []);
 
     return (
-        <Box sx={{ flexGrow: 1 }}>
-            <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
-                <Box sx={{ my: { xs: 4, sm: 6 }, textAlign: 'center' }}>
-                    <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                        <Typography
-                            variant="h1"
-                            component="h1"
-                            gutterBottom
-                            align="center"
-                            sx={{
-                                fontWeight: 'bold',
-                                mb: 2,
-                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' }
-                            }}
-                        >
-                            Unlock Knowledge with AI-Powered Presentations
-                        </Typography>
+        <ParallaxProvider>
+            <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+                    <Box sx={{
+                        my: { xs: 4, sm: 6 },
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 1,
+                    }}>
+                        <Parallax translateY={[-20, 20]}>
+                            <Typography
+                                variant="h1"
+                                component="h1"
+                                gutterBottom
+                                align="center"
+                                sx={{
+                                    fontWeight: 'bold',
+                                    mb: 2,
+                                    fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                                    color: theme.palette.text.primary,
+                                    textShadow: '2px 2px 4px rgba(0,0,0,0.1)',
+                                }}
+                            >
+                                Unlock Knowledge with AI-Powered Presentations
+                            </Typography>
+                        </Parallax>
                         <Typography
                             variant="h5"
                             component="h2"
@@ -165,7 +197,8 @@ function LandingPage() {
                                 mb: 4,
                                 maxWidth: '800px',
                                 mx: 'auto',
-                                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' }
+                                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+                                lineHeight: 1.5,
                             }}
                         >
                             Reduce meetings, streamline onboarding, and personalize content with Brdge AI—your new dynamic knowledge tool.
@@ -175,7 +208,7 @@ function LandingPage() {
                             <Paper
                                 elevation={6}
                                 sx={{
-                                    width: '85%',
+                                    width: '100%',
                                     maxWidth: '680px',
                                     backgroundColor: 'background.paper',
                                     borderRadius: 2,
@@ -196,117 +229,124 @@ function LandingPage() {
                                 component={Link}
                                 to="/demo"
                                 variant="contained"
-                                color="primary"
                                 size="large"
                                 endIcon={<ArrowForward />}
                                 className="glow-button"
                                 sx={{
-                                    py: 1.5,
-                                    px: 5,
-                                    fontSize: '1.1rem',
+                                    py: 2,
+                                    px: 6,
+                                    fontSize: '1.2rem',
+                                    background: 'linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%)',
                                     '&:hover': {
-                                        backgroundColor: theme.palette.primary.dark,
+                                        background: 'linear-gradient(90deg, #00B4E6 0%, #84E5A8 100%)',
                                     }
                                 }}
                             >
                                 Try Brdge AI Demo
                             </Button>
                         </motion.div>
-                    </motion.div>
-                </Box>
+                    </Box>
 
-                <Box sx={{ my: 16, position: 'relative' }} data-aos="fade-up">
-                    <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
-                        How It Works
-                    </Typography>
-                    <Grid container spacing={4} justifyContent="center">
-                        {flowSteps.map((step, index) => (
-                            <Grid item xs={12} sm={6} md={3} key={index} sx={{ position: 'relative' }}>
-                                <Box className="use-case-card" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                                    <StepIcon icon={step.icon} />
-                                    <Typography variant="h6" gutterBottom>
-                                        {step.title}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {step.description}
-                                    </Typography>
-                                </Box>
-                                {index < flowSteps.length - 1 && (
-                                    <Box sx={{
-                                        position: 'absolute',
-                                        top: '30%',
-                                        right: '-10%',
-                                        width: '20%',
-                                        height: '2px',
-                                        backgroundColor: 'primary.main',
-                                        display: { xs: 'none', md: 'block' },
-                                    }} />
-                                )}
-                            </Grid>
-                        ))}
-                    </Grid>
-                </Box>
-
-                <Box sx={{ my: 16 }} data-aos="fade-up">
-                    <Typography variant="h2" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
-                        Use Cases
-                    </Typography>
-                    <Grid container spacing={4}>
-                        <Grid item xs={12} md={4}>
-                            <UseCase
-                                icon={<Group />}
-                                title="Employee Onboarding"
-                                description="Streamline the onboarding process with interactive, AI-powered training materials."
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <UseCase
-                                icon={<Support />}
-                                title="Customer Support"
-                                description="Enhance customer support with dynamic, context-aware documentation and guides."
-                            />
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <UseCase
-                                icon={<School />}
-                                title="Info Products"
-                                description="Create and monetize interactive, AI-enhanced info products for your audience."
-                            />
-                        </Grid>
-                    </Grid>
-                </Box>
-
-                <Box sx={{ my: 16, textAlign: 'center' }} data-aos="fade-up">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Typography variant="h3" component="h2" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
-                            Ready to Transform Your Knowledge Sharing?
+                    <Box sx={{ my: 8, position: 'relative' }} data-aos="fade-up">
+                        <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold' }}>
+                            How It Works
                         </Typography>
-                        <Typography variant="h6" component="p" gutterBottom color="text.secondary" sx={{ mb: 6, maxWidth: '800px', mx: 'auto' }}>
-                            Try Brdge AI today and revolutionize how you share information.
+                        <Grid container spacing={4} justifyContent="center">
+                            {flowSteps.map((step, index) => (
+                                <Grid item xs={12} sm={6} md={3} key={index} sx={{ position: 'relative' }}>
+                                    <Parallax translateY={[10, -10]}>
+                                        <Paper elevation={3} sx={{
+                                            p: 4,
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            transition: 'all 0.3s ease',
+                                            borderRadius: '12px',
+                                            boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+                                            '&:hover': {
+                                                transform: 'translateY(-10px) scale(1.02)',
+                                                boxShadow: '0px 6px 25px rgba(0, 0, 0, 0.15)',
+                                            }
+                                        }}>
+                                            <StepIcon icon={step.icon} />
+                                            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                {step.title}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {step.description}
+                                            </Typography>
+                                        </Paper>
+                                    </Parallax>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+
+                    <Box sx={{ my: 16 }} data-aos="fade-up">
+                        <Typography variant="h2" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
+                            Use Cases
                         </Typography>
-                        <Button
-                            component={Link}
-                            to="/waitlist"
-                            variant="contained"
-                            color="primary"
-                            size="large"
-                            endIcon={<ArrowForward />}
-                            className="glow-button"
-                            sx={{
-                                py: 2,
-                                px: 6,
-                                fontSize: '1.2rem',
-                                '&:hover': {
-                                    backgroundColor: theme.palette.primary.dark,
-                                }
-                            }}
-                        >
-                            Join Beta
-                        </Button>
-                    </motion.div>
-                </Box>
-            </Container>
-        </Box>
+                        <Grid container spacing={6}>
+                            {[
+                                { icon: <Group />, title: "Employee Onboarding", subheading: "Efficient, Scalable, AI-driven", description: "Streamline the onboarding process with interactive, AI-powered training materials." },
+                                { icon: <Support />, title: "Customer Support", subheading: "Dynamic, Context-aware, Intelligent", description: "Enhance customer support with dynamic, context-aware documentation and guides." },
+                                { icon: <School />, title: "Info Products", subheading: "Interactive, Engaging, Monetizable", description: "Create and monetize interactive, AI-enhanced info products for your audience." },
+                            ].map((useCase, index) => (
+                                <Grid item xs={12} md={4} key={index}>
+                                    <UseCase
+                                        icon={useCase.icon}
+                                        title={useCase.title}
+                                        subheading={useCase.subheading}
+                                        description={useCase.description}
+                                    />
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
+
+                    <Box sx={{
+                        my: 16,
+                        textAlign: 'center',
+                        py: 8,
+                        background: 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)',
+                        borderRadius: theme.shape.borderRadius,
+                        boxShadow: '0px 10px 30px rgba(0, 131, 176, 0.3)',
+                    }} data-aos="fade-up">
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Typography variant="h3" component="h2" gutterBottom sx={{ fontWeight: 'bold', mb: 4, color: 'white' }}>
+                                Ready to <span style={{ color: '#00ffcc' }}>Transform</span> Your Knowledge Sharing?
+                            </Typography>
+                            <Typography variant="h6" component="p" gutterBottom sx={{ mb: 6, maxWidth: '800px', mx: 'auto', color: 'rgba(255, 255, 255, 0.9)' }}>
+                                Try Brdge AI today and revolutionize how you share information.
+                            </Typography>
+                            <Button
+                                component={Link}
+                                to="/waitlist"
+                                variant="contained"
+                                size="large"
+                                endIcon={<ArrowForward />}
+                                className="glow-button"
+                                sx={{
+                                    py: 2,
+                                    px: 6,
+                                    fontSize: '1.2rem',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                                    color: '#fff',
+                                    borderRadius: '50px',
+                                    width: { xs: '90%', sm: 'auto' },
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                                    }
+                                }}
+                            >
+                                Join the Revolution
+                            </Button>
+                        </motion.div>
+                    </Box>
+                </Container>
+            </Box>
+        </ParallaxProvider>
     );
 }
 
