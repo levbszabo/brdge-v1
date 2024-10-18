@@ -26,38 +26,43 @@ function SignUpPage() {
     };
 
     return (
-        <Container maxWidth="sm" sx={{ mt: 8 }}>
-            <Typography variant="h4" gutterBottom>
-                Sign Up
-            </Typography>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-            <Box component="form" onSubmit={handleSignUp}>
-                <TextField
-                    label="Email"
-                    type="email"
-                    fullWidth
-                    required
-                    margin="normal"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                />
-                <TextField
-                    label="Password"
-                    type="password"
-                    fullWidth
-                    required
-                    margin="normal"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <Button variant="contained" color="primary" type="submit" sx={{ mt: 2 }}>
-                    Sign Up
-                </Button>
+        <Container maxWidth="sm">
+            <Box sx={{ my: 4 }}>
+                <Typography variant="h4" component="h1" gutterBottom>
+                    Sign Up for Brdge AI Beta
+                </Typography>
+                <Typography variant="body1" sx={{ mb: 4 }}>
+                    Brdge AI is currently in Beta. Enjoy free access for the duration of the Beta period. Pricing details will be available upon launch.
+                </Typography>
+                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+                {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+                <Box component="form" onSubmit={handleSignUp}>
+                    <TextField
+                        label="Email"
+                        type="email"
+                        fullWidth
+                        required
+                        margin="normal"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <TextField
+                        label="Password"
+                        type="password"
+                        fullWidth
+                        required
+                        margin="normal"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button variant="contained" color="primary" type="submit" sx={{ mt: 2 }}>
+                        Sign Up
+                    </Button>
+                </Box>
+                <Typography variant="body2" sx={{ mt: 2 }}>
+                    Already have an account? <Link to="/login">Log in</Link>
+                </Typography>
             </Box>
-            <Typography variant="body2" sx={{ mt: 2 }}>
-                Already have an account? <Link to="/login">Log in</Link>
-            </Typography>
         </Container>
     );
 }

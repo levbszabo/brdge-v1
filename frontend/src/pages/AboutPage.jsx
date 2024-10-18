@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { Container, Typography, Box, Grid, Button, useTheme, Card, CardContent, TextField } from '@mui/material';
+import React from 'react';
+import { Container, Typography, Box, Grid, Button, useTheme, Card, CardContent } from '@mui/material';
 import { motion } from 'framer-motion';
-import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import RecordVoiceOverIcon from '@mui/icons-material/RecordVoiceOver';
+import EditIcon from '@mui/icons-material/Edit';
 import ShareIcon from '@mui/icons-material/Share';
-import DownloadIcon from '@mui/icons-material/Download';
-import EmailIcon from '@mui/icons-material/Email';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-// FeatureCard component to display features
 const FeatureCard = ({ icon, title, description }) => {
     const theme = useTheme();
     return (
@@ -19,24 +18,27 @@ const FeatureCard = ({ icon, title, description }) => {
         >
             <Card
                 sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                     textAlign: 'center',
                     boxShadow: 3,
                     borderRadius: 2,
                     transition: 'transform 0.3s',
                     '&:hover': {
-                        transform: 'scale(1.05)',
+                        transform: 'scale(1.02)',
                         boxShadow: 6,
                     },
                 }}
             >
-                <CardContent>
-                    <Box sx={{ color: theme.palette.primary.main, fontSize: '3rem', mb: 1 }}>
+                <CardContent sx={{ flexGrow: 1 }}>
+                    <Box sx={{ color: theme.palette.primary.main, fontSize: '3rem', mb: 2 }}>
                         {icon}
                     </Box>
-                    <Typography variant="h5" component="h3" gutterBottom>
+                    <Typography variant="h6" component="h3" gutterBottom fontWeight="bold">
                         {title}
                     </Typography>
-                    <Typography variant="body2" sx={{ maxWidth: '550px', margin: '0 auto' }}>
+                    <Typography variant="body2" color="text.secondary">
                         {description}
                     </Typography>
                 </CardContent>
@@ -47,16 +49,6 @@ const FeatureCard = ({ icon, title, description }) => {
 
 function AboutPage() {
     const theme = useTheme();
-    const [email, setEmail] = useState('');
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        // Here you would typically send the email to your backend
-        console.log('Whitepaper requested for:', email);
-        // Reset the email field
-        setEmail('');
-        // You might want to show a success message to the user
-    };
 
     return (
         <Container maxWidth="lg" sx={{ mt: 8, mb: 12 }}>
@@ -65,131 +57,143 @@ function AboutPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
             >
-                <Typography variant="h2" component="h1" align="center" sx={{ mb: 4, fontWeight: 700 }}>
+                <Typography variant="h2" component="h1" align="center" sx={{ mb: 2, fontWeight: 'bold', color: '#004d99' }}>
                     About Brdge AI
                 </Typography>
-                <Typography variant="h5" component="h2" align="center" sx={{ mb: 8, fontWeight: 400, color: theme.palette.text.secondary }}>
-                    Elevating Presentations with AI-Driven Innovation
+                <Typography variant="h5" component="h2" align="center" sx={{ mb: 6, fontWeight: 400, color: theme.palette.text.secondary }}>
+                    Transforming Knowledge Sharing into Dynamic Experiences
                 </Typography>
             </motion.div>
 
-            {/* What Brdge AI is */}
-            <Box sx={{ mb: 10 }}>
-                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 4 }}>
+            <Box sx={{ mb: 8 }}>
+                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 3, fontWeight: 'bold', color: '#004d99' }}>
                     What is Brdge AI?
                 </Typography>
-                <Typography variant="body1" paragraph>
-                    Brdge AI is a cutting-edge platform that revolutionizes the way presentations are created, delivered, and experienced. By harnessing the power of artificial intelligence, we bridge the gap between static slides and dynamic, engaging content.
+                <Typography variant="body1" paragraph sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                    Brdge AI is a platform designed to make knowledge sharing as engaging and accessible as possible. We turn your static documents—like PowerPoints and PDFs—into interactive, voice-enhanced experiences called Brdges.
                 </Typography>
-                <Typography variant="body1" paragraph>
-                    Our innovative technology analyzes your slides, extracts key information, and transforms your presentations into captivating narratives. With Brdge AI, you can bring your ideas to life in ways never before possible, creating unforgettable experiences for your audience.
-                </Typography>
-            </Box>
-
-            {/* Feature Sections */}
-            <Grid container spacing={4} sx={{ mb: 10 }}>
-                <Grid item xs={12} md={4}>
-                    <FeatureCard
-                        icon={<AutoStoriesIcon fontSize="inherit" />}
-                        title="Intelligent Slide Analysis"
-                        description="Our advanced AI analyzes your slides, extracting key information and context to create a seamless narrative that captivates your audience."
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <FeatureCard
-                        icon={<RecordVoiceOverIcon fontSize="inherit" />}
-                        title="Natural Voice Synthesis"
-                        description="Transform your presentations into lifelike narrations with our state-of-the-art voice cloning technology, bringing your content to life."
-                    />
-                </Grid>
-                <Grid item xs={12} md={4}>
-                    <FeatureCard
-                        icon={<ShareIcon fontSize="inherit" />}
-                        title="Easy Sharing & Collaboration"
-                        description="Share your AI-enhanced presentations effortlessly, fostering collaboration and engagement across teams and audiences worldwide."
-                    />
-                </Grid>
-            </Grid>
-
-            {/* Our Vision */}
-            <Box sx={{ mb: 10 }}>
-                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 4 }}>
-                    Our Vision
-                </Typography>
-                <Typography variant="body1" paragraph>
-                    At Brdge AI, we envision a future where every presentation has the power to inspire, educate, and transform. We believe that by combining cutting-edge AI technology with intuitive design, we can empower presenters to communicate their ideas more effectively and engagingly than ever before.
-                </Typography>
-                <Typography variant="body1" paragraph>
-                    Our goal is to revolutionize knowledge management and presentation delivery, making it easier for organizations to share complex information, foster collaboration, and drive innovation. We're committed to pushing the boundaries of what's possible in presentation technology, always with the aim of enhancing human creativity and communication.
+                <Typography variant="body1" paragraph sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                    No more meetings, no more scheduling conflicts; your presentations are always available, delivered in your voice, whenever and wherever your audience needs them.
                 </Typography>
             </Box>
 
-            {/* Learn More Section with Contact Form */}
-            <Box sx={{ textAlign: 'center', mb: 10 }}>
-                <Typography variant="h4" component="h2" sx={{ mb: 4 }}>
-                    Learn More
+            <Box sx={{ mb: 8 }}>
+                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 4, fontWeight: 'bold', color: '#004d99' }}>
+                    How It Works
                 </Typography>
-                <Typography variant="body1" paragraph sx={{ maxWidth: '700px', margin: '0 auto', mb: 5 }}>
-                    Discover how Brdge AI is transforming presentations and why our AI-powered platform is the future of knowledge sharing. Request our whitepaper for in-depth insights into our technology, market potential, and strategic vision.
-                </Typography>
-                <Card sx={{ maxWidth: 500, margin: '0 auto', p: 3 }}>
-                    <form onSubmit={handleSubmit}>
-                        <TextField
-                            fullWidth
-                            label="Your Email"
-                            variant="outlined"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            sx={{ mb: 2 }}
+                <Grid container spacing={4}>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <FeatureCard
+                            icon={<CloudUploadIcon fontSize="inherit" />}
+                            title="Upload Your Document"
+                            description="Start by uploading a PDF or presentation file."
                         />
-                        <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ type: 'spring', stiffness: 300 }}
-                        >
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                color="primary"
-                                startIcon={<DownloadIcon />}
-                                sx={{
-                                    fontSize: '1.25rem',
-                                    py: 1.75,
-                                    px: 5,
-                                    borderRadius: 2,
-                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.2)',
-                                    transition: 'box-shadow 0.3s, transform 0.3s',
-                                    '&:hover': {
-                                        boxShadow: '0px 6px 20px rgba(0, 0, 0, 0.3)',
-                                    },
-                                }}
-                            >
-                                SEND ME WHITEPAPER
-                            </Button>
-                        </motion.div>
-                    </form>
-                </Card>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <FeatureCard
+                            icon={<RecordVoiceOverIcon fontSize="inherit" />}
+                            title="Record Your Walkthrough"
+                            description="Walk your audience through the content, using your voice or AI-generated narration."
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <FeatureCard
+                            icon={<EditIcon fontSize="inherit" />}
+                            title="Refine the Presentation"
+                            description="Fine-tune the transcript for clarity and accuracy, ensuring everything sounds just right."
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                        <FeatureCard
+                            icon={<ShareIcon fontSize="inherit" />}
+                            title="Share & Engage"
+                            description="Deploy your Brdge and share it with anyone. They'll experience your content as if you were guiding them in real-time."
+                        />
+                    </Grid>
+                </Grid>
             </Box>
 
-            {/* Contact Section */}
-            <Box sx={{ textAlign: 'center' }}>
-                <Typography variant="h4" component="h2" sx={{ mb: 4 }}>
-                    Contact Us
+            <Box sx={{ mb: 8 }}>
+                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 3, fontWeight: 'bold', color: '#004d99' }}>
+                    What We're Doing Today
                 </Typography>
-                <Typography variant="body1" paragraph sx={{ maxWidth: '700px', margin: '0 auto', mb: 3 }}>
-                    Have questions or want to learn more about Brdge AI? We'd love to hear from you. Reach out to us directly at:
+                <Typography variant="body1" paragraph sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                    Brdge AI is already being used for:
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2 }}>
-                    <EmailIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
-                    <Typography variant="h6" component="a" href="mailto:levbszabo@gmail.com" sx={{ color: theme.palette.primary.main, textDecoration: 'none' }}>
-                        levbszabo@gmail.com
-                    </Typography>
-                </Box>
-                <Typography variant="body2">
-                    We'll get back to you as soon as possible.
+                <ul>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Corporate Training & Onboarding:</strong> Streamline learning and development with on-demand, narrated documents, eliminating repetitive meetings.
+                        </Typography>
+                    </li>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Education:</strong> Teachers and trainers create engaging lessons that students can access at their own pace, with the benefit of personalized narration.
+                        </Typography>
+                    </li>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Client Presentations:</strong> Businesses deliver consistent, polished presentations for clients, ensuring every demo and sales pitch has the same professional impact.
+                        </Typography>
+                    </li>
+                </ul>
+            </Box>
+
+            <Box sx={{ mb: 8 }}>
+                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 3, fontWeight: 'bold', color: '#004d99' }}>
+                    Our Vision for the Future
                 </Typography>
+                <Typography variant="body1" paragraph sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                    At Brdge AI, we believe knowledge sharing should be seamless, engaging, and accessible to everyone. We're building a platform that evolves with the needs of its users, and we have exciting plans for what's next:
+                </Typography>
+                <ul>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Conversational Presentations:</strong> Soon, you'll be able to create interactive presentations where AI-powered agents respond to questions and provide deeper insights.
+                        </Typography>
+                    </li>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Brdge AI Networks:</strong> We're developing a knowledge network, connecting experts and their Brdges, so users can learn from others in their field and share their own expertise.
+                        </Typography>
+                    </li>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Collaboration Tools:</strong> Multiple users will be able to collaborate on Brdges, making it easy for teams to work together on projects and create richer content.
+                        </Typography>
+                    </li>
+                    <li>
+                        <Typography variant="body1" sx={{ fontSize: '1rem', lineHeight: 1.6, color: '#333' }}>
+                            <strong>Rewards Program:</strong> We're exploring ways to reward users for contributing valuable content and engaging with the platform, creating a thriving ecosystem of shared knowledge.
+                        </Typography>
+                    </li>
+                </ul>
+            </Box>
+
+            <Box sx={{ textAlign: 'center', mt: 10 }}>
+                <Typography variant="h4" component="h2" gutterBottom sx={{ mb: 4, fontWeight: 'bold', color: '#004d99' }}>
+                    The Future of Knowledge Sharing
+                </Typography>
+                <Typography variant="body1" paragraph sx={{ fontSize: '1.1rem', lineHeight: 1.6, color: '#333', maxWidth: '800px', margin: '0 auto 2rem' }}>
+                    We're committed to making knowledge transfer smarter, more interactive, and more effective. Whether you're an educator, a corporate trainer, or a business professional, Brdge AI empowers you to share your expertise in a way that feels personal and is available on demand.
+                </Typography>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        size="large"
+                        endIcon={<ArrowForwardIcon />}
+                        href="/demos"
+                        sx={{
+                            py: 1.5,
+                            px: 4,
+                            fontSize: '1.1rem',
+                            borderRadius: 2,
+                        }}
+                    >
+                        Explore Our Platform
+                    </Button>
+                </motion.div>
             </Box>
         </Container>
     );

@@ -100,7 +100,7 @@ const StyledBrdgePlayer = styled(BrdgePlayer)(({ theme }) => ({
     overflow: 'hidden',
     boxShadow: theme.shadows[4],
     '& .brdge-player-controls': {
-        opacity: 0.7,
+        opacity: 0.9,
         transition: 'opacity 0.3s ease',
         '&:hover': {
             opacity: 1,
@@ -109,8 +109,19 @@ const StyledBrdgePlayer = styled(BrdgePlayer)(({ theme }) => ({
     '& .brdge-player-button': {
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         color: theme.palette.common.white,
+        padding: '10px 15px',
+        fontSize: '1.1rem',
         '&:hover': {
             backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        },
+    },
+    '& .brdge-player-play-button': {
+        padding: '15px 20px',
+        fontSize: '1.3rem',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+            boxShadow: '0 0 15px rgba(255, 255, 255, 0.5)',
+            transform: 'scale(1.05)',
         },
     },
     '& .track-title': {
@@ -227,7 +238,7 @@ function LandingPage() {
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                                 component={Link}
-                                to="/demo"
+                                to="/demos"
                                 variant="contained"
                                 size="large"
                                 endIcon={<ArrowForward />}
@@ -236,13 +247,14 @@ function LandingPage() {
                                     py: 2,
                                     px: 6,
                                     fontSize: '1.2rem',
-                                    background: 'linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%)',
+                                    backgroundColor: theme.palette.primary.main,
+                                    color: '#fff',
                                     '&:hover': {
-                                        background: 'linear-gradient(90deg, #00B4E6 0%, #84E5A8 100%)',
+                                        backgroundColor: theme.palette.primary.dark,
                                     }
                                 }}
                             >
-                                Try Brdge AI Demo
+                                Brdge AI Use Cases
                             </Button>
                         </motion.div>
                     </Box>
@@ -322,7 +334,7 @@ function LandingPage() {
                             </Typography>
                             <Button
                                 component={Link}
-                                to="/waitlist"
+                                to="/signup"
                                 variant="contained"
                                 size="large"
                                 endIcon={<ArrowForward />}
@@ -340,8 +352,11 @@ function LandingPage() {
                                     }
                                 }}
                             >
-                                Join the Revolution
+                                Join the Free Beta Trial
                             </Button>
+                            <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.8)' }}>
+                                Limited-time free access during the Beta period. Sign up now to experience Brdge AI before launch!
+                            </Typography>
                         </motion.div>
                     </Box>
                 </Container>

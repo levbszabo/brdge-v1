@@ -113,9 +113,8 @@ function App() {
                   Brdge AI
                 </Typography>
                 <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                  <Button color="inherit" component={Link} to="/demo" sx={{ mx: 1 }}>Demo</Button>
+                  <Button color="inherit" component={Link} to="/demos" sx={{ mx: 1 }}>Demos</Button>
                   <Button color="inherit" component={Link} to="/about" sx={{ mx: 1 }}>About</Button>
-                  <Button color="inherit" component={Link} to="/waitlist" sx={{ mx: 1 }}>Join Beta</Button>
                   {isLoggedIn ? (
                     <>
                       <Button color="inherit" component={Link} to="/brdges" sx={{ mx: 1 }}>Brdges</Button>
@@ -140,10 +139,9 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/demo" element={<DemoPage />} />
+              <Route path="/demos" element={<DemoPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/about" element={<AboutPage />} />
-              <Route path="/waitlist" element={<WaitlistPage />} />
               <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
               <Route path="/b/:publicId" element={<ViewBrdgePage />} /> {/* New route for public ID */}
               <Route
