@@ -29,7 +29,6 @@ exceptiongroup==1.2.2
 executing==2.1.0
 Flask==3.0.3
 Flask-Cors==5.0.0
-Flask-JWT==0.3.2
 Flask-JWT-Extended==4.6.0
 Flask-Login==0.6.3
 Flask-Migrate==4.0.7
