@@ -2,19 +2,20 @@ import { api } from '../api';
 
 export const setAuthToken = (token) => {
     if (token) {
-        localStorage.setItem('token', token);
-        // Don't log the token here
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        localStorage.setItem('authToken', token);
     } else {
-        localStorage.removeItem('token');
+        delete api.defaults.headers.common['Authorization'];
+        localStorage.removeItem('authToken');
     }
 };
 
 export const getAuthToken = () => {
-    return localStorage.getItem('token');
+    return localStorage.getItem('authToken');
 };
 
 export const removeAuthToken = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
 };
 
 export const logout = () => {
