@@ -38,6 +38,12 @@ function CreateBrdgePage() {
         setLoading(true);
         setError('');
 
+        if (file && file.size > 10 * 1024 * 1024) {  // 10MB in bytes
+            setError('File size exceeds 10MB limit. Please choose a smaller file.');
+            setLoading(false);
+            return;
+        }
+
         const formData = new FormData();
         formData.append('name', name);
         if (file) {
