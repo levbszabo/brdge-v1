@@ -270,7 +270,12 @@ def create_brdge(user):
 
         # Convert PDF to images
         slide_images = pdf_to_images(pdf_temp_path)
-
+            # Start Generation Here
+        slides_dir = os.path.join("/tmp/brdge", f"slides_{brdge.id}")
+        os.makedirs(slides_dir, exist_ok=True)
+        for idx, image in enumerate(slide_images):
+            slide_path = os.path.join(slides_dir, f"slide_{idx+1}.png")
+            image.save(slide_path, format="PNG")
         # Upload PDF and images to S3
         s3_folder = f"brdges/{brdge.id}"
         s3_presentation_key = f"{s3_folder}/{presentation_filename}"
@@ -297,7 +302,7 @@ def create_brdge(user):
             s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
 
         # Clean up temporary PDF file
-        os.remove(pdf_temp_path)
+        #os.remove(pdf_temp_path)
 
         db.session.commit()
 
@@ -1022,6 +1027,7 @@ def manage_brdge(user, brdge_id):
 
             # Convert PDF to images and upload to S3
             slide_images = pdf_to_images(pdf_temp_path)
+
             s3_folder = brdge.folder
             s3_presentation_key = f"{s3_folder}/{presentation_filename}"
             s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
