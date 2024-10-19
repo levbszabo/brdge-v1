@@ -25,6 +25,11 @@ from datetime import datetime, timedelta
 from werkzeug.exceptions import RequestEntityTooLarge
 from functools import wraps
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+import logging
+
+# Set botocore to only log errors
+logging.getLogger("botocore").setLevel(logging.ERROR)
+logging.getLogger("boto3").setLevel(logging.ERROR)
 
 # AWS S3 configuration
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -198,29 +203,71 @@ def delete_brdge(brdge_id):
 @app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
 def get_slide_image(brdge_id, slide_number):
     brdge = Brdge.query.get_or_404(brdge_id)
+
+    # Check local cache first
+    cache_dir = f"/tmp/brdge/slides_{brdge_id}"
+    cache_file_path = os.path.join(cache_dir, f"slide_{slide_number}.png")
+
+    if os.path.exists(cache_file_path):
+        return send_file(cache_file_path, mimetype="image/png")
+
+    # If not in cache, fetch from S3
     s3_key = f"{brdge.folder}/slides/slide_{slide_number}.png"
 
     try:
-        s3_object = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
-        image_data = s3_object["Body"].read()
-        return send_file(BytesIO(image_data), mimetype="image/png")
+        # Ensure cache directory exists
+        os.makedirs(cache_dir, exist_ok=True)
+
+        # Download file from S3 to cache
+        s3_client.download_file(S3_BUCKET, s3_key, cache_file_path)
+
+        # Send the cached file
+        return send_file(cache_file_path, mimetype="image/png")
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            print(f"Error: The slide image does not exist in S3: {s3_key}")
+            abort(404)
+        else:
+            print(f"Error fetching image from S3: {e}")
+            abort(500)
     except Exception as e:
-        print(f"Error fetching image from S3: {e}")
-        abort(404)
+        print(f"Unexpected error: {e}")
+        abort(500)
 
 
 @app.route("/api/brdges/<string:public_id>/slides/<int:slide_number>", methods=["GET"])
 def get_public_slide_image(public_id, slide_number):
     brdge = Brdge.query.filter_by(public_id=public_id, shareable=True).first_or_404()
+
+    # Check local cache first
+    cache_dir = f"/tmp/brdge/slides_{brdge.id}"  # Note: Using brdge.id here
+    cache_file_path = os.path.join(cache_dir, f"slide_{slide_number}.png")
+
+    if os.path.exists(cache_file_path):
+        return send_file(cache_file_path, mimetype="image/png")
+
+    # If not in cache, fetch from S3
     s3_key = f"{brdge.folder}/slides/slide_{slide_number}.png"
 
     try:
-        s3_object = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
-        image_data = s3_object["Body"].read()
-        return send_file(BytesIO(image_data), mimetype="image/png")
+        # Ensure cache directory exists
+        os.makedirs(cache_dir, exist_ok=True)
+
+        # Download file from S3 to cache
+        s3_client.download_file(S3_BUCKET, s3_key, cache_file_path)
+
+        # Send the cached file
+        return send_file(cache_file_path, mimetype="image/png")
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            print(f"Error: The public slide image does not exist in S3: {s3_key}")
+            abort(404)
+        else:
+            print(f"Error fetching public image from S3: {e}")
+            abort(500)
     except Exception as e:
-        print(f"Error fetching image from S3: {e}")
-        abort(404)
+        print(f"Unexpected error fetching public slide: {e}")
+        abort(500)
 
 
 @app.route("/api/brdges", methods=["GET"])
@@ -253,7 +300,7 @@ def create_brdge(user):
             presentation_filename="",
             audio_filename="",
             folder="",
-            user_id=user.id,  # Associate the brdge with the current user
+            user_id=user.id,
         )
         db.session.add(brdge)
         db.session.flush()
@@ -263,46 +310,25 @@ def create_brdge(user):
             f"{uuid.uuid4()}_{presentation.filename}"
         )
 
-        # Save the PDF locally for processing
+        # Create directories for storing files
         pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
-        os.makedirs("/tmp/brdge", exist_ok=True)  # Ensure the directory exists
+        os.makedirs("/tmp/brdge", exist_ok=True)
         presentation.save(pdf_temp_path)
-
-        # Convert PDF to images
-        slide_images = pdf_to_images(pdf_temp_path)
-            # Start Generation Here
         slides_dir = os.path.join("/tmp/brdge", f"slides_{brdge.id}")
         os.makedirs(slides_dir, exist_ok=True)
-        for idx, image in enumerate(slide_images):
-            slide_path = os.path.join(slides_dir, f"slide_{idx+1}.png")
-            image.save(slide_path, format="PNG")
-        # Upload PDF and images to S3
-        s3_folder = f"brdges/{brdge.id}"
-        s3_presentation_key = f"{s3_folder}/{presentation_filename}"
+        # Convert PDF to images
+        slide_images = pdf_to_images(pdf_temp_path)
 
-        # Upload the original PDF to S3
-        s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
-
-        # Update brdge data with S3 information
-        brdge.presentation_filename = presentation_filename
-        brdge.folder = s3_folder
-
-        # Upload slide images to S3
+        # Save slide images locally
         num_slides = len(slide_images)
         for idx, image in enumerate(slide_images):
             image_filename = f"slide_{idx+1}.png"
-            s3_image_key = f"{s3_folder}/slides/{image_filename}"
+            image_path = os.path.join(slides_dir, image_filename)
+            image.save(image_path, format="PNG")
 
-            # Save image to a bytes buffer
-            img_byte_arr = BytesIO()
-            image.save(img_byte_arr, format="PNG")
-            img_byte_arr.seek(0)
-
-            # Upload image to S3
-            s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
-
-        # Clean up temporary PDF file
-        #os.remove(pdf_temp_path)
+        # Update brdge data with local file information
+        brdge.presentation_filename = presentation_filename
+        brdge.folder = str(brdge.id)
 
         db.session.commit()
 
@@ -311,7 +337,7 @@ def create_brdge(user):
                 {
                     "message": "Brdge created successfully",
                     "brdge": brdge.to_dict(),
-                    "num_slides": num_slides,  # Return the number of slides instead of URLs
+                    "num_slides": num_slides,
                 }
             ),
             201,

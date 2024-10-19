@@ -16,6 +16,7 @@ function LoginPage() {
             const response = await api.post('/login', { email, password });
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);
+                window.location.href = '/brdges';
                 navigate('/brdges');
             } else {
                 throw new Error('No access token received');

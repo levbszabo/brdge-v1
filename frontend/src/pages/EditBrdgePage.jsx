@@ -114,12 +114,21 @@ function EditBrdgePage() {
                 numSlides: data.num_slides,
                 isShareable: data.shareable,
                 slides: data.slides || [],
-                transcripts: [], // Initialize as empty, will set after fetching aligned transcripts
+                transcripts: [], // Initialize as empty
                 generatedAudioFiles: data.generated_audio_files || []
             });
             setIsAudioUploaded(!!data.audio_filename);
 
-            // Fetch aligned transcripts
+            // Fetch aligned transcripts separately
+            fetchAlignedTranscripts();
+        } catch (error) {
+            console.error('Error fetching brdge data:', error);
+            showSnackbar('Error loading brdge data.', 'error');
+        }
+    };
+
+    const fetchAlignedTranscripts = async () => {
+        try {
             const transcriptsResponse = await api.get(`/brdges/${id}/transcripts/aligned`);
             if (transcriptsResponse.data && Array.isArray(transcriptsResponse.data.image_transcripts)) {
                 const transcriptsArray = transcriptsResponse.data.image_transcripts.map(item => item.transcript);
@@ -127,13 +136,17 @@ function EditBrdgePage() {
                     ...prev,
                     transcripts: transcriptsArray
                 }));
+                setCompletedSteps(prev => ({ ...prev, transcriptsGenerated: true }));
             } else {
-                console.warn('Unexpected transcript data format:', transcriptsResponse.data);
-                showSnackbar('Unexpected transcript data format.', 'warning');
+                console.warn('Transcripts not available yet:', transcriptsResponse.data);
             }
         } catch (error) {
-            console.error('Error fetching brdge data:', error);
-            showSnackbar('Error loading brdge data.', 'error');
+            if (error.response && error.response.status === 404) {
+                console.warn('Aligned transcripts not available yet.');
+            } else {
+                console.error('Error fetching aligned transcripts:', error);
+                showSnackbar('Error fetching aligned transcripts.', 'error');
+            }
         }
     };
 
@@ -472,6 +485,7 @@ function EditBrdgePage() {
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = 'https://via.placeholder.com/600x400?text=No+Slide+Available';
+                                console.error(`Error loading slide ${currentSlide}`);
                             }}
                         />
                     </Box>
@@ -484,7 +498,8 @@ function EditBrdgePage() {
                             variant="outlined"
                             value={brdgeData.transcripts[currentSlide - 1] || ''}
                             onChange={(e) => handleTranscriptChange(currentSlide - 1, e.target.value)}
-                            placeholder={`Enter transcript for slide ${currentSlide}...`}
+                            placeholder={brdgeData.transcripts.length === 0 ? 'Transcripts not available yet. Generate them first.' : `Enter transcript for slide ${currentSlide}...`}
+                            disabled={brdgeData.transcripts.length === 0}
                         />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
