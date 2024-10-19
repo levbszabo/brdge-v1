@@ -27,8 +27,3 @@ export const useSnackbar = () => {
     }
     return context;
 };
-
-export const showSnackbar = (message, severity) => {
-    const { showSnackbar } = useSnackbar();
-    showSnackbar(message, severity);
-};
