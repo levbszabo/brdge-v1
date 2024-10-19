@@ -63,7 +63,6 @@ pillow==10.4.0
 prompt_toolkit==3.0.47
 ptyprocess==0.7.0
 pure_eval==0.2.3
-PyAudio==0.2.14
 pycparser==2.22
 pydantic==2.9.2
 pydantic_core==2.23.4
