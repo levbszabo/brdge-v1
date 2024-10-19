@@ -314,21 +314,34 @@ def create_brdge(user):
         pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
         os.makedirs("/tmp/brdge", exist_ok=True)
         presentation.save(pdf_temp_path)
-        slides_dir = os.path.join("/tmp/brdge", f"slides_{brdge.id}")
-        os.makedirs(slides_dir, exist_ok=True)
+
         # Convert PDF to images
         slide_images = pdf_to_images(pdf_temp_path)
 
-        # Save slide images locally
-        num_slides = len(slide_images)
-        for idx, image in enumerate(slide_images):
-            image_filename = f"slide_{idx+1}.png"
-            image_path = os.path.join(slides_dir, image_filename)
-            image.save(image_path, format="PNG")
-
-        # Update brdge data with local file information
+        # Update brdge data
         brdge.presentation_filename = presentation_filename
         brdge.folder = str(brdge.id)
+
+        # Upload PDF to S3
+        s3_folder = brdge.folder
+        s3_presentation_key = f"{s3_folder}/{presentation_filename}"
+        s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
+
+        # Upload slide images to S3
+        for idx, image in enumerate(slide_images):
+            image_filename = f"slide_{idx+1}.png"
+            s3_image_key = f"{s3_folder}/slides/{image_filename}"
+
+            # Save image to a bytes buffer
+            img_byte_arr = BytesIO()
+            image.save(img_byte_arr, format="PNG")
+            img_byte_arr.seek(0)
+
+            # Upload image to S3
+            s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
+
+        # Clean up temporary PDF file
+        os.remove(pdf_temp_path)
 
         db.session.commit()
 
@@ -337,7 +350,7 @@ def create_brdge(user):
                 {
                     "message": "Brdge created successfully",
                     "brdge": brdge.to_dict(),
-                    "num_slides": num_slides,
+                    "num_slides": len(slide_images),
                 }
             ),
             201,
