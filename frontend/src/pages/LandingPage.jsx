@@ -118,9 +118,9 @@ function LandingPage() {
 
     const memoizedBrdgePlayer = useMemo(() => (
         <StyledBrdgePlayer
-            brdgeId="1"
+            brdgeId="47"
             onError={(error) => console.error('BrdgePlayer error:', error)}
-            autoplay={true}  // Add this prop
+            autoplay={true}
         />
     ), []);
 

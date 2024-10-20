@@ -848,17 +848,20 @@ def get_generated_audio_files(brdge_id):
     return jsonify({"files": audio_files}), 200
 
 
-@app.route("/api/brdges/<string:public_id>/audio/generated", methods=["GET", "OPTIONS"])
-@cross_origin()
+@app.route("/api/brdges/<string:public_id>/audio/generated", methods=["GET"])
 def get_generated_audio_files_by_public_id(public_id):
+    print(f"Fetching generated audio files for public_id: {public_id}")  # Debug log
     if request.method == "OPTIONS":
         return "", 200
 
     # Fetch the Brdge using the public ID
     brdge = Brdge.query.filter_by(public_id=public_id).first_or_404()
+    print(f"Found brdge: id={brdge.id}, folder={brdge.folder}")  # Debug log
 
     cache_dir = f"/tmp/brdge/audio/processed/{brdge.id}"
     s3_folder = f"{brdge.folder}/audio/processed"
+    print(f"Cache dir: {cache_dir}")  # Debug log
+    print(f"S3 folder: {s3_folder}")  # Debug log
 
     # Check cache first
     if os.path.exists(cache_dir):
@@ -888,6 +891,7 @@ def get_generated_audio_files_by_public_id(public_id):
     audio_files.sort(key=extract_slide_number)
     print(f"Sorted audio files: {audio_files}")  # Debug print
 
+    print(f"Returning audio files: {audio_files}")  # Debug log
     return jsonify({"files": audio_files}), 200
 
 
