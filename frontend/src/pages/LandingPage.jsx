@@ -1,4 +1,5 @@
 // src/pages/LandingPage.jsx
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -18,7 +19,9 @@ import {
 import { motion } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 import './LandingPage.css';
-import { styled } from '@mui/material/styles';
+import V1Diagram from '../components/V1Diagram';
+import V2Diagram from '../components/V2Diagram';
+import V3Diagram from '../components/V3Diagram';
 
 // Reuse FeatureCard component
 const FeatureCard = ({ icon, title, description }) => {
@@ -114,84 +117,34 @@ const IntroducingBrdgeAI = () => {
         setTabValue(newValue);
     };
 
-    const tabContent = [
+    const tabDetails = [
         {
             label: "V1 Static AI Presentation",
             icon: <Slideshow />,
-            content: (
-                <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                            Static AI Presentation
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            V1 introduces a static, AI-generated presentation that delivers your content seamlessly. This version automates the creation of presentations, ensuring consistency and saving valuable time.
-                        </Typography>
-                        {/* Replace with actual image or illustration */}
-                        <Box sx={{ mt: 2, textAlign: 'center' }}>
-                            <img
-                                src="/images/v1-static-ai-presentation.png" // Ensure this path is correct
-                                alt="V1 Static AI Presentation"
-                                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
-                            />
-                        </Box>
-                    </CardContent>
-                </Card>
-            )
+            title: 'Static AI Presentation',
+            description: 'V1 introduces a static, AI-generated presentation that delivers your content seamlessly. This version automates the creation of presentations, ensuring consistency and saving valuable time.',
+            component: <V1Diagram />,
         },
         {
             label: "V2 AI Agent Presentation",
             icon: <Chat />,
-            content: (
-                <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                            AI Agent Presentation
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            V2 enhances the experience by introducing AI Agents. These agents can interact with users, adapt the presentation in real-time, and provide personalized content based on user feedback and interactions.
-                        </Typography>
-                        {/* Replace with actual image or illustration */}
-                        <Box sx={{ mt: 2, textAlign: 'center' }}>
-                            <img
-                                src="/images/v2-ai-agent-presentation.png" // Ensure this path is correct
-                                alt="V2 AI Agent Presentation"
-                                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
-                            />
-                        </Box>
-                    </CardContent>
-                </Card>
-            )
+            title: 'AI Agent Presentation',
+            description: 'V2 enhances the experience by introducing AI Agents. These agents can interact with users, adapt the presentation in real-time, and provide personalized content based on user feedback and interactions.',
+            component: <V2Diagram />,
         },
         {
-            label: "V3 With Human in the Loop",
+            label: "V3 Bidirectionally Agentic",
             icon: <Group />,
-            content: (
-                <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
-                    <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                            With Human in the Loop
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            V3 combines the power of AI with human expertise. This hybrid approach ensures accuracy, personalization, and emotional intelligence in presentations, making interactions more meaningful and effective.
-                        </Typography>
-                        {/* Replace with actual image or illustration */}
-                        <Box sx={{ mt: 2, textAlign: 'center' }}>
-                            <img
-                                src="/images/v3-human-in-the-loop.png" // Ensure this path is correct
-                                alt="V3 With Human in the Loop"
-                                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
-                            />
-                        </Box>
-                    </CardContent>
-                </Card>
-            )
+            title: 'Bidirectionally Agentic Presentation',
+            description: 'V3 combines the power of AI with human expertise. This hybrid approach ensures accuracy, personalization, and emotional intelligence in presentations, making interactions more meaningful and effective.',
+            component: <V3Diagram />,
         },
     ];
 
     return (
         <Box sx={{ my: 16, backgroundColor: '#f0f4f8', p: { xs: 4, md: 8 }, borderRadius: 2 }}>
             <Grid container spacing={4} alignItems="center">
+                {/* Textual Content */}
                 <Grid item xs={12} md={6}>
                     <motion.div
                         initial={{ opacity: 0, x: -50 }}
@@ -226,6 +179,8 @@ const IntroducingBrdgeAI = () => {
                         </List>
                     </motion.div>
                 </Grid>
+
+                {/* Tabs Component with Diagrams */}
                 <Grid item xs={12} md={6}>
                     <motion.div
                         initial={{ opacity: 0, x: 50 }}
@@ -252,12 +207,27 @@ const IntroducingBrdgeAI = () => {
                                 sx={{ mb: 2 }}
                                 aria-label="AI Presentation Versions"
                             >
-                                {tabContent.map((tab, index) => (
+                                {tabDetails.map((tab, index) => (
                                     <Tab key={index} label={tab.label} icon={tab.icon} iconPosition="start" />
                                 ))}
                             </Tabs>
                             <Box sx={{ flexGrow: 1 }}>
-                                {tabContent[tabValue].content}
+                                <motion.div
+                                    key={tabValue}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5 }}
+                                >
+                                    <Typography variant="h6" gutterBottom>
+                                        {tabDetails[tabValue].title}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        {tabDetails[tabValue].description}
+                                    </Typography>
+                                    <Box sx={{ mt: 2, width: '100%', height: '100%' }}>
+                                        {tabDetails[tabValue].component}
+                                    </Box>
+                                </motion.div>
                             </Box>
                         </Box>
                     </motion.div>
