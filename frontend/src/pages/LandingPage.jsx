@@ -1,31 +1,26 @@
 // src/pages/LandingPage.jsx
-import React, { useEffect, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Typography, Button, Container, Grid, Box,
-    useTheme, Paper
+    useTheme, Paper, List, ListItem, ListItemIcon, ListItemText,
+    Tabs, Tab, Card, CardContent
 } from '@mui/material';
 import {
     CloudUpload, RecordVoiceOver, Slideshow,
-    Group, Support, ArrowForward, School, Refresh
+    Group, Support, ArrowForward, School, Refresh,
+    Assessment, Description, Mic, Chat,
 } from '@mui/icons-material';
+import {
+    Timeline, TimelineItem, TimelineSeparator,
+    TimelineConnector, TimelineContent, TimelineDot
+} from '@mui/lab';
 import { motion } from 'framer-motion';
-import { useSpring, animated } from 'react-spring';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
-import BrdgePlayer from '../components/BrdgePlayer';
 import './LandingPage.css';
 import { styled } from '@mui/material/styles';
 
-const HeroBackground = () => {
-    const props = useSpring({
-        from: { background: 'linear-gradient(135deg, #0072ff, #00c6ff)' },
-        to: { background: 'linear-gradient(135deg, #00c6ff, #0072ff)' },
-        config: { duration: 5000 },
-        loop: true,
-    });
-    return <animated.div style={{ ...props, padding: '10rem 0 6rem', borderRadius: '0 0 50% 50% / 20px' }} />;
-};
-
+// Reuse FeatureCard component
 const FeatureCard = ({ icon, title, description }) => {
     const theme = useTheme();
     return (
@@ -36,7 +31,7 @@ const FeatureCard = ({ icon, title, description }) => {
             flexDirection: 'column',
             alignItems: 'center',
             borderRadius: '16px',
-            transition: 'all 0.3s ease-in-out',
+            transition: 'transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease',
             '&:hover': {
                 transform: 'translateY(-10px)',
                 boxShadow: theme.shadows[10],
@@ -47,7 +42,7 @@ const FeatureCard = ({ icon, title, description }) => {
                 color: theme.palette.primary.main,
                 fontSize: '4rem',
                 mb: 2,
-                transition: 'all 0.3s ease-in-out',
+                transition: 'transform 0.3s ease',
                 '&:hover': {
                     transform: 'scale(1.1)',
                 }
@@ -64,118 +59,287 @@ const FeatureCard = ({ icon, title, description }) => {
     );
 };
 
-const StyledBrdgePlayer = styled(BrdgePlayer)(({ theme }) => ({
-    width: '100%',
-    maxWidth: '680px',
-    margin: '0 auto',
-    borderRadius: theme.shape.borderRadius,
-    overflow: 'hidden',
-    boxShadow: theme.shadows[4],
-    '& .brdge-player-controls': {
-        opacity: 0.9,
-        transition: 'opacity 0.3s ease',
-        '&:hover': {
-            opacity: 1,
+// Evolution of Information Transfer using Timeline
+const EvolutionTimeline = () => {
+    const theme = useTheme();
+    const timelineItems = [
+        { icon: <Mic />, title: "Spoken Word", description: "The original form of transferring knowledge through speech." },
+        { icon: <Description />, title: "Papyrus & Paper", description: "Transitioning from ancient scripts to written documentation." },
+        { icon: <Assessment />, title: "Screens & Presentations", description: "Digital displays enhancing information sharing." },
+        { icon: <Chat />, title: "AI Agents", description: "AI-driven intermediaries that present and share knowledge on your behalf." },
+        { icon: <Refresh />, title: "Brdge AI", description: "The next evolution in information transfer, seamlessly integrating AI into communication." },
+    ];
+
+    return (
+        <Box sx={{ my: 16 }}>
+            <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold' }}>
+                The Evolution of Information Transfer
+            </Typography>
+            <Timeline position="alternate">
+                {timelineItems.map((item, index) => (
+                    <TimelineItem key={index}>
+                        <TimelineSeparator>
+                            <TimelineDot color="primary">
+                                {item.icon}
+                            </TimelineDot>
+                            {index < timelineItems.length - 1 && <TimelineConnector />}
+                        </TimelineSeparator>
+                        <TimelineContent>
+                            <motion.div
+                                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.5, delay: index * 0.2 }}
+                            >
+                                <Typography variant="h6" component="h3" fontWeight="bold">
+                                    {item.title}
+                                </Typography>
+                                <Typography variant="body1" color="text.secondary">
+                                    {item.description}
+                                </Typography>
+                            </motion.div>
+                        </TimelineContent>
+                    </TimelineItem>
+                ))}
+            </Timeline>
+        </Box>
+    );
+};
+
+// Enhanced Tabs Component for Introducing Brdge AI
+const IntroducingBrdgeAI = () => {
+    const theme = useTheme();
+    const [tabValue, setTabValue] = useState(0);
+
+    const handleChange = (event, newValue) => {
+        setTabValue(newValue);
+    };
+
+    const tabContent = [
+        {
+            label: "V1 Static AI Presentation",
+            icon: <Slideshow />,
+            content: (
+                <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                            Static AI Presentation
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            V1 introduces a static, AI-generated presentation that delivers your content seamlessly. This version automates the creation of presentations, ensuring consistency and saving valuable time.
+                        </Typography>
+                        {/* Replace with actual image or illustration */}
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                            <img
+                                src="/images/v1-static-ai-presentation.png" // Ensure this path is correct
+                                alt="V1 Static AI Presentation"
+                                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+                            />
+                        </Box>
+                    </CardContent>
+                </Card>
+            )
         },
-    },
-    '& .brdge-player-button': {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        color: theme.palette.common.white,
-        padding: '10px 15px',
-        fontSize: '1.1rem',
-        '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        {
+            label: "V2 AI Agent Presentation",
+            icon: <Chat />,
+            content: (
+                <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                            AI Agent Presentation
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            V2 enhances the experience by introducing AI Agents. These agents can interact with users, adapt the presentation in real-time, and provide personalized content based on user feedback and interactions.
+                        </Typography>
+                        {/* Replace with actual image or illustration */}
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                            <img
+                                src="/images/v2-ai-agent-presentation.png" // Ensure this path is correct
+                                alt="V2 AI Agent Presentation"
+                                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+                            />
+                        </Box>
+                    </CardContent>
+                </Card>
+            )
         },
-    },
-    '& .brdge-player-play-button': {
-        padding: '15px 20px',
-        fontSize: '1.3rem',
-        transition: 'all 0.3s ease',
-        '&:hover': {
-            boxShadow: '0 0 15px rgba(255, 255, 255, 0.5)',
-            transform: 'scale(1.05)',
+        {
+            label: "V3 With Human in the Loop",
+            icon: <Group />,
+            content: (
+                <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 3 }}>
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                            With Human in the Loop
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            V3 combines the power of AI with human expertise. This hybrid approach ensures accuracy, personalization, and emotional intelligence in presentations, making interactions more meaningful and effective.
+                        </Typography>
+                        {/* Replace with actual image or illustration */}
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                            <img
+                                src="/images/v3-human-in-the-loop.png" // Ensure this path is correct
+                                alt="V3 With Human in the Loop"
+                                style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
+                            />
+                        </Box>
+                    </CardContent>
+                </Card>
+            )
         },
-    },
-    '& .track-title': {
-        fontSize: '1.5rem',
-        fontWeight: 600,
-    },
-    '& .progress-bar': {
-        height: '8px',
-        background: 'linear-gradient(90deg, #00C9FF 0%, #92FE9D 100%)',
-    },
-}));
+    ];
+
+    return (
+        <Box sx={{ my: 16, backgroundColor: '#f0f4f8', p: { xs: 4, md: 8 }, borderRadius: 2 }}>
+            <Grid container spacing={4} alignItems="center">
+                <Grid item xs={12} md={6}>
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 1 }}
+                    >
+                        <Typography variant="h4" component="h3" gutterBottom fontWeight="bold">
+                            Introducing Brdge AI
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                            For the first time in history, AI Agents provide us with an intermediary—an extension of ourselves. With Brdge AI, we offload our expertise and knowledge onto these extensions, enabling seamless information sharing.
+                        </Typography>
+                        <List>
+                            <ListItem>
+                                <ListItemIcon>
+                                    <Chat color="primary" />
+                                </ListItemIcon>
+                                <ListItemText primary="Interactive AI Agents" secondary="AI-driven intermediaries that present and share knowledge on your behalf." />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemIcon>
+                                    <Mic color="primary" />
+                                </ListItemIcon>
+                                <ListItemText primary="Voice Cloning & Transcription" secondary="Convert your voice into AI-generated interactions, making communication effortless." />
+                            </ListItem>
+                            <ListItem>
+                                <ListItemIcon>
+                                    <Description color="primary" />
+                                </ListItemIcon>
+                                <ListItemText primary="Generative AI Models" secondary="Extract rich signals from your documents to create dynamic, interactive presentations." />
+                            </ListItem>
+                        </List>
+                    </motion.div>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 1 }}
+                    >
+                        <Box
+                            sx={{
+                                backgroundColor: '#ffffff',
+                                borderRadius: 2,
+                                boxShadow: 3,
+                                p: 2,
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                        >
+                            <Tabs
+                                value={tabValue}
+                                onChange={handleChange}
+                                variant="fullWidth"
+                                indicatorColor="primary"
+                                textColor="primary"
+                                sx={{ mb: 2 }}
+                                aria-label="AI Presentation Versions"
+                            >
+                                {tabContent.map((tab, index) => (
+                                    <Tab key={index} label={tab.label} icon={tab.icon} iconPosition="start" />
+                                ))}
+                            </Tabs>
+                            <Box sx={{ flexGrow: 1 }}>
+                                {tabContent[tabValue].content}
+                            </Box>
+                        </Box>
+                    </motion.div>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+};
+
+// Building the Future of Communication
+const FutureOfCommunication = () => {
+    const theme = useTheme();
+    const steps = [
+        { icon: <CloudUpload />, title: "Upload Documents", description: "Transform your static documents into interactive AI experiences." },
+        { icon: <RecordVoiceOver />, title: "Add Voiceovers", description: "Incorporate voice explanations to guide users seamlessly through your content." },
+        { icon: <Slideshow />, title: "AI-Powered Presentations", description: "Generate personalized, interactive presentations effortlessly." },
+        { icon: <Refresh />, title: "Continuous Improvement", description: "Update and refine your content based on real-time feedback and new data." }
+    ];
+
+    return (
+        <Box sx={{ my: 16 }}>
+            <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold' }}>
+                Building the Future of Communication
+            </Typography>
+            <Grid container spacing={4} justifyContent="center">
+                {steps.map((step, index) => (
+                    <Grid item xs={12} sm={6} md={3} key={index}>
+                        <Parallax translateY={[10, -10]}>
+                            <FeatureCard
+                                icon={step.icon}
+                                title={step.title}
+                                description={step.description}
+                            />
+                        </Parallax>
+                    </Grid>
+                ))}
+            </Grid>
+        </Box>
+    );
+};
 
 function LandingPage() {
     const theme = useTheme();
 
-    const flowSteps = [
-        { icon: <CloudUpload />, title: "Upload Documents", description: "Transform your static documents into interactive AI experiences." },
-        { icon: <RecordVoiceOver />, title: "Record Walkthrough", description: "Add voice explanations to guide users through your content." },
-        { icon: <Slideshow />, title: "AI-Powered Presentation", description: "Our AI creates an interactive, personalized presentation." },
-        { icon: <Refresh />, title: "Continuous Refinement", description: "Easily update and improve based on feedback and new information." }
+    const useCases = [
+        { icon: <Group />, title: "Employee Onboarding", subheading: "Efficient & Scalable", description: "Streamline the onboarding process with interactive, AI-powered training materials." },
+        { icon: <Support />, title: "Customer Support", subheading: "Dynamic & Intelligent", description: "Enhance customer support with context-aware documentation and guides." },
+        { icon: <School />, title: "Info Products", subheading: "Engaging & Monetizable", description: "Create and monetize interactive, AI-enhanced informational products for your audience." },
     ];
-
-    const memoizedBrdgePlayer = useMemo(() => (
-        <StyledBrdgePlayer
-            brdgeId="47"
-            onError={(error) => console.error('BrdgePlayer error:', error)}
-            autoplay={true}
-        />
-    ), []);
 
     return (
         <ParallaxProvider>
-            <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                <HeroBackground />
-                <Container maxWidth="lg" sx={{ mt: { xs: -24, sm: -28, md: -32 }, mb: 12, position: 'relative', zIndex: 1 }}>
+            <Box sx={{ flexGrow: 1, overflow: 'hidden', backgroundColor: '#f9f9f9' }}>
+                <Container maxWidth="lg" sx={{ py: { xs: 8, sm: 10, md: 12 } }}>
+                    {/* Hero Section */}
                     <motion.div
                         initial={{ opacity: 0, y: -50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1 }}
                     >
-                        <Typography variant="h1" component="h1" align="center" sx={{
+                        <Typography variant="h2" component="h1" align="center" sx={{
                             mb: { xs: 2, sm: 3 },
                             fontWeight: 'bold',
-                            color: 'white',
-                            fontSize: { xs: '1.75rem', sm: '2.25rem', md: '3rem' },
-                            lineHeight: { xs: 1.2, sm: 1.3, md: 1.4 }
+                            color: theme.palette.text.primary,
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                            lineHeight: 1.2
                         }}>
-                            Transform Documents into Interactive AI Experiences
+                            Transform Your Documents with AI
                         </Typography>
-                        <Typography variant="h5" component="h2" align="center" sx={{
-                            mb: { xs: 3, sm: 4, md: 6 },
-                            fontWeight: 400,
-                            color: 'rgba(255, 255, 255, 0.9)',
+                        <Typography variant="h6" component="p" align="center" sx={{
+                            mb: { xs: 4, sm: 6 },
+                            color: theme.palette.text.secondary,
                             maxWidth: '800px',
                             mx: 'auto',
-                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' }
+                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
                         }}>
-                            Reduce meetings, streamline onboarding, and personalize content with Brdge AI
+                            Streamline your workflow, enhance onboarding, and personalize content effortlessly with our cutting-edge AI solutions.
                         </Typography>
                     </motion.div>
 
-                    <Box sx={{ my: { xs: 2, sm: 4, md: 8 }, display: 'flex', justifyContent: 'center' }}>
-                        <Paper
-                            elevation={6}
-                            sx={{
-                                width: '100%',
-                                maxWidth: { xs: '100%', sm: '680px' },
-                                backgroundColor: 'background.paper',
-                                borderRadius: 2,
-                                overflow: 'hidden',
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    transform: 'translateY(-5px)',
-                                    boxShadow: 8,
-                                },
-                            }}
-                        >
-                            {memoizedBrdgePlayer}
-                        </Paper>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                    {/* Call to Action Button */}
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 6, sm: 8 } }}>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                             <Button
                                 component={Link}
@@ -188,42 +352,33 @@ function LandingPage() {
                                     px: { xs: 4, md: 6 },
                                     fontSize: { xs: '1rem', md: '1.2rem' },
                                     borderRadius: 2,
+                                    backgroundColor: theme.palette.primary.main,
+                                    '&:hover': {
+                                        backgroundColor: theme.palette.primary.dark,
+                                    },
                                 }}
                             >
-                                Brdge AI Use Cases
+                                Explore AI Use Cases
                             </Button>
                         </motion.div>
                     </Box>
 
-                    <Box sx={{ my: 16 }}>
-                        <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold' }}>
-                            How It Works
-                        </Typography>
-                        <Grid container spacing={4} justifyContent="center">
-                            {flowSteps.map((step, index) => (
-                                <Grid item xs={12} sm={6} md={3} key={index}>
-                                    <Parallax translateY={[10, -10]}>
-                                        <FeatureCard
-                                            icon={step.icon}
-                                            title={step.title}
-                                            description={step.description}
-                                        />
-                                    </Parallax>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </Box>
+                    {/* Evolution Timeline Section */}
+                    <EvolutionTimeline />
 
+                    {/* Introducing Brdge AI Section */}
+                    <IntroducingBrdgeAI />
+
+                    {/* Building the Future of Communication */}
+                    <FutureOfCommunication />
+
+                    {/* Use Cases Section */}
                     <Box sx={{ my: 16 }}>
                         <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 8, fontWeight: 'bold' }}>
-                            Use Cases
+                            Real-World Applications
                         </Typography>
                         <Grid container spacing={6}>
-                            {[
-                                { icon: <Group />, title: "Employee Onboarding", subheading: "Efficient, Scalable, AI-driven", description: "Streamline the onboarding process with interactive, AI-powered training materials." },
-                                { icon: <Support />, title: "Customer Support", subheading: "Dynamic, Context-aware, Intelligent", description: "Enhance customer support with dynamic, context-aware documentation and guides." },
-                                { icon: <School />, title: "Info Products", subheading: "Interactive, Engaging, Monetizable", description: "Create and monetize interactive, AI-enhanced info products for your audience." },
-                            ].map((useCase, index) => (
+                            {useCases.map((useCase, index) => (
                                 <Grid item xs={12} md={4} key={index}>
                                     <FeatureCard
                                         icon={useCase.icon}
@@ -235,6 +390,7 @@ function LandingPage() {
                         </Grid>
                     </Box>
 
+                    {/* Final Call to Action */}
                     <Box sx={{
                         my: { xs: 8, md: 16 },
                         textAlign: 'center',
@@ -260,7 +416,7 @@ function LandingPage() {
                                 color: 'rgba(255, 255, 255, 0.9)',
                                 fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
                             }}>
-                                Try Brdge AI today and revolutionize how you share information.
+                                Join us today and revolutionize the way you share and interact with information.
                             </Typography>
                             <Button
                                 component={Link}
@@ -281,16 +437,16 @@ function LandingPage() {
                                     transition: 'all 0.3s ease-in-out',
                                 }}
                             >
-                                Join the Free Beta Trial
+                                Start Your Free Trial
                             </Button>
                             <Typography variant="body2" sx={{
                                 mt: 2,
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 fontSize: { xs: '0.8rem', md: '0.875rem' }
                             }}>
-                                Limited-time free access during the Beta period.
+                                Limited-time free access during our Beta period.
                                 <br />
-                                Sign up now to experience Brdge AI before launch!
+                                Sign up now to experience our AI solutions before the official launch!
                             </Typography>
                         </motion.div>
                     </Box>
