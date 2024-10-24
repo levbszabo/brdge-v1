@@ -1,76 +1,80 @@
-import React from 'react';
-import ReactFlow, { Background, MarkerType } from 'reactflow';
+import React, { memo, useState } from 'react';
+import ReactFlow, { Background, Handle, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
+
+const CustomNode = memo(({ data, isConnectable }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+        <div
+            style={{
+                padding: '8px',
+                borderRadius: '5px',
+                background: data.color,
+                color: '#333',
+                border: '1px solid #222',
+                width: 120,
+                fontSize: '10px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                boxShadow: isHovered ? '0 0 10px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                transition: 'box-shadow 0.3s ease',
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {data.label}
+            {isHovered && (
+                <div style={{ fontSize: '8px', marginTop: '5px' }}>
+                    {data.description}
+                </div>
+            )}
+            <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+            <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
+        </div>
+    );
+});
+
+const nodeTypes = {
+    custom: CustomNode,
+};
 
 const V2Diagram = () => {
     const nodes = [
-        {
-            id: '1',
-            type: 'input',
-            data: { label: 'User Content' },
-            position: { x: 50, y: 50 },
-            style: { background: '#D3F9D8', border: '1px solid #4CAF50', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
-        {
-            id: '2',
-            data: { label: 'AI Agent\n(Interrupts & Questions)' },
-            position: { x: 150, y: 150 },
-            style: { background: '#E8F4FD', border: '1px solid #2196F3', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
-        {
-            id: '3',
-            data: { label: 'Interactive AI Presentation' },
-            position: { x: 50, y: 250 },
-            style: { background: '#FFF3E0', border: '1px solid #FF9800', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
-        {
-            id: '4',
-            data: { label: 'Viewers\n(Ask Questions)' },
-            position: { x: 250, y: 250 },
-            style: { background: '#F3E5F5', border: '1px solid #9C27B0', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
+        { id: '1', type: 'custom', position: { x: 50, y: 0 }, data: { label: 'Presenter', color: '#D3F9D8', description: 'Provides initial content and guidelines' } },
+        { id: '2', type: 'custom', position: { x: 50, y: 120 }, data: { label: 'AI Agent', color: '#E8F4FD', description: 'Adapts content in real-time, answers queries' } },
+        { id: '3', type: 'custom', position: { x: 50, y: 240 }, data: { label: 'Viewer', color: '#FFF3E0', description: 'Engages in interactive learning experience' } },
+        { id: '4', type: 'custom', position: { x: 250, y: 120 }, data: { label: 'Knowledge Base', color: '#FFCDD2', description: 'Dynamic repository of information' } },
     ];
 
     const edges = [
-        { id: 'e1-2', source: '1', target: '2', animated: true, label: 'Initial offloading', style: { stroke: '#4CAF50' } },
-        { id: 'e2-3', source: '2', target: '3', animated: true, label: 'Generate script', style: { stroke: '#2196F3' } },
-        {
-            id: 'e3-4',
-            source: '3',
-            target: '4',
-            animated: true,
-            label: 'Present',
-            style: { stroke: '#FF9800' },
-            type: 'straight',
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#FF9800' },
-        },
-        {
-            id: 'e4-2',
-            source: '4',
-            target: '2',
-            animated: true,
-            label: 'Answer questions',
-            style: { stroke: '#9C27B0' },
-            type: 'straight',
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#9C27B0' },
-        },
+        { id: 'e1-2', source: '1', target: '2', animated: true, label: 'Offload', style: { stroke: '#4CAF50' } },
+        { id: 'e2-3', source: '2', target: '3', animated: true, label: 'Present/Ask', style: { stroke: '#2196F3' } },
+        { id: 'e4-2', source: '4', target: '2', animated: true, label: 'Inform', style: { stroke: '#F44336' } },
     ];
 
     return (
-        <div style={{ height: '300px', width: '100%' }}>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                fitView
-                style={{ background: 'transparent' }}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                zoomOnScroll={false}
-                panOnScroll={false}
-                preventScrolling={true}
-            >
-                <Background color="#f0f0f0" gap={16} size={1} />
-            </ReactFlow>
+        <div>
+            <div style={{ marginBottom: '20px' }}>
+                <p>
+                    Empower your presentations with real-time interaction. Agentic AI adds an intelligent assistant to your content, capable of answering questions directly on your behalf. It engages viewers in a two-way conversation, providing accurate responses while ensuring your expertise is represented effectively.
+                </p>
+
+            </div>
+            <div style={{ width: '100%', height: '350px', position: 'relative' }}>
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    style={{ background: 'white' }}
+                    minZoom={0.5}
+                    maxZoom={2}
+                    attributionPosition="hidden"
+                >
+                    <Background color="#aaa" gap={16} />
+                </ReactFlow>
+            </div>
         </div>
     );
 };

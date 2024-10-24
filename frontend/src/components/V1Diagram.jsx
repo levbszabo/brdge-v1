@@ -1,59 +1,93 @@
 // src/components/V1Diagram.jsx
 
-import React from 'react';
-import ReactFlow, { Background, MarkerType } from 'reactflow';
+import React, { memo, useState } from 'react';
+import ReactFlow, { Background, Handle, Position } from 'reactflow';
 import 'reactflow/dist/style.css';
+
+const CustomNode = memo(({ data, isConnectable }) => {
+    const [isHovered, setIsHovered] = useState(false);
+
+    return (
+        <div
+            style={{
+                padding: '8px',
+                borderRadius: '5px',
+                background: data.color,
+                color: '#333',
+                border: '1px solid #222',
+                width: 120,
+                fontSize: '10px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                boxShadow: isHovered ? '0 0 10px rgba(0, 0, 0, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)',
+                transition: 'box-shadow 0.3s ease',
+                position: 'relative',
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {data.label}
+            {isHovered && (
+                <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: 'white',
+                    padding: '4px',
+                    borderRadius: '4px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    zIndex: 1000,
+                    width: '150px',
+                    fontSize: '8px',
+                }}>
+                    {data.description}
+                </div>
+            )}
+            <Handle type="target" position={Position.Top} isConnectable={isConnectable} />
+            <Handle type="source" position={Position.Bottom} isConnectable={isConnectable} />
+        </div>
+    );
+});
+
+const nodeTypes = {
+    custom: CustomNode,
+};
 
 const V1Diagram = () => {
     const nodes = [
-        {
-            id: '1',
-            type: 'input',
-            data: { label: 'Document Upload' },
-            position: { x: 50, y: 50 },
-            style: { background: '#D3F9D8', border: '1px solid #4CAF50', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
-        {
-            id: '2',
-            data: { label: 'AI Processing' },
-            position: { x: 50, y: 150 },
-            style: { background: '#E8F4FD', border: '1px solid #2196F3', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
-        {
-            id: '3',
-            data: { label: 'Static AI Presentation' },
-            position: { x: 50, y: 250 },
-            style: { background: '#FFF3E0', border: '1px solid #FF9800', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
-        {
-            id: '4',
-            data: { label: 'Viewers' },
-            position: { x: 200, y: 250 },
-            style: { background: '#F3E5F5', border: '1px solid #9C27B0', borderRadius: 8, padding: 10, fontSize: 12 },
-        },
+        { id: '1', type: 'custom', position: { x: 100, y: 0 }, data: { label: 'Presenter', color: '#D3F9D8', description: 'Uploads and organizes content' } },
+        { id: '2', type: 'custom', position: { x: 100, y: 120 }, data: { label: 'AI Agent', color: '#E8F4FD', description: 'Processes and structures information' } },
+        { id: '3', type: 'custom', position: { x: 100, y: 240 }, data: { label: 'Viewer', color: '#FFF3E0', description: 'Accesses polished, consistent content' } },
     ];
 
     const edges = [
-        { id: 'e1-2', source: '1', target: '2', animated: true, label: 'One-time upload', style: { stroke: '#4CAF50' } },
-        { id: 'e2-3', source: '2', target: '3', animated: true, label: 'Generate', style: { stroke: '#2196F3' } },
-        { id: 'e3-4', source: '3', target: '4', animated: true, label: 'View anytime', style: { stroke: '#FF9800' }, markerEnd: { type: MarkerType.ArrowClosed } },
+        { id: 'e1-2', source: '1', target: '2', animated: true, label: 'Offload', style: { stroke: '#4CAF50' } },
+        { id: 'e2-3', source: '2', target: '3', animated: true, label: 'Present', style: { stroke: '#2196F3' } },
     ];
 
     return (
-        <div style={{ height: '300px', width: '100%' }}>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                fitView
-                style={{ background: 'transparent' }}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                zoomOnScroll={false}
-                panOnScroll={false}
-                preventScrolling={true}
-            >
-                <Background color="#f0f0f0" gap={16} size={1} />
-            </ReactFlow>
+        <div>
+            <div style={{ marginBottom: '20px' }}>
+                <p>
+                    Create powerful presentations that speak for you—literally. With Static AI, turn your documents into engaging walkthroughs, letting your content shine without requiring you to be there. It's like having your best presentation skills on autopilot, delivering consistency and clarity every single time
+                </p>
+
+            </div>
+            <div style={{ width: '100%', height: '350px', position: 'relative' }}>
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    fitView
+                    style={{ background: 'white' }}
+                    minZoom={0.5}
+                    maxZoom={2}
+                    attributionPosition="hidden"
+                >
+                    <Background color="#aaa" gap={16} />
+                </ReactFlow>
+            </div>
         </div>
     );
 };

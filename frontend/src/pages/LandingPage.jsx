@@ -5,12 +5,13 @@ import { Link } from 'react-router-dom';
 import {
     Typography, Button, Container, Grid, Box,
     useTheme, Paper, List, ListItem, ListItemIcon, ListItemText,
-    Tabs, Tab, Card, CardContent, useMediaQuery
+    Tabs, Tab, Card, CardContent, useMediaQuery, Icon
 } from '@mui/material';
 import {
     CloudUpload, RecordVoiceOver, Slideshow,
     Group, Support, ArrowForward, School, Refresh,
     Assessment, Description, Mic, Chat,
+    AutoAwesome, Speed
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
@@ -59,6 +60,13 @@ const FeatureCard = ({ icon, title, description }) => {
     );
 };
 
+const FeatureItem = ({ icon, text }) => (
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Icon component={icon} sx={{ mr: 2, color: 'primary.main' }} />
+        <Typography variant="body1"><strong>{text}</strong></Typography>
+    </Box>
+);
+
 // Introducing Brdge AI
 const IntroducingBrdgeAI = () => {
     const theme = useTheme();
@@ -74,81 +82,114 @@ const IntroducingBrdgeAI = () => {
             label: "Static",
             icon: <Slideshow />,
             title: 'Static AI Presentation',
-            description: 'Introduces a static, AI-generated presentation that delivers your content seamlessly. This version automates the creation of presentations, ensuring consistency and saving valuable time.',
+            description: '',
             component: <V1Diagram />,
         },
         {
-            label: "Interactive",
+            label: "Agentic",
             icon: <Chat />,
-            title: 'Interactive AI Presentation',
-            description: 'Enhances the experience by introducing AI Agents. These agents can interact with users, adapt the presentation in real-time, and provide personalized content based on user feedback and interactions.',
+            title: 'Agentic AI Presentation',
+            description: '',
             component: <V2Diagram />,
         },
         {
-            label: "Hybrid",
+            label: "Cybernetic",
             icon: <Group />,
             title: 'Hybrid AI-Human Presentation',
-            description: 'Combines the power of AI with human expertise. This hybrid approach ensures accuracy, personalization, and emotional intelligence in presentations, making interactions more meaningful and effective.',
+            description: '',
             component: <V3Diagram />,
         },
     ];
 
     return (
-        <Box sx={{ my: 16, backgroundColor: '#f0f4f8', p: { xs: 2, md: 8 }, borderRadius: 2 }}>
-            <Typography variant="h4" component="h3" gutterBottom fontWeight="bold" align="center" sx={{ mb: 4 }}>
+        <Box sx={{
+            my: { xs: 4, md: 16 },
+            backgroundColor: '#f0f4f8',
+            p: { xs: 1, md: 8 },
+            borderRadius: 2
+        }}>
+            <Typography variant="h4" component="h2" gutterBottom fontWeight="bold" align="center" sx={{ mb: { xs: 3, md: 6 } }}>
                 Introducing Brdge AI
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }} align="center">
-                For the first time in history, AI Agents provide us with an intermediary—an extension of ourselves. With Brdge AI, we offload our expertise and knowledge onto these extensions, enabling seamless information sharing.
-            </Typography>
-            <Box
-                sx={{
-                    backgroundColor: '#ffffff',
-                    borderRadius: 2,
-                    boxShadow: 3,
-                    p: 2,
-                    mt: 4,
-                }}
-            >
-                <Tabs
-                    value={tabValue}
-                    onChange={handleChange}
-                    variant={isMobile ? "fullWidth" : "standard"}
-                    centered
-                    sx={{ mb: 2 }}
-                    aria-label="AI Presentation Versions"
-                >
-                    {tabDetails.map((tab, index) => (
-                        <Tab
-                            key={index}
-                            label={tab.label}
-                            icon={tab.icon}
-                            iconPosition="start"
-                        />
-                    ))}
-                </Tabs>
-                <Box sx={{ p: 2, minHeight: isMobile ? '400px' : '500px' }}>
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={tabValue}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ duration: 0.5 }}
+            <Grid container spacing={4}>
+                <Grid item xs={12} md={5}>
+                    <Typography variant="body1" paragraph>
+                        <strong>Brdge AI:</strong> Your personal AI intermediary for <span style={{ color: theme.palette.primary.main }}>seamless communication</span> and <span style={{ color: theme.palette.primary.main }}>expertise-sharing</span>. We enable you to offload your knowledge onto AI extensions, revolutionizing information sharing.
+                    </Typography>
+                    <FeatureItem icon={AutoAwesome} text="Tailored Information Delivery" />
+                    <FeatureItem icon={Speed} text="Real-time Adaptability" />
+                    <FeatureItem icon={Refresh} text="Continuous Learning & Improvement" />
+                    <Typography variant="body1" sx={{ mt: 2 }}>
+                        Discover how our three levels of AI-powered presentations can <strong>transform your information sharing experience</strong>.
+                    </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={7}>
+                    <Box sx={{
+                        backgroundColor: '#ffffff',
+                        borderRadius: 2,
+                        boxShadow: 3,
+                        p: { xs: 1, md: 2 },
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}>
+                        <Tabs
+                            value={tabValue}
+                            onChange={handleChange}
+                            variant="scrollable"
+                            scrollButtons="auto"
+                            allowScrollButtonsMobile
+                            sx={{
+                                mb: 2,
+                                '& .MuiTabs-flexContainer': {
+                                    justifyContent: 'center',
+                                },
+                                '& .MuiTab-root': {
+                                    minWidth: 'auto',
+                                    px: { xs: 1, md: 2 },
+                                }
+                            }}
+                            aria-label="AI Presentation Versions"
                         >
-                            <Typography variant="h6" gutterBottom>
-                                {tabDetails[tabValue].title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                {tabDetails[tabValue].description}
-                            </Typography>
-                            <Box sx={{ mt: 2, width: '100%', height: isMobile ? '250px' : '300px' }}>
-                                {tabDetails[tabValue].component}
-                            </Box>
-                        </motion.div>
-                    </AnimatePresence>
-                </Box>
-            </Box>
+                            {tabDetails.map((tab, index) => (
+                                <Tab
+                                    key={index}
+                                    label={tab.label}
+                                    icon={tab.icon}
+                                    iconPosition="start"
+                                    sx={{
+                                        flexDirection: { xs: 'column', md: 'row' },
+                                        alignItems: 'center',
+                                    }}
+                                />
+                            ))}
+                        </Tabs>
+                        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={tabValue}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.5 }}
+                                    style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
+                                >
+                                    <Typography variant="h6" gutterBottom>
+                                        {tabDetails[tabValue].title}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        {tabDetails[tabValue].description}
+                                    </Typography>
+                                    <Box sx={{ flexGrow: 1, width: '100%', position: 'relative' }}>
+                                        {tabDetails[tabValue].component}
+                                    </Box>
+                                </motion.div>
+                            </AnimatePresence>
+                        </Box>
+                    </Box>
+                </Grid>
+            </Grid>
         </Box>
     );
 };
@@ -276,7 +317,6 @@ function LandingPage() {
     const theme = useTheme();
 
     useEffect(() => {
-        // Enable smooth scrolling
         document.documentElement.style.scrollBehavior = 'smooth';
         return () => {
             document.documentElement.style.scrollBehavior = 'auto';
@@ -300,7 +340,7 @@ function LandingPage() {
                             fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                             lineHeight: 1.2
                         }}>
-                            Transform Your Documents with AI
+                            Revolutionize Communication with AI-powered Presentations
                         </Typography>
                         <Typography variant="h6" component="p" align="center" sx={{
                             mb: { xs: 4, sm: 6 },
@@ -309,7 +349,7 @@ function LandingPage() {
                             mx: 'auto',
                             fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
                         }}>
-                            Streamline your workflow, enhance onboarding, and personalize content effortlessly with our cutting-edge AI solutions.
+                            Empower your communication. Simplify onboarding, automate content delivery, and captivate your audience.
                         </Typography>
                     </motion.div>
 
