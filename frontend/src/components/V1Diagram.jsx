@@ -72,7 +72,6 @@ const V1Diagram = () => {
                 <p>
                     Create powerful presentations that speak for you—literally. With Static AI, turn your documents into engaging walkthroughs, letting your content shine without requiring you to be there. It's like having your best presentation skills on autopilot, delivering consistency and clarity every single time
                 </p>
-
             </div>
             <div style={{ width: '100%', height: '350px', position: 'relative' }}>
                 <ReactFlow
@@ -81,8 +80,11 @@ const V1Diagram = () => {
                     nodeTypes={nodeTypes}
                     fitView
                     style={{ background: 'white' }}
-                    minZoom={0.5}
-                    maxZoom={2}
+                    zoomOnScroll={false}
+                    panOnScroll={false}
+                    nodesDraggable={false}
+                    nodesConnectable={false}
+                    elementsSelectable={false}
                     attributionPosition="hidden"
                 >
                     <Background color="#aaa" gap={16} />

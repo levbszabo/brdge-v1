@@ -9,7 +9,8 @@ import {
 import {
     CloudUpload, RecordVoiceOver, Slideshow,
     Group, Support, ArrowForward, School, Refresh, Chat,
-    AutoAwesome, Speed, Mic, Description, VolumeUp, Share
+    AutoAwesome, Speed, Mic, Description, VolumeUp, Share,
+    Handshake, TrendingUp, Devices, MenuBook
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
@@ -61,11 +62,32 @@ const FeatureCard = ({ icon, title, description }) => {
     );
 };
 
-const FeatureItem = ({ icon, text }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <Icon component={icon} sx={{ mr: 2, color: 'primary.main' }} />
-        <Typography variant="body1"><strong>{text}</strong></Typography>
-    </Box>
+const FeatureItem = ({ icon, title, description }) => (
+    <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+    >
+        <Box sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            mb: 3,
+            p: 2,
+            borderRadius: 2,
+            background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+            transition: 'transform 0.3s ease-in-out',
+            '&:hover': {
+                transform: 'translateY(-5px)',
+            }
+        }}>
+            <Icon component={icon} sx={{ mr: 2, color: 'primary.main', fontSize: 32 }} />
+            <Box>
+                <Typography variant="h6" gutterBottom><strong>{title}</strong></Typography>
+                <Typography variant="body2">{description}</Typography>
+            </Box>
+        </Box>
+    </motion.div>
 );
 
 // Introducing Brdge AI
@@ -93,44 +115,60 @@ const IntroducingBrdgeAI = () => {
             description: '',
             component: <V2Diagram />,
         },
-        {
-            label: "Cybernetic",
-            icon: <Group />,
-            title: 'Hybrid AI-Human Presentation',
-            description: '',
-            component: <V3Diagram />,
-        },
     ];
 
     return (
         <Box sx={{
             my: { xs: 4, md: 16 },
-            backgroundColor: '#f0f4f8',
-            p: { xs: 1, md: 8 },
-            borderRadius: 2
+            background: 'linear-gradient(135deg, #f0f4f8 0%, #e0e8f0 100%)',
+            p: { xs: 3, md: 8 },
+            borderRadius: 4,
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
         }}>
             <Typography variant="h4" component="h2" gutterBottom fontWeight="bold" align="center" sx={{ mb: { xs: 3, md: 6 } }}>
                 Introducing Brdge AI
             </Typography>
             <Grid container spacing={4}>
                 <Grid item xs={12} md={5}>
-                    <Typography variant="body1" paragraph>
-                        <strong>Brdge AI:</strong> Your personal AI intermediary for <span style={{ color: theme.palette.primary.main }}>seamless communication</span> and <span style={{ color: theme.palette.primary.main }}>expertise-sharing</span>. We enable you to offload your knowledge onto AI extensions, revolutionizing information sharing.
-                    </Typography>
-                    <FeatureItem icon={AutoAwesome} text="Tailored Information Delivery" />
-                    <FeatureItem icon={Speed} text="Real-time Adaptability" />
-                    <FeatureItem icon={Refresh} text="Continuous Learning & Improvement" />
-                    <Typography variant="body1" sx={{ mt: 2 }}>
-                        Discover how our three levels of AI-powered presentations can <strong>transform your information sharing experience</strong>.
-                    </Typography>
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <Typography variant="body1" paragraph>
+                            With Brdge AI, transform any document into a presentation with your chosen script—consistent and ready to go.
+
+                            Simply upload your document, record your walkthrough, set your script, and deploy. Want more interaction?
+
+                            Our Agentic Brdge allows your presentations to respond to questions, creating an engaging, dynamic experience for your audience.
+                        </Typography>
+                        <Typography variant="h6" gutterBottom sx={{ mt: 4, mb: 2 }}>
+                            <strong>Key Use Cases:</strong>
+                        </Typography>
+                        <FeatureItem
+                            icon={Handshake}
+                            title="Effortlessly Guide New Hires"
+                            description="Create AI-powered onboarding sessions that guide new employees through policies, tools, and workflows. Ensure a consistent and engaging experience for every hire."
+                        />
+                        <FeatureItem
+                            icon={TrendingUp}
+                            title="Elevate Your Sales Pitches"
+                            description="Transform your sales presentations with AI-driven interactivity, adapting to client questions and ensuring every pitch is engaging and effective."
+                        />
+                        <FeatureItem
+                            icon={Devices}
+                            title="Showcase Your Products Like Never Before"
+                            description="Turn your product demos into dynamic, AI-led experiences that respond to your audience's interactions and highlight key features."
+                        />
+                    </motion.div>
                 </Grid>
 
                 <Grid item xs={12} md={7}>
                     <Box sx={{
                         backgroundColor: '#ffffff',
-                        borderRadius: 2,
-                        boxShadow: 3,
-                        p: { xs: 1, md: 2 },
+                        borderRadius: 4,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+                        p: { xs: 2, md: 4 },
                         height: '100%',
                         display: 'flex',
                         flexDirection: 'column',
@@ -149,7 +187,17 @@ const IntroducingBrdgeAI = () => {
                                 '& .MuiTab-root': {
                                     minWidth: 'auto',
                                     px: { xs: 1, md: 2 },
-                                }
+                                    color: 'text.secondary',
+                                    '&.Mui-selected': {
+                                        color: 'primary.main',
+                                        fontWeight: 'bold',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                                        borderRadius: '8px',
+                                    },
+                                },
+                                '& .MuiTabs-indicator': {
+                                    display: 'none',
+                                },
                             }}
                             aria-label="AI Presentation Versions"
                         >
@@ -222,7 +270,7 @@ function LandingPage() {
                             fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                             lineHeight: 1.2
                         }}>
-                            Revolutionize Communication with AI-powered Presentations
+                            Autonomous AI Presentations
                         </Typography>
                         <Typography variant="h6" component="p" align="center" sx={{
                             mb: { xs: 4, sm: 6 },
@@ -231,7 +279,7 @@ function LandingPage() {
                             mx: 'auto',
                             fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
                         }}>
-                            Empower your communication. Simplify onboarding, automate content delivery, and captivate your audience.
+                            Let Brdge AI Agents Handle Onboarding, Sales, and Training for You.
                         </Typography>
                     </motion.div>
 
@@ -316,17 +364,8 @@ function LandingPage() {
                                     transition: 'all 0.3s ease-in-out',
                                 }}
                             >
-                                Start Your Free Trial
+                                Sign Up For Free
                             </Button>
-                            <Typography variant="body2" sx={{
-                                mt: 2,
-                                color: 'rgba(255, 255, 255, 0.8)',
-                                fontSize: { xs: '0.8rem', md: '0.875rem' }
-                            }}>
-                                Limited-time free access during our Beta period.
-                                <br />
-                                Sign up now to experience our AI solutions before the official launch!
-                            </Typography>
                         </motion.div>
                     </Box>
                 </Container>

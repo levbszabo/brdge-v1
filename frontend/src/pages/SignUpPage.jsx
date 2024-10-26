@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, TextField, Button, Typography, Box, Alert, Paper } from '@mui/material';
+import { Container, TextField, Button, Typography, Box, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
 import { motion } from 'framer-motion';
 import { api } from '../api';
+import { PersonAdd } from '@mui/icons-material';
 
 function SignUpPage() {
     const [email, setEmail] = useState('');
@@ -10,6 +11,8 @@ function SignUpPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const navigate = useNavigate();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -27,23 +30,46 @@ function SignUpPage() {
     };
 
     return (
-        <Container maxWidth="sm">
-            <Box sx={{ my: 8 }}>
+        <Container maxWidth="sm" sx={{ height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                mt: { xs: -8, sm: -4 }, // Adjust top margin for mobile and desktop
+            }}>
                 <motion.div
-                    initial={{ opacity: 0, y: -50 }}
+                    initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Typography variant="h4" component="h1" gutterBottom align="center">
-                        Sign Up for Brdge AI Beta
+                    <Typography
+                        variant={isMobile ? "h4" : "h3"}
+                        component="h1"
+                        gutterBottom
+                        align="center"
+                        sx={{
+                            fontWeight: 'bold',
+                            color: theme.palette.primary.main,
+                            mb: 2
+                        }}
+                    >
+                        Join Brdge AI Beta
                     </Typography>
                 </motion.div>
-                <Typography variant="body1" sx={{ mb: 4, textAlign: 'center' }}>
-                    Join our exclusive beta program and experience the future of knowledge sharing. Limited-time free access during the Beta period!
+                <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', maxWidth: '90%' }}>
+                    Experience the future of knowledge sharing. Get exclusive beta access!
                 </Typography>
-                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-                {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-                <Paper elevation={3} sx={{ p: 4 }}>
+                {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
+                {success && <Alert severity="success" sx={{ mb: 2, width: '100%' }}>{success}</Alert>}
+                <Paper
+                    elevation={3}
+                    sx={{
+                        p: { xs: 3, md: 4 },
+                        width: '100%',
+                        borderRadius: '16px',
+                        background: '#ffffff',
+                    }}
+                >
                     <Box component="form" onSubmit={handleSignUp}>
                         <TextField
                             label="Email"
@@ -53,6 +79,17 @@ function SignUpPage() {
                             margin="normal"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            variant="outlined"
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                        borderColor: theme.palette.primary.main,
+                                    },
+                                    '&:hover fieldset': {
+                                        borderColor: theme.palette.primary.dark,
+                                    },
+                                },
+                            }}
                         />
                         <TextField
                             label="Password"
@@ -62,17 +99,45 @@ function SignUpPage() {
                             margin="normal"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
+                            variant="outlined"
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                        borderColor: theme.palette.primary.main,
+                                    },
+                                    '&:hover fieldset': {
+                                        borderColor: theme.palette.primary.dark,
+                                    },
+                                },
+                            }}
                         />
-                        <Button variant="contained" color="primary" type="submit" fullWidth sx={{ mt: 3, mb: 2 }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            type="submit"
+                            fullWidth
+                            startIcon={<PersonAdd />}
+                            sx={{
+                                mt: 3,
+                                mb: 2,
+                                borderRadius: '50px',
+                                background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
+                                transition: 'all 0.3s ease-in-out',
+                                '&:hover': {
+                                    transform: 'scale(1.05)',
+                                    boxShadow: '0 6px 20px rgba(0, 180, 219, 0.4)',
+                                },
+                            }}
+                        >
                             Join Beta Program
                         </Button>
                     </Box>
                 </Paper>
-                <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }}>
-                    By signing up, you'll get early access to Brdge AI and help shape its future. Your feedback is invaluable!
+                <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic' }}>
+                    By signing up, you'll get early access to Brdge AI and help shape its future.
                 </Typography>
-                <Typography variant="body2" sx={{ mt: 2, textAlign: 'center' }}>
-                    Already have an account? <Link to="/login">Log in</Link>
+                <Typography variant="body1" sx={{ mt: 2, textAlign: 'center' }}>
+                    Already have an account? <Link to="/login" style={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>Log in</Link>
                 </Typography>
             </Box>
         </Container>

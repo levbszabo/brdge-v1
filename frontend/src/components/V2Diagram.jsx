@@ -59,7 +59,6 @@ const V2Diagram = () => {
                 <p>
                     Empower your presentations with real-time interaction. Agentic AI adds an intelligent assistant to your content, capable of answering questions directly on your behalf. It engages viewers in a two-way conversation, providing accurate responses while ensuring your expertise is represented effectively.
                 </p>
-
             </div>
             <div style={{ width: '100%', height: '350px', position: 'relative' }}>
                 <ReactFlow
@@ -68,8 +67,13 @@ const V2Diagram = () => {
                     nodeTypes={nodeTypes}
                     fitView
                     style={{ background: 'white' }}
-                    minZoom={0.5}
-                    maxZoom={2}
+                    minZoom={1}
+                    maxZoom={1}
+                    zoomOnScroll={false}
+                    panOnScroll={false}
+                    nodesDraggable={false}
+                    nodesConnectable={false}
+                    elementsSelectable={false}
                     attributionPosition="hidden"
                 >
                     <Background color="#aaa" gap={16} />
