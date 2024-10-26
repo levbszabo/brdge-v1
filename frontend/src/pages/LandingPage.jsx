@@ -4,14 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Typography, Button, Container, Grid, Box,
-    useTheme, Paper, List, ListItem, ListItemIcon, ListItemText,
-    Tabs, Tab, Card, CardContent, useMediaQuery, Icon
+    useTheme, Paper, Tabs, Tab, useMediaQuery, Icon
 } from '@mui/material';
 import {
     CloudUpload, RecordVoiceOver, Slideshow,
-    Group, Support, ArrowForward, School, Refresh,
-    Assessment, Description, Mic, Chat,
-    AutoAwesome, Speed
+    Group, Support, ArrowForward, School, Refresh, Chat,
+    AutoAwesome, Speed, Mic, Description, VolumeUp, Share
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
@@ -20,6 +18,9 @@ import V1Diagram from '../components/V1Diagram';
 import V2Diagram from '../components/V2Diagram';
 import V3Diagram from '../components/V3Diagram';
 import EvolutionTimeline from '../components/EvolutionTimeline';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { useInView } from 'react-intersection-observer';
+import HowItWorks from '../components/HowItWorks';
 
 // Reuse FeatureCard component
 const FeatureCard = ({ icon, title, description }) => {
@@ -194,125 +195,6 @@ const IntroducingBrdgeAI = () => {
     );
 };
 
-// Building the Future of Communication
-const FutureOfCommunication = () => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-    const steps = [
-        { icon: <CloudUpload />, title: "Upload Documents", description: "Transform static documents into interactive AI experiences." },
-        { icon: <RecordVoiceOver />, title: "Add Voiceovers", description: "Incorporate voice explanations for seamless content guidance." },
-        { icon: <Slideshow />, title: "AI Presentations", description: "Generate personalized, interactive presentations effortlessly." },
-        { icon: <Refresh />, title: "Continuous Improvement", description: "Update content based on real-time feedback and new data." }
-    ];
-
-    return (
-        <Box sx={{ my: 16, px: 2 }}>
-            <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold', fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}>
-                Building the Future of Communication
-            </Typography>
-            <Grid container spacing={3} justifyContent="center">
-                {steps.map((step, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                        >
-                            <Paper elevation={3} sx={{
-                                p: 2,
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                borderRadius: '16px',
-                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                                '&:hover': {
-                                    transform: 'translateY(-10px)',
-                                    boxShadow: theme.shadows[10],
-                                }
-                            }}>
-                                <Box sx={{
-                                    color: theme.palette.primary.main,
-                                    fontSize: '2.5rem',
-                                    mb: 1,
-                                }}>
-                                    {step.icon}
-                                </Box>
-                                <Typography variant="h6" component="h3" gutterBottom fontWeight="bold" align="center" sx={{ fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' } }}>
-                                    {step.title}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' } }}>
-                                    {step.description}
-                                </Typography>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-                ))}
-            </Grid>
-        </Box>
-    );
-};
-
-// Use Cases Section
-const UseCases = () => {
-    const theme = useTheme();
-    const useCases = [
-        { icon: <Group />, title: "Employee Onboarding", subheading: "Efficient & Scalable", description: "Streamline the onboarding process with interactive, AI-powered training materials." },
-        { icon: <Support />, title: "Customer Support", subheading: "Dynamic & Intelligent", description: "Enhance customer support with context-aware documentation and guides." },
-        { icon: <School />, title: "Info Products", subheading: "Engaging & Monetizable", description: "Create and monetize interactive, AI-enhanced informational products for your audience." },
-    ];
-
-    return (
-        <Box sx={{ my: 16, px: 2 }}>
-            <Typography variant="h3" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold' }}>
-                Real-World Applications
-            </Typography>
-            <Grid container spacing={4} justifyContent="center">
-                {useCases.map((useCase, index) => (
-                    <Grid item xs={12} md={4} key={index}>
-                        <motion.div
-                            initial={{ opacity: 0, y: 50 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                        >
-                            <Paper elevation={3} sx={{
-                                p: 4,
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                borderRadius: '16px',
-                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                                '&:hover': {
-                                    transform: 'translateY(-10px)',
-                                    boxShadow: theme.shadows[10],
-                                }
-                            }}>
-                                <Box sx={{
-                                    color: theme.palette.primary.main,
-                                    fontSize: '3rem',
-                                    mb: 2,
-                                    alignSelf: 'center',
-                                }}>
-                                    {useCase.icon}
-                                </Box>
-                                <Typography variant="h5" component="h3" gutterBottom fontWeight="bold" align="center">
-                                    {useCase.title}
-                                </Typography>
-                                <Typography variant="subtitle1" color="primary" align="center" gutterBottom>
-                                    {useCase.subheading}
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" align="center">
-                                    {useCase.description}
-                                </Typography>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-                ))}
-            </Grid>
-        </Box>
-    );
-};
-
 function LandingPage() {
     const theme = useTheme();
 
@@ -384,11 +266,8 @@ function LandingPage() {
                     {/* Introducing Brdge AI Section */}
                     <IntroducingBrdgeAI />
 
-                    {/* Building the Future of Communication */}
-                    <FutureOfCommunication />
-
-                    {/* Use Cases Section */}
-                    <UseCases />
+                    {/* How It Works Section */}
+                    <HowItWorks />
 
                     {/* Final Call to Action */}
                     <Box sx={{
