@@ -26,6 +26,10 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from functools import wraps
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import logging
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -40,6 +44,9 @@ s3_client = boto3.client("s3", region_name=S3_REGION)
 
 # Enable CORS for all routes
 CORS(app)
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 
 @jwt_required(optional=True)
@@ -1095,6 +1102,61 @@ def manage_brdge(user, brdge_id):
         )
 
     return jsonify({"error": "Invalid method"}), 405
+
+
+@app.route("/api/auth/google", methods=["POST"])
+def google_auth():
+    token = request.json.get("token")
+    try:
+        # Specify the CLIENT_ID of the app that accesses the backend:
+        idinfo = id_token.verify_oauth2_token(
+            token, google_requests.Request(), GOOGLE_CLIENT_ID
+        )
+
+        if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+            raise ValueError("Wrong issuer.")
+
+        # ID token is valid. Get the user's Google Account email from the decoded token.
+        email = idinfo["email"]
+
+        # Check if user exists, if not, create a new user
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            user = User(
+                email=email, password_hash=""
+            )  # Set a dummy password or handle it differently
+            db.session.add(user)
+            db.session.commit()
+
+        # Generate JWT token
+        access_token = create_access_token(identity=user.id)
+        return jsonify(access_token=access_token), 200
+
+    except ValueError:
+        return jsonify({"error": "Invalid token"}), 400
+
+
+@app.route("/auth/google/callback")
+def google_auth_callback():
+    flow = Flow.from_client_secrets_file(
+        "path/to/client_secrets.json",
+        scopes=["https://www.googleapis.com/auth/userinfo.email", "openid"],
+        redirect_uri=request.base_url,
+    )
+    flow.fetch_token(code=request.args.get("code"))
+
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google_requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token, request=token_request, audience=GOOGLE_CLIENT_ID
+    )
+
+    # ... process the user info and create/login the user ...
+
+    return redirect(url_for("some_route"))
 
 
 @app.before_request

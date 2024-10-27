@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { api } from '../api';
 import { PersonAdd } from '@mui/icons-material';
 import { AuthContext } from '../App';
+import { GoogleLogin } from '@react-oauth/google';
+import { setAuthToken } from '../utils/auth';
 
 function SignUpPage() {
     const [email, setEmail] = useState('');
@@ -29,6 +31,22 @@ function SignUpPage() {
             }
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred');
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const response = await api.post('/auth/google', { token: credentialResponse.credential });
+            if (response.data.access_token) {
+                setAuthToken(response.data.access_token);
+                setIsAuthenticated(true);
+                navigate('/brdges');
+            } else {
+                throw new Error('No access token received');
+            }
+        } catch (error) {
+            console.error('Error during Google login:', error);
+            setError('An error occurred during Google login. Please try again.');
         }
     };
 
@@ -152,6 +170,13 @@ function SignUpPage() {
                 <Typography variant="body1" sx={{ mt: 2, textAlign: 'center' }}>
                     Already have an account? <Link to="/login" style={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>Log in</Link>
                 </Typography>
+                <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => {
+                        console.log('Login Failed');
+                        setError('Google login failed. Please try again.');
+                    }}
+                />
             </Box>
         </Container>
     );

@@ -21,6 +21,8 @@ import { getAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
 import '@fontsource/poppins';
 import PricingPage from './pages/PricingPage';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import PolicyPage from './pages/PolicyPage';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -62,51 +64,63 @@ function Layout({ children }) {
 }
 
 function App() {
+  // Get the Google Client ID from the environment variable
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+
+  if (!googleClientId) {
+    console.error('Google Client ID is not set in the environment variables.');
+    // You might want to handle this error case, perhaps by not rendering the GoogleOAuthProvider
+    // or by showing an error message to the user
+  }
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <SnackbarProvider>
-        <Router>
-          <ScrollToTop />
-          <Layout>
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/demos" element={<DemoPage />} />
-              <Route path="/signup" element={<SignUpPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
-              <Route path="/b/:publicId" element={<ViewBrdgePage />} />
-              <Route
-                path="/brdges"
-                element={
-                  <ProtectedRoute>
-                    <BrdgeListPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/create"
-                element={
-                  <ProtectedRoute>
-                    <CreateBrdgePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/edit/:id"
-                element={
-                  <ProtectedRoute>
-                    <EditBrdgePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/pricing" element={<PricingPage />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </SnackbarProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={googleClientId}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <SnackbarProvider>
+          <Router>
+            <ScrollToTop />
+            <Layout>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/demos" element={<DemoPage />} />
+                <Route path="/signup" element={<SignUpPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
+                <Route path="/b/:publicId" element={<ViewBrdgePage />} />
+                <Route
+                  path="/brdges"
+                  element={
+                    <ProtectedRoute>
+                      <BrdgeListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/create"
+                  element={
+                    <ProtectedRoute>
+                      <CreateBrdgePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/edit/:id"
+                  element={
+                    <ProtectedRoute>
+                      <EditBrdgePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/policy" element={<PolicyPage />} />
+              </Routes>
+            </Layout>
+          </Router>
+        </SnackbarProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 
