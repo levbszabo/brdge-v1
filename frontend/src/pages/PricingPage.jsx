@@ -1,7 +1,11 @@
 import React from 'react';
-import { Container, Typography, Grid, Paper, Button, Box, useTheme, useMediaQuery } from '@mui/material';
+import { Container, Typography, Grid, Paper, Button, Box, useTheme, useMediaQuery, Divider } from '@mui/material';
 import { motion } from 'framer-motion';
 import CheckIcon from '@mui/icons-material/Check';
+import { Link as RouterLink } from 'react-router-dom';
+import SchoolIcon from '@mui/icons-material/School';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 
 const PricingTier = ({ title, price, features, buttonText, isPremium }) => {
     const theme = useTheme();
@@ -31,6 +35,8 @@ const PricingTier = ({ title, price, features, buttonText, isPremium }) => {
                     ))}
                 </Box>
                 <Button
+                    component={RouterLink}
+                    to="/signup"
                     variant={isPremium ? "contained" : "outlined"}
                     color={isPremium ? "secondary" : "primary"}
                     sx={{ mt: 2, borderRadius: '50px' }}
@@ -51,7 +57,7 @@ function PricingPage() {
             title: "Free",
             price: "$0/month",
             features: [
-                "2 Monthly Brdges",
+                "Up to 2 Brdges",
                 "Basic Customization",
                 "Limited Analytics",
                 "Standard Support"
@@ -83,6 +89,27 @@ function PricingPage() {
         }
     ];
 
+    const useCases = [
+        {
+            icon: <SchoolIcon fontSize="large" />,
+            title: "Effortless Onboarding",
+            description: "Turn training documents into engaging, guided sessions that new hires can access anytime. Make onboarding fast, consistent, and easy to follow.",
+            subheading: "Streamline training, save time, and ensure consistency."
+        },
+        {
+            icon: <TrendingUpIcon fontSize="large" />,
+            title: "Automated Sales Pitches",
+            description: "Deliver the perfect pitch every time with AI presenters tailored to your prospect's needs. Reach more clients without being tied to the screen.",
+            subheading: "Boost sales efficiency and reach more prospects."
+        },
+        {
+            icon: <MonetizationOnIcon fontSize="large" />,
+            title: "Profitable Online Courses",
+            description: "Monetize your expertise with interactive, AI-led courses. Share knowledge, increase your reach, and generate revenue by turning content into immersive experiences.",
+            subheading: "Scale your knowledge and increase revenue streams."
+        }
+    ];
+
     return (
         <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 8 } }}>
             <Box sx={{ my: 8 }}>
@@ -105,27 +132,98 @@ function PricingPage() {
                     </Typography>
                 </motion.div>
 
-                <Grid container spacing={4}>
+                <Box display="flex" flexWrap="wrap" gap={4}>
                     {pricingTiers.map((tier, index) => (
-                        <Grid item xs={12} md={4} key={index}>
+                        <Box key={index} flexGrow={1} flexBasis={{ xs: '100%', md: '30%' }}>
                             <PricingTier {...tier} />
-                        </Grid>
+                        </Box>
                     ))}
-                </Grid>
+                </Box>
 
-                <Box sx={{ mt: 8 }}>
-                    <Typography variant="h4" component="h2" gutterBottom fontWeight="bold">
-                        Plan Breakdown
-                    </Typography>
-                    <Typography variant="body1" paragraph>
-                        <strong>Free:</strong> Best for new users exploring Brdge AI. Includes up to 2 Brdges per month, basic customization, and limited analytics.
-                    </Typography>
-                    <Typography variant="body1" paragraph>
-                        <strong>Standard ($29/month):</strong> Ideal for individual users or small teams. Provides up to 20 Brdges per month, standard customization, and basic analytics.
-                    </Typography>
-                    <Typography variant="body1" paragraph>
-                        <strong>Premium ($59/month):</strong> Suited for heavy users or larger teams. Offers unlimited Brdges, full customization, advanced analytics, and priority support.
-                    </Typography>
+                <Box sx={{ mt: 12, mb: 8 }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <Typography variant="h2" component="h2" align="center" sx={{
+                            fontWeight: 700,
+                            color: theme.palette.primary.main,
+                            mb: 3,
+                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                            background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                            Create Your First AI Presenter
+                        </Typography>
+                        <Typography variant="h6" component="p" align="center" sx={{ mb: 6, color: theme.palette.text.secondary, maxWidth: '800px', mx: 'auto' }}>
+                            With Brdge AI, transform everyday documents into powerful, interactive presentations. Save time, scale your outreach, and drive engagement like never before.
+                        </Typography>
+                    </motion.div>
+
+                    <Box sx={{ mb: 8 }}>
+                        {useCases.map((useCase, index) => (
+                            <React.Fragment key={index}>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                                >
+                                    <Box sx={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        p: 3,
+                                        mb: 3,
+                                        backgroundColor: `rgba(0, 180, 219, 0.05)`,
+                                        borderRadius: '16px',
+                                    }}>
+                                        <Box sx={{ color: theme.palette.primary.main, mr: 3, mt: 1 }}>
+                                            {useCase.icon}
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="h5" component="h3" gutterBottom fontWeight="bold">
+                                                {useCase.title}
+                                            </Typography>
+                                            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                                                {useCase.subheading}
+                                            </Typography>
+                                            <Typography variant="body1">
+                                                {useCase.description}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                </motion.div>
+                                {index < useCases.length - 1 && (
+                                    <Divider sx={{ my: 3 }} />
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </Box>
+
+                    <Box sx={{ textAlign: 'center' }}>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button
+                                component={RouterLink}
+                                to="/signup"
+                                variant="contained"
+                                color="primary"
+                                size="large"
+                                sx={{
+                                    py: 2,
+                                    px: 6,
+                                    fontSize: '1.2rem',
+                                    borderRadius: '50px',
+                                    background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
+                                    '&:hover': {
+                                        background: 'linear-gradient(45deg, #00A0C2 30%, #006F94 90%)',
+                                    },
+                                }}
+                            >
+                                Get Started Free
+                            </Button>
+                        </motion.div>
+                    </Box>
                 </Box>
             </Box>
         </Container>

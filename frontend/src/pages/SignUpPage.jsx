@@ -53,10 +53,20 @@ function SignUpPage() {
                         sx={{
                             fontWeight: 'bold',
                             color: theme.palette.primary.main,
+                            mb: 1
+                        }}
+                    >
+                        Sign Up Free
+                    </Typography>
+                    <Typography
+                        variant="subtitle1"
+                        align="center"
+                        sx={{
+                            color: theme.palette.text.secondary,
                             mb: 2
                         }}
                     >
-                        Sign Up Free – No Credit Card Needed
+                        No Credit Card Needed
                     </Typography>
                 </motion.div>
                 <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', maxWidth: '90%' }}>
@@ -132,7 +142,7 @@ function SignUpPage() {
                                 },
                             }}
                         >
-                            Get Started Free
+                            Get Started
                         </Button>
                     </Box>
                 </Paper>
