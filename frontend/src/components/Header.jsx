@@ -32,9 +32,9 @@ function Header() {
                         to="/signup"
                         sx={{
                             fontWeight: 500,
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            backgroundColor: theme.palette.primary.dark,
                             '&:hover': {
-                                backgroundColor: 'rgba(255,255,255,0.2)',
+                                backgroundColor: theme.palette.primary.main,
                             }
                         }}
                     >

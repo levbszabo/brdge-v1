@@ -35,3 +35,9 @@
         transform: scale(1.05);
     }
 }
+
+.logo {
+    width: 100px;
+    height: auto;
+    /* ... other styles ... */
+}

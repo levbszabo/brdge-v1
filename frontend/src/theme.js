@@ -3,15 +3,15 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#0A2647', // Premium navy color
-            light: '#1E3A5F',
-            dark: '#051C3B',
+            main: '#2196f3', // Light blue
+            light: '#64b5f6',
+            dark: '#1976d2',
             contrastText: '#FFFFFF',
         },
         secondary: {
-            main: '#3498db', // A brighter blue for accents
-            light: '#5DADE2',
-            dark: '#2874A6',
+            main: '#0d47a1', // Darker blue for contrast
+            light: '#5472d3',
+            dark: '#002171',
             contrastText: '#FFFFFF',
         },
         background: {
@@ -46,6 +46,15 @@ const theme = createTheme({
     },
     shape: {
         borderRadius: 8,
+    },
+    components: {
+        MuiButton: {
+            styleOverrides: {
+                root: {
+                    textTransform: 'none',
+                },
+            },
+        },
     },
 });
 

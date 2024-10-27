@@ -121,6 +121,9 @@
 
     .timeline-item.top .timeline-content {
         margin-top: 20px;
+        bottom: calc(100%);
+        /* Increased from 100% to 100% + 2px */
+        padding-bottom: 12px;
     }
 
     .timeline-item.bottom .timeline-content {

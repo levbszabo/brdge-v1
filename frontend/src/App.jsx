@@ -36,44 +36,46 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <ScrollToTop />
-        <Layout>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/demos" element={<DemoPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
-            <Route path="/b/:publicId" element={<ViewBrdgePage />} />
-            <Route
-              path="/brdges"
-              element={
-                <ProtectedRoute>
-                  <BrdgeListPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/create"
-              element={
-                <ProtectedRoute>
-                  <CreateBrdgePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/edit/:id"
-              element={
-                <ProtectedRoute>
-                  <EditBrdgePage />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Layout>
-      </Router>
+      <SnackbarProvider>
+        <Router>
+          <ScrollToTop />
+          <Layout>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/demos" element={<DemoPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
+              <Route path="/b/:publicId" element={<ViewBrdgePage />} />
+              <Route
+                path="/brdges"
+                element={
+                  <ProtectedRoute>
+                    <BrdgeListPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/create"
+                element={
+                  <ProtectedRoute>
+                    <CreateBrdgePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditBrdgePage />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Layout>
+        </Router>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }

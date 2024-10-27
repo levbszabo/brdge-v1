@@ -1,5 +1,5 @@
-import React, { memo, useState } from 'react';
-import ReactFlow, { Background, Handle, Position } from 'reactflow';
+import React, { memo, useState, useCallback } from 'react';
+import ReactFlow, { Background, Handle, Position, useReactFlow, ReactFlowProvider } from 'reactflow';
 import 'reactflow/dist/style.css';
 
 const CustomNode = memo(({ data, isConnectable }) => {
@@ -39,13 +39,14 @@ const nodeTypes = {
     custom: CustomNode,
 };
 
-const V2Diagram = () => {
-    const nodes = [
+const Flow = () => {
+    const { fitView } = useReactFlow();
+    const [nodes, setNodes] = useState([
         { id: '1', type: 'custom', position: { x: 50, y: 0 }, data: { label: 'Presenter', color: '#D3F9D8', description: 'Provides initial content and guidelines' } },
         { id: '2', type: 'custom', position: { x: 50, y: 120 }, data: { label: 'AI Agent', color: '#E8F4FD', description: 'Adapts content in real-time, answers queries' } },
         { id: '3', type: 'custom', position: { x: 50, y: 240 }, data: { label: 'Viewer', color: '#FFF3E0', description: 'Engages in interactive learning experience' } },
         { id: '4', type: 'custom', position: { x: 250, y: 120 }, data: { label: 'Knowledge Base', color: '#FFCDD2', description: 'Dynamic repository of information' } },
-    ];
+    ]);
 
     const edges = [
         { id: 'e1-2', source: '1', target: '2', animated: true, label: 'Offload', style: { stroke: '#4CAF50' } },
@@ -53,6 +54,29 @@ const V2Diagram = () => {
         { id: 'e4-2', source: '4', target: '2', animated: true, label: 'Inform', style: { stroke: '#F44336' } },
     ];
 
+    const onLayout = useCallback(() => {
+        fitView({ padding: 0.3, maxZoom: 0.8 });
+    }, [fitView]);
+
+    return (
+        <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            fitView
+            style={{ background: 'white' }}
+            onLayout={onLayout}
+            minZoom={0.4}
+            maxZoom={1.5}
+            defaultZoom={0.7}
+            attributionPosition="hidden"
+        >
+            <Background color="#aaa" gap={16} />
+        </ReactFlow>
+    );
+};
+
+const V2Diagram = () => {
     return (
         <div>
             <div style={{ marginBottom: '20px' }}>
@@ -61,23 +85,9 @@ const V2Diagram = () => {
                 </p>
             </div>
             <div style={{ width: '100%', height: '350px', position: 'relative' }}>
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    nodeTypes={nodeTypes}
-                    fitView
-                    style={{ background: 'white' }}
-                    minZoom={1}
-                    maxZoom={1}
-                    zoomOnScroll={false}
-                    panOnScroll={false}
-                    nodesDraggable={false}
-                    nodesConnectable={false}
-                    elementsSelectable={false}
-                    attributionPosition="hidden"
-                >
-                    <Background color="#aaa" gap={16} />
-                </ReactFlow>
+                <ReactFlowProvider>
+                    <Flow />
+                </ReactFlowProvider>
             </div>
         </div>
     );
