@@ -23,7 +23,8 @@ function Header() {
 
     const menuItems = [
         { text: 'About', link: '/about' },
-        { text: 'Demos', link: '/demos' }, // Added Demos link back
+        { text: 'Demos', link: '/demos' },
+        { text: 'Pricing', link: '/pricing' },
         ...(isAuthenticated
             ? [
                 { text: 'Brdges', link: '/brdges' },

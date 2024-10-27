@@ -20,6 +20,7 @@ import { api } from './api';
 import { getAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
 import '@fontsource/poppins';
+import PricingPage from './pages/PricingPage';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -100,6 +101,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/pricing" element={<PricingPage />} />
             </Routes>
           </Layout>
         </Router>
