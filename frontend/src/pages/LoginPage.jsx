@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { TextField, Button, Container, Typography, Box, Paper, useTheme, useMediaQuery } from '@mui/material';
 import { motion } from 'framer-motion';
 import { api } from '../api';
 import { setAuthToken } from '../utils/auth';
 import { LockOpen } from '@mui/icons-material';
+import { AuthContext } from '../App';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
@@ -12,6 +13,7 @@ function LoginPage() {
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { setIsAuthenticated } = useContext(AuthContext);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,7 +21,7 @@ function LoginPage() {
             const response = await api.post('/login', { email, password });
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);
-                window.location.href = '/brdges';
+                setIsAuthenticated(true);
                 navigate('/brdges');
             } else {
                 throw new Error('No access token received');

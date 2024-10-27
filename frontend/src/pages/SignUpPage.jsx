@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Container, TextField, Button, Typography, Box, Alert, Paper, useTheme, useMediaQuery } from '@mui/material';
 import { motion } from 'framer-motion';
 import { api } from '../api';
 import { PersonAdd } from '@mui/icons-material';
+import { AuthContext } from '../App';
 
 function SignUpPage() {
     const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ function SignUpPage() {
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { setIsAuthenticated } = useContext(AuthContext);
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -20,6 +22,7 @@ function SignUpPage() {
             const response = await api.post('/register', { email, password });
             if (response.status === 201) {
                 setSuccess('User registered successfully. You can now log in.');
+                setIsAuthenticated(true);
                 setTimeout(() => navigate('/login'), 3000);
             } else {
                 throw new Error('Registration failed');
@@ -53,11 +56,11 @@ function SignUpPage() {
                             mb: 2
                         }}
                     >
-                        Join Brdge AI Beta
+                        Sign Up Free – No Credit Card Needed
                     </Typography>
                 </motion.div>
                 <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', maxWidth: '90%' }}>
-                    Experience the future of knowledge sharing. Get exclusive beta access!
+                    Try Brdge AI and see how easy it is to create interactive presentations.
                 </Typography>
                 {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
                 {success && <Alert severity="success" sx={{ mb: 2, width: '100%' }}>{success}</Alert>}
@@ -129,12 +132,12 @@ function SignUpPage() {
                                 },
                             }}
                         >
-                            Join Beta Program
+                            Get Started Free
                         </Button>
                     </Box>
                 </Paper>
                 <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic' }}>
-                    By signing up, you'll get early access to Brdge AI and help shape its future.
+                    By signing up, you'll get instant access to Brdge AI's powerful features.
                 </Typography>
                 <Typography variant="body1" sx={{ mt: 2, textAlign: 'center' }}>
                     Already have an account? <Link to="/login" style={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>Log in</Link>

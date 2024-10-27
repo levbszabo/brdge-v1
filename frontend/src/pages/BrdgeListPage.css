@@ -61,3 +61,36 @@
         display: flex;
     }
 }
+
+.brdge-list-page {
+    padding: 20px;
+}
+
+.brdge-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 16px;
+}
+
+.brdge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.glow-button {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.glow-button:hover {
+    box-shadow: 0 0 15px 5px rgba(33, 150, 243, 0.7);
+    transform: scale(1.05);
+}
+
+@media (max-width: 600px) {
+    .brdge-card:hover {
+        transform: none;
+    }
+
+    .glow-button:hover {
+        transform: scale(1.02);
+    }
+}

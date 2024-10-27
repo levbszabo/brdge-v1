@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -17,18 +17,46 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import { api } from './api';
-import { getAuthToken, setAuthToken, logout } from './utils/auth';
+import { getAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
 import '@fontsource/poppins';
 
+// Create an AuthContext
+export const AuthContext = React.createContext(null);
+
 function Layout({ children }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = getAuthToken();
+      if (token) {
+        try {
+          // Verify the token with the backend
+          await api.get('/auth/verify', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Token verification failed:', error);
+          logout();
+          setIsAuthenticated(false);
+        }
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Header />
-      <Box component="main" sx={{ flexGrow: 1 }}>
-        {children}
+    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Header />
+        <Box component="main" sx={{ flexGrow: 1 }}>
+          {children}
+        </Box>
       </Box>
-    </Box>
+    </AuthContext.Provider>
   );
 }
 

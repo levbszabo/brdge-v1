@@ -5,7 +5,7 @@ import {
     Container, Typography, Button, List, ListItem, ListItemText,
     CircularProgress, IconButton, Dialog, DialogTitle, DialogContent,
     DialogActions, Box, TextField, Tooltip, Paper, InputAdornment,
-    useTheme, Autocomplete
+    useTheme, Autocomplete, Grid
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -130,25 +130,29 @@ function BrdgeListPage() {
     }
 
     return (
-        <Container maxWidth="md">
+        <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 8 } }}>
             <Box sx={{ my: 8 }}>
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Typography variant="h2" component="h1" gutterBottom align="center" sx={{ fontWeight: 700, color: theme.palette.primary.main, mb: 4, fontSize: "2rem" }}>
+                    <Typography variant="h2" component="h1" align="center" sx={{
+                        fontWeight: 700,
+                        color: theme.palette.primary.main,
+                        mb: 4,
+                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                        lineHeight: 1.2
+                    }}>
                         Your Brdges
                     </Typography>
                 </motion.div>
                 <Paper elevation={3} sx={{
-                    p: 2,
+                    p: 3,
                     mb: 4,
-                    boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
-                    '&:focus-within': {
-                        borderColor: "#0072ff",
-                        boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)"
-                    }
+                    borderRadius: '16px',
+                    boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
+                    background: 'linear-gradient(145deg, #ffffff, #f0f0f0)',
                 }}>
                     <Autocomplete
                         freeSolo
@@ -178,24 +182,39 @@ function BrdgeListPage() {
                         onInputChange={(event, newInputValue) => {
                             setSearchTerm(newInputValue);
                         }}
-                        sx={{ maxWidth: '400px', mx: 'auto', display: 'block' }}
+                        sx={{ maxWidth: '600px', mx: 'auto', display: 'block' }}
                     />
                 </Paper>
-                {filteredBrdges.length === 0 ? (
-                    <Box textAlign="center" mt={4}>
-                        <Typography variant="h6" color="text.secondary" gutterBottom>
-                            No Brdges found. Create your first Brdge!
-                        </Typography>
+
+                {/* Move the Create New Brdge button here */}
+                <Box textAlign="center" mb={4}>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Button
                             variant="contained"
                             color="primary"
-                            component={Link}
-                            to="/create"
+                            onClick={handleCreateNewBrdge}
                             startIcon={<AddIcon />}
-                            sx={{ mt: 2 }}
+                            sx={{
+                                py: 1.5,
+                                px: 4,
+                                fontSize: '1.1rem',
+                                borderRadius: '25px',
+                                background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
+                                '&:hover': {
+                                    background: 'linear-gradient(90deg, #0058cc, #00a3cc)',
+                                },
+                            }}
                         >
                             Create New Brdge
                         </Button>
+                    </motion.div>
+                </Box>
+
+                {filteredBrdges.length === 0 ? (
+                    <Box textAlign="center" mt={4}>
+                        <Typography variant="h5" color="text.secondary" gutterBottom>
+                            No Brdges found. Create your first Brdge!
+                        </Typography>
                     </Box>
                 ) : (
                     <motion.div
@@ -203,103 +222,64 @@ function BrdgeListPage() {
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                        <List>
+                        <Grid container spacing={3}>
                             {filteredBrdges.map((brdge) => (
-                                <Paper
-                                    elevation={2}
-                                    sx={{
-                                        mb: 2,
-                                        overflow: 'hidden',
-                                        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.1)",
-                                        transition: 'all 0.3s ease-in-out',
-                                        '&:hover': {
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.2)",
-                                        }
-                                    }}
-                                    key={brdge.id}
-                                >
-                                    <ListItem
-                                        component={Link}
-                                        to={`/viewBrdge/${brdge.id}`}
-                                        sx={{
-                                            textDecoration: 'none',
-                                            color: 'inherit',
-                                            '&:hover': {
-                                                backgroundColor: 'action.hover',
-                                            },
-                                        }}
-                                    >
-                                        <ListItemText
-                                            primary={
+                                <Grid item xs={12} sm={6} md={4} key={brdge.id}>
+                                    <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.3 }}>
+                                        <Paper
+                                            elevation={3}
+                                            sx={{
+                                                p: 3,
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'space-between',
+                                                borderRadius: '16px',
+                                                transition: 'all 0.3s ease-in-out',
+                                                '&:hover': {
+                                                    boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.15)',
+                                                },
+                                            }}
+                                        >
+                                            <Box>
                                                 <Typography
                                                     variant="h6"
+                                                    component={Link}
+                                                    to={`/viewBrdge/${brdge.id}`}
                                                     sx={{
-                                                        fontWeight: 400,
+                                                        fontWeight: 600,
+                                                        color: theme.palette.primary.main,
+                                                        textDecoration: 'none',
                                                         '&:hover': {
-                                                            color: theme.palette.primary.main,
                                                             textDecoration: 'underline',
-                                                        }
+                                                        },
                                                     }}
                                                 >
                                                     {brdge.name}
                                                 </Typography>
-                                            }
-                                        />
-                                        <Tooltip title="Edit Brdge">
-                                            <IconButton onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                navigate(`/edit/${brdge.id}`);
-                                            }} sx={{ '&:hover': { transform: 'scale(1.1)' } }}>
-                                                <EditIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title={brdge.shareable ? "Shareable" : "Make Shareable"}>
-                                            <IconButton onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleShare(brdge);
-                                            }} sx={{ '&:hover': { transform: 'scale(1.1)' } }}>
-                                                <ShareIcon color={brdge.shareable ? 'primary' : 'inherit'} />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Delete Brdge">
-                                            <IconButton onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleDelete(brdge);
-                                            }} sx={{ '&:hover': { transform: 'scale(1.1)' } }}>
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </ListItem>
-                                </Paper>
+                                            </Box>
+                                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                                <Tooltip title="Edit Brdge">
+                                                    <IconButton onClick={() => navigate(`/edit/${brdge.id}`)} sx={{ '&:hover': { color: theme.palette.primary.main } }}>
+                                                        <EditIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title={brdge.shareable ? "Shareable" : "Make Shareable"}>
+                                                    <IconButton onClick={() => handleShare(brdge)} sx={{ '&:hover': { color: theme.palette.primary.main } }}>
+                                                        <ShareIcon color={brdge.shareable ? 'primary' : 'inherit'} />
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Delete Brdge">
+                                                    <IconButton onClick={() => handleDelete(brdge)} sx={{ '&:hover': { color: theme.palette.error.main } }}>
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            </Box>
+                                        </Paper>
+                                    </motion.div>
+                                </Grid>
                             ))}
-                        </List>
-                        <Box textAlign="center" mt={4}>
-                            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={handleCreateNewBrdge}
-                                    startIcon={<AddIcon />}
-                                    sx={{
-                                        py: 1.5,
-                                        px: 4,
-                                        fontSize: '1.1rem',
-                                        borderRadius: '25px',
-                                        background: 'linear-gradient(90deg, #0072ff, #00c6ff)',
-                                        '&:hover': {
-                                            boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.2)',
-                                            background: 'linear-gradient(90deg, #0058cc, #00a3cc)',
-                                        },
-                                    }}
-                                >
-                                    Create New Brdge
-                                </Button>
-                            </motion.div>
-                        </Box>
+                        </Grid>
                     </motion.div>
                 )}
             </Box>
