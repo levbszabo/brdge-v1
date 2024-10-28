@@ -357,6 +357,20 @@ function AboutPage() {
                         </motion.div>
                     </Box>
 
+                    {/* Legal Links */}
+                    <Box sx={{ textAlign: 'center', mb: 4 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            By using our service, you agree to our{' '}
+                            <Link href="/terms" sx={{ color: theme.palette.primary.main }}>
+                                Terms of Service
+                            </Link>{' '}
+                            and{' '}
+                            <Link href="/privacy" sx={{ color: theme.palette.primary.main }}>
+                                Privacy Policy
+                            </Link>
+                        </Typography>
+                    </Box>
+
                     {/* Contact Information */}
                     <Box sx={{ mt: { xs: 4, md: 8 }, textAlign: 'center' }}>
                         <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', fontSize: { xs: '1.5rem', md: '2rem' } }}>Get in Touch</Typography>
