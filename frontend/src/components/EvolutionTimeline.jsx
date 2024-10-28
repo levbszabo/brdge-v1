@@ -35,7 +35,7 @@ const EvolutionTimeline = () => {
     return (
         <Box sx={{ my: { xs: 8, md: 16 }, px: 2 }}>
             <Typography variant="h2" component="h2" gutterBottom align="center" sx={{ mb: 6, fontWeight: 'bold', fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}>
-                Evolution of Information Transfer
+                How We Share Information
             </Typography>
             <Box className="timeline">
                 <svg className="timeline-svg" width="100%" height="100%" preserveAspectRatio="none">

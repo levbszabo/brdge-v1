@@ -23,7 +23,7 @@ function PolicyPage() {
                     Privacy Policy & Terms of Service
                 </Typography>
                 <Typography variant="subtitle1" align="center" gutterBottom>
-                    Last Updated: [Date]
+                    Last Updated: 10/27/2024
                 </Typography>
 
                 <Divider sx={{ my: 4 }} />

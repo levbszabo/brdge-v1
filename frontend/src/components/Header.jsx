@@ -25,7 +25,6 @@ function Header() {
         { text: 'About', link: '/about' },
         { text: 'Demos', link: '/demos' },
         { text: 'Pricing', link: '/pricing' },
-        { text: 'Policy', link: '/policy' },
         ...(isAuthenticated
             ? [
                 { text: 'Brdges', link: '/brdges' },

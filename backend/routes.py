@@ -46,7 +46,6 @@ s3_client = boto3.client("s3", region_name=S3_REGION)
 CORS(app)
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 
 @jwt_required(optional=True)
@@ -1136,29 +1135,17 @@ def google_auth():
         return jsonify({"error": "Invalid token"}), 400
 
 
-@app.route("/auth/google/callback")
-def google_auth_callback():
-    flow = Flow.from_client_secrets_file(
-        "path/to/client_secrets.json",
-        scopes=["https://www.googleapis.com/auth/userinfo.email", "openid"],
-        redirect_uri=request.base_url,
-    )
-    flow.fetch_token(code=request.args.get("code"))
-
-    credentials = flow.credentials
-    request_session = requests.session()
-    cached_session = cachecontrol.CacheControl(request_session)
-    token_request = google_requests.Request(session=cached_session)
-
-    id_info = id_token.verify_oauth2_token(
-        id_token=credentials._id_token, request=token_request, audience=GOOGLE_CLIENT_ID
-    )
-
-    # ... process the user info and create/login the user ...
-
-    return redirect(url_for("some_route"))
-
-
 @app.before_request
 def log_request_info():
     print(f"Request: {request.method} {request.path}")
+
+
+@app.route("/api/auth/verify", methods=["GET"])
+@jwt_required()
+def verify_token():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if user:
+        return jsonify({"verified": True, "user_id": current_user_id}), 200
+    else:
+        return jsonify({"verified": False}), 401
