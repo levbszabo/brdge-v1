@@ -11,12 +11,17 @@ class User(db.Model):
 
     # One-to-one relationship with UserAccount
     account = db.relationship("UserAccount", backref="user", uselist=False)
+    # One-to-many relationship with Brdge (only define it here)
+    brdges = db.relationship("Brdge", backref="user", lazy="dynamic")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    def get_brdge_count(self):
+        return self.brdges.count()
 
 
 class UserAccount(db.Model):
@@ -63,18 +68,14 @@ class UserAccount(db.Model):
 
 
 class Brdge(db.Model):
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(100), nullable=False)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     presentation_filename = db.Column(db.String(255), nullable=False)
     audio_filename = db.Column(db.String(255), nullable=False)
     folder = db.Column(db.String(255), nullable=False)
-    shareable = db.Column(db.Boolean, default=False)  # Ensure this is a Boolean
-    public_id = db.Column(
-        db.String(36), unique=True, nullable=True
-    )  # Ensure this is present
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-
-    user = db.relationship("User", backref=db.backref("brdges", lazy=True))
+    shareable = db.Column(db.Boolean, default=False)
+    public_id = db.Column(db.String(36), unique=True, nullable=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -88,9 +89,9 @@ class Brdge(db.Model):
             "presentation_filename": self.presentation_filename,
             "audio_filename": self.audio_filename,
             "folder": self.folder,
-            "shareable": self.shareable,  # Include shareable status
-            "public_id": self.public_id,  # Include public_id
-            "user_id": self.user_id,  # Include user_id
+            "shareable": self.shareable,
+            "public_id": self.public_id,
+            "user_id": self.user_id,
             "presentation_s3_key": f"{self.folder}/{self.presentation_filename}",
             "audio_s3_key": (
                 f"{self.folder}/audio/{self.audio_filename}"

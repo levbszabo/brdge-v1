@@ -31,6 +31,7 @@ from google.auth.transport import requests as google_requests
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import stripe
+from sqlalchemy import text
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -50,6 +51,11 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+# Add these constants at the top of the file with other configurations
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
+STRIPE_PRODUCT_PRICE = 5900  # Price in cents ($59.00)
+STRIPE_PRODUCT_CURRENCY = "usd"
 
 
 @jwt_required(optional=True)
@@ -990,7 +996,7 @@ def login():
                 identity=user.id, expires_delta=timedelta(hours=24)
             )
             print("Password check successful, token generated")
-            return jsonify(access_token=access_token), 200
+            return jsonify({"access_token": access_token}), 200
         else:
             print("Password check failed")
     else:
@@ -1211,93 +1217,92 @@ def get_user_profile():
 @jwt_required()
 def create_checkout_session():
     try:
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        data = request.get_json()
+        tier = data.get("tier")
 
-        print(f"Creating checkout session for user: {user.email}")  # Debug log
+        success_url = f"{os.getenv('FRONTEND_URL')}/profile?redirect_status=succeeded"
+        cancel_url = f"{os.getenv('FRONTEND_URL')}/profile"
 
-        # Create or get Stripe customer
-        if not user.account.stripe_customer_id:
-            print("Creating new Stripe customer")  # Debug log
-            customer = stripe.Customer.create(
-                email=user.email, metadata={"user_id": user.id}
-            )
-            user.account.stripe_customer_id = customer.id
-            db.session.commit()
-            print(f"Created Stripe customer: {customer.id}")  # Debug log
+        if tier == "standard":
+            payment_link = f"{os.getenv('STRIPE_STANDARD_PAYMENT_LINK')}?redirect_status=succeeded&success_url={success_url}&cancel_url={cancel_url}"
+        elif tier == "premium":
+            payment_link = f"{os.getenv('STRIPE_PREMIUM_PAYMENT_LINK')}?redirect_status=succeeded&success_url={success_url}&cancel_url={cancel_url}"
         else:
-            print(
-                f"Using existing Stripe customer: {user.account.stripe_customer_id}"
-            )  # Debug log
+            return jsonify({"error": "Invalid subscription tier"}), 400
 
-        # Get domain from request
-        domain_url = request.headers.get("Origin", "http://localhost:3000")
-        print(f"Domain URL: {domain_url}")  # Debug log
-
-        # Create checkout session with absolute URLs
-        session = stripe.checkout.Session.create(
-            customer=user.account.stripe_customer_id,
-            payment_method_types=["card"],
-            line_items=[
-                {
-                    "price": "price_H5ggYwtDq4fbrJ",  # Your price ID
-                    "quantity": 1,
-                }
-            ],
-            mode="subscription",
-            success_url=f"{domain_url}/profile?success=true",
-            cancel_url=f"{domain_url}/profile?canceled=true",
-            client_reference_id=str(user.id),  # Add this to track the user
-        )
-
-        print(f"Created checkout session: {session.id}")  # Debug log
-        return jsonify({"url": session.url})
+        return jsonify({"url": payment_link})
 
     except Exception as e:
-        print(f"Error creating checkout session: {str(e)}")  # Debug log
+        print(f"Error handling payment redirect: {str(e)}")
         return jsonify({"error": str(e)}), 400
 
 
-@app.route("/api/create-portal-session", methods=["POST"])
+@app.route("/api/verify-subscription", methods=["POST"])
 @jwt_required()
-def create_portal_session():
+def verify_subscription():
     try:
         current_user_id = get_jwt_identity()
         user = User.query.get(current_user_id)
 
-        if not user.account.stripe_customer_id:
-            return jsonify({"error": "No Stripe customer found"}), 400
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-        # Create portal session with relative URL
-        session = stripe.billing_portal.Session.create(
-            customer=user.account.stripe_customer_id,
-            return_url="/profile",  # Relative URL
-        )
+        data = request.get_json()
+        tier = data.get("tier", "standard")
 
-        return jsonify({"url": session.url})
+        if user and user.account:
+            # Update account type based on the tier
+            if tier == "premium":
+                user.account.account_type = "pro"
+            else:
+                user.account.account_type = "standard"
+
+            # Add subscription timestamp
+            user.account.subscription_updated_at = datetime.utcnow()
+            db.session.commit()
+
+            print(f"Updated user {user.id} to {user.account.account_type} plan")
+
+            return jsonify(
+                {
+                    "success": True,
+                    "account_type": user.account.account_type,
+                    "message": f"Successfully upgraded to {user.account.account_type} plan",
+                }
+            )
+
+        return jsonify({"error": "User account not found"}), 404
+
     except Exception as e:
-        print(f"Error creating portal session: {str(e)}")
+        print(f"Error verifying subscription: {str(e)}")
+        db.session.rollback()
         return jsonify({"error": str(e)}), 400
 
 
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    payload = request.data
-    event = None
-
+@app.route("/api/user/stats", methods=["GET"])
+@jwt_required()
+def get_user_stats():
     try:
-        event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
-    except ValueError as e:
-        return jsonify({"error": "Invalid payload"}), 400
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
 
-    if event.type == "checkout.session.completed":
-        session = event.data.object
-        user_id = session.client_reference_id
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-        # Update user account
-        user = User.query.get(user_id)
-        if user and user.account:
-            user.account.account_type = "pro"
-            db.session.commit()
+        # Get brdge count
+        brdges_count = Brdge.query.filter_by(user_id=current_user_id).count()
 
-    return jsonify({"status": "success"}), 200
+        # Get limit based on account type
+        limit = {"free": 2, "standard": 20, "pro": float("inf")}.get(
+            user.account.account_type, 2
+        )
+
+        return jsonify(
+            {
+                "brdges_created": brdges_count,
+                "brdges_limit": "Unlimited" if limit == float("inf") else str(limit),
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
