@@ -23,6 +23,7 @@ import '@fontsource/poppins';
 import PricingPage from './pages/PricingPage';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import PolicyPage from './pages/PolicyPage';
+import UserProfilePage from './pages/UserProfilePage';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -67,14 +68,12 @@ function App() {
   // Get the Google Client ID from the environment variable
   const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
-  if (!googleClientId) {
-    console.error('Google Client ID is not set in the environment variables.');
-    // You might want to handle this error case, perhaps by not rendering the GoogleOAuthProvider
-    // or by showing an error message to the user
-  }
-
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
+    <GoogleOAuthProvider
+      clientId={googleClientId}
+      onScriptLoadError={() => console.error('Google Script failed to load')}
+      onScriptLoadSuccess={() => console.log('Google Script loaded successfully')}
+    >
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider>
@@ -115,6 +114,14 @@ function App() {
                 />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/policy" element={<PolicyPage />} />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <UserProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
               </Routes>
             </Layout>
           </Router>

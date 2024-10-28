@@ -11,6 +11,7 @@ import { GoogleLogin } from '@react-oauth/google';
 function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -24,29 +25,42 @@ function LoginPage() {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
                 navigate('/brdges');
-            } else {
-                throw new Error('No access token received');
             }
         } catch (error) {
-            console.error('Error during login:', error.response || error);
-            alert('An error occurred during login. Please try again.');
+            console.error('Login error:', error);
+            setError('Invalid email or password');
         }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            const response = await api.post('/auth/google', { token: credentialResponse.credential });
+            console.log('Google response:', credentialResponse);
+
+            if (!credentialResponse.credential) {
+                setError('No credentials received from Google');
+                return;
+            }
+
+            const response = await api.post('/auth/google', {
+                token: credentialResponse.credential
+            });
+
+            console.log('Backend response:', response);
+
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
                 navigate('/brdges');
-            } else {
-                throw new Error('No access token received');
             }
         } catch (error) {
-            console.error('Error during Google login:', error);
-            alert('An error occurred during Google login. Please try again.');
+            console.error('Google login error:', error.response || error);
+            setError(error.response?.data?.error || 'Failed to login with Google');
         }
+    };
+
+    const handleGoogleError = () => {
+        console.error('Google Sign In failed');
+        setError('Google Sign In failed. Please try again.');
     };
 
     return (
@@ -107,16 +121,21 @@ function LoginPage() {
                             justifyContent: 'center'
                         }
                     }}>
+                        {error && (
+                            <Typography color="error" sx={{ mb: 2 }}>
+                                {error}
+                            </Typography>
+                        )}
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
-                            onError={() => {
-                                console.log('Login Failed');
-                                alert('Google login failed. Please try again.');
-                            }}
+                            onError={handleGoogleError}
+                            useOneTap={false}
+                            theme="outline"
                             size="large"
-                            text="continue_with"
+                            text="signin_with"
                             shape="rectangular"
-                            useOneTap
+                            width="300"
+                            cookiePolicy={'single_host_origin'}
                         />
                     </Box>
 

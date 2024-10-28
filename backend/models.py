@@ -1,6 +1,7 @@
 import uuid
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 
 class User(db.Model):
@@ -8,11 +9,57 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
 
+    # One-to-one relationship with UserAccount
+    account = db.relationship("UserAccount", backref="user", uselist=False)
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class UserAccount(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False, unique=True
+    )
+
+    # Account Details
+    account_type = db.Column(db.String(20), default="free")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Stripe Integration
+    stripe_customer_id = db.Column(db.String(255))
+    stripe_subscription_id = db.Column(db.String(255))
+
+    # Billing Details
+    next_billing_date = db.Column(db.DateTime)
+    subscription_status = db.Column(
+        db.String(50)
+    )  # 'active', 'canceled', 'past_due', etc.
+
+    # Usage Stats
+    total_brdges = db.Column(db.Integer, default=0)
+    storage_used = db.Column(db.Float, default=0.0)  # in MB
+    last_activity = db.Column(db.DateTime)
+
+    def to_dict(self):
+        return {
+            "account_type": self.account_type,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "subscription_status": self.subscription_status,
+            "next_billing_date": (
+                self.next_billing_date.isoformat() if self.next_billing_date else None
+            ),
+            "usage_stats": {
+                "total_brdges": self.total_brdges,
+                "storage_used": self.storage_used,
+                "last_activity": (
+                    self.last_activity.isoformat() if self.last_activity else None
+                ),
+            },
+        }
 
 
 class Brdge(db.Model):

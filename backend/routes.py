@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 import os
 import boto3
 import uuid
-from models import Brdge, User
+from models import Brdge, User, UserAccount
 from utils import (
     clone_voice_helper,
     pdf_to_images,
@@ -30,6 +30,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
+import stripe
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -46,6 +47,9 @@ s3_client = boto3.client("s3", region_name=S3_REGION)
 CORS(app)
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 
 @jwt_required(optional=True)
@@ -1020,13 +1024,24 @@ def register():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "User already exists"}), 400
 
-    hashed_password = generate_password_hash(password)
-    print(f"Hashed password for {email}: {hashed_password}")  # Debug print
-    new_user = User(email=email, password_hash=hashed_password)
-    db.session.add(new_user)
-    db.session.commit()
+    try:
+        # Create user
+        new_user = User(email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.flush()  # Get the user ID
 
-    return jsonify({"message": "User registered successfully"}), 201
+        # Create user account
+        new_account = UserAccount(
+            user_id=new_user.id, account_type="free", created_at=datetime.utcnow()
+        )
+        db.session.add(new_account)
+        db.session.commit()
+
+        return jsonify({"message": "User registered successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/toggle_shareable", methods=["POST"])
@@ -1105,34 +1120,52 @@ def manage_brdge(user, brdge_id):
 
 @app.route("/api/auth/google", methods=["POST"])
 def google_auth():
+    print("Received Google auth request")
     token = request.json.get("token")
+
+    if not token:
+        print("No token provided in request")
+        return jsonify({"error": "No token provided"}), 400
+
     try:
-        # Specify the CLIENT_ID of the app that accesses the backend:
+        print(f"Attempting to verify token with client ID: {GOOGLE_CLIENT_ID}")
         idinfo = id_token.verify_oauth2_token(
             token, google_requests.Request(), GOOGLE_CLIENT_ID
         )
 
+        print("Token verification successful")
+
         if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
-            raise ValueError("Wrong issuer.")
+            print(f"Invalid issuer: {idinfo['iss']}")
+            return jsonify({"error": "Invalid token issuer"}), 400
 
-        # ID token is valid. Get the user's Google Account email from the decoded token.
         email = idinfo["email"]
+        print(f"Email from token: {email}")
 
-        # Check if user exists, if not, create a new user
         user = User.query.filter_by(email=email).first()
         if not user:
-            user = User(
-                email=email, password_hash=""
-            )  # Set a dummy password or handle it differently
+            print(f"Creating new user for {email}")
+            user = User(email=email, password_hash="")
             db.session.add(user)
+            db.session.flush()
+
+            new_account = UserAccount(
+                user_id=user.id, account_type="free", created_at=datetime.utcnow()
+            )
+            db.session.add(new_account)
             db.session.commit()
+            print(f"Created new user and account for {email}")
 
-        # Generate JWT token
         access_token = create_access_token(identity=user.id)
-        return jsonify(access_token=access_token), 200
+        print(f"Generated access token for user {user.id}")
+        return jsonify({"access_token": access_token}), 200
 
-    except ValueError:
-        return jsonify({"error": "Invalid token"}), 400
+    except ValueError as e:
+        print(f"Token verification failed: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        print(f"Unexpected error: {str(e)}")
+        return jsonify({"error": "Authentication failed"}), 400
 
 
 @app.before_request
@@ -1149,3 +1182,122 @@ def verify_token():
         return jsonify({"verified": True, "user_id": current_user_id}), 200
     else:
         return jsonify({"verified": False}), 401
+
+
+@app.route("/api/user/profile", methods=["GET"])
+@jwt_required()
+def get_user_profile():
+    current_user_id = get_jwt_identity()
+    print(f"Fetching profile for user ID: {current_user_id}")  # Debug log
+
+    user = User.query.get(current_user_id)
+    if not user:
+        print("User not found")  # Debug log
+        return jsonify({"error": "User not found"}), 404
+
+    # Get or create user account
+    user_account = user.account or UserAccount(user_id=user.id)
+    if not user.account:
+        print("Creating new user account")  # Debug log
+        db.session.add(user_account)
+        db.session.commit()
+
+    response_data = {"email": user.email, "account": user_account.to_dict()}
+    print("Response data:", response_data)  # Debug log
+    return jsonify(response_data)
+
+
+@app.route("/api/create-checkout-session", methods=["POST"])
+@jwt_required()
+def create_checkout_session():
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        print(f"Creating checkout session for user: {user.email}")  # Debug log
+
+        # Create or get Stripe customer
+        if not user.account.stripe_customer_id:
+            print("Creating new Stripe customer")  # Debug log
+            customer = stripe.Customer.create(
+                email=user.email, metadata={"user_id": user.id}
+            )
+            user.account.stripe_customer_id = customer.id
+            db.session.commit()
+            print(f"Created Stripe customer: {customer.id}")  # Debug log
+        else:
+            print(
+                f"Using existing Stripe customer: {user.account.stripe_customer_id}"
+            )  # Debug log
+
+        # Get domain from request
+        domain_url = request.headers.get("Origin", "http://localhost:3000")
+        print(f"Domain URL: {domain_url}")  # Debug log
+
+        # Create checkout session with absolute URLs
+        session = stripe.checkout.Session.create(
+            customer=user.account.stripe_customer_id,
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price": "price_H5ggYwtDq4fbrJ",  # Your price ID
+                    "quantity": 1,
+                }
+            ],
+            mode="subscription",
+            success_url=f"{domain_url}/profile?success=true",
+            cancel_url=f"{domain_url}/profile?canceled=true",
+            client_reference_id=str(user.id),  # Add this to track the user
+        )
+
+        print(f"Created checkout session: {session.id}")  # Debug log
+        return jsonify({"url": session.url})
+
+    except Exception as e:
+        print(f"Error creating checkout session: {str(e)}")  # Debug log
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/create-portal-session", methods=["POST"])
+@jwt_required()
+def create_portal_session():
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user.account.stripe_customer_id:
+            return jsonify({"error": "No Stripe customer found"}), 400
+
+        # Create portal session with relative URL
+        session = stripe.billing_portal.Session.create(
+            customer=user.account.stripe_customer_id,
+            return_url="/profile",  # Relative URL
+        )
+
+        return jsonify({"url": session.url})
+    except Exception as e:
+        print(f"Error creating portal session: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    payload = request.data
+    event = None
+
+    try:
+        event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
+    except ValueError as e:
+        return jsonify({"error": "Invalid payload"}), 400
+
+    if event.type == "checkout.session.completed":
+        session = event.data.object
+        user_id = session.client_reference_id
+
+        # Update user account
+        user = User.query.get(user_id)
+        if user and user.account:
+            user.account.account_type = "pro"
+            db.session.commit()
+
+    return jsonify({"status": "success"}), 200

@@ -1,11 +1,25 @@
-import React, { useContext, useState } from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, Drawer, List, ListItem, ListItemText } from '@mui/material';
+import React, { useContext, useState, useEffect } from 'react';
+import {
+    AppBar,
+    Toolbar,
+    Typography,
+    Button,
+    Box,
+    IconButton,
+    Drawer,
+    List,
+    ListItem,
+    ListItemText,
+    Avatar
+} from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { logout } from '../utils/auth';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
+import { api } from '../api';
+import PersonIcon from '@mui/icons-material/Person';
 
 function Header() {
     const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -13,6 +27,21 @@ function Header() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [userEmail, setUserEmail] = useState('');
+
+    useEffect(() => {
+        // Fetch user email when authenticated
+        if (isAuthenticated) {
+            api.get('/user/profile')
+                .then(response => {
+                    setUserEmail(response.data.email);
+                })
+                .catch(error => console.error('Error fetching user profile:', error));
+        }
+    }, [isAuthenticated]);
+
+    // Get first letter of email for avatar
+    const avatarLetter = userEmail ? userEmail[0].toUpperCase() : 'U';
 
     const handleLogout = () => {
         logout();
@@ -21,21 +50,23 @@ function Header() {
         if (isMobile) setDrawerOpen(false);
     };
 
-    const menuItems = [
-        { text: 'About', link: '/about' },
-        { text: 'Demos', link: '/demos' },
-        { text: 'Pricing', link: '/pricing' },
-        ...(isAuthenticated
-            ? [
-                { text: 'Brdges', link: '/brdges' },
-                { text: 'Logout', onClick: handleLogout }
-            ]
-            : [
-                { text: 'Login', link: '/login' },
-                { text: 'Sign Up', link: '/signup' }
-            ]
-        )
-    ];
+    const handleProfileClick = () => {
+        navigate('/profile');
+    };
+
+    // Different menu items based on authentication status
+    const menuItems = isAuthenticated
+        ? [
+            { text: 'My Brdges', link: '/brdges' },
+            { text: 'Logout', onClick: handleLogout }
+        ]
+        : [
+            { text: 'About', link: '/about' },
+            { text: 'Demos', link: '/demos' },
+            { text: 'Pricing', link: '/pricing' },
+            { text: 'Login', link: '/login' },
+            { text: 'Sign Up', link: '/signup' }
+        ];
 
     const renderMenuItems = () => (
         <>
@@ -82,6 +113,22 @@ function Header() {
                 </Typography>
                 {isMobile ? (
                     <>
+                        {isAuthenticated && (
+                            <IconButton
+                                onClick={handleProfileClick}
+                                sx={{ mr: 2 }}
+                            >
+                                <Avatar
+                                    sx={{
+                                        width: 32,
+                                        height: 32,
+                                        bgcolor: theme.palette.primary.main,
+                                    }}
+                                >
+                                    <PersonIcon sx={{ fontSize: 20 }} />
+                                </Avatar>
+                            </IconButton>
+                        )}
                         <IconButton
                             size="large"
                             edge="start"
@@ -100,8 +147,24 @@ function Header() {
                         </Drawer>
                     </>
                 ) : (
-                    <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {renderMenuItems()}
+                        {isAuthenticated && (
+                            <IconButton
+                                onClick={handleProfileClick}
+                                sx={{ ml: 2 }}
+                            >
+                                <Avatar
+                                    sx={{
+                                        width: 32,
+                                        height: 32,
+                                        bgcolor: theme.palette.primary.main,
+                                    }}
+                                >
+                                    <PersonIcon sx={{ fontSize: 20 }} />
+                                </Avatar>
+                            </IconButton>
+                        )}
                     </Box>
                 )}
             </Toolbar>
