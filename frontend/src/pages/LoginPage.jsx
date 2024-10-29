@@ -42,7 +42,7 @@ function LoginPage() {
             }
 
             const response = await api.post('/auth/google', {
-                token: credentialResponse.credential
+                credential: credentialResponse.credential
             });
 
             console.log('Backend response:', response);

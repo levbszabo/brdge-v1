@@ -520,6 +520,17 @@ function UserProfilePage() {
         }
     ];
 
+    const getSubscriptionDescription = (currentPlan) => {
+        switch (currentPlan) {
+            case 'standard':
+                return "You're currently on our standard plan. Upgrade to premium for more features!";
+            case 'pro':
+                return "You're currently on our premium plan. Enjoy all the advanced features!";
+            default:
+                return "Upgrade your plan to unlock more features and capabilities.";
+        }
+    };
+
     return (
         <Box sx={{
             minHeight: '100vh',
@@ -655,9 +666,7 @@ function UserProfilePage() {
                                         Your Subscription
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        {currentPlan === 'free'
-                                            ? "Upgrade your plan to unlock more features and capabilities."
-                                            : "You're currently on our premium plan. Enjoy all the advanced features!"}
+                                        {getSubscriptionDescription(currentPlan)}
                                     </Typography>
                                 </div>
                             </Box>
@@ -707,14 +716,16 @@ function UserProfilePage() {
                                                                     sx={{ fontWeight: 'bold' }}
                                                                 />
                                                             ) : (
-                                                                <Button
-                                                                    variant={tier.isPremium ? "contained" : "outlined"}
-                                                                    color="primary"
-                                                                    onClick={tier.onClick}
-                                                                    sx={{ borderRadius: '50px' }}
-                                                                >
-                                                                    {tier.buttonText}
-                                                                </Button>
+                                                                !shouldShowUpgradeButton(currentPlan, tier.tier) ? null : (
+                                                                    <Button
+                                                                        variant={tier.isPremium ? "contained" : "outlined"}
+                                                                        color="primary"
+                                                                        onClick={tier.onClick}
+                                                                        sx={{ borderRadius: '50px' }}
+                                                                    >
+                                                                        {tier.buttonText}
+                                                                    </Button>
+                                                                )
                                                             )}
                                                         </Grid>
                                                     </Grid>
@@ -731,5 +742,10 @@ function UserProfilePage() {
         </Box>
     );
 }
+
+const shouldShowUpgradeButton = (currentPlan, targetTier) => {
+    const planOrder = { 'free': 0, 'standard': 1, 'premium': 2, 'pro': 2 };
+    return planOrder[targetTier] > planOrder[currentPlan];
+};
 
 export default UserProfilePage;
