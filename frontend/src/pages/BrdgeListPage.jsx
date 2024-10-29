@@ -167,15 +167,32 @@ function BrdgeListPage() {
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Box sx={{ position: 'relative', mb: 8 }}>
-                <UsageIndicator stats={userStats} />
+            <Box>
+                <Box sx={{
+                    position: 'fixed',
+                    bottom: { xs: 16, sm: 24 },
+                    right: { xs: 16, sm: 24 },
+                    left: 'auto',
+                    top: 'auto',
+                    zIndex: 1000,
+                    display: { xs: 'none', sm: 'flex' },
+                    justifyContent: 'flex-end',
+                }}>
+                    <UsageIndicator stats={userStats} />
+                </Box>
 
                 <Box sx={{ mb: 4 }}>
                     <Typography variant="h4" component="h1" gutterBottom align="center">
                         Your Brdges
                     </Typography>
 
-                    <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 2,
+                        mb: 3,
+                        mt: 4
+                    }}>
                         <TextField
                             fullWidth
                             placeholder="Search Brdges"
@@ -188,7 +205,7 @@ function BrdgeListPage() {
                                     </InputAdornment>
                                 ),
                             }}
-                            sx={{ maxWidth: 400 }}
+                            sx={{ maxWidth: { sm: 400 } }}
                         />
                         <Button
                             variant="contained"
@@ -196,6 +213,7 @@ function BrdgeListPage() {
                             onClick={() => navigate('/create')}
                             disabled={!canCreateBrdge()}
                             sx={{
+                                minWidth: { xs: '100%', sm: 'auto' },
                                 background: canCreateBrdge() ? 'linear-gradient(90deg, #2196F3, #00BCD4)' : undefined,
                                 '&:hover': {
                                     background: canCreateBrdge() ? 'linear-gradient(90deg, #1976D2, #0097A7)' : undefined,
@@ -206,23 +224,26 @@ function BrdgeListPage() {
                         </Button>
                     </Box>
 
-                    {filteredBrdges.length === 0 ? (
-                        <EmptyBrdgeState
-                            onCreateClick={() => navigate('/create')}
-                            canCreate={canCreateBrdge()}
-                        />
-                    ) : (
-                        <BrdgeList
-                            brdges={filteredBrdges}
-                            onView={handleView}
-                            onEdit={handleEdit}
-                            onShare={handleShare}
-                            onDelete={handleDelete}
-                            orderBy={orderBy}
-                            orderDirection={orderDirection}
-                            onSort={handleSort}
-                        />
-                    )}
+                    <Box sx={{ pb: { xs: 12, sm: 0 } }}>
+                        {filteredBrdges.length === 0 ? (
+                            <EmptyBrdgeState
+                                onCreateClick={() => navigate('/create')}
+                                canCreate={canCreateBrdge()}
+                            />
+                        ) : (
+                            <BrdgeList
+                                brdges={filteredBrdges}
+                                onView={handleView}
+                                onEdit={handleEdit}
+                                onShare={handleShare}
+                                onDelete={handleDelete}
+                                orderBy={orderBy}
+                                orderDirection={orderDirection}
+                                onSort={handleSort}
+                                stats={userStats}
+                            />
+                        )}
+                    </Box>
                 </Box>
             </Box>
 

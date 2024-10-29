@@ -75,8 +75,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                         lineHeight: 1.6
                     }}
                 >
-                    Start your journey by creating your first AI presenter. Transform your content into engaging,
-                    interactive presentations with just a few clicks.
+                    Unleash the power of AI to bring your presentations to life. Turn your content into captivating stories with a personal AI presenter in minutes.
                 </Typography>
 
                 {canCreate ? (
