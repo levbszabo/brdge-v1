@@ -1126,52 +1126,58 @@ def manage_brdge(user, brdge_id):
 
 @app.route("/api/auth/google", methods=["POST"])
 def google_auth():
-    print("Received Google auth request")
-    token = request.json.get("token")
-
-    if not token:
-        print("No token provided in request")
-        return jsonify({"error": "No token provided"}), 400
-
     try:
-        print(f"Attempting to verify token with client ID: {GOOGLE_CLIENT_ID}")
-        idinfo = id_token.verify_oauth2_token(
-            token, google_requests.Request(), GOOGLE_CLIENT_ID
-        )
+        data = request.get_json()
+        credential = data.get("credential")  # Changed from 'token' to 'credential'
 
-        print("Token verification successful")
+        if not credential:
+            print("No credential provided in request")
+            return jsonify({"error": "No credential provided"}), 400
 
-        if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
-            print(f"Invalid issuer: {idinfo['iss']}")
-            return jsonify({"error": "Invalid token issuer"}), 400
-
-        email = idinfo["email"]
-        print(f"Email from token: {email}")
-
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            print(f"Creating new user for {email}")
-            user = User(email=email, password_hash="")
-            db.session.add(user)
-            db.session.flush()
-
-            new_account = UserAccount(
-                user_id=user.id, account_type="free", created_at=datetime.utcnow()
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                credential,  # Use credential instead of token
+                google_requests.Request(),
+                os.getenv("GOOGLE_CLIENT_ID"),
             )
-            db.session.add(new_account)
-            db.session.commit()
-            print(f"Created new user and account for {email}")
 
-        access_token = create_access_token(identity=user.id)
-        print(f"Generated access token for user {user.id}")
-        return jsonify({"access_token": access_token}), 200
+            # Verify issuer
+            if idinfo["iss"] not in [
+                "accounts.google.com",
+                "https://accounts.google.com",
+            ]:
+                return jsonify({"error": "Wrong issuer"}), 400
 
-    except ValueError as e:
-        print(f"Token verification failed: {str(e)}")
-        return jsonify({"error": str(e)}), 400
+            # Get user email
+            email = idinfo["email"]
+
+            # Find or create user
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                user = User(
+                    email=email, password_hash=""
+                )  # Google users don't need password
+                db.session.add(user)
+                db.session.flush()  # Get the user ID
+
+                # Create user account
+                new_account = UserAccount(
+                    user_id=user.id, account_type="free", created_at=datetime.utcnow()
+                )
+                db.session.add(new_account)
+                db.session.commit()
+
+            # Generate JWT token
+            access_token = create_access_token(identity=user.id)
+            return jsonify({"access_token": access_token}), 200
+
+        except ValueError as e:
+            print(f"Invalid token: {str(e)}")
+            return jsonify({"error": "Invalid token"}), 400
+
     except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        return jsonify({"error": "Authentication failed"}), 400
+        print(f"Unexpected error in google_auth: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.before_request
@@ -1220,20 +1226,29 @@ def create_checkout_session():
         data = request.get_json()
         tier = data.get("tier")
 
-        success_url = f"{os.getenv('FRONTEND_URL')}/profile?redirect_status=succeeded"
-        cancel_url = f"{os.getenv('FRONTEND_URL')}/profile"
+        # Use relative URLs for success/cancel to work in popup
+        success_url = (
+            f"{os.getenv('FRONTEND_URL')}/profile?payment_status=success&tier={tier}"
+        )
+        cancel_url = f"{os.getenv('FRONTEND_URL')}/profile?payment_status=cancelled"
 
         if tier == "standard":
-            payment_link = f"{os.getenv('STRIPE_STANDARD_PAYMENT_LINK')}?redirect_status=succeeded&success_url={success_url}&cancel_url={cancel_url}"
+            payment_link = os.getenv("STRIPE_STANDARD_PAYMENT_LINK")
         elif tier == "premium":
-            payment_link = f"{os.getenv('STRIPE_PREMIUM_PAYMENT_LINK')}?redirect_status=succeeded&success_url={success_url}&cancel_url={cancel_url}"
+            payment_link = os.getenv("STRIPE_PREMIUM_PAYMENT_LINK")
         else:
             return jsonify({"error": "Invalid subscription tier"}), 400
 
+        # Add success and cancel URLs to payment link
+        payment_link = (
+            f"{payment_link}?success_url={success_url}&cancel_url={cancel_url}"
+        )
+
+        print(f"Created payment link: {payment_link}")  # Debug log
         return jsonify({"url": payment_link})
 
     except Exception as e:
-        print(f"Error handling payment redirect: {str(e)}")
+        print(f"Error creating checkout session: {str(e)}")
         return jsonify({"error": str(e)}), 400
 
 
@@ -1242,41 +1257,67 @@ def create_checkout_session():
 def verify_subscription():
     try:
         current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
+        print(f"Verifying subscription for user {current_user_id}")
 
+        user = User.query.get(current_user_id)
         if not user:
+            print(f"User {current_user_id} not found")
             return jsonify({"error": "User not found"}), 404
 
         data = request.get_json()
-        tier = data.get("tier", "standard")
+        tier = data.get("tier")
 
-        if user and user.account:
-            # Update account type based on the tier
-            if tier == "premium":
-                user.account.account_type = "pro"
+        print(f"Received subscription request - User: {current_user_id}, Tier: {tier}")
+
+        if not tier:
+            print("No tier specified in request")
+            return jsonify({"error": "No tier specified"}), 400
+
+        tier_mapping = {"standard": "standard", "premium": "pro"}
+
+        if tier not in tier_mapping:
+            print(f"Invalid tier specified: {tier}")
+            return jsonify({"error": "Invalid tier specified"}), 400
+
+        try:
+            # Get or create user account
+            user_account = user.account
+            if not user_account:
+                print("Creating new user account")
+                user_account = UserAccount(
+                    user_id=user.id,
+                    account_type=tier_mapping[tier],
+                    created_at=datetime.utcnow(),
+                )
+                db.session.add(user_account)
             else:
-                user.account.account_type = "standard"
+                print(
+                    f"Updating existing account from {user_account.account_type} to {tier_mapping[tier]}"
+                )
+                user_account.account_type = tier_mapping[tier]
 
-            # Add subscription timestamp
-            user.account.subscription_updated_at = datetime.utcnow()
             db.session.commit()
+            print(f"Successfully updated user {user.id} to {tier_mapping[tier]} plan")
 
-            print(f"Updated user {user.id} to {user.account.account_type} plan")
-
-            return jsonify(
-                {
-                    "success": True,
-                    "account_type": user.account.account_type,
-                    "message": f"Successfully upgraded to {user.account.account_type} plan",
-                }
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Subscription updated successfully",
+                        "new_tier": tier_mapping[tier],
+                    }
+                ),
+                200,
             )
 
-        return jsonify({"error": "User account not found"}), 404
+        except Exception as e:
+            print(f"Database error: {str(e)}")
+            db.session.rollback()
+            return jsonify({"error": "Database error occurred"}), 500
 
     except Exception as e:
-        print(f"Error verifying subscription: {str(e)}")
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 400
+        print(f"Unexpected error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/user/stats", methods=["GET"])

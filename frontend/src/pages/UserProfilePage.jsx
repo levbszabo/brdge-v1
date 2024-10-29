@@ -14,7 +14,9 @@ import {
     CardContent,
     Chip,
     Alert,
-    LinearProgress
+    LinearProgress,
+    Dialog,
+    DialogContent
 } from '@mui/material';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
@@ -282,6 +284,7 @@ function UserProfilePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
     const fetchUserProfile = async () => {
         try {
@@ -302,17 +305,26 @@ function UserProfilePage() {
         const checkPaymentStatus = async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const isSuccess = urlParams.get('redirect_status') === 'succeeded';
+            const tier = localStorage.getItem('selected_tier');
 
-            if (isSuccess) {
+            console.log('Payment check - Success:', isSuccess, 'Tier:', tier);
+
+            if (isSuccess && tier) {
                 try {
-                    const tier = localStorage.getItem('selected_tier') || 'standard';
-                    await api.post('/verify-subscription', { tier });
+                    console.log('Attempting to update subscription...');
+
+                    const response = await api.post('/verify-subscription', { tier });
+                    console.log('Subscription update response:', response.data);
+
                     await fetchUserProfile();
+
                     setShowSuccess(true);
+
                     window.history.replaceState({}, document.title, "/profile");
                     localStorage.removeItem('selected_tier');
                 } catch (error) {
                     console.error('Error updating subscription:', error);
+                    setError('Failed to update subscription. Please contact support.');
                 }
             }
         };
@@ -320,14 +332,94 @@ function UserProfilePage() {
         checkPaymentStatus();
     }, []);
 
-    const handleStandardUpgrade = () => {
-        localStorage.setItem('selected_tier', 'standard');
-        window.location.href = 'https://buy.stripe.com/test_14k02B3XE8Qa43CfYY';
+    const handleStandardUpgrade = async () => {
+        try {
+            localStorage.setItem('selected_tier', 'standard');
+            // Direct link to Stripe payment page
+            const success_url = encodeURIComponent(`${window.location.origin}/profile?redirect_status=succeeded`);
+            const cancel_url = encodeURIComponent(`${window.location.origin}/profile`);
+            const paymentUrl = `https://buy.stripe.com/test_14k02B3XE8Qa43CfYY?success_url=${success_url}&cancel_url=${cancel_url}`;
+
+            // Open in popup
+            const popup = window.open(
+                paymentUrl,
+                'Stripe Checkout',
+                'width=600,height=600,top=50,left=50'
+            );
+
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                alert('Please enable popups to proceed with payment');
+                return;
+            }
+
+            // Monitor popup
+            const checkPopup = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopup);
+                    // Check URL parameters for success
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('redirect_status') === 'succeeded') {
+                        const verifyPayment = async () => {
+                            try {
+                                await api.post('/verify-subscription', { tier: 'standard' });
+                                await fetchUserProfile();
+                                setShowSuccess(true);
+                            } catch (error) {
+                                console.error('Error verifying payment:', error);
+                            }
+                        };
+                        verifyPayment();
+                    }
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('Error:', error);
+        }
     };
 
-    const handlePremiumUpgrade = () => {
-        localStorage.setItem('selected_tier', 'premium');
-        window.location.href = 'https://buy.stripe.com/test_bIYeXvgKqfeyfMkcMN';
+    const handlePremiumUpgrade = async () => {
+        try {
+            localStorage.setItem('selected_tier', 'premium');
+            // Direct link to Stripe payment page
+            const success_url = encodeURIComponent(`${window.location.origin}/profile?redirect_status=succeeded`);
+            const cancel_url = encodeURIComponent(`${window.location.origin}/profile`);
+            const paymentUrl = `https://buy.stripe.com/test_bIYeXvgKqfeyfMkcMN?success_url=${success_url}&cancel_url=${cancel_url}`;
+
+            // Open in popup
+            const popup = window.open(
+                paymentUrl,
+                'Stripe Checkout',
+                'width=600,height=600,top=50,left=50'
+            );
+
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                alert('Please enable popups to proceed with payment');
+                return;
+            }
+
+            // Monitor popup
+            const checkPopup = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(checkPopup);
+                    // Check URL parameters for success
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('redirect_status') === 'succeeded') {
+                        const verifyPayment = async () => {
+                            try {
+                                await api.post('/verify-subscription', { tier: 'premium' });
+                                await fetchUserProfile();
+                                setShowSuccess(true);
+                            } catch (error) {
+                                console.error('Error verifying payment:', error);
+                            }
+                        };
+                        verifyPayment();
+                    }
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('Error:', error);
+        }
     };
 
     const handleManageSubscription = async () => {
