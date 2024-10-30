@@ -1253,146 +1253,6 @@ def get_user_profile():
     return jsonify(response_data)
 
 
-@app.route("/api/create-checkout-session", methods=["POST"])
-@jwt_required()
-def create_checkout_session():
-    try:
-        data = request.get_json()
-        tier = data.get("tier")
-
-        # Use relative URLs for success/cancel to work in popup
-        success_url = (
-            f"{os.getenv('FRONTEND_URL')}/profile?payment_status=success&tier={tier}"
-        )
-        cancel_url = f"{os.getenv('FRONTEND_URL')}/profile?payment_status=cancelled"
-
-        if tier == "standard":
-            payment_link = os.getenv("STRIPE_STANDARD_PAYMENT_LINK")
-        elif tier == "premium":
-            payment_link = os.getenv("STRIPE_PREMIUM_PAYMENT_LINK")
-        else:
-            return jsonify({"error": "Invalid subscription tier"}), 400
-
-        # Add success and cancel URLs to payment link
-        payment_link = (
-            f"{payment_link}?success_url={success_url}&cancel_url={cancel_url}"
-        )
-
-        print(f"Created payment link: {payment_link}")  # Debug log
-        return jsonify({"url": payment_link})
-
-    except Exception as e:
-        print(f"Error creating checkout session: {str(e)}")
-        return jsonify({"error": str(e)}), 400
-
-
-@app.route("/api/verify-subscription", methods=["POST"])
-@jwt_required()
-def verify_subscription():
-    try:
-        current_user_id = get_jwt_identity()
-        print(f"Verifying subscription for user {current_user_id}")
-
-        user = User.query.get(current_user_id)
-        if not user:
-            print(f"User {current_user_id} not found")
-            return jsonify({"error": "User not found"}), 404
-
-        data = request.get_json()
-        tier = data.get("tier")
-
-        print(f"Received subscription request - User: {current_user_id}, Tier: {tier}")
-
-        if not tier:
-            print("No tier specified in request")
-            return jsonify({"error": "No tier specified"}), 400
-
-        tier_mapping = {"standard": "standard", "premium": "pro"}
-        price_ids = {
-            "standard": "price_standard_id",  # Replace with your actual price IDs
-            "premium": "price_premium_id",
-        }
-
-        if tier not in tier_mapping:
-            print(f"Invalid tier specified: {tier}")
-            return jsonify({"error": "Invalid tier specified"}), 400
-
-        try:
-            # If user doesn't have a Stripe customer ID, create one
-            if not user.stripe_customer_id:
-                customer = stripe.Customer.create(
-                    email=user.email, metadata={"user_id": user.id}
-                )
-                user.stripe_customer_id = customer.id
-
-            # Get the subscription from Stripe's most recent payment
-            subscriptions = stripe.Subscription.list(
-                customer=user.stripe_customer_id, limit=1, status="active"
-            )
-
-            if not subscriptions.data:
-                return jsonify({"error": "No active subscription found"}), 400
-
-            subscription = subscriptions.data[0]
-
-            # Update user's subscription details
-            user.stripe_subscription_id = subscription.id
-            user.subscription_status = subscription.status
-
-            # Get or create user account
-            user_account = user.account
-            if not user_account:
-                print("Creating new user account")
-                user_account = UserAccount(
-                    user_id=user.id,
-                    account_type=tier_mapping[tier],
-                    created_at=datetime.utcnow(),
-                )
-                db.session.add(user_account)
-            else:
-                print(
-                    f"Updating existing account from {user_account.account_type} to {tier_mapping[tier]}"
-                )
-                user_account.account_type = tier_mapping[tier]
-
-            # Update account details
-            user_account.stripe_customer_id = user.stripe_customer_id
-            user_account.stripe_subscription_id = subscription.id
-            user_account.subscription_status = subscription.status
-            user_account.next_billing_date = datetime.fromtimestamp(
-                subscription.current_period_end
-            )
-
-            db.session.commit()
-            print(f"Successfully updated user {user.id} to {tier_mapping[tier]} plan")
-
-            return (
-                jsonify(
-                    {
-                        "success": True,
-                        "message": "Subscription updated successfully",
-                        "new_tier": tier_mapping[tier],
-                        "subscription_id": subscription.id,
-                        "next_billing_date": subscription.current_period_end,
-                    }
-                ),
-                200,
-            )
-
-        except stripe.error.StripeError as e:
-            print(f"Stripe error: {str(e)}")
-            db.session.rollback()
-            return jsonify({"error": f"Stripe error: {str(e)}"}), 500
-        except Exception as e:
-            print(f"Database error: {str(e)}")
-            db.session.rollback()
-            return jsonify({"error": "Database error occurred"}), 500
-
-    except Exception as e:
-        print(f"Unexpected error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/api/user/stats", methods=["GET"])
 @jwt_required()
 def get_user_stats():
@@ -1422,159 +1282,139 @@ def get_user_stats():
         return jsonify({"error": str(e)}), 400
 
 
-@app.route("/api/cancel-subscription", methods=["POST", "OPTIONS"])
-@cross_origin()
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+
+
+@app.route("/api/create-checkout-session", methods=["POST"])
 @login_required
-def cancel_subscription(user):
-    if request.method == "OPTIONS":
-        return "", 200
-
+def create_checkout_session(user):
     try:
-        # Start database transaction
-        with db.session.begin_nested():
-            # 1. Get the user account and check for subscription
-            user_account = UserAccount.query.filter_by(user_id=user.id).first()
+        data = request.get_json()
+        tier = data.get("tier")
 
-            if not user_account:
-                return (
-                    jsonify({"success": False, "message": "User account not found"}),
-                    404,
-                )
+        price_ids = {
+            "standard": os.getenv("STRIPE_STANDARD_PRICE_ID"),
+            "premium": os.getenv("STRIPE_PREMIUM_PRICE_ID"),
+        }
 
-            # 2. Cancel Stripe subscription if it exists
-            if user_account.stripe_subscription_id:
-                try:
-                    # Immediately cancel the subscription in Stripe
-                    stripe.Subscription.delete(user_account.stripe_subscription_id)
-                    user_account.stripe_subscription_id = None
-                    user_account.stripe_customer_id = None
-                except stripe.error.StripeError as e:
-                    app.logger.error(f"Stripe error: {str(e)}")
-                    return (
-                        jsonify(
-                            {
-                                "success": False,
-                                "message": "Failed to cancel Stripe subscription",
-                            }
-                        ),
-                        500,
-                    )
+        price_id = price_ids.get(tier)
+        if not price_id:
+            return jsonify({"error": "Invalid subscription tier"}), 400
 
-            # 3. Get user's brdges
-            brdges = Brdge.query.filter_by(user_id=user.id).all()
-
-            # 4. Keep only first 2 brdges, delete the rest
-            if len(brdges) > 2:
-                brdges_to_delete = brdges[2:]
-                for brdge in brdges_to_delete:
-                    try:
-                        s3_objects = s3_client.list_objects_v2(
-                            Bucket=S3_BUCKET, Prefix=brdge.folder
-                        )
-                        for obj in s3_objects.get("Contents", []):
-                            s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
-                    except Exception as e:
-                        app.logger.error(f"Error deleting S3 files: {str(e)}")
-
-                    # Delete brdge from database
-                    db.session.delete(brdge)
-
-            # 5. Update user account
-            user_account.account_type = "free"
-            user_account.subscription_status = "canceled"
-
-            # 6. Commit the transaction
-            db.session.commit()
-
-        return jsonify(
-            {"success": True, "message": "Subscription cancelled successfully"}
+        # Create checkout session with direct redirect URLs
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            mode="subscription",
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{request.headers.get('Origin')}/payment-success?session_id={{CHECKOUT_SESSION_ID}}&tier={tier}",
+            cancel_url=f"{request.headers.get('Origin')}/profile",
+            client_reference_id=user.id,
+            metadata={"tier": tier, "user_id": str(user.id)},
         )
+
+        return jsonify({"url": session.url}), 200
+
     except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error cancelling subscription: {str(e)}")
+        print(f"Error creating checkout session: {e}")
+        return jsonify({"error": "Failed to create checkout session"}), 500
+
+
+@app.route("/api/verify-subscription", methods=["POST"])
+@login_required
+def verify_subscription(user):
+    try:
+        data = request.get_json()
+        tier = data.get("tier")
+        session_id = data.get("session_id")
+
+        print(
+            f"Starting verify_subscription - User: {user.id}, Tier: {tier}, Session: {session_id}"
+        )
+
+        if not tier or not session_id:
+            print("Missing parameters:", {"tier": tier, "session_id": session_id})
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Map frontend tier names to database account types
+        tier_mapping = {"standard": "standard", "premium": "pro"}
+        account_type = tier_mapping.get(tier)
+
+        print(f"Mapped tier '{tier}' to account_type '{account_type}'")
+
+        if not account_type:
+            print(f"Invalid tier mapping for: {tier}")
+            return jsonify({"error": "Invalid subscription tier"}), 400
+
+        # Retrieve the session
+        try:
+            print(f"Retrieving Stripe session: {session_id}")
+            session = stripe.checkout.Session.retrieve(
+                session_id, expand=["subscription"]
+            )
+            print(
+                "Stripe session retrieved:",
+                {
+                    "payment_status": session.payment_status,
+                    "customer": session.customer,
+                    "subscription_status": (
+                        session.subscription.status if session.subscription else None
+                    ),
+                },
+            )
+        except stripe.error.StripeError as e:
+            print(f"Stripe error retrieving session: {e}")
+            return jsonify({"error": "Invalid session"}), 400
+
+        # Verify session belongs to user
+        if str(user.id) != session.client_reference_id:
+            print(
+                f"Session mismatch - Session user: {session.client_reference_id}, Current user: {user.id}"
+            )
+            return jsonify({"error": "Session does not match user"}), 403
+
+        # Get or create user account
+        user_account = UserAccount.query.filter_by(user_id=user.id).first()
+        if not user_account:
+            print(f"Creating new UserAccount for user {user.id}")
+            user_account = UserAccount(user_id=user.id)
+            db.session.add(user_account)
+
+        print(f"Current account state: {user_account.to_dict()}")
+
+        # Update account details
+        user_account.account_type = account_type
+        user_account.stripe_customer_id = session.customer
+        user_account.stripe_subscription_id = session.subscription.id
+        user_account.subscription_status = "active"
+        user_account.last_activity = datetime.utcnow()
+        user_account.next_billing_date = datetime.fromtimestamp(
+            session.subscription.current_period_end
+        )
+
+        print(f"Updated account state: {user_account.to_dict()}")
+
+        try:
+            db.session.commit()
+            print("Database commit successful")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Database error during commit: {e}")
+            return jsonify({"error": "Database error"}), 500
+
+        # Verify the changes were saved
+        refreshed_account = UserAccount.query.filter_by(user_id=user.id).first()
+        print(f"Account after commit: {refreshed_account.to_dict()}")
+
         return (
             jsonify(
                 {
-                    "success": False,
-                    "message": f"Failed to cancel subscription: {str(e)}",
+                    "message": "Subscription verified and updated successfully",
+                    "account": refreshed_account.to_dict(),
                 }
             ),
-            500,
+            200,
         )
 
-
-@app.route("/api/create-portal-session", methods=["POST"])
-@login_required
-def create_portal_session(user):
-    try:
-        # Get user account
-        user_account = user.account
-        if not user_account or not user_account.stripe_customer_id:
-            return jsonify({"error": "No active subscription found"}), 400
-
-        # Create a Stripe billing portal session using the customer ID from user_account
-        session = stripe.billing_portal.Session.create(
-            customer=user_account.stripe_customer_id,
-            return_url=f"{os.getenv('FRONTEND_URL')}/profile",
-        )
-        return jsonify({"url": session.url})
     except Exception as e:
-        app.logger.error(f"Error creating portal session: {str(e)}")
-        return jsonify({"error": "Failed to create portal session"}), 500
-
-
-@app.route("/stripe-webhook", methods=["POST"])
-def stripe_webhook():
-    payload = request.get_data()
-    sig_header = request.headers.get("Stripe-Signature")
-
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except ValueError as e:
-        return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError as e:
-        return jsonify({"error": "Invalid signature"}), 400
-
-    # Handle subscription events
-    if event["type"] in [
-        "customer.subscription.deleted",
-        "customer.subscription.updated",
-        "customer.subscription.trial_will_end",
-        "customer.subscription.pending_update_expired",
-        "customer.subscription.pending_update_applied",
-        "invoice.payment_failed",
-    ]:
-        subscription = event["data"]["object"]
-        # Find the user account using the subscription ID
-        user_account = UserAccount.query.filter_by(
-            stripe_subscription_id=subscription.id
-        ).first()
-
-        if user_account:
-            try:
-                if event["type"] == "customer.subscription.deleted":
-                    # Handle cancellation
-                    user_account.stripe_subscription_id = None
-                    user_account.subscription_status = "canceled"
-                    user_account.account_type = "free"
-
-                elif event["type"] == "customer.subscription.updated":
-                    # Update subscription status
-                    user_account.subscription_status = subscription.status
-
-                elif event["type"] == "invoice.payment_failed":
-                    # Handle failed payment
-                    user_account.subscription_status = "past_due"
-                    # Could send email notification here
-
-                db.session.commit()
-                app.logger.info(
-                    f"Successfully processed {event['type']} for user {user_account.user_id}"
-                )
-
-            except Exception as e:
-                db.session.rollback()
-                app.logger.error(f"Error processing webhook {event['type']}: {str(e)}")
-                return jsonify({"error": str(e)}), 500
-
-    return jsonify({"status": "success"}), 200
+        print(f"Unexpected error in verify_subscription: {e}")
+        return jsonify({"error": "Failed to verify subscription"}), 500

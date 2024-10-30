@@ -57,6 +57,8 @@ class UserAccount(db.Model):
             "next_billing_date": (
                 self.next_billing_date.isoformat() if self.next_billing_date else None
             ),
+            "stripe_customer_id": self.stripe_customer_id,
+            "stripe_subscription_id": self.stripe_subscription_id,
             "usage_stats": {
                 "total_brdges": self.total_brdges,
                 "storage_used": self.storage_used,

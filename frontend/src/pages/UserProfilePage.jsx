@@ -352,13 +352,18 @@ function UserProfilePage() {
     const [error, setError] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [paymentError, setPaymentError] = useState(null);
 
     const fetchUserProfile = async () => {
         try {
+            console.log('Fetching user profile...');
             const response = await api.get('/user/profile');
+            console.log('Profile data received:', response.data);
             setUserProfile(response.data);
             setLoading(false);
         } catch (err) {
+            console.error('Error fetching profile:', err);
             setError(err.response?.data?.error || 'Failed to load user profile');
             setLoading(false);
         }
@@ -371,121 +376,62 @@ function UserProfilePage() {
     useEffect(() => {
         const checkPaymentStatus = async () => {
             const urlParams = new URLSearchParams(window.location.search);
-            const isSuccess = urlParams.get('redirect_status') === 'succeeded';
-            const tier = localStorage.getItem('selected_tier');
+            const paymentSuccess = urlParams.get('payment') === 'success';
 
-            console.log('Payment check - Success:', isSuccess, 'Tier:', tier);
-
-            if (isSuccess && tier) {
+            if (paymentSuccess) {
+                console.log('Payment success detected, refreshing profile...');
                 try {
-                    console.log('Attempting to update subscription...');
-
-                    const response = await api.post('/verify-subscription', { tier });
-                    console.log('Subscription update response:', response.data);
-
                     await fetchUserProfile();
-
                     setShowSuccess(true);
-
                     window.history.replaceState({}, document.title, "/profile");
-                    localStorage.removeItem('selected_tier');
                 } catch (error) {
-                    console.error('Error updating subscription:', error);
-                    setError('Failed to update subscription. Please contact support.');
+                    console.error('Error refreshing profile:', error);
+                    setError('Failed to refresh profile after payment');
                 }
             }
         };
 
         checkPaymentStatus();
+        fetchUserProfile(); // Initial profile fetch
     }, []);
 
     const handleStandardUpgrade = async () => {
+        setIsProcessing(true);
+        setPaymentError(null);
         try {
             localStorage.setItem('selected_tier', 'standard');
-            // Direct link to Stripe payment page
-            const success_url = encodeURIComponent(`${window.location.origin}/profile?redirect_status=succeeded`);
-            const cancel_url = encodeURIComponent(`${window.location.origin}/profile`);
-            const paymentUrl = `https://buy.stripe.com/test_14k02B3XE8Qa43CfYY?success_url=${success_url}&cancel_url=${cancel_url}`;
+            const response = await api.post('/create-checkout-session', {
+                tier: 'standard'
+            });
 
-            // Open in popup
-            const popup = window.open(
-                paymentUrl,
-                'Stripe Checkout',
-                'width=600,height=600,top=50,left=50'
-            );
-
-            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-                alert('Please enable popups to proceed with payment');
-                return;
+            if (response.data.url) {
+                // Direct redirect to Stripe
+                window.location.href = response.data.url;
             }
-
-            // Monitor popup
-            const checkPopup = setInterval(() => {
-                if (popup.closed) {
-                    clearInterval(checkPopup);
-                    // Check URL parameters for success
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.get('redirect_status') === 'succeeded') {
-                        const verifyPayment = async () => {
-                            try {
-                                await api.post('/verify-subscription', { tier: 'standard' });
-                                await fetchUserProfile();
-                                setShowSuccess(true);
-                            } catch (error) {
-                                console.error('Error verifying payment:', error);
-                            }
-                        };
-                        verifyPayment();
-                    }
-                }
-            }, 1000);
         } catch (error) {
             console.error('Error:', error);
+            setPaymentError(error.response?.data?.error || 'Failed to start checkout process');
+            setIsProcessing(false);
         }
     };
 
     const handlePremiumUpgrade = async () => {
+        setIsProcessing(true);
+        setPaymentError(null);
         try {
             localStorage.setItem('selected_tier', 'premium');
-            // Direct link to Stripe payment page
-            const success_url = encodeURIComponent(`${window.location.origin}/profile?redirect_status=succeeded`);
-            const cancel_url = encodeURIComponent(`${window.location.origin}/profile`);
-            const paymentUrl = `https://buy.stripe.com/test_bIYeXvgKqfeyfMkcMN?success_url=${success_url}&cancel_url=${cancel_url}`;
+            const response = await api.post('/create-checkout-session', {
+                tier: 'premium'
+            });
 
-            // Open in popup
-            const popup = window.open(
-                paymentUrl,
-                'Stripe Checkout',
-                'width=600,height=600,top=50,left=50'
-            );
-
-            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-                alert('Please enable popups to proceed with payment');
-                return;
+            if (response.data.url) {
+                // Direct redirect to Stripe
+                window.location.href = response.data.url;
             }
-
-            // Monitor popup
-            const checkPopup = setInterval(() => {
-                if (popup.closed) {
-                    clearInterval(checkPopup);
-                    // Check URL parameters for success
-                    const urlParams = new URLSearchParams(window.location.search);
-                    if (urlParams.get('redirect_status') === 'succeeded') {
-                        const verifyPayment = async () => {
-                            try {
-                                await api.post('/verify-subscription', { tier: 'premium' });
-                                await fetchUserProfile();
-                                setShowSuccess(true);
-                            } catch (error) {
-                                console.error('Error verifying payment:', error);
-                            }
-                        };
-                        verifyPayment();
-                    }
-                }
-            }, 1000);
         } catch (error) {
             console.error('Error:', error);
+            setPaymentError(error.response?.data?.error || 'Failed to start checkout process');
+            setIsProcessing(false);
         }
     };
 
@@ -527,6 +473,30 @@ function UserProfilePage() {
     const handleSubscriptionChange = async () => {
         // Refresh user profile after subscription change
         await fetchUserProfile();
+    };
+
+    const verifyPayment = async (tier) => {
+        try {
+            const response = await api.post('/verify-subscription', { tier });
+            console.log('Verification response:', response.data);
+
+            // Refresh the user profile
+            await fetchUserProfile();
+
+            // Show success message
+            setShowSuccess(true);
+            setPaymentError(null);
+
+            // Clean up URL and localStorage
+            window.history.replaceState({}, document.title, "/profile");
+            localStorage.removeItem('selected_tier');
+
+            // Scroll to top to show success message
+            window.scrollTo(0, 0);
+        } catch (error) {
+            console.error('Error verifying payment:', error);
+            setPaymentError(error.response?.data?.error || 'Failed to verify payment');
+        }
     };
 
     if (loading) {
@@ -626,8 +596,9 @@ function UserProfilePage() {
                                         color: '#00BCD4'
                                     }
                                 }}
+                                onClose={() => setShowSuccess(false)}
                             >
-                                Subscription updated successfully!
+                                Your subscription has been updated successfully!
                             </Alert>
                         </motion.div>
                     </Box>
@@ -794,9 +765,10 @@ function UserProfilePage() {
                                                                         variant={tier.isPremium ? "contained" : "outlined"}
                                                                         color="primary"
                                                                         onClick={tier.onClick}
+                                                                        disabled={isProcessing}
                                                                         sx={{ borderRadius: '50px' }}
                                                                     >
-                                                                        {tier.buttonText}
+                                                                        {isProcessing ? 'Processing...' : tier.buttonText}
                                                                     </Button>
                                                                 )
                                                             )}

@@ -24,6 +24,7 @@ import PricingPage from './pages/PricingPage';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import PolicyPage from './pages/PolicyPage';
 import UserProfilePage from './pages/UserProfilePage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -122,6 +123,7 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/payment-success" element={<PaymentSuccessPage />} />
               </Routes>
             </Layout>
           </Router>
