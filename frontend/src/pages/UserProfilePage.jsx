@@ -124,7 +124,8 @@ const styles = {
 function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageSubscription }) {
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [cancelling, setCancelling] = useState(false);
-    const [error, setError] = useState(null);
+    const [cancelError, setCancelError] = useState(null);
+    const [cancelSuccess, setCancelSuccess] = useState(null);
 
     // Calculate next billing date (one month from now)
     const nextBillingDate = userProfile?.account?.next_billing_date ?
@@ -132,20 +133,25 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageS
         new Date(new Date().setMonth(new Date().getMonth() + 1));
 
     const handleCancelSubscription = async () => {
+        setCancelling(true);
+        setCancelError(null);
         try {
-            setCancelling(true);
             const response = await api.post('/cancel-subscription');
+            console.log('Cancellation response:', response.data);
 
-            if (response.data.success) {
+            setCancelSuccess(response.data);
+            // Close dialog after short delay
+            setTimeout(() => {
+                setOpenConfirmDialog(false);
+                // Refresh profile data
                 if (onSubscriptionChange) {
                     onSubscriptionChange();
                 }
-                setOpenConfirmDialog(false);
-            } else {
-                setError(response.data.message || 'Failed to cancel subscription');
-            }
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to cancel subscription');
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error canceling subscription:', error);
+            setCancelError(error.response?.data?.error || 'Failed to cancel subscription');
         } finally {
             setCancelling(false);
         }
@@ -215,7 +221,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageS
 
                     <Dialog
                         open={openConfirmDialog}
-                        onClose={() => setOpenConfirmDialog(false)}
+                        onClose={() => !cancelling && setOpenConfirmDialog(false)}
                     >
                         <DialogContent sx={{ p: 4 }}>
                             <Typography variant="h6" gutterBottom>
@@ -229,11 +235,21 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageS
                                     <li>Additional Brdges will be deleted</li>
                                 </ul>
                             </Typography>
-                            {error && (
+
+                            {cancelError && (
                                 <Alert severity="error" sx={{ mb: 2 }}>
-                                    {error}
+                                    {cancelError}
                                 </Alert>
                             )}
+
+                            {cancelSuccess && (
+                                <Alert severity="success" sx={{ mb: 2 }}>
+                                    Subscription canceled successfully.
+                                    Kept {cancelSuccess.brdges_kept} brdges,
+                                    deleted {cancelSuccess.brdges_deleted} brdges.
+                                </Alert>
+                            )}
+
                             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
                                 <Button
                                     variant="outlined"
@@ -296,47 +312,102 @@ function UsageStats({ currentPlan }) {
 
     return (
         <Paper elevation={0} sx={{ ...styles.glassCard, p: 4, mt: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" gutterBottom sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 3
+            }}>
                 <StarIcon color="primary" />
                 Usage Statistics
             </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Grid container spacing={2}>
+            <Divider sx={{ mb: 4 }} />
+
+            <Grid container spacing={4} alignItems="center">
+                {/* Brdges Created */}
                 <Grid item xs={6}>
-                    <Typography variant="h3" fontWeight="bold" color="primary">
-                        {stats.brdges_created}
-                    </Typography>
-                    <Typography color="text.secondary">
-                        Brdges Created
-                    </Typography>
+                    <Box sx={{ textAlign: 'center' }}>
+                        <Typography
+                            variant="h2"
+                            fontWeight="bold"
+                            color="primary"
+                            sx={{
+                                mb: 1,
+                                fontSize: { xs: '2rem', sm: '2.5rem' }
+                            }}
+                        >
+                            {stats.brdges_created}
+                        </Typography>
+                        <Typography
+                            color="text.secondary"
+                            variant="subtitle1"
+                            sx={{ fontWeight: 500 }}
+                        >
+                            Brdges Created
+                        </Typography>
+                    </Box>
                 </Grid>
+
+                {/* Brdge Limit */}
                 <Grid item xs={6}>
-                    <Typography variant="h3" fontWeight="bold" color="primary">
-                        {stats.brdges_limit}
-                    </Typography>
-                    <Typography color="text.secondary">
-                        Brdge Limit
-                    </Typography>
+                    <Box sx={{ textAlign: 'center' }}>
+                        <Typography
+                            variant="h2"
+                            fontWeight="bold"
+                            color="primary"
+                            sx={{
+                                mb: 1,
+                                fontSize: stats.brdges_limit === 'Unlimited'
+                                    ? { xs: '1.5rem', sm: '2rem' }
+                                    : { xs: '2rem', sm: '2.5rem' },
+                                background: stats.brdges_limit === 'Unlimited'
+                                    ? 'linear-gradient(45deg, #2196F3, #00BCD4)'
+                                    : 'inherit',
+                                WebkitBackgroundClip: stats.brdges_limit === 'Unlimited' ? 'text' : 'inherit',
+                                WebkitTextFillColor: stats.brdges_limit === 'Unlimited' ? 'transparent' : 'inherit',
+                            }}
+                        >
+                            {stats.brdges_limit}
+                        </Typography>
+                        <Typography
+                            color="text.secondary"
+                            variant="subtitle1"
+                            sx={{ fontWeight: 500 }}
+                        >
+                            Brdge Limit
+                        </Typography>
+                    </Box>
                 </Grid>
+
+                {/* Usage Bar - Only show if not unlimited */}
                 {stats.brdges_limit !== 'Unlimited' && (
                     <Grid item xs={12}>
                         <Box sx={{ mt: 2 }}>
+                            <Box sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                mb: 1
+                            }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Usage
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {getUsagePercentage().toFixed(0)}%
+                                </Typography>
+                            </Box>
                             <LinearProgress
                                 variant="determinate"
                                 value={getUsagePercentage()}
                                 sx={{
-                                    height: 10,
-                                    borderRadius: 5,
-                                    backgroundColor: 'rgba(0,0,0,0.1)',
+                                    height: 8,
+                                    borderRadius: 4,
+                                    backgroundColor: 'rgba(0,0,0,0.05)',
                                     '& .MuiLinearProgress-bar': {
-                                        borderRadius: 5,
+                                        borderRadius: 4,
                                         background: 'linear-gradient(90deg, #2196F3, #00BCD4)'
                                     }
                                 }}
                             />
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'right' }}>
-                                {getUsagePercentage().toFixed(0)}% used
-                            </Typography>
                         </Box>
                     </Grid>
                 )}

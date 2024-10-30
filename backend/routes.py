@@ -1418,3 +1418,97 @@ def verify_subscription(user):
     except Exception as e:
         print(f"Unexpected error in verify_subscription: {e}")
         return jsonify({"error": "Failed to verify subscription"}), 500
+
+
+@app.route("/api/cancel-subscription", methods=["POST"])
+@login_required
+def cancel_subscription(user):
+    try:
+        # Get user account
+        user_account = UserAccount.query.filter_by(user_id=user.id).first()
+        if not user_account or not user_account.stripe_subscription_id:
+            return jsonify({"error": "No active subscription found"}), 400
+
+        try:
+            # Cancel the subscription in Stripe
+            subscription = stripe.Subscription.modify(
+                user_account.stripe_subscription_id, cancel_at_period_end=True
+            )
+
+            # Update user account
+            user_account.account_type = "free"
+            user_account.subscription_status = "canceled"
+
+            # Get all user's brdges
+            all_brdges = Brdge.query.filter_by(user_id=user.id).all()
+
+            # Keep only first two brdges
+            if len(all_brdges) > 2:
+                brdges_to_delete = all_brdges[2:]
+
+                # Delete files from S3 for each brdge
+                for brdge in brdges_to_delete:
+                    try:
+                        # List all objects in the brdge's folder
+                        s3_objects = s3_client.list_objects_v2(
+                            Bucket=S3_BUCKET, Prefix=brdge.folder
+                        )
+
+                        # Delete all objects in the folder
+                        for obj in s3_objects.get("Contents", []):
+                            s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
+
+                        # Delete brdge from database
+                        db.session.delete(brdge)
+
+                    except Exception as e:
+                        print(f"Error deleting brdge {brdge.id}: {str(e)}")
+                        continue
+
+            # Commit all changes
+            db.session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "message": "Subscription canceled successfully",
+                        "brdges_kept": min(2, len(all_brdges)),
+                        "brdges_deleted": max(0, len(all_brdges) - 2),
+                    }
+                ),
+                200,
+            )
+
+        except stripe.error.StripeError as e:
+            print(f"Stripe error: {str(e)}")
+            return jsonify({"error": "Failed to cancel subscription with Stripe"}), 400
+
+    except Exception as e:
+        print(f"Error canceling subscription: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to cancel subscription"}), 500
+
+
+@app.route("/api/create-portal-session", methods=["POST"])
+@login_required
+def create_portal_session(user):
+    try:
+        # Get user account
+        user_account = UserAccount.query.filter_by(user_id=user.id).first()
+        if not user_account or not user_account.stripe_customer_id:
+            return jsonify({"error": "No active subscription found"}), 400
+
+        # Create Stripe Customer Portal session
+        session = stripe.billing_portal.Session.create(
+            customer=user_account.stripe_customer_id,
+            return_url=f"{request.headers.get('Origin')}/profile",
+        )
+
+        return jsonify({"url": session.url}), 200
+
+    except stripe.error.StripeError as e:
+        print(f"Stripe error: {str(e)}")
+        return jsonify({"error": "Failed to create portal session"}), 400
+    except Exception as e:
+        print(f"Error creating portal session: {str(e)}")
+        return jsonify({"error": "Failed to create portal session"}), 500
