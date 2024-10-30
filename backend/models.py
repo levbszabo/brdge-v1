@@ -11,7 +11,7 @@ class User(db.Model):
 
     # One-to-one relationship with UserAccount
     account = db.relationship("UserAccount", backref="user", uselist=False)
-    # One-to-many relationship with Brdge (only define it here)
+    # One-to-many relationship with Brdge
     brdges = db.relationship("Brdge", backref="user", lazy="dynamic")
 
     def set_password(self, password):

@@ -121,9 +121,35 @@ const styles = {
     }
 };
 
-function BillingCard({ userProfile, onManageSubscription, currentPlan }) {
-    const nextBillingDate = new Date();
-    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageSubscription }) {
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+    const [error, setError] = useState(null);
+
+    // Calculate next billing date (one month from now)
+    const nextBillingDate = userProfile?.account?.next_billing_date ?
+        new Date(userProfile.account.next_billing_date) :
+        new Date(new Date().setMonth(new Date().getMonth() + 1));
+
+    const handleCancelSubscription = async () => {
+        try {
+            setCancelling(true);
+            const response = await api.post('/cancel-subscription');
+
+            if (response.data.success) {
+                if (onSubscriptionChange) {
+                    onSubscriptionChange();
+                }
+                setOpenConfirmDialog(false);
+            } else {
+                setError(response.data.message || 'Failed to cancel subscription');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to cancel subscription');
+        } finally {
+            setCancelling(false);
+        }
+    };
 
     return (
         <Paper elevation={0} sx={{ ...styles.glassCard, p: 4, mt: 3 }}>
@@ -179,13 +205,54 @@ function BillingCard({ userProfile, onManageSubscription, currentPlan }) {
                                     color="error"
                                     startIcon={<CancelIcon />}
                                     sx={{ borderRadius: '50px' }}
-                                    onClick={onManageSubscription}
+                                    onClick={() => setOpenConfirmDialog(true)}
                                 >
                                     Cancel Plan
                                 </Button>
                             </Box>
                         </Grid>
                     </Grid>
+
+                    <Dialog
+                        open={openConfirmDialog}
+                        onClose={() => setOpenConfirmDialog(false)}
+                    >
+                        <DialogContent sx={{ p: 4 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Cancel Subscription?
+                            </Typography>
+                            <Typography color="text.secondary" sx={{ mb: 3 }}>
+                                By canceling your subscription:
+                                <ul>
+                                    <li>You'll be downgraded to the free plan</li>
+                                    <li>Only your first 2 Brdges will be kept</li>
+                                    <li>Additional Brdges will be deleted</li>
+                                </ul>
+                            </Typography>
+                            {error && (
+                                <Alert severity="error" sx={{ mb: 2 }}>
+                                    {error}
+                                </Alert>
+                            )}
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                <Button
+                                    variant="outlined"
+                                    onClick={() => setOpenConfirmDialog(false)}
+                                    disabled={cancelling}
+                                >
+                                    Keep Subscription
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="error"
+                                    onClick={handleCancelSubscription}
+                                    disabled={cancelling}
+                                >
+                                    {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                                </Button>
+                            </Box>
+                        </DialogContent>
+                    </Dialog>
                 </>
             ) : (
                 <Box sx={{ textAlign: 'center', py: 2 }}>
@@ -457,6 +524,11 @@ function UserProfilePage() {
         }
     };
 
+    const handleSubscriptionChange = async () => {
+        // Refresh user profile after subscription change
+        await fetchUserProfile();
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -641,8 +713,9 @@ function UserProfilePage() {
 
                         <BillingCard
                             userProfile={userProfile}
-                            onManageSubscription={handleManageSubscription}
                             currentPlan={currentPlan}
+                            onSubscriptionChange={handleSubscriptionChange}
+                            onManageSubscription={handleManageSubscription}
                         />
 
                         <UsageStats currentPlan={currentPlan} />
