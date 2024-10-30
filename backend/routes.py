@@ -1301,7 +1301,51 @@ def create_checkout_session(user):
         if not price_id:
             return jsonify({"error": "Invalid subscription tier"}), 400
 
-        # Create checkout session with direct redirect URLs
+        # Get user account to check current subscription
+        user_account = UserAccount.query.filter_by(user_id=user.id).first()
+
+        # Set up subscription data with proration settings
+        subscription_data = {
+            "payment_behavior": "default_incomplete",
+            "proration_behavior": "create_prorations",
+        }
+
+        # If user has existing subscription, handle upgrade/downgrade
+        if user_account and user_account.stripe_subscription_id:
+            try:
+                # Retrieve current subscription
+                subscription = stripe.Subscription.retrieve(
+                    user_account.stripe_subscription_id
+                )
+
+                # Modify existing subscription instead of creating new one
+                updated_subscription = stripe.Subscription.modify(
+                    user_account.stripe_subscription_id,
+                    items=[
+                        {
+                            "id": subscription["items"]["data"][0].id,
+                            "price": price_id,
+                        }
+                    ],
+                    proration_behavior="create_prorations",
+                )
+
+                return (
+                    jsonify(
+                        {
+                            "message": "Subscription updated",
+                            "proration_amount": updated_subscription.latest_invoice.amount_due
+                            / 100,
+                        }
+                    ),
+                    200,
+                )
+
+            except stripe.error.StripeError as e:
+                print(f"Stripe error modifying subscription: {e}")
+                return jsonify({"error": str(e)}), 400
+
+        # Create new checkout session for new subscriptions
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             mode="subscription",
@@ -1310,6 +1354,7 @@ def create_checkout_session(user):
             cancel_url=f"{request.headers.get('Origin')}/profile",
             client_reference_id=user.id,
             metadata={"tier": tier, "user_id": str(user.id)},
+            subscription_data=subscription_data,
         )
 
         return jsonify({"url": session.url}), 200
@@ -1498,17 +1543,31 @@ def create_portal_session(user):
         if not user_account or not user_account.stripe_customer_id:
             return jsonify({"error": "No active subscription found"}), 400
 
-        # Create Stripe Customer Portal session
-        session = stripe.billing_portal.Session.create(
-            customer=user_account.stripe_customer_id,
-            return_url=f"{request.headers.get('Origin')}/profile",
-        )
+        try:
+            # Create portal session directly with proration settings
+            session = stripe.billing_portal.Session.create(
+                customer=user_account.stripe_customer_id,
+                return_url=f"{request.headers.get('Origin')}/profile",
+                flow_data={
+                    "type": "subscription_update",
+                    "subscription_update": {
+                        "subscription": user_account.stripe_subscription_id,
+                        "features": {
+                            "proration_behavior": "create_prorations",
+                            "upgrade_downgrade_enabled": True,
+                            "payment_method_update_enabled": True,
+                            "cancellation_enabled": True,
+                        },
+                    },
+                },
+            )
 
-        return jsonify({"url": session.url}), 200
+            return jsonify({"url": session.url}), 200
 
-    except stripe.error.StripeError as e:
-        print(f"Stripe error: {str(e)}")
-        return jsonify({"error": "Failed to create portal session"}), 400
+        except stripe.error.StripeError as e:
+            print(f"Stripe error: {str(e)}")
+            return jsonify({"error": str(e)}), 400
+
     except Exception as e:
         print(f"Error creating portal session: {str(e)}")
         return jsonify({"error": "Failed to create portal session"}), 500

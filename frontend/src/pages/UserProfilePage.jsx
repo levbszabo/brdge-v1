@@ -198,16 +198,6 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageS
                                 <Button
                                     fullWidth
                                     variant="outlined"
-                                    color="primary"
-                                    onClick={onManageSubscription}
-                                    startIcon={<AutorenewIcon />}
-                                    sx={{ borderRadius: '50px' }}
-                                >
-                                    Manage Subscription
-                                </Button>
-                                <Button
-                                    fullWidth
-                                    variant="outlined"
                                     color="error"
                                     startIcon={<CancelIcon />}
                                     sx={{ borderRadius: '50px' }}
@@ -508,14 +498,35 @@ function UserProfilePage() {
 
     const handleManageSubscription = async () => {
         try {
+            setIsProcessing(true);
+            setError(null);
             const response = await api.post('/create-portal-session');
+
             if (response.data.url) {
+                console.log('Redirecting to portal:', response.data.url);
                 window.location.href = response.data.url;
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error accessing subscription management:', error);
+            setError(error.response?.data?.error || 'Failed to access subscription management');
+        } finally {
+            setIsProcessing(false);
         }
     };
+
+    // Add this useEffect to handle return from portal
+    useEffect(() => {
+        const handleReturnFromPortal = async () => {
+            const returnToProfile = localStorage.getItem('return_to_profile');
+            if (returnToProfile) {
+                localStorage.removeItem('return_to_profile');
+                await fetchUserProfile();
+                setShowSuccess(true);
+            }
+        };
+
+        handleReturnFromPortal();
+    }, []);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
