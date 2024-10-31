@@ -25,6 +25,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import PolicyPage from './pages/PolicyPage';
 import UserProfilePage from './pages/UserProfilePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -67,7 +68,7 @@ function Layout({ children }) {
 
 function App() {
   // Get the Google Client ID from the environment variable
-  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const googleClientId = REACT_APP_GOOGLE_CLIENT_ID;
 
   return (
     <GoogleOAuthProvider

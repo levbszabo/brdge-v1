@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# To invoke this script, run: source startup
+# Note: Using 'source' is important to preserve the environment changes.
+
+# Navigate to the backend directory
+if cd backend; then
+    echo "Successfully changed to the backend directory."
+else
+    echo "Error: Unable to change to the backend directory."
+    return 1  # Use return instead of exit to avoid closing the shell when sourcing
+fi
+
+# Source the environment variables from export_env
+if [ -f export_env ]; then
+    echo "Sourcing environment variables from export_env."
+    source export_env
+else
+    echo "Error: export_env file not found."
+    return 1
+fi
+
+# Activate the virtual environment
+if [ -f brdge-env/bin/activate ]; then
+    echo "Activating the virtual environment."
+    source brdge-env/bin/activate
+else
+    echo "Error: Virtual environment not found."
+    return 1
+fi
+
+# Print a message to confirm successful initialization
+echo "Startup complete. Virtual environment is activated, and you are in the backend directory."
+
+# Verify Python and pip are available
+if command -v python3 &>/dev/null && command -v pip3 &>/dev/null; then
+    echo "Python and pip are available:"
+    python3 --version
+    pip3 --version
+else
+    echo "Error: Python or pip is not available."
+    return 1
+fi
