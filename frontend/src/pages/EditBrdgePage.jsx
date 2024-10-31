@@ -14,6 +14,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LinkIcon from '@mui/icons-material/Link';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { useTTS } from '@cartesia/cartesia-js/react';
+import { CARTESIA_API_KEY, CARTESIA_VOICE_ID } from '../config';
 
 // Custom styled components
 const CustomStepLabel = styled(StepLabel)(({ theme, completed }) => ({
@@ -44,6 +46,22 @@ const StyledButton = styled(Button)(({ theme }) => ({
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     },
 }));
+
+// Add this near the top of the file, after the imports
+const ResizeObserverHandler = () => {
+    const errorHandler = (e) => {
+        if (e.message === 'ResizeObserver loop completed with undelivered notifications.') {
+            e.stopPropagation();
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener('error', errorHandler);
+        return () => window.removeEventListener('error', errorHandler);
+    }, []);
+
+    return null;
+};
 
 function EditBrdgePage() {
     const { id } = useParams();
@@ -89,6 +107,13 @@ function EditBrdgePage() {
     const mp3Recorder = useRef(new MicRecorder({ bitRate: 128 }));
     const countdownIntervalRef = useRef(null);
 
+    const tts = useTTS({
+        apiKey: CARTESIA_API_KEY,
+        sampleRate: 44100,
+    });
+
+    const [ttsStatus, setTtsStatus] = useState('idle');
+
     useEffect(() => {
         fetchBrdgeData();
         fetchGeneratedAudioFiles();
@@ -104,6 +129,22 @@ function EditBrdgePage() {
             loadAudioForSlide(currentSlide);
         }
     }, [audioUrls, currentSlide]);
+
+    useEffect(() => {
+        if (isPlaying) {
+            tts.pause();
+            setIsPlaying(false);
+            setTtsStatus('idle');
+        }
+    }, [currentSlide]);
+
+    useEffect(() => {
+        return () => {
+            if (isPlaying) {
+                tts.pause();
+            }
+        };
+    }, []);
 
     const fetchBrdgeData = async () => {
         try {
@@ -372,80 +413,43 @@ function EditBrdgePage() {
         }
     };
 
-    const handleGenerateVoice = async () => {
+    const handlePlayPause = async () => {
+        if (!brdgeData.transcripts[currentSlide - 1]) {
+            showSnackbar('No transcript available for this slide.', 'warning');
+            return;
+        }
+
+        if (isPlaying) {
+            await tts.pause();
+            setIsPlaying(false);
+            return;
+        }
+
         try {
             setIsProcessing(true);
-            if (!brdgeData.transcripts || brdgeData.transcripts.length === 0) {
-                showSnackbar('No transcripts available. Please generate transcripts first.', 'warning');
-                return;
-            }
+            setTtsStatus('Generating audio...');
 
-            let usedVoiceId = voiceId;
-
-            if (!usedVoiceId) {
-                console.log('Cloning voice');
-                const cloneResponse = await api.post(`/brdges/${id}/audio/clone_voice`, {}, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                console.log('Response from clone voice:', cloneResponse.data);
-
-                if (!cloneResponse.data || !cloneResponse.data.voice_id) {
-                    showSnackbar('Failed to clone voice. Please try again or provide a voice ID.', 'error');
-                    return;
-                }
-
-                usedVoiceId = cloneResponse.data.voice_id;
-            }
-
-            console.log('Sending request to generate voice');
-
-            const generateResponse = await api.post(`/brdges/${id}/audio/generate_voice`, { voice_id: usedVoiceId }, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+            // Buffer the audio using the hook
+            await tts.buffer({
+                model_id: "sonic-english",
+                voice: {
+                    mode: "id",
+                    id: CARTESIA_VOICE_ID,
+                },
+                transcript: brdgeData.transcripts[currentSlide - 1],
             });
 
-            console.log('Response from generate voice:', generateResponse.data);
+            // Play the buffered audio
+            await tts.play();
+            setIsPlaying(true);
+            setTtsStatus('Playing...');
 
-            if (generateResponse.data && generateResponse.data.message) {
-                showSnackbar(generateResponse.data.message, 'success');
-                await fetchGeneratedAudioFiles();
-                setCompletedSteps(prev => ({ ...prev, voiceGenerated: true }));
-                setActiveStep(prev => Math.max(prev, 3));
-            } else {
-                showSnackbar('Unexpected response from voice generation.', 'warning');
-            }
         } catch (error) {
-            console.error('Error generating voice:', error);
-            if (error.response) {
-                console.error('Error response:', error.response.data);
-                console.error('Error status:', error.response.status);
-                console.error('Error headers:', error.response.headers);
-            } else if (error.request) {
-                console.error('Error request:', error.request);
-            } else {
-                console.error('Error message:', error.message);
-            }
-            showSnackbar(`Error generating voice: ${error.response?.data?.message || error.message}`, 'error');
+            console.error('Error playing audio:', error);
+            showSnackbar('Error playing audio. Please try again.', 'error');
+            setTtsStatus('Error');
         } finally {
             setIsProcessing(false);
-        }
-    };
-
-    const handlePlayPause = () => {
-        if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play().catch(error => {
-                    console.error('Error playing audio:', error);
-                    showSnackbar('Error playing audio. Please try again.', 'error');
-                });
-            }
-            setIsPlaying(!isPlaying);
         }
     };
 
@@ -468,7 +472,10 @@ function EditBrdgePage() {
         const imageUrl = `${api.defaults.baseURL}/brdges/${id}/slides/${currentSlide}`;
         return (
             <Card variant="outlined" sx={{ mb: 4 }}>
-                <CardHeader title={`Slide ${currentSlide}`} />
+                <CardHeader
+                    title={`Slide ${currentSlide}`}
+                    subheader={tts.bufferStatus !== 'inactive' ? 'Buffering audio...' : null}
+                />
                 <CardContent>
                     <Box sx={{ textAlign: 'center' }}>
                         <CardMedia
@@ -485,7 +492,6 @@ function EditBrdgePage() {
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = 'https://via.placeholder.com/600x400?text=No+Slide+Available';
-                                console.error(`Error loading slide ${currentSlide}`);
                             }}
                         />
                     </Box>
@@ -510,8 +516,18 @@ function EditBrdgePage() {
                         >
                             <FaChevronLeft />
                         </IconButton>
-                        <IconButton onClick={handlePlayPause} aria-label={isPlaying ? 'Pause Audio' : 'Play Audio'}>
-                            {isPlaying ? <FaPause /> : <FaPlay />}
+                        <IconButton
+                            onClick={handlePlayPause}
+                            disabled={tts.bufferStatus === 'buffering'}
+                            aria-label={isPlaying ? 'Pause Audio' : 'Play Audio'}
+                        >
+                            {tts.bufferStatus === 'buffering' ? (
+                                <CircularProgress size={24} />
+                            ) : isPlaying ? (
+                                <FaPause />
+                            ) : (
+                                <FaPlay />
+                            )}
                         </IconButton>
                         <IconButton
                             onClick={() => setCurrentSlide(prev => Math.min(prev + 1, brdgeData.numSlides))}
@@ -521,22 +537,6 @@ function EditBrdgePage() {
                             <FaChevronRight />
                         </IconButton>
                     </Box>
-                    {currentAudio && (
-                        <Box sx={{ mt: 2 }}>
-                            <input
-                                type="range"
-                                min={0}
-                                max={audioDuration}
-                                value={currentTime}
-                                onChange={handleSeek}
-                                style={{ width: '100%' }}
-                            />
-                            <Typography variant="caption" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span>{formatTime(currentTime)}</span>
-                                <span>{formatTime(audioDuration)}</span>
-                            </Typography>
-                        </Box>
-                    )}
                 </CardContent>
             </Card>
         );
@@ -630,36 +630,22 @@ function EditBrdgePage() {
                 </AccordionSummary>
                 <AccordionDetails>
                     <Typography variant="body2" sx={{ mb: 2 }}>
-                        Generate voice output based on your transcripts.
+                        Click the play button under each slide to hear the generated voice.
                     </Typography>
-                    <TextField
-                        label="Voice ID (optional)"
-                        variant="outlined"
-                        fullWidth
-                        value={voiceId}
-                        onChange={(e) => setVoiceId(e.target.value)}
-                        sx={{ mb: 1 }}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <Tooltip title="Enter a specific voice ID or leave blank for default">
-                                        <HelpOutlineIcon color="action" />
-                                    </Tooltip>
-                                </InputAdornment>
-                            ),
-                        }}
-                    />
-                    <Tooltip title="Generate Voice">
-                        <span>
-                            <StyledButton
-                                onClick={handleGenerateVoice}
-                                fullWidth
-                                disabled={isProcessing}
-                            >
-                                {isProcessing ? <CircularProgress size={20} /> : 'Generate Voice'}
-                            </StyledButton>
-                        </span>
-                    </Tooltip>
+                    <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" color="textSecondary">
+                            TTS Status: {tts.playbackStatus} | Buffer: {tts.bufferStatus}
+                        </Typography>
+                        {tts.bufferStatus === 'buffering' && (
+                            <LinearProgress
+                                variant="indeterminate"
+                                sx={{ mt: 1 }}
+                            />
+                        )}
+                    </Box>
+                    <Typography variant="body2" color="info.main">
+                        Note: Audio is generated on-demand when you click play on each slide.
+                    </Typography>
                 </AccordionDetails>
             </Accordion>
 
@@ -694,6 +680,7 @@ function EditBrdgePage() {
 
     return (
         <Box sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
+            <ResizeObserverHandler />
             <Container maxWidth="lg">
                 <StyledCard sx={{ p: { xs: 2, md: 4 } }}>
                     <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
@@ -788,23 +775,6 @@ function EditBrdgePage() {
                     </Grid>
                 </StyledCard>
             </Container>
-
-            {/* Audio Element */}
-            {currentAudio && (
-                <audio
-                    ref={audioRef}
-                    src={currentAudio}
-                    onLoadedMetadata={(e) => setAudioDuration(e.target.duration)}
-                    onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
-                    onEnded={() => setIsPlaying(false)}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onError={(e) => {
-                        console.error('Audio error:', e);
-                        showSnackbar('Error loading audio. Please try again.', 'error');
-                    }}
-                />
-            )}
 
             {/* Recording Countdown Dialog */}
             <Dialog
