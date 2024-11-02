@@ -240,9 +240,9 @@ def generate_audio_for_page(page_number, text, outdir, voice_id):
         "text": text,
         "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-            "stability": 0.89,
-            "similarity_boost": 0.91,
-            "style": 0.05,
+            "stability": 0.50,
+            "similarity_boost": 0.80,
+            "style": 0.0,
             "use_speaker_boost": True,
         },
     }
