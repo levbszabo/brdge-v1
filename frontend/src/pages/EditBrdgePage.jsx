@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import MicRecorder from 'mic-recorder-to-mp3';
 import {
     Grid, Card, CardHeader, CardContent, CardMedia, Typography, Button, TextField, Box,
-    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled, LinearProgress, Accordion, AccordionSummary, AccordionDetails, InputAdornment, useTheme, useMediaQuery, Container
+    Stepper, Step, StepLabel, CircularProgress, Paper, Switch, FormControlLabel, IconButton, Dialog, DialogContent, DialogContentText, Backdrop, Tooltip, styled, LinearProgress, Accordion, AccordionSummary, AccordionDetails, InputAdornment, useTheme, useMediaQuery, Container, Avatar, Tabs, Tab
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -16,6 +16,11 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useTTS } from '@cartesia/cartesia-js/react';
 import { CARTESIA_API_KEY, CARTESIA_VOICE_ID } from '../config';
+import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
+import SettingsIcon from '@mui/icons-material/Settings';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import { createClient, LiveTranscriptionEvents } from "@deepgram/sdk";
+import { DEEPGRAM_API_KEY } from '../config';
 
 // Custom styled components
 const CustomStepLabel = styled(StepLabel)(({ theme, completed }) => ({
@@ -114,6 +119,17 @@ function EditBrdgePage() {
 
     const [ttsStatus, setTtsStatus] = useState('idle');
 
+    const [activeTab, setActiveTab] = useState(0);
+    const [agentSettings, setAgentSettings] = useState({
+        questions: [],
+        settings: {},
+        knowledgeBase: ''
+    });
+
+    const [liveTranscript, setLiveTranscript] = useState('');
+    const deepgramClientRef = useRef(null);
+    const liveTranscriptionRef = useRef(null);
+
     useEffect(() => {
         fetchBrdgeData();
         fetchGeneratedAudioFiles();
@@ -142,6 +158,15 @@ function EditBrdgePage() {
         return () => {
             if (isPlaying) {
                 tts.pause();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        deepgramClientRef.current = createClient(DEEPGRAM_API_KEY);
+        return () => {
+            if (liveTranscriptionRef.current) {
+                liveTranscriptionRef.current.requestClose();
             }
         };
     }, []);
@@ -231,7 +256,7 @@ function EditBrdgePage() {
             setIsRecordingDialogOpen(true);
             countdownIntervalRef.current = setInterval(() => {
                 setCountdown((prev) => {
-                    if (prev === 1) {
+                    if (prev <= 1) {
                         clearInterval(countdownIntervalRef.current);
                         setIsRecordingDialogOpen(false);
                         startRecording();
@@ -243,23 +268,131 @@ function EditBrdgePage() {
         }
     };
 
-    const startRecording = () => {
-        mp3Recorder.current
-            .start()
-            .then(() => {
-                setIsRecording(true);
-                showSnackbar('Recording started...', 'info');
-                recordingIntervalRef.current = setInterval(() => {
-                    setRecordingTime((prevTime) => prevTime + 1);
-                }, 1000);
-            })
-            .catch((error) => {
-                console.error('Error starting recording:', error);
-                showSnackbar('Microphone access is required to record audio.', 'error');
+    const startRecording = async () => {
+        try {
+            console.log('Starting recording and transcription...');
+
+            liveTranscriptionRef.current = deepgramClientRef.current.listen.live({
+                model: "nova-2",
+                language: "en",
+                punctuate: true,
+                smart_format: true,
+                interim_results: true
             });
+
+            liveTranscriptionRef.current.on(LiveTranscriptionEvents.Open, async () => {
+                console.log('Deepgram connection opened');
+
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    console.log('Got audio stream');
+
+                    // Start MP3 recording
+                    await mp3Recorder.current.start();
+                    setIsRecording(true);
+                    showSnackbar('Recording started...', 'info');
+                    recordingIntervalRef.current = setInterval(() => {
+                        setRecordingTime((prevTime) => prevTime + 1);
+                    }, 1000);
+
+                    // Modern audio processing
+                    const audioContext = new AudioContext();
+                    const source = audioContext.createMediaStreamSource(stream);
+
+                    // Create buffer for processing
+                    const bufferSize = 2048;
+                    const numberOfInputChannels = 1;
+                    const numberOfOutputChannels = 1;
+
+                    if (audioContext.audioWorklet) {
+                        // Use AudioWorklet if supported
+                        await audioContext.audioWorklet.addModule('/audioProcessor.js');
+                        const audioProcessor = new AudioWorkletNode(audioContext, 'audio-processor');
+
+                        audioProcessor.port.onmessage = (event) => {
+                            if (event.data && liveTranscriptionRef.current) {
+                                liveTranscriptionRef.current.send(event.data);
+                            }
+                        };
+
+                        source.connect(audioProcessor);
+                        audioProcessor.connect(audioContext.destination);
+                    } else {
+                        // Fallback to ScriptProcessor
+                        const processor = audioContext.createScriptProcessor(
+                            bufferSize,
+                            numberOfInputChannels,
+                            numberOfOutputChannels
+                        );
+
+                        processor.onaudioprocess = (e) => {
+                            if (liveTranscriptionRef.current) {
+                                const inputData = e.inputBuffer.getChannelData(0);
+                                const pcmData = new Int16Array(inputData.length);
+                                for (let i = 0; i < inputData.length; i++) {
+                                    pcmData[i] = Math.max(-32768, Math.min(32767, Math.floor(inputData[i] * 32768)));
+                                }
+                                liveTranscriptionRef.current.send(pcmData.buffer);
+                            }
+                        };
+
+                        source.connect(processor);
+                        processor.connect(audioContext.destination);
+                    }
+                } catch (err) {
+                    console.error('Error accessing microphone:', err);
+                    showSnackbar('Error accessing microphone', 'error');
+                }
+            });
+
+            liveTranscriptionRef.current.on(LiveTranscriptionEvents.Transcript, (data) => {
+                console.log('Received transcript:', data);
+                if (data.channel?.alternatives?.[0]?.transcript) {
+                    const transcript = data.channel.alternatives[0].transcript;
+                    console.log('Processing transcript:', transcript);
+
+                    setLiveTranscript(prev => {
+                        // Only add new text if it's not empty
+                        if (transcript.trim()) {
+                            // If it's a new sentence (starts with capital), add newline
+                            const shouldAddNewline =
+                                prev.length > 0 &&
+                                transcript.match(/^[A-Z]/) &&
+                                !prev.endsWith('\n');
+
+                            const newText = shouldAddNewline
+                                ? `\n${transcript}`
+                                : `${prev ? ' ' : ''}${transcript}`;
+
+                            console.log('Updated transcript:', prev + newText);
+                            return prev + newText;
+                        }
+                        return prev;
+                    });
+                }
+            });
+
+            liveTranscriptionRef.current.on(LiveTranscriptionEvents.Error, error => {
+                console.error('Deepgram error:', error);
+                showSnackbar('Transcription error occurred', 'error');
+            });
+
+            liveTranscriptionRef.current.on(LiveTranscriptionEvents.Close, () => {
+                console.log('Deepgram connection closed');
+            });
+
+        } catch (error) {
+            console.error('Error starting recording:', error);
+            showSnackbar('Error starting recording and transcription', 'error');
+        }
     };
 
     const stopRecording = () => {
+        // Close Deepgram connection
+        if (liveTranscriptionRef.current) {
+            liveTranscriptionRef.current.requestClose();
+        }
+
         mp3Recorder.current
             .stop()
             .getMp3()
@@ -268,6 +401,11 @@ function EditBrdgePage() {
                     type: blob.type,
                     lastModified: Date.now(),
                 });
+
+                // Update the transcript for the current slide
+                handleTranscriptChange(currentSlide - 1, liveTranscript.trim());
+                setLiveTranscript(''); // Clear live transcript
+
                 handleUploadAudio({ target: { files: [audioFile] } });
                 setIsRecording(false);
                 clearInterval(recordingIntervalRef.current);
@@ -401,13 +539,25 @@ function EditBrdgePage() {
     const handleSaveTranscripts = async () => {
         try {
             setIsProcessing(true);
-            await api.put(`/brdges/${id}/transcripts/aligned`, { transcripts: brdgeData.transcripts });
+
+            // Format the transcripts data properly
+            const transcriptsData = {
+                image_transcripts: brdgeData.transcripts.map((transcript, index) => ({
+                    slide_number: index + 1,
+                    transcript: transcript || ''
+                }))
+            };
+
+            await api.put(`/brdges/${id}/transcripts/aligned`, transcriptsData);
             setIsTranscriptModified(false);
             setCompletedSteps(prev => ({ ...prev, transcriptsSaved: true }));
             showSnackbar('Transcripts saved successfully.', 'success');
         } catch (error) {
             console.error('Error saving transcripts:', error);
-            showSnackbar('Error saving transcripts.', 'error');
+            showSnackbar(
+                error.response?.data?.error || 'Error saving transcripts. Please try again.',
+                'error'
+            );
         } finally {
             setIsProcessing(false);
         }
@@ -678,138 +828,299 @@ function EditBrdgePage() {
         showSnackbar('Shareable link copied to clipboard!', 'success');
     };
 
-    return (
-        <Box sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh', py: 4 }}>
-            <ResizeObserverHandler />
-            <Container maxWidth="lg">
-                <StyledCard sx={{ p: { xs: 2, md: 4 } }}>
-                    <Typography variant="h4" gutterBottom sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
-                        Edit Brdge
-                    </Typography>
+    const renderHeader = () => (
+        <Box sx={{
+            p: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+        }}>
+            <Typography variant="h5">
+                {brdgeData.name || 'Untitled Brdge'}
+            </Typography>
+            <Button
+                variant="contained"
+                onClick={handleSaveTranscripts}
+                startIcon={<SaveIcon />}
+                disabled={!isTranscriptModified}
+            >
+                Save Changes
+            </Button>
+        </Box>
+    );
 
-                    <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', mb: 2 }}>
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={brdgeData.isShareable}
-                                    onChange={handleToggleShareable}
-                                    name="shareable"
-                                    color="primary"
-                                />
-                            }
-                            label="Make Brdge Shareable"
+    const renderMainContent = () => (
+        <Grid container spacing={2}>
+            {/* Left Column - Slides */}
+            <Grid item xs={12} md={8}>
+                <Box sx={{ mb: 2 }}>
+                    <TextField
+                        fullWidth
+                        label="Brdge Name"
+                        value={brdgeData.name}
+                        onChange={(e) => setBrdgeData(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                </Box>
+                <Paper sx={{ p: 2, mb: 2 }}>
+                    {/* Slide Display */}
+                    <CardMedia
+                        component="img"
+                        image={`${api.defaults.baseURL}/brdges/${id}/slides/${currentSlide}`}
+                        alt={`Slide ${currentSlide}`}
+                        sx={{ maxHeight: 400, objectFit: 'contain' }}
+                    />
+                    {/* Slide Controls */}
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        mt: 2,
+                        borderTop: 1,
+                        borderBottom: 1,
+                        borderColor: 'divider',
+                        py: 1
+                    }}>
+                        <IconButton onClick={() => setCurrentSlide(prev => Math.max(prev - 1, 1))}>
+                            <FaChevronLeft />
+                        </IconButton>
+                        <IconButton onClick={handlePlayPause}>
+                            {isPlaying ? <FaPause /> : <FaPlay />}
+                        </IconButton>
+                        <IconButton onClick={() => setCurrentSlide(prev => Math.min(prev + 1, brdgeData.numSlides))}>
+                            <FaChevronRight />
+                        </IconButton>
+                    </Box>
+                    {/* Transcript Area */}
+                    <Box sx={{ mt: 2 }}>
+                        <TextField
+                            fullWidth
+                            multiline
+                            rows={6}
+                            label={isRecording ? "Live Transcription" : "Transcript"}
+                            value={isRecording ? liveTranscript : (brdgeData.transcripts[currentSlide - 1] || '')}
+                            onChange={(e) => {
+                                if (!isRecording) {
+                                    handleTranscriptChange(currentSlide - 1, e.target.value);
+                                }
+                            }}
+                            disabled={isRecording}
+                            placeholder={isRecording ? "Speaking..." : "Enter transcript..."}
+                            sx={{
+                                '& .MuiInputBase-input': {
+                                    color: isRecording ? theme.palette.primary.main : 'inherit',
+                                    fontWeight: isRecording ? 500 : 400,
+                                    lineHeight: '1.5',
+                                    transition: 'all 0.2s ease',
+                                },
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: isRecording ? 'rgba(0, 0, 0, 0.02)' : 'transparent',
+                                    transition: 'all 0.3s ease',
+                                },
+                                '& .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: isRecording ? theme.palette.primary.main : 'rgba(0, 0, 0, 0.23)',
+                                    borderWidth: isRecording ? 2 : 1,
+                                },
+                                '& .MuiInputBase-root': {
+                                    maxHeight: '300px',  // Increased height
+                                    overflow: 'auto',
+                                    scrollBehavior: 'smooth',
+                                },
+                            }}
+                            InputProps={{
+                                endAdornment: isRecording && (
+                                    <InputAdornment position="end">
+                                        <CircularProgress size={20} color="primary" />
+                                    </InputAdornment>
+                                ),
+                                // Auto-scroll to bottom
+                                inputRef: (input) => {
+                                    if (input && isRecording) {
+                                        setTimeout(() => {
+                                            input.scrollTop = input.scrollHeight;
+                                        }, 100);
+                                    }
+                                },
+                            }}
                         />
-                        {brdgeData.isShareable && shareableLink && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', ml: isMobile ? 0 : 2, mt: isMobile ? 2 : 0, width: isMobile ? '100%' : 'auto' }}>
-                                <TextField
-                                    value={shareableLink}
-                                    variant="outlined"
-                                    size="small"
-                                    fullWidth={isMobile}
-                                    InputProps={{
-                                        readOnly: true,
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <LinkIcon />
-                                            </InputAdornment>
-                                        ),
-                                    }}
-                                    sx={{ mr: 1 }}
-                                />
-                                <IconButton onClick={copyShareableLink} size="small">
-                                    <ContentCopyIcon />
-                                </IconButton>
-                            </Box>
+                        {isRecording && (
+                            <Typography
+                                variant="caption"
+                                color="primary"
+                                sx={{
+                                    display: 'block',
+                                    mt: 1,
+                                    textAlign: 'right',
+                                    animation: 'pulse 1.5s infinite',
+                                    '@keyframes pulse': {
+                                        '0%': { opacity: 0.6 },
+                                        '50%': { opacity: 1 },
+                                        '100%': { opacity: 0.6 },
+                                    },
+                                }}
+                            >
+                                Recording in progress...
+                            </Typography>
                         )}
                     </Box>
+                </Paper>
+            </Grid>
 
-                    <Grid container spacing={4}>
-                        <Grid item xs={12} md={8}>
-                            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <TextField
-                                    label="Brdge Name"
-                                    variant="outlined"
-                                    fullWidth
-                                    value={brdgeData.name}
-                                    onChange={(e) => setBrdgeData(prev => ({ ...prev, name: e.target.value }))}
-                                    required
-                                />
-                                <StyledButton variant="contained" component="label" startIcon={<CloudUploadIcon />}>
-                                    Upload New Presentation (PDF)
-                                    <input
-                                        type="file"
-                                        accept=".pdf"
-                                        hidden
-                                        onChange={(e) => setPresentation(e.target.files[0])}
-                                    />
-                                </StyledButton>
-                                {!presentation && (
-                                    <Typography variant="body2" color="textSecondary">
-                                        Current presentation will be used if no new file is selected.
-                                    </Typography>
-                                )}
-                                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                                    <StyledButton
-                                        type="submit"
-                                        variant="contained"
-                                        color="primary"
-                                        disabled={isProcessing}
-                                        startIcon={isProcessing ? <CircularProgress size={20} /> : <SaveIcon />}
-                                    >
-                                        {isProcessing ? 'Updating...' : 'Update Brdge'}
-                                    </StyledButton>
-                                    <StyledButton
-                                        variant="outlined"
-                                        color="secondary"
-                                        onClick={() => navigate(-1)}
-                                    >
-                                        Cancel
-                                    </StyledButton>
-                                </Box>
-                            </Box>
-                            {brdgeData.numSlides > 0 && renderSlides()}
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            {renderToolbar()}
-                        </Grid>
-                    </Grid>
-                </StyledCard>
-            </Container>
+            {/* Right Column - Controls */}
+            <Grid item xs={12} md={4}>
+                {/* Record Button */}
+                <Button
+                    fullWidth
+                    variant="contained"
+                    color="primary"
+                    onClick={handleRecordWalkthrough}
+                    startIcon={isRecording ? <FaStop /> : <FaMicrophone />}
+                    sx={{ mb: 2 }}
+                >
+                    {isRecording ? 'Stop Recording' : 'Record Walkthrough'}
+                </Button>
 
-            {/* Recording Countdown Dialog */}
+                {/* Settings Card */}
+                <Paper sx={{ p: 2, mb: 2 }}>
+                    <Typography variant="h6" gutterBottom>Settings</Typography>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={brdgeData.isShareable}
+                                onChange={handleToggleShareable}
+                            />
+                        }
+                        label="Make it shareable (public)"
+                    />
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={voiceId === CARTESIA_VOICE_ID}
+                                onChange={(e) => setVoiceId(e.target.checked ? CARTESIA_VOICE_ID : '')}
+                            />
+                        }
+                        label="Clone voice by default"
+                    />
+                </Paper>
+
+                {/* Agent Config */}
+                <Paper sx={{ p: 2 }}>
+                    <Typography variant="h6" gutterBottom>Agent Config</Typography>
+                    <Tabs
+                        value={activeTab}
+                        onChange={(e, newValue) => setActiveTab(newValue)}
+                        variant="fullWidth"
+                    >
+                        <Tab icon={<QuestionAnswerIcon />} label="Questions" />
+                        <Tab icon={<SettingsIcon />} label="Settings" />
+                        <Tab icon={<MenuBookIcon />} label="Knowledge" />
+                    </Tabs>
+                    <Box sx={{ mt: 2 }}>
+                        {activeTab === 0 && (
+                            <Typography>
+                                Configure questions for users to answer
+                            </Typography>
+                        )}
+                        {activeTab === 1 && (
+                            <Typography>
+                                Configure agent settings
+                            </Typography>
+                        )}
+                        {activeTab === 2 && (
+                            <Typography>
+                                Configure knowledge base
+                            </Typography>
+                        )}
+                    </Box>
+                </Paper>
+
+                {/* Bridge Icon */}
+                <Box sx={{
+                    mt: 2,
+                    display: 'flex',
+                    justifyContent: 'center'
+                }}>
+                    <Avatar
+                        sx={{
+                            width: 60,
+                            height: 60,
+                            bgcolor: theme.palette.primary.main
+                        }}
+                    >
+                        B
+                    </Avatar>
+                </Box>
+            </Grid>
+        </Grid>
+    );
+
+    return (
+        <Container maxWidth="xl" sx={{ py: 4 }}>
+            <Paper sx={{ overflow: 'hidden' }}>
+                {renderHeader()}
+                <Box sx={{ p: 2 }}>
+                    {renderMainContent()}
+                </Box>
+            </Paper>
+
+            {/* Keep existing dialogs */}
             <Dialog
                 open={isRecordingDialogOpen}
-                onClose={() => { if (!isRecording) setIsRecordingDialogOpen(false); }}
+                onClose={() => {
+                    if (!isRecording) {
+                        setIsRecordingDialogOpen(false);
+                        clearInterval(countdownIntervalRef.current);
+                        setCountdown(3);
+                    }
+                }}
                 aria-labelledby="recording-dialog-title"
-                aria-describedby="recording-dialog-description"
             >
                 <DialogContent>
-                    <DialogContentText id="recording-dialog-description">
-                        {countdown > 0 ? `Recording starts in ${countdown}...` : 'Recording in progress...'}
-                    </DialogContentText>
-                    {isRecording && (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                            <Button
-                                variant="contained"
-                                color="error"
-                                startIcon={<FaStop />}
-                                onClick={stopRecording}
-                            >
-                                Stop Recording
-                            </Button>
+                    {countdown > 0 ? (
+                        <Typography variant="h4" align="center">
+                            Recording starts in {countdown}...
+                        </Typography>
+                    ) : (
+                        <Box>
+                            <Typography variant="h6" align="center">
+                                Recording in progress...
+                            </Typography>
+                            {isRecording && (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                    <Button
+                                        variant="contained"
+                                        color="error"
+                                        startIcon={<FaStop />}
+                                        onClick={stopRecording}
+                                    >
+                                        Stop Recording
+                                    </Button>
+                                </Box>
+                            )}
                         </Box>
                     )}
                 </DialogContent>
             </Dialog>
 
-            {/* Backdrop for Graying Out Screen During Countdown */}
             <Backdrop
-                sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
-                open={isRecordingDialogOpen && countdown > 0}
+                sx={{
+                    color: '#fff',
+                    zIndex: (theme) => theme.zIndex.drawer + 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2
+                }}
+                open={countdown > 0}
             >
-                <Typography variant="h4">{`Recording starts in ${countdown}`}</Typography>
+                <Typography variant="h2">
+                    {countdown}
+                </Typography>
+                <Typography variant="h5">
+                    Get ready to record...
+                </Typography>
             </Backdrop>
-        </Box>
+        </Container>
     );
 }
 
