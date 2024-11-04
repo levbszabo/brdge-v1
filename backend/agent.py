@@ -35,23 +35,21 @@ def load_and_resize_image(image_path, size=(100, 100)):
 
 async def entrypoint(ctx: JobContext):
     # Use the example URL for the image
-    image_url = "https://t1.gstatic.com/images?q=tbn:ANd9GcQQn6_Hz9zTckXYuOa1biiMhulnHv6pKtadAFcdg79yocrL3Y29"
+    image_url = "https://levbszabo.github.io/images/IMG_6649.jpg"
 
     # Create a ChatImage instance with the URL
     chat_image = ChatImage(image=image_url)
 
-    initial_ctx = (
-        llm.ChatContext()
-        .append(
-            role="system",
-            text=("Chat with the user in a friendly way"),
-        )
-        .append(
-            role="user",
-            text="Here is an image for context.",
-            images=[chat_image],
-        )
+    initial_ctx = llm.ChatContext().append(
+        role="system",
+        text=("Chat with the user in a friendly way"),
     )
+    initial_ctx = initial_ctx.append(
+        role="user",
+        text="Here is an image for context.",
+        images=[chat_image],
+    )
+    logger.info(f"Initial context: {initial_ctx}")
 
     logger.info(f"connecting to room {ctx.room.name}")
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
