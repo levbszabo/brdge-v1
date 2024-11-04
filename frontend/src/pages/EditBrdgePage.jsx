@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import {
-    Grid, Card, CardHeader, CardContent, CardMedia, Typography, Button, TextField, Box,
+    Card, CardHeader, CardContent, CardMedia, Typography, Button, TextField, Box,
     Container, useTheme, styled
 } from '@mui/material';
 import { FaMicrophone, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
-import Room from './Room';
+import {
+    LiveKitRoom,
+    useVoiceAssistant,
+    BarVisualizer,
+    RoomAudioRenderer,
+    VoiceAssistantControlBar,
+    DisconnectButton,
+} from "@livekit/components-react";
+
+const serverUrl = 'wss://brdge-bgs5ijzf.livekit.cloud';
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -31,7 +40,6 @@ const StyledButton = styled(Button)(({ theme }) => ({
 
 function EditBrdgePage() {
     const { id } = useParams();
-    const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
     const theme = useTheme();
 
@@ -42,6 +50,8 @@ function EditBrdgePage() {
     });
     const [currentSlide, setCurrentSlide] = useState(1);
     const [isRoomActive, setIsRoomActive] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const [connectionDetails, setConnectionDetails] = useState(null);
 
     useEffect(() => {
         fetchBrdgeData();
@@ -62,9 +72,42 @@ function EditBrdgePage() {
         }
     };
 
-    const handleRecordWalkthrough = () => {
-        console.log("Activating room...");
-        setIsRoomActive(true);
+    const handleRecordWalkthrough = useCallback(async () => {
+        try {
+            const response = await api.get('/getToken');
+            const token = response.data;
+            setConnectionDetails({
+                participantToken: token,
+                serverUrl: serverUrl,
+            });
+            setIsRoomActive(true);
+            setTranscript(prev => prev + "\n[System] Starting recording session...");
+        } catch (error) {
+            console.error('Error fetching token:', error);
+            showSnackbar('Error starting recording session.', 'error');
+        }
+    }, [showSnackbar]);
+
+    const VoiceAssistantHandler = () => {
+        const { state, audioTrack } = useVoiceAssistant();
+
+        useEffect(() => {
+            if (state === "speaking") {
+                setTranscript(prev => prev + "\n[Assistant] Speaking...");
+            }
+        }, [state]);
+
+        return (
+            <Box sx={{ height: '60px', mt: 2 }}>
+                <BarVisualizer
+                    state={state}
+                    barCount={5}
+                    trackRef={audioTrack}
+                    className="agent-visualizer"
+                    options={{ minHeight: 24 }}
+                />
+            </Box>
+        );
     };
 
     const renderSlides = () => {
@@ -88,7 +131,6 @@ function EditBrdgePage() {
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = 'https://via.placeholder.com/600x400?text=No+Slide+Available';
-                                console.error(`Error loading slide ${currentSlide}`);
                             }}
                         />
                     </Box>
@@ -99,7 +141,9 @@ function EditBrdgePage() {
                             fullWidth
                             minRows={4}
                             variant="outlined"
-                            placeholder={`Enter transcript for slide ${currentSlide}...`}
+                            value={transcript}
+                            onChange={(e) => setTranscript(e.target.value)}
+                            placeholder="Start recording to begin conversation..."
                         />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
@@ -135,6 +179,7 @@ function EditBrdgePage() {
                         <StyledButton
                             onClick={handleRecordWalkthrough}
                             fullWidth
+                            disabled={isRoomActive}
                             sx={{
                                 mb: 1,
                                 backgroundColor: theme.palette.primary.main,
@@ -145,7 +190,7 @@ function EditBrdgePage() {
                             }}
                             startIcon={<FaMicrophone />}
                         >
-                            Start Recording
+                            {isRoomActive ? 'Recording in Progress' : 'Start Recording'}
                         </StyledButton>
                     </Box>
 
@@ -153,41 +198,23 @@ function EditBrdgePage() {
                 </StyledCard>
             </Container>
 
-            {/* Render Room in a modal or overlay */}
-            {isRoomActive && (
-                <Box
-                    sx={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        zIndex: 1000,
-                    }}
+            {/* LiveKit Room */}
+            {isRoomActive && connectionDetails && (
+                <LiveKitRoom
+                    token={connectionDetails.participantToken}
+                    serverUrl={connectionDetails.serverUrl}
+                    connect={true}
+                    audio={true}
+                    video={false}
+                    onDisconnected={() => setIsRoomActive(false)}
                 >
-                    <Box
-                        sx={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: '80%',
-                            maxWidth: '800px',
-                            bgcolor: 'background.paper',
-                            borderRadius: '8px',
-                            p: 4,
-                        }}
-                    >
-                        <Room />
-                        <Button
-                            onClick={() => setIsRoomActive(false)}
-                            sx={{ position: 'absolute', top: 8, right: 8 }}
-                        >
-                            Close
-                        </Button>
-                    </Box>
-                </Box>
+                    <RoomAudioRenderer />
+                    <VoiceAssistantHandler />
+                    <VoiceAssistantControlBar controls={{ leave: false }} />
+                    <DisconnectButton onClick={() => setIsRoomActive(false)}>
+                        Close
+                    </DisconnectButton>
+                </LiveKitRoom>
             )}
         </Box>
     );
