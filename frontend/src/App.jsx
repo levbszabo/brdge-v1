@@ -26,6 +26,7 @@ import PolicyPage from './pages/PolicyPage';
 import UserProfilePage from './pages/UserProfilePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
+import Room from './pages/Room'; // Import the Room component
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -125,6 +126,7 @@ function App() {
                   }
                 />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                <Route path="/room" element={<Room />} /> {/* Add the Room route */}
               </Routes>
             </Layout>
           </Router>

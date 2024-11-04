@@ -1542,3 +1542,25 @@ def create_portal_session(user):
     except Exception as e:
         print(f"Error creating portal session: {str(e)}")
         return jsonify({"error": "Failed to create portal session"}), 500
+
+
+import os
+from livekit import api as lk_api
+
+
+@app.route("/api/getToken")
+def getToken():
+    token = (
+        lk_api.AccessToken(
+            os.getenv("LIVEKIT_API_KEY"), os.getenv("LIVEKIT_API_SECRET")
+        )
+        .with_identity("identity")
+        .with_name("my name")
+        .with_grants(
+            lk_api.VideoGrants(
+                room_join=True,
+                room="my-room",
+            )
+        )
+    )
+    return token.to_jwt()
