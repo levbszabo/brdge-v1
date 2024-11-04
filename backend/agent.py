@@ -25,25 +25,32 @@ def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
 
 
-def load_image_as_base64(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
+def load_and_resize_image(image_path, size=(100, 100)):
+    with Image.open(image_path) as img:
+        img = img.resize(size, Image.LANCZOS)
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 
 async def entrypoint(ctx: JobContext):
-    # Load the image and convert it to a base64 string
-    image_base64 = load_image_as_base64("BRDGE.png")
+    # Use the example URL for the image
+    image_url = "https://t1.gstatic.com/images?q=tbn:ANd9GcQQn6_Hz9zTckXYuOa1biiMhulnHv6pKtadAFcdg79yocrL3Y29"
 
-    # Create a ChatImage instance
-    chat_image = ChatImage(image=image_base64)
+    # Create a ChatImage instance with the URL
+    chat_image = ChatImage(image=image_url)
 
-    initial_ctx = llm.ChatContext().append(
-        role="system",
-        text=(
-            "You are a voice assistant named Brdge, your job is to patiently ingest what the user is telling you about the image in the context - extract relevant questions"
-            "At each point of talking you should attempt to rank the questions by relevance and 'confidence' the more relevant and less confident you are in the answer you should ask it"
-        ),
-        images=[chat_image],
+    initial_ctx = (
+        llm.ChatContext()
+        .append(
+            role="system",
+            text=("Chat with the user in a friendly way"),
+        )
+        .append(
+            role="user",
+            text="Here is an image for context.",
+            images=[chat_image],
+        )
     )
 
     logger.info(f"connecting to room {ctx.room.name}")
@@ -53,10 +60,6 @@ async def entrypoint(ctx: JobContext):
     participant = await ctx.wait_for_participant()
     logger.info(f"starting voice assistant for participant {participant.identity}")
 
-    # This project is configured to use Deepgram STT, OpenAI LLM and TTS plugins
-    # Other great providers exist like Cartesia and ElevenLabs
-    # Learn more and pick the best one for your app:
-    # https://docs.livekit.io/agents/plugins
     assistant = VoicePipelineAgent(
         vad=ctx.proc.userdata["vad"],
         stt=deepgram.STT(),
@@ -67,7 +70,6 @@ async def entrypoint(ctx: JobContext):
 
     assistant.start(ctx.room, participant)
 
-    # The agent should be polite and greet the user when it joins :)
     await assistant.say(
         "Hey bro hows it going? Happy to see what you have for me today",
         allow_interruptions=True,
