@@ -7,11 +7,11 @@ import {
     AgentState,
     DisconnectButton,
 } from "@livekit/components-react";
-import { React, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useKrispNoiseFilter } from "@livekit/components-react/krisp";
 import { NoAgentNotification } from "../components/NoAgentNotification";
-import { CloseIcon } from '../components/CloseIcon'; // Import the CloseIcon component
+import { CloseIcon } from '../components/CloseIcon';
 import { api } from '../api';
 
 const serverUrl = 'wss://brdge-bgs5ijzf.livekit.cloud';
@@ -23,7 +23,7 @@ export default function Room() {
     const onConnectButtonClicked = useCallback(async () => {
         try {
             const response = await api.get('/getToken');
-            const token = response.data; // Assuming the token is returned in the response data
+            const token = response.data;
             updateConnectionDetails({
                 participantToken: token,
                 serverUrl: serverUrl,
@@ -83,8 +83,10 @@ function SimpleVoiceAssistant({ onStateChange }) {
 function ControlBar({ onConnectButtonClicked, agentState }) {
     const krisp = useKrispNoiseFilter();
     useEffect(() => {
-        krisp.setNoiseFilterEnabled(true);
-    }, [krisp]);
+        if (agentState === "connected") {
+            krisp.setNoiseFilterEnabled(true);
+        }
+    }, [krisp, agentState]);
 
     return (
         <div className="relative h-[100px]">
