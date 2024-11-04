@@ -89,13 +89,13 @@ function EditBrdgePage() {
     }, [showSnackbar]);
 
     const VoiceAssistantHandler = () => {
-        const { state, audioTrack } = useVoiceAssistant();
+        const { state, audioTrack, transcript: assistantTranscript } = useVoiceAssistant();
 
         useEffect(() => {
-            if (state === "speaking") {
-                setTranscript(prev => prev + "\n[Assistant] Speaking...");
+            if (assistantTranscript) {
+                setTranscript(prev => prev + `\n[Assistant] ${assistantTranscript}`);
             }
-        }, [state]);
+        }, [assistantTranscript]);
 
         return (
             <Box sx={{ height: '60px', mt: 2 }}>
