@@ -12,6 +12,7 @@ from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import openai, deepgram, silero, cartesia
 from livekit.agents.llm import ChatImage
 import json
+import asyncio
 
 load_dotenv(dotenv_path=".env.local")
 logger = logging.getLogger("voice-agent")
@@ -25,11 +26,9 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"connecting to room {ctx.room.name}")
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
-    # Wait for the first participant to connect
     participant = await ctx.wait_for_participant()
     logger.info(f"starting voice assistant for participant {participant.identity}")
 
-    # Initialize with empty context
     initial_ctx = llm.ChatContext().append(
         role="system",
         text=(
@@ -47,15 +46,48 @@ async def entrypoint(ctx: JobContext):
         chat_ctx=initial_ctx,
     )
 
-    # Set up data message handler for slide changes
-    async def handle_data_message(msg):
+    # Set up transcript handler
+    async def on_transcript(text: str):
         try:
-            data = json.loads(msg.payload.decode())
+            data = {
+                "type": "transcript",
+                "text": text,
+                "isUser": True,
+                "timestamp": None,
+            }
+            await ctx.room.local_participant.publish_data(json.dumps(data).encode())
+            logger.info(f"Published transcript: {text}")
+        except Exception as e:
+            logger.error(f"Error publishing transcript: {e}")
+
+    # Set up assistant response handler
+    async def on_assistant_response(text: str):
+        try:
+            data = {
+                "type": "transcript",
+                "text": text,
+                "isUser": False,
+                "timestamp": None,
+            }
+            await ctx.room.local_participant.publish_data(json.dumps(data).encode())
+            logger.info(f"Published assistant response: {text}")
+        except Exception as e:
+            logger.error(f"Error publishing assistant response: {e}")
+
+    # Hook up the handlers
+    assistant.on("transcript", on_transcript)
+    assistant.on("say", on_assistant_response)
+
+    # Handle slide changes
+    async def handle_data(data, participant):
+        try:
+            if isinstance(data, bytes):
+                data = json.loads(data.decode())
+
             if data.get("type") == "slide_change":
                 slide_number = data.get("slide_number")
                 slide_url = data.get("slide_url")
 
-                # Update context with new slide
                 chat_image = ChatImage(image=slide_url)
                 new_context = assistant.chat_ctx.append(
                     role="system",
@@ -63,29 +95,29 @@ async def entrypoint(ctx: JobContext):
                     images=[chat_image],
                 )
                 await assistant.update_context(new_context)
-
-                # Prompt the user about the new slide
                 await assistant.say(
-                    f"I see we're now on slide {slide_number}. Could you tell me about what we're looking at?",
-                    allow_interruptions=True,
+                    f"I see we're now on slide {slide_number}. Could you tell me about what we're looking at?"
                 )
         except Exception as e:
-            logger.error(f"Error handling data message: {e}")
+            logger.error(f"Error handling data: {e}")
 
-    # Subscribe to data messages
-    ctx.room.on("data_received", handle_data_message)
+    ctx.room.on("data_received", handle_data)
 
     assistant.start(ctx.room, participant)
 
-    # Initial greeting
-    await assistant.say(
-        "Hello! I'm ready to help you present your slides. When you're ready, "
-        "please navigate through your slides and I'll help you describe them.",
-        allow_interruptions=True,
-    )
+    try:
+        await assistant.say("Hello! I'm ready to help you present your slides.")
+    except Exception as e:
+        logger.error(f"Error in initial greeting: {e}")
 
     # Keep the connection alive
-    await ctx.wait_for_disconnect()
+    try:
+        while True:
+            await asyncio.sleep(1)
+    except Exception as e:
+        logger.error(f"Error in main loop: {e}")
+    finally:
+        assistant.stop()
 
 
 if __name__ == "__main__":
