@@ -46,43 +46,42 @@ async def entrypoint(ctx: JobContext):
         chat_ctx=initial_ctx,
     )
 
-    # Set up transcript handler
+    # Set up transcript handler for user speech
     async def on_transcript(text: str):
         try:
-            data = {
-                "type": "transcript",
-                "text": text,
-                "isUser": True,
-                "timestamp": None,
+            message = {
+                "type": "chat_message",
+                "content": text,
+                "sender": "user",
+                "timestamp": None,  # LiveKit will add this
             }
-            await ctx.room.local_participant.publish_data(json.dumps(data).encode())
-            logger.info(f"Published transcript: {text}")
+            await ctx.room.local_participant.publish_message(json.dumps(message))
+            logger.info(f"Published user message: {text}")
         except Exception as e:
-            logger.error(f"Error publishing transcript: {e}")
+            logger.error(f"Error publishing user message: {e}")
 
     # Set up assistant response handler
     async def on_assistant_response(text: str):
         try:
-            data = {
-                "type": "transcript",
-                "text": text,
-                "isUser": False,
-                "timestamp": None,
+            message = {
+                "type": "chat_message",
+                "content": text,
+                "sender": "assistant",
+                "timestamp": None,  # LiveKit will add this
             }
-            await ctx.room.local_participant.publish_data(json.dumps(data).encode())
-            logger.info(f"Published assistant response: {text}")
+            await ctx.room.local_participant.publish_message(json.dumps(message))
+            logger.info(f"Published assistant message: {text}")
         except Exception as e:
-            logger.error(f"Error publishing assistant response: {e}")
+            logger.error(f"Error publishing assistant message: {e}")
 
     # Hook up the handlers
     assistant.on("transcript", on_transcript)
     assistant.on("say", on_assistant_response)
 
     # Handle slide changes
-    async def handle_data(data, participant):
+    async def handle_chat_message(msg):
         try:
-            if isinstance(data, bytes):
-                data = json.loads(data.decode())
+            data = json.loads(msg.message)
 
             if data.get("type") == "slide_change":
                 slide_number = data.get("slide_number")
@@ -95,13 +94,25 @@ async def entrypoint(ctx: JobContext):
                     images=[chat_image],
                 )
                 await assistant.update_context(new_context)
+
+                # Send a system message about slide change
+                system_message = {
+                    "type": "chat_message",
+                    "content": f"Moved to slide {slide_number}",
+                    "sender": "system",
+                    "timestamp": None,
+                }
+                await ctx.room.local_participant.publish_message(
+                    json.dumps(system_message)
+                )
+
                 await assistant.say(
                     f"I see we're now on slide {slide_number}. Could you tell me about what we're looking at?"
                 )
         except Exception as e:
-            logger.error(f"Error handling data: {e}")
+            logger.error(f"Error handling chat message: {e}")
 
-    ctx.room.on("data_received", handle_data)
+    ctx.room.on("message_received", handle_chat_message)
 
     assistant.start(ctx.room, participant)
 

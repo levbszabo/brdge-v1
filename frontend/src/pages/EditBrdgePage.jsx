@@ -16,6 +16,9 @@ import {
     useRoomContext,
     StartAudio,
     TrackToggle,
+    useChat,
+    Chat,
+    LayoutContextProvider
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track, DataPacket_Kind } from 'livekit-client';
@@ -83,14 +86,27 @@ const TranscriptMessage = styled(Box)(({ isUser }) => ({
     color: isUser ? 'white' : 'black',
 }));
 
+const ChatWrapper = styled(Box)(({ theme }) => ({
+    width: '100%',
+    height: '300px',
+    background: 'white',
+    borderRadius: theme.spacing(2),
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    marginBottom: theme.spacing(8),
+}));
+
 // Create a separate component for LiveKit functionality
-function LiveKitControls({ onSlideChange, currentSlide, id, micSettings, onMicSettingsChange }) {
+function LiveKitControls({ onSlideChange, currentSlide, id }) {
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
     const [isConnected, setIsConnected] = useState(false);
+    const { messages, send, isSending } = useChat();
 
     const notifySlideChange = useCallback(async (slideNumber) => {
-        if (!localParticipant || !isConnected) return;
+        if (!isConnected || isSending) return;
 
         try {
             const slideUrl = `${api.defaults.baseURL}/brdges/${id}/slides/${slideNumber}`;
@@ -99,38 +115,40 @@ function LiveKitControls({ onSlideChange, currentSlide, id, micSettings, onMicSe
                 slide_number: slideNumber,
                 slide_url: slideUrl
             };
-
-            const encoder = new TextEncoder();
-            const payload = encoder.encode(JSON.stringify(data));
-            await localParticipant.publishData(payload, DataPacket_Kind.RELIABLE);
+            await send(JSON.stringify(data));
         } catch (error) {
             console.error('Error publishing slide change:', error);
         }
-    }, [localParticipant, id, isConnected]);
+    }, [id, isConnected, isSending, send]);
 
-    const handleData = useCallback((payload, participant) => {
-        try {
-            const data = JSON.parse(new TextDecoder().decode(payload));
-            if (data.type === 'transcript') {
-                onSlideChange(prev => {
-                    const newMessage = {
+    useEffect(() => {
+        if (messages) {
+            const newTranscripts = messages.map(msg => {
+                try {
+                    const data = JSON.parse(msg.message);
+                    return {
                         text: data.text,
-                        isUser: false,
-                        timestamp: new Date().toISOString()
+                        isUser: data.isUser,
+                        timestamp: msg.timestamp,
+                        from: data.from || msg.from?.identity || 'System'
                     };
-                    return [...prev, newMessage];
-                });
-            }
-        } catch (error) {
-            console.error('Error processing data message:', error);
+                } catch (e) {
+                    return {
+                        text: msg.message,
+                        isUser: msg.from?.identity === localParticipant?.identity,
+                        timestamp: msg.timestamp,
+                        from: msg.from?.identity || 'System'
+                    };
+                }
+            });
+            onSlideChange(newTranscripts);
         }
-    }, [onSlideChange]);
+    }, [messages, localParticipant, onSlideChange]);
 
     useEffect(() => {
         if (room) {
             const handleConnected = () => {
                 setIsConnected(true);
-                // Notify about current slide after connection is established
                 notifySlideChange(currentSlide);
             };
 
@@ -140,9 +158,7 @@ function LiveKitControls({ onSlideChange, currentSlide, id, micSettings, onMicSe
 
             room.on('connected', handleConnected);
             room.on('disconnected', handleDisconnected);
-            room.on('dataReceived', handleData);
 
-            // Check if already connected
             if (room.state === 'connected') {
                 setIsConnected(true);
                 notifySlideChange(currentSlide);
@@ -151,10 +167,9 @@ function LiveKitControls({ onSlideChange, currentSlide, id, micSettings, onMicSe
             return () => {
                 room.off('connected', handleConnected);
                 room.off('disconnected', handleDisconnected);
-                room.off('dataReceived', handleData);
             };
         }
-    }, [room, onSlideChange, currentSlide, notifySlideChange]);
+    }, [room, currentSlide, notifySlideChange]);
 
     useEffect(() => {
         if (isConnected) {
@@ -163,31 +178,44 @@ function LiveKitControls({ onSlideChange, currentSlide, id, micSettings, onMicSe
     }, [currentSlide, notifySlideChange, isConnected]);
 
     return (
-        <LiveKitControlsWrapper>
-            <Container maxWidth="lg">
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2
-                }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <StartAudio />
-                        <TrackToggle
-                            source={Track.Source.Microphone}
-                            style={{
-                                background: 'white',
-                                padding: '8px',
-                                borderRadius: '50%',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                            }}
-                        />
-                    </Box>
-                    <RoomAudioRenderer />
-                    <DisconnectButton>End Session</DisconnectButton>
+        <>
+            <Box sx={{ width: '100%', mb: 4 }}>
+                <Box sx={{ p: 2, borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+                    <Typography variant="h6">Conversation</Typography>
                 </Box>
-            </Container>
-        </LiveKitControlsWrapper>
+                <ChatWrapper>
+                    <LayoutContextProvider>
+                        <Chat />
+                    </LayoutContextProvider>
+                </ChatWrapper>
+            </Box>
+
+            <LiveKitControlsWrapper>
+                <Container maxWidth="lg">
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 2
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <StartAudio />
+                            <TrackToggle
+                                source={Track.Source.Microphone}
+                                style={{
+                                    background: 'white',
+                                    padding: '8px',
+                                    borderRadius: '50%',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }}
+                            />
+                        </Box>
+                        <RoomAudioRenderer />
+                        <DisconnectButton>End Session</DisconnectButton>
+                    </Box>
+                </Container>
+            </LiveKitControlsWrapper>
+        </>
     );
 }
 
@@ -353,8 +381,9 @@ function EditBrdgePage() {
                 <Box sx={{
                     display: 'flex',
                     gap: 2,
-                    alignItems: 'stretch',
-                    mb: isRoomActive ? 10 : 0
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mb: 2
                 }}>
                     <Button
                         variant="outlined"
@@ -365,7 +394,6 @@ function EditBrdgePage() {
                     >
                         Previous
                     </Button>
-                    {renderTranscript()}
                     <Button
                         variant="outlined"
                         onClick={() => handleSlideChange(Math.min(currentSlide + 1, brdgeData.numSlides))}
@@ -407,6 +435,31 @@ function EditBrdgePage() {
                 </Box>
 
                 {brdgeData.numSlides > 0 && renderSlides()}
+
+                {isRoomActive && connectionDetails && (
+                    <LiveKitRoom
+                        token={connectionDetails.token}
+                        serverUrl={connectionDetails.serverUrl}
+                        connect={true}
+                        audio={!micSettings.muted}
+                        video={false}
+                        onDisconnected={() => {
+                            setIsRoomActive(false);
+                            setConnectionDetails(null);
+                        }}
+                        data-lk-theme="default"
+                    >
+                        <LayoutContextProvider>
+                            <LiveKitControls
+                                onSlideChange={setTranscript}
+                                currentSlide={currentSlide}
+                                id={id}
+                                micSettings={micSettings}
+                                onMicSettingsChange={setMicSettings}
+                            />
+                        </LayoutContextProvider>
+                    </LiveKitRoom>
+                )}
             </Container>
 
             <AnimatePresence>
@@ -428,28 +481,6 @@ function EditBrdgePage() {
                     </CountdownOverlay>
                 )}
             </AnimatePresence>
-
-            {isRoomActive && connectionDetails && (
-                <LiveKitRoom
-                    token={connectionDetails.token}
-                    serverUrl={connectionDetails.serverUrl}
-                    connect={true}
-                    audio={!micSettings.muted}
-                    video={false}
-                    onDisconnected={() => {
-                        setIsRoomActive(false);
-                        setConnectionDetails(null);
-                    }}
-                >
-                    <LiveKitControls
-                        onSlideChange={setTranscript}
-                        currentSlide={currentSlide}
-                        id={id}
-                        micSettings={micSettings}
-                        onMicSettingsChange={setMicSettings}
-                    />
-                </LiveKitRoom>
-            )}
         </Box>
     );
 }
