@@ -9,12 +9,16 @@ import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 import {
     LiveKitRoom,
-    useVoiceAssistant,
-    BarVisualizer,
     RoomAudioRenderer,
-    VoiceAssistantControlBar,
+    ControlBar,
     DisconnectButton,
+    useLocalParticipant,
+    useRoomContext,
+    StartAudio,
+    TrackToggle,
 } from "@livekit/components-react";
+import "@livekit/components-styles";
+import { Track, DataPacket_Kind } from 'livekit-client';
 
 const serverUrl = 'wss://brdge-bgs5ijzf.livekit.cloud';
 
@@ -37,6 +41,96 @@ const StyledButton = styled(Button)(({ theme }) => ({
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     },
 }));
+
+// Create a separate component for LiveKit functionality
+function LiveKitControls({ onSlideChange, currentSlide, id }) {
+    const { localParticipant } = useLocalParticipant();
+    const room = useRoomContext();
+    const [isConnected, setIsConnected] = useState(false);
+
+    const notifySlideChange = useCallback(async (slideNumber) => {
+        if (!localParticipant || !isConnected) return;
+
+        try {
+            const slideUrl = `${api.defaults.baseURL}/brdges/${id}/slides/${slideNumber}`;
+            const data = {
+                type: 'slide_change',
+                slide_number: slideNumber,
+                slide_url: slideUrl
+            };
+
+            const encoder = new TextEncoder();
+            const payload = encoder.encode(JSON.stringify(data));
+            await localParticipant.publishData(payload, DataPacket_Kind.RELIABLE);
+        } catch (error) {
+            console.error('Error publishing slide change:', error);
+        }
+    }, [localParticipant, id, isConnected]);
+
+    useEffect(() => {
+        if (room) {
+            const handleConnected = () => {
+                setIsConnected(true);
+                // Notify about current slide after connection is established
+                notifySlideChange(currentSlide);
+            };
+
+            const handleDisconnected = () => {
+                setIsConnected(false);
+            };
+
+            const handleData = (payload, participant) => {
+                try {
+                    const data = JSON.parse(new TextDecoder().decode(payload));
+                    if (data.type === 'transcript') {
+                        onSlideChange(prev => prev + `\n[Assistant] ${data.text}`);
+                    }
+                } catch (error) {
+                    console.error('Error processing data message:', error);
+                }
+            };
+
+            room.on('connected', handleConnected);
+            room.on('disconnected', handleDisconnected);
+            room.on('dataReceived', handleData);
+
+            // Check if already connected
+            if (room.state === 'connected') {
+                setIsConnected(true);
+                notifySlideChange(currentSlide);
+            }
+
+            return () => {
+                room.off('connected', handleConnected);
+                room.off('disconnected', handleDisconnected);
+                room.off('dataReceived', handleData);
+            };
+        }
+    }, [room, onSlideChange, currentSlide, notifySlideChange]);
+
+    useEffect(() => {
+        if (isConnected) {
+            notifySlideChange(currentSlide);
+        }
+    }, [currentSlide, notifySlideChange, isConnected]);
+
+    return (
+        <div>
+            <RoomAudioRenderer />
+            <StartAudio />
+            <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
+                <TrackToggle source={Track.Source.Microphone} />
+                <DisconnectButton>Close</DisconnectButton>
+            </Box>
+            <ControlBar controls={{
+                microphone: true,
+                screenShare: false,
+                camera: false,
+                leave: true
+            }} />
+        </div>
+    );
+}
 
 function EditBrdgePage() {
     const { id } = useParams();
@@ -72,12 +166,16 @@ function EditBrdgePage() {
         }
     };
 
+    const handleSlideChange = useCallback((newSlide) => {
+        setCurrentSlide(newSlide);
+    }, []);
+
     const handleRecordWalkthrough = useCallback(async () => {
         try {
             const response = await api.get('/getToken');
             const token = response.data;
             setConnectionDetails({
-                participantToken: token,
+                token: token,
                 serverUrl: serverUrl,
             });
             setIsRoomActive(true);
@@ -87,28 +185,6 @@ function EditBrdgePage() {
             showSnackbar('Error starting recording session.', 'error');
         }
     }, [showSnackbar]);
-
-    const VoiceAssistantHandler = () => {
-        const { state, audioTrack, transcript: assistantTranscript } = useVoiceAssistant();
-
-        useEffect(() => {
-            if (assistantTranscript) {
-                setTranscript(prev => prev + `\n[Assistant] ${assistantTranscript}`);
-            }
-        }, [assistantTranscript]);
-
-        return (
-            <Box sx={{ height: '60px', mt: 2 }}>
-                <BarVisualizer
-                    state={state}
-                    barCount={5}
-                    trackRef={audioTrack}
-                    className="agent-visualizer"
-                    options={{ minHeight: 24 }}
-                />
-            </Box>
-        );
-    };
 
     const renderSlides = () => {
         const imageUrl = `${api.defaults.baseURL}/brdges/${id}/slides/${currentSlide}`;
@@ -148,14 +224,14 @@ function EditBrdgePage() {
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                         <Button
-                            onClick={() => setCurrentSlide(prev => Math.max(prev - 1, 1))}
+                            onClick={() => handleSlideChange(Math.max(currentSlide - 1, 1))}
                             disabled={currentSlide === 1}
                             startIcon={<FaChevronLeft />}
                         >
                             Previous
                         </Button>
                         <Button
-                            onClick={() => setCurrentSlide(prev => Math.min(prev + 1, brdgeData.numSlides))}
+                            onClick={() => handleSlideChange(Math.min(currentSlide + 1, brdgeData.numSlides))}
                             disabled={currentSlide === brdgeData.numSlides}
                             endIcon={<FaChevronRight />}
                         >
@@ -198,22 +274,23 @@ function EditBrdgePage() {
                 </StyledCard>
             </Container>
 
-            {/* LiveKit Room */}
             {isRoomActive && connectionDetails && (
                 <LiveKitRoom
-                    token={connectionDetails.participantToken}
+                    token={connectionDetails.token}
                     serverUrl={connectionDetails.serverUrl}
                     connect={true}
                     audio={true}
                     video={false}
-                    onDisconnected={() => setIsRoomActive(false)}
+                    onDisconnected={() => {
+                        setIsRoomActive(false);
+                        setConnectionDetails(null);
+                    }}
                 >
-                    <RoomAudioRenderer />
-                    <VoiceAssistantHandler />
-                    <VoiceAssistantControlBar controls={{ leave: false }} />
-                    <DisconnectButton onClick={() => setIsRoomActive(false)}>
-                        Close
-                    </DisconnectButton>
+                    <LiveKitControls
+                        onSlideChange={setTranscript}
+                        currentSlide={currentSlide}
+                        id={id}
+                    />
                 </LiveKitRoom>
             )}
         </Box>
