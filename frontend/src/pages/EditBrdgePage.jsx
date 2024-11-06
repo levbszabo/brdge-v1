@@ -21,9 +21,12 @@ import {
     LayoutContextProvider
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, DataPacket_Kind } from 'livekit-client';
+import { Track, DataPacket_Kind, RoomEvent } from 'livekit-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
+import { format } from 'date-fns';
+import { Paper, Fade } from '@mui/material';
+import ScrollableFeed from 'react-scrollable-feed';
 
 const serverUrl = 'wss://brdge-bgs5ijzf.livekit.cloud';
 
@@ -98,12 +101,60 @@ const ChatWrapper = styled(Box)(({ theme }) => ({
     marginBottom: theme.spacing(8),
 }));
 
+const TranscriptContainer = styled(Paper)(({ theme }) => ({
+    height: '400px',
+    backgroundColor: '#ffffff',
+    borderRadius: theme.spacing(2),
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+}));
+
+const TranscriptHeader = styled(Box)(({ theme }) => ({
+    padding: theme.spacing(2),
+    borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+    backgroundColor: '#f8fafc',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+}));
+
+const TranscriptContent = styled(Box)(({ theme }) => ({
+    flex: 1,
+    overflow: 'hidden',
+    padding: theme.spacing(2),
+}));
+
+const TranscriptBubble = styled(Box)(({ isUser, theme }) => ({
+    padding: '12px 16px',
+    borderRadius: '12px',
+    maxWidth: '80%',
+    marginBottom: theme.spacing(1.5),
+    backgroundColor: isUser ? theme.palette.primary.main : '#f0f2f5',
+    color: isUser ? '#fff' : theme.palette.text.primary,
+    alignSelf: isUser ? 'flex-end' : 'flex-start',
+    position: 'relative',
+    '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: 0,
+        [isUser ? 'right' : 'left']: -8,
+        width: 0,
+        height: 0,
+        borderStyle: 'solid',
+        borderWidth: isUser ? '0 0 8px 8px' : '0 8px 8px 0',
+        borderColor: `transparent transparent ${isUser ? theme.palette.primary.main : '#f0f2f5'} transparent`,
+    },
+}));
+
 // Create a separate component for LiveKit functionality
 function LiveKitControls({ onSlideChange, currentSlide, id }) {
     const { localParticipant } = useLocalParticipant();
     const room = useRoomContext();
     const [isConnected, setIsConnected] = useState(false);
     const { messages, send, isSending } = useChat();
+    const [transcriptions, setTranscriptions] = useState({});
 
     const notifySlideChange = useCallback(async (slideNumber) => {
         if (!isConnected || isSending) return;
@@ -177,18 +228,71 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
         }
     }, [currentSlide, notifySlideChange, isConnected]);
 
+    useEffect(() => {
+        if (!room) return;
+
+        const updateTranscriptions = (segments, participant, publication) => {
+            setTranscriptions((prev) => {
+                const newTranscriptions = { ...prev };
+                for (const segment of segments) {
+                    newTranscriptions[segment.id] = segment;
+                }
+                return newTranscriptions;
+            });
+        };
+
+        room.on(RoomEvent.TranscriptionReceived, updateTranscriptions);
+        return () => {
+            room.off(RoomEvent.TranscriptionReceived, updateTranscriptions);
+        };
+    }, [room]);
+
     return (
         <>
-            <Box sx={{ width: '100%', mb: 4 }}>
-                <Box sx={{ p: 2, borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
-                    <Typography variant="h6">Conversation</Typography>
-                </Box>
-                <ChatWrapper>
-                    <LayoutContextProvider>
-                        <Chat />
-                    </LayoutContextProvider>
-                </ChatWrapper>
-            </Box>
+            <TranscriptContainer elevation={0}>
+                <TranscriptHeader>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Conversation Transcript
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        {Object.keys(transcriptions).length} messages
+                    </Typography>
+                </TranscriptHeader>
+
+                <TranscriptContent>
+                    <ScrollableFeed>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {Object.values(transcriptions)
+                                .sort((a, b) => a.firstReceivedTime - b.firstReceivedTime)
+                                .map((segment) => (
+                                    <Fade key={segment.id} in={true} timeout={500}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{
+                                                    mb: 0.5,
+                                                    alignSelf: segment.participantId === localParticipant?.identity ? 'flex-end' : 'flex-start'
+                                                }}
+                                            >
+                                                {segment.participantId === localParticipant?.identity ? 'You' : 'AI Assistant'}
+                                                {' • '}
+                                                {format(new Date(segment.firstReceivedTime), 'h:mm a')}
+                                            </Typography>
+                                            <TranscriptBubble
+                                                isUser={segment.participantId === localParticipant?.identity}
+                                            >
+                                                <Typography variant="body1">
+                                                    {segment.text}
+                                                </Typography>
+                                            </TranscriptBubble>
+                                        </Box>
+                                    </Fade>
+                                ))}
+                        </Box>
+                    </ScrollableFeed>
+                </TranscriptContent>
+            </TranscriptContainer>
 
             <LiveKitControlsWrapper>
                 <Container maxWidth="lg">
