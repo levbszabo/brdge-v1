@@ -23,12 +23,11 @@ function SignUpPage() {
     const handleSignUp = async (e) => {
         e.preventDefault();
 
-        // Check if passwords match
         if (password !== confirmPassword) {
             setPasswordError('Passwords do not match');
             return;
         }
-        setPasswordError(''); // Clear any previous password error
+        setPasswordError('');
 
         try {
             const response = await api.post('/register', { email, password });
@@ -40,23 +39,39 @@ function SignUpPage() {
                 throw new Error('Registration failed');
             }
         } catch (err) {
+            console.error('Registration error:', err.message);
             setError(err.response?.data?.error || 'An error occurred');
         }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            const response = await api.post('/auth/google', { token: credentialResponse.credential });
+            console.log('Received Google sign-in response');
+
+            if (!credentialResponse.credential) {
+                setError('No credentials received from Google');
+                return;
+            }
+
+            const response = await api.post('/auth/google', {
+                credential: credentialResponse.credential
+            });
+
+            console.log('Google authentication completed:', response.status === 200 ? 'success' : 'failed');
+
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
-                navigate('/brdges');
+                setSuccess('Successfully signed up with Google!');
+                setTimeout(() => {
+                    navigate('/brdges');
+                }, 1000);
             } else {
                 throw new Error('No access token received');
             }
         } catch (error) {
-            console.error('Error during Google login:', error);
-            setError('An error occurred during Google login. Please try again.');
+            console.error('Google sign-up error:', error.message);
+            setError(error.response?.data?.error || 'Failed to login with Google');
         }
     };
 
@@ -127,15 +142,24 @@ function SignUpPage() {
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={() => {
-                                console.log('Login Failed');
-                                setError('Google login failed. Please try again.');
+                                console.error('Google Sign In failed');
+                                setError('Google Sign In failed. Please try again.');
                             }}
+                            useOneTap={false}
+                            theme="outline"
                             size="large"
                             text="signup_with"
                             shape="rectangular"
-                            useOneTap
+                            width="300"
+                            cookiePolicy={'single_host_origin'}
                         />
                     </Box>
+
+                    {error && error.includes('cookies') && (
+                        <Typography variant="body2" color="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
+                            Tip: To enable cookies in Chrome, go to Settings → Privacy and Security → Cookies and other site data
+                        </Typography>
+                    )}
 
                     <Box sx={{
                         width: '100%',

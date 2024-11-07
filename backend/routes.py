@@ -1131,87 +1131,72 @@ def google_auth():
         credential = data.get("credential")
 
         if not credential:
-            print("No credential provided in request")
             return jsonify({"error": "No credential provided"}), 400
 
         try:
+            # Verify the Google token
             idinfo = id_token.verify_oauth2_token(
                 credential,
                 google_requests.Request(),
                 os.getenv("GOOGLE_CLIENT_ID"),
+                clock_skew_in_seconds=60
             )
 
             # Verify issuer
-            if idinfo["iss"] not in [
-                "accounts.google.com",
-                "https://accounts.google.com",
-            ]:
+            if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
                 return jsonify({"error": "Wrong issuer"}), 400
 
-            # Get user email
             email = idinfo["email"]
             if not email:
                 return jsonify({"error": "No email found in Google token"}), 400
 
-            # Find or create user and their account
+            # Find or create user
             user = User.query.filter_by(email=email).first()
 
             if not user:
-                # Start a transaction
-                try:
-                    # Create new user
-                    user = User(
-                        email=email, password_hash=""
-                    )  # Google users don't need password
-                    db.session.add(user)
-                    db.session.flush()  # Get the user ID
+                # Create new user
+                user = User(email=email, password_hash="")
+                db.session.add(user)
+                db.session.flush()
 
-                    # Create user account
-                    user_account = UserAccount(
-                        user_id=user.id,
-                        account_type="free",
-                        created_at=datetime.utcnow(),
-                        last_activity=datetime.utcnow(),
-                    )
-                    db.session.add(user_account)
-                    db.session.commit()
-                except Exception as e:
-                    db.session.rollback()
-                    print(f"Error creating new user: {str(e)}")
-                    return jsonify({"error": "Failed to create user account"}), 500
+                # Create user account
+                user_account = UserAccount(
+                    user_id=user.id,
+                    account_type="free",
+                    created_at=datetime.utcnow(),
+                    last_activity=datetime.utcnow(),
+                )
+                db.session.add(user_account)
+                db.session.commit()
             else:
-                # Update last activity for existing user
+                # Update existing user's last activity
                 if user.account:
                     user.account.last_activity = datetime.utcnow()
                     db.session.commit()
 
             # Generate JWT token
             access_token = create_access_token(
-                identity=user.id, expires_delta=timedelta(hours=24)
+                identity=user.id,
+                expires_delta=timedelta(hours=24)
             )
 
-            return (
-                jsonify(
-                    {
-                        "access_token": access_token,
-                        "user": {
-                            "email": user.email,
-                            "account_type": (
-                                user.account.account_type if user.account else "free"
-                            ),
-                        },
-                    }
-                ),
-                200,
-            )
+            return jsonify({
+                "access_token": access_token,
+                "user": {
+                    "email": user.email,
+                    "name": idinfo.get("name"),
+                    "account_type": user.account.account_type if user.account else "free",
+                    "id": user.id
+                },
+                "message": "Successfully signed up with Google"
+            }), 200
 
-        except ValueError as e:
-            print(f"Invalid token: {str(e)}")
+        except ValueError as token_error:
             return jsonify({"error": "Invalid token"}), 400
 
     except Exception as e:
-        print(f"Unexpected error in google_auth: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        db.session.rollback()
+        return jsonify({"error": "Authentication failed"}), 500
 
 
 @app.before_request
