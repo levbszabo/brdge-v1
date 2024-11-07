@@ -155,9 +155,27 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
     const [isConnected, setIsConnected] = useState(false);
     const { messages, send, isSending } = useChat();
     const [transcriptions, setTranscriptions] = useState({});
+    const [participantType, setParticipantType] = useState(null);
+
+    useEffect(() => {
+        if (localParticipant) {
+            console.log('=== Local Participant Details ===');
+            console.log('Identity:', localParticipant.identity);
+            console.log('Name:', localParticipant.name);
+            console.log('Metadata:', localParticipant.metadata);
+            setParticipantType(localParticipant.identity);
+        }
+    }, [localParticipant]);
 
     const notifySlideChange = useCallback(async (slideNumber) => {
-        if (!isConnected || isSending) return;
+        console.log('=== Attempting Slide Change Notification ===');
+        console.log('Connected:', isConnected);
+        console.log('Is Sending:', isSending);
+
+        if (!isConnected || isSending) {
+            console.log('Skipping notification - not connected or already sending');
+            return;
+        }
 
         try {
             const slideUrl = `${api.defaults.baseURL}/brdges/${id}/slides/${slideNumber}`;
@@ -166,7 +184,9 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
                 slide_number: slideNumber,
                 slide_url: slideUrl
             };
+            console.log('Sending slide change data:', data);
             await send(JSON.stringify(data));
+            console.log('Slide change notification sent successfully');
         } catch (error) {
             console.error('Error publishing slide change:', error);
         }
@@ -174,9 +194,22 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
 
     useEffect(() => {
         if (messages) {
+            console.log('=== New Messages Received ===');
+            console.log('All messages:', messages);
+            console.log('Local participant:', localParticipant);
+
             const newTranscripts = messages.map(msg => {
+                console.log('Processing message:', {
+                    rawMessage: msg,
+                    from: msg.from,
+                    participantIdentity: msg.from?.identity,
+                    localIdentity: localParticipant?.identity,
+                    timestamp: msg.timestamp
+                });
+
                 try {
                     const data = JSON.parse(msg.message);
+                    console.log('Parsed message data:', data);
                     return {
                         text: data.text,
                         isUser: data.isUser,
@@ -184,6 +217,7 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
                         from: data.from || msg.from?.identity || 'System'
                     };
                 } catch (e) {
+                    console.log('Message is not JSON:', msg.message);
                     return {
                         text: msg.message,
                         isUser: msg.from?.identity === localParticipant?.identity,
@@ -192,6 +226,7 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
                     };
                 }
             });
+            console.log('Processed transcripts:', newTranscripts);
             onSlideChange(newTranscripts);
         }
     }, [messages, localParticipant, onSlideChange]);
@@ -199,16 +234,27 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
     useEffect(() => {
         if (room) {
             const handleConnected = () => {
+                console.log('=== Room Connected ===');
+                console.log('Room state:', room.state);
+                console.log('Room participants:', room.participants);
                 setIsConnected(true);
                 notifySlideChange(currentSlide);
             };
 
             const handleDisconnected = () => {
+                console.log('=== Room Disconnected ===');
                 setIsConnected(false);
             };
 
             room.on('connected', handleConnected);
             room.on('disconnected', handleDisconnected);
+
+            // Log initial room state
+            console.log('=== Initial Room State ===');
+            console.log('Room:', room);
+            console.log('Current state:', room.state);
+            console.log('Local participant:', room.localParticipant);
+            console.log('Remote participants:', room.participants);
 
             if (room.state === 'connected') {
                 setIsConnected(true);
@@ -232,10 +278,26 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
         if (!room) return;
 
         const updateTranscriptions = (segments, participant, publication) => {
+            console.log('=== Transcription Received ===');
+            console.log('Local Participant Identity:', localParticipant?.identity);
+            console.log('Current Participant Identity:', participant?.identity);
+            console.log('Is Local:', participant?.identity === localParticipant?.identity);
+
             setTranscriptions((prev) => {
                 const newTranscriptions = { ...prev };
                 for (const segment of segments) {
-                    newTranscriptions[segment.id] = segment;
+                    const isLocalParticipant = segment.participantId === localParticipant?.identity;
+                    console.log('Processing segment:', {
+                        id: segment.id,
+                        participantId: segment.participantId,
+                        isLocal: isLocalParticipant,
+                        text: segment.text,
+                        timestamp: segment.firstReceivedTime
+                    });
+                    newTranscriptions[segment.id] = {
+                        ...segment,
+                        isLocal: isLocalParticipant
+                    };
                 }
                 return newTranscriptions;
             });
@@ -245,7 +307,7 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
         return () => {
             room.off(RoomEvent.TranscriptionReceived, updateTranscriptions);
         };
-    }, [room]);
+    }, [room, localParticipant]);
 
     return (
         <>
@@ -264,31 +326,40 @@ function LiveKitControls({ onSlideChange, currentSlide, id }) {
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             {Object.values(transcriptions)
                                 .sort((a, b) => a.firstReceivedTime - b.firstReceivedTime)
-                                .map((segment) => (
-                                    <Fade key={segment.id} in={true} timeout={500}>
-                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                                sx={{
-                                                    mb: 0.5,
-                                                    alignSelf: segment.participantId === localParticipant?.identity ? 'flex-end' : 'flex-start'
-                                                }}
-                                            >
-                                                {segment.participantId === localParticipant?.identity ? 'You' : 'AI Assistant'}
-                                                {' • '}
-                                                {format(new Date(segment.firstReceivedTime), 'h:mm a')}
-                                            </Typography>
-                                            <TranscriptBubble
-                                                isUser={segment.participantId === localParticipant?.identity}
-                                            >
-                                                <Typography variant="body1">
-                                                    {segment.text}
+                                .map((segment) => {
+                                    console.log('Rendering segment:', {
+                                        id: segment.id,
+                                        isLocal: segment.isLocal,
+                                        participantId: segment.participantId,
+                                        localIdentity: localParticipant?.identity
+                                    });
+
+                                    return (
+                                        <Fade key={segment.id} in={true} timeout={500}>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                                                <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                    sx={{
+                                                        mb: 0.5,
+                                                        alignSelf: segment.isLocal ? 'flex-end' : 'flex-start'
+                                                    }}
+                                                >
+                                                    {segment.isLocal ? 'You' : 'AI Assistant'}
+                                                    {' • '}
+                                                    {format(new Date(segment.firstReceivedTime), 'h:mm a')}
                                                 </Typography>
-                                            </TranscriptBubble>
-                                        </Box>
-                                    </Fade>
-                                ))}
+                                                <TranscriptBubble
+                                                    isUser={segment.isLocal}
+                                                >
+                                                    <Typography variant="body1">
+                                                        {segment.text}
+                                                    </Typography>
+                                                </TranscriptBubble>
+                                            </Box>
+                                        </Fade>
+                                    );
+                                })}
                         </Box>
                     </ScrollableFeed>
                 </TranscriptContent>

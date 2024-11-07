@@ -8,17 +8,15 @@ from livekit.agents import (
     cli,
     llm,
 )
+import asyncio
 from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import openai, deepgram, silero, cartesia
 from livekit.agents.llm import ChatImage
+from livekit import rtc
 import json
 
 load_dotenv(dotenv_path=".env.local")
 logger = logging.getLogger("voice-agent")
-
-
-def prewarm(proc: JobProcess):
-    proc.userdata["vad"] = silero.VAD.load()
 
 
 async def entrypoint(ctx: JobContext):
@@ -40,7 +38,7 @@ async def entrypoint(ctx: JobContext):
     )
 
     assistant = VoicePipelineAgent(
-        vad=ctx.proc.userdata["vad"],
+        vad=silero.VAD.load(),
         stt=deepgram.STT(),
         llm=openai.LLM(model="gpt-4o-mini"),
         tts=cartesia.TTS(voice="3a7e284d-ee6d-459d-91e3-405d8dadfbdf"),
@@ -48,34 +46,58 @@ async def entrypoint(ctx: JobContext):
     )
 
     # Set up data message handler for slide changes
-    async def handle_data_message(msg):
-        try:
-            data = json.loads(msg.payload.decode())
-            if data.get("type") == "slide_change":
-                slide_number = data.get("slide_number")
-                slide_url = data.get("slide_url")
+    # async def handle_data_message(msg):
+    #     try:
+    #         data = json.loads(msg.payload.decode())
+    #         if data.get("type") == "slide_change":
+    #             slide_number = data.get("slide_number")
+    #             slide_url = data.get("slide_url")
 
-                # Update context with new slide
-                chat_image = ChatImage(image=slide_url)
-                new_context = assistant.chat_ctx.append(
-                    role="system",
-                    text=f"The user has moved to slide {slide_number}. Help them describe this slide.",
-                    images=[chat_image],
-                )
-                await assistant.update_context(new_context)
+    #             # Update context with new slide
+    #             chat_image = ChatImage(image=slide_url)
+    #             new_context = assistant.chat_ctx.append(
+    #                 role="system",
+    #                 text=f"The user has moved to slide {slide_number}. Help them describe this slide.",
+    #                 images=[chat_image],
+    #             )
+    #             await assistant.update_context(new_context)
 
-                # Prompt the user about the new slide
-                await assistant.say(
-                    f"I see we're now on slide {slide_number}. Could you tell me about what we're looking at?",
-                    allow_interruptions=True,
-                )
-        except Exception as e:
-            logger.error(f"Error handling data message: {e}")
+    #             # Prompt the user about the new slide
+    #             await assistant.say(
+    #                 f"I see we're now on slide {slide_number}. Could you tell me about what we're looking at?",
+    #                 allow_interruptions=True,
+    #             )
+    #     except Exception as e:
+    #         logger.error(f"Error handling data message: {e}")
 
     # Subscribe to data messages
-    ctx.room.on("data_received", handle_data_message)
+    # ctx.room.on("data_received", handle_data_message)
 
     assistant.start(ctx.room, participant)
+
+    chat = rtc.ChatManager(ctx.room)
+
+    async def answer_from_text(txt: str):
+        chat_ctx = assistant.chat_ctx.copy()
+        chat_ctx.append(role="user", text=txt)
+        stream = assistant.llm.chat(chat_ctx=chat_ctx)
+        await assistant.say(stream)
+
+    @chat.on("message_received")
+    def on_chat_received(msg: rtc.ChatMessage):
+        if msg.message:
+            asyncio.create_task(answer_from_text(msg.message))
+
+    log_queue = asyncio.Queue()
+
+    @assistant.on("user_speech_committed")
+    def on_user_speech_committed(msg: llm.ChatMessage):
+        # convert string lists to strings, drop images
+        if isinstance(msg.content, list):
+            msg.content = "\n".join(
+                "[image]" if isinstance(x, llm.ChatImage) else x for x in msg
+            )
+        log_queue.put_nowait(f"[{datetime.now()}] USER:\n{msg.content}\n\n")
 
     # Initial greeting
     await assistant.say(
@@ -88,9 +110,4 @@ async def entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
-    cli.run_app(
-        WorkerOptions(
-            entrypoint_fnc=entrypoint,
-            prewarm_fnc=prewarm,
-        ),
-    )
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
