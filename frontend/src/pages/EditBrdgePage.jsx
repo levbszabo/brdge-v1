@@ -15,7 +15,9 @@ import {
     TrackToggle,
     useChat,
     LayoutContextProvider,
-    Chat
+    Chat,
+    BarVisualizer,
+    useVoiceAssistant,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,11 +30,55 @@ const StyledButton = styled(Button)(({ theme }) => ({
     fontWeight: 600,
 }));
 
+const visualizerStyles = {
+    '--lk-bar-visualizer-color': 'var(--lk-theme-color)',
+    '--lk-bar-visualizer-gradient': 'linear-gradient(180deg, var(--lk-theme-color) 0%, rgba(var(--lk-theme-color-rgb), 0.2) 100%)',
+    '--lk-bar-visualizer-background': 'rgba(var(--lk-theme-color-rgb), 0.1)',
+};
+
 function LiveKitControls() {
     const { messages, send: sendMessage } = useChat();
+    const voiceAssistant = useVoiceAssistant();
+    const theme = useTheme();
+
+    useEffect(() => {
+        console.log('Voice Assistant State:', voiceAssistant.state);
+        console.log('Audio Track:', voiceAssistant.audioTrack);
+    }, [voiceAssistant.state, voiceAssistant.audioTrack]);
 
     return (
         <Box sx={{ position: 'relative', flex: 1 }}>
+            <div style={{ padding: '10px', background: '#f0f0f0' }}>
+                Voice Assistant Status: {voiceAssistant.state}
+                <br />
+                Audio Track: {voiceAssistant.audioTrack ? 'Present' : 'Not Present'}
+            </div>
+            {voiceAssistant.audioTrack && (
+                <Box sx={{
+                    mb: 2,
+                    height: '100px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    '& .lk-bar-visualizer': {
+                        width: '100%',
+                        '--lk-bar-color': theme.palette.primary.main,
+                        '--lk-bar-width': '30px',
+                        '--lk-bar-gap': '20px',
+                    }
+                }}>
+                    <BarVisualizer
+                        state={voiceAssistant.state}
+                        trackRef={voiceAssistant.audioTrack}
+                        barCount={5}
+                        options={{
+                            minHeight: 20,
+                            maxHeight: 80,
+                            smoothing: 0.5
+                        }}
+                    />
+                </Box>
+            )}
             <Chat messages={messages} onSendMessage={sendMessage} />
         </Box>
     );
@@ -42,6 +88,8 @@ function EditBrdgePage() {
     const { id } = useParams();
     const { showSnackbar } = useSnackbar();
     const theme = useTheme();
+
+
 
     const [brdgeData, setBrdgeData] = useState({
         name: '',
@@ -179,9 +227,17 @@ function EditBrdgePage() {
                         token={connectionDetails.token}
                         serverUrl={connectionDetails.serverUrl}
                         connect={true}
-                        audio
+                        audio={true}
                         video={false}
                         onDisconnected={() => setIsRoomActive(false)}
+                        options={{
+                            adaptiveStream: true,
+                            dynacast: true,
+                            publishDefaults: {
+                                simulcast: false,
+                                audioEnabled: true,
+                            },
+                        }}
                     >
                         <LayoutContextProvider>
                             <LiveKitControls />
