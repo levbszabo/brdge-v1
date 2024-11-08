@@ -14,6 +14,7 @@ from livekit.plugins import openai, deepgram, silero, cartesia
 from livekit.agents.llm import ChatImage
 from livekit import rtc
 import json
+from datetime import datetime
 
 load_dotenv(dotenv_path=".env.local")
 logger = logging.getLogger("voice-agent")
@@ -99,10 +100,29 @@ async def entrypoint(ctx: JobContext):
             )
         log_queue.put_nowait(f"[{datetime.now()}] USER:\n{msg.content}\n\n")
 
+    @assistant.on("agent_speech_committed")
+    def on_agent_speech_committed(msg: llm.ChatMessage):
+        log_queue.put_nowait(f"[{datetime.now()}] AGENT:\n{msg.content}\n\n")
+
+    async def write_transcription():
+        async with open("transcription.txt", "w") as f:
+            while True:
+                msg = await log_queue.get()
+                if msg is None:
+                    break
+                await f.write(msg)
+
+    write_task = asyncio.create_task(write_transcription())
+
+    async def finish_queue():
+        log_queue.put_nowait(None)
+        await write_task
+
+    ctx.add_shutdown_callback(finish_queue)
+
     # Initial greeting
     await assistant.say(
-        "Hello! I'm ready to help you present your slides. When you're ready, "
-        "please navigate through your slides and I'll help you describe them.",
+        "Howdy mate, its Levi here",
         allow_interruptions=True,
     )
 
