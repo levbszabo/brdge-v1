@@ -29,11 +29,11 @@ const StyledButton = styled(Button)(({ theme }) => ({
 }));
 
 function LiveKitControls() {
-    const { messages, send } = useChat();
+    const { messages, send: sendMessage } = useChat();
 
     return (
         <Box sx={{ position: 'relative', flex: 1 }}>
-            <Chat messages={messages} onSend={send} />
+            <Chat messages={messages} onSendMessage={sendMessage} />
         </Box>
     );
 }
