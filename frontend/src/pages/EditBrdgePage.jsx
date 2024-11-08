@@ -15,7 +15,6 @@ import {
     TrackToggle,
     useChat,
     LayoutContextProvider,
-    Chat,
     BarVisualizer,
     useVoiceAssistant,
 } from "@livekit/components-react";
@@ -23,6 +22,7 @@ import "@livekit/components-styles";
 import { motion, AnimatePresence } from 'framer-motion';
 import { CircularProgress } from '@mui/material';
 import { LIVEKIT_URL as serverUrl } from '../config';
+import Chat from '../components/Chat';
 
 const StyledButton = styled(Button)(({ theme }) => ({
     borderRadius: theme.spacing(3),
@@ -37,7 +37,6 @@ const visualizerStyles = {
 };
 
 function LiveKitControls() {
-    const { messages, send: sendMessage } = useChat();
     const voiceAssistant = useVoiceAssistant();
     const theme = useTheme();
 
@@ -51,11 +50,6 @@ function LiveKitControls() {
 
     return (
         <Box sx={{ position: 'relative', flex: 1 }}>
-            <div style={{ padding: '10px', background: '#f0f0f0' }}>
-                Voice Assistant Status: {voiceAssistant.state}
-                <br />
-                Audio Track: {voiceAssistant.audioTrack ? 'Present' : 'Not Present'}
-            </div>
             {voiceAssistant.audioTrack && (
                 <Box sx={{
                     mb: 2,
@@ -82,7 +76,7 @@ function LiveKitControls() {
                     />
                 </Box>
             )}
-            <Chat messages={messages} onSendMessage={sendMessage} />
+            <Chat />
         </Box>
     );
 }
