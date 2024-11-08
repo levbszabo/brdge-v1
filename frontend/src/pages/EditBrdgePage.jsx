@@ -42,9 +42,12 @@ function LiveKitControls() {
     const theme = useTheme();
 
     useEffect(() => {
-        console.log('Voice Assistant State:', voiceAssistant.state);
-        console.log('Audio Track:', voiceAssistant.audioTrack);
-    }, [voiceAssistant.state, voiceAssistant.audioTrack]);
+        if (voiceAssistant.state === 'ready') {
+            setTimeout(() => {
+                voiceAssistant.start();
+            }, 1000);
+        }
+    }, [voiceAssistant.state]);
 
     return (
         <Box sx={{ position: 'relative', flex: 1 }}>
@@ -231,17 +234,35 @@ function EditBrdgePage() {
                         video={false}
                         onDisconnected={() => setIsRoomActive(false)}
                         options={{
-                            adaptiveStream: true,
-                            dynacast: true,
+                            adaptiveStream: false,
+                            dynacast: false,
                             publishDefaults: {
                                 simulcast: false,
                                 audioEnabled: true,
+                                dtx: false,
+                                red: true,
+                                audioBitrate: 128000,
+                                audioCodec: 'opus',
                             },
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true,
+                                sampleRate: 48000,
+                                sampleSize: 24,
+                                channelCount: 2,
+                                latency: 0,
+                                volume: 1.0
+                            }
                         }}
                     >
                         <LayoutContextProvider>
                             <LiveKitControls />
-                            <RoomAudioRenderer />
+                            <RoomAudioRenderer
+                                volume={1.0}
+                                autoPlay
+                                muted={false}
+                            />
                             <StartAudio />
                             <ControlBar>
                                 <TrackToggle source="microphone" />
