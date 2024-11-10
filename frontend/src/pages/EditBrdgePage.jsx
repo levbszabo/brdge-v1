@@ -41,7 +41,17 @@ function LiveKitControls() {
     const theme = useTheme();
 
     useEffect(() => {
+        console.log('Voice Assistant State Changed:', {
+            state: voiceAssistant.state,
+            hasAudioTrack: !!voiceAssistant.audioTrack,
+            hasTranscriptions: !!voiceAssistant.agentTranscriptions,
+            segments: voiceAssistant.agentTranscriptions?.segments
+        });
+    }, [voiceAssistant.state, voiceAssistant.audioTrack, voiceAssistant.agentTranscriptions]);
+
+    useEffect(() => {
         if (voiceAssistant.state === 'ready') {
+            console.log('Starting voice assistant...');
             setTimeout(() => {
                 voiceAssistant.start();
             }, 1000);
@@ -50,6 +60,10 @@ function LiveKitControls() {
 
     return (
         <Box sx={{ position: 'relative', flex: 1 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Assistant State: {voiceAssistant.state}
+            </Typography>
+
             {voiceAssistant.audioTrack && (
                 <Box sx={{
                     mb: 2,
@@ -247,6 +261,10 @@ function EditBrdgePage() {
                                 channelCount: 2,
                                 latency: 0,
                                 volume: 1.0
+                            },
+                            transcriptions: {
+                                enabled: true,
+                                language: 'en-US',
                             }
                         }}
                     >

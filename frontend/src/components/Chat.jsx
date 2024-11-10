@@ -6,7 +6,7 @@ import {
     useVoiceAssistant,
 } from "@livekit/components-react";
 
-const ChatMessage = ({ name, message, isSelf }) => {
+const ChatMessage = ({ name, message, isSelf, isTranscription, final }) => {
     return (
         <Box sx={{
             display: 'flex',
@@ -20,19 +20,22 @@ const ChatMessage = ({ name, message, isSelf }) => {
                 sx={{
                     color: isSelf ? 'text.secondary' : '#00e5ff',
                     textTransform: 'uppercase',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    opacity: isTranscription && !final ? 0.8 : 1
                 }}
             >
-                {name}
+                {isTranscription ? `${name} (${final ? 'Final' : 'Live'})` : name}
             </Typography>
             <Typography
                 variant="body2"
                 sx={{
                     color: isSelf ? '#fff' : '#00e5ff',
-                    whiteSpace: 'pre-line'
+                    whiteSpace: 'pre-line',
+                    opacity: isTranscription && !final ? 0.8 : 1
                 }}
             >
                 {message}
+                {isTranscription && !final ? '...' : ''}
             </Typography>
         </Box>
     );
@@ -42,14 +45,84 @@ const Chat = () => {
     const [message, setMessage] = useState('');
     const containerRef = useRef(null);
     const { messages = [], send: sendMessage } = useChat() || {};
-    const voiceAssistant = useVoiceAssistant();
+    const { state, agentTranscriptions } = useVoiceAssistant();
+    const [allMessages, setAllMessages] = useState([]);
 
+    // Add this new effect specifically for transcriptions
+    useEffect(() => {
+        if (!agentTranscriptions) return;
+
+        // Access segments directly from the array structure we see in the logs
+        const segments = Array.isArray(agentTranscriptions)
+            ? agentTranscriptions
+            : (agentTranscriptions.segments || []);
+
+        console.log('Processing segments:', segments);
+
+        // Convert segments to messages
+        const newMessages = segments.map((segment, index) => {
+            // Handle both possible segment structures
+            const text = typeof segment === 'object' ? segment.text : segment;
+            const final = typeof segment === 'object' ? segment.final : true;
+            const id = typeof segment === 'object' ? segment.id : index;
+
+            return {
+                id,
+                name: 'Agent',
+                message: text,
+                isSelf: false,
+                timestamp: Date.now() - (segments.length - index),
+                isTranscription: true,
+                final
+            };
+        }).filter(msg => msg.message); // Filter out any empty messages
+
+        setAllMessages(prevMessages => {
+            // Filter out old transcriptions and combine with new ones
+            const chatOnlyMessages = prevMessages.filter(msg => !msg.isTranscription);
+            return [...newMessages, ...chatOnlyMessages].sort((a, b) => a.timestamp - b.timestamp);
+        });
+
+    }, [agentTranscriptions]);
+
+    // Add separate effect for chat messages
+    useEffect(() => {
+        if (!messages?.length) return;
+
+        setAllMessages(prevMessages => {
+            // Filter out chat messages and add new ones
+            const transcriptMessages = prevMessages.filter(msg => msg.isTranscription);
+            const newChatMessages = messages.map(msg => ({
+                name: msg.from?.name || 'Agent',
+                message: msg.message,
+                isSelf: !msg.from?.isAgent,
+                timestamp: msg.timestamp,
+                isTranscription: false
+            }));
+
+            return [...transcriptMessages, ...newChatMessages]
+                .sort((a, b) => a.timestamp - b.timestamp);
+        });
+    }, [messages]);
+
+    // Scroll to bottom effect
     useEffect(() => {
         if (containerRef.current) {
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
-    }, [messages]);
+    }, [allMessages]);
 
+    // Debug logging
+    useEffect(() => {
+        console.log('Chat State:', {
+            hasMessages: messages?.length > 0,
+            messageCount: allMessages.length,
+            transcriptions: agentTranscriptions,
+            state
+        });
+    }, [messages, allMessages, agentTranscriptions, state]);
+
+    // Rest of the component remains the same...
     const handleSend = async () => {
         if (message.trim() && sendMessage) {
             try {
@@ -68,14 +141,6 @@ const Chat = () => {
         }
     };
 
-    // Format LiveKit messages to match our component's format
-    const formattedMessages = messages?.map(msg => ({
-        name: msg.from?.name || 'Agent',
-        message: msg.message,
-        isSelf: !msg.from?.isAgent,
-        timestamp: msg.timestamp
-    })) || [];
-
     return (
         <Box sx={{
             display: 'flex',
@@ -90,7 +155,7 @@ const Chat = () => {
                 borderBottom: '1px solid rgba(255,255,255,0.1)'
             }}>
                 <Typography variant="h6" sx={{ color: '#fff' }}>
-                    CHAT
+                    CHAT {state && `(${state})`}
                 </Typography>
             </Box>
 
@@ -106,14 +171,22 @@ const Chat = () => {
                     gap: 2
                 }}
             >
-                {formattedMessages.map((msg, index) => (
-                    <ChatMessage
-                        key={index}
-                        name={msg.name}
-                        message={msg.message}
-                        isSelf={msg.isSelf}
-                    />
-                ))}
+                {allMessages.length > 0 ? (
+                    allMessages.map((msg, index) => (
+                        <ChatMessage
+                            key={msg.id || `${index}-${msg.timestamp}-${msg.message}`}
+                            name={msg.name}
+                            message={msg.message}
+                            isSelf={msg.isSelf}
+                            isTranscription={msg.isTranscription}
+                            final={msg.final}
+                        />
+                    ))
+                ) : (
+                    <Typography sx={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', py: 4 }}>
+                        No messages yet
+                    </Typography>
+                )}
             </Box>
 
             {/* Input Area */}
@@ -131,7 +204,7 @@ const Chat = () => {
                     placeholder="Type a message"
                     variant="outlined"
                     size="small"
-                    disabled={voiceAssistant.state === 'speaking'}
+                    disabled={state === 'speaking'}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             color: '#fff',
@@ -153,7 +226,7 @@ const Chat = () => {
                 />
                 <Button
                     onClick={handleSend}
-                    disabled={!message.trim() || voiceAssistant.state === 'speaking'}
+                    disabled={!message.trim() || state === 'speaking'}
                     variant="contained"
                     sx={{
                         backgroundColor: '#00e5ff',
