@@ -8,7 +8,6 @@ const defaultConfig = {
     video_fit: "cover",
     settings: {
         editable: true,
-        theme_color: "cyan",
         chat: true,
         inputs: {
             camera: true,
@@ -55,8 +54,6 @@ export const ConfigProvider = ({ children }) => {
         return defaultConfig;
     }, []);
 
-    const [localColorOverride, setLocalColorOverride] = useState(null);
-
     const getSettingsFromStorage = useCallback(() => {
         return loadFromStorage('lk_settings');
     }, []);
@@ -66,12 +63,9 @@ export const ConfigProvider = ({ children }) => {
     }, []);
 
     const getConfig = useCallback(() => {
-        const appConfigFromSettings = appConfig;
+        const appConfigFromSettings = { ...appConfig };
 
         if (appConfigFromSettings.settings.editable === false) {
-            if (localColorOverride) {
-                appConfigFromSettings.settings.theme_color = localColorOverride;
-            }
             return appConfigFromSettings;
         }
         const storageSettings = getSettingsFromStorage();
@@ -80,12 +74,11 @@ export const ConfigProvider = ({ children }) => {
         }
         appConfigFromSettings.settings = storageSettings;
         return { ...appConfigFromSettings };
-    }, [appConfig, getSettingsFromStorage, localColorOverride]);
+    }, [appConfig, getSettingsFromStorage]);
 
     const setUserSettings = useCallback((settings) => {
         const appConfigFromSettings = appConfig;
         if (appConfigFromSettings.settings.editable === false) {
-            setLocalColorOverride(settings.theme_color);
             return;
         }
         setStorageSettings(settings);

@@ -14,16 +14,11 @@ import { ConfigProvider, useConfig } from "../hooks/useConfig";
 import { ConnectionProvider, useConnection } from "../hooks/useConnection";
 import { ToasterProvider as ToastProvider, useToast } from '../components/toast/ToasterProvider';
 
-const themeColors = [
-    "cyan", "green", "amber", "blue", "violet", "rose", "pink", "teal",
-];
-
 function PlaygroundInner() {
     const { shouldConnect, wsUrl, token, mode, connect, disconnect } = useConnection();
     const { config } = useConfig();
-    const { toastMessage, setToastMessage } = useToast();
+    const { toastMessage } = useToast();
 
-    // Remove TypeScript type annotations
     const handleConnect = useCallback((connected, connectionMode) => {
         connected ? connect(connectionMode) : disconnect();
     }, [connect, disconnect]);
@@ -59,12 +54,10 @@ function PlaygroundInner() {
                     token={token}
                     connect={shouldConnect}
                     onError={(e) => {
-                        setToastMessage({ message: e.message, type: "error" });
                         console.error(e);
                     }}
                 >
                     <Playground
-                        themeColors={themeColors}
                         onConnect={(c) => {
                             const m = process.env.REACT_APP_LIVEKIT_URL ? "env" : mode;
                             handleConnect(c, m);
@@ -75,7 +68,6 @@ function PlaygroundInner() {
                 </LiveKitRoom>
             ) : (
                 <PlaygroundConnect
-                    accentColor={themeColors[0]}
                     onConnectClicked={(mode) => {
                         handleConnect(true, mode);
                     }}

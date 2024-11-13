@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "./button/Button";
 
-export const PlaygroundConnect = ({ accentColor, onConnectClicked }) => {
+export const PlaygroundConnect = ({ onConnectClicked }) => {
     const [url, setUrl] = useState("");
     const [token, setToken] = useState("");
 
@@ -26,7 +26,6 @@ export const PlaygroundConnect = ({ accentColor, onConnectClicked }) => {
                 ></textarea>
             </div>
             <Button
-                accentColor={accentColor}
                 className="w-full"
                 disabled={!url || !token}
                 onClick={() => {
