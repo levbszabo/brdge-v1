@@ -32,6 +32,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import stripe
 from sqlalchemy import text
+from livekit import api as lk_api
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -1544,23 +1545,23 @@ def create_portal_session(user):
         return jsonify({"error": "Failed to create portal session"}), 500
 
 
-import os
-from livekit import api as lk_api
-
-
 @app.route("/api/getToken")
 def getToken():
-    token = (
-        lk_api.AccessToken(
-            os.getenv("LIVEKIT_API_KEY"), os.getenv("LIVEKIT_API_SECRET")
-        )
-        .with_identity("identity")
-        .with_name("my name")
-        .with_grants(
-            lk_api.VideoGrants(
-                room_join=True,
-                room="my-room",
+    try:
+        token = (
+            lk_api.AccessToken(
+                os.getenv("LIVEKIT_API_KEY"), os.getenv("LIVEKIT_API_SECRET")
+            )
+            .with_identity("user-" + str(uuid.uuid4()))  # Generate unique user ID
+            .with_name("LiveKit User")
+            .with_grants(
+                lk_api.VideoGrants(
+                    room_join=True,
+                    room="playground-room",  # You might want to make this configurable
+                )
             )
         )
-    )
-    return token.to_jwt()
+        return token.to_jwt()
+    except Exception as e:
+        print(f"Error generating token: {str(e)}")
+        return {"error": "Failed to generate token"}, 500

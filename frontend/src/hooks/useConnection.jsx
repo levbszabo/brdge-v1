@@ -21,33 +21,72 @@ export const ConnectionProvider = ({ children }) => {
     const connect = useCallback(async (mode) => {
         let token = "";
         let url = "";
-        if (mode === "cloud") {
-            try {
+
+        console.log("Attempting to connect with mode:", mode);
+
+        try {
+            if (mode === "cloud") {
+                console.log("Cloud mode - generating token...");
                 token = await generateToken();
-            } catch (error) {
-                setToastMessage({
-                    type: "error",
-                    message: "Failed to generate token, you may need to increase your role in this LiveKit Cloud project.",
-                });
+                url = cloudWSUrl;
+                console.log("Cloud token generated, URL:", url);
+            } else if (mode === "env") {
+                console.log("Env mode - checking LIVEKIT_URL...");
+                url = process.env.REACT_APP_LIVEKIT_URL;
+
+                if (!url) {
+                    console.error("REACT_APP_LIVEKIT_URL is not set");
+                    throw new Error("LIVEKIT_URL is not configured");
+                }
+                console.log("Using LIVEKIT_URL:", url);
+
+                // Fetch token from backend
+                console.log("Fetching token from backend...");
+                const response = await fetch("/api/getToken");
+                console.log("Token response status:", response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Token fetch failed:", errorText);
+                    throw new Error(`Failed to fetch token: ${errorText}`);
+                }
+
+                token = await response.text();
+                console.log("Token received from backend");
+            } else {
+                console.log("Manual mode - using config settings");
+                token = config.settings.token;
+                url = config.settings.ws_url;
+                console.log("Using manual URL:", url);
             }
-            url = cloudWSUrl;
-        } else if (mode === "env") {
-            if (!process.env.NEXT_PUBLIC_LIVEKIT_URL) {
-                throw new Error("NEXT_PUBLIC_LIVEKIT_URL is not set");
+
+            if (!url || !token) {
+                console.error("Missing URL or token:", { url, hasToken: !!token });
+                throw new Error("Missing connection details");
             }
-            url = process.env.NEXT_PUBLIC_LIVEKIT_URL;
-            const { accessToken } = await fetch("/api/token").then((res) =>
-                res.json()
-            );
-            token = accessToken;
-        } else {
-            token = config.settings.token;
-            url = config.settings.ws_url;
+
+            console.log("Setting connection details...");
+            setConnectionDetails({ wsUrl: url, token, shouldConnect: true, mode });
+            console.log("Connection details set successfully");
+
+        } catch (error) {
+            console.error("Connection error:", error);
+            setToastMessage({
+                type: "error",
+                message: `Connection failed: ${error.message}`,
+            });
+            // Reset connection details on error
+            setConnectionDetails({
+                wsUrl: "",
+                token: "",
+                shouldConnect: false,
+                mode: "manual"
+            });
         }
-        setConnectionDetails({ wsUrl: url, token, shouldConnect: true, mode });
     }, [cloudWSUrl, config.settings.token, config.settings.ws_url, generateToken, setToastMessage]);
 
     const disconnect = useCallback(async () => {
+        console.log("Disconnecting...");
         setConnectionDetails((prev) => ({ ...prev, shouldConnect: false }));
     }, []);
 

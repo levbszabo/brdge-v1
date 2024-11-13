@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography, TextField, Button } from '@mui/material';
 import {
-    ChatMessage as ComponentsChatMessage,
     useChat,
     useVoiceAssistant,
+    useConnectionState,
 } from "@livekit/components-react";
 
 const ChatMessage = ({ name, message, isSelf, isTranscription, final }) => {
@@ -43,25 +43,21 @@ const ChatMessage = ({ name, message, isSelf, isTranscription, final }) => {
 
 const Chat = () => {
     const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
     const containerRef = useRef(null);
     const { messages = [], send: sendMessage } = useChat() || {};
     const { state, agentTranscriptions } = useVoiceAssistant();
     const [allMessages, setAllMessages] = useState([]);
+    const connectionState = useConnectionState();
 
-    // Add this new effect specifically for transcriptions
     useEffect(() => {
         if (!agentTranscriptions) return;
 
-        // Access segments directly from the array structure we see in the logs
         const segments = Array.isArray(agentTranscriptions)
             ? agentTranscriptions
             : (agentTranscriptions.segments || []);
 
-        console.log('Processing segments:', segments);
-
-        // Convert segments to messages
         const newMessages = segments.map((segment, index) => {
-            // Handle both possible segment structures
             const text = typeof segment === 'object' ? segment.text : segment;
             const final = typeof segment === 'object' ? segment.final : true;
             const id = typeof segment === 'object' ? segment.id : index;
@@ -75,22 +71,18 @@ const Chat = () => {
                 isTranscription: true,
                 final
             };
-        }).filter(msg => msg.message); // Filter out any empty messages
+        }).filter(msg => msg.message);
 
         setAllMessages(prevMessages => {
-            // Filter out old transcriptions and combine with new ones
             const chatOnlyMessages = prevMessages.filter(msg => !msg.isTranscription);
             return [...newMessages, ...chatOnlyMessages].sort((a, b) => a.timestamp - b.timestamp);
         });
-
     }, [agentTranscriptions]);
 
-    // Add separate effect for chat messages
     useEffect(() => {
         if (!messages?.length) return;
 
         setAllMessages(prevMessages => {
-            // Filter out chat messages and add new ones
             const transcriptMessages = prevMessages.filter(msg => msg.isTranscription);
             const newChatMessages = messages.map(msg => ({
                 name: msg.from?.name || 'Agent',
@@ -105,32 +97,27 @@ const Chat = () => {
         });
     }, [messages]);
 
-    // Scroll to bottom effect
     useEffect(() => {
         if (containerRef.current) {
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
     }, [allMessages]);
 
-    // Debug logging
-    useEffect(() => {
-        console.log('Chat State:', {
-            hasMessages: messages?.length > 0,
-            messageCount: allMessages.length,
-            transcriptions: agentTranscriptions,
-            state
-        });
-    }, [messages, allMessages, agentTranscriptions, state]);
-
-    // Rest of the component remains the same...
     const handleSend = async () => {
-        if (message.trim() && sendMessage) {
-            try {
-                await sendMessage(message);
-                setMessage('');
-            } catch (error) {
-                console.error('Error sending message:', error);
-            }
+        if (!message.trim() || !sendMessage) return;
+
+        if (connectionState !== 'connected') {
+            setError('Cannot send message: Not connected to the server');
+            return;
+        }
+
+        try {
+            setError('');
+            await sendMessage(message);
+            setMessage('');
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setError('Failed to send message. Please try again.');
         }
     };
 
@@ -141,6 +128,8 @@ const Chat = () => {
         }
     };
 
+    const isDisabled = state === 'speaking' || connectionState !== 'connected';
+
     return (
         <Box sx={{
             display: 'flex',
@@ -149,7 +138,6 @@ const Chat = () => {
             backgroundColor: '#000',
             borderRadius: 1
         }}>
-            {/* Chat Header */}
             <Box sx={{
                 p: 2,
                 borderBottom: '1px solid rgba(255,255,255,0.1)'
@@ -157,9 +145,13 @@ const Chat = () => {
                 <Typography variant="h6" sx={{ color: '#fff' }}>
                     CHAT {state && `(${state})`}
                 </Typography>
+                {connectionState !== 'connected' && (
+                    <Typography variant="caption" sx={{ color: 'error.main' }}>
+                        Not connected to server
+                    </Typography>
+                )}
             </Box>
 
-            {/* Messages Container */}
             <Box
                 ref={containerRef}
                 sx={{
@@ -189,7 +181,20 @@ const Chat = () => {
                 )}
             </Box>
 
-            {/* Input Area */}
+            {error && (
+                <Typography
+                    sx={{
+                        color: 'error.main',
+                        px: 2,
+                        py: 1,
+                        textAlign: 'center',
+                        fontSize: '0.875rem'
+                    }}
+                >
+                    {error}
+                </Typography>
+            )}
+
             <Box sx={{
                 p: 2,
                 borderTop: '1px solid rgba(255,255,255,0.1)',
@@ -201,10 +206,10 @@ const Chat = () => {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type a message"
+                    placeholder={isDisabled ? "Cannot send messages while disconnected" : "Type a message"}
                     variant="outlined"
                     size="small"
-                    disabled={state === 'speaking'}
+                    disabled={isDisabled}
                     sx={{
                         '& .MuiOutlinedInput-root': {
                             color: '#fff',
@@ -226,7 +231,7 @@ const Chat = () => {
                 />
                 <Button
                     onClick={handleSend}
-                    disabled={!message.trim() || state === 'speaking'}
+                    disabled={isDisabled || !message.trim()}
                     variant="contained"
                     sx={{
                         backgroundColor: '#00e5ff',
