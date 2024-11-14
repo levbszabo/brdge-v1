@@ -169,32 +169,28 @@ async def entrypoint(ctx: JobContext):
         chat_ctx.append(role="user", text=txt)
 
         # Capture screen image if requested
-        if any(
-            trigger in txt.lower()
-            for trigger in ["what's on screen", "what do you see", "analyze screen"]
-        ):
-            logger.info("Screen capture requested")
-            try:
-                # Get frame from screen share
-                image_data = await capture_screen_frame(participant)
-                if image_data:
-                    logger.info("Successfully captured screen frame")
-                    # Create ChatImage with the data URL string
-                    chat_image = ChatImage(
-                        image=image_data
-                    )  # Now passing a data URL string
-                    chat_ctx.append(role="user", images=[chat_image])
-                    chat_ctx.append(
-                        role="user",
-                        text="Please analyze what you see in this screen share.",
-                    )
-                else:
-                    logger.error("No screen frame captured")
-            except Exception as e:
-                logger.error(f"Error in screen capture process: {e}")
-                import traceback
+        logger.info("Screen capture requested")
+        try:
+            # Get frame from screen share
+            image_data = await capture_screen_frame(participant)
+            if image_data:
+                logger.info("Successfully captured screen frame")
+                # Create ChatImage with the data URL string
+                chat_image = ChatImage(
+                    image=image_data
+                )  # Now passing a data URL string
+                chat_ctx.append(role="user", images=[chat_image])
+                chat_ctx.append(
+                    role="user",
+                    text="Utilize the image to help you answer the question.",
+                )
+            else:
+                logger.error("No screen frame captured")
+        except Exception as e:
+            logger.error(f"Error in screen capture process: {e}")
+            import traceback
 
-                logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
 
         stream = assistant.llm.chat(chat_ctx=chat_ctx)
         await assistant.say(stream)
