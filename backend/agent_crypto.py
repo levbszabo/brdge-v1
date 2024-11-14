@@ -13,14 +13,17 @@ from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import openai, deepgram, silero, cartesia
 from livekit.agents.llm import ChatImage
 from livekit import rtc
+from livekit.rtc import VideoFrame
+from livekit.rtc._proto import video_frame_pb2
 import json
 from datetime import datetime
 from livekit.plugins import browser
+import io
+from PIL import Image
+import base64
 
-# WIDTH = 1920
-# HEIGHT = 1080
-WIDTH = 1000
-HEIGHT = 500
+WIDTH = 1920
+HEIGHT = 1080
 load_dotenv(dotenv_path=".env_crypto")
 logger = logging.getLogger("voice-agent")
 
@@ -29,23 +32,28 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"connecting to room {ctx.room.name}")
     await ctx.connect()
 
-    browser_ctx = browser.BrowserContext(dev_mode=True)
     participant = await ctx.wait_for_participant()
-    print(participant.track_publications)
+    # browser_ctx = browser.BrowserContext(dev_mode=True)
+    # print(participant.track_publications)
 
-    await browser_ctx.initialize()
-    page = await browser_ctx.new_page(url="https://cointelegraph.com/bitcoin-price")
-    source = rtc.VideoSource(WIDTH, HEIGHT)
-    track = rtc.LocalVideoTrack.create_video_track("single-color", source)
-    options = rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_CAMERA)
-    publication = await ctx.room.local_participant.publish_track(track, options)
+    # await browser_ctx.initialize()
+    # page = await browser_ctx.new_page(
+    #     url="https://cointelegraph.com/bitcoin-price",
+    #     width=WIDTH,
+    #     height=HEIGHT,
+    #     framerate=1,
+    # )
+    # source = rtc.VideoSource(WIDTH, HEIGHT)
+    # track = rtc.LocalVideoTrack.create_video_track("single-color", source)
+    # options = rtc.TrackPublishOptions(source=rtc.TrackSource.SOURCE_CAMERA)
+    # publication = await ctx.room.local_participant.publish_track(track, options)
 
-    @page.on("paint")
-    def on_paint(paint_data):
-        try:
-            source.capture_frame(paint_data.frame)
-        except Exception as e:
-            logger.error(f"Frame capture error: {e}")
+    # @page.on("paint")
+    # def on_paint(paint_data):
+    #     try:
+    #         source.capture_frame(paint_data.frame)
+    #     except Exception as e:
+    #         logger.error(f"Frame capture error: {e}")
 
     logger.info(f"starting voice assistant for participant {participant.identity}")
 
@@ -98,9 +106,96 @@ async def entrypoint(ctx: JobContext):
 
     chat = rtc.ChatManager(ctx.room)
 
+    async def capture_screen_frame(participant) -> str:
+        """Capture a frame from the screen share track and return as base64"""
+        try:
+            # Find screen share track
+            screen_track = next(
+                (
+                    pub.track
+                    for pub in participant.track_publications.values()
+                    if pub.kind == rtc.TrackKind.KIND_VIDEO
+                    and pub.source == rtc.TrackSource.SOURCE_SCREENSHARE
+                    and pub.track is not None
+                ),
+                None,
+            )
+
+            if screen_track:
+                # Create video stream from track
+                video_stream = rtc.VideoStream.from_track(
+                    track=screen_track, format=video_frame_pb2.RGB24
+                )
+
+                # Get first frame from stream
+                async for frame_event in video_stream:
+                    frame = frame_event.frame
+
+                    # Create PIL Image from frame data
+                    image = Image.frombytes(
+                        "RGB", (frame.width, frame.height), bytes(frame.data)
+                    )
+
+                    # Convert to base64
+                    img_byte_arr = io.BytesIO()
+                    image.save(img_byte_arr, format="PNG")
+                    img_byte_arr.seek(0)
+
+                    # Convert to base64 string with data URL prefix
+                    base64_image = base64.b64encode(img_byte_arr.getvalue()).decode(
+                        "utf-8"
+                    )
+                    data_url = f"data:image/png;base64,{base64_image}"
+
+                    # Close the stream
+                    await video_stream.aclose()
+
+                    return data_url
+
+                await video_stream.aclose()
+                return None
+
+            logger.error("No screen share track found")
+            return None
+        except Exception as e:
+            logger.error(f"Error capturing screen frame: {e}")
+            import traceback
+
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return None
+
     async def answer_from_text(txt: str):
         chat_ctx = assistant.chat_ctx.copy()
         chat_ctx.append(role="user", text=txt)
+
+        # Capture screen image if requested
+        if any(
+            trigger in txt.lower()
+            for trigger in ["what's on screen", "what do you see", "analyze screen"]
+        ):
+            logger.info("Screen capture requested")
+            try:
+                # Get frame from screen share
+                image_data = await capture_screen_frame(participant)
+                if image_data:
+                    logger.info("Successfully captured screen frame")
+                    # Create ChatImage with the data URL string
+                    chat_image = ChatImage(
+                        image=image_data
+                    )  # Now passing a data URL string
+                    chat_ctx.append(role="user", images=[chat_image])
+                    chat_ctx.append(
+                        role="user",
+                        text="Please analyze what you see in this screen share.",
+                    )
+                else:
+                    logger.error("No screen frame captured")
+            except Exception as e:
+                logger.error(f"Error in screen capture process: {e}")
+                import traceback
+
+                logger.error(f"Traceback: {traceback.format_exc()}")
+
         stream = assistant.llm.chat(chat_ctx=chat_ctx)
         await assistant.say(stream)
 
