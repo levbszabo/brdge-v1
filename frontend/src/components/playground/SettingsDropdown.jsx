@@ -1,6 +1,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { CheckIcon, ChevronIcon } from "./icons";
 import { useConfig } from "../../hooks/useConfig";
+import { useConnection } from "../../hooks/useConnection";
 
 const settingsDropdown = [
     {
@@ -42,11 +43,12 @@ const settingsDropdown = [
 
 export const SettingsDropdown = () => {
     const { config, setUserSettings } = useConfig();
+    const { showChat, toggleChat } = useConnection();
 
     const isEnabled = (setting) => {
         if (setting.type === "separator" || setting.type === "theme_color") return false;
         if (setting.type === "chat") {
-            return config.settings[setting.type];
+            return showChat;
         }
 
         if (setting.type === "inputs") {
@@ -60,12 +62,16 @@ export const SettingsDropdown = () => {
 
     const toggleSetting = (setting) => {
         if (setting.type === "separator" || setting.type === "theme_color") return;
+
+        if (setting.type === "chat") {
+            toggleChat();
+            return;
+        }
+
         const newValue = !isEnabled(setting);
         const newSettings = { ...config.settings }
 
-        if (setting.type === "chat") {
-            newSettings.chat = newValue;
-        } else if (setting.type === "inputs") {
+        if (setting.type === "inputs") {
             newSettings.inputs[setting.key] = newValue;
         } else if (setting.type === "outputs") {
             newSettings.outputs[setting.key] = newValue;

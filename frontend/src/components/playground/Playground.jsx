@@ -1,16 +1,14 @@
 "use client";
 
 import React from "react";
-import { useConfig } from "../../hooks/useConfig";
 import { useConnection } from "../../hooks/useConnection";
 import { useVoiceAssistant } from "@livekit/components-react";
 import { NoAgentNotification } from "../NoAgentNotification";
 import Chat from "../Chat";
 
 function Playground({ onConnect }) {
-    const { config } = useConfig();
+    const { shouldConnect, showChat } = useConnection();
     const { state } = useVoiceAssistant();
-    const { shouldConnect } = useConnection();
 
     return (
         <div className="flex flex-col h-full w-full">
@@ -19,7 +17,7 @@ function Playground({ onConnect }) {
                 <div className="flex-1">
                     {/* Main content area */}
                 </div>
-                {config.settings.chat && (
+                {showChat && (
                     <div className="w-80">
                         <Chat />
                     </div>

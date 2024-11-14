@@ -10,13 +10,12 @@ import { useCallback, useState, useMemo } from "react";
 import { PlaygroundConnect } from "../components/PlaygroundConnect";
 import Playground from "../components/playground/Playground";
 import { PlaygroundToast } from "../components/toast/PlaygroundToast";
-import { ConfigProvider, useConfig } from "../hooks/useConfig";
 import { ConnectionProvider, useConnection } from "../hooks/useConnection";
 import { ToasterProvider as ToastProvider, useToast } from '../components/toast/ToasterProvider';
+import { ConfigProvider } from '../hooks/useConfig';
 
 function PlaygroundInner() {
     const { shouldConnect, wsUrl, token, mode, connect, disconnect } = useConnection();
-    const { config } = useConfig();
     const { toastMessage } = useToast();
 
     const handleConnect = useCallback((connected, connectionMode) => {

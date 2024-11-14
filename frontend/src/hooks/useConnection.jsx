@@ -7,16 +7,26 @@ import { useToast } from "../components/toast/ToasterProvider";
 
 const ConnectionContext = createContext();
 
+const initialState = {
+    shouldConnect: false,
+    wsUrl: null,
+    token: null,
+    mode: null,
+    showChat: true,
+};
+
 export const ConnectionProvider = ({ children }) => {
     const { generateToken, wsUrl: cloudWSUrl } = useCloud();
     const { setToastMessage } = useToast();
     const { config } = useConfig();
-    const [connectionDetails, setConnectionDetails] = useState({
-        wsUrl: "",
-        token: "",
-        shouldConnect: false,
-        mode: "manual"
-    });
+    const [state, setState] = useState(initialState);
+
+    const toggleChat = useCallback(() => {
+        setState(prev => ({
+            ...prev,
+            showChat: !prev.showChat
+        }));
+    }, []);
 
     const connect = useCallback(async (mode) => {
         let token = "";
@@ -66,7 +76,7 @@ export const ConnectionProvider = ({ children }) => {
             }
 
             console.log("Setting connection details...");
-            setConnectionDetails({ wsUrl: url, token, shouldConnect: true, mode });
+            setState({ wsUrl: url, token, shouldConnect: true, mode, showChat: state.showChat });
             console.log("Connection details set successfully");
 
         } catch (error) {
@@ -76,31 +86,24 @@ export const ConnectionProvider = ({ children }) => {
                 message: `Connection failed: ${error.message}`,
             });
             // Reset connection details on error
-            setConnectionDetails({
-                wsUrl: "",
-                token: "",
-                shouldConnect: false,
-                mode: "manual"
-            });
+            setState(initialState);
         }
-    }, [cloudWSUrl, config.settings.token, config.settings.ws_url, generateToken, setToastMessage]);
+    }, [cloudWSUrl, config.settings.token, config.settings.ws_url, generateToken, setToastMessage, state]);
 
     const disconnect = useCallback(async () => {
         console.log("Disconnecting...");
-        setConnectionDetails((prev) => ({ ...prev, shouldConnect: false }));
+        setState(prev => ({ ...prev, shouldConnect: false }));
     }, []);
 
+    const value = {
+        ...state,
+        connect,
+        disconnect,
+        toggleChat,
+    };
+
     return (
-        <ConnectionContext.Provider
-            value={{
-                wsUrl: connectionDetails.wsUrl,
-                token: connectionDetails.token,
-                shouldConnect: connectionDetails.shouldConnect,
-                mode: connectionDetails.mode,
-                connect,
-                disconnect,
-            }}
-        >
+        <ConnectionContext.Provider value={value}>
             {children}
         </ConnectionContext.Provider>
     );
