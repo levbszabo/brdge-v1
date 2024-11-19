@@ -13,7 +13,7 @@ from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import openai, deepgram, silero, cartesia
 from livekit.agents.llm import ChatImage
 from livekit import rtc
-from livekit.rtc import VideoFrame
+from livekit.rtc import VideoFrame, DataPacket
 from livekit.rtc._proto import video_frame_pb2
 import json
 from datetime import datetime
@@ -53,6 +53,15 @@ Your role is to:
 
 Remember: Your goal is to gather knowledge and understand their presentation style. Keep your responses short (under 100 tokens) and focus on asking good questions."""
 
+# At the top of the file, add these logging configurations
+import logging
+
+logging.basicConfig(level=logging.DEBUG)  # Set root logger to DEBUG
+livekit_logger = logging.getLogger("livekit")
+livekit_logger.setLevel(logging.DEBUG)
+rtc_logger = logging.getLogger("livekit.rtc")
+rtc_logger.setLevel(logging.DEBUG)
+
 
 async def entrypoint(ctx: JobContext):
     logger.info(f"connecting to room {ctx.room.name}")
@@ -79,14 +88,126 @@ async def entrypoint(ctx: JobContext):
     assistant.start(ctx.room, participant)
     chat = rtc.ChatManager(ctx.room)
 
-    # Track current slide
+    # Track current slide with better initialization
     current_slide = {
         "number": 1,
         "url": None,
         "total_slides": 0,
         "api_base_url": None,
         "brdge_id": None,
+        "initialized": False,
     }
+
+    # Track last processed message to prevent duplicates
+    last_processed_message = {"slide": None, "timestamp": None}
+
+    # Handle data received events - using the correct event structure
+    @ctx.room.on("data_received")
+    def on_data_received(data_packet: DataPacket):
+        try:
+            logger.info("=== START: Data Received Event ===")
+            logger.info(f"Data packet details:")
+            logger.info(f"- Data length: {len(data_packet.data)}")
+            logger.info(f"- Kind: {data_packet.kind}")
+            logger.info(f"- Topic: {data_packet.topic}")
+            if data_packet.participant:
+                logger.info(f"- From participant: {data_packet.participant.identity}")
+
+            # Decode and parse first
+            try:
+                decoded_message = data_packet.data.decode("utf-8")
+                logger.info(f"- Decoded message: {decoded_message}")
+                json_data = json.loads(decoded_message)
+                logger.info(f"- Parsed JSON: {json.dumps(json_data, indent=2)}")
+            except (UnicodeDecodeError, json.JSONDecodeError) as e:
+                logger.error(f"Failed to decode/parse message: {e}")
+                return
+
+            # Only process SLIDE_UPDATE messages
+            if json_data.get("type") != "SLIDE_UPDATE":
+                logger.info("Not a SLIDE_UPDATE message, skipping")
+                return
+
+            current_slide_num = json_data.get("currentSlide")
+
+            # Check if this is a duplicate message
+            if (
+                last_processed_message["slide"] == current_slide_num
+                and last_processed_message["timestamp"]
+                and (
+                    datetime.now() - last_processed_message["timestamp"]
+                ).total_seconds()
+                < 1
+            ):
+                logger.info(
+                    f"Skipping duplicate slide update for slide {current_slide_num}"
+                )
+                logger.info(
+                    f"- Last processed: {last_processed_message['timestamp'].isoformat()}"
+                )
+                logger.info(
+                    f"- Time since last: {(datetime.now() - last_processed_message['timestamp']).total_seconds():.2f}s"
+                )
+                return
+
+            logger.info(f"Processing new SLIDE_UPDATE for slide {current_slide_num}")
+            logger.info("Current state:")
+            logger.info(f"- Was initialized: {current_slide.get('initialized', False)}")
+            logger.info(f"- Previous slide: {current_slide.get('number')}")
+            logger.info(f"- New slide info: {json.dumps(json_data, indent=2)}")
+
+            was_initialized = current_slide.get("initialized", False)
+
+            # Update slide info
+            current_slide.update(
+                {
+                    "number": current_slide_num,
+                    "total_slides": json_data.get("numSlides", 0),
+                    "api_base_url": json_data.get("apiBaseUrl"),
+                    "brdge_id": json_data.get("brdgeId"),
+                    "initialized": True,
+                }
+            )
+
+            # Update last processed message
+            last_processed_message.update(
+                {"slide": current_slide_num, "timestamp": datetime.now()}
+            )
+
+            logger.info("After update:")
+            logger.info(f"- Current slide state: {json.dumps(current_slide, indent=2)}")
+            logger.info(
+                f"- Last processed: {last_processed_message['timestamp'].isoformat()}"
+            )
+
+            # Only send greeting on first initialization
+            if not was_initialized:
+                logger.info("Sending initial greeting (first initialization)")
+                initial_greeting = f"""Hello! I'm your Brdge Learning Assistant. I'll help create your AI presentation by asking questions about each slide. 
+We're starting with slide {current_slide['number']} of {current_slide['total_slides']}. Please walk me through this slide, and I'll ask questions to better understand your content and style."""
+                create_task(assistant.say(initial_greeting, allow_interruptions=True))
+
+            logger.info("=== END: Data Received Event ===\n")
+
+        except Exception as e:
+            logger.error(f"Error processing data received: {e}", exc_info=True)
+            logger.error(f"Data that caused error: {data_packet.data}")
+
+    # Helper function to create tasks
+    def create_task(coro):
+        try:
+            asyncio.create_task(coro)
+        except Exception as e:
+            logger.error(f"Error creating task: {e}", exc_info=True)
+
+    # Remove the slide update handling from chat messages
+    @chat.on("message_received")
+    def on_chat_received(msg: rtc.ChatMessage):
+        try:
+            # Only handle regular chat messages
+            asyncio.create_task(answer_from_text(msg.message))
+        except Exception as e:
+            logger.error(f"Error processing chat message: {e}", exc_info=True)
 
     # Start log processing task
     async def process_logs():
@@ -100,28 +221,6 @@ async def entrypoint(ctx: JobContext):
 
     # Start the log processing task
     asyncio.create_task(process_logs())
-
-    @chat.on("message_received")
-    def on_chat_received(msg: rtc.ChatMessage):
-        try:
-            # Check if it's a slide update message
-            data = json.loads(msg.message)
-            if data.get("type") == "SLIDE_UPDATE":
-                current_slide.update(
-                    {
-                        "number": data.get("currentSlide", 1),
-                        "total_slides": data.get("numSlides", 0),
-                        "api_base_url": data.get("apiBaseUrl"),
-                        "brdge_id": data.get("brdgeId"),
-                    }
-                )
-                logger.info(f"Updated slide info: {current_slide}")
-            else:
-                # Handle regular chat messages
-                asyncio.create_task(answer_from_text(msg.message))
-        except json.JSONDecodeError:
-            # Handle regular chat messages
-            asyncio.create_task(answer_from_text(msg.message))
 
     async def process_input_with_slide(
         txt: str, chat_ctx: llm.ChatContext
@@ -182,13 +281,21 @@ async def entrypoint(ctx: JobContext):
 
     # Initial greeting
     await assistant.say(
-        "Hello! I'm your Brdge Learning Assistant. I'll help create your AI presentation by asking questions about each slide. Please start by walking me through your first slide, and I'll ask questions to better understand your content and style.",
+        "Hello.",
         allow_interruptions=True,
     )
 
+    # Replace wait_for_disconnect with a simple event wait
+    disconnect_event = asyncio.Event()
+
+    @ctx.room.on("disconnected")
+    def on_disconnect(*args):
+        logger.info("Room disconnected")
+        disconnect_event.set()
+
     # Keep the connection alive
     try:
-        await ctx.wait_for_disconnect()
+        await disconnect_event.wait()
     finally:
         logger.info("Cleaning up...")
         # Clean up any resources if needed
