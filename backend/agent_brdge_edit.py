@@ -97,6 +97,25 @@ async def entrypoint(ctx: JobContext):
 
     # Start the assistant
     assistant.start(ctx.room, participant)
+    chat = rtc.ChatManager(ctx.room)
+
+    async def answer_from_text(txt: str):
+        chat_ctx = assistant.chat_ctx.copy()
+        slide_info = f"We are on slide {current_slide['number']} out of {current_slide['total_slides']} total slides."
+        chat_ctx.append(
+            role="user", text=f"{slide_info}\nWhat slide are we on and how many slides?"
+        )
+        stream = assistant.llm.chat(chat_ctx=chat_ctx)
+        await assistant.say(stream)
+
+    # @assistant.on("user_transcript")
+    # def on_user_transcript(transcript: str):
+    #     logger.info(f"Received user transcript: {transcript}")
+    #     asyncio.create_task(answer_from_text(transcript))
+
+    @chat.on("message_received")
+    def on_chat_received(msg: rtc.ChatMessage):
+        asyncio.create_task(answer_from_text(msg.message))
 
     @ctx.room.on("data_received")
     def on_data_received(data_packet: DataPacket):
@@ -123,11 +142,9 @@ async def entrypoint(ctx: JobContext):
                 if not initial_slide_received.is_set():
                     initial_slide_received.set()
                     # Send the proper greeting with slide info
-                    initial_greeting = f"""Hello! I'm your Brdge Learning Assistant. I'll help create your AI presentation by asking questions about each slide. 
-We're starting with slide {current_slide['number']} of {current_slide['total_slides']}. Please walk me through this slide, and I'll ask questions to better understand your content and style."""
-                    asyncio.create_task(
-                        assistant.say(initial_greeting, allow_interruptions=True)
-                    )
+                    # asyncio.create_task(
+                    #     assistant.say(initial_greeting, allow_interruptions=True)
+                    # )
 
         except Exception as e:
             logger.error(f"Error processing data received: {e}", exc_info=True)
