@@ -80,27 +80,55 @@ async def entrypoint(ctx: JobContext):
         chat_ctx=initial_ctx,
     )
 
-    # Start the assistant
+    # Start the assistant and chat manager
     assistant.start(ctx.room, participant)
     chat = rtc.ChatManager(ctx.room)
 
-    async def answer_from_text(txt: str):
-        chat_ctx = assistant.chat_ctx.copy()
-        slide_info = f"We are on slide {current_slide['number']} out of {current_slide['total_slides']} total slides."
-        chat_ctx.append(
-            role="user", text=f"{slide_info}\nWhat slide are we on and how many slides?"
-        )
-        stream = assistant.llm.chat(chat_ctx=chat_ctx)
-        await assistant.say(stream)
+    # Add a lock to prevent concurrent responses
+    response_lock = asyncio.Lock()
 
-    # @assistant.on("user_transcript")
-    # def on_user_transcript(transcript: str):
-    #     logger.info(f"Received user transcript: {transcript}")
-    #     asyncio.create_task(answer_from_text(transcript))
+    async def answer_from_text(txt: str, is_voice: bool = False):
+        # Use lock to prevent concurrent responses
+        async with response_lock:
+            chat_ctx = assistant.chat_ctx.copy()
 
+            # Add current slide context
+            if current_slide["initialized"]:
+                slide_info = f"Looking at slide {current_slide['number']} of {current_slide['total_slides']}"
+                user_input = (
+                    f"{slide_info}\nUser {('said' if is_voice else 'wrote')}: {txt}"
+                )
+            else:
+                user_input = txt
+
+            logger.info(
+                f"Processing {'voice' if is_voice else 'text'} input: {user_input}"
+            )
+
+            chat_ctx.append(role="user", text=user_input)
+            stream = assistant.llm.chat(chat_ctx=chat_ctx)
+            await assistant.say(
+                stream, allow_interruptions=False
+            )  # Prevent interruptions during response
+
+    # Handle voice transcripts
+    @assistant.on("user_speech_committed")
+    def on_speech_committed(msg: llm.ChatMessage):
+        if isinstance(msg.content, str):
+            logger.info(f"Received voice input: {msg.content}")
+            # Deduplicate whitespace and check for empty messages
+            cleaned_input = " ".join(msg.content.split()).strip()
+            if cleaned_input:  # Only process non-empty messages
+                asyncio.create_task(answer_from_text(cleaned_input, is_voice=True))
+
+    # Handle chat messages
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
-        asyncio.create_task(answer_from_text(msg.message))
+        # Deduplicate whitespace and check for empty messages
+        cleaned_message = " ".join(msg.message.split()).strip()
+        if cleaned_message:  # Only process non-empty messages
+            logger.info(f"Received chat message: {cleaned_message}")
+            asyncio.create_task(answer_from_text(cleaned_message, is_voice=False))
 
     @ctx.room.on("data_received")
     def on_data_received(data_packet: DataPacket):
@@ -134,9 +162,10 @@ async def entrypoint(ctx: JobContext):
         except Exception as e:
             logger.error(f"Error processing data received: {e}", exc_info=True)
 
-    # Send a brief initial greeting
+    # Send a brief initial greeting only after slide info is received
+    await initial_slide_received.wait()
     await assistant.say(
-        "Walk me through your presentation. I may ask a few questions so I can effectively share this with others. ",
+        "Walk me through your presentation. I may ask a few questions so I can effectively share this with others.",
         allow_interruptions=False,
     )
 
