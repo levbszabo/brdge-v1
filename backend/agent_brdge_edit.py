@@ -20,6 +20,8 @@ from datetime import datetime
 import io
 from PIL import Image
 import base64
+import os
+import requests
 
 load_dotenv(dotenv_path=".env_crypto")
 logger = logging.getLogger("voice-agent")
@@ -80,55 +82,116 @@ async def entrypoint(ctx: JobContext):
         chat_ctx=initial_ctx,
     )
 
+    # After creating the assistant but before starting it
+
+    async def before_llm_callback(chat_ctx: llm.ChatContext) -> llm.ChatContext:
+        try:
+            if current_slide["initialized"]:
+                slide_info = f"Looking at slide {current_slide['number']} of {current_slide['total_slides']}"
+
+                if current_slide["brdge_id"] and current_slide["number"]:
+                    image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
+
+                    if os.path.exists(image_path):
+                        logger.debug(f"Loading image from {image_path}")
+                        base64_image = image_to_base64(image_path)
+                        if base64_image:
+                            slide_image = llm.ChatImage(
+                                data=f"data:image/png;base64,{base64_image}"
+                            )
+                            chat_ctx.append(role="user", image=slide_image)
+                            logger.debug("Successfully added image to chat context")
+                    else:
+                        logger.warning(f"Image file not found: {image_path}")
+
+                last_msg = chat_ctx.messages[-1]
+                if last_msg.role == "user":
+                    last_msg.text = f"{slide_info}\nUser said: {last_msg.text}"
+                    logger.debug(
+                        f"Updated user message with slide context: {last_msg.text}"
+                    )
+
+        except Exception as e:
+            logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
+            # Don't re-raise the exception to ensure the conversation continues
+
+        return chat_ctx
+
+    # Set the callback on the assistant
+    assistant.before_llm = before_llm_callback
+
     # Start the assistant and chat manager
     assistant.start(ctx.room, participant)
     chat = rtc.ChatManager(ctx.room)
 
-    # Add a lock to prevent concurrent responses
-    response_lock = asyncio.Lock()
-
-    async def answer_from_text(txt: str, is_voice: bool = False):
-        # Use lock to prevent concurrent responses
-        async with response_lock:
-            chat_ctx = assistant.chat_ctx.copy()
-
-            # Add current slide context
-            if current_slide["initialized"]:
-                slide_info = f"Looking at slide {current_slide['number']} of {current_slide['total_slides']}"
-                user_input = (
-                    f"{slide_info}\nUser {('said' if is_voice else 'wrote')}: {txt}"
-                )
-            else:
-                user_input = txt
-
-            logger.info(
-                f"Processing {'voice' if is_voice else 'text'} input: {user_input}"
-            )
-
-            chat_ctx.append(role="user", text=user_input)
-            stream = assistant.llm.chat(chat_ctx=chat_ctx)
-            await assistant.say(
-                stream, allow_interruptions=False
-            )  # Prevent interruptions during response
-
-    # Handle voice transcripts
+    # Handle voice transcripts - simplified to use pipeline's built-in handling
     @assistant.on("user_speech_committed")
     def on_speech_committed(msg: llm.ChatMessage):
         if isinstance(msg.content, str):
             logger.info(f"Received voice input: {msg.content}")
-            # Deduplicate whitespace and check for empty messages
-            cleaned_input = " ".join(msg.content.split()).strip()
-            if cleaned_input:  # Only process non-empty messages
-                asyncio.create_task(answer_from_text(cleaned_input, is_voice=True))
+            # The pipeline will automatically handle the response using the before_llm callback
 
-    # Handle chat messages
+    # Handle chat messages - modified to use the same context injection
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
-        # Deduplicate whitespace and check for empty messages
         cleaned_message = " ".join(msg.message.split()).strip()
         if cleaned_message:  # Only process non-empty messages
             logger.info(f"Received chat message: {cleaned_message}")
-            asyncio.create_task(answer_from_text(cleaned_message, is_voice=False))
+            # Add message to assistant's chat context and let it handle the response
+            assistant.chat_ctx.append(role="user", text=cleaned_message)
+            stream = assistant.llm.chat(chat_ctx=assistant.chat_ctx)
+            asyncio.create_task(assistant.say(stream, allow_interruptions=False))
+
+    async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
+        """Get slide image path, checking local tmp first before downloading"""
+        # Define the expected local path
+        tmp_dir = f"/tmp/brdge/slides_{brdge_id}"
+        file_path = f"{tmp_dir}/slide_{slide_number}.png"
+
+        # Check if file exists locally first
+        if os.path.exists(file_path):
+            logger.debug(f"Found existing slide in tmp directory: {file_path}")
+            return file_path
+
+        # If not found locally, download it
+        try:
+            logger.info(f"Slide not found locally, downloading from {url}")
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+
+            # Create directory if it doesn't exist
+            os.makedirs(tmp_dir, exist_ok=True)
+
+            # Save the image
+            with open(file_path, "wb") as f:
+                f.write(response.content)
+
+            logger.info(f"Successfully downloaded and saved slide to {file_path}")
+            return file_path
+        except requests.RequestException as e:
+            logger.error(f"Network error downloading slide: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error handling slide: {e}", exc_info=True)
+            return None
+
+    def image_to_base64(image_path: str) -> str:
+        """Convert image to base64 string"""
+        try:
+            with Image.open(image_path) as img:
+                # Convert to RGB if needed
+                if img.mode != "RGB":
+                    img = img.convert("RGB")
+
+                # Save to bytes buffer
+                buffer = io.BytesIO()
+                img.save(buffer, format="PNG")
+
+                # Convert to base64
+                return base64.b64encode(buffer.getvalue()).decode("utf-8")
+        except Exception as e:
+            logger.error(f"Error converting image to base64: {e}")
+            return None
 
     @ctx.room.on("data_received")
     def on_data_received(data_packet: DataPacket):
@@ -138,26 +201,30 @@ async def entrypoint(ctx: JobContext):
             logger.info(f"Received slide data: {json.dumps(json_data, indent=2)}")
 
             if json_data.get("currentSlide") is not None:
+                # Update current slide info
                 current_slide.update(
                     {
                         "number": json_data["currentSlide"],
                         "total_slides": json_data["numSlides"],
                         "api_base_url": json_data["apiBaseUrl"],
                         "brdge_id": json_data["brdgeId"],
+                        "url": json_data.get("slideUrl"),
                         "initialized": True,
                     }
                 )
 
-                logger.info(
-                    f"Updated slide state: {json.dumps(current_slide, indent=2)}"
-                )
+                # Get or download the slide if URL is provided
+                if current_slide["url"]:
+                    asyncio.create_task(
+                        get_slide_image(
+                            current_slide["url"],
+                            current_slide["brdge_id"],
+                            current_slide["number"],
+                        )
+                    )
 
                 if not initial_slide_received.is_set():
                     initial_slide_received.set()
-                    # Send the proper greeting with slide info
-                    # asyncio.create_task(
-                    #     assistant.say(initial_greeting, allow_interruptions=True)
-                    # )
 
         except Exception as e:
             logger.error(f"Error processing data received: {e}", exc_info=True)
