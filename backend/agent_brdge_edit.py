@@ -131,14 +131,6 @@ async def entrypoint(ctx: JobContext):
     assistant.start(ctx.room, participant)
     chat = rtc.ChatManager(ctx.room)
 
-    # Handle voice transcripts
-    @assistant.on("user_speech_committed")
-    def on_speech_committed(msg: llm.ChatMessage):
-        if isinstance(msg.content, str):
-            logger.info(f"Received voice input: {msg.content}")
-            # Let the pipeline handle it with the callback
-            logger.debug("Voice input will be processed by pipeline")
-
     # Handle chat messages
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
@@ -147,9 +139,19 @@ async def entrypoint(ctx: JobContext):
             logger.info(f"Received chat message: {cleaned_message}")
             # Add message to assistant's chat context
             assistant.chat_ctx.append(role="user", text=cleaned_message)
-            # This should trigger the callback
-            stream = assistant.llm.chat(chat_ctx=assistant.chat_ctx)
-            asyncio.create_task(assistant.say(stream, allow_interruptions=False))
+
+            # Create a separate async function for handling the message
+            async def process_message():
+                # Create LLM stream using callback
+                stream = await before_llm_callback(assistant, assistant.chat_ctx)
+                # Pass the stream to say()
+                await assistant.say(
+                    stream,
+                    allow_interruptions=False,
+                )
+
+            # Create task to handle the async processing
+            asyncio.create_task(process_message())
 
     async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
         """Get slide image path, checking local tmp first before downloading"""
