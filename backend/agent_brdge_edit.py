@@ -22,6 +22,7 @@ from PIL import Image
 import base64
 import os
 import requests
+from typing import Optional
 
 load_dotenv(dotenv_path=".env_crypto")
 logger = logging.getLogger("voice-agent")
@@ -70,25 +71,16 @@ async def entrypoint(ctx: JobContext):
         "brdge_id": None,
         "initialized": False,
     }
+    # Create the LLM instance
+    llm_instance = openai.LLM(model="gpt-4o-mini")
 
-    last_processed_message = {"slide": None, "timestamp": None}
-
-    # Create and start the assistant first
-    assistant = VoicePipelineAgent(
-        vad=silero.VAD.load(),
-        stt=deepgram.STT(),
-        llm=openai.LLM(model="gpt-4o-mini"),
-        tts=cartesia.TTS(voice="5265a761-5cf5-4b35-9055-adfd541e591c"),
-        chat_ctx=initial_ctx,
-    )
-
-    # After creating the assistant but before starting it
-
-    async def before_llm_callback(chat_ctx: llm.ChatContext) -> llm.ChatContext:
+    # Define the callback with correct signature and return type
+    async def before_llm_callback(
+        agent: VoicePipelineAgent, chat_ctx: llm.ChatContext
+    ) -> Optional[llm.LLMStream]:
         try:
             if current_slide["initialized"]:
-                slide_info = f"Looking at slide {current_slide['number']} of {current_slide['total_slides']}"
-
+                # Check for slide image
                 if current_slide["brdge_id"] and current_slide["number"]:
                     image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
 
@@ -96,29 +88,26 @@ async def entrypoint(ctx: JobContext):
                         logger.debug(f"Loading image from {image_path}")
                         base64_image = image_to_base64(image_path)
                         if base64_image:
-                            slide_image = llm.ChatImage(
-                                data=f"data:image/png;base64,{base64_image}"
-                            )
+                            # Just inject the image into the existing context
+                            slide_image = llm.ChatImage(base64_image)
                             chat_ctx.append(role="user", image=slide_image)
-                            logger.debug("Successfully added image to chat context")
-                    else:
-                        logger.warning(f"Image file not found: {image_path}")
-
-                last_msg = chat_ctx.messages[-1]
-                if last_msg.role == "user":
-                    last_msg.text = f"{slide_info}\nUser said: {last_msg.text}"
-                    logger.debug(
-                        f"Updated user message with slide context: {last_msg.text}"
-                    )
+                            logger.debug("Added image to chat context")
 
         except Exception as e:
             logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
-            # Don't re-raise the exception to ensure the conversation continues
 
-        return chat_ctx
+        # Always use the existing context
+        return agent.llm.chat(chat_ctx=chat_ctx)
 
-    # Set the callback on the assistant
-    assistant.before_llm = before_llm_callback
+    # Create and start the assistant with the callback
+    assistant = VoicePipelineAgent(
+        vad=silero.VAD.load(),
+        stt=deepgram.STT(),
+        llm=llm_instance,
+        tts=cartesia.TTS(voice="5265a761-5cf5-4b35-9055-adfd541e591c"),
+        chat_ctx=initial_ctx,
+        before_llm_cb=before_llm_callback,  # Pass the callback in constructor
+    )
 
     # Start the assistant and chat manager
     assistant.start(ctx.room, participant)
