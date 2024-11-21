@@ -78,25 +78,38 @@ async def entrypoint(ctx: JobContext):
     async def before_llm_callback(
         agent: VoicePipelineAgent, chat_ctx: llm.ChatContext
     ) -> Optional[llm.LLMStream]:
+        logger.info("before_llm_callback invoked!")
         try:
             if current_slide["initialized"]:
-                # Check for slide image
+                logger.info(f"Current slide state: {current_slide}")
+
                 if current_slide["brdge_id"] and current_slide["number"]:
                     image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
+                    logger.info(f"Checking image path: {image_path}")
 
                     if os.path.exists(image_path):
                         logger.debug(f"Loading image from {image_path}")
                         base64_image = image_to_base64(image_path)
                         if base64_image:
-                            # Just inject the image into the existing context
-                            slide_image = llm.ChatImage(base64_image)
-                            chat_ctx.append(role="user", image=slide_image)
+                            # Create ChatImage with proper data URL format
+                            slide_image = llm.ChatImage(
+                                image=f"data:image/png;base64,{base64_image}"  # Add data URL prefix
+                            )
+                            # Create message with images list
+                            image_message = llm.ChatMessage.create(
+                                role="user", text="", images=[slide_image]
+                            )
+                            # Add the image message to context
+                            chat_ctx.messages.append(image_message)
                             logger.debug("Added image to chat context")
+                            logger.info(
+                                f"Chat context after adding image: {len(chat_ctx.messages)} messages"
+                            )
 
         except Exception as e:
             logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
 
-        # Always use the existing context
+        # Always return a chat stream
         return agent.llm.chat(chat_ctx=chat_ctx)
 
     # Create and start the assistant with the callback
@@ -106,28 +119,35 @@ async def entrypoint(ctx: JobContext):
         llm=llm_instance,
         tts=cartesia.TTS(voice="5265a761-5cf5-4b35-9055-adfd541e591c"),
         chat_ctx=initial_ctx,
-        before_llm_cb=before_llm_callback,  # Pass the callback in constructor
+        before_llm_cb=before_llm_callback,
+    )
+
+    # Verify the callback is set
+    logger.info(
+        f"Assistant created with before_llm_cb: {assistant._opts.before_llm_cb is not None}"
     )
 
     # Start the assistant and chat manager
     assistant.start(ctx.room, participant)
     chat = rtc.ChatManager(ctx.room)
 
-    # Handle voice transcripts - simplified to use pipeline's built-in handling
+    # Handle voice transcripts
     @assistant.on("user_speech_committed")
     def on_speech_committed(msg: llm.ChatMessage):
         if isinstance(msg.content, str):
             logger.info(f"Received voice input: {msg.content}")
-            # The pipeline will automatically handle the response using the before_llm callback
+            # Let the pipeline handle it with the callback
+            logger.debug("Voice input will be processed by pipeline")
 
-    # Handle chat messages - modified to use the same context injection
+    # Handle chat messages
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
         cleaned_message = " ".join(msg.message.split()).strip()
-        if cleaned_message:  # Only process non-empty messages
+        if cleaned_message:
             logger.info(f"Received chat message: {cleaned_message}")
-            # Add message to assistant's chat context and let it handle the response
+            # Add message to assistant's chat context
             assistant.chat_ctx.append(role="user", text=cleaned_message)
+            # This should trigger the callback
             stream = assistant.llm.chat(chat_ctx=assistant.chat_ctx)
             asyncio.create_task(assistant.say(stream, allow_interruptions=False))
 
@@ -187,7 +207,7 @@ async def entrypoint(ctx: JobContext):
         try:
             decoded_message = data_packet.data.decode("utf-8")
             json_data = json.loads(decoded_message)
-            logger.info(f"Received slide data: {json.dumps(json_data, indent=2)}")
+            # logger.info(f"Received slide data: {json.dumps(json_data, indent=2)}")
 
             if json_data.get("currentSlide") is not None:
                 # Update current slide info
