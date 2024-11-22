@@ -22,7 +22,7 @@ from PIL import Image
 import base64
 import os
 import requests
-from typing import Optional
+from typing import Optional, Dict
 
 load_dotenv(dotenv_path=".env_crypto")
 logger = logging.getLogger("voice-agent")
@@ -51,6 +51,134 @@ rtc_logger = logging.getLogger("livekit.rtc")
 rtc_logger.setLevel(logging.DEBUG)
 
 
+class TranscriptLogger:
+    def __init__(self, brdge_id: str, total_slides: int):
+        self.brdge_id = brdge_id
+        self.log_dir = os.path.join("data", "walkthroughs")
+        self.file_path = os.path.join(self.log_dir, f"brdge_{brdge_id}.json")
+        self.total_slides = total_slides
+        self.initialize_log_file()
+
+    def initialize_log_file(self):
+        """Create or load the log file with initial structure"""
+        try:
+            # Ensure directory exists
+            os.makedirs(self.log_dir, exist_ok=True)
+
+            # Create initial data structure
+            initial_data = {
+                "brdge_id": self.brdge_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "slides": {},
+                "metadata": {
+                    "total_slides": self.total_slides,
+                    "status": "in_progress",
+                },
+            }
+
+            # Write initial data if file doesn't exist
+            if not os.path.exists(self.file_path):
+                self.save_data(initial_data)
+                logger.info(f"Created new transcript file: {self.file_path}")
+
+        except Exception as e:
+            logger.error(f"Error initializing log file: {e}", exc_info=True)
+
+    def log_message(self, slide_number: int, role: str, content: str):
+        """Log a new message for a specific slide"""
+        try:
+            # Ensure file exists before trying to load it
+            if not os.path.exists(self.file_path):
+                self.initialize_log_file()
+
+            data = self.load_data()
+
+            # Initialize slide array if it doesn't exist
+            slide_key = str(slide_number)
+            if "slides" not in data:
+                data["slides"] = {}
+            if slide_key not in data["slides"]:
+                data["slides"][slide_key] = []
+
+            # Add the new message
+            message = {
+                "role": role,
+                "content": content,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            data["slides"][slide_key].append(message)
+
+            # Save updated data
+            self.save_data(data)
+            logger.debug(f"Logged message for slide {slide_number}: {message}")
+
+        except Exception as e:
+            logger.error(f"Error logging message: {e}", exc_info=True)
+
+    def complete_walkthrough(self):
+        """Mark the walkthrough as completed"""
+        try:
+            # Ensure file exists before trying to load it
+            if not os.path.exists(self.file_path):
+                self.initialize_log_file()
+
+            data = self.load_data()
+
+            # Ensure metadata exists
+            if "metadata" not in data:
+                data["metadata"] = {
+                    "total_slides": self.total_slides,
+                    "status": "in_progress",
+                }
+
+            data["metadata"]["status"] = "completed"
+            data["metadata"]["completed_at"] = datetime.utcnow().isoformat()
+
+            self.save_data(data)
+            logger.info(f"Completed walkthrough for Brdge {self.brdge_id}")
+
+        except Exception as e:
+            logger.error(f"Error completing walkthrough: {e}", exc_info=True)
+
+    def load_data(self) -> Dict:
+        """Load the current log file data"""
+        try:
+            if not os.path.exists(self.file_path):
+                self.initialize_log_file()
+
+            with open(self.file_path, "r") as f:
+                return json.load(f)
+
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON in {self.file_path}, reinitializing file")
+            self.initialize_log_file()
+            with open(self.file_path, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading data: {e}", exc_info=True)
+            return {
+                "brdge_id": self.brdge_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "slides": {},
+                "metadata": {
+                    "total_slides": self.total_slides,
+                    "status": "in_progress",
+                },
+            }
+
+    def save_data(self, data: Dict):
+        """Save data to the log file"""
+        try:
+            # Ensure directory exists before saving
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
+
+            with open(self.file_path, "w") as f:
+                json.dump(data, f, indent=2)
+
+        except Exception as e:
+            logger.error(f"Error saving data: {e}", exc_info=True)
+
+
 async def entrypoint(ctx: JobContext):
     logger.info(f"connecting to room {ctx.room.name}")
     await ctx.connect()
@@ -59,7 +187,7 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"starting learning assistant for participant {participant.identity}")
 
     initial_ctx = llm.ChatContext().append(role="system", text=SYSTEM_PROMPT)
-    log_queue = asyncio.Queue()
+
     initial_slide_received = asyncio.Event()
 
     # Track current slide with better initialization
@@ -117,7 +245,7 @@ async def entrypoint(ctx: JobContext):
         vad=silero.VAD.load(),
         stt=deepgram.STT(),
         llm=llm_instance,
-        tts=cartesia.TTS(voice="5265a761-5cf5-4b35-9055-adfd541e591c"),
+        tts=cartesia.TTS(voice="b7d50908-b17c-442d-ad8d-810c63997ed9"),
         chat_ctx=initial_ctx,
         before_llm_cb=before_llm_callback,
     )
@@ -137,21 +265,65 @@ async def entrypoint(ctx: JobContext):
         cleaned_message = " ".join(msg.message.split()).strip()
         if cleaned_message:
             logger.info(f"Received chat message: {cleaned_message}")
+
+            # Log the chat message
+            if transcript_logger and current_slide["number"]:
+                transcript_logger.log_message(
+                    current_slide["number"], "user", cleaned_message
+                )
+                logger.info(
+                    f"Logged user chat message for slide {current_slide['number']}"
+                )
+
             # Add message to assistant's chat context
             assistant.chat_ctx.append(role="user", text=cleaned_message)
 
-            # Create a separate async function for handling the message
             async def process_message():
-                # Create LLM stream using callback
                 stream = await before_llm_callback(assistant, assistant.chat_ctx)
-                # Pass the stream to say()
+                # Log the assistant's response before saying it
+                if transcript_logger and current_slide["number"]:
+                    response_text = await stream.text()
+                    transcript_logger.log_message(
+                        current_slide["number"], "assistant", response_text
+                    )
+                    logger.info(
+                        f"Logged assistant response for slide {current_slide['number']}"
+                    )
+                    # Create new stream since we consumed the original
+                    stream = llm.LLMStream.from_text(response_text)
+
                 await assistant.say(
                     stream,
                     allow_interruptions=False,
                 )
 
-            # Create task to handle the async processing
             asyncio.create_task(process_message())
+
+    @assistant.on("agent_speech_committed")
+    async def on_agent_speech_committed(text: str):
+        try:
+            if transcript_logger and current_slide["number"]:
+                transcript_logger.log_message(
+                    slide_number=current_slide["number"], role="assistant", content=text
+                )
+                logger.info(
+                    f"Logged assistant speech for slide {current_slide['number']}: {text[:50]}..."
+                )
+        except Exception as e:
+            logger.error(f"Error logging agent speech: {e}", exc_info=True)
+
+    @assistant.on("user_speech_committed")
+    async def on_user_speech_committed(text: str):
+        try:
+            if transcript_logger and current_slide["number"]:
+                transcript_logger.log_message(
+                    slide_number=current_slide["number"], role="user", content=text
+                )
+                logger.info(
+                    f"Logged user speech for slide {current_slide['number']}: {text[:50]}..."
+                )
+        except Exception as e:
+            logger.error(f"Error logging user speech: {e}", exc_info=True)
 
     async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
         """Get slide image path, checking local tmp first before downloading"""
@@ -242,8 +414,21 @@ async def entrypoint(ctx: JobContext):
 
     # Send a brief initial greeting only after slide info is received
     await initial_slide_received.wait()
+    transcript_logger = TranscriptLogger(
+        current_slide["brdge_id"], current_slide["total_slides"]
+    )
+
+    initial_greeting = "Walk me through your presentation. I may ask a few questions so I can effectively share this with others."
+
+    # Log the initial greeting first
+    if current_slide["number"]:
+        transcript_logger.log_message(
+            current_slide["number"], "assistant", initial_greeting
+        )
+        logger.info("Logged initial greeting")
+
     await assistant.say(
-        "Walk me through your presentation. I may ask a few questions so I can effectively share this with others.",
+        initial_greeting,
         allow_interruptions=False,
     )
 
@@ -253,6 +438,7 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("disconnected")
     def on_disconnect(*args):
         logger.info("Room disconnected")
+        transcript_logger.complete_walkthrough()
         disconnect_event.set()
 
     try:
