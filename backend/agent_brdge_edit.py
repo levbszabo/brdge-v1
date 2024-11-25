@@ -40,7 +40,8 @@ Your role:
 3. Maintain professionalism by keeping questions clear, focused, and relevant to each slide.
 4. Use a supportive tone: be encouraging, show active listening, and keep responses brief (under 100 tokens).
 
-Your goal is to gather knowledge and understand the presenter’s style using slide content efficiently.
+Your goal is to gather knowledge and understand the presenter’s style using slide content efficiently. You will have the slide content as well as the 
+users inputs about the given slide. Ask short engaging questions as needed. 
 """
 
 # At the top of the file, add these logging configurations
@@ -205,6 +206,19 @@ class WalkthroughManager:
         except Exception as e:
             logger.error(f"Error saving walkthrough: {e}", exc_info=True)
 
+    def complete_walkthrough(self):
+        """Mark the current walkthrough as completed"""
+        try:
+            if self.current_walkthrough:
+                self.current_walkthrough["metadata"]["status"] = "completed"
+                self.current_walkthrough["metadata"][
+                    "completed_at"
+                ] = datetime.utcnow().isoformat()
+                self.save()
+                logger.info(f"Completed walkthrough for brdge {self.brdge_id}")
+        except Exception as e:
+            logger.error(f"Error completing walkthrough: {e}", exc_info=True)
+
 
 async def entrypoint(ctx: JobContext):
     logger.info(f"connecting to room {ctx.room.name}")
@@ -226,6 +240,7 @@ async def entrypoint(ctx: JobContext):
         "api_base_url": None,
         "brdge_id": None,
         "initialized": False,
+        "last_processed": None,
     }
     # Create the LLM instance
     llm_instance = openai.LLM(model="gpt-4o-mini")
@@ -243,7 +258,6 @@ async def entrypoint(ctx: JobContext):
                     last_message = chat_ctx.messages[-1]
                     content = getattr(last_message, "content", None)
                     if content:
-                        # Convert content to string if it's not already
                         content = (
                             str(content) if not isinstance(content, str) else content
                         )
@@ -251,36 +265,41 @@ async def entrypoint(ctx: JobContext):
                             current_slide["number"], "user", content
                         )
 
-            if current_slide["initialized"]:
-                logger.info(f"Current slide state: {current_slide}")
+            # Only process the image if this is a new slide
+            if (
+                current_slide["initialized"]
+                and current_slide["number"] != current_slide["last_processed"]
+            ):
+
+                logger.info(f"Processing new slide: {current_slide['number']}")
 
                 if current_slide["brdge_id"] and current_slide["number"]:
                     image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
-                    logger.info(f"Checking image path: {image_path}")
 
                     if os.path.exists(image_path):
-                        logger.debug(f"Loading image from {image_path}")
                         base64_image = image_to_base64(image_path)
                         if base64_image:
                             # Create ChatImage with proper data URL format
                             slide_image = llm.ChatImage(
-                                image=f"data:image/png;base64,{base64_image}"  # Add data URL prefix
+                                image=f"data:image/png;base64,{base64_image}"
                             )
                             # Create message with images list
                             image_message = llm.ChatMessage.create(
-                                role="user", text="", images=[slide_image]
+                                role="user",
+                                text=f"New slide {current_slide['number']} - Please analyze this slide and be ready to discuss it.",
+                                images=[slide_image],
                             )
                             # Add the image message to context
                             chat_ctx.messages.append(image_message)
-                            logger.debug("Added image to chat context")
-                            logger.info(
-                                f"Chat context after adding image: {len(chat_ctx.messages)} messages"
-                            )
+                            logger.debug("Added new slide image to chat context")
+
+                            # Update last processed slide
+                            current_slide["last_processed"] = current_slide["number"]
 
         except Exception as e:
             logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
 
-        # Always return a chat stream
+        # Return chat stream
         return agent.llm.chat(chat_ctx=chat_ctx)
 
     # Create and start the assistant with the callback
@@ -398,9 +417,11 @@ async def entrypoint(ctx: JobContext):
         try:
             decoded_message = data_packet.data.decode("utf-8")
             json_data = json.loads(decoded_message)
-            # logger.info(f"Received slide data: {json.dumps(json_data, indent=2)}")
 
             if json_data.get("currentSlide") is not None:
+                # Check if this is a new slide
+                new_slide = current_slide["number"] != json_data["currentSlide"]
+
                 # Update current slide info
                 current_slide.update(
                     {
@@ -413,7 +434,7 @@ async def entrypoint(ctx: JobContext):
                     }
                 )
 
-                # Initialize walkthrough manager if not already done
+                # Initialize walkthrough manager if needed
                 if (
                     not walkthrough_manager
                     and json_data.get("brdgeId")
@@ -423,8 +444,8 @@ async def entrypoint(ctx: JobContext):
                         json_data["brdgeId"], json_data["numSlides"]
                     )
 
-                # Get or download the slide if URL is provided
-                if current_slide["url"]:
+                # Get or download the slide if it's new and URL is provided
+                if new_slide and current_slide["url"]:
                     asyncio.create_task(
                         get_slide_image(
                             current_slide["url"],
