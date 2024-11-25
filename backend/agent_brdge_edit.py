@@ -22,7 +22,9 @@ from PIL import Image
 import base64
 import os
 import requests
-from typing import Optional, Dict
+from typing import Optional
+import os.path
+from typing import Dict, List, Any
 
 load_dotenv(dotenv_path=".env_crypto")
 logger = logging.getLogger("voice-agent")
@@ -51,132 +53,157 @@ rtc_logger = logging.getLogger("livekit.rtc")
 rtc_logger.setLevel(logging.DEBUG)
 
 
-class TranscriptLogger:
+def initialize_walkthrough(brdge_id: str, total_slides: int) -> Dict[str, Any]:
+    """Create a new walkthrough entry"""
+    return {
+        "brdge_id": brdge_id,
+        "timestamp": datetime.utcnow().isoformat(),
+        "slides": {str(i): [] for i in range(1, total_slides + 1)},
+        "metadata": {
+            "total_slides": total_slides,
+            "status": "in_progress",
+            "created_at": datetime.utcnow().isoformat(),
+            "completed_at": None,
+        },
+    }
+
+
+def load_walkthrough_file(brdge_id: str) -> List[Dict[str, Any]]:
+    """Load existing walkthrough file or return empty list"""
+    file_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading walkthrough file: {e}")
+    return []
+
+
+def save_walkthrough(brdge_id: str, walkthroughs: List[Dict[str, Any]]) -> bool:
+    """Save walkthroughs to file"""
+    file_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump(walkthroughs, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving walkthrough: {e}")
+        return False
+
+
+class WalkthroughManager:
     def __init__(self, brdge_id: str, total_slides: int):
         self.brdge_id = brdge_id
-        self.log_dir = os.path.join("data", "walkthroughs")
-        self.file_path = os.path.join(self.log_dir, f"brdge_{brdge_id}.json")
         self.total_slides = total_slides
-        self.initialize_log_file()
+        self.current_walkthrough = None
+        self.walkthroughs = []
+        self.load_or_create_walkthrough()
 
-    def initialize_log_file(self):
-        """Create or load the log file with initial structure"""
+    def load_or_create_walkthrough(self):
+        """Load existing walkthroughs and create new entry"""
+        file_path = f"data/walkthroughs/brdge_{self.brdge_id}.json"
+
+        # Load existing walkthroughs
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, "r") as f:
+                    self.walkthroughs = json.load(f)
+                    if not isinstance(self.walkthroughs, list):
+                        logger.warning(
+                            "Corrupted walkthrough file, resetting to empty list"
+                        )
+                        self.walkthroughs = []
+            except json.JSONDecodeError as e:
+                logger.error(f"Error decoding walkthrough file: {e}")
+                self.walkthroughs = []
+            except Exception as e:
+                logger.error(f"Error loading walkthrough file: {e}")
+                self.walkthroughs = []
+
+        # Create new walkthrough entry
+        self.current_walkthrough = initialize_walkthrough(
+            self.brdge_id, self.total_slides
+        )
+
+        # If walkthroughs exist, append to them
+        if isinstance(self.walkthroughs, list):
+            self.walkthroughs.append(self.current_walkthrough)
+        else:
+            self.walkthroughs = [self.current_walkthrough]
+
+        self.save()
+
+    def add_message(self, slide_number: int, role: str, content: str):
+        """Add a message to the current slide's transcript"""
         try:
-            # Ensure directory exists
-            os.makedirs(self.log_dir, exist_ok=True)
+            if not self.current_walkthrough:
+                logger.error("No current walkthrough available")
+                return
 
-            # Create initial data structure
-            initial_data = {
-                "brdge_id": self.brdge_id,
-                "timestamp": datetime.utcnow().isoformat(),
-                "slides": {},
-                "metadata": {
-                    "total_slides": self.total_slides,
-                    "status": "in_progress",
-                },
-            }
-
-            # Write initial data if file doesn't exist
-            if not os.path.exists(self.file_path):
-                self.save_data(initial_data)
-                logger.info(f"Created new transcript file: {self.file_path}")
-
-        except Exception as e:
-            logger.error(f"Error initializing log file: {e}", exc_info=True)
-
-    def log_message(self, slide_number: int, role: str, content: str):
-        """Log a new message for a specific slide"""
-        try:
-            # Ensure file exists before trying to load it
-            if not os.path.exists(self.file_path):
-                self.initialize_log_file()
-
-            data = self.load_data()
-
-            # Initialize slide array if it doesn't exist
             slide_key = str(slide_number)
-            if "slides" not in data:
-                data["slides"] = {}
-            if slide_key not in data["slides"]:
-                data["slides"][slide_key] = []
+            if slide_key not in self.current_walkthrough["slides"]:
+                logger.error(f"Invalid slide number: {slide_key}")
+                return
 
-            # Add the new message
+            # Ensure content is serializable
+            if hasattr(content, "__iter__") and not isinstance(
+                content, (str, dict, list)
+            ):
+                logger.warning(
+                    f"Converting non-serializable content type: {type(content)}"
+                )
+                content = str(content)
+
+            # Clean and validate content
+            content = str(content).strip() if content else ""
+            if not content:
+                logger.warning("Empty content received, skipping message")
+                return
+
             message = {
                 "role": role,
                 "content": content,
                 "timestamp": datetime.utcnow().isoformat(),
             }
-            data["slides"][slide_key].append(message)
 
-            # Save updated data
-            self.save_data(data)
-            logger.debug(f"Logged message for slide {slide_number}: {message}")
+            logger.debug(f"Adding message to slide {slide_key}: {json.dumps(message)}")
+            self.current_walkthrough["slides"][slide_key].append(message)
+            self.save()
 
         except Exception as e:
-            logger.error(f"Error logging message: {e}", exc_info=True)
+            logger.error(f"Error adding message: {e}", exc_info=True)
 
-    def complete_walkthrough(self):
-        """Mark the walkthrough as completed"""
+    def save(self):
+        """Save current state to file"""
         try:
-            # Ensure file exists before trying to load it
-            if not os.path.exists(self.file_path):
-                self.initialize_log_file()
+            file_path = f"data/walkthroughs/brdge_{self.brdge_id}.json"
 
-            data = self.load_data()
+            # Validate data before saving
+            if not isinstance(self.walkthroughs, list):
+                logger.error("Invalid walkthroughs data structure")
+                return
 
-            # Ensure metadata exists
-            if "metadata" not in data:
-                data["metadata"] = {
-                    "total_slides": self.total_slides,
-                    "status": "in_progress",
-                }
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            data["metadata"]["status"] = "completed"
-            data["metadata"]["completed_at"] = datetime.utcnow().isoformat()
+            # Verify JSON serialization before writing
+            try:
+                json_data = json.dumps(self.walkthroughs, indent=2)
+            except TypeError as e:
+                logger.error(f"JSON serialization error: {e}")
+                return
 
-            self.save_data(data)
-            logger.info(f"Completed walkthrough for Brdge {self.brdge_id}")
+            # Write to file
+            with open(file_path, "w") as f:
+                f.write(json_data)
 
-        except Exception as e:
-            logger.error(f"Error completing walkthrough: {e}", exc_info=True)
-
-    def load_data(self) -> Dict:
-        """Load the current log file data"""
-        try:
-            if not os.path.exists(self.file_path):
-                self.initialize_log_file()
-
-            with open(self.file_path, "r") as f:
-                return json.load(f)
-
-        except json.JSONDecodeError:
-            logger.error(f"Invalid JSON in {self.file_path}, reinitializing file")
-            self.initialize_log_file()
-            with open(self.file_path, "r") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.error(f"Error loading data: {e}", exc_info=True)
-            return {
-                "brdge_id": self.brdge_id,
-                "timestamp": datetime.utcnow().isoformat(),
-                "slides": {},
-                "metadata": {
-                    "total_slides": self.total_slides,
-                    "status": "in_progress",
-                },
-            }
-
-    def save_data(self, data: Dict):
-        """Save data to the log file"""
-        try:
-            # Ensure directory exists before saving
-            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
-
-            with open(self.file_path, "w") as f:
-                json.dump(data, f, indent=2)
+            logger.debug(f"Successfully saved walkthrough to {file_path}")
 
         except Exception as e:
-            logger.error(f"Error saving data: {e}", exc_info=True)
+            logger.error(f"Error saving walkthrough: {e}", exc_info=True)
 
 
 async def entrypoint(ctx: JobContext):
@@ -187,8 +214,9 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"starting learning assistant for participant {participant.identity}")
 
     initial_ctx = llm.ChatContext().append(role="system", text=SYSTEM_PROMPT)
-
+    log_queue = asyncio.Queue()
     initial_slide_received = asyncio.Event()
+    walkthrough_manager = None
 
     # Track current slide with better initialization
     current_slide = {
@@ -208,6 +236,21 @@ async def entrypoint(ctx: JobContext):
     ) -> Optional[llm.LLMStream]:
         logger.info("before_llm_callback invoked!")
         try:
+            nonlocal walkthrough_manager
+            if walkthrough_manager and current_slide["number"]:
+                # Get the last message content safely
+                if chat_ctx.messages and len(chat_ctx.messages) > 0:
+                    last_message = chat_ctx.messages[-1]
+                    content = getattr(last_message, "content", None)
+                    if content:
+                        # Convert content to string if it's not already
+                        content = (
+                            str(content) if not isinstance(content, str) else content
+                        )
+                        walkthrough_manager.add_message(
+                            current_slide["number"], "user", content
+                        )
+
             if current_slide["initialized"]:
                 logger.info(f"Current slide state: {current_slide}")
 
@@ -245,7 +288,7 @@ async def entrypoint(ctx: JobContext):
         vad=silero.VAD.load(),
         stt=deepgram.STT(),
         llm=llm_instance,
-        tts=cartesia.TTS(voice="b7d50908-b17c-442d-ad8d-810c63997ed9"),
+        tts=cartesia.TTS(voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"),
         chat_ctx=initial_ctx,
         before_llm_cb=before_llm_callback,
     )
@@ -259,71 +302,44 @@ async def entrypoint(ctx: JobContext):
     assistant.start(ctx.room, participant)
     chat = rtc.ChatManager(ctx.room)
 
+    # @assistant.on()
+    @assistant.on("agent_speech_committed")
+    def on_agent_speech_committed(msg: llm.ChatMessage):
+        logger.info(f"Agent speech committed: {msg.content}")
+        # save to walkthrough
+        try:
+            nonlocal walkthrough_manager
+            if walkthrough_manager and current_slide["number"]:
+                walkthrough_manager.add_message(
+                    current_slide["number"], "assistant", msg.content
+                )
+                walkthrough_manager.save()
+        except Exception as e:
+            logger.error(
+                f"Error saving agent speech to walkthrough: {e}", exc_info=True
+            )
+
     # Handle chat messages
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
         cleaned_message = " ".join(msg.message.split()).strip()
         if cleaned_message:
             logger.info(f"Received chat message: {cleaned_message}")
-
-            # Log the chat message
-            if transcript_logger and current_slide["number"]:
-                transcript_logger.log_message(
-                    current_slide["number"], "user", cleaned_message
-                )
-                logger.info(
-                    f"Logged user chat message for slide {current_slide['number']}"
-                )
-
             # Add message to assistant's chat context
             assistant.chat_ctx.append(role="user", text=cleaned_message)
 
+            # Create a separate async function for handling the message
             async def process_message():
+                # Create LLM stream using callback
                 stream = await before_llm_callback(assistant, assistant.chat_ctx)
-                # Log the assistant's response before saying it
-                if transcript_logger and current_slide["number"]:
-                    response_text = await stream.text()
-                    transcript_logger.log_message(
-                        current_slide["number"], "assistant", response_text
-                    )
-                    logger.info(
-                        f"Logged assistant response for slide {current_slide['number']}"
-                    )
-                    # Create new stream since we consumed the original
-                    stream = llm.LLMStream.from_text(response_text)
-
+                # Pass the stream to say()
                 await assistant.say(
                     stream,
                     allow_interruptions=False,
                 )
 
+            # Create task to handle the async processing
             asyncio.create_task(process_message())
-
-    @assistant.on("agent_speech_committed")
-    async def on_agent_speech_committed(text: str):
-        try:
-            if transcript_logger and current_slide["number"]:
-                transcript_logger.log_message(
-                    slide_number=current_slide["number"], role="assistant", content=text
-                )
-                logger.info(
-                    f"Logged assistant speech for slide {current_slide['number']}: {text[:50]}..."
-                )
-        except Exception as e:
-            logger.error(f"Error logging agent speech: {e}", exc_info=True)
-
-    @assistant.on("user_speech_committed")
-    async def on_user_speech_committed(text: str):
-        try:
-            if transcript_logger and current_slide["number"]:
-                transcript_logger.log_message(
-                    slide_number=current_slide["number"], role="user", content=text
-                )
-                logger.info(
-                    f"Logged user speech for slide {current_slide['number']}: {text[:50]}..."
-                )
-        except Exception as e:
-            logger.error(f"Error logging user speech: {e}", exc_info=True)
 
     async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
         """Get slide image path, checking local tmp first before downloading"""
@@ -378,6 +394,7 @@ async def entrypoint(ctx: JobContext):
 
     @ctx.room.on("data_received")
     def on_data_received(data_packet: DataPacket):
+        nonlocal walkthrough_manager
         try:
             decoded_message = data_packet.data.decode("utf-8")
             json_data = json.loads(decoded_message)
@@ -395,6 +412,16 @@ async def entrypoint(ctx: JobContext):
                         "initialized": True,
                     }
                 )
+
+                # Initialize walkthrough manager if not already done
+                if (
+                    not walkthrough_manager
+                    and json_data.get("brdgeId")
+                    and json_data.get("numSlides")
+                ):
+                    walkthrough_manager = WalkthroughManager(
+                        json_data["brdgeId"], json_data["numSlides"]
+                    )
 
                 # Get or download the slide if URL is provided
                 if current_slide["url"]:
@@ -414,21 +441,8 @@ async def entrypoint(ctx: JobContext):
 
     # Send a brief initial greeting only after slide info is received
     await initial_slide_received.wait()
-    transcript_logger = TranscriptLogger(
-        current_slide["brdge_id"], current_slide["total_slides"]
-    )
-
-    initial_greeting = "Walk me through your presentation. I may ask a few questions so I can effectively share this with others."
-
-    # Log the initial greeting first
-    if current_slide["number"]:
-        transcript_logger.log_message(
-            current_slide["number"], "assistant", initial_greeting
-        )
-        logger.info("Logged initial greeting")
-
     await assistant.say(
-        initial_greeting,
+        "I'm listening...",
         allow_interruptions=False,
     )
 
@@ -437,8 +451,10 @@ async def entrypoint(ctx: JobContext):
 
     @ctx.room.on("disconnected")
     def on_disconnect(*args):
+        nonlocal walkthrough_manager
+        if walkthrough_manager:
+            walkthrough_manager.complete_walkthrough()
         logger.info("Room disconnected")
-        transcript_logger.complete_walkthrough()
         disconnect_event.set()
 
     try:
