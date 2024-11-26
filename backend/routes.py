@@ -1774,3 +1774,46 @@ def get_brdge_walkthroughs(brdge_id):
             ),
             500,
         )
+
+
+@app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
+def get_brdge_scripts(brdge_id):
+    """Get existing scripts for a brdge if they exist"""
+    try:
+        # Create slides directory if it doesn't exist
+        slides_dir = "data/slides"
+        os.makedirs(slides_dir, exist_ok=True)
+        
+        script_path = f"{slides_dir}/brdge_{brdge_id}_slides.json"
+        print(f"Looking for scripts at: {script_path}")  # Debug log
+
+        if not os.path.exists(script_path):
+            print(f"No scripts found at {script_path}")  # Debug log
+            return jsonify({
+                "has_scripts": False,
+                "message": "No scripts found"
+            }), 200
+
+        with open(script_path, 'r') as f:
+            script_data = json.load(f)
+            print(f"Found scripts: {script_data}")  # Debug log
+
+        return jsonify({
+            "has_scripts": True,
+            "scripts": script_data["slide_scripts"],
+            "metadata": {
+                "generated_at": script_data["generated_at"],
+                "source_walkthrough_id": script_data["source_walkthrough_id"]
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"Error fetching scripts: {e}")  # Debug log
+        return jsonify({
+            "error": str(e),
+            "message": "Error fetching scripts",
+            "details": {
+                "brdge_id": brdge_id,
+                "path": f"data/slides/brdge_{brdge_id}_slides.json"
+            }
+        }), 500
