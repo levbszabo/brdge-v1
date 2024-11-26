@@ -32,7 +32,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import stripe
 from sqlalchemy import text
-from typing import Dict, List
+from typing import Dict, List, Optional
 import openai
 
 # Set botocore to only log errors
@@ -1541,12 +1541,12 @@ def create_portal_session(user):
 
 
 @app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
-@login_required
-def generate_slide_scripts(user, brdge_id):
+@jwt_required()
+def generate_slide_scripts(brdge_id):
     """Generate cleaned-up scripts for all slides in one API call"""
     try:
         # Get the brdge to verify ownership
-        brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+        # brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
 
         # Load walkthrough data
         walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
@@ -1646,3 +1646,120 @@ def generate_slide_scripts(user, brdge_id):
     except Exception as e:
         print(f"Error generating slide scripts: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+def get_walkthrough_list(brdge_id: int) -> Optional[List[Dict]]:
+    """
+    Get a list of available walkthroughs for a brdge with labels and timestamps.
+
+    Args:
+        brdge_id: The ID of the brdge
+
+    Returns:
+        List of walkthrough metadata if found, None if no walkthroughs exist
+    """
+    walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+
+    if not os.path.exists(walkthrough_path):
+        return None
+
+    try:
+        with open(walkthrough_path, "r") as f:
+            walkthroughs = json.load(f)
+
+        if not isinstance(walkthroughs, list):
+            print(f"Warning: Invalid walkthrough format for brdge {brdge_id}")
+            return None
+
+        # Create labeled walkthrough list
+        labeled_walkthroughs = []
+        for idx, walkthrough in enumerate(walkthroughs, 1):
+            labeled_walkthroughs.append(
+                {
+                    "id": idx,
+                    "label": f"Walkthrough {idx}",
+                    "timestamp": walkthrough.get("timestamp"),
+                    "slide_count": len(walkthrough.get("slides", {})),
+                }
+            )
+
+        return labeled_walkthroughs
+
+    except Exception as e:
+        print(f"Error reading walkthrough file for brdge {brdge_id}: {e}")
+        return None
+
+
+@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
+def get_brdge_walkthroughs(brdge_id):
+    """
+    Get a list of all walkthroughs available for a brdge.
+    Returns labeled walkthroughs that can be used in a dropdown selection.
+    """
+    try:
+        # Get current user but don't require it
+        current_user = get_current_user()
+        print(f"Current user: {current_user.id if current_user else 'None'}")
+
+        # Create data directory if it doesn't exist
+        os.makedirs("data/walkthroughs", exist_ok=True)
+
+        # Create test walkthrough for development
+        walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+        if not os.path.exists(walkthrough_path):
+            # Create a test walkthrough
+            test_walkthrough = [
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "slides": {
+                        "1": "This is test content for slide 1",
+                        "2": "This is test content for slide 2",
+                        "3": "This is test content for slide 3",
+                    },
+                }
+            ]
+
+            with open(walkthrough_path, "w") as f:
+                json.dump(test_walkthrough, f, indent=2)
+
+            print(f"Created test walkthrough at {walkthrough_path}")
+
+        walkthroughs = get_walkthrough_list(brdge_id)
+
+        if not walkthroughs:
+            print(f"No walkthroughs found for brdge {brdge_id}")
+            return (
+                jsonify(
+                    {
+                        "has_walkthroughs": False,
+                        "walkthroughs": [],
+                        "message": "No walkthroughs found",
+                    }
+                ),
+                200,
+            )
+
+        print(f"Found {len(walkthroughs)} walkthrough(s) for brdge {brdge_id}")
+        return (
+            jsonify(
+                {
+                    "has_walkthroughs": True,
+                    "walkthroughs": walkthroughs,
+                    "message": f"Found {len(walkthroughs)} walkthrough(s)",
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        print(f"Error in get_brdge_walkthroughs: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching walkthroughs",
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
+                }
+            ),
+            500,
+        )

@@ -201,6 +201,13 @@ def align_transcript_with_slides(
     return image_transcripts
 
 
+def generate_slide_scripts(brdge_id):
+    walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+    with open(walkthrough_path, "r") as f:
+        walkthroughs = json.load(f)
+    walkthrough = walkthroughs[-1]
+
+
 def clone_voice_helper(name, audio_file_path):
     """
     Clone a voice using the ElevenLabs API.
