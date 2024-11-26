@@ -32,6 +32,8 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import stripe
 from sqlalchemy import text
+from typing import Dict, List
+import openai
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -1139,11 +1141,14 @@ def google_auth():
                 credential,
                 google_requests.Request(),
                 os.getenv("GOOGLE_CLIENT_ID"),
-                clock_skew_in_seconds=60
+                clock_skew_in_seconds=60,
             )
 
             # Verify issuer
-            if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+            if idinfo["iss"] not in [
+                "accounts.google.com",
+                "https://accounts.google.com",
+            ]:
                 return jsonify({"error": "Wrong issuer"}), 400
 
             email = idinfo["email"]
@@ -1176,20 +1181,26 @@ def google_auth():
 
             # Generate JWT token
             access_token = create_access_token(
-                identity=user.id,
-                expires_delta=timedelta(hours=24)
+                identity=user.id, expires_delta=timedelta(hours=24)
             )
 
-            return jsonify({
-                "access_token": access_token,
-                "user": {
-                    "email": user.email,
-                    "name": idinfo.get("name"),
-                    "account_type": user.account.account_type if user.account else "free",
-                    "id": user.id
-                },
-                "message": "Successfully signed up with Google"
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "access_token": access_token,
+                        "user": {
+                            "email": user.email,
+                            "name": idinfo.get("name"),
+                            "account_type": (
+                                user.account.account_type if user.account else "free"
+                            ),
+                            "id": user.id,
+                        },
+                        "message": "Successfully signed up with Google",
+                    }
+                ),
+                200,
+            )
 
         except ValueError as token_error:
             return jsonify({"error": "Invalid token"}), 400
@@ -1527,3 +1538,111 @@ def create_portal_session(user):
     except Exception as e:
         print(f"Error creating portal session: {str(e)}")
         return jsonify({"error": "Failed to create portal session"}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
+@login_required
+def generate_slide_scripts(user, brdge_id):
+    """Generate cleaned-up scripts for all slides in one API call"""
+    try:
+        # Get the brdge to verify ownership
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+        # Load walkthrough data
+        walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+        if not os.path.exists(walkthrough_path):
+            return jsonify({"error": "No walkthrough data found"}), 404
+
+        with open(walkthrough_path, "r") as f:
+            walkthroughs = json.load(f)
+
+        if not walkthroughs or not isinstance(walkthroughs, list):
+            return jsonify({"error": "Invalid walkthrough data"}), 400
+
+        # Get the most recent walkthrough
+        walkthrough = walkthroughs[-1]
+        slides_data = walkthrough.get("slides", {})
+
+        # Prepare the prompt
+        prompt = """
+        You are provided with transcripts of a user's presentation across {num_slides} slides. For each slide, the user has discussed key points.
+        Your task is to generate a polished, cohesive script for each slide that effectively communicates the main points the user intended to convey.
+        Paraphrase where appropriate to enhance clarity and flow, but maintain the user's tone and style.
+        Instructions:
+
+        - Focus solely on the user's messages.
+        - Summarize and paraphrase the user's content for each slide into one coherent message.
+        - Ensure the script for each slide is a single, natural-sounding message in the user's voice.
+        - Preserve important details and key points relevant to each slide.
+        - Avoid filler words, repetitions, and disfluencies.
+        - Present the scripts in JSON format as follows:
+
+        {{
+          "1": "User's script for slide 1",
+          "2": "User's script for slide 2",
+          ...
+        }}
+
+        - Ensure the scripts are suitable for text-to-speech conversion by avoiding special characters and complex formatting.
+        - Do not include any additional text or explanations outside the JSON format.
+
+        -----------Conversation Transcript-----------
+        {conversation_transcript}
+        """.format(
+            conversation_transcript=json.dumps(slides_data, indent=2),
+            num_slides=len(slides_data),
+        )
+
+        # Create OpenAI client and make request
+        client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        input_data = {
+            "model": "gpt-4o",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                    ],
+                },
+            ],
+            "temperature": 0.3,
+            "response_format": {"type": "json_object"},
+        }
+
+        try:
+            response = client.chat.completions.create(**input_data)
+            slide_scripts = json.loads(response.choices[0].message.content)
+
+        except Exception as e:
+            print(f"Error generating scripts: {e}")
+            return jsonify({"error": "Failed to generate scripts"}), 500
+
+        # Save generated scripts
+        script_data = {
+            "slide_scripts": slide_scripts,
+            "generated_at": datetime.utcnow().isoformat(),
+            "source_walkthrough_id": walkthrough.get("timestamp"),
+        }
+
+        # Create slides directory if it doesn't exist
+        slides_dir = f"data/slides"
+        os.makedirs(slides_dir, exist_ok=True)
+
+        # Save to slides directory
+        script_path = f"{slides_dir}/brdge_{brdge_id}_slides.json"
+        with open(script_path, "w") as f:
+            json.dump(script_data, f, indent=2)
+
+        return (
+            jsonify(
+                {
+                    "message": "Slide scripts generated successfully",
+                    "scripts": slide_scripts,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        print(f"Error generating slide scripts: {e}")
+        return jsonify({"error": str(e)}), 500
