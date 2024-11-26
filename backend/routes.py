@@ -1541,12 +1541,14 @@ def create_portal_session(user):
 
 
 @app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
-@jwt_required()
 def generate_slide_scripts(brdge_id):
     """Generate cleaned-up scripts for all slides in one API call"""
     try:
-        # Get the brdge to verify ownership
-        # brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+        data = request.get_json()
+        walkthrough_id = data.get("walkthrough_id")
+
+        if not walkthrough_id:
+            return jsonify({"error": "Walkthrough ID required"}), 400
 
         # Load walkthrough data
         walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
@@ -1559,8 +1561,12 @@ def generate_slide_scripts(brdge_id):
         if not walkthroughs or not isinstance(walkthroughs, list):
             return jsonify({"error": "Invalid walkthrough data"}), 400
 
-        # Get the most recent walkthrough
-        walkthrough = walkthroughs[-1]
+        # Get the specified walkthrough (subtract 1 since IDs start at 1)
+        try:
+            walkthrough = walkthroughs[walkthrough_id - 1]
+        except IndexError:
+            return jsonify({"error": "Invalid walkthrough ID"}), 400
+
         slides_data = walkthrough.get("slides", {})
 
         # Prepare the prompt
@@ -1621,7 +1627,7 @@ def generate_slide_scripts(brdge_id):
         script_data = {
             "slide_scripts": slide_scripts,
             "generated_at": datetime.utcnow().isoformat(),
-            "source_walkthrough_id": walkthrough.get("timestamp"),
+            "source_walkthrough_id": walkthrough_id,
         }
 
         # Create slides directory if it doesn't exist
@@ -1638,6 +1644,11 @@ def generate_slide_scripts(brdge_id):
                 {
                     "message": "Slide scripts generated successfully",
                     "scripts": slide_scripts,
+                    "metadata": {
+                        "generated_at": datetime.utcnow().isoformat(),
+                        "walkthrough_id": walkthrough_id,
+                        "num_slides": len(slide_scripts),
+                    },
                 }
             ),
             200,
