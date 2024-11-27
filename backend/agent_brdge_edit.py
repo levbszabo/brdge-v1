@@ -26,7 +26,7 @@ from typing import Optional
 import os.path
 from typing import Dict, List, Any
 
-load_dotenv(dotenv_path=".env_crypto")
+load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
 
 SYSTEM_PROMPT = """You are a Brdge Learning Assistant, an AI that learns from presenters by analyzing their slides and asking insightful questions when needed.
@@ -438,6 +438,7 @@ async def entrypoint(ctx: JobContext):
                         "brdge_id": json_data["brdgeId"],
                         "url": json_data.get("slideUrl"),
                         "initialized": True,
+                        "agent_type": json_data.get("agentType"),
                     }
                 )
 
@@ -469,8 +470,9 @@ async def entrypoint(ctx: JobContext):
 
     # Send a brief initial greeting only after slide info is received
     await initial_slide_received.wait()
+    agent_type = current_slide.get("agent_type", "")
     await assistant.say(
-        "I'm listening...",
+        f"I'm listening...{agent_type}",
         allow_interruptions=False,
     )
 
