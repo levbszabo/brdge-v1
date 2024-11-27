@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import AgentsPlayground from '../components/AgentsPlayground';
 
 function ViewBrdgePage() {
@@ -21,7 +21,7 @@ function ViewBrdgePage() {
             width: '100vw',
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: '#121212' // Match Playground's dark theme
+            bgcolor: '#121212'
         }}>
             <Box sx={{
                 flexGrow: 1,
@@ -34,7 +34,7 @@ function ViewBrdgePage() {
                     bottom: 0
                 }
             }}>
-                <AgentsPlayground brdgeId={brdgeId} />
+                <AgentsPlayground brdgeId={brdgeId} agentType="view" />
             </Box>
         </Box>
     );

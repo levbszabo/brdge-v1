@@ -2,7 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { api } from '../api';
 
-function AgentsPlayground({ brdgeId }) {
+// Add to props interface/type definition at the top
+interface AgentsPlaygroundProps {
+    brdgeId?: string;
+    agentType?: 'view' | 'edit';
+}
+
+function AgentsPlayground({ brdgeId, agentType = 'edit' }: AgentsPlaygroundProps) {
     const [playgroundUrl, setPlaygroundUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -22,6 +28,7 @@ function AgentsPlayground({ brdgeId }) {
                 }
 
                 console.log('Fetching brdge data for ID:', brdgeId);
+                // Use the same endpoint for both modes
                 const response = await api.get(`/brdges/${brdgeId}`);
                 const brdgeData = response.data;
                 console.log('Received brdge data:', brdgeData);
@@ -34,16 +41,17 @@ function AgentsPlayground({ brdgeId }) {
                 // Ensure API base URL doesn't end with a slash
                 const cleanApiBaseUrl = api.defaults.baseURL.replace(/\/$/, '');
 
-                // Construct URL with brdge data
+                // Construct URL with brdge data and agent type
                 const baseUrl = 'http://localhost:3001';
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     numSlides: brdgeData.num_slides.toString(),
-                    apiBaseUrl: cleanApiBaseUrl
+                    apiBaseUrl: cleanApiBaseUrl,
+                    agentType: agentType // Pass the agent type to the playground
                 });
 
                 const url = `${baseUrl}?${params.toString()}`;
-                console.log('Constructed playground URL:', url);
+                console.log('Constructed playground URL:', url, 'Agent Type:', agentType);
 
                 setPlaygroundUrl(url);
             } catch (error) {
@@ -54,7 +62,7 @@ function AgentsPlayground({ brdgeId }) {
         };
 
         initPlayground();
-    }, [brdgeId]);
+    }, [brdgeId, agentType]);
 
     if (isLoading) {
         return (

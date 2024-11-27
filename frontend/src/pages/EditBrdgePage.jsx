@@ -12,7 +12,7 @@ function EditBrdgePage() {
             width: '100vw',
             overflow: 'hidden'  // Prevent any scrolling at container level
         }}>
-            <AgentsPlayground brdgeId={id} />
+            <AgentsPlayground brdgeId={id} agentType="edit" />
         </Box>
     );
 }
