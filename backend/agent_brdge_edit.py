@@ -29,7 +29,8 @@ from typing import Dict, List, Any
 load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
 
-SYSTEM_PROMPT = """You are a Brdge Learning Assistant, an AI that learns from presenters by analyzing their slides and asking insightful questions when needed.
+# First, let's modify the SYSTEM_PROMPT to be specific to the edit mode
+EDIT_SYSTEM_PROMPT = """You are a Brdge Learning Assistant, an AI that learns from presenters by analyzing their slides and asking insightful questions when needed.
 Core Behaviors:
 1. Listen First: Let the presenter speak freely. Don't interrupt their flow unless necessary.
 
@@ -49,6 +50,29 @@ Core Behaviors:
    - Observe their transition patterns
 
 Remember: Your presence should feel like a thoughtful observer rather than an active participant. The presenter should almost forget you're there.
+"""
+
+# Add a new system prompt for the view mode
+VIEW_SYSTEM_PROMPT = """You are a Brdge Presentation Assistant, an AI that helps present slides using pre-written scripts.
+Core Behaviors:
+1. Clear Presentation: Present the script for each slide clearly and professionally.
+
+2. Stay On Script: 
+   - Stick to the provided script for each slide
+   - Maintain consistent pacing and tone
+   - Don't add or modify the content
+
+3. Transition Smoothly:
+   - Acknowledge slide changes
+   - Use professional transitions between slides
+   - Keep the presentation flowing naturally
+
+4. Professional Tone:
+   - Speak with clarity and confidence
+   - Maintain an engaging presentation style
+   - Use appropriate pauses for emphasis
+
+Remember: Your role is to deliver the pre-written content professionally and clearly. Think of yourself as a skilled presenter delivering a polished presentation.
 """
 
 # At the top of the file, add these logging configurations
@@ -227,6 +251,79 @@ class WalkthroughManager:
             logger.error(f"Error completing walkthrough: {e}", exc_info=True)
 
 
+# Add a function to load scripts for a specific brdge
+def load_slide_scripts(brdge_id: str) -> Dict[str, str]:
+    """Load scripts for a specific brdge"""
+    # Get the absolute path to the data directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(
+        current_dir, "data", "slides", f"brdge_{brdge_id}_slides.json"
+    )
+
+    logger.info(f"Attempting to load scripts from: {file_path}")
+
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, "r") as f:
+                data = json.load(f)
+                scripts = data.get("slide_scripts", {})
+                logger.info(f"Successfully loaded scripts: {scripts}")
+                return scripts
+        else:
+            logger.warning(f"Script file not found at: {file_path}")
+            # Log the directory contents to help debug
+            slides_dir = os.path.join(current_dir, "data", "slides")
+            if os.path.exists(slides_dir):
+                logger.info(
+                    f"Available files in slides directory: {os.listdir(slides_dir)}"
+                )
+            else:
+                logger.warning(f"Slides directory not found: {slides_dir}")
+    except Exception as e:
+        logger.error(f"Error loading scripts: {e}", exc_info=True)
+    return {}
+
+
+class ViewerAgent(VoicePipelineAgent):
+    def __init__(self, brdge_id: str):
+        self.brdge_id = brdge_id
+        logger.info(f"Initializing ViewerAgent for brdge_id: {brdge_id}")
+        self.scripts = self._load_scripts()
+        self.current_slide = None
+        super().__init__(
+            vad=silero.VAD.load(),
+            stt=deepgram.STT(),
+            llm=openai.LLM(model="gpt-4o-mini"),
+            tts=cartesia.TTS(voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"),
+            chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
+        )
+
+    def _load_scripts(self) -> Dict[str, str]:
+        """Load and validate scripts"""
+        scripts = load_slide_scripts(self.brdge_id)
+        logger.info(f"ViewerAgent loaded scripts for brdge {self.brdge_id}: {scripts}")
+        return scripts
+
+    async def present_slide(self, slide_number: str):
+        """Present the script for the current slide"""
+        logger.info(f"Attempting to present slide {slide_number}")
+        logger.info(f"Available scripts: {self.scripts}")
+
+        if slide_number != self.current_slide:
+            self.current_slide = slide_number
+            script = self.scripts.get(str(slide_number))
+            if script:
+                logger.info(f"Found script for slide {slide_number}: {script}")
+                await self.say(script, allow_interruptions=False)
+            else:
+                logger.warning(
+                    f"No script found for slide {slide_number} in available scripts: {self.scripts}"
+                )
+                await self.say(
+                    "No script available for this slide.", allow_interruptions=False
+                )
+
+
 async def entrypoint(ctx: JobContext):
     logger.info(f"connecting to room {ctx.room.name}")
     await ctx.connect()
@@ -234,10 +331,8 @@ async def entrypoint(ctx: JobContext):
     participant = await ctx.wait_for_participant()
     logger.info(f"starting learning assistant for participant {participant.identity}")
 
-    initial_ctx = llm.ChatContext().append(role="system", text=SYSTEM_PROMPT)
-    log_queue = asyncio.Queue()
+    # Add the missing initial_slide_received event
     initial_slide_received = asyncio.Event()
-    walkthrough_manager = None
 
     # Track current slide with better initialization
     current_slide = {
@@ -248,187 +343,21 @@ async def entrypoint(ctx: JobContext):
         "brdge_id": None,
         "initialized": False,
         "last_processed": None,
+        "agent_type": None,
     }
-    # Create the LLM instance
-    llm_instance = openai.LLM(model="gpt-4o-mini")
 
-    # Define the callback with correct signature and return type
-    async def before_llm_callback(
-        agent: VoicePipelineAgent, chat_ctx: llm.ChatContext
-    ) -> Optional[llm.LLMStream]:
-        logger.info("before_llm_callback invoked!")
-        try:
-            nonlocal walkthrough_manager
-            if walkthrough_manager and current_slide["number"]:
-                # Get the last message content safely
-                if chat_ctx.messages and len(chat_ctx.messages) > 0:
-                    last_message = chat_ctx.messages[-1]
-                    content = getattr(last_message, "content", None)
-                    if content:
-                        content = (
-                            str(content) if not isinstance(content, str) else content
-                        )
-                        walkthrough_manager.add_message(
-                            current_slide["number"], "user", content
-                        )
-
-            # Only process the image if this is a new slide
-            if (
-                current_slide["initialized"]
-                and current_slide["number"] != current_slide["last_processed"]
-            ):
-
-                logger.info(f"Processing new slide: {current_slide['number']}")
-
-                if current_slide["brdge_id"] and current_slide["number"]:
-                    image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
-
-                    if os.path.exists(image_path):
-                        base64_image = image_to_base64(image_path)
-                        if base64_image:
-                            # Create ChatImage with proper data URL format
-                            slide_image = llm.ChatImage(
-                                image=f"data:image/png;base64,{base64_image}"
-                            )
-                            # Create message with images list
-                            image_message = llm.ChatMessage.create(
-                                role="user",
-                                text=f"New slide {current_slide['number']} - Please analyze this slide and be ready to discuss it.",
-                                images=[slide_image],
-                            )
-                            # Add the image message to context
-                            chat_ctx.messages.append(image_message)
-                            logger.debug("Added new slide image to chat context")
-
-                            # Update last processed slide
-                            current_slide["last_processed"] = current_slide["number"]
-
-        except Exception as e:
-            logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
-
-        # Return chat stream
-        return agent.llm.chat(chat_ctx=chat_ctx)
-
-    # Create and start the assistant with the callback
-    assistant = VoicePipelineAgent(
-        vad=silero.VAD.load(),
-        stt=deepgram.STT(),
-        llm=llm_instance,
-        tts=cartesia.TTS(voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"),
-        chat_ctx=initial_ctx,
-        before_llm_cb=before_llm_callback,
-    )
-
-    # Verify the callback is set
-    logger.info(
-        f"Assistant created with before_llm_cb: {assistant._opts.before_llm_cb is not None}"
-    )
-
-    # Start the assistant and chat manager
-    assistant.start(ctx.room, participant)
-    chat = rtc.ChatManager(ctx.room)
-
-    # @assistant.on()
-    @assistant.on("agent_speech_committed")
-    def on_agent_speech_committed(msg: llm.ChatMessage):
-        logger.info(f"Agent speech committed: {msg.content}")
-        # save to walkthrough
-        try:
-            nonlocal walkthrough_manager
-            if walkthrough_manager and current_slide["number"]:
-                walkthrough_manager.add_message(
-                    current_slide["number"], "assistant", msg.content
-                )
-                walkthrough_manager.save()
-        except Exception as e:
-            logger.error(
-                f"Error saving agent speech to walkthrough: {e}", exc_info=True
-            )
-
-    # Handle chat messages
-    @chat.on("message_received")
-    def on_chat_received(msg: rtc.ChatMessage):
-        cleaned_message = " ".join(msg.message.split()).strip()
-        if cleaned_message:
-            logger.info(f"Received chat message: {cleaned_message}")
-            # Add message to assistant's chat context
-            assistant.chat_ctx.append(role="user", text=cleaned_message)
-
-            # Create a separate async function for handling the message
-            async def process_message():
-                # Create LLM stream using callback
-                stream = await before_llm_callback(assistant, assistant.chat_ctx)
-                # Pass the stream to say()
-                await assistant.say(
-                    stream,
-                    allow_interruptions=False,
-                )
-
-            # Create task to handle the async processing
-            asyncio.create_task(process_message())
-
-    async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
-        """Get slide image path, checking local tmp first before downloading"""
-        # Define the expected local path
-        tmp_dir = f"/tmp/brdge/slides_{brdge_id}"
-        file_path = f"{tmp_dir}/slide_{slide_number}.png"
-
-        # Check if file exists locally first
-        if os.path.exists(file_path):
-            logger.debug(f"Found existing slide in tmp directory: {file_path}")
-            return file_path
-
-        # If not found locally, download it
-        try:
-            logger.info(f"Slide not found locally, downloading from {url}")
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-
-            # Create directory if it doesn't exist
-            os.makedirs(tmp_dir, exist_ok=True)
-
-            # Save the image
-            with open(file_path, "wb") as f:
-                f.write(response.content)
-
-            logger.info(f"Successfully downloaded and saved slide to {file_path}")
-            return file_path
-        except requests.RequestException as e:
-            logger.error(f"Network error downloading slide: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"Error handling slide: {e}", exc_info=True)
-            return None
-
-    def image_to_base64(image_path: str) -> str:
-        """Convert image to base64 string"""
-        try:
-            with Image.open(image_path) as img:
-                # Convert to RGB if needed
-                if img.mode != "RGB":
-                    img = img.convert("RGB")
-
-                # Save to bytes buffer
-                buffer = io.BytesIO()
-                img.save(buffer, format="PNG")
-
-                # Convert to base64
-                return base64.b64encode(buffer.getvalue()).decode("utf-8")
-        except Exception as e:
-            logger.error(f"Error converting image to base64: {e}")
-            return None
+    # Create a placeholder for the agent
+    agent = None
+    walkthrough_manager = None
 
     @ctx.room.on("data_received")
     def on_data_received(data_packet: DataPacket):
-        nonlocal walkthrough_manager
+        nonlocal walkthrough_manager, agent, current_slide
         try:
             decoded_message = data_packet.data.decode("utf-8")
             json_data = json.loads(decoded_message)
 
             if json_data.get("currentSlide") is not None:
-                # Check if this is a new slide
-                new_slide = current_slide["number"] != json_data["currentSlide"]
-
                 # Update current slide info
                 current_slide.update(
                     {
@@ -438,43 +367,60 @@ async def entrypoint(ctx: JobContext):
                         "brdge_id": json_data["brdgeId"],
                         "url": json_data.get("slideUrl"),
                         "initialized": True,
-                        "agent_type": json_data.get("agentType"),
+                        "agent_type": json_data.get("agentType", "edit"),
                     }
                 )
 
-                # Initialize walkthrough manager if needed
-                if (
-                    not walkthrough_manager
-                    and json_data.get("brdgeId")
-                    and json_data.get("numSlides")
-                ):
-                    walkthrough_manager = WalkthroughManager(
-                        json_data["brdgeId"], json_data["numSlides"]
-                    )
-
-                # Get or download the slide if it's new and URL is provided
-                if new_slide and current_slide["url"]:
-                    asyncio.create_task(
-                        get_slide_image(
-                            current_slide["url"],
-                            current_slide["brdge_id"],
-                            current_slide["number"],
-                        )
-                    )
-
+                # Set the initial_slide_received event
                 if not initial_slide_received.is_set():
                     initial_slide_received.set()
+
+                # Initialize the appropriate agent if not already done
+                if not agent:
+                    if current_slide["agent_type"] == "view":
+                        logger.info(
+                            f"Initializing ViewerAgent for brdge {current_slide['brdge_id']}"
+                        )
+                        agent = ViewerAgent(current_slide["brdge_id"])
+                        agent.start(ctx.room, participant)
+
+                        # Log the loaded scripts for debugging
+                        logger.info(f"Loaded scripts: {agent.scripts}")
+                    else:  # edit mode
+                        initial_ctx = llm.ChatContext().append(
+                            role="system", text=EDIT_SYSTEM_PROMPT
+                        )
+                        agent = VoicePipelineAgent(
+                            vad=silero.VAD.load(),
+                            stt=deepgram.STT(),
+                            llm=openai.LLM(model="gpt-4o-mini"),
+                            tts=cartesia.TTS(
+                                voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"
+                            ),
+                            chat_ctx=initial_ctx,
+                            before_llm_cb=before_llm_callback,
+                        )
+                        agent.start(ctx.room, participant)
+
+                # For view mode, present the script
+                if current_slide["agent_type"] == "view" and isinstance(
+                    agent, ViewerAgent
+                ):
+                    logger.info(
+                        f"Presenting script for slide {current_slide['number']}"
+                    )
+                    asyncio.create_task(
+                        agent.present_slide(str(current_slide["number"]))
+                    )
 
         except Exception as e:
             logger.error(f"Error processing data received: {e}", exc_info=True)
 
-    # Send a brief initial greeting only after slide info is received
+    # Send initial greeting
     await initial_slide_received.wait()
-    agent_type = current_slide.get("agent_type", "")
-    await assistant.say(
-        f"I'm listening...{agent_type}",
-        allow_interruptions=False,
-    )
+    agent_type = current_slide.get("agent_type", "edit")
+    greeting = "I'm ready to present..." if agent_type == "view" else "I'm listening..."
+    await agent.say(greeting, allow_interruptions=False)
 
     # Keep the connection alive
     disconnect_event = asyncio.Event()
