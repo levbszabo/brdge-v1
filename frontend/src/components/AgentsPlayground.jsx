@@ -3,12 +3,7 @@ import { Box } from '@mui/material';
 import { api } from '../api';
 
 // Add to props interface/type definition at the top
-interface AgentsPlaygroundProps {
-    brdgeId?: string;
-    agentType?: 'view' | 'edit';
-}
-
-function AgentsPlayground({ brdgeId, agentType = 'edit' }: AgentsPlaygroundProps) {
+function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
     const [playgroundUrl, setPlaygroundUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
