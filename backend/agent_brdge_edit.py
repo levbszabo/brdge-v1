@@ -291,17 +291,58 @@ def load_slide_scripts(brdge_id: str) -> Dict[str, str]:
     return {}
 
 
+# Add this function to get the latest voice ID for a brdge
+def get_brdge_voice_id(brdge_id: str) -> Optional[str]:
+    """Get the most recently created voice ID for a brdge"""
+    try:
+        voices_dir = "data/voices"
+        voice_file_path = os.path.join(voices_dir, f"brdge_{brdge_id}_voices.json")
+
+        if not os.path.exists(voice_file_path):
+            print(f"No voices found for brdge {brdge_id}")
+            return None
+
+        with open(voice_file_path, "r") as f:
+            voices = json.load(f)
+            if not voices:
+                return None
+
+            # Get the most recent voice (last in the list)
+            if isinstance(voices, list):
+                latest_voice = voices[-1]
+            else:
+                latest_voice = voices
+
+            return latest_voice.get("id")
+
+    except Exception as e:
+        print(f"Error getting voice ID: {e}")
+        return None
+
+
 class ViewerAgent(VoicePipelineAgent):
     def __init__(self, brdge_id: str):
         self.brdge_id = brdge_id
         logger.info(f"Initializing ViewerAgent for brdge_id: {brdge_id}")
         self.scripts = self._load_scripts()
         self.current_slide = None
+
+        # Get voice ID for this brdge
+        voice_id = get_brdge_voice_id(brdge_id)
+        logger.info(f"Using voice ID: {voice_id}")
+
+        # Use the cloned voice if available, otherwise fallback to default
+        tts_config = {
+            "voice": (
+                voice_id if voice_id else "41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"
+            )  # Default voice
+        }
+
         super().__init__(
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
-            tts=cartesia.TTS(voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"),
+            tts=cartesia.TTS(**tts_config),
             chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
         )
 
