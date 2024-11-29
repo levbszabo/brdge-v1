@@ -291,33 +291,45 @@ def load_slide_scripts(brdge_id: str) -> Dict[str, str]:
     return {}
 
 
-# Add this function to get the latest voice ID for a brdge
-def get_brdge_voice_id(brdge_id: str) -> Optional[str]:
-    """Get the most recently created voice ID for a brdge"""
+def get_brdge_voice_id(brdge_id: str) -> str:
+    """Get the voice ID for a brdge, falling back to default if none found"""
+    DEFAULT_VOICE = "85100d63-eb8a-4225-9750-803920c3c8d3"
+
     try:
         voices_dir = "data/voices"
         voice_file_path = os.path.join(voices_dir, f"brdge_{brdge_id}_voices.json")
 
         if not os.path.exists(voice_file_path):
-            print(f"No voices found for brdge {brdge_id}")
-            return None
+            logger.info(f"No voices found for brdge {brdge_id}, using default")
+            return DEFAULT_VOICE
 
         with open(voice_file_path, "r") as f:
             voices = json.load(f)
             if not voices:
-                return None
+                return DEFAULT_VOICE
 
-            # Get the most recent voice (last in the list)
+            # Get the first voice from the list or the single voice object
             if isinstance(voices, list):
-                latest_voice = voices[-1]
-            else:
-                latest_voice = voices
-
-            return latest_voice.get("id")
+                return voices[0].get("id", DEFAULT_VOICE)
+            return voices.get("id", DEFAULT_VOICE)
 
     except Exception as e:
-        print(f"Error getting voice ID: {e}")
-        return None
+        logger.error(f"Error getting voice ID: {e}")
+        return DEFAULT_VOICE
+
+
+class EditAgent(VoicePipelineAgent):
+    def __init__(self, brdge_id: str):
+        voice_id = get_brdge_voice_id(brdge_id)
+        logger.info(f"Using voice ID for EditAgent: {voice_id}")
+
+        super().__init__(
+            vad=silero.VAD.load(),
+            stt=deepgram.STT(),
+            llm=openai.LLM(model="gpt-4o-mini"),
+            tts=cartesia.TTS(voice=voice_id),
+            chat_ctx=llm.ChatContext().append(role="system", text=EDIT_SYSTEM_PROMPT),
+        )
 
 
 class ViewerAgent(VoicePipelineAgent):
@@ -327,99 +339,45 @@ class ViewerAgent(VoicePipelineAgent):
         self.scripts = self._load_scripts()
         self.current_slide = None
 
-        # Get voice ID for this brdge
         voice_id = get_brdge_voice_id(brdge_id)
-        logger.info(f"Using voice ID: {voice_id}")
-
-        # Use the cloned voice if available, otherwise fallback to default
-        tts_config = {
-            "voice": (
-                voice_id if voice_id else "41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"
-            )  # Default voice
-        }
+        logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
 
         super().__init__(
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
-            tts=cartesia.TTS(**tts_config),
+            tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
         )
 
-    def _load_scripts(self) -> Dict[str, str]:
-        """Load and validate scripts"""
-        scripts = load_slide_scripts(self.brdge_id)
-        logger.info(f"ViewerAgent loaded scripts for brdge {self.brdge_id}: {scripts}")
-        return scripts
+    def _load_scripts(self):
+        """Load scripts for this brdge"""
+        return load_slide_scripts(self.brdge_id)
 
     async def present_slide(self, slide_number: str):
         """Present the script for the current slide"""
         logger.info(f"Attempting to present slide {slide_number}")
-        logger.info(f"Available scripts: {self.scripts}")
-
-        if slide_number != self.current_slide:
-            self.current_slide = slide_number
-            script = self.scripts.get(str(slide_number))
-            if script:
-                logger.info(f"Found script for slide {slide_number}: {script}")
-                # Allow interruptions during presentation
-                await self.say(script, allow_interruptions=True)
-            else:
-                logger.warning(
-                    f"No script found for slide {slide_number} in available scripts: {self.scripts}"
-                )
-                await self.say(
-                    "No script available for this slide.", allow_interruptions=True
-                )
-
-    async def on_text(self, text: str):
-        """Handle incoming text messages"""
-        logger.info(f"Received text message in ViewerAgent: {text}")
 
         try:
-            # Prevent processing multiple messages simultaneously
-            if self.is_processing:
-                logger.info("Already processing a message, skipping")
-                return
+            if slide_number != self.current_slide:
+                self.current_slide = slide_number
+                script = self.scripts.get(str(slide_number))
 
-            self.is_processing = True
-
-            # Add the user's message to the chat context
-            self.chat_ctx.append(role="user", text=text)
-
-            # Get current slide's script as context
-            current_script = ""
-            if self.current_slide and str(self.current_slide) in self.scripts:
-                current_script = self.scripts[str(self.current_slide)]
-
-            # Prepare the prompt with context
-            context_prompt = f"""
-            Current slide: {self.current_slide}
-            Current script: {current_script}
-            
-            User question: {text}
-            
-            Please respond to the user's question in the context of the current slide and its script.
-            Keep responses concise and relevant to the presentation content.
-            """
-
-            # Get response from LLM
-            response = await self.llm.complete(context_prompt, self.chat_ctx)
-
-            # Add response to chat context
-            self.chat_ctx.append(role="assistant", text=response)
-
-            # Send the response
-            await self.say(response, allow_interruptions=False)
-
+                if script:
+                    logger.info(f"Found script for slide {slide_number}: {script}")
+                    await self.say(script, allow_interruptions=True)
+                else:
+                    logger.warning(f"No script found for slide {slide_number}")
+                    await self.say(
+                        "I don't have any content for this slide.",
+                        allow_interruptions=True,
+                    )
         except Exception as e:
-            logger.error(f"Error processing text message: {e}", exc_info=True)
+            logger.error(f"Error presenting slide: {e}", exc_info=True)
             await self.say(
-                "I apologize, but I encountered an error processing your message.",
-                allow_interruptions=False,
+                "I encountered an error while presenting this slide.",
+                allow_interruptions=True,
             )
-        finally:
-            self.is_processing = False
 
 
 async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
