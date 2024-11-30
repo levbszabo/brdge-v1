@@ -25,15 +25,6 @@ import requests
 from typing import Optional
 import os.path
 from typing import Dict, List, Any
-from utils import (
-    get_walkthrough_count,
-    save_walkthrough,
-    get_walkthrough,
-    list_walkthroughs,
-    get_brdge_paths,
-    create_brdge_directory_structure,
-    cleanup_brdge_directory,
-)
 
 load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
@@ -128,141 +119,150 @@ def load_walkthrough_file(brdge_id: str) -> List[Dict[str, Any]]:
     return []
 
 
+def save_walkthrough(brdge_id: str, walkthroughs: List[Dict[str, Any]]) -> bool:
+    """Save walkthroughs to file"""
+    file_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+    try:
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as f:
+            json.dump(walkthroughs, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving walkthrough: {e}")
+        return False
+
+
 class WalkthroughManager:
     def __init__(self, brdge_id: str, total_slides: int):
-        logger.debug(
-            f"Initializing WalkthroughManager with brdge_id: {brdge_id} ({type(brdge_id)}), total_slides: {total_slides}"
-        )
-        self.brdge_id = str(brdge_id)
+        self.brdge_id = brdge_id
         self.total_slides = total_slides
         self.current_walkthrough = None
-        self.current_walkthrough_number = None
-        self.initialize_walkthrough()
+        self.walkthroughs = []
+        self.api_base_url = "http://localhost:5000/api"  # Configure as needed
+        self.load_or_create_walkthrough()
 
-    def initialize_walkthrough(self):
-        """Initialize a new walkthrough"""
+    def load_or_create_walkthrough(self):
+        """Load existing walkthroughs and create new entry"""
         try:
-            # Get the next walkthrough number
-            next_number = get_walkthrough_count(self.brdge_id) + 1
-            logger.debug(
-                f"Next walkthrough number: {next_number} ({type(next_number)})"
+            # Create new walkthrough via API
+            response = requests.post(
+                f"{self.api_base_url}/walkthroughs",
+                json={"brdge_id": self.brdge_id, "total_slides": self.total_slides},
             )
-            self.current_walkthrough_number = next_number
+            response.raise_for_status()
+            walkthrough_data = response.json()
 
-            # Create new walkthrough data
+            # Initialize walkthrough data
             self.current_walkthrough = {
+                "id": walkthrough_data["id"],
                 "brdge_id": self.brdge_id,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": walkthrough_data["created_at"],
                 "slides": {str(i): [] for i in range(1, self.total_slides + 1)},
                 "metadata": {
                     "total_slides": self.total_slides,
-                    "status": "in_progress",
-                    "created_at": datetime.utcnow().isoformat(),
+                    "status": walkthrough_data["status"],
+                    "created_at": walkthrough_data["created_at"],
                     "completed_at": None,
                 },
             }
-            logger.debug(f"Created walkthrough data: {self.current_walkthrough}")
 
-            # Save the initial walkthrough
-            logger.debug("Calling save_walkthrough with:")
-            logger.debug(f"  - brdge_id: {self.brdge_id} ({type(self.brdge_id)})")
-            logger.debug(f"  - walkthrough_number: {next_number} ({type(next_number)})")
-            logger.debug(f"  - data: {type(self.current_walkthrough)}")
+            # Handle local file storage as before
+            file_path = f"data/walkthroughs/brdge_{self.brdge_id}.json"
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            success = save_walkthrough(
-                self.brdge_id, next_number, self.current_walkthrough
-            )
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r") as f:
+                        self.walkthroughs = json.load(f)
+                        if not isinstance(self.walkthroughs, list):
+                            self.walkthroughs = []
+                except Exception as e:
+                    logger.error(f"Error loading walkthrough file: {e}")
+                    self.walkthroughs = []
 
-            if not success:
-                logger.error("Failed to save initial walkthrough")
-                raise Exception("Failed to initialize walkthrough")
+            self.walkthroughs.append(self.current_walkthrough)
+            self.save()
 
         except Exception as e:
-            logger.error(f"Error initializing walkthrough: {e}")
+            logger.error(f"Error creating walkthrough: {e}", exc_info=True)
             raise
 
     def add_message(self, slide_number: int, role: str, content: str):
-        """Add a message to the current slide's transcript"""
+        """Add message via API"""
         try:
-            if not self.current_walkthrough:
-                logger.error("No current walkthrough available")
-                return
+            response = requests.post(
+                f"{self.api_base_url}/walkthroughs/{self.current_walkthrough['id']}/messages",
+                json={"slide_number": slide_number, "role": role, "content": content},
+            )
+            response.raise_for_status()
+            message_data = response.json()
 
+            # Update local storage
             slide_key = str(slide_number)
             if slide_key not in self.current_walkthrough["slides"]:
                 logger.error(f"Invalid slide number: {slide_key}")
                 return
 
-            # Ensure content is serializable
-            if hasattr(content, "__iter__") and not isinstance(
-                content, (str, dict, list)
-            ):
-                logger.warning(
-                    f"Converting non-serializable content type: {type(content)}"
-                )
-                content = str(content)
-
-            # Clean and validate content
-            content = str(content).strip() if content else ""
-            if not content:
-                logger.warning("Empty content received, skipping message")
-                return
-
             message = {
                 "role": role,
                 "content": content,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": message_data["timestamp"],
             }
-
-            # Add message to current walkthrough
             self.current_walkthrough["slides"][slide_key].append(message)
-
-            # Save updated walkthrough
-            success = save_walkthrough(
-                self.brdge_id, self.current_walkthrough_number, self.current_walkthrough
-            )
-
-            if not success:
-                logger.error("Failed to save walkthrough update")
+            self.save()
 
         except Exception as e:
             logger.error(f"Error adding message: {e}", exc_info=True)
 
-    def complete_walkthrough(self):
-        """Mark the current walkthrough as completed"""
+    def save(self):
+        """Save current state to file"""
         try:
-            if self.current_walkthrough:
-                self.current_walkthrough["metadata"]["status"] = "completed"
-                self.current_walkthrough["metadata"][
-                    "completed_at"
-                ] = datetime.utcnow().isoformat()
+            file_path = f"data/walkthroughs/brdge_{self.brdge_id}.json"
 
-                success = save_walkthrough(
-                    self.brdge_id,
-                    self.current_walkthrough_number,
-                    self.current_walkthrough,
-                )
+            # Validate data before saving
+            if not isinstance(self.walkthroughs, list):
+                logger.error("Invalid walkthroughs data structure")
+                return
 
-                if success:
-                    logger.info(
-                        f"Completed walkthrough {self.current_walkthrough_number} for brdge {self.brdge_id}"
-                    )
-                else:
-                    logger.error("Failed to save completed walkthrough")
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            # Verify JSON serialization before writing
+            try:
+                json_data = json.dumps(self.walkthroughs, indent=2)
+            except TypeError as e:
+                logger.error(f"JSON serialization error: {e}")
+                return
+
+            # Write to file
+            with open(file_path, "w") as f:
+                f.write(json_data)
+
+            logger.debug(f"Successfully saved walkthrough to {file_path}")
+
+        except Exception as e:
+            logger.error(f"Error saving walkthrough: {e}", exc_info=True)
+
+    def complete_walkthrough(self):
+        """Complete walkthrough via API"""
+        try:
+            response = requests.post(
+                f"{self.api_base_url}/walkthroughs/{self.current_walkthrough['id']}/complete"
+            )
+            response.raise_for_status()
+            completion_data = response.json()
+
+            # Update local storage
+            self.current_walkthrough["metadata"]["status"] = "completed"
+            self.current_walkthrough["metadata"]["completed_at"] = completion_data[
+                "completed_at"
+            ]
+            self.save()
+            logger.info(f"Completed walkthrough for brdge {self.brdge_id}")
+
         except Exception as e:
             logger.error(f"Error completing walkthrough: {e}", exc_info=True)
-
-    @staticmethod
-    def get_walkthrough_list(brdge_id: str) -> List[Dict]:
-        """Get a list of all walkthroughs for a brdge"""
-        return list_walkthroughs(brdge_id)
-
-    @staticmethod
-    def get_specific_walkthrough(
-        brdge_id: str, walkthrough_number: int
-    ) -> Optional[Dict]:
-        """Get a specific walkthrough by number"""
-        return get_walkthrough(brdge_id, walkthrough_number)
 
 
 # Add a function to load scripts for a specific brdge
@@ -528,6 +528,42 @@ async def entrypoint(ctx: JobContext):
                     }
                 )
 
+                # Initialize the appropriate agent if not already done
+                if not agent:
+                    if current_slide["agent_type"] == "view":
+                        logger.info(
+                            f"Initializing ViewerAgent for brdge {current_slide['brdge_id']}"
+                        )
+                        agent = ViewerAgent(current_slide["brdge_id"])
+                    else:  # edit mode
+                        initial_ctx = llm.ChatContext().append(
+                            role="system", text=EDIT_SYSTEM_PROMPT
+                        )
+                        agent = VoicePipelineAgent(
+                            vad=silero.VAD.load(),
+                            stt=deepgram.STT(),
+                            llm=openai.LLM(model="gpt-4o-mini"),
+                            tts=cartesia.TTS(
+                                voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"
+                            ),
+                            chat_ctx=initial_ctx,
+                            before_llm_cb=before_llm_callback,
+                        )
+
+                        @agent.on("agent_speech_committed")
+                        def on_agent_speech_committed(msg: llm.ChatMessage):
+                            logger.info(f"Agent speech committed: {msg.content}")
+                            if (
+                                current_slide["number"]
+                                and walkthrough_manager
+                                and current_slide["agent_type"] == "edit"
+                            ):
+                                walkthrough_manager.add_message(
+                                    current_slide["number"], "assistant", msg.content
+                                )
+
+                    agent.start(ctx.room, participant)
+
                 # Initialize walkthrough manager for edit mode
                 if current_slide["agent_type"] == "edit" and not walkthrough_manager:
                     if json_data.get("brdgeId") and json_data.get("numSlides"):
@@ -573,10 +609,16 @@ async def entrypoint(ctx: JobContext):
         cleaned_message = " ".join(msg.message.split()).strip()
         if cleaned_message:
             logger.info(f"Received chat message: {cleaned_message}")
+
+            # Log user message to walkthrough
+            if current_slide["number"] and walkthrough_manager:
+                walkthrough_manager.add_message(
+                    current_slide["number"], "user", cleaned_message
+                )
+
             # Add message to agent's chat context
             agent.chat_ctx.append(role="user", text=cleaned_message)
 
-            # Create a separate async function for handling the message
             async def process_message():
                 try:
                     if current_slide["agent_type"] == "view":
@@ -608,7 +650,13 @@ async def entrypoint(ctx: JobContext):
                     else:
                         # For edit mode, use the callback
                         stream = await before_llm_callback(agent, agent.chat_ctx)
-                        await agent.say(stream, allow_interruptions=False)
+                        response = await agent.say(stream, allow_interruptions=False)
+
+                        # Log assistant's response to walkthrough
+                        if current_slide["number"] and walkthrough_manager:
+                            walkthrough_manager.add_message(
+                                current_slide["number"], "assistant", response
+                            )
                 except Exception as e:
                     logger.error(f"Error processing chat message: {e}", exc_info=True)
                     await agent.say(

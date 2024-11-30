@@ -2,6 +2,7 @@ import uuid
 from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import json
 
 
 class User(db.Model):
@@ -101,3 +102,94 @@ class Brdge(db.Model):
                 else None
             ),
         }
+
+
+class Walkthrough(db.Model):
+    """Stores walkthrough data for a brdge presentation"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+    status = db.Column(
+        db.String(50), default="in_progress"
+    )  # in_progress, completed, error
+    total_slides = db.Column(db.Integer, nullable=False)
+
+    # Relationship to slide messages
+    messages = db.relationship(
+        "WalkthroughMessage", backref="walkthrough", lazy="dynamic"
+    )
+
+    # Relationship to brdge
+    brdge = db.relationship("Brdge", backref="walkthroughs")
+
+    def to_dict(self):
+        """Convert walkthrough to dictionary format"""
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
+            "status": self.status,
+            "total_slides": self.total_slides,
+            "slides": {
+                str(msg.slide_number): msg.to_dict()
+                for msg in self.messages.order_by(WalkthroughMessage.timestamp).all()
+            },
+        }
+
+    @staticmethod
+    def from_json(brdge_id: int, json_data: dict):
+        """Create a walkthrough from JSON data"""
+        walkthrough = Walkthrough(
+            brdge_id=brdge_id,
+            total_slides=json_data.get("metadata", {}).get("total_slides", 0),
+            created_at=datetime.fromisoformat(json_data.get("timestamp")),
+            status=json_data.get("metadata", {}).get("status", "in_progress"),
+        )
+
+        if json_data.get("metadata", {}).get("completed_at"):
+            walkthrough.completed_at = datetime.fromisoformat(
+                json_data["metadata"]["completed_at"]
+            )
+
+        return walkthrough
+
+
+class WalkthroughMessage(db.Model):
+    """Stores individual messages within a walkthrough"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    walkthrough_id = db.Column(
+        db.Integer, db.ForeignKey("walkthrough.id"), nullable=False
+    )
+    slide_number = db.Column(db.Integer, nullable=False)
+    role = db.Column(db.String(50), nullable=False)  # user, assistant, system
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        """Convert message to dictionary format"""
+        return {
+            "role": self.role,
+            "content": self.content,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+        }
+
+    @staticmethod
+    def from_dict(walkthrough_id: int, slide_number: int, message_data: dict):
+        """Create a message from dictionary data"""
+        return WalkthroughMessage(
+            walkthrough_id=walkthrough_id,
+            slide_number=slide_number,
+            role=message_data.get("role"),
+            content=message_data.get("content"),
+            timestamp=(
+                datetime.fromisoformat(message_data.get("timestamp"))
+                if message_data.get("timestamp")
+                else datetime.utcnow()
+            ),
+        )

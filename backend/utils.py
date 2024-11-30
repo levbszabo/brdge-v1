@@ -25,6 +25,9 @@ import os
 import requests
 import shutil
 import boto3
+import dotenv
+
+dotenv.load_dotenv(".env")
 
 import json
 

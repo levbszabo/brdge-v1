@@ -1,26 +1,21 @@
 # routes.py
 # brian voice :nPczCjzI2devNBz1zQrb
 import re
-from flask import request, jsonify, send_file, abort, url_for, current_app
+from flask import request, jsonify, send_file, abort, url_for, current_app, Blueprint
 from flask_cors import CORS, cross_origin
-from app import app, db
+from extensions import db
 from werkzeug.utils import secure_filename
 import os
 import boto3
 import uuid
-from models import Brdge, User, UserAccount
+from models import Brdge, User, UserAccount, Walkthrough, WalkthroughMessage
 from utils import (
     clone_voice_helper,
     pdf_to_images,
     transcribe_audio_helper,
     align_transcript_with_slides,
     generate_voice_helper,
-    create_brdge_directory_structure,
-    cleanup_brdge_directory,
-    get_brdge_paths,
-    list_walkthroughs,
 )
-
 from io import BytesIO
 import botocore
 import json
@@ -64,8 +59,6 @@ endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
 STRIPE_PRODUCT_PRICE = 5900  # Price in cents ($59.00)
 STRIPE_PRODUCT_CURRENCY = "usd"
-
-logger = logging.getLogger(__name__)
 
 
 @jwt_required(optional=True)
@@ -321,56 +314,53 @@ def create_brdge(user):
         if not all([name, presentation]):
             return jsonify({"error": "Missing data"}), 400
 
-        # Create new brdge record with empty string for audio_filename
         brdge = Brdge(
             name=name,
-            presentation_filename="",  # Will update after upload
-            audio_filename="",  # Initialize with empty string instead of NULL
-            folder="",  # Will update after creation
+            presentation_filename="",
+            audio_filename="",
+            folder="",
             user_id=user.id,
         )
         db.session.add(brdge)
-        db.session.flush()  # Get the ID without committing
+        db.session.flush()
 
-        # Create directory structure
-        directories = create_brdge_directory_structure(str(brdge.id))
-
-        # Generate unique filename and save presentation
+        # Generate unique filename for the PDF
         presentation_filename = secure_filename(
             f"{uuid.uuid4()}_{presentation.filename}"
         )
-        source_path = os.path.join(directories["source"], presentation_filename)
-        presentation.save(source_path)
+
+        # Create directories for storing files
+        pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
+        os.makedirs("/tmp/brdge", exist_ok=True)
+        presentation.save(pdf_temp_path)
 
         # Convert PDF to images
-        slide_images = pdf_to_images(source_path)
+        slide_images = pdf_to_images(pdf_temp_path)
 
-        # Save slide images locally
-        for idx, image in enumerate(slide_images, 1):
-            image_path = os.path.join(directories["slides"], f"slide_{idx}.png")
-            image.save(image_path, "PNG")
-
-        # Update brdge record
+        # Update brdge data
         brdge.presentation_filename = presentation_filename
         brdge.folder = str(brdge.id)
 
-        # Upload to S3
-        try:
-            # Upload source PDF
-            s3_presentation_key = f"{brdge.folder}/source/{presentation_filename}"
-            s3_client.upload_file(source_path, S3_BUCKET, s3_presentation_key)
+        # Upload PDF to S3
+        s3_folder = brdge.folder
+        s3_presentation_key = f"{s3_folder}/{presentation_filename}"
+        s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
 
-            # Upload slide images
-            for idx in range(1, len(slide_images) + 1):
-                image_path = os.path.join(directories["slides"], f"slide_{idx}.png")
-                s3_key = f"{brdge.folder}/slides/slide_{idx}.png"
-                s3_client.upload_file(image_path, S3_BUCKET, s3_key)
+        # Upload slide images to S3
+        for idx, image in enumerate(slide_images):
+            image_filename = f"slide_{idx+1}.png"
+            s3_image_key = f"{s3_folder}/slides/{image_filename}"
 
-        except Exception as e:
-            logger.error(f"Error uploading to S3: {e}")
-            db.session.rollback()
-            cleanup_brdge_directory(str(brdge.id))
-            return jsonify({"error": "Failed to upload files"}), 500
+            # Save image to a bytes buffer
+            img_byte_arr = BytesIO()
+            image.save(img_byte_arr, format="PNG")
+            img_byte_arr.seek(0)
+
+            # Upload image to S3
+            s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
+
+        # Clean up temporary PDF file
+        os.remove(pdf_temp_path)
 
         db.session.commit()
 
@@ -388,9 +378,7 @@ def create_brdge(user):
     except RequestEntityTooLarge:
         return jsonify({"error": "File too large. Maximum size is 16 MB."}), 413
     except Exception as e:
-        logger.error(f"Error creating brdge: {e}")
-        if "brdge" in locals():
-            cleanup_brdge_directory(str(brdge.id))
+        print(f"Error creating brdge: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 
@@ -1553,68 +1541,9 @@ def create_portal_session(user):
         return jsonify({"error": "Failed to create portal session"}), 500
 
 
-@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
-@jwt_required(optional=True)  # Allow both authenticated and unauthenticated access
-def get_brdge_walkthroughs(brdge_id):
-    """Get a list of all walkthroughs available for a brdge."""
-    try:
-        # Get current user but don't require it
-        current_user = get_current_user()
-        logger.debug(f"Current user: {current_user.id if current_user else 'None'}")
-
-        # Check if brdge exists
-        brdge = Brdge.query.get_or_404(brdge_id)
-
-        # Create directory structure if it doesn't exist
-        directories = create_brdge_directory_structure(str(brdge_id))
-        logger.debug(f"Created directories: {directories}")
-
-        # Get walkthrough list using utility function
-        walkthroughs = list_walkthroughs(str(brdge_id))
-        logger.debug(f"Found walkthroughs: {walkthroughs}")
-
-        if not walkthroughs:
-            logger.debug(f"No walkthroughs found for brdge {brdge_id}")
-            return (
-                jsonify(
-                    {
-                        "has_walkthroughs": False,
-                        "walkthroughs": [],
-                        "message": "No walkthroughs found",
-                    }
-                ),
-                200,
-            )
-
-        logger.debug(f"Found {len(walkthroughs)} walkthrough(s) for brdge {brdge_id}")
-        return (
-            jsonify(
-                {
-                    "has_walkthroughs": True,
-                    "walkthroughs": walkthroughs,
-                    "message": f"Found {len(walkthroughs)} walkthrough(s)",
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error in get_brdge_walkthroughs: {str(e)}", exc_info=True)
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error fetching walkthroughs",
-                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
-                }
-            ),
-            500,
-        )
-
-
 @app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
 def generate_slide_scripts(brdge_id):
-    """Generate cleaned-up scripts from a specific walkthrough"""
+    """Generate cleaned-up scripts for all slides in one API call"""
     try:
         data = request.get_json()
         walkthrough_id = data.get("walkthrough_id")
@@ -1622,13 +1551,24 @@ def generate_slide_scripts(brdge_id):
         if not walkthrough_id:
             return jsonify({"error": "Walkthrough ID required"}), 400
 
-        # Get the specific walkthrough
-        walkthrough = get_walkthrough(str(brdge_id), walkthrough_id)
-        if not walkthrough:
-            return jsonify({"error": "Walkthrough not found"}), 404
+        # Load walkthrough data
+        walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+        if not os.path.exists(walkthrough_path):
+            return jsonify({"error": "No walkthrough data found"}), 404
 
-        # Get paths
-        paths = get_brdge_paths(str(brdge_id))
+        with open(walkthrough_path, "r") as f:
+            walkthroughs = json.load(f)
+
+        if not walkthroughs or not isinstance(walkthroughs, list):
+            return jsonify({"error": "Invalid walkthrough data"}), 400
+
+        # Get the specified walkthrough (subtract 1 since IDs start at 1)
+        try:
+            walkthrough = walkthroughs[walkthrough_id - 1]
+        except IndexError:
+            return jsonify({"error": "Invalid walkthrough ID"}), 400
+
+        slides_data = walkthrough.get("slides", {})
 
         # Prepare the prompt
         prompt = """
@@ -1656,8 +1596,8 @@ def generate_slide_scripts(brdge_id):
         -----------Conversation Transcript-----------
         {conversation_transcript}
         """.format(
-            conversation_transcript=json.dumps(walkthrough["slides"], indent=2),
-            num_slides=len(walkthrough["slides"]),
+            conversation_transcript=json.dumps(slides_data, indent=2),
+            num_slides=len(slides_data),
         )
 
         # Create OpenAI client and make request
@@ -1667,7 +1607,9 @@ def generate_slide_scripts(brdge_id):
             "messages": [
                 {
                     "role": "user",
-                    "content": [{"type": "text", "text": prompt}],
+                    "content": [
+                        {"type": "text", "text": prompt},
+                    ],
                 },
             ],
             "temperature": 0.3,
@@ -1677,8 +1619,9 @@ def generate_slide_scripts(brdge_id):
         try:
             response = client.chat.completions.create(**input_data)
             slide_scripts = json.loads(response.choices[0].message.content)
+
         except Exception as e:
-            logger.error(f"Error generating scripts: {e}")
+            print(f"Error generating scripts: {e}")
             return jsonify({"error": "Failed to generate scripts"}), 500
 
         # Save generated scripts
@@ -1688,18 +1631,14 @@ def generate_slide_scripts(brdge_id):
             "source_walkthrough_id": walkthrough_id,
         }
 
-        # Save locally
-        script_path = os.path.join(paths["scripts"], "scripts.json")
+        # Create slides directory if it doesn't exist
+        slides_dir = f"data/slides"
+        os.makedirs(slides_dir, exist_ok=True)
+
+        # Save to slides directory
+        script_path = f"{slides_dir}/brdge_{brdge_id}_slides.json"
         with open(script_path, "w") as f:
             json.dump(script_data, f, indent=2)
-
-        # Upload to S3
-        s3_key = f"{brdge_id}/scripts/scripts.json"
-        try:
-            s3_client.upload_file(script_path, S3_BUCKET, s3_key)
-        except Exception as e:
-            logger.error(f"Error uploading scripts to S3: {e}")
-            return jsonify({"error": "Failed to save scripts"}), 500
 
         return (
             jsonify(
@@ -1717,8 +1656,125 @@ def generate_slide_scripts(brdge_id):
         )
 
     except Exception as e:
-        logger.error(f"Error generating slide scripts: {e}")
+        print(f"Error generating slide scripts: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+def get_walkthrough_list(brdge_id: int) -> Optional[List[Dict]]:
+    """
+    Get a list of available walkthroughs for a brdge with labels and timestamps.
+
+    Args:
+        brdge_id: The ID of the brdge
+
+    Returns:
+        List of walkthrough metadata if found, None if no walkthroughs exist
+    """
+    walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+
+    if not os.path.exists(walkthrough_path):
+        return None
+
+    try:
+        with open(walkthrough_path, "r") as f:
+            walkthroughs = json.load(f)
+
+        if not isinstance(walkthroughs, list):
+            print(f"Warning: Invalid walkthrough format for brdge {brdge_id}")
+            return None
+
+        # Create labeled walkthrough list
+        labeled_walkthroughs = []
+        for idx, walkthrough in enumerate(walkthroughs, 1):
+            labeled_walkthroughs.append(
+                {
+                    "id": idx,
+                    "label": f"Walkthrough {idx}",
+                    "timestamp": walkthrough.get("timestamp"),
+                    "slide_count": len(walkthrough.get("slides", {})),
+                }
+            )
+
+        return labeled_walkthroughs
+
+    except Exception as e:
+        print(f"Error reading walkthrough file for brdge {brdge_id}: {e}")
+        return None
+
+
+@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
+def get_brdge_walkthroughs(brdge_id):
+    """
+    Get a list of all walkthroughs available for a brdge.
+    Returns labeled walkthroughs that can be used in a dropdown selection.
+    """
+    try:
+        # Get current user but don't require it
+        current_user = get_current_user()
+        print(f"Current user: {current_user.id if current_user else 'None'}")
+
+        # Create data directory if it doesn't exist
+        os.makedirs("data/walkthroughs", exist_ok=True)
+
+        # Create test walkthrough for development
+        walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+        if not os.path.exists(walkthrough_path):
+            # Create a test walkthrough
+            test_walkthrough = [
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "slides": {
+                        "1": "This is test content for slide 1",
+                        "2": "This is test content for slide 2",
+                        "3": "This is test content for slide 3",
+                    },
+                }
+            ]
+
+            with open(walkthrough_path, "w") as f:
+                json.dump(test_walkthrough, f, indent=2)
+
+            print(f"Created test walkthrough at {walkthrough_path}")
+
+        walkthroughs = get_walkthrough_list(brdge_id)
+
+        if not walkthroughs:
+            print(f"No walkthroughs found for brdge {brdge_id}")
+            return (
+                jsonify(
+                    {
+                        "has_walkthroughs": False,
+                        "walkthroughs": [],
+                        "message": "No walkthroughs found",
+                    }
+                ),
+                200,
+            )
+
+        print(f"Found {len(walkthroughs)} walkthrough(s) for brdge {brdge_id}")
+        return (
+            jsonify(
+                {
+                    "has_walkthroughs": True,
+                    "walkthroughs": walkthroughs,
+                    "message": f"Found {len(walkthroughs)} walkthrough(s)",
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        print(f"Error in get_brdge_walkthroughs: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching walkthroughs",
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
@@ -1918,3 +1974,88 @@ def get_brdge_voices(brdge_id):
             ),
             500,
         )
+
+
+@app.route("/api/walkthroughs", methods=["POST"])
+def create_walkthrough():
+    """Create a new walkthrough"""
+    data = request.get_json()
+    brdge_id = data.get("brdge_id")
+    total_slides = data.get("total_slides")
+
+    try:
+        walkthrough = Walkthrough(brdge_id=brdge_id, total_slides=total_slides)
+        db.session.add(walkthrough)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "id": walkthrough.id,
+                    "brdge_id": walkthrough.brdge_id,
+                    "created_at": walkthrough.created_at.isoformat(),
+                    "status": walkthrough.status,
+                }
+            ),
+            201,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/walkthroughs/<int:walkthrough_id>/messages", methods=["POST"])
+def add_walkthrough_message(walkthrough_id):
+    """Add a message to a walkthrough"""
+    data = request.get_json()
+    slide_number = data.get("slide_number")
+    role = data.get("role")
+    content = data.get("content")
+
+    try:
+        message = WalkthroughMessage(
+            walkthrough_id=walkthrough_id,
+            slide_number=slide_number,
+            role=role,
+            content=content,
+        )
+        db.session.add(message)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "id": message.id,
+                    "slide_number": message.slide_number,
+                    "role": message.role,
+                    "timestamp": message.timestamp.isoformat(),
+                }
+            ),
+            201,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/walkthroughs/<int:walkthrough_id>/complete", methods=["POST"])
+def complete_walkthrough(walkthrough_id):
+    """Mark a walkthrough as completed"""
+    try:
+        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
+        walkthrough.status = "completed"
+        walkthrough.completed_at = datetime.utcnow()
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Walkthrough completed",
+                    "completed_at": walkthrough.completed_at.isoformat(),
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
