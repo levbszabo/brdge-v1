@@ -2186,3 +2186,63 @@ def debug_brdge_scripts(brdge_id):
             ),
             500,
         )
+
+
+@app.route("/api/brdges/<int:brdge_id>/scripts/update", methods=["PUT", "OPTIONS"])
+@cross_origin()  # Add CORS support
+def update_brdge_scripts(brdge_id):
+    """Update scripts for a brdge"""
+    # Handle preflight request
+    if request.method == "OPTIONS":
+        return "", 200  # Respond to preflight request
+
+    try:
+        data = request.get_json()
+        updated_scripts = data.get("scripts")
+
+        if not updated_scripts:
+            return jsonify({"error": "No scripts provided"}), 400
+
+        # Get the most recent script
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
+
+        if not script:
+            return jsonify({"error": "No scripts found for this brdge"}), 404
+
+        # Update scripts
+        script.scripts = updated_scripts
+        script.generated_at = datetime.utcnow()
+        db.session.commit()
+
+        app.logger.info(f"Successfully updated scripts for brdge {brdge_id}")
+        return (
+            jsonify(
+                {
+                    "message": "Scripts updated successfully",
+                    "scripts": script.scripts,
+                    "metadata": {
+                        "generated_at": script.generated_at.isoformat(),
+                        "walkthrough_id": script.walkthrough_id,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating scripts: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error updating scripts",
+                    "details": {"brdge_id": brdge_id},
+                }
+            ),
+            500,
+        )
