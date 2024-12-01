@@ -59,6 +59,9 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
 STRIPE_PRODUCT_PRICE = 5900  # Price in cents ($59.00)
 STRIPE_PRODUCT_CURRENCY = "usd"
 
+# Set up logger
+logger = logging.getLogger(__name__)
+
 
 @jwt_required(optional=True)
 def get_current_user():
@@ -201,21 +204,70 @@ def delete_brdge(brdge_id):
     brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first_or_404()
 
     try:
-        # Delete associated files from S3
-        s3_folder = brdge.folder
-        s3_objects = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
-        for obj in s3_objects.get("Contents", []):
-            s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
+        # Start a transaction
+        db.session.begin_nested()
 
-        # Delete the brdge from the database
-        db.session.delete(brdge)
-        db.session.commit()
+        try:
+            # Delete associated scripts first
+            Scripts.query.filter_by(brdge_id=brdge_id).delete()
 
-        return jsonify({"message": "Brdge deleted successfully"}), 200
+            # Delete associated walkthrough messages
+            walkthroughs = Walkthrough.query.filter_by(brdge_id=brdge_id).all()
+            for walkthrough in walkthroughs:
+                WalkthroughMessage.query.filter_by(
+                    walkthrough_id=walkthrough.id
+                ).delete()
+
+            # Delete walkthroughs
+            Walkthrough.query.filter_by(brdge_id=brdge_id).delete()
+
+            # Delete S3 files
+            s3_folder = brdge.folder
+            try:
+                # List all objects with this prefix
+                s3_objects = s3_client.list_objects_v2(
+                    Bucket=S3_BUCKET, Prefix=s3_folder
+                )
+
+                # Delete each object
+                for obj in s3_objects.get("Contents", []):
+                    app.logger.debug(f"Deleting S3 object: {obj['Key']}")
+                    s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
+
+                app.logger.info(f"Successfully deleted S3 files for brdge {brdge_id}")
+            except Exception as s3_error:
+                app.logger.error(f"Error deleting S3 files: {s3_error}")
+                raise
+
+            # Finally delete the brdge
+            db.session.delete(brdge)
+
+            # Commit the transaction
+            db.session.commit()
+            app.logger.info(
+                f"Successfully deleted brdge {brdge_id} and all related data"
+            )
+
+            return jsonify({"message": "Brdge deleted successfully"}), 200
+
+        except Exception as inner_error:
+            db.session.rollback()
+            app.logger.error(f"Error in delete transaction: {inner_error}")
+            raise
+
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error deleting brdge: {str(e)}")
-        return jsonify({"error": "An error occurred while deleting the brdge"}), 500
+        app.logger.error(f"Error deleting brdge: {e}")
+        return (
+            jsonify(
+                {
+                    "error": "Failed to delete brdge",
+                    "message": str(e),
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
@@ -1557,7 +1609,12 @@ def generate_slide_scripts(brdge_id):
         if walkthrough.brdge_id != brdge_id:
             return jsonify({"error": "Walkthrough does not belong to this brdge"}), 403
 
-        # Get all messages for this walkthrough, ordered by slide and timestamp
+        # Check for existing scripts and update if found
+        existing_script = Scripts.query.filter_by(
+            brdge_id=brdge_id, walkthrough_id=walkthrough_id
+        ).first()
+
+        # Get all messages for this walkthrough
         messages = (
             WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
             .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
@@ -1608,180 +1665,86 @@ def generate_slide_scripts(brdge_id):
             num_slides=walkthrough.total_slides,
         )
 
-        # Generate scripts using OpenAI
-        client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
-            temperature=0.3,
-            response_format={"type": "json_object"},
-        )
-
-        slide_scripts = json.loads(response.choices[0].message.content)
-
-        # Save scripts to database
-        script = Scripts(
-            brdge_id=brdge_id,
-            walkthrough_id=walkthrough_id,
-            scripts=slide_scripts,
-            generated_at=datetime.utcnow(),
-        )
-        db.session.add(script)
-        db.session.commit()
-
-        return (
-            jsonify(
-                {
-                    "message": "Slide scripts generated successfully",
-                    "scripts": slide_scripts,
-                    "metadata": {
-                        "generated_at": script.generated_at.isoformat(),
-                        "walkthrough_id": walkthrough_id,
-                        "num_slides": len(slide_scripts),
-                    },
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error generating slide scripts: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-def get_walkthrough_list(brdge_id: int) -> Optional[List[Dict]]:
-    """
-    Get a list of available walkthroughs for a brdge with labels and timestamps.
-
-    Args:
-        brdge_id: The ID of the brdge
-
-    Returns:
-        List of walkthrough metadata if found, None if no walkthroughs exist
-    """
-    walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
-
-    if not os.path.exists(walkthrough_path):
-        return None
-
-    try:
-        with open(walkthrough_path, "r") as f:
-            walkthroughs = json.load(f)
-
-        if not isinstance(walkthroughs, list):
-            print(f"Warning: Invalid walkthrough format for brdge {brdge_id}")
-            return None
-
-        # Create labeled walkthrough list
-        labeled_walkthroughs = []
-        for idx, walkthrough in enumerate(walkthroughs, 1):
-            labeled_walkthroughs.append(
-                {
-                    "id": idx,
-                    "label": f"Walkthrough {idx}",
-                    "timestamp": walkthrough.get("timestamp"),
-                    "slide_count": len(walkthrough.get("slides", {})),
-                }
+        try:
+            # Generate scripts using OpenAI
+            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "user", "content": [{"type": "text", "text": prompt}]}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
             )
 
-        return labeled_walkthroughs
+            slide_scripts = json.loads(response.choices[0].message.content)
 
-    except Exception as e:
-        print(f"Error reading walkthrough file for brdge {brdge_id}: {e}")
-        return None
+            # Save or update scripts in database
+            if existing_script:
+                existing_script.scripts = slide_scripts
+                existing_script.generated_at = datetime.utcnow()
+                script = existing_script
+            else:
+                script = Scripts(
+                    brdge_id=brdge_id,
+                    walkthrough_id=walkthrough_id,
+                    scripts=slide_scripts,
+                    generated_at=datetime.utcnow(),
+                )
+                db.session.add(script)
 
+            db.session.commit()
+            app.logger.info(f"Successfully saved scripts for brdge {brdge_id}")
 
-@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
-def get_brdge_walkthroughs(brdge_id):
-    """Get a list of all walkthroughs available for a brdge."""
-    try:
-        # Get current user but don't require it
-        current_user = get_current_user()
-        logger.info(f"Current user: {current_user.id if current_user else 'None'}")
-
-        # Query walkthroughs from database
-        walkthroughs = Walkthrough.query.filter_by(brdge_id=brdge_id).all()
-
-        if not walkthroughs:
-            logger.info(f"No walkthroughs found for brdge {brdge_id}")
             return (
                 jsonify(
                     {
-                        "has_walkthroughs": False,
-                        "walkthroughs": [],
-                        "message": "No walkthroughs found",
+                        "message": "Scripts generated successfully",
+                        "scripts": script.scripts,
+                        "metadata": {
+                            "generated_at": script.generated_at.isoformat(),
+                            "walkthrough_id": walkthrough_id,
+                            "num_slides": len(slide_scripts),
+                        },
                     }
                 ),
                 200,
             )
 
-        # Format walkthrough data
-        walkthrough_list = [
-            {
-                "id": w.id,
-                "label": f"Walkthrough {idx + 1}",
-                "timestamp": w.created_at.isoformat(),
-                "slide_count": w.total_slides,
-                "status": w.status,
-            }
-            for idx, w in enumerate(walkthroughs)
-        ]
-
-        logger.info(
-            f"Found {len(walkthrough_list)} walkthrough(s) for brdge {brdge_id}"
-        )
-        return (
-            jsonify(
-                {
-                    "has_walkthroughs": True,
-                    "walkthroughs": walkthrough_list,
-                    "message": f"Found {len(walkthrough_list)} walkthrough(s)",
-                }
-            ),
-            200,
-        )
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error generating scripts: {e}")
+            raise
 
     except Exception as e:
-        logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error fetching walkthroughs",
-                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
-                }
-            ),
-            500,
-        )
+        app.logger.error(f"Error in script generation: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
 def get_brdge_scripts(brdge_id):
     """Get existing scripts for a brdge if they exist"""
     try:
-        # Create slides directory if it doesn't exist
-        slides_dir = "data/slides"
-        os.makedirs(slides_dir, exist_ok=True)
+        # Query the most recent script from database
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
 
-        script_path = f"{slides_dir}/brdge_{brdge_id}_slides.json"
-        print(f"Looking for scripts at: {script_path}")  # Debug log
-
-        if not os.path.exists(script_path):
-            print(f"No scripts found at {script_path}")  # Debug log
+        if not script:
+            logger.info(f"No scripts found for brdge {brdge_id}")
             return jsonify({"has_scripts": False, "message": "No scripts found"}), 200
 
-        with open(script_path, "r") as f:
-            script_data = json.load(f)
-            print(f"Found scripts: {script_data}")  # Debug log
-
+        logger.info(f"Found scripts for brdge {brdge_id}")
         return (
             jsonify(
                 {
                     "has_scripts": True,
-                    "scripts": script_data["slide_scripts"],
+                    "scripts": script.scripts,
                     "metadata": {
-                        "generated_at": script_data["generated_at"],
-                        "source_walkthrough_id": script_data["source_walkthrough_id"],
+                        "generated_at": script.generated_at.isoformat(),
+                        "source_walkthrough_id": script.walkthrough_id,
                     },
                 }
             ),
@@ -1789,16 +1752,13 @@ def get_brdge_scripts(brdge_id):
         )
 
     except Exception as e:
-        print(f"Error fetching scripts: {e}")  # Debug log
+        logger.error(f"Error fetching scripts: {e}")
         return (
             jsonify(
                 {
                     "error": str(e),
                     "message": "Error fetching scripts",
-                    "details": {
-                        "brdge_id": brdge_id,
-                        "path": f"data/slides/brdge_{brdge_id}_slides.json",
-                    },
+                    "details": {"brdge_id": brdge_id},
                 }
             ),
             500,
@@ -2037,3 +1997,192 @@ def complete_walkthrough(walkthrough_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
+def get_brdge_walkthroughs(brdge_id):
+    """
+    Get a list of all walkthroughs available for a brdge.
+    Returns labeled walkthroughs that can be used in a dropdown selection.
+    """
+    try:
+        # Get current user but don't require it
+        current_user = get_current_user()
+        logger.info(f"Current user: {current_user.id if current_user else 'None'}")
+
+        # Query walkthroughs from database
+        walkthroughs = (
+            Walkthrough.query.filter_by(brdge_id=brdge_id)
+            .order_by(Walkthrough.created_at.desc())
+            .all()
+        )
+
+        if not walkthroughs:
+            logger.info(f"No walkthroughs found for brdge {brdge_id}")
+            return (
+                jsonify(
+                    {
+                        "has_walkthroughs": False,
+                        "walkthroughs": [],
+                        "message": "No walkthroughs found",
+                    }
+                ),
+                200,
+            )
+
+        # Format walkthrough data
+        walkthrough_list = [
+            {
+                "id": w.id,
+                "label": f"Walkthrough {idx + 1}",
+                "timestamp": w.created_at.isoformat(),
+                "slide_count": w.total_slides,
+                "status": w.status,
+                "message_count": w.messages.count(),  # Add message count for UI feedback
+            }
+            for idx, w in enumerate(walkthroughs)
+        ]
+
+        logger.info(
+            f"Found {len(walkthrough_list)} walkthrough(s) for brdge {brdge_id}"
+        )
+        return (
+            jsonify(
+                {
+                    "has_walkthroughs": True,
+                    "walkthroughs": walkthrough_list,
+                    "message": f"Found {len(walkthrough_list)} walkthrough(s)",
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching walkthroughs",
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/walkthroughs/<int:walkthrough_id>", methods=["GET"])
+def get_walkthrough(walkthrough_id):
+    """Get a specific walkthrough's details and messages"""
+    try:
+        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
+
+        # Get all messages for this walkthrough
+        messages = (
+            WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
+            .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
+            .all()
+        )
+
+        # Organize messages by slide
+        slides_data = {}
+        for msg in messages:
+            slide_num = str(msg.slide_number)
+            if slide_num not in slides_data:
+                slides_data[slide_num] = []
+            slides_data[slide_num].append(msg.to_dict())
+
+        return (
+            jsonify(
+                {
+                    "id": walkthrough.id,
+                    "brdge_id": walkthrough.brdge_id,
+                    "created_at": walkthrough.created_at.isoformat(),
+                    "completed_at": (
+                        walkthrough.completed_at.isoformat()
+                        if walkthrough.completed_at
+                        else None
+                    ),
+                    "status": walkthrough.status,
+                    "total_slides": walkthrough.total_slides,
+                    "slides": slides_data,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching walkthrough: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching walkthrough",
+                    "details": {
+                        "walkthrough_id": walkthrough_id,
+                        "error_type": type(e).__name__,
+                    },
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/brdges/<int:brdge_id>/scripts/debug", methods=["GET"])
+def debug_brdge_scripts(brdge_id):
+    """Debug endpoint to check script availability"""
+    try:
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
+
+        if not script:
+            return (
+                jsonify(
+                    {
+                        "has_scripts": False,
+                        "message": "No scripts found",
+                        "debug_info": {
+                            "brdge_id": brdge_id,
+                            "scripts_count": Scripts.query.filter_by(
+                                brdge_id=brdge_id
+                            ).count(),
+                        },
+                    }
+                ),
+                200,
+            )
+
+        return (
+            jsonify(
+                {
+                    "has_scripts": True,
+                    "scripts": script.scripts,
+                    "debug_info": {
+                        "brdge_id": brdge_id,
+                        "generated_at": script.generated_at.isoformat(),
+                        "walkthrough_id": script.walkthrough_id,
+                        "script_keys": list(script.scripts.keys()),
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error in debug_brdge_scripts: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching scripts",
+                    "debug_info": {
+                        "brdge_id": brdge_id,
+                        "error_type": type(e).__name__,
+                    },
+                }
+            ),
+            500,
+        )

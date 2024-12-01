@@ -343,6 +343,8 @@ class ViewerAgent(VoicePipelineAgent):
     def __init__(self, brdge_id: str):
         self.brdge_id = brdge_id
         logger.info(f"Initializing ViewerAgent for brdge_id: {brdge_id}")
+
+        # Load scripts from database instead of files
         self.scripts = self._load_scripts()
         self.current_slide = None
 
@@ -357,9 +359,29 @@ class ViewerAgent(VoicePipelineAgent):
             chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
         )
 
-    def _load_scripts(self):
-        """Load scripts for this brdge"""
-        return load_slide_scripts(self.brdge_id)
+    def _load_scripts(self) -> dict:
+        """Load scripts from database"""
+        try:
+            from models import Scripts
+            from app import db
+
+            # Get the most recent script
+            script = (
+                Scripts.query.filter_by(brdge_id=self.brdge_id)
+                .order_by(Scripts.generated_at.desc())
+                .first()
+            )
+
+            if script:
+                logger.info(f"Found scripts for brdge {self.brdge_id}")
+                return script.scripts
+            else:
+                logger.warning(f"No scripts found for brdge {self.brdge_id}")
+                return {}
+
+        except Exception as e:
+            logger.error(f"Error loading scripts: {e}")
+            return {}
 
     async def present_slide(self, slide_number: str):
         """Present the script for the current slide"""
