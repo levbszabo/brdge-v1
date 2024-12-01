@@ -3,12 +3,11 @@
 import re
 from flask import request, jsonify, send_file, abort, url_for, current_app, Blueprint
 from flask_cors import CORS, cross_origin
-from extensions import db
 from werkzeug.utils import secure_filename
 import os
 import boto3
 import uuid
-from models import Brdge, User, UserAccount, Walkthrough, WalkthroughMessage
+from models import Brdge, User, UserAccount, Walkthrough, WalkthroughMessage, Scripts
 from utils import (
     clone_voice_helper,
     pdf_to_images,
@@ -35,6 +34,7 @@ from sqlalchemy import text
 from typing import Dict, List, Optional
 import openai
 import requests
+from app import app, db
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -48,7 +48,6 @@ S3_REGION = os.getenv("S3_REGION", "us-east-1")  # Default to 'us-east-1' if not
 s3_client = boto3.client("s3", region_name=S3_REGION)
 
 # Enable CORS for all routes
-CORS(app)
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
@@ -1543,7 +1542,7 @@ def create_portal_session(user):
 
 @app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
 def generate_slide_scripts(brdge_id):
-    """Generate cleaned-up scripts for all slides in one API call"""
+    """Generate cleaned-up scripts using walkthrough data from database"""
     try:
         data = request.get_json()
         walkthrough_id = data.get("walkthrough_id")
@@ -1551,26 +1550,35 @@ def generate_slide_scripts(brdge_id):
         if not walkthrough_id:
             return jsonify({"error": "Walkthrough ID required"}), 400
 
-        # Load walkthrough data
-        walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
-        if not os.path.exists(walkthrough_path):
-            return jsonify({"error": "No walkthrough data found"}), 404
+        # Get walkthrough from database
+        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
 
-        with open(walkthrough_path, "r") as f:
-            walkthroughs = json.load(f)
+        # Verify walkthrough belongs to brdge
+        if walkthrough.brdge_id != brdge_id:
+            return jsonify({"error": "Walkthrough does not belong to this brdge"}), 403
 
-        if not walkthroughs or not isinstance(walkthroughs, list):
-            return jsonify({"error": "Invalid walkthrough data"}), 400
+        # Get all messages for this walkthrough, ordered by slide and timestamp
+        messages = (
+            WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
+            .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
+            .all()
+        )
 
-        # Get the specified walkthrough (subtract 1 since IDs start at 1)
-        try:
-            walkthrough = walkthroughs[walkthrough_id - 1]
-        except IndexError:
-            return jsonify({"error": "Invalid walkthrough ID"}), 400
+        # Organize messages by slide
+        slides_data = {}
+        for msg in messages:
+            slide_num = str(msg.slide_number)
+            if slide_num not in slides_data:
+                slides_data[slide_num] = []
+            slides_data[slide_num].append(
+                {
+                    "role": msg.role,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.isoformat(),
+                }
+            )
 
-        slides_data = walkthrough.get("slides", {})
-
-        # Prepare the prompt
+        # Prepare the prompt with full instructions
         prompt = """
         You are provided with transcripts of a user's presentation across {num_slides} slides. For each slide, the user has discussed key points.
         Your task is to generate a polished, cohesive script for each slide that effectively communicates the main points the user intended to convey.
@@ -1597,48 +1605,29 @@ def generate_slide_scripts(brdge_id):
         {conversation_transcript}
         """.format(
             conversation_transcript=json.dumps(slides_data, indent=2),
-            num_slides=len(slides_data),
+            num_slides=walkthrough.total_slides,
         )
 
-        # Create OpenAI client and make request
+        # Generate scripts using OpenAI
         client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        input_data = {
-            "model": "gpt-4o",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                    ],
-                },
-            ],
-            "temperature": 0.3,
-            "response_format": {"type": "json_object"},
-        }
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
 
-        try:
-            response = client.chat.completions.create(**input_data)
-            slide_scripts = json.loads(response.choices[0].message.content)
+        slide_scripts = json.loads(response.choices[0].message.content)
 
-        except Exception as e:
-            print(f"Error generating scripts: {e}")
-            return jsonify({"error": "Failed to generate scripts"}), 500
-
-        # Save generated scripts
-        script_data = {
-            "slide_scripts": slide_scripts,
-            "generated_at": datetime.utcnow().isoformat(),
-            "source_walkthrough_id": walkthrough_id,
-        }
-
-        # Create slides directory if it doesn't exist
-        slides_dir = f"data/slides"
-        os.makedirs(slides_dir, exist_ok=True)
-
-        # Save to slides directory
-        script_path = f"{slides_dir}/brdge_{brdge_id}_slides.json"
-        with open(script_path, "w") as f:
-            json.dump(script_data, f, indent=2)
+        # Save scripts to database
+        script = Scripts(
+            brdge_id=brdge_id,
+            walkthrough_id=walkthrough_id,
+            scripts=slide_scripts,
+            generated_at=datetime.utcnow(),
+        )
+        db.session.add(script)
+        db.session.commit()
 
         return (
             jsonify(
@@ -1646,7 +1635,7 @@ def generate_slide_scripts(brdge_id):
                     "message": "Slide scripts generated successfully",
                     "scripts": slide_scripts,
                     "metadata": {
-                        "generated_at": datetime.utcnow().isoformat(),
+                        "generated_at": script.generated_at.isoformat(),
                         "walkthrough_id": walkthrough_id,
                         "num_slides": len(slide_scripts),
                     },
@@ -1656,7 +1645,7 @@ def generate_slide_scripts(brdge_id):
         )
 
     except Exception as e:
-        print(f"Error generating slide scripts: {e}")
+        logger.error(f"Error generating slide scripts: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1704,42 +1693,17 @@ def get_walkthrough_list(brdge_id: int) -> Optional[List[Dict]]:
 
 @app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
 def get_brdge_walkthroughs(brdge_id):
-    """
-    Get a list of all walkthroughs available for a brdge.
-    Returns labeled walkthroughs that can be used in a dropdown selection.
-    """
+    """Get a list of all walkthroughs available for a brdge."""
     try:
         # Get current user but don't require it
         current_user = get_current_user()
-        print(f"Current user: {current_user.id if current_user else 'None'}")
+        logger.info(f"Current user: {current_user.id if current_user else 'None'}")
 
-        # Create data directory if it doesn't exist
-        os.makedirs("data/walkthroughs", exist_ok=True)
-
-        # Create test walkthrough for development
-        walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
-        if not os.path.exists(walkthrough_path):
-            # Create a test walkthrough
-            test_walkthrough = [
-                {
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "slides": {
-                        "1": "This is test content for slide 1",
-                        "2": "This is test content for slide 2",
-                        "3": "This is test content for slide 3",
-                    },
-                }
-            ]
-
-            with open(walkthrough_path, "w") as f:
-                json.dump(test_walkthrough, f, indent=2)
-
-            print(f"Created test walkthrough at {walkthrough_path}")
-
-        walkthroughs = get_walkthrough_list(brdge_id)
+        # Query walkthroughs from database
+        walkthroughs = Walkthrough.query.filter_by(brdge_id=brdge_id).all()
 
         if not walkthroughs:
-            print(f"No walkthroughs found for brdge {brdge_id}")
+            logger.info(f"No walkthroughs found for brdge {brdge_id}")
             return (
                 jsonify(
                     {
@@ -1751,20 +1715,34 @@ def get_brdge_walkthroughs(brdge_id):
                 200,
             )
 
-        print(f"Found {len(walkthroughs)} walkthrough(s) for brdge {brdge_id}")
+        # Format walkthrough data
+        walkthrough_list = [
+            {
+                "id": w.id,
+                "label": f"Walkthrough {idx + 1}",
+                "timestamp": w.created_at.isoformat(),
+                "slide_count": w.total_slides,
+                "status": w.status,
+            }
+            for idx, w in enumerate(walkthroughs)
+        ]
+
+        logger.info(
+            f"Found {len(walkthrough_list)} walkthrough(s) for brdge {brdge_id}"
+        )
         return (
             jsonify(
                 {
                     "has_walkthroughs": True,
-                    "walkthroughs": walkthroughs,
-                    "message": f"Found {len(walkthroughs)} walkthrough(s)",
+                    "walkthroughs": walkthrough_list,
+                    "message": f"Found {len(walkthrough_list)} walkthrough(s)",
                 }
             ),
             200,
         )
 
     except Exception as e:
-        print(f"Error in get_brdge_walkthroughs: {str(e)}")
+        logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
         return (
             jsonify(
                 {

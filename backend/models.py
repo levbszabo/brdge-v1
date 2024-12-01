@@ -193,3 +193,28 @@ class WalkthroughMessage(db.Model):
                 else datetime.utcnow()
             ),
         )
+
+
+class Scripts(db.Model):
+    """Stores generated scripts for a brdge"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    walkthrough_id = db.Column(
+        db.Integer, db.ForeignKey("walkthrough.id"), nullable=False
+    )
+    scripts = db.Column(db.JSON, nullable=False)  # Store the slide scripts as JSON
+    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    brdge = db.relationship("Brdge", backref="scripts")
+    walkthrough = db.relationship("Walkthrough", backref="generated_scripts")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "walkthrough_id": self.walkthrough_id,
+            "scripts": self.scripts,
+            "generated_at": self.generated_at.isoformat(),
+        }
