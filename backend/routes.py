@@ -1638,12 +1638,12 @@ def generate_slide_scripts(brdge_id):
         # Prepare the prompt with full instructions
         prompt = """
         You are provided with transcripts of a user's presentation across {num_slides} slides. For each slide, the user has discussed key points.
-        Your task is to generate a polished, cohesive script for each slide that effectively communicates the main points the user intended to convey.
-        Paraphrase where appropriate to enhance clarity and flow, but maintain the user's tone and style.
+        Your task is to generate a polished, cohesive script for each slide that effectively communicates the points the user intended to convey.
+        Paraphrase where appropriate to enhance clarity and flow, but maintain the user's tone and style. Do not delete any information thats relevant.
         Instructions:
 
         - Focus solely on the user's messages.
-        - Summarize and paraphrase the user's content for each slide into one coherent message.
+        - Encapsulate the user's content for each slide into one coherent message. You can summarize if needed but do not remove important information
         - Ensure the script for each slide is a single, natural-sounding message in the user's voice.
         - Preserve important details and key points relevant to each slide.
         - Avoid filler words, repetitions, and disfluencies.
