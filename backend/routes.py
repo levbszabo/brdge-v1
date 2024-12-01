@@ -2010,7 +2010,7 @@ def get_brdge_walkthroughs(brdge_id):
         current_user = get_current_user()
         logger.info(f"Current user: {current_user.id if current_user else 'None'}")
 
-        # Query walkthroughs from database
+        # Query walkthroughs directly from database
         walkthroughs = (
             Walkthrough.query.filter_by(brdge_id=brdge_id)
             .order_by(Walkthrough.created_at.desc())
@@ -2038,7 +2038,7 @@ def get_brdge_walkthroughs(brdge_id):
                 "timestamp": w.created_at.isoformat(),
                 "slide_count": w.total_slides,
                 "status": w.status,
-                "message_count": w.messages.count(),  # Add message count for UI feedback
+                "message_count": w.messages.count(),
             }
             for idx, w in enumerate(walkthroughs)
         ]

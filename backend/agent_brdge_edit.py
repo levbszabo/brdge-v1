@@ -340,8 +340,11 @@ class EditAgent(VoicePipelineAgent):
 
 
 class ViewerAgent(VoicePipelineAgent):
-    def __init__(self, brdge_id: str):
+    def __init__(self, brdge_id: str, api_base_url: str = None):
         self.brdge_id = brdge_id
+        self.api_base_url = api_base_url or os.getenv(
+            "API_BASE_URL", "http://localhost:5000"
+        )
         logger.info(f"Initializing ViewerAgent for brdge_id: {brdge_id}")
 
         # Load scripts from database instead of files
@@ -360,27 +363,31 @@ class ViewerAgent(VoicePipelineAgent):
         )
 
     def _load_scripts(self) -> dict:
-        """Load scripts from database"""
+        """Load scripts using API request"""
         try:
-            from models import Scripts
-            from app import db
+            import requests
 
-            # Get the most recent script
-            script = (
-                Scripts.query.filter_by(brdge_id=self.brdge_id)
-                .order_by(Scripts.generated_at.desc())
-                .first()
+            # Get scripts from API endpoint using same pattern as walkthrough manager
+            response = requests.get(
+                f"{self.api_base_url}/brdges/{self.brdge_id}/scripts", timeout=10
             )
+            response.raise_for_status()
 
-            if script:
-                logger.info(f"Found scripts for brdge {self.brdge_id}")
-                return script.scripts
+            data = response.json()
+            if data.get("has_scripts"):
+                scripts = data["scripts"]
+                logger.info(f"Found scripts for brdge {self.brdge_id}: {scripts}")
+                # Convert string keys to slide numbers if needed
+                return {str(k): v for k, v in scripts.items()}
             else:
                 logger.warning(f"No scripts found for brdge {self.brdge_id}")
                 return {}
 
+        except requests.RequestException as e:
+            logger.error(f"Error fetching scripts from API: {e}", exc_info=True)
+            return {}
         except Exception as e:
-            logger.error(f"Error loading scripts: {e}")
+            logger.error(f"Error loading scripts: {e}", exc_info=True)
             return {}
 
     async def present_slide(self, slide_number: str):
@@ -556,7 +563,10 @@ async def entrypoint(ctx: JobContext):
                         logger.info(
                             f"Initializing ViewerAgent for brdge {current_slide['brdge_id']}"
                         )
-                        agent = ViewerAgent(current_slide["brdge_id"])
+                        agent = ViewerAgent(
+                            brdge_id=current_slide["brdge_id"],
+                            api_base_url=json_data.get("apiBaseUrl"),
+                        )
                     else:  # edit mode
                         initial_ctx = llm.ChatContext().append(
                             role="system", text=EDIT_SYSTEM_PROMPT
