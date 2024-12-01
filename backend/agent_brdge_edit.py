@@ -239,18 +239,28 @@ def get_brdge_voice_id(brdge_id: str, api_base_url: str) -> str:
     DEFAULT_VOICE = "85100d63-eb8a-4225-9750-803920c3c8d3"
 
     try:
+        # Log the URL we're trying to access
+        url = f"{api_base_url}/brdges/{brdge_id}/voices"
+        logger.info(f"Attempting to fetch voices from: {url}")
+
         # Get voices from API endpoint
-        response = requests.get(f"{api_base_url}/brdges/{brdge_id}/voices", timeout=10)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         data = response.json()
 
-        # If we have voices, use the most recent one (they're already ordered by created_at desc)
-        if data.get("has_voices") and data.get("voices"):
-            voice = data["voices"][0]
-            logger.info(f"Using voice ID: {voice['id']} for brdge {brdge_id}")
-            return voice["id"]
+        logger.info(f"API Response: {data}")
 
-        # If no voices found, use default
+        # Check if we have voices in the response
+        voices = data.get("voices", [])
+        if voices:
+            # Get the first voice (most recent)
+            voice = voices[0]
+            # Extract the cartesia_voice_id
+            voice_id = voice.get("cartesia_voice_id")
+            if voice_id:
+                logger.info(f"Using custom voice ID: {voice_id}")
+                return voice_id
+
         logger.info(f"No custom voices found for brdge {brdge_id}, using default voice")
         return DEFAULT_VOICE
 
@@ -261,8 +271,13 @@ def get_brdge_voice_id(brdge_id: str, api_base_url: str) -> str:
 
 
 class EditAgent(VoicePipelineAgent):
-    def __init__(self, brdge_id: str):
-        voice_id = get_brdge_voice_id(brdge_id)
+    def __init__(self, brdge_id: str, api_base_url: str = None):
+        self.api_base_url = api_base_url or os.getenv(
+            "API_BASE_URL", "http://localhost:5000"
+        )
+
+        # Pass api_base_url to get_brdge_voice_id
+        voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for EditAgent: {voice_id}")
 
         super().__init__(
@@ -280,13 +295,16 @@ class ViewerAgent(VoicePipelineAgent):
         self.api_base_url = api_base_url or os.getenv(
             "API_BASE_URL", "http://localhost:5000"
         )
-        logger.info(f"Initializing ViewerAgent for brdge_id: {brdge_id}")
+        logger.info(f"ViewerAgent initialized with API URL: {self.api_base_url}")
 
         # Load scripts from database
         self.scripts = self._load_scripts()
         self.current_slide = None
 
         # Get voice ID from database
+        logger.info(
+            f"Fetching voice ID from {self.api_base_url}/brdges/{brdge_id}/voices"
+        )
         voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
 
@@ -294,7 +312,7 @@ class ViewerAgent(VoicePipelineAgent):
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
-            tts=cartesia.TTS(voice=voice_id),  # Use the fetched voice ID
+            tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
         )
 
@@ -501,7 +519,7 @@ async def entrypoint(ctx: JobContext):
                         )
                         agent = ViewerAgent(
                             brdge_id=current_slide["brdge_id"],
-                            api_base_url=json_data.get("apiBaseUrl"),
+                            api_base_url=current_slide["api_base_url"],
                         )
                     else:  # edit mode
                         initial_ctx = llm.ChatContext().append(
