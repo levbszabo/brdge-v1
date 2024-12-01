@@ -234,30 +234,29 @@ def load_slide_scripts(brdge_id: str) -> Dict[str, str]:
     return {}
 
 
-def get_brdge_voice_id(brdge_id: str) -> str:
-    """Get the voice ID for a brdge, falling back to default if none found"""
+def get_brdge_voice_id(brdge_id: str, api_base_url: str) -> str:
+    """Get the voice ID for a brdge from database, falling back to default if none found"""
     DEFAULT_VOICE = "85100d63-eb8a-4225-9750-803920c3c8d3"
 
     try:
-        voices_dir = "data/voices"
-        voice_file_path = os.path.join(voices_dir, f"brdge_{brdge_id}_voices.json")
+        # Get voices from API endpoint
+        response = requests.get(f"{api_base_url}/brdges/{brdge_id}/voices", timeout=10)
+        response.raise_for_status()
+        data = response.json()
 
-        if not os.path.exists(voice_file_path):
-            logger.info(f"No voices found for brdge {brdge_id}, using default")
-            return DEFAULT_VOICE
+        # If we have voices, use the most recent one (they're already ordered by created_at desc)
+        if data.get("has_voices") and data.get("voices"):
+            voice = data["voices"][0]
+            logger.info(f"Using voice ID: {voice['id']} for brdge {brdge_id}")
+            return voice["id"]
 
-        with open(voice_file_path, "r") as f:
-            voices = json.load(f)
-            if not voices:
-                return DEFAULT_VOICE
-
-            # Get the first voice from the list or the single voice object
-            if isinstance(voices, list):
-                return voices[0].get("id", DEFAULT_VOICE)
-            return voices.get("id", DEFAULT_VOICE)
+        # If no voices found, use default
+        logger.info(f"No custom voices found for brdge {brdge_id}, using default voice")
+        return DEFAULT_VOICE
 
     except Exception as e:
-        logger.error(f"Error getting voice ID: {e}")
+        logger.error(f"Error getting voice ID from API: {e}")
+        logger.info(f"Falling back to default voice")
         return DEFAULT_VOICE
 
 
@@ -283,18 +282,19 @@ class ViewerAgent(VoicePipelineAgent):
         )
         logger.info(f"Initializing ViewerAgent for brdge_id: {brdge_id}")
 
-        # Load scripts from database instead of files
+        # Load scripts from database
         self.scripts = self._load_scripts()
         self.current_slide = None
 
-        voice_id = get_brdge_voice_id(brdge_id)
+        # Get voice ID from database
+        voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
 
         super().__init__(
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
-            tts=cartesia.TTS(voice=voice_id),
+            tts=cartesia.TTS(voice=voice_id),  # Use the fetched voice ID
             chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
         )
 

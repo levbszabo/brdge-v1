@@ -218,3 +218,50 @@ class Scripts(db.Model):
             "scripts": self.scripts,
             "generated_at": self.generated_at.isoformat(),
         }
+
+
+class Voice(db.Model):
+    """Stores voice clone data for a brdge"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    cartesia_voice_id = db.Column(
+        db.String(255), nullable=False
+    )  # ID from Cartesia API
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    language = db.Column(db.String(10), default="en")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(50), default="active")  # active, deleted, etc.
+
+    # Relationship to brdge
+    brdge = db.relationship("Brdge", backref="voices")
+
+    def to_dict(self):
+        """Convert voice to dictionary format"""
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "cartesia_voice_id": self.cartesia_voice_id,
+            "name": self.name,
+            "description": self.description,
+            "language": self.language,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "status": self.status,
+        }
+
+    @staticmethod
+    def from_cartesia_response(brdge_id: int, voice_data: dict):
+        """Create a voice record from Cartesia API response"""
+        return Voice(
+            brdge_id=brdge_id,
+            cartesia_voice_id=voice_data["id"],
+            name=voice_data["name"],
+            description=voice_data.get("description"),
+            language=voice_data.get("language", "en"),
+            created_at=(
+                datetime.fromisoformat(voice_data["created_at"])
+                if "created_at" in voice_data
+                else datetime.utcnow()
+            ),
+        )

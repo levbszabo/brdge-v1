@@ -7,7 +7,15 @@ from werkzeug.utils import secure_filename
 import os
 import boto3
 import uuid
-from models import Brdge, User, UserAccount, Walkthrough, WalkthroughMessage, Scripts
+from models import (
+    Brdge,
+    User,
+    UserAccount,
+    Walkthrough,
+    WalkthroughMessage,
+    Scripts,
+    Voice,
+)
 from utils import (
     clone_voice_helper,
     pdf_to_images,
@@ -1766,99 +1774,118 @@ def get_brdge_scripts(brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>/voice/clone", methods=["POST"])
-@login_required
-def clone_voice_for_brdge(user, brdge_id):
+@cross_origin()
+def clone_voice_for_brdge(brdge_id):
     """Clone a voice from uploaded audio sample using Cartesia API"""
     try:
         # Get the brdge to use its name as default
-        brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+        brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
 
         # Get form data
         audio_file = request.files.get("audio")
-        name = request.form.get("name", brdge.name)  # Default to brdge name
+        name = request.form.get("name", brdge.name)
         description = request.form.get("description", f"Voice clone for {brdge.name}")
-        language = request.form.get("language", "en")  # Default to English
-        mode = request.form.get("mode", "stability")  # Default to stability mode
-        enhance = (
-            request.form.get("enhance", "true").lower() == "true"
-        )  # Default to true
-        transcript = request.form.get("transcript", "")  # Optional transcript
+        language = request.form.get("language", "en")
+        mode = request.form.get("mode", "stability")
+        enhance = request.form.get("enhance", "true").lower() == "true"
+        transcript = request.form.get("transcript", "")
 
         if not audio_file:
             return jsonify({"error": "No audio file provided"}), 400
 
-        # Create voices directory if it doesn't exist
-        voices_dir = "data/voices"
-        os.makedirs(voices_dir, exist_ok=True)
-
-        # Save audio file temporarily
+        # Create temporary directory for audio file
+        temp_dir = "/tmp/voice_clone"
+        os.makedirs(temp_dir, exist_ok=True)
         temp_audio_path = os.path.join(
-            voices_dir, f"temp_{brdge_id}_{secure_filename(audio_file.filename)}"
-        )
-        audio_file.save(temp_audio_path)
-
-        # Prepare the multipart form data for Cartesia API
-        files = {"clip": ("audio.wav", open(temp_audio_path, "rb"), "audio/wav")}
-
-        data = {
-            "name": name,
-            "description": description,
-            "language": language,
-            "mode": mode,
-            "enhance": str(enhance).lower(),
-        }
-
-        if transcript:
-            data["transcript"] = transcript
-
-        # Make request to Cartesia API
-        headers = {
-            "X-API-Key": os.getenv("CARTESIA_API_KEY"),
-            "Cartesia-Version": "2024-06-10",
-        }
-
-        response = requests.post(
-            "https://api.cartesia.ai/voices/clone",
-            headers=headers,
-            files=files,
-            data=data,
+            temp_dir, f"temp_{brdge_id}_{secure_filename(audio_file.filename)}"
         )
 
-        # Clean up temporary audio file
-        os.remove(temp_audio_path)
+        try:
+            # Save audio file temporarily
+            audio_file.save(temp_audio_path)
 
-        if response.status_code != 200:
-            logger.error(f"Cartesia API error: {response.text}")
-            return (
-                jsonify({"error": "Voice cloning failed", "details": response.text}),
-                response.status_code,
+            # Prepare the multipart form data for Cartesia API
+            files = {"clip": ("audio.wav", open(temp_audio_path, "rb"), "audio/wav")}
+            data = {
+                "name": name,
+                "description": description,
+                "language": language,
+                "mode": mode,
+                "enhance": str(enhance).lower(),
+            }
+            if transcript:
+                data["transcript"] = transcript
+
+            # Make request to Cartesia API
+            headers = {
+                "X-API-Key": os.getenv("CARTESIA_API_KEY"),
+                "Cartesia-Version": "2024-06-10",
+            }
+
+            response = requests.post(
+                "https://api.cartesia.ai/voices/clone",
+                headers=headers,
+                files=files,
+                data=data,
             )
 
-        # Get response data
-        voice_data = response.json()
+            # Log the response for debugging
+            logger.info(f"Cartesia API response: {response.text}")
 
-        # Save voice data to local storage
-        voice_info = {
-            "id": voice_data["id"],
-            "name": voice_data["name"],
-            "description": voice_data["description"],
-            "created_at": voice_data["created_at"],
-            "language": voice_data["language"],
-            "brdge_id": brdge_id,
-            "user_id": user.id,
-        }
+            try:
+                # Try to parse the response data regardless of status code
+                voice_data = response.json()
 
-        voice_file_path = os.path.join(voices_dir, f"brdge_{brdge_id}_voice.json")
-        with open(voice_file_path, "w") as f:
-            json.dump(voice_info, f, indent=2)
+                # Check if we got the expected fields
+                if "id" in voice_data and "name" in voice_data:
+                    logger.info(f"Successfully parsed voice data: {voice_data}")
 
-        logger.info(f"Voice cloned successfully for brdge {brdge_id}")
-        return (
-            jsonify({"message": "Voice cloned successfully", "voice": voice_info}),
-            200,
-        )
+                    voice = Voice.from_cartesia_response(brdge_id, voice_data)
+                    logger.info(f"Created voice record: {voice.to_dict()}")
+
+                    # Save to database
+                    db.session.add(voice)
+                    db.session.commit()
+                    logger.info(f"Successfully saved voice to database")
+
+                    return (
+                        jsonify(
+                            {
+                                "message": "Voice cloned successfully",
+                                "voice": voice.to_dict(),
+                            }
+                        ),
+                        201,
+                    )
+                else:
+                    logger.error(f"Missing required fields in response: {voice_data}")
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid response from voice service",
+                                "details": voice_data,
+                            }
+                        ),
+                        400,
+                    )
+
+            except Exception as db_error:
+                logger.error(f"Database error while saving voice: {db_error}")
+                db.session.rollback()
+                raise
+
+            finally:
+                # Clean up temporary file
+                if os.path.exists(temp_audio_path):
+                    os.remove(temp_audio_path)
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error cloning voice: {e}")
+            return jsonify({"error": "Failed to clone voice", "details": str(e)}), 500
 
     except Exception as e:
+        db.session.rollback()
         logger.error(f"Error cloning voice: {e}")
         return jsonify({"error": "Failed to clone voice", "details": str(e)}), 500
 
@@ -1868,32 +1895,49 @@ def clone_voice_for_brdge(user, brdge_id):
 def get_brdge_voices(brdge_id):
     """Get all saved voices for a brdge"""
     try:
-        voices_dir = "data/voices"
-        voice_file_path = os.path.join(voices_dir, f"brdge_{brdge_id}_voices.json")
-        print(f"Looking for voices at: {voice_file_path}")
+        # Debug: Check what brdge_id we're querying
+        logger.info(f"Querying voices for brdge_id: {brdge_id}")
 
-        if not os.path.exists(voice_file_path):
-            print(f"No voices found at {voice_file_path}")
-            return (
-                jsonify(
-                    {
-                        "voices": [],
-                        "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
-                    }
-                ),
-                200,
+        # Debug: Check all voices in the table
+        all_voices = Voice.query.all()
+        logger.info(f"Total voices in DB: {len(all_voices)}")
+        for v in all_voices:
+            logger.info(
+                f"DB Voice - brdge_id: {v.brdge_id}, voice_id: {v.cartesia_voice_id}, name: {v.name}"
             )
 
-        with open(voice_file_path, "r") as f:
-            voices = json.load(f)
-            if not isinstance(voices, list):
-                voices = [voices]
-            print(f"Found voices: {voices}")
+        # Get voices for this brdge
+        voices = (
+            Voice.query.filter_by(brdge_id=brdge_id, status="active")
+            .order_by(Voice.created_at.desc())
+            .all()
+        )
+
+        # Debug: Log what we found
+        logger.info(f"Found {len(voices)} active voices for brdge {brdge_id}")
+        for voice in voices:
+            logger.info(f"Voice details: {voice.to_dict()}")
+
+        # Format voices for frontend
+        voice_list = [
+            {
+                "id": voice.cartesia_voice_id,  # Frontend expects Cartesia's ID
+                "name": voice.name,
+                "created_at": voice.created_at.isoformat(),
+                "language": voice.language,
+                "description": voice.description,
+            }
+            for voice in voices
+        ]
+
+        # Debug: Log what we're returning
+        logger.info(f"Returning voice list: {voice_list}")
 
         return (
             jsonify(
                 {
-                    "voices": voices,
+                    "has_voices": len(voice_list) > 0,
+                    "voices": voice_list,
                     "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
                 }
             ),
@@ -1901,10 +1945,14 @@ def get_brdge_voices(brdge_id):
         )
 
     except Exception as e:
-        print(f"Error fetching voices: {e}")
+        logger.error(f"Error fetching voices: {e}")
+        # Debug: Log the full error details
+        logger.exception("Full error details:")
         return (
             jsonify(
                 {
+                    "has_voices": False,
+                    "voices": [],
                     "error": "Failed to fetch voices",
                     "details": str(e),
                     "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
@@ -2056,7 +2104,6 @@ def get_brdge_walkthroughs(brdge_id):
             ),
             200,
         )
-
     except Exception as e:
         logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
         return (
