@@ -137,130 +137,66 @@ class WalkthroughManager:
     def __init__(self, brdge_id: str, total_slides: int):
         self.brdge_id = brdge_id
         self.total_slides = total_slides
-        self.current_walkthrough = None
-        self.walkthroughs = []
-        self.api_base_url = "http://localhost:5000/api"  # Configure as needed
-        self.load_or_create_walkthrough()
+        self.api_base_url = os.getenv("API_BASE_URL", "http://localhost:5000/api")
+        self.walkthrough_id = None
+        self._initialize_walkthrough()
 
-    def load_or_create_walkthrough(self):
-        """Load existing walkthroughs and create new entry"""
+    def _initialize_walkthrough(self):
+        """Initialize a new walkthrough in the database"""
         try:
-            # Create new walkthrough via API
             response = requests.post(
                 f"{self.api_base_url}/walkthroughs",
                 json={"brdge_id": self.brdge_id, "total_slides": self.total_slides},
             )
             response.raise_for_status()
-            walkthrough_data = response.json()
+            data = response.json()
 
-            # Initialize walkthrough data
-            self.current_walkthrough = {
-                "id": walkthrough_data["id"],
-                "brdge_id": self.brdge_id,
-                "timestamp": walkthrough_data["created_at"],
-                "slides": {str(i): [] for i in range(1, self.total_slides + 1)},
-                "metadata": {
-                    "total_slides": self.total_slides,
-                    "status": walkthrough_data["status"],
-                    "created_at": walkthrough_data["created_at"],
-                    "completed_at": None,
-                },
-            }
-
-            # Handle local file storage as before
-            file_path = f"data/walkthroughs/brdge_{self.brdge_id}.json"
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-            if os.path.exists(file_path):
-                try:
-                    with open(file_path, "r") as f:
-                        self.walkthroughs = json.load(f)
-                        if not isinstance(self.walkthroughs, list):
-                            self.walkthroughs = []
-                except Exception as e:
-                    logger.error(f"Error loading walkthrough file: {e}")
-                    self.walkthroughs = []
-
-            self.walkthroughs.append(self.current_walkthrough)
-            self.save()
+            # Check for walkthrough_id in response
+            if "id" in data:  # Update this based on your API response
+                self.walkthrough_id = data["id"]
+                logger.info(
+                    f"Created new walkthrough {self.walkthrough_id} for brdge {self.brdge_id}"
+                )
+            else:
+                logger.error(f"No walkthrough ID in response: {data}")
+                raise ValueError("No walkthrough ID in response")
 
         except Exception as e:
-            logger.error(f"Error creating walkthrough: {e}", exc_info=True)
+            logger.error(f"Error initializing walkthrough: {e}", exc_info=True)
             raise
 
     def add_message(self, slide_number: int, role: str, content: str):
-        """Add message via API"""
+        """Add a message to the current walkthrough"""
+        if not self.walkthrough_id:
+            logger.error("No active walkthrough")
+            return
+
         try:
             response = requests.post(
-                f"{self.api_base_url}/walkthroughs/{self.current_walkthrough['id']}/messages",
+                f"{self.api_base_url}/walkthroughs/{self.walkthrough_id}/messages",
                 json={"slide_number": slide_number, "role": role, "content": content},
             )
             response.raise_for_status()
-            message_data = response.json()
-
-            # Update local storage
-            slide_key = str(slide_number)
-            if slide_key not in self.current_walkthrough["slides"]:
-                logger.error(f"Invalid slide number: {slide_key}")
-                return
-
-            message = {
-                "role": role,
-                "content": content,
-                "timestamp": message_data["timestamp"],
-            }
-            self.current_walkthrough["slides"][slide_key].append(message)
-            self.save()
-
+            response_data = response.json()
+            logger.info(
+                f"Added message to walkthrough {self.walkthrough_id}, slide {slide_number}: {response_data}"
+            )
         except Exception as e:
             logger.error(f"Error adding message: {e}", exc_info=True)
 
-    def save(self):
-        """Save current state to file"""
-        try:
-            file_path = f"data/walkthroughs/brdge_{self.brdge_id}.json"
-
-            # Validate data before saving
-            if not isinstance(self.walkthroughs, list):
-                logger.error("Invalid walkthroughs data structure")
-                return
-
-            # Ensure the directory exists
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-            # Verify JSON serialization before writing
-            try:
-                json_data = json.dumps(self.walkthroughs, indent=2)
-            except TypeError as e:
-                logger.error(f"JSON serialization error: {e}")
-                return
-
-            # Write to file
-            with open(file_path, "w") as f:
-                f.write(json_data)
-
-            logger.debug(f"Successfully saved walkthrough to {file_path}")
-
-        except Exception as e:
-            logger.error(f"Error saving walkthrough: {e}", exc_info=True)
-
     def complete_walkthrough(self):
-        """Complete walkthrough via API"""
+        """Mark the current walkthrough as completed"""
+        if not self.walkthrough_id:
+            logger.error("No active walkthrough")
+            return
+
         try:
             response = requests.post(
-                f"{self.api_base_url}/walkthroughs/{self.current_walkthrough['id']}/complete"
+                f"{self.api_base_url}/walkthroughs/{self.walkthrough_id}/complete"
             )
             response.raise_for_status()
-            completion_data = response.json()
-
-            # Update local storage
-            self.current_walkthrough["metadata"]["status"] = "completed"
-            self.current_walkthrough["metadata"]["completed_at"] = completion_data[
-                "completed_at"
-            ]
-            self.save()
-            logger.info(f"Completed walkthrough for brdge {self.brdge_id}")
-
+            response_data = response.json()
+            logger.info(f"Completed walkthrough {self.walkthrough_id}: {response_data}")
         except Exception as e:
             logger.error(f"Error completing walkthrough: {e}", exc_info=True)
 
@@ -599,9 +535,19 @@ async def entrypoint(ctx: JobContext):
                 # Initialize walkthrough manager for edit mode
                 if current_slide["agent_type"] == "edit" and not walkthrough_manager:
                     if json_data.get("brdgeId") and json_data.get("numSlides"):
-                        walkthrough_manager = WalkthroughManager(
-                            json_data["brdgeId"], json_data["numSlides"]
-                        )
+                        try:
+                            walkthrough_manager = WalkthroughManager(
+                                json_data["brdgeId"], json_data["numSlides"]
+                            )
+                            logger.info(
+                                f"Successfully created walkthrough manager for brdge {json_data['brdgeId']}"
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to create walkthrough manager: {e}",
+                                exc_info=True,
+                            )
+                            # Maybe send an error message to the client here
 
                 # Handle new slide image for edit mode
                 if (
