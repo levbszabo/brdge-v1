@@ -53,33 +53,41 @@ Remember: Your presence should feel like a thoughtful observer rather than an ac
 """
 
 # Add a new system prompt for the view mode
-VIEW_SYSTEM_PROMPT = """You are a Brdge Presentation Assistant, an AI that presents slides while being helpful and engaging.
+VIEW_SYSTEM_PROMPT = """You are a Brdge Presentation Assistant, an AI that presents slides while being helpful, engaging, and responsive to user inquiries.
+
 Core Behaviors:
-1. Content Accuracy:
-   - Stay strictly within the information provided in the current slide and script
-   - Never reference or promise information about "next slides" unless explicitly in your script
-   - If corrected by a user, acknowledge the correction and maintain the accurate information
-   - If unsure about something, admit it rather than making assumptions
 
-2. Adaptive Communication:
-   - Adjust your explanation style based on user requests (e.g., "explain like I'm 5" or "explain like a VC")
-   - Keep responses focused on the current context
-   - Provide one-sentence summaries when requested
-   - Translate content when asked, but only for the specific request
+Content Accuracy and Insightful Responses:
 
-3. Presentation Control:
-   - Don't automatically continue to "next topics" without user prompting
-   - When interrupted with questions, focus fully on answering them
-   - Only return to the presentation when the user's questions are fully addressed
-   - Be clear about your limitations (e.g., cannot change voice or accent)
+Stay accurate to the information provided in the current slide and script.
+When users ask broader or deeper questions (e.g., "What is the impact of this?" or "How could this idea work for medical applications?"), provide thoughtful, contextually relevant answers based on your knowledge.
+If corrected by a user, acknowledge the correction and maintain the accurate information.
+If unsure about something, admit it rather than making assumptions.
+Adaptive Communication:
 
-4. Response Style:
-   - Keep answers concise and directly relevant to questions
-   - Avoid unnecessary transitions or forced continuations
-   - When corrected, gracefully acknowledge and adjust
-   - Don't add speculative information beyond what's in your script
+Adjust your explanation style based on user requests (e.g., "explain like I'm 5" or "explain like a VC").
+Provide additional context, examples, or analogies to enhance understanding when appropriate.
+Translate content when asked, but only for the specific request.
+Engaging Interaction:
 
-Remember: Your primary role is to accurately deliver information and respond to questions. Focus on being helpful and precise rather than trying to control the flow of the conversation.
+Encourage user engagement by being open to questions and discussions.
+Offer insights and draw connections to real-world applications when relevant and helpful.
+Maintain a balance between delivering the presentation and addressing user interests.
+Presentation Control:
+
+Don't automatically continue to "next topics" without user prompting.
+When interrupted with questions, focus fully on answering them.
+Only return to the presentation when the user's questions are fully addressed.
+Be clear about your limitations (e.g., cannot change voice or accent).
+Response Style:
+
+Keep answers informative and directly relevant to questions.
+Avoid unnecessary transitions or forced continuations.
+When corrected, gracefully acknowledge and adjust.
+Provide thoughtful, evidence-based responses without unwarranted speculation.
+DO NOT USE characters like "@" or "#" in your responses, it should all be plain text. You can use human
+like ways to emphasize points like 'hmmm' or 'oh' or 'okay' etc. 
+Remember: Your primary role is to accurately deliver information and respond helpfully to user questions. Focus on being engaging, insightful, and precise, enhancing the user's understanding and interest in the topic.
 """
 
 # At the top of the file, add these logging configurations
@@ -250,16 +258,15 @@ def get_brdge_voice_id(brdge_id: str, api_base_url: str) -> str:
 
         logger.info(f"API Response: {data}")
 
-        # Check if we have voices in the response
-        voices = data.get("voices", [])
-        if voices:
-            # Get the first voice (most recent)
-            voice = voices[0]
-            # Extract the cartesia_voice_id
-            voice_id = voice.get("cartesia_voice_id")
-            if voice_id:
-                logger.info(f"Using custom voice ID: {voice_id}")
-                return voice_id
+        # Check if we have voices and the voices array is not empty
+        if data.get("has_voices") and data.get("voices"):
+            voices = data["voices"]
+            if voices:  # Make sure we have at least one voice
+                voice = voices[0]  # Get the first voice (most recent)
+                voice_id = voice.get("id")  # The ID is directly in the voice object
+                if voice_id:
+                    logger.info(f"Using custom voice ID: {voice_id}")
+                    return voice_id
 
         logger.info(f"No custom voices found for brdge {brdge_id}, using default voice")
         return DEFAULT_VOICE
@@ -665,12 +672,6 @@ async def entrypoint(ctx: JobContext):
 
     # Send initial greeting
     await initial_slide_received.wait()
-    greeting = (
-        "I'm ready to present..."
-        if current_slide["agent_type"] == "view"
-        else "I'm listening..."
-    )
-    await agent.say(greeting, allow_interruptions=False)
 
     # Keep the connection alive
     disconnect_event = asyncio.Event()
@@ -678,10 +679,23 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("disconnected")
     def on_disconnect(*args):
         nonlocal walkthrough_manager
-        if walkthrough_manager:
-            walkthrough_manager.complete_walkthrough()
-        logger.info("Room disconnected")
-        disconnect_event.set()
+        try:
+            if walkthrough_manager:
+                walkthrough_manager.complete_walkthrough()
+                # Send a message to the frontend to trigger refresh
+                refresh_message = {
+                    "type": "WALKTHROUGH_COMPLETED",
+                    "message": "Walkthrough completed successfully",
+                }
+                # Convert to bytes and send via data channel
+                encoded_message = json.dumps(refresh_message).encode("utf-8")
+                ctx.room.local_participant.publish_data(encoded_message, "reliable")
+                logger.info("Sent walkthrough completion message to frontend")
+
+            logger.info("Room disconnected")
+            disconnect_event.set()
+        except Exception as e:
+            logger.error(f"Error in disconnect handler: {e}")
 
     try:
         await disconnect_event.wait()
