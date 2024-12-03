@@ -10,18 +10,15 @@ import {
     CloudUpload, RecordVoiceOver, Slideshow,
     Group, Support, ArrowForward, School, Refresh, Chat,
     AutoAwesome, Speed, Mic, Description, VolumeUp, Share,
-    Handshake, TrendingUp, Devices, MenuBook
+    Handshake, TrendingUp, Devices, MenuBook, ArrowDownward
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 import './LandingPage.css';
-import V1Diagram from '../components/V1Diagram';
-import V2Diagram from '../components/V2Diagram';
-import V3Diagram from '../components/V3Diagram';
-import EvolutionTimeline from '../components/EvolutionTimeline';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useInView } from 'react-intersection-observer';
 import HowItWorks from '../components/HowItWorks';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 // Reuse FeatureCard component
 const FeatureCard = ({ icon, title, description }) => {
@@ -105,15 +102,39 @@ const IntroducingBrdgeAI = () => {
             label: "Static",
             icon: <Slideshow />,
             title: 'Static AI Presentation',
-            description: '',
-            component: <V1Diagram />,
+            description: 'Traditional presentations with AI-powered delivery. Upload your content and let our AI present it consistently every time.',
+            component: (
+                <Box sx={{
+                    p: 4,
+                    textAlign: 'center',
+                    bgcolor: 'rgba(0, 65, 194, 0.05)',
+                    borderRadius: 2
+                }}>
+                    <Typography variant="body1">
+                        Static presentations allow you to create consistent, AI-powered content delivery.
+                        Perfect for standardized training and presentations.
+                    </Typography>
+                </Box>
+            ),
         },
         {
             label: "Agentic",
             icon: <Chat />,
             title: 'Agentic AI Presentation',
-            description: '',
-            component: <V2Diagram />,
+            description: 'Interactive presentations that can respond to questions and adapt in real-time.',
+            component: (
+                <Box sx={{
+                    p: 4,
+                    textAlign: 'center',
+                    bgcolor: 'rgba(0, 180, 219, 0.05)',
+                    borderRadius: 2
+                }}>
+                    <Typography variant="body1">
+                        Agentic presentations take it further by enabling real-time interaction.
+                        Your AI presenter can answer questions and adapt to your audience's needs.
+                    </Typography>
+                </Box>
+            ),
         },
     ];
 
@@ -243,6 +264,264 @@ const IntroducingBrdgeAI = () => {
     );
 };
 
+// Update the hero section
+const HeroSection = () => {
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+    const iconAnimation = useAnimation();
+
+    const handleMouseMove = (event) => {
+        const { clientX, clientY } = event;
+        const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
+        const x = (clientX - left) / width;
+        const y = (clientY - top) / height;
+        setMousePosition({ x, y });
+    };
+
+    useEffect(() => {
+        const moveX = (mousePosition.x - 0.5) * 20;
+        const moveY = (mousePosition.y - 0.5) * 20;
+        iconAnimation.start({
+            x: moveX,
+            y: moveY,
+            transition: { type: "spring", stiffness: 300, damping: 30 }
+        });
+    }, [mousePosition, iconAnimation]);
+
+    return (
+        <Box sx={{
+            minHeight: '100vh',
+            width: '100vw',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            background: 'linear-gradient(180deg, #000000 0%, #000B1F 35%, #0041C2 70%, #00B4DB 100%)',
+            color: 'white',
+            overflow: 'hidden',
+            marginLeft: 'calc(-50vw + 50%)',
+            marginRight: 'calc(-50vw + 50%)',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'radial-gradient(circle at 30% 40%, rgba(0,65,194,0.4) 0%, transparent 60%)',
+                pointerEvents: 'none'
+            }
+        }}>
+            <Container maxWidth="lg" sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                mt: 8
+            }}>
+                {/* AI Presenter Visualization */}
+                <Box
+                    sx={{
+                        width: '200px',
+                        height: '200px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        mb: 4,
+                        cursor: 'pointer'
+                    }}
+                    onMouseMove={handleMouseMove}
+                >
+                    <motion.div
+                        animate={iconAnimation}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <SmartToyIcon sx={{
+                            fontSize: '100px',
+                            color: 'white',
+                            filter: 'drop-shadow(0 0 20px rgba(0, 180, 219, 0.5))'
+                        }} />
+                    </motion.div>
+                </Box>
+
+                {/* Existing Hero Content */}
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1 }}
+                >
+                    <Typography
+                        variant="h1"
+                        align="center"
+                        sx={{
+                            mb: { xs: 2, sm: 3 },
+                            fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                            lineHeight: 1.1,
+                            fontWeight: 700,
+                            textTransform: 'none',
+                            letterSpacing: '-0.02em'
+                        }}
+                    >
+                        Revolutionize Presentations with AI
+                    </Typography>
+                    <Typography
+                        variant="h5"
+                        align="center"
+                        sx={{
+                            mb: { xs: 4, sm: 6 },
+                            maxWidth: '800px',
+                            mx: 'auto',
+                            opacity: 0.8,
+                            fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                            fontWeight: 400
+                        }}
+                    >
+                        Meet the future of presentations: AI agents that deliver, explain, and interact—all in your voice.
+                    </Typography>
+
+                    <Box sx={{
+                        display: 'flex',
+                        gap: 2,
+                        justifyContent: 'center',
+                        mt: 4
+                    }}>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Button
+                                variant="contained"
+                                size="large"
+                                sx={{
+                                    bgcolor: 'white',
+                                    color: '#0041C2',
+                                    px: { xs: 4, md: 6 },
+                                    py: { xs: 1.5, md: 2 },
+                                    fontSize: { xs: '1rem', md: '1.2rem' },
+                                    borderRadius: '50px',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(255,255,255,0.9)'
+                                    }
+                                }}
+                            >
+                                Start Free Today
+                            </Button>
+                        </motion.div>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Button
+                                variant="outlined"
+                                size="large"
+                                sx={{
+                                    color: 'white',
+                                    borderColor: 'white',
+                                    px: { xs: 4, md: 6 },
+                                    py: { xs: 1.5, md: 2 },
+                                    fontSize: { xs: '1rem', md: '1.2rem' },
+                                    borderRadius: '50px',
+                                    '&:hover': {
+                                        borderColor: 'white',
+                                        bgcolor: 'rgba(255,255,255,0.1)'
+                                    }
+                                }}
+                            >
+                                Watch Demo
+                            </Button>
+                        </motion.div>
+                    </Box>
+                </motion.div>
+            </Container>
+
+            {/* Scroll Indicator */}
+            <Box sx={{
+                position: 'absolute',
+                bottom: 40,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                color: 'rgba(255,255,255,0.6)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1
+            }}>
+                <Typography variant="body2" sx={{ textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    Scroll for more
+                </Typography>
+                <motion.div
+                    animate={{
+                        y: [0, 10, 0],
+                    }}
+                    transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                >
+                    <ArrowDownward sx={{ fontSize: 20 }} />
+                </motion.div>
+            </Box>
+        </Box>
+    );
+};
+
+// Add the How It Works section with the new design
+const HowItWorksSection = () => {
+    return (
+        <Box sx={{ py: { xs: 8, sm: 12, md: 16 } }}>
+            <Container maxWidth="lg">
+                <Typography variant="h2" align="center" sx={{ mb: 6 }}>
+                    How Brdge AI Works
+                </Typography>
+
+                <Grid container spacing={4}>
+                    {[
+                        {
+                            title: "Interact with AI",
+                            description: "Engage with our AI to upload and explain your content effortlessly."
+                        },
+                        {
+                            title: "Generate Script",
+                            description: "Watch your input transform into a polished, editable script tailored to your voice and style."
+                        },
+                        {
+                            title: "Configure the Agent",
+                            description: "Clone your voice and fine-tune your AI presenter to deliver your message perfectly."
+                        },
+                        {
+                            title: "Save & Share",
+                            description: "Distribute your presentation with a shareable link—accessible anywhere."
+                        }
+                    ].map((step, index) => (
+                        <Grid item xs={12} md={6} lg={3} key={index}>
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.2 }}
+                            >
+                                <Box sx={{
+                                    p: 3,
+                                    height: '100%',
+                                    bgcolor: 'secondary.main',
+                                    borderRadius: 2
+                                }}>
+                                    <Typography variant="h6" gutterBottom>
+                                        {step.title}
+                                    </Typography>
+                                    <Typography>
+                                        {step.description}
+                                    </Typography>
+                                </Box>
+                            </motion.div>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Container>
+        </Box>
+    );
+};
+
 function LandingPage() {
     const theme = useTheme();
 
@@ -255,34 +534,9 @@ function LandingPage() {
 
     return (
         <ParallaxProvider>
-            <Box sx={{ flexGrow: 1, overflow: 'hidden', backgroundColor: '#f9f9f9' }}>
-                <Container maxWidth="lg" sx={{ py: { xs: 8, sm: 10, md: 12 } }}>
-                    {/* Hero Section */}
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1 }}
-                    >
-                        <Typography variant="h2" component="h1" align="center" sx={{
-                            mb: { xs: 2, sm: 3 },
-                            fontWeight: 'bold',
-                            color: theme.palette.text.primary,
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                            lineHeight: 1.2
-                        }}>
-                            Autonomous AI Presentations
-                        </Typography>
-                        <Typography variant="h6" component="p" align="center" sx={{
-                            mb: { xs: 4, sm: 6 },
-                            color: theme.palette.text.secondary,
-                            maxWidth: '800px',
-                            mx: 'auto',
-                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
-                        }}>
-                            Let Brdge AI Agents Handle Onboarding, Sales, and Training for You.
-                        </Typography>
-                    </motion.div>
-
+            <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                <HeroSection />
+                <Container maxWidth="lg">
                     {/* Call to Action Button */}
                     <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 6, sm: 8 } }}>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -308,14 +562,11 @@ function LandingPage() {
                         </motion.div>
                     </Box>
 
-                    {/* Evolution Timeline Section */}
-                    <EvolutionTimeline />
-
                     {/* Introducing Brdge AI Section */}
                     <IntroducingBrdgeAI />
 
                     {/* How It Works Section */}
-                    <HowItWorks />
+                    <HowItWorksSection />
 
                     {/* Final Call to Action */}
                     <Box sx={{

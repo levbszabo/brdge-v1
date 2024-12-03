@@ -77,6 +77,12 @@ function Header() {
                     component={item.link ? RouterLink : 'button'}
                     to={item.link}
                     onClick={item.onClick}
+                    sx={{
+                        color: 'white',
+                        '&:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }}
                 >
                     {item.text}
                 </Button>
@@ -104,9 +110,25 @@ function Header() {
     );
 
     return (
-        <AppBar position="static">
+        <AppBar
+            position="fixed"
+            elevation={0}
+            sx={{
+                background: 'transparent',
+                backdropFilter: 'none',
+                pt: 2,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 1000
+            }}
+        >
             <Toolbar>
-                <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                <Typography variant="h6" component="div" sx={{
+                    flexGrow: 1,
+                    color: 'white'
+                }}>
                     <RouterLink to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
                         Brdge AI
                     </RouterLink>
