@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Container, TextField, Button, Typography, Box, Alert, Paper, useTheme, useMediaQuery, Divider } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Alert, useTheme, useMediaQuery } from '@mui/material';
 import { motion } from 'framer-motion';
 import { api } from '../api';
 import { PersonAdd, Email, LockOpen } from '@mui/icons-material';
@@ -76,220 +76,431 @@ function SignUpPage() {
     };
 
     return (
-        <Container maxWidth="xs" sx={{
+        <Box sx={{
             minHeight: '100vh',
+            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+            position: 'relative',
+            overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
             alignItems: 'center',
-            py: 4
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '5%',
+                left: '-5%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 20s infinite alternate'
+            },
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '5%',
+                right: '-5%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 25s infinite alternate-reverse'
+            }
         }}>
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                style={{ width: '100%' }}
-            >
-                <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    width: '100%'
-                }}>
-                    <Typography
-                        variant={isMobile ? "h4" : "h3"}
-                        component="h1"
-                        gutterBottom
-                        align="center"
-                        sx={{
-                            fontWeight: 'bold',
-                            background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            mb: 1
-                        }}
-                    >
-                        Sign Up Free
-                    </Typography>
-                    <Typography
-                        variant="subtitle1"
-                        align="center"
-                        sx={{
-                            color: theme.palette.text.secondary,
-                            mb: 2
-                        }}
-                    >
-                        No Credit Card Needed
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 3, textAlign: 'center', maxWidth: '90%' }}>
-                        Try Brdge AI and see how easy it is to create interactive presentations.
-                    </Typography>
+            {/* Geometric shapes */}
+            <Box sx={{
+                position: 'absolute',
+                top: '10%',
+                left: '15%',
+                width: '400px',
+                height: '400px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transform: 'rotate(45deg)',
+                animation: 'rotate 30s linear infinite',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -1,
+                    padding: '1px',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude'
+                }
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: '15%',
+                right: '10%',
+                width: '300px',
+                height: '300px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '50%',
+                animation: 'rotateReverse 25s linear infinite',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -1,
+                    borderRadius: 'inherit',
+                    padding: '1px',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude'
+                }
+            }} />
 
-                    {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
-                    {success && <Alert severity="success" sx={{ mb: 2, width: '100%' }}>{success}</Alert>}
-
+            <Container maxWidth="xs" sx={{ position: 'relative', zIndex: 1 }}>
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                >
                     <Box sx={{
-                        width: '100%',
-                        mb: 3,
                         display: 'flex',
-                        justifyContent: 'center',
-                        '& > div': {
-                            width: '100%',
-                            display: 'flex',
-                            justifyContent: 'center'
-                        }
-                    }}>
-                        <GoogleLogin
-                            onSuccess={handleGoogleSuccess}
-                            onError={() => {
-                                console.error('Google Sign In failed');
-                                setError('Google Sign In failed. Please try again.');
-                            }}
-                            useOneTap={false}
-                            theme="outline"
-                            size="large"
-                            text="signup_with"
-                            shape="rectangular"
-                            width="300"
-                            cookiePolicy={'single_host_origin'}
-                        />
-                    </Box>
-
-                    {error && error.includes('cookies') && (
-                        <Typography variant="body2" color="error" sx={{ mt: 1, fontSize: '0.75rem' }}>
-                            Tip: To enable cookies in Chrome, go to Settings → Privacy and Security → Cookies and other site data
-                        </Typography>
-                    )}
-
-                    <Box sx={{
-                        width: '100%',
-                        display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        mb: 3
                     }}>
-                        <Divider sx={{ flex: 1 }} />
-                        <Typography sx={{ px: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
-                            or sign up with email
-                        </Typography>
-                        <Divider sx={{ flex: 1 }} />
-                    </Box>
-
-                    <Paper
-                        elevation={3}
-                        sx={{
-                            p: 4,
-                            width: '100%',
-                            borderRadius: '16px',
-                            background: '#ffffff',
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                        }}
-                    >
-                        <form onSubmit={handleSignUp}>
-                            <TextField
-                                label="Email"
-                                type="email"
-                                fullWidth
-                                required
-                                margin="normal"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                variant="outlined"
-                                InputProps={{
-                                    startAdornment: <Email sx={{ mr: 1, color: theme.palette.primary.main }} />,
-                                }}
-                                sx={{ mb: 2 }}
-                            />
-                            <TextField
-                                label="Password"
-                                type="password"
-                                fullWidth
-                                required
-                                margin="normal"
-                                value={password}
-                                onChange={(e) => {
-                                    setPassword(e.target.value);
-                                    if (confirmPassword && e.target.value !== confirmPassword) {
-                                        setPasswordError('Passwords do not match');
-                                    } else {
-                                        setPasswordError('');
-                                    }
-                                }}
-                                variant="outlined"
-                                InputProps={{
-                                    startAdornment: <LockOpen sx={{ mr: 1, color: theme.palette.primary.main }} />,
-                                }}
-                                sx={{ mb: 2 }}
-                            />
-                            <TextField
-                                label="Confirm Password"
-                                type="password"
-                                fullWidth
-                                required
-                                margin="normal"
-                                value={confirmPassword}
-                                onChange={(e) => {
-                                    setConfirmPassword(e.target.value);
-                                    if (password !== e.target.value) {
-                                        setPasswordError('Passwords do not match');
-                                    } else {
-                                        setPasswordError('');
-                                    }
-                                }}
-                                error={!!passwordError}
-                                helperText={passwordError}
-                                variant="outlined"
-                                InputProps={{
-                                    startAdornment: <LockOpen sx={{ mr: 1, color: theme.palette.primary.main }} />,
-                                }}
-                                sx={{ mb: 3 }}
-                            />
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    type="submit"
-                                    fullWidth
-                                    startIcon={<PersonAdd />}
-                                    disabled={!!passwordError}
-                                    sx={{
-                                        py: 1.5,
-                                        borderRadius: '50px',
-                                        background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
-                                        boxShadow: '0 3px 15px rgba(0, 180, 219, 0.2)',
-                                        transition: 'all 0.3s ease-in-out',
-                                        '&:hover': {
-                                            boxShadow: '0 6px 20px rgba(0, 180, 219, 0.4)',
-                                        },
-                                    }}
-                                >
-                                    Get Started Free
-                                </Button>
-                            </motion.div>
-                        </form>
-                    </Paper>
-
-                    <Typography variant="body2" sx={{ mt: 2, textAlign: 'center', fontStyle: 'italic' }}>
-                        By signing up, you'll get instant access to Brdge AI's powerful features.
-                    </Typography>
-                    <Typography variant="body1" sx={{ mt: 2, textAlign: 'center' }}>
-                        Already have an account?{' '}
-                        <Link
-                            to="/login"
-                            style={{
-                                color: theme.palette.primary.main,
-                                fontWeight: 'bold',
-                                textDecoration: 'none',
-                                '&:hover': {
-                                    textDecoration: 'underline'
+                        <Typography
+                            variant={isMobile ? "h3" : "h2"}
+                            component="h1"
+                            align="center"
+                            sx={{
+                                mb: { xs: 3, md: 4 },
+                                fontWeight: '700',
+                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                                background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                position: 'relative',
+                                textTransform: 'none',
+                                letterSpacing: '-0.02em',
+                                filter: 'drop-shadow(0 0 20px rgba(79, 156, 249, 0.3))',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-12px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '60px',
+                                    height: '3px',
+                                    background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
+                                    borderRadius: '2px',
+                                    boxShadow: '0 0 20px rgba(79, 156, 249, 0.5)'
                                 }
                             }}
                         >
-                            Log in
-                        </Link>
-                    </Typography>
-                </Box>
-            </motion.div>
-        </Container>
+                            Sign up free
+                        </Typography>
+                        <Typography
+                            variant="h6"
+                            align="center"
+                            sx={{
+                                mb: 2,
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                maxWidth: '300px',
+                                mx: 'auto',
+                                fontWeight: '400',
+                                lineHeight: 1.5,
+                                textTransform: 'none',
+                                letterSpacing: '0.02em'
+                            }}
+                        >
+                            No credit card needed
+                        </Typography>
+
+                        {/* Form Container */}
+                        <Box sx={{
+                            width: '100%',
+                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '24px',
+                            p: 4,
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '1px',
+                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
+                            }
+                        }}>
+                            {error && (
+                                <Alert
+                                    severity="error"
+                                    sx={{
+                                        mb: 2,
+                                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                                        color: '#ff6b6b',
+                                        border: '1px solid rgba(255, 107, 107, 0.2)',
+                                        '& .MuiAlert-icon': {
+                                            color: '#ff6b6b'
+                                        }
+                                    }}
+                                >
+                                    {error}
+                                </Alert>
+                            )}
+                            {success && (
+                                <Alert
+                                    severity="success"
+                                    sx={{
+                                        mb: 2,
+                                        backgroundColor: 'rgba(84, 214, 44, 0.1)',
+                                        color: '#54d628',
+                                        border: '1px solid rgba(84, 214, 44, 0.2)',
+                                        '& .MuiAlert-icon': {
+                                            color: '#54d628'
+                                        }
+                                    }}
+                                >
+                                    {success}
+                                </Alert>
+                            )}
+
+                            <Box sx={{
+                                width: '100%',
+                                mb: 3,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                '& > div': {
+                                    width: '100%',
+                                    display: 'flex',
+                                    justifyContent: 'center'
+                                }
+                            }}>
+                                <GoogleLogin
+                                    onSuccess={handleGoogleSuccess}
+                                    onError={() => setError('Google Sign In failed. Please try again.')}
+                                    useOneTap={false}
+                                    theme="filled_blue"
+                                    size="large"
+                                    text="signup_with"
+                                    shape="rectangular"
+                                    width={isMobile ? "250" : "300"}
+                                />
+                            </Box>
+
+                            <Box sx={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                mb: 3
+                            }}>
+                                <Box sx={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                                <Typography sx={{ px: 2, color: 'rgba(255, 255, 255, 0.6)', fontSize: '0.875rem' }}>
+                                    or sign up with email
+                                </Typography>
+                                <Box sx={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+                            </Box>
+
+                            <form onSubmit={handleSignUp}>
+                                <TextField
+                                    label="Email"
+                                    type="email"
+                                    fullWidth
+                                    required
+                                    margin="normal"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    variant="outlined"
+                                    InputProps={{
+                                        startAdornment: <Email sx={{ mr: 1, color: theme.palette.primary.main }} />,
+                                    }}
+                                    sx={{
+                                        mb: 2,
+                                        '& .MuiOutlinedInput-root': {
+                                            color: 'white',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                            borderRadius: '12px',
+                                            '& fieldset': {
+                                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                transition: 'all 0.2s ease-in-out',
+                                            },
+                                            '&:hover fieldset': {
+                                                borderColor: 'rgba(79, 156, 249, 0.5)',
+                                            },
+                                            '&.Mui-focused fieldset': {
+                                                borderColor: '#4F9CF9',
+                                                borderWidth: '1px',
+                                                boxShadow: '0 0 10px rgba(79, 156, 249, 0.2)',
+                                            },
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            '&.Mui-focused': {
+                                                color: '#4F9CF9',
+                                            },
+                                        },
+                                    }}
+                                />
+                                <TextField
+                                    label="Password"
+                                    type="password"
+                                    fullWidth
+                                    required
+                                    margin="normal"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (confirmPassword && e.target.value !== confirmPassword) {
+                                            setPasswordError('Passwords do not match');
+                                        } else {
+                                            setPasswordError('');
+                                        }
+                                    }}
+                                    variant="outlined"
+                                    InputProps={{
+                                        startAdornment: <LockOpen sx={{ mr: 1, color: theme.palette.primary.main }} />,
+                                    }}
+                                    sx={{
+                                        mb: 2,
+                                        '& .MuiOutlinedInput-root': {
+                                            color: 'white',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                            borderRadius: '12px',
+                                            '& fieldset': {
+                                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                transition: 'all 0.2s ease-in-out',
+                                            },
+                                            '&:hover fieldset': {
+                                                borderColor: 'rgba(79, 156, 249, 0.5)',
+                                            },
+                                            '&.Mui-focused fieldset': {
+                                                borderColor: '#4F9CF9',
+                                                borderWidth: '1px',
+                                                boxShadow: '0 0 10px rgba(79, 156, 249, 0.2)',
+                                            },
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            '&.Mui-focused': {
+                                                color: '#4F9CF9',
+                                            },
+                                        },
+                                    }}
+                                />
+                                <TextField
+                                    label="Confirm Password"
+                                    type="password"
+                                    fullWidth
+                                    required
+                                    margin="normal"
+                                    value={confirmPassword}
+                                    onChange={(e) => {
+                                        setConfirmPassword(e.target.value);
+                                        if (password !== e.target.value) {
+                                            setPasswordError('Passwords do not match');
+                                        } else {
+                                            setPasswordError('');
+                                        }
+                                    }}
+                                    error={!!passwordError}
+                                    helperText={passwordError}
+                                    variant="outlined"
+                                    InputProps={{
+                                        startAdornment: <LockOpen sx={{ mr: 1, color: theme.palette.primary.main }} />,
+                                    }}
+                                    sx={{
+                                        mb: 3,
+                                        '& .MuiOutlinedInput-root': {
+                                            color: 'white',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                            borderRadius: '12px',
+                                            '& fieldset': {
+                                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                transition: 'all 0.2s ease-in-out',
+                                            },
+                                            '&:hover fieldset': {
+                                                borderColor: 'rgba(79, 156, 249, 0.5)',
+                                            },
+                                            '&.Mui-focused fieldset': {
+                                                borderColor: '#4F9CF9',
+                                                borderWidth: '1px',
+                                                boxShadow: '0 0 10px rgba(79, 156, 249, 0.2)',
+                                            },
+                                        },
+                                        '& .MuiInputLabel-root': {
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            '&.Mui-focused': {
+                                                color: '#4F9CF9',
+                                            },
+                                        },
+                                    }}
+                                />
+                                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                    <Button
+                                        variant="contained"
+                                        type="submit"
+                                        fullWidth
+                                        startIcon={<PersonAdd />}
+                                        disabled={!!passwordError}
+                                        sx={{
+                                            py: 1.5,
+                                            borderRadius: '50px',
+                                            background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                            fontSize: '1rem',
+                                            fontWeight: '600',
+                                            letterSpacing: '0.02em',
+                                            textTransform: 'none',
+                                            transition: 'all 0.3s ease-in-out',
+                                            boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
+                                            '&:hover': {
+                                                background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
+                                            },
+                                        }}
+                                    >
+                                        Get Started Free
+                                    </Button>
+                                </motion.div>
+                            </form>
+                        </Box>
+
+                        <Box mt={3}>
+                            <Typography variant="body1" align="center" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                Already have an account?{' '}
+                                <Link
+                                    to="/login"
+                                    style={{
+                                        color: '#4F9CF9',
+                                        fontWeight: 'bold',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    Log in
+                                </Link>
+                            </Typography>
+                        </Box>
+                    </Box>
+                </motion.div>
+            </Container>
+
+            <style>
+                {`
+                    @keyframes float {
+                        0% { transform: translateY(0px) rotate(0deg); }
+                        50% { transform: translateY(-20px) rotate(5deg); }
+                        100% { transform: translateY(0px) rotate(0deg); }
+                    }
+                    @keyframes rotate {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                    @keyframes rotateReverse {
+                        from { transform: rotate(360deg); }
+                        to { transform: rotate(0deg); }
+                    }
+                `}
+            </style>
+        </Box>
     );
 }
 

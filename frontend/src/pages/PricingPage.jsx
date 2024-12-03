@@ -1,49 +1,112 @@
 import React from 'react';
-import { Container, Typography, Grid, Paper, Button, Box, useTheme, useMediaQuery, Divider } from '@mui/material';
+import { Container, Typography, Grid, Box, Button, useTheme, useMediaQuery } from '@mui/material';
 import { motion } from 'framer-motion';
-import CheckIcon from '@mui/icons-material/Check';
-import { Link as RouterLink } from 'react-router-dom';
-import SchoolIcon from '@mui/icons-material/School';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
+import { useInView } from 'react-intersection-observer';
+import { Check, Star } from '@mui/icons-material';
 
-const PricingTier = ({ title, price, features, buttonText, isPremium }) => {
-    const theme = useTheme();
+const PricingTier = ({ tier, isPopular, delay }) => {
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
     return (
-        <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
-            <Paper elevation={3} sx={{
-                p: 4,
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: '16px',
-                background: isPremium ? 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)' : '#ffffff',
-                color: isPremium ? '#ffffff' : 'inherit',
-            }}>
-                <Typography variant="h5" component="h3" gutterBottom fontWeight="bold">
-                    {title}
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 50 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay }}
+        >
+            <Box
+                sx={{
+                    position: 'relative',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    p: 4,
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    transition: 'transform 0.3s ease-in-out',
+                    '&:hover': {
+                        transform: 'translateY(-10px)',
+                    },
+                    ...(isPopular && {
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            inset: -1,
+                            padding: '1px',
+                            background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                            WebkitMaskComposite: 'xor',
+                            maskComposite: 'exclude',
+                        }
+                    })
+                }}
+            >
+                {isPopular && (
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: 20,
+                            right: 20,
+                            color: '#4F9CF9',
+                        }}
+                    >
+                        <Star />
+                    </Box>
+                )}
+                <Typography variant="h3" component="h2"
+                    sx={{
+                        mb: 2,
+                        color: isPopular ? '#4F9CF9' : 'white',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    {tier.name}
                 </Typography>
-                <Typography variant="h4" component="p" gutterBottom fontWeight="bold">
-                    {price}
+                <Typography variant="body1" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.7)' }}>
+                    {tier.description}
+                </Typography>
+                <Typography variant="h4" sx={{ mb: 4, color: 'white' }}>
+                    ${tier.price}
+                    <Typography component="span" variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        /month
+                    </Typography>
                 </Typography>
                 <Box sx={{ flexGrow: 1 }}>
-                    {features.map((feature, index) => (
-                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <CheckIcon sx={{ mr: 1, color: isPremium ? '#ffffff' : theme.palette.primary.main }} />
-                            <Typography variant="body1">{feature}</Typography>
+                    {tier.features.map((feature, index) => (
+                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <Check sx={{ mr: 1, color: '#4F9CF9' }} />
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                {feature}
+                            </Typography>
                         </Box>
                     ))}
                 </Box>
                 <Button
-                    component={RouterLink}
-                    to="/signup"
-                    variant={isPremium ? "contained" : "outlined"}
-                    color={isPremium ? "secondary" : "primary"}
-                    sx={{ mt: 2, borderRadius: '50px' }}
+                    variant="contained"
+                    fullWidth
+                    sx={{
+                        mt: 4,
+                        background: isPopular ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)' : 'rgba(255, 255, 255, 0.1)',
+                        color: 'white',
+                        py: 1.5,
+                        borderRadius: '50px',
+                        '&:hover': {
+                            background: isPopular ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)' : 'rgba(255, 255, 255, 0.2)',
+                            transform: 'scale(1.05)',
+                            boxShadow: isPopular ? '0 6px 20px rgba(79, 156, 249, 0.4)' : 'none',
+                        },
+                    }}
                 >
-                    {buttonText}
+                    Get Started
                 </Button>
-            </Paper>
+            </Box>
         </motion.div>
     );
 };
@@ -51,182 +114,178 @@ const PricingTier = ({ title, price, features, buttonText, isPremium }) => {
 function PricingPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
 
-    const pricingTiers = [
+    const tiers = [
         {
-            title: "Free",
-            price: "$0/month",
+            name: 'Free',
+            price: '0',
+            description: 'Perfect for getting started',
             features: [
-                "Up to 2 Brdges",
-                "Basic Customization",
-                "Limited Analytics",
-                "Standard Support"
+                'Up to 2 Brdges',
+                'Basic Customization',
+                'Limited Analytics',
+                'Standard Support'
             ],
-            buttonText: "Try for Free"
         },
         {
-            title: "Standard",
-            price: "$29/month",
+            name: 'Standard',
+            price: '29',
+            description: 'For growing businesses',
             features: [
-                "Up to 20 Brdges",
-                "Basic Customization",
-                "Basic Analytics",
-                "Standard Support"
+                'Up to 20 Brdges',
+                'Basic Customization',
+                'Basic Analytics',
+                'Standard Support'
             ],
-            buttonText: "Upgrade to Standard"
         },
         {
-            title: "Premium",
-            price: "$59/month",
+            name: 'Premium',
+            price: '59',
+            description: 'For teams and enterprises',
             features: [
-                "Unlimited Brdges",
-                "Full Customization",
-                "Advanced Analytics",
-                "Priority Support"
+                'Unlimited Brdges',
+                'Full Customization',
+                'Advanced Analytics',
+                'Priority Support'
             ],
-            buttonText: "Upgrade to Premium",
-            isPremium: true
-        }
-    ];
-
-    const useCases = [
-        {
-            icon: <SchoolIcon fontSize="large" />,
-            title: "Effortless Onboarding",
-            description: "Turn training documents into engaging, guided sessions that new hires can access anytime. Make onboarding fast, consistent, and easy to follow.",
-            subheading: "Streamline training, save time, and ensure consistency."
         },
-        {
-            icon: <TrendingUpIcon fontSize="large" />,
-            title: "Automated Sales Pitches",
-            description: "Deliver the perfect pitch every time with AI presenters tailored to your prospect's needs. Reach more clients without being tied to the screen.",
-            subheading: "Boost sales efficiency and reach more prospects."
-        },
-        {
-            icon: <MonetizationOnIcon fontSize="large" />,
-            title: "Profitable Online Courses",
-            description: "Monetize your expertise with interactive, AI-led courses. Share knowledge, increase your reach, and generate revenue by turning content into immersive experiences.",
-            subheading: "Scale your knowledge and increase revenue streams."
-        }
     ];
 
     return (
-        <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6, md: 8 } }}>
-            <Box sx={{ my: 8 }}>
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <Typography variant="h2" component="h1" align="center" sx={{
-                        fontWeight: 700,
-                        color: theme.palette.primary.main,
-                        mb: 4,
-                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                        lineHeight: 1.2
-                    }}>
-                        Choose Your Plan
-                    </Typography>
-                    <Typography variant="h6" component="p" align="center" sx={{ mb: 6, color: theme.palette.text.secondary }}>
-                        Select the perfect plan for your needs
-                    </Typography>
-                </motion.div>
+        <ParallaxProvider>
+            <Box sx={{
+                background: 'linear-gradient(180deg, #000B1F 0%, #0041C2 100%)',
+                py: { xs: 8, md: 12 },
+                minHeight: '100vh',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '10%',
+                    left: '-10%',
+                    width: '500px',
+                    height: '500px',
+                    background: 'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    filter: 'blur(60px)',
+                    animation: 'float 15s infinite alternate'
+                },
+                '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: '10%',
+                    right: '-10%',
+                    width: '600px',
+                    height: '600px',
+                    background: 'radial-gradient(circle, rgba(0,65,194,0.15) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    filter: 'blur(60px)',
+                    animation: 'float 20s infinite alternate-reverse'
+                }
+            }}>
+                {/* Geometric shapes */}
+                <Box sx={{
+                    position: 'absolute',
+                    top: '15%',
+                    left: '5%',
+                    width: '300px',
+                    height: '300px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '50%',
+                    animation: 'rotate 20s linear infinite',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        inset: -1,
+                        borderRadius: 'inherit',
+                        padding: '1px',
+                        background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude'
+                    }
+                }} />
 
-                <Box display="flex" flexWrap="wrap" gap={4}>
-                    {pricingTiers.map((tier, index) => (
-                        <Box key={index} flexGrow={1} flexBasis={{ xs: '100%', md: '30%' }}>
-                            <PricingTier {...tier} />
-                        </Box>
-                    ))}
-                </Box>
-
-                <Box sx={{ mt: 12, mb: 8 }}>
+                <Container maxWidth="lg" ref={ref}>
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: -50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <Typography variant="h2" component="h2" align="center" sx={{
-                            fontWeight: 700,
-                            color: theme.palette.primary.main,
-                            mb: 3,
-                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                            background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                        }}>
-                            Create Your First AI Presenter
+                        <Typography
+                            variant={isMobile ? "h3" : "h2"}
+                            component="h1"
+                            align="center"
+                            sx={{
+                                mb: { xs: 4, md: 6 },
+                                fontWeight: 'bold',
+                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                                background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-16px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '80px',
+                                    height: '4px',
+                                    background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
+                                    borderRadius: '2px'
+                                }
+                            }}
+                        >
+                            Simple, Transparent Pricing
                         </Typography>
-                        <Typography variant="h6" component="p" align="center" sx={{ mb: 6, color: theme.palette.text.secondary, maxWidth: '800px', mx: 'auto' }}>
-                            With Brdge AI, transform everyday documents into powerful, interactive presentations. Save time, scale your outreach, and drive engagement like never before.
+                        <Typography
+                            variant="h5"
+                            align="center"
+                            sx={{
+                                mb: 8,
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                maxWidth: '800px',
+                                mx: 'auto'
+                            }}
+                        >
+                            Choose the perfect plan for your needs. Scale as you grow.
                         </Typography>
                     </motion.div>
 
-                    <Box sx={{ mb: 8 }}>
-                        {useCases.map((useCase, index) => (
-                            <React.Fragment key={index}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                                >
-                                    <Box sx={{
-                                        display: 'flex',
-                                        alignItems: 'flex-start',
-                                        p: 3,
-                                        mb: 3,
-                                        backgroundColor: `rgba(0, 180, 219, 0.05)`,
-                                        borderRadius: '16px',
-                                    }}>
-                                        <Box sx={{ color: theme.palette.primary.main, mr: 3, mt: 1 }}>
-                                            {useCase.icon}
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="h5" component="h3" gutterBottom fontWeight="bold">
-                                                {useCase.title}
-                                            </Typography>
-                                            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-                                                {useCase.subheading}
-                                            </Typography>
-                                            <Typography variant="body1">
-                                                {useCase.description}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </motion.div>
-                                {index < useCases.length - 1 && (
-                                    <Divider sx={{ my: 3 }} />
-                                )}
-                            </React.Fragment>
+                    <Grid container spacing={4}>
+                        {tiers.map((tier, index) => (
+                            <Grid item xs={12} md={4} key={tier.name}>
+                                <PricingTier
+                                    tier={tier}
+                                    isPopular={index === 1}
+                                    delay={index * 0.2}
+                                />
+                            </Grid>
                         ))}
-                    </Box>
+                    </Grid>
+                </Container>
 
-                    <Box sx={{ textAlign: 'center' }}>
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                                component={RouterLink}
-                                to="/signup"
-                                variant="contained"
-                                color="primary"
-                                size="large"
-                                sx={{
-                                    py: 2,
-                                    px: 6,
-                                    fontSize: '1.2rem',
-                                    borderRadius: '50px',
-                                    background: 'linear-gradient(45deg, #00B4DB 30%, #0083B0 90%)',
-                                    '&:hover': {
-                                        background: 'linear-gradient(45deg, #00A0C2 30%, #006F94 90%)',
-                                    },
-                                }}
-                            >
-                                Get Started Free
-                            </Button>
-                        </motion.div>
-                    </Box>
-                </Box>
+                <style>
+                    {`
+                        @keyframes float {
+                            0% { transform: translateY(0px); }
+                            50% { transform: translateY(-20px); }
+                            100% { transform: translateY(0px); }
+                        }
+                        @keyframes rotate {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    `}
+                </style>
             </Box>
-        </Container>
+        </ParallaxProvider>
     );
 }
 
