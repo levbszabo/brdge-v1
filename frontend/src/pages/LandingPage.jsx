@@ -685,7 +685,17 @@ const HowItWorksSection = () => {
             position: 'relative',
             background: 'linear-gradient(180deg, #00B4DB 0%, #0041C2 100%)',
             mt: -1,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '100px',
+                background: 'radial-gradient(50% 50% at 50% 0%, rgba(0,255,204,0.15) 0%, transparent 100%)',
+                pointerEvents: 'none'
+            }
         }}>
             <Container maxWidth="lg" ref={ref}>
                 <motion.div
@@ -697,10 +707,10 @@ const HowItWorksSection = () => {
                         position: 'relative',
                         bgcolor: 'rgba(255, 255, 255, 0.05)',
                         backdropFilter: 'blur(20px)',
-                        borderRadius: '40px',
+                        borderRadius: '60px',
                         p: { xs: 4, md: 6 },
                         overflow: 'hidden',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255,255,255,0.1)',
                         boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
                         '&::before': {
                             content: '""',
@@ -750,7 +760,7 @@ const HowItWorksSection = () => {
                                         alignItems: 'center',
                                         gap: 4,
                                         p: 4,
-                                        borderRadius: '30px',
+                                        borderRadius: '40px',
                                         bgcolor: 'rgba(255, 255, 255, 0.03)',
                                         backdropFilter: 'blur(10px)',
                                         border: '1px solid rgba(255, 255, 255, 0.05)',
@@ -779,7 +789,7 @@ const HowItWorksSection = () => {
                                             sx={{
                                                 width: 80,
                                                 height: 80,
-                                                borderRadius: '24px',
+                                                borderRadius: '30px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
@@ -877,7 +887,7 @@ const FinalCTA = () => {
                         position: 'relative',
                         bgcolor: 'rgba(255, 255, 255, 0.03)',
                         backdropFilter: 'blur(20px)',
-                        borderRadius: '40px',
+                        borderRadius: '60px',
                         p: { xs: 6, md: 8 },
                         textAlign: 'center',
                         overflow: 'hidden',
@@ -887,7 +897,7 @@ const FinalCTA = () => {
                             content: '""',
                             position: 'absolute',
                             inset: 0,
-                            background: 'radial-gradient(circle at 50% 0%, rgba(0,255,204,0.1), transparent 70%)',
+                            background: 'radial-gradient(70% 70% at 50% 0%, rgba(0,255,204,0.15), transparent 70%)',
                             opacity: 0.5
                         }
                     }}>
@@ -954,7 +964,7 @@ const FinalCTA = () => {
                                         '&:hover': {
                                             bgcolor: '#00ffcc',
                                             transform: 'translateY(-3px)',
-                                            boxShadow: '0 10px 20px rgba(0,255,204,0.2)',
+                                            boxShadow: '0 10px 30px rgba(0,255,204,0.3)',
                                             '&::after': {
                                                 transform: 'translateX(100%)'
                                             }
@@ -993,6 +1003,7 @@ const FinalCTA = () => {
                                             borderColor: '#00ffcc',
                                             transform: 'translateY(-3px)',
                                             bgcolor: 'rgba(0,255,204,0.1)',
+                                            boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
                                             '&::after': {
                                                 transform: 'translateX(100%)'
                                             }
