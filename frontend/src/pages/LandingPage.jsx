@@ -13,7 +13,7 @@ import {
     AutoAwesome, Speed, Mic, Description, VolumeUp, Share,
     Handshake, TrendingUp, Devices, MenuBook, ArrowDownward,
     Psychology, Link as LinkIcon, Analytics, BusinessCenter,
-    Laptop, Campaign
+    Laptop, Campaign, PlayArrow
 } from '@mui/icons-material';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
@@ -101,6 +101,31 @@ const IntroducingBrdgeAI = () => {
         <Box sx={{
             py: { xs: 8, md: 16 },
             position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '10%',
+                left: '-10%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(0,255,204,0.08) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 15s infinite alternate'
+            },
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '10%',
+                right: '-10%',
+                width: '700px',
+                height: '700px',
+                background: 'radial-gradient(circle, rgba(0,180,219,0.08) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 20s infinite alternate-reverse'
+            }
         }}>
             <Container maxWidth="lg" ref={ref}>
                 <motion.div
@@ -113,8 +138,20 @@ const IntroducingBrdgeAI = () => {
                         mb: 12,
                         display: 'flex',
                         flexDirection: 'column',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        position: 'relative'
                     }}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '-50%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '200px',
+                            height: '200px',
+                            background: 'linear-gradient(45deg, rgba(0,255,204,0.1), rgba(0,180,219,0.1))',
+                            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                            animation: 'rotate 20s linear infinite'
+                        }} />
                         <Button
                             sx={{
                                 mb: 3,
@@ -124,7 +161,24 @@ const IntroducingBrdgeAI = () => {
                                 px: 3,
                                 py: 1,
                                 textTransform: 'none',
-                                '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&:hover': {
+                                    bgcolor: 'rgba(255,255,255,0.15)',
+                                    '&::after': {
+                                        transform: 'translateX(100%)'
+                                    }
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-100%',
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                    transition: 'transform 0.5s',
+                                }
                             }}
                         >
                             Why Brdge AI?
@@ -150,7 +204,14 @@ const IntroducingBrdgeAI = () => {
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center'
+                                    justifyContent: 'center',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: 0,
+                                        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
+                                        opacity: 0.5
+                                    }
                                 }}>
                                     <Box sx={{
                                         position: 'absolute',
@@ -159,11 +220,55 @@ const IntroducingBrdgeAI = () => {
                                         background: 'radial-gradient(circle at center, rgba(0,255,204,0.15) 0%, transparent 70%)',
                                         animation: 'pulse 3s infinite'
                                     }} />
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        top: '20%',
+                                        left: '5%',
+                                        width: '300px',
+                                        height: '300px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '50%',
+                                        animation: 'rotate 20s linear infinite',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            inset: -1,
+                                            borderRadius: 'inherit',
+                                            padding: '1px',
+                                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                            WebkitMaskComposite: 'xor',
+                                            maskComposite: 'exclude'
+                                        }
+                                    }} />
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        bottom: '15%',
+                                        right: '10%',
+                                        width: '200px',
+                                        height: '200px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '50%',
+                                        animation: 'rotate 15s linear infinite reverse',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            inset: -1,
+                                            borderRadius: 'inherit',
+                                            padding: '1px',
+                                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                            WebkitMaskComposite: 'xor',
+                                            maskComposite: 'exclude'
+                                        }
+                                    }} />
                                     <SmartToyIcon sx={{
                                         fontSize: '120px',
                                         color: '#00ffcc',
                                         filter: 'drop-shadow(0 0 20px rgba(0,255,204,0.5))',
-                                        animation: 'float 3s ease-in-out infinite'
+                                        animation: 'float 3s ease-in-out infinite',
+                                        position: 'relative',
+                                        zIndex: 1
                                     }} />
                                 </Box>
                             </motion.div>
@@ -181,7 +286,18 @@ const IntroducingBrdgeAI = () => {
                                     mb: 4,
                                     background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
                                     WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent'
+                                    WebkitTextFillColor: 'transparent',
+                                    position: 'relative',
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: '-10px',
+                                        left: 0,
+                                        width: '60px',
+                                        height: '4px',
+                                        background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                                        borderRadius: '2px'
+                                    }
                                 }}>
                                     Redefining Knowledge Sharing
                                 </Typography>
@@ -198,11 +314,22 @@ const IntroducingBrdgeAI = () => {
                                     mb: 6
                                 }}>
                                     <Box sx={{
-                                        p: 2,
-                                        borderRadius: '15px',
+                                        p: 3,
+                                        borderRadius: '20px',
                                         bgcolor: 'rgba(255,255,255,0.05)',
                                         backdropFilter: 'blur(10px)',
                                         border: '1px solid rgba(255,255,255,0.1)',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                                        }
                                     }}>
                                         <Typography variant="h4" sx={{ color: '#00ffcc', mb: 1 }}>
                                             Minutes
@@ -212,11 +339,22 @@ const IntroducingBrdgeAI = () => {
                                         </Typography>
                                     </Box>
                                     <Box sx={{
-                                        p: 2,
-                                        borderRadius: '15px',
+                                        p: 3,
+                                        borderRadius: '20px',
                                         bgcolor: 'rgba(255,255,255,0.05)',
                                         backdropFilter: 'blur(10px)',
                                         border: '1px solid rgba(255,255,255,0.1)',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                                        }
                                     }}>
                                         <Typography variant="h4" sx={{ color: '#00ffcc', mb: 1 }}>
                                             24/7
@@ -236,8 +374,23 @@ const IntroducingBrdgeAI = () => {
                                         px: 4,
                                         py: 2,
                                         borderRadius: '100px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
                                         '&:hover': {
-                                            bgcolor: '#00e6b8'
+                                            bgcolor: '#00e6b8',
+                                            '&::after': {
+                                                transform: 'translateX(100%)'
+                                            }
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                                            transition: 'transform 0.5s'
                                         }
                                     }}
                                 >
@@ -261,6 +414,10 @@ const IntroducingBrdgeAI = () => {
                         0% { transform: translateY(0px); }
                         50% { transform: translateY(-20px); }
                         100% { transform: translateY(0px); }
+                    }
+                    @keyframes rotate {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
                     }
                 `}
             </style>
@@ -527,7 +684,8 @@ const HowItWorksSection = () => {
             py: { xs: 8, sm: 12, md: 16 },
             position: 'relative',
             background: 'linear-gradient(180deg, #00B4DB 0%, #0041C2 100%)',
-            mt: -1
+            mt: -1,
+            overflow: 'hidden'
         }}>
             <Container maxWidth="lg" ref={ref}>
                 <motion.div
@@ -535,179 +693,353 @@ const HowItWorksSection = () => {
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                 >
-                    <Box sx={{ mb: 8, textAlign: 'center' }}>
-                        <Typography variant="h2" sx={{
+                    <Box sx={{
+                        position: 'relative',
+                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '40px',
+                        p: { xs: 4, md: 6 },
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '1px',
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                        }
+                    }}>
+                        <Typography variant="h2" align="center" sx={{
                             fontSize: { xs: '2.5rem', md: '3.5rem' },
                             fontWeight: 600,
                             color: 'white',
-                            mb: 2
+                            mb: 8,
+                            position: 'relative',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: '-16px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '80px',
+                                height: '4px',
+                                background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                                borderRadius: '2px'
+                            }
                         }}>
                             How Brdge AI Works
                         </Typography>
-                    </Box>
 
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 4
-                    }}>
-                        {steps.map((step, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-                                animate={inView ? { opacity: 1, x: 0 } : {}}
-                                transition={{ delay: index * 0.2, duration: 0.8 }}
-                            >
-                                <Paper
-                                    elevation={0}
-                                    sx={{
-                                        bgcolor: 'rgba(255, 255, 255, 0.05)',
-                                        backdropFilter: 'blur(10px)',
-                                        borderRadius: '20px',
-                                        overflow: 'hidden',
-                                        position: 'relative',
-                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                        transition: 'transform 0.3s ease-in-out',
-                                        '&:hover': {
-                                            transform: 'translateY(-5px)',
-                                            '& .step-icon': {
-                                                transform: 'scale(1.1) rotate(10deg)',
-                                            }
-                                        }
-                                    }}
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4
+                        }}>
+                            {steps.map((step, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+                                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                                    transition={{ delay: index * 0.2, duration: 0.8 }}
                                 >
                                     <Box sx={{
-                                        p: 4,
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: 4,
+                                        p: 4,
+                                        borderRadius: '30px',
+                                        bgcolor: 'rgba(255, 255, 255, 0.03)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                                        transition: 'all 0.3s ease-in-out',
                                         position: 'relative',
-                                        zIndex: 1
+                                        overflow: 'hidden',
+                                        '&:hover': {
+                                            transform: 'translateY(-5px)',
+                                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                            '& .step-icon': {
+                                                transform: 'scale(1.1)',
+                                            }
+                                        },
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
+                                        }
                                     }}>
                                         <Box
                                             className="step-icon"
                                             sx={{
                                                 width: 80,
                                                 height: 80,
-                                                borderRadius: '50%',
+                                                borderRadius: '24px',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                bgcolor: 'rgba(255, 255, 255, 0.05)',
                                                 color: step.color,
                                                 transition: 'transform 0.3s ease-in-out',
-                                                flexShrink: 0
+                                                position: 'relative',
+                                                '&::after': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    inset: -1,
+                                                    borderRadius: 'inherit',
+                                                    padding: '1px',
+                                                    background: `linear-gradient(45deg, transparent, ${step.color}40)`,
+                                                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                                    WebkitMaskComposite: 'xor',
+                                                    maskComposite: 'exclude'
+                                                }
                                             }}
                                         >
                                             {step.icon}
                                         </Box>
-                                        <Box>
-                                            <Typography
-                                                variant="h5"
-                                                sx={{
-                                                    color: step.color,
-                                                    fontWeight: 600,
-                                                    mb: 1
-                                                }}
-                                            >
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography variant="h5" sx={{
+                                                color: step.color,
+                                                fontWeight: 600,
+                                                mb: 1,
+                                                fontSize: { xs: '1.25rem', md: '1.5rem' }
+                                            }}>
                                                 {step.title}
                                             </Typography>
-                                            <Typography
-                                                variant="body1"
-                                                sx={{
-                                                    color: 'rgba(255, 255, 255, 0.8)'
-                                                }}
-                                            >
+                                            <Typography variant="body1" sx={{
+                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                fontSize: { xs: '0.9rem', md: '1rem' },
+                                                lineHeight: 1.6
+                                            }}>
                                                 {step.description}
                                             </Typography>
                                         </Box>
                                     </Box>
-                                    <Box
-                                        sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            right: 0,
-                                            width: '150px',
-                                            height: '150px',
-                                            background: `radial-gradient(circle at 100% 0%, ${step.color}20 0%, transparent 70%)`,
-                                            opacity: 0.5
-                                        }}
-                                    />
-                                </Paper>
-                            </motion.div>
-                        ))}
+                                </motion.div>
+                            ))}
+                        </Box>
                     </Box>
                 </motion.div>
             </Container>
+
+            {/* Background Elements */}
+            <Box sx={{
+                position: 'absolute',
+                top: '10%',
+                left: '-10%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0,255,204,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 15s infinite alternate'
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: '10%',
+                right: '-10%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(0,180,219,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 20s infinite alternate-reverse'
+            }} />
         </Box>
     );
 };
 
 // Update the Final Call to Action section
 const FinalCTA = () => {
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
     return (
         <Box sx={{
             my: { xs: 8, md: 16 },
-            textAlign: 'center',
-            py: { xs: 6, md: 8 },
-            px: { xs: 2, md: 4 },
-            background: 'rgba(0, 11, 31, 0.95)',
-            borderRadius: { xs: '24px', md: 4 },
-            boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.3)',
             position: 'relative',
-            overflow: 'hidden',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '5px',
-                background: 'linear-gradient(90deg, #00B4DB, #0041C2)',
-            }
+            overflow: 'hidden'
         }}>
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Typography variant="h3" component="h2" gutterBottom sx={{
-                    fontWeight: 'bold',
-                    mb: { xs: 2, md: 4 },
-                    color: 'white',
-                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-                }}>
-                    Ready to <span style={{ color: '#00ffcc' }}>Transform</span> Your Knowledge Sharing?
-                </Typography>
-                <Typography variant="h6" component="p" gutterBottom sx={{
-                    mb: { xs: 3, md: 6 },
-                    maxWidth: '800px',
-                    mx: 'auto',
-                    color: 'rgba(255, 255, 255, 0.9)',
-                    fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
-                }}>
-                    Join us today and revolutionize the way you share and interact with information.
-                </Typography>
-                <Button
-                    component={Link}
-                    to="/signup"
-                    variant="contained"
-                    size="large"
-                    endIcon={<ArrowForward />}
-                    sx={{
-                        py: { xs: 1.5, md: 2 },
-                        px: { xs: 4, md: 6 },
-                        fontSize: { xs: '1rem', md: '1.2rem' },
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        color: '#fff',
-                        borderRadius: '50px',
-                        '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                        },
-                        transition: 'all 0.3s ease-in-out',
-                    }}
+            <Container maxWidth="lg" ref={ref}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8 }}
                 >
-                    Sign Up For Free
-                </Button>
-            </motion.div>
+                    <Box sx={{
+                        position: 'relative',
+                        bgcolor: 'rgba(255, 255, 255, 0.03)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '40px',
+                        p: { xs: 6, md: 8 },
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'radial-gradient(circle at 50% 0%, rgba(0,255,204,0.1), transparent 70%)',
+                            opacity: 0.5
+                        }
+                    }}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '1px',
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                        }} />
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.2, duration: 0.8 }}
+                        >
+                            <Typography variant="h2" sx={{
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontWeight: 600,
+                                color: 'white',
+                                mb: 3,
+                                background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>
+                                Ready to Transform Your Knowledge Sharing?
+                            </Typography>
+
+                            <Typography variant="h5" sx={{
+                                color: 'rgba(255,255,255,0.8)',
+                                mb: 6,
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                lineHeight: 1.6,
+                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
+                            }}>
+                                Join us today and revolutionize the way you share and interact with information.
+                            </Typography>
+
+                            <Box sx={{
+                                display: 'flex',
+                                gap: 3,
+                                justifyContent: 'center',
+                                flexWrap: 'wrap'
+                            }}>
+                                <Button
+                                    component={Link}
+                                    to="/signup"
+                                    variant="contained"
+                                    size="large"
+                                    endIcon={<ArrowForward />}
+                                    sx={{
+                                        bgcolor: '#00ffcc',
+                                        color: '#000B1F',
+                                        px: { xs: 4, md: 6 },
+                                        py: { xs: 1.5, md: 2 },
+                                        fontSize: { xs: '1rem', md: '1.1rem' },
+                                        fontWeight: 600,
+                                        borderRadius: '100px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease-in-out',
+                                        '&:hover': {
+                                            bgcolor: '#00ffcc',
+                                            transform: 'translateY(-3px)',
+                                            boxShadow: '0 10px 20px rgba(0,255,204,0.2)',
+                                            '&::after': {
+                                                transform: 'translateX(100%)'
+                                            }
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                                            transition: 'transform 0.5s'
+                                        }
+                                    }}
+                                >
+                                    Get Started Free
+                                </Button>
+
+                                <Button
+                                    variant="outlined"
+                                    size="large"
+                                    endIcon={<PlayArrow />}
+                                    sx={{
+                                        color: 'white',
+                                        borderColor: 'rgba(255,255,255,0.2)',
+                                        px: { xs: 4, md: 6 },
+                                        py: { xs: 1.5, md: 2 },
+                                        fontSize: { xs: '1rem', md: '1.1rem' },
+                                        fontWeight: 600,
+                                        borderRadius: '100px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease-in-out',
+                                        '&:hover': {
+                                            borderColor: '#00ffcc',
+                                            transform: 'translateY(-3px)',
+                                            bgcolor: 'rgba(0,255,204,0.1)',
+                                            '&::after': {
+                                                transform: 'translateX(100%)'
+                                            }
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                            transition: 'transform 0.5s'
+                                        }
+                                    }}
+                                >
+                                    Watch Demo
+                                </Button>
+                            </Box>
+                        </motion.div>
+                    </Box>
+                </motion.div>
+            </Container>
+
+            {/* Background Elements */}
+            <Box sx={{
+                position: 'absolute',
+                top: '-20%',
+                left: '-10%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0,255,204,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 15s infinite alternate'
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: '-20%',
+                right: '-10%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(0,180,219,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 20s infinite alternate-reverse'
+            }} />
         </Box>
     );
 };
