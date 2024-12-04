@@ -212,16 +212,17 @@ function DemoPage() {
                         <Typography
                             variant={isMobile ? "h3" : "h2"}
                             component="h1"
-                            gutterBottom
                             align="center"
                             sx={{
                                 mb: { xs: 4, md: 6 },
-                                fontWeight: 'bold',
-                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                                background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
+                                fontWeight: '600',
+                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                color: 'white',
+                                textTransform: 'none',
+                                letterSpacing: '-0.02em',
+                                lineHeight: 1.1,
                                 position: 'relative',
+                                textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
@@ -230,8 +231,9 @@ function DemoPage() {
                                     transform: 'translateX(-50%)',
                                     width: '80px',
                                     height: '4px',
-                                    background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
-                                    borderRadius: '2px'
+                                    background: 'rgba(255, 255, 255, 0.5)',
+                                    borderRadius: '2px',
+                                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
                                 }
                             }}
                         >
@@ -244,10 +246,14 @@ function DemoPage() {
                                 mb: 8,
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '800px',
-                                mx: 'auto'
+                                mx: 'auto',
+                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontWeight: '400',
+                                letterSpacing: '0.01em',
+                                lineHeight: 1.6
                             }}
                         >
-                            AI-Narrated Walkthroughs Created in Minutes. Transform your content into engaging, interactive experiences with just a few clicks.
+                            AI-narrated walkthroughs created in minutes. Transform your content into engaging, interactive experiences with just a few clicks.
                         </Typography>
                     </motion.div>
 

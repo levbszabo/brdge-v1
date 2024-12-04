@@ -61,7 +61,6 @@ function Header() {
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
-            { text: 'About', link: '/about' },
             { text: 'Demos', link: '/demos' },
             { text: 'Pricing', link: '/pricing' },
             { text: 'Login', link: '/login' },

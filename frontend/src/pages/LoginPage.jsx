@@ -177,30 +177,29 @@ function LoginPage() {
                             align="center"
                             sx={{
                                 mb: { xs: 3, md: 4 },
-                                fontWeight: '700',
-                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                                background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                position: 'relative',
+                                fontWeight: '600',
+                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                color: 'white',
                                 textTransform: 'none',
                                 letterSpacing: '-0.02em',
-                                filter: 'drop-shadow(0 0 20px rgba(79, 156, 249, 0.3))',
+                                lineHeight: 1.1,
+                                position: 'relative',
+                                textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
-                                    bottom: '-12px',
+                                    bottom: '-16px',
                                     left: '50%',
                                     transform: 'translateX(-50%)',
-                                    width: '60px',
-                                    height: '3px',
-                                    background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
+                                    width: '80px',
+                                    height: '4px',
+                                    background: 'rgba(255, 255, 255, 0.5)',
                                     borderRadius: '2px',
-                                    boxShadow: '0 0 20px rgba(79, 156, 249, 0.5)'
+                                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
                                 }
                             }}
                         >
-                            Welcome back
+                            Welcome Back
                         </Typography>
                         <Typography
                             variant="h6"
@@ -210,10 +209,10 @@ function LoginPage() {
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '300px',
                                 mx: 'auto',
+                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
                                 fontWeight: '400',
-                                lineHeight: 1.5,
-                                textTransform: 'none',
-                                letterSpacing: '0.02em'
+                                letterSpacing: '0.01em',
+                                lineHeight: 1.6
                             }}
                         >
                             Sign in to continue to Brdge AI

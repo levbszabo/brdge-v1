@@ -158,11 +158,11 @@ function PricingPage() {
     return (
         <ParallaxProvider>
             <Box sx={{
-                background: 'linear-gradient(180deg, #000B1F 0%, #0041C2 100%)',
-                py: { xs: 8, md: 12 },
                 minHeight: '100vh',
+                background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
                 position: 'relative',
                 overflow: 'hidden',
+                py: { xs: 8, md: 12 },
                 '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -223,12 +223,14 @@ function PricingPage() {
                             align="center"
                             sx={{
                                 mb: { xs: 4, md: 6 },
-                                fontWeight: 'bold',
-                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                                background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
+                                fontWeight: '600',
+                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                color: 'white',
+                                textTransform: 'none',
+                                letterSpacing: '-0.02em',
+                                lineHeight: 1.1,
                                 position: 'relative',
+                                textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
@@ -237,12 +239,13 @@ function PricingPage() {
                                     transform: 'translateX(-50%)',
                                     width: '80px',
                                     height: '4px',
-                                    background: 'linear-gradient(90deg, #4F9CF9, #00B4DB)',
-                                    borderRadius: '2px'
+                                    background: 'rgba(255, 255, 255, 0.5)',
+                                    borderRadius: '2px',
+                                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
                                 }
                             }}
                         >
-                            Simple, Transparent Pricing
+                            Choose Your Plan
                         </Typography>
                         <Typography
                             variant="h5"
@@ -251,10 +254,14 @@ function PricingPage() {
                                 mb: 8,
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '800px',
-                                mx: 'auto'
+                                mx: 'auto',
+                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontWeight: '400',
+                                letterSpacing: '0.01em',
+                                lineHeight: 1.6
                             }}
                         >
-                            Choose the perfect plan for your needs. Scale as you grow.
+                            Select the perfect plan for your needs
                         </Typography>
                     </motion.div>
 
