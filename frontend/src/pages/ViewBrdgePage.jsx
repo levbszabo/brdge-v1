@@ -1,40 +1,58 @@
 import React from 'react';
+import { Box } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
 import AgentsPlayground from '../components/AgentsPlayground';
 
 function ViewBrdgePage() {
-    const { id, publicId } = useParams();
-    const brdgeId = id || publicId;
-
-    if (!brdgeId) {
-        return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-                <Typography color="error">No Brdge ID provided</Typography>
-            </Box>
-        );
-    }
+    const { id } = useParams();
 
     return (
         <Box sx={{
-            height: '100vh',
-            width: '100vw',
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: '#121212'
+            height: '100vh',
+            width: '100vw',
+            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+            position: 'relative',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '5%',
+                left: '-5%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 20s infinite alternate',
+                zIndex: 0
+            },
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '5%',
+                right: '-5%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 25s infinite alternate-reverse',
+                zIndex: 0
+            }
         }}>
             <Box sx={{
-                flexGrow: 1,
+                height: '64px',
+                flexShrink: 0
+            }} />
+
+            <Box sx={{
+                flex: 1,
                 position: 'relative',
-                '& > *': {
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0
-                }
+                overflow: 'hidden',
+                zIndex: 1
             }}>
-                <AgentsPlayground brdgeId={brdgeId} agentType="view" />
+                <AgentsPlayground brdgeId={id} agentType="view" />
             </Box>
         </Box>
     );
