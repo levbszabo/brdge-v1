@@ -284,9 +284,10 @@ const IntroducingBrdgeAI = () => {
                                 <Typography variant="h3" sx={{
                                     fontWeight: 600,
                                     mb: 4,
-                                    background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                                    background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent',
+                                    textShadow: '0 2px 10px rgba(255,255,255,0.3)',
                                     position: 'relative',
                                     '&::after': {
                                         content: '""',
@@ -295,16 +296,18 @@ const IntroducingBrdgeAI = () => {
                                         left: 0,
                                         width: '60px',
                                         height: '4px',
-                                        background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
-                                        borderRadius: '2px'
+                                        background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
+                                        borderRadius: '2px',
+                                        boxShadow: '0 2px 10px rgba(255,255,255,0.2)'
                                     }
                                 }}>
                                     Redefining Knowledge Sharing
                                 </Typography>
                                 <Typography variant="h6" sx={{
-                                    color: 'rgba(255,255,255,0.9)',
+                                    color: '#FFFFFF',
                                     mb: 4,
-                                    lineHeight: 1.8
+                                    lineHeight: 1.8,
+                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)'
                                 }}>
                                     Create personalized AI representatives that deliver your message with precision and engage your audience in real-time conversations.
                                 </Typography>
@@ -316,11 +319,12 @@ const IntroducingBrdgeAI = () => {
                                     <Box sx={{
                                         p: 3,
                                         borderRadius: '20px',
-                                        bgcolor: 'rgba(255,255,255,0.05)',
+                                        bgcolor: 'rgba(255,255,255,0.1)',
                                         backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
                                         position: 'relative',
                                         overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
                                         '&::before': {
                                             content: '""',
                                             position: 'absolute',
@@ -328,24 +332,25 @@ const IntroducingBrdgeAI = () => {
                                             left: 0,
                                             right: 0,
                                             height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
                                         }
                                     }}>
-                                        <Typography variant="h4" sx={{ color: '#00ffcc', mb: 1 }}>
+                                        <Typography variant="h4" sx={{ color: '#FFFFFF', mb: 1, textShadow: '0 2px 10px rgba(255,255,255,0.2)' }}>
                                             Minutes
                                         </Typography>
-                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                                             Setup Time
                                         </Typography>
                                     </Box>
                                     <Box sx={{
                                         p: 3,
                                         borderRadius: '20px',
-                                        bgcolor: 'rgba(255,255,255,0.05)',
+                                        bgcolor: 'rgba(255,255,255,0.1)',
                                         backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
                                         position: 'relative',
                                         overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
                                         '&::before': {
                                             content: '""',
                                             position: 'absolute',
@@ -353,13 +358,13 @@ const IntroducingBrdgeAI = () => {
                                             left: 0,
                                             right: 0,
                                             height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
                                         }
                                     }}>
-                                        <Typography variant="h4" sx={{ color: '#00ffcc', mb: 1 }}>
+                                        <Typography variant="h4" sx={{ color: '#FFFFFF', mb: 1, textShadow: '0 2px 10px rgba(255,255,255,0.2)' }}>
                                             24/7
                                         </Typography>
-                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
                                             Availability
                                         </Typography>
                                     </Box>
@@ -369,15 +374,17 @@ const IntroducingBrdgeAI = () => {
                                     size="large"
                                     endIcon={<ArrowForward />}
                                     sx={{
-                                        bgcolor: '#00ffcc',
-                                        color: '#000B1F',
+                                        background: 'linear-gradient(45deg, #FFFFFF, #E0E0E0)',
+                                        color: '#000000',
                                         px: 4,
                                         py: 2,
                                         borderRadius: '100px',
                                         position: 'relative',
                                         overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
                                         '&:hover': {
-                                            bgcolor: '#00e6b8',
+                                            background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
+                                            boxShadow: '0 6px 25px rgba(255,255,255,0.3)',
                                             '&::after': {
                                                 transform: 'translateX(100%)'
                                             }
@@ -389,7 +396,7 @@ const IntroducingBrdgeAI = () => {
                                             left: '-100%',
                                             width: '100%',
                                             height: '100%',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
                                             transition: 'transform 0.5s'
                                         }
                                     }}
@@ -1314,7 +1321,7 @@ function LandingPage() {
             <Box sx={{
                 flexGrow: 1,
                 overflow: 'hidden',
-                background: 'linear-gradient(180deg, #b0fff5 0%, #00B4DB 30%, #000B1F 65%, #000000 100%)',
+                background: 'linear-gradient(180deg, #00B4DB 0%, #00d2ff 30%, #000B1F 65%, #000000 100%)',
                 color: 'white',
                 minHeight: '100vh',
                 position: 'relative',

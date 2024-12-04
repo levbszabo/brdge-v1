@@ -79,12 +79,25 @@ const BrdgeList = ({
         });
     };
 
-    const headers = [
-        { id: 'name', label: 'Name', sortable: true },
-        { id: 'status', label: 'Status', sortable: true },
-        { id: 'created_at', label: 'Created', sortable: true },
-        { id: 'updated_at', label: 'Last Modified', sortable: true },
-        { id: 'actions', label: 'Actions', sortable: false }
+    const columns = [
+        {
+            id: 'name',
+            label: 'Name',
+            sortable: true,
+            width: '40%'
+        },
+        {
+            id: 'status',
+            label: 'Status',
+            sortable: true,
+            width: '30%'
+        },
+        {
+            id: 'actions',
+            label: 'Actions',
+            sortable: false,
+            width: '30%'
+        }
     ];
 
     const handleAction = (action) => {
@@ -133,34 +146,44 @@ const BrdgeList = ({
         <TableHead>
             <TableRow
                 sx={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    backdropFilter: 'blur(10px)',
                     '& th': {
+                        color: 'rgba(255, 255, 255, 0.7)',
                         fontWeight: 600,
-                        color: theme.palette.text.secondary,
-                        borderBottom: `2px solid ${theme.palette.divider}`
+                        fontSize: '0.875rem',
+                        letterSpacing: '0.02em',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        py: 2
                     }
                 }}
             >
-                {headers.map((header) => (
+                {columns.map((column) => (
                     <TableCell
-                        key={header.id}
-                        sortDirection={orderBy === header.id ? orderDirection : false}
+                        key={column.id}
+                        sortDirection={orderBy === column.id ? orderDirection : false}
                         sx={{
                             '&:not(:last-child)': {
-                                borderRight: `1px solid ${theme.palette.divider}`
+                                borderRight: '1px solid rgba(255, 255, 255, 0.05)'
                             }
                         }}
                     >
-                        {header.sortable ? (
+                        {column.sortable ? (
                             <TableSortLabel
-                                active={orderBy === header.id}
-                                direction={orderBy === header.id ? orderDirection : 'asc'}
-                                onClick={() => onSort(header.id)}
+                                active={orderBy === column.id}
+                                direction={orderBy === column.id ? orderDirection : 'asc'}
+                                onClick={() => onSort(column.id)}
+                                sx={{
+                                    color: 'rgba(255, 255, 255, 0.7) !important',
+                                    '& .MuiTableSortLabel-icon': {
+                                        color: 'rgba(255, 255, 255, 0.3) !important'
+                                    }
+                                }}
                             >
-                                {header.label}
+                                {column.label}
                             </TableSortLabel>
                         ) : (
-                            header.label
+                            column.label
                         )}
                     </TableCell>
                 ))}
@@ -172,101 +195,113 @@ const BrdgeList = ({
         <Chip
             icon={shareable ? <PublicIcon /> : <LockIcon />}
             label={shareable ? 'Public' : 'Private'}
-            color={shareable ? 'success' : 'default'}
             size="small"
             sx={{
+                backgroundColor: shareable
+                    ? 'rgba(79, 156, 249, 0.1)'
+                    : 'rgba(255, 255, 255, 0.1)',
+                color: shareable
+                    ? '#4F9CF9'
+                    : 'rgba(255, 255, 255, 0.7)',
                 borderRadius: '12px',
+                border: `1px solid ${shareable
+                    ? 'rgba(79, 156, 249, 0.2)'
+                    : 'rgba(255, 255, 255, 0.1)'}`,
                 '& .MuiChip-icon': {
-                    fontSize: '16px',
                     color: 'inherit'
+                },
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                    backgroundColor: shareable
+                        ? 'rgba(79, 156, 249, 0.15)'
+                        : 'rgba(255, 255, 255, 0.15)'
                 }
             }}
         />
     );
 
     const ActionButtons = ({ brdge }) => (
-        isMobile ? (
+        <Box sx={{ display: 'flex', gap: 1 }}>
             <IconButton
                 size="small"
-                onClick={(e) => handleMenuOpen(e, brdge)}
+                onClick={() => onView(brdge)}
                 sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
                     '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                        color: '#4F9CF9',
+                        backgroundColor: 'rgba(79, 156, 249, 0.1)',
+                        transform: 'translateY(-2px)'
                     }
                 }}
             >
-                <MoreVertIcon />
+                <VisibilityIcon fontSize="small" />
             </IconButton>
-        ) : (
-            <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="View">
-                    <IconButton
-                        size="small"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onView(brdge);
-                        }}
-                        sx={{
-                            '&:hover': {
-                                color: '#2196F3',
-                                transform: 'scale(1.1)'
-                            }
-                        }}
-                    >
-                        <VisibilityIcon />
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title="Edit">
-                    <IconButton
-                        size="small"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(brdge);
-                        }}
-                        sx={{
-                            '&:hover': {
-                                color: '#2196F3',
-                                transform: 'scale(1.1)'
-                            }
-                        }}
-                    >
-                        <EditIcon />
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title={brdge.shareable ? "Manage Sharing" : "Share"}>
-                    <IconButton
-                        size="small"
-                        onClick={(e) => handleShareClick(brdge, e)}
-                        sx={{
-                            color: brdge.shareable ? '#2196F3' : 'inherit',
-                            '&:hover': {
-                                color: '#2196F3',
-                                transform: 'scale(1.1)'
-                            }
-                        }}
-                    >
-                        <ShareIcon />
-                    </IconButton>
-                </Tooltip>
-                <Tooltip title="Delete">
-                    <IconButton
-                        size="small"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(brdge);
-                        }}
-                        sx={{
-                            '&:hover': {
-                                color: '#f44336',
-                                transform: 'scale(1.1)'
-                            }
-                        }}
-                    >
-                        <DeleteIcon />
-                    </IconButton>
-                </Tooltip>
-            </Box>
-        )
+            <IconButton
+                size="small"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(brdge);
+                }}
+                sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        color: '#4F9CF9',
+                        backgroundColor: 'rgba(79, 156, 249, 0.1)',
+                        transform: 'translateY(-2px)'
+                    }
+                }}
+            >
+                <EditIcon fontSize="small" />
+            </IconButton>
+            <Tooltip title={brdge.shareable ? "Manage Sharing" : "Share"}>
+                <IconButton
+                    size="small"
+                    onClick={(e) => handleShareClick(brdge, e)}
+                    sx={{
+                        color: brdge.shareable ? '#4F9CF9' : 'rgba(255, 255, 255, 0.7)',
+                        backgroundColor: brdge.shareable ? 'rgba(79, 156, 249, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                            color: '#4F9CF9',
+                            backgroundColor: 'rgba(79, 156, 249, 0.15)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}
+                >
+                    <ShareIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+                <IconButton
+                    size="small"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(brdge);
+                    }}
+                    sx={{
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                            color: '#4F9CF9',
+                            backgroundColor: 'rgba(79, 156, 249, 0.1)',
+                            transform: 'translateY(-2px)'
+                        }
+                    }}
+                >
+                    <DeleteIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
+        </Box>
     );
 
     // Add mobile-specific components
@@ -442,7 +477,7 @@ const BrdgeList = ({
                     <MobileHeader
                         orderBy={orderBy}
                         onSort={onSort}
-                        headers={headers}
+                        headers={columns}
                         stats={stats} // Pass stats to MobileHeader
                     />
                     <AnimatePresence>
@@ -456,13 +491,19 @@ const BrdgeList = ({
                 <TableContainer
                     component={Paper}
                     sx={{
-                        borderRadius: '16px',
-                        background: 'rgba(255, 255, 255, 0.9)',
-                        backdropFilter: 'blur(10px)',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                        borderRadius: '24px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
                         overflow: 'hidden',
                         '& .MuiTableCell-root': {
-                            borderColor: theme.palette.divider
+                            borderColor: 'rgba(255, 255, 255, 0.05)',
+                            color: 'white'
+                        },
+                        '& .MuiTableRow-root:hover': {
+                            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                            transition: 'background-color 0.3s ease'
                         }
                     }}
                 >
@@ -494,8 +535,6 @@ const BrdgeList = ({
                                         <TableCell>
                                             <StatusChip shareable={brdge.shareable} />
                                         </TableCell>
-                                        <TableCell>{formatDate(brdge.created_at)}</TableCell>
-                                        <TableCell>{formatDate(brdge.updated_at || brdge.created_at)}</TableCell>
                                         <TableCell>
                                             <ActionButtons brdge={brdge} />
                                         </TableCell>

@@ -45,21 +45,66 @@ const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClic
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                borderRadius: '16px',
-                background: isPremium ? 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)' : '#ffffff',
-                color: isPremium ? '#ffffff' : 'inherit',
-                border: isActive ? `2px solid ${theme.palette.primary.main}` : 'none',
+                borderRadius: '24px',
+                background: isPremium
+                    ? 'linear-gradient(90deg, #00B4DB 0%, #0041C2 100%)'
+                    : '#ffffff',
+                border: isActive ? '2px solid #00B4DB' : 'none',
+                color: isPremium ? '#ffffff' : '#1a1a1a',
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                '& .MuiTypography-root': {
+                    color: isPremium ? 'rgba(255, 255, 255, 0.9)' : 'inherit'
+                },
+                '& .MuiTypography-h5': {
+                    fontSize: '1.5rem',
+                    fontWeight: 600,
+                    marginBottom: 1
+                },
+                '& .MuiTypography-h4': {
+                    fontSize: '2rem',
+                    fontWeight: 700,
+                    marginBottom: 2
+                },
+                '& .MuiTypography-body1': {
+                    color: isPremium ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)',
+                    fontSize: '0.95rem'
+                }
             }}>
-                <Typography variant="h5" component="h3" gutterBottom fontWeight="bold">
-                    {title}
-                </Typography>
-                <Typography variant="h4" component="p" gutterBottom fontWeight="bold">
-                    {price}
-                </Typography>
-                <Box sx={{ flexGrow: 1, my: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Box>
+                        <Typography variant="h5">{title}</Typography>
+                        <Typography variant="h4">{price}</Typography>
+                    </Box>
+                    {isActive && (
+                        <Button
+                            variant="contained"
+                            disabled
+                            sx={{
+                                backgroundColor: '#0052CC',
+                                color: 'white',
+                                borderRadius: '50px',
+                                textTransform: 'none',
+                                px: 3,
+                                '&.Mui-disabled': {
+                                    backgroundColor: '#0052CC',
+                                    color: 'white',
+                                }
+                            }}
+                        >
+                            Current Plan
+                        </Button>
+                    )}
+                </Box>
+                <Box sx={{ flexGrow: 1 }}>
                     {features.map((feature, index) => (
-                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <CheckIcon sx={{ mr: 1, color: isPremium ? '#ffffff' : theme.palette.primary.main }} />
+                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                            <CheckIcon sx={{
+                                mr: 1.5,
+                                color: isPremium ? '#ffffff' : '#00B4DB',
+                                fontSize: '1.2rem'
+                            }} />
                             <Typography variant="body1">{feature}</Typography>
                         </Box>
                     ))}
@@ -67,33 +112,25 @@ const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClic
                 {!isActive && (
                     <Button
                         variant={isPremium ? "contained" : "outlined"}
-                        color={isPremium ? "secondary" : "primary"}
                         onClick={handleClick}
                         sx={{
                             mt: 2,
                             borderRadius: '50px',
-                            backgroundColor: isPremium ? '#ffffff' : undefined,
-                            color: isPremium ? '#0083B0' : undefined,
+                            backgroundColor: isPremium ? '#0052CC' : 'transparent',
+                            color: isPremium ? '#ffffff' : '#0052CC',
+                            borderColor: isPremium ? 'transparent' : '#0052CC',
+                            textTransform: 'none',
+                            fontSize: '1rem',
+                            fontWeight: 500,
+                            py: 1,
                             '&:hover': {
-                                backgroundColor: isPremium ? '#f5f5f5' : undefined,
+                                backgroundColor: isPremium ? '#0747A6' : 'rgba(0, 82, 204, 0.04)',
+                                borderColor: isPremium ? 'transparent' : '#0052CC',
                             }
                         }}
                     >
                         {buttonText}
                     </Button>
-                )}
-                {isActive && (
-                    <Typography
-                        variant="subtitle1"
-                        sx={{
-                            mt: 2,
-                            textAlign: 'center',
-                            color: isPremium ? '#ffffff' : theme.palette.primary.main,
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        Current Plan
-                    </Typography>
                 )}
             </Paper>
         </motion.div>
@@ -102,20 +139,37 @@ const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClic
 
 const styles = {
     gradientText: {
-        background: 'linear-gradient(45deg, #2196F3, #00BCD4)',
+        background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
         fontWeight: 'bold'
     },
     glassCard: {
-        background: 'rgba(255, 255, 255, 0.9)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '20px',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+        background: 'rgba(255, 255, 255, 0.05)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '24px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden',
+        position: 'relative',
+        '& .MuiTypography-root': {
+            color: 'rgba(255, 255, 255, 0.9)'
+        },
+        '& .MuiTypography-body2': {
+            color: 'rgba(255, 255, 255, 0.7)'
+        },
+        '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
+        }
     },
     premiumGradient: {
-        background: 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)',
+        background: 'linear-gradient(135deg, #00B4DB 0%, #0041C2 100%)',
         color: 'white',
         transition: 'all 0.3s ease'
     }
@@ -658,11 +712,82 @@ function UserProfilePage() {
     return (
         <Box sx={{
             minHeight: '100vh',
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+            position: 'relative',
             pt: 8,
-            pb: 8
+            pb: 8,
+            color: 'white',
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '5%',
+                left: '-5%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 20s infinite alternate',
+                zIndex: 0
+            },
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '5%',
+                right: '-5%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 25s infinite alternate-reverse',
+                zIndex: 0
+            }
         }}>
-            <Container maxWidth="lg">
+            <Box sx={{
+                position: 'absolute',
+                top: '10%',
+                left: '15%',
+                width: '400px',
+                height: '400px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transform: 'rotate(45deg)',
+                animation: 'rotate 30s linear infinite',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -1,
+                    padding: '1px',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude'
+                }
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: '15%',
+                right: '10%',
+                width: '300px',
+                height: '300px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '50%',
+                animation: 'rotateReverse 25s linear infinite',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -1,
+                    borderRadius: 'inherit',
+                    padding: '1px',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude'
+                }
+            }} />
+
+            <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
                 {showSuccess && (
                     <Box sx={{ mb: 4 }}>
                         <motion.div
@@ -674,8 +799,10 @@ function UserProfilePage() {
                                 severity="success"
                                 sx={{
                                     ...styles.glassCard,
+                                    backgroundColor: 'rgba(0, 200, 83, 0.1)',
+                                    color: 'rgba(255, 255, 255, 0.9)',
                                     '& .MuiAlert-icon': {
-                                        color: '#00BCD4'
+                                        color: '#00ffcc'
                                     }
                                 }}
                                 onClose={() => setShowSuccess(false)}
@@ -866,6 +993,24 @@ function UserProfilePage() {
                     </Grid>
                 </Grid>
             </Container>
+
+            <style>
+                {`
+                    @keyframes float {
+                        0% { transform: translateY(0px) rotate(0deg); }
+                        50% { transform: translateY(-20px) rotate(5deg); }
+                        100% { transform: translateY(0px) rotate(0deg); }
+                    }
+                    @keyframes rotate {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                    @keyframes rotateReverse {
+                        from { transform: rotate(360deg); }
+                        to { transform: rotate(0deg); }
+                    }
+                `}
+            </style>
         </Box>
     );
 }

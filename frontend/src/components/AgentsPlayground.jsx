@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { api } from '../api';
 
-// Add to props interface/type definition at the top
 function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
     const [playgroundUrl, setPlaygroundUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -16,38 +15,29 @@ function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
 
             setIsLoading(true);
             try {
-                // First, ensure we have a valid API base URL
                 if (!api.defaults.baseURL) {
                     console.error('API base URL is not configured');
                     return;
                 }
 
-                console.log('Fetching brdge data for ID:', brdgeId);
-                // Use the same endpoint for both modes
                 const response = await api.get(`/brdges/${brdgeId}`);
                 const brdgeData = response.data;
-                console.log('Received brdge data:', brdgeData);
 
                 if (!brdgeData.num_slides) {
                     console.error('No slides found in brdge data:', brdgeData);
                     return;
                 }
 
-                // Ensure API base URL doesn't end with a slash
                 const cleanApiBaseUrl = api.defaults.baseURL.replace(/\/$/, '');
-
-                // Construct URL with brdge data and agent type
                 const baseUrl = 'http://localhost:3001';
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     numSlides: brdgeData.num_slides.toString(),
                     apiBaseUrl: cleanApiBaseUrl,
-                    agentType: agentType // Pass the agent type to the playground
+                    agentType: agentType
                 });
 
                 const url = `${baseUrl}?${params.toString()}`;
-                console.log('Constructed playground URL:', url, 'Agent Type:', agentType);
-
                 setPlaygroundUrl(url);
             } catch (error) {
                 console.error('Error fetching brdge data:', error.response || error);
@@ -66,9 +56,10 @@ function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
                 height: '100%',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                color: 'white'
             }}>
-                Loading Brdge...
+                <Typography variant="h6">Loading Brdge...</Typography>
             </Box>
         );
     }
@@ -83,7 +74,7 @@ function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
                 justifyContent: 'center',
                 color: 'error.main'
             }}>
-                Error: Unable to load Brdge data
+                <Typography variant="h6">Error: Unable to load Brdge data</Typography>
             </Box>
         );
     }
