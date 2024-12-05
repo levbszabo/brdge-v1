@@ -362,11 +362,10 @@ class EditAgent(VoicePipelineAgent):
         super().__init__(
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o", temperature=0.3),
+            llm=openai.LLM(model="gpt-4o", temperature=0.5),
             tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
-            interrupt_speech_duration=0.2,
-            before_llm_cb=before_llm_callback,
+            interrupt_speech_duration=0.1,
         )
 
 
@@ -606,6 +605,33 @@ async def entrypoint(ctx: JobContext):
                             current_slide["number"],
                         )
                     )
+                    image_path = f"/tmp/brdge/slides_{agent.current_slide['brdge_id']}/slide_{agent.current_slide['number']}.png"
+
+                    if os.path.exists(image_path):
+                        base64_image = image_to_base64(image_path)
+                        if base64_image:
+                            slide_image = llm.ChatImage(
+                                image=f"data:image/png;base64,{base64_image}"
+                            )
+                            image_message = llm.ChatMessage.create(
+                                role="user",
+                                text=f"""Slide:{agent.current_slide['number']}. 
+                                    As we discuss this slide, observe and analyze:
+                                    - Key messages and themes
+                                    - Technical terms or concepts that might need clarification
+                                    - The overall structure and flow
+                                    - Any visuals, diagrams, or data presented
+                                    You can refer to these as you analyze the slide.""",
+                                images=[slide_image],
+                            )
+                            agent.chat_ctx.messages.append(image_message)
+                            agent.current_slide["last_processed"] = agent.current_slide[
+                                "number"
+                            ]
+                            agent.current_slide["image_processed"] = True
+                            logger.info(
+                                f"Processed image for slide {agent.current_slide['number']}"
+                            )
 
                 if not initial_slide_received.is_set():
                     initial_slide_received.set()
@@ -670,10 +696,13 @@ async def entrypoint(ctx: JobContext):
                                 allow_interruptions=False,
                             )
                     else:
-                        # For edit mode, use the callback
-                        stream = await before_llm_callback(agent, agent.chat_ctx)
-                        response = await agent.say(stream, allow_interruptions=True)
-
+                        # For edit mode, use the callback -- need to fix this
+                        # stream = await before_llm_callback(agent, agent.chat_ctx)
+                        # response = await agent.say(stream, allow_interruptions=True)
+                        response = await agent.say(
+                            agent.llm.chat(chat_ctx=agent.chat_ctx),
+                            allow_interruptions=True,
+                        )
                         # Log assistant's response to walkthrough
                         if current_slide["number"] and walkthrough_manager:
                             walkthrough_manager.add_message(
