@@ -25,6 +25,7 @@ import requests
 from typing import Optional
 import os.path
 from typing import Dict, List, Any
+from prompts import edit_agent_prompt
 
 load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
@@ -278,11 +279,81 @@ def get_brdge_voice_id(brdge_id: str, api_base_url: str) -> str:
         return DEFAULT_VOICE
 
 
+# Move the callback outside of entrypoint to make it globally accessible
+async def before_llm_callback(
+    agent: VoicePipelineAgent, chat_ctx: llm.ChatContext
+) -> Optional[llm.LLMStream]:
+    logger.info("before_llm_callback invoked!")
+    try:
+        # Get the current slide and walkthrough_manager from the agent instance
+        if hasattr(agent, "current_slide") and hasattr(agent, "walkthrough_manager"):
+            if agent.walkthrough_manager and agent.current_slide["number"]:
+                if chat_ctx.messages and len(chat_ctx.messages) > 0:
+                    last_message = chat_ctx.messages[-1]
+                    content = getattr(last_message, "content", None)
+                    if content:
+                        content = (
+                            str(content) if not isinstance(content, str) else content
+                        )
+                        agent.walkthrough_manager.add_message(
+                            agent.current_slide["number"], "user", content
+                        )
+
+            # Only process image if it's a new slide and hasn't been processed yet
+            if (
+                agent.current_slide["initialized"]
+                and agent.current_slide["number"]
+                != agent.current_slide["last_processed"]
+                and not agent.current_slide["image_processed"]
+            ):
+                if agent.current_slide["brdge_id"] and agent.current_slide["number"]:
+                    image_path = f"/tmp/brdge/slides_{agent.current_slide['brdge_id']}/slide_{agent.current_slide['number']}.png"
+
+                    if os.path.exists(image_path):
+                        base64_image = image_to_base64(image_path)
+                        if base64_image:
+                            slide_image = llm.ChatImage(
+                                image=f"data:image/png;base64,{base64_image}"
+                            )
+                            image_message = llm.ChatMessage.create(
+                                role="user",
+                                text=f"""Examining slide {agent.current_slide['number']}. 
+                                    As we discuss this slide, observe and analyze:
+                                    - Key messages and themes
+                                    - Technical terms or concepts that might need clarification
+                                    - The overall structure and flow
+                                    - Any visuals, diagrams, or data presented
+                                    You can refer to these as you analyze the slide.""",
+                                images=[slide_image],
+                            )
+                            chat_ctx.messages.append(image_message)
+                            agent.current_slide["last_processed"] = agent.current_slide[
+                                "number"
+                            ]
+                            agent.current_slide["image_processed"] = True
+                            logger.info(
+                                f"Processed image for slide {agent.current_slide['number']}"
+                            )
+
+    except Exception as e:
+        logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
+
+    return agent.llm.chat(chat_ctx=chat_ctx)
+
+
 class EditAgent(VoicePipelineAgent):
-    def __init__(self, brdge_id: str, api_base_url: str = None):
+    def __init__(
+        self,
+        brdge_id: str,
+        api_base_url: str = None,
+        current_slide=None,
+        walkthrough_manager=None,
+    ):
         self.api_base_url = api_base_url or os.getenv(
             "API_BASE_URL", "http://localhost:5000"
         )
+        self.current_slide = current_slide or {}
+        self.walkthrough_manager = walkthrough_manager
 
         # Pass api_base_url to get_brdge_voice_id
         voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
@@ -291,9 +362,11 @@ class EditAgent(VoicePipelineAgent):
         super().__init__(
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o-mini"),
+            llm=openai.LLM(model="gpt-4o", temperature=0.3),
             tts=cartesia.TTS(voice=voice_id),
-            chat_ctx=llm.ChatContext().append(role="system", text=EDIT_SYSTEM_PROMPT),
+            chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
+            interrupt_speech_duration=0.2,
+            before_llm_cb=before_llm_callback,
         )
 
 
@@ -439,57 +512,6 @@ async def entrypoint(ctx: JobContext):
         "image_processed": False,
     }
 
-    # Define the LLM callback for edit mode
-    async def before_llm_callback(
-        agent: VoicePipelineAgent, chat_ctx: llm.ChatContext
-    ) -> Optional[llm.LLMStream]:
-        logger.info("before_llm_callback invoked!")
-        try:
-            nonlocal walkthrough_manager
-            if walkthrough_manager and current_slide["number"]:
-                if chat_ctx.messages and len(chat_ctx.messages) > 0:
-                    last_message = chat_ctx.messages[-1]
-                    content = getattr(last_message, "content", None)
-                    if content:
-                        content = (
-                            str(content) if not isinstance(content, str) else content
-                        )
-                        walkthrough_manager.add_message(
-                            current_slide["number"], "user", content
-                        )
-
-            # Only process image if it's a new slide and hasn't been processed yet
-            if (
-                current_slide["initialized"]
-                and current_slide["number"] != current_slide["last_processed"]
-                and not current_slide["image_processed"]
-            ):
-                if current_slide["brdge_id"] and current_slide["number"]:
-                    image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
-
-                    if os.path.exists(image_path):
-                        base64_image = image_to_base64(image_path)
-                        if base64_image:
-                            slide_image = llm.ChatImage(
-                                image=f"data:image/png;base64,{base64_image}"
-                            )
-                            image_message = llm.ChatMessage.create(
-                                role="user",
-                                text=f"New slide {current_slide['number']} - Please analyze this slide and be ready to discuss it.",
-                                images=[slide_image],
-                            )
-                            chat_ctx.messages.append(image_message)
-                            current_slide["last_processed"] = current_slide["number"]
-                            current_slide["image_processed"] = True  # Mark as processed
-                            logger.info(
-                                f"Processed image for slide {current_slide['number']}"
-                            )
-
-        except Exception as e:
-            logger.error(f"Error in before_llm_callback: {e}", exc_info=True)
-
-        return agent.llm.chat(chat_ctx=chat_ctx)
-
     agent = None
     chat = rtc.ChatManager(ctx.room)
 
@@ -530,18 +552,14 @@ async def entrypoint(ctx: JobContext):
                             api_base_url=current_slide["api_base_url"],
                         )
                     else:  # edit mode
-                        initial_ctx = llm.ChatContext().append(
-                            role="system", text=EDIT_SYSTEM_PROMPT
+                        logger.info(
+                            f"Initializing EditAgent for brdge {current_slide['brdge_id']}"
                         )
-                        agent = VoicePipelineAgent(
-                            vad=silero.VAD.load(),
-                            stt=deepgram.STT(),
-                            llm=openai.LLM(model="gpt-4o-mini"),
-                            tts=cartesia.TTS(
-                                voice="41f3c367-e0a8-4a85-89e0-c27bae9c9b6d"
-                            ),
-                            chat_ctx=initial_ctx,
-                            before_llm_cb=before_llm_callback,
+                        agent = EditAgent(
+                            brdge_id=current_slide["brdge_id"],
+                            api_base_url=current_slide["api_base_url"],
+                            current_slide=current_slide,
+                            walkthrough_manager=walkthrough_manager,
                         )
 
                         @agent.on("agent_speech_committed")
@@ -654,7 +672,7 @@ async def entrypoint(ctx: JobContext):
                     else:
                         # For edit mode, use the callback
                         stream = await before_llm_callback(agent, agent.chat_ctx)
-                        response = await agent.say(stream, allow_interruptions=False)
+                        response = await agent.say(stream, allow_interruptions=True)
 
                         # Log assistant's response to walkthrough
                         if current_slide["number"] and walkthrough_manager:
