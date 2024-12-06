@@ -2,9 +2,11 @@ import React from 'react';
 import { Box } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import AgentsPlayground from '../components/AgentsPlayground';
+import { getAuthToken } from '../utils/auth';
 
 function ViewBrdgePage() {
     const { id } = useParams();
+    const token = getAuthToken();
 
     return (
         <Box sx={{
@@ -52,7 +54,11 @@ function ViewBrdgePage() {
                 overflow: 'hidden',
                 zIndex: 1
             }}>
-                <AgentsPlayground brdgeId={id} agentType="view" />
+                <AgentsPlayground
+                    brdgeId={id}
+                    agentType="view"
+                    token={token}
+                />
             </Box>
         </Box>
     );

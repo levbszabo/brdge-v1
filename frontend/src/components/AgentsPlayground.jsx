@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { api } from '../api';
 
-function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
+function AgentsPlayground({ brdgeId, agentType = 'edit', token }) {
     const [playgroundUrl, setPlaygroundUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +34,8 @@ function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
                     brdgeId: brdgeId.toString(),
                     numSlides: brdgeData.num_slides.toString(),
                     apiBaseUrl: cleanApiBaseUrl,
-                    agentType: agentType
+                    agentType: agentType,
+                    token: token || ''
                 });
 
                 const url = `${baseUrl}?${params.toString()}`;
@@ -47,7 +48,7 @@ function AgentsPlayground({ brdgeId, agentType = 'edit' }) {
         };
 
         initPlayground();
-    }, [brdgeId, agentType]);
+    }, [brdgeId, agentType, token]);
 
     if (isLoading) {
         return (

@@ -271,14 +271,13 @@ class ViewerConversation(db.Model):
     """Stores conversations between users and the view agent"""
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    anonymous_id = db.Column(db.String(255))
     brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
     message = db.Column(db.Text, nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'user' or 'agent'
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    slide_number = db.Column(
-        db.Integer
-    )  # Optional: track which slide the conversation was about
+    slide_number = db.Column(db.Integer)
 
     # Relationships
     user = db.relationship("User", backref="viewer_conversations")
@@ -288,6 +287,7 @@ class ViewerConversation(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "anonymous_id": self.anonymous_id,
             "brdge_id": self.brdge_id,
             "message": self.message,
             "role": self.role,

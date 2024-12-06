@@ -18,7 +18,6 @@ from livekit.rtc._proto import video_frame_pb2
 import json
 from datetime import datetime
 import io
-from PIL import Image
 import base64
 import os
 import requests
@@ -524,10 +523,7 @@ async def entrypoint(ctx: JobContext):
             if json_data.get("currentSlide") is not None:
                 new_slide = current_slide["number"] != json_data["currentSlide"]
 
-                # Reset image_processed flag if it's a new slide
-                if new_slide:
-                    current_slide["image_processed"] = False
-
+                # Update current_slide with all data including userId
                 current_slide.update(
                     {
                         "number": json_data["currentSlide"],
@@ -537,6 +533,9 @@ async def entrypoint(ctx: JobContext):
                         "url": json_data.get("slideUrl"),
                         "initialized": True,
                         "agent_type": json_data.get("agentType", "edit"),
+                        "user_id": json_data.get(
+                            "userId"
+                        ),  # Add user_id to current_slide
                     }
                 )
 
@@ -670,6 +669,23 @@ async def entrypoint(ctx: JobContext):
         if cleaned_message:
             logger.info(f"Received chat message: {cleaned_message}")
 
+            # Log viewer conversation
+            if current_slide.get("user_id"):
+                try:
+                    response = requests.post(
+                        f"{current_slide['api_base_url']}/brdges/{current_slide['brdge_id']}/viewer-conversations",
+                        json={
+                            "user_id": current_slide["user_id"],
+                            "message": cleaned_message,
+                            "role": "user",
+                            "slide_number": current_slide["number"],
+                        },
+                    )
+                    response.raise_for_status()
+                    logger.info(f"Logged viewer message: {response.json()}")
+                except Exception as e:
+                    logger.error(f"Error logging viewer message: {e}")
+
             # Log user message to walkthrough
             if current_slide["number"] and walkthrough_manager:
                 walkthrough_manager.add_message(
@@ -707,6 +723,21 @@ async def entrypoint(ctx: JobContext):
                                 agent.llm.chat(chat_ctx=temp_ctx),
                                 allow_interruptions=False,
                             )
+
+                            # Log agent response
+                            if current_slide.get("user_id"):
+                                try:
+                                    requests.post(
+                                        f"{current_slide['api_base_url']}/brdges/{current_slide['brdge_id']}/viewer-conversations",
+                                        json={
+                                            "user_id": current_slide["user_id"],
+                                            "message": response,
+                                            "role": "agent",
+                                            "slide_number": current_slide["number"],
+                                        },
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Error logging agent response: {e}")
                     else:
                         # For edit mode, use the callback -- need to fix this
                         # stream = await before_llm_callback(agent, agent.chat_ctx)

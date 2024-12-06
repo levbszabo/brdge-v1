@@ -15,6 +15,7 @@ from models import (
     WalkthroughMessage,
     Scripts,
     Voice,
+    ViewerConversation,
 )
 from utils import (
     clone_voice_helper,
@@ -1277,6 +1278,7 @@ def log_request_info():
 
 @app.route("/api/auth/verify", methods=["GET"])
 @jwt_required()
+@cross_origin()
 def verify_token():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
@@ -2293,3 +2295,88 @@ def update_brdge_scripts(brdge_id):
             ),
             500,
         )
+
+
+@app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["POST"])
+@jwt_required(optional=True)
+def add_viewer_conversation(brdge_id):
+    try:
+        data = request.get_json()
+        viewer_id = data.get("user_id")
+        message = data.get("message")
+        role = data.get("role")
+        slide_number = data.get("slide_number")
+
+        if not all([viewer_id, message, role]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # If viewer_id starts with 'user_', extract the ID number
+        user_id = None
+        anonymous_id = None
+        if viewer_id.startswith("user_"):
+            user_id = int(viewer_id.split("_")[1])
+        else:
+            anonymous_id = viewer_id
+
+        conversation = ViewerConversation(
+            user_id=user_id,
+            anonymous_id=anonymous_id,
+            brdge_id=brdge_id,
+            message=message,
+            role=role,
+            slide_number=slide_number,
+        )
+
+        db.session.add(conversation)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {"id": conversation.id, "timestamp": conversation.timestamp.isoformat()}
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error logging viewer conversation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["GET"])
+@jwt_required(optional=True)
+@cross_origin()
+def get_viewer_conversations(brdge_id):
+    """Get viewer conversations for a brdge"""
+    try:
+        current_user = get_current_user()
+
+        # Base query for the brdge
+        query = ViewerConversation.query.filter_by(brdge_id=brdge_id)
+
+        # If user is authenticated, get their conversations
+        if current_user:
+            query = query.filter_by(user_id=current_user.id)
+        else:
+            # Get anonymous ID from query params
+            anonymous_id = request.args.get("anonymous_id")
+            if anonymous_id:
+                query = query.filter_by(anonymous_id=anonymous_id)
+            else:
+                return (
+                    jsonify(
+                        {"error": "Anonymous ID required for non-authenticated users"}
+                    ),
+                    400,
+                )
+
+        conversations = query.order_by(ViewerConversation.timestamp.desc()).all()
+
+        return (
+            jsonify({"conversations": [conv.to_dict() for conv in conversations]}),
+            200,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error fetching viewer conversations: {e}")
+        return jsonify({"error": str(e)}), 500
