@@ -573,6 +573,18 @@ async def entrypoint(ctx: JobContext):
                                     current_slide["number"], "assistant", msg.content
                                 )
 
+                        @agent.on("user_speech_committed")
+                        def on_user_speech_committed(msg: llm.ChatMessage):
+                            logger.info(f"User speech committed: {msg.content}")
+                            if (
+                                current_slide["number"]
+                                and walkthrough_manager
+                                and current_slide["agent_type"] == "edit"
+                            ):
+                                walkthrough_manager.add_message(
+                                    current_slide["number"], "user", msg.content
+                                )
+
                     agent.start(ctx.room, participant)
 
                 # Initialize walkthrough manager for edit mode
