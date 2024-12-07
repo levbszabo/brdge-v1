@@ -369,7 +369,7 @@ class EditAgent(VoicePipelineAgent):
 
 
 class ViewerAgent(VoicePipelineAgent):
-    def __init__(self, brdge_id: str, api_base_url: str = None):
+    def __init__(self, brdge_id: str, api_base_url: str = None, user_id: str = None):
         self.brdge_id = brdge_id
         self.api_base_url = api_base_url or os.getenv(
             "API_BASE_URL", "http://localhost:5000"
@@ -379,6 +379,7 @@ class ViewerAgent(VoicePipelineAgent):
         # Load scripts from database
         self.scripts = self._load_scripts()
         self.current_slide = None
+        self.user_id = user_id
 
         # Get voice ID from database
         logger.info(
@@ -447,6 +448,27 @@ class ViewerAgent(VoicePipelineAgent):
                 "I encountered an error while presenting this slide.",
                 allow_interruptions=True,
             )
+
+    def add_message(self, slide_number: int, role: str, message: str):
+        """Add a message to the conversation log"""
+        if not self.brdge_id:
+            logger.error("No brdge id")
+            return
+
+        try:
+            response = requests.post(
+                f"{self.api_base_url}/brdges/{self.brdge_id}/viewer-conversations",
+                json={
+                    "slide_number": slide_number,
+                    "role": role,
+                    "message": message,
+                    "user_id": self.user_id,
+                },
+            )
+            response.raise_for_status()
+            # response_data = response.json()
+        except Exception as e:
+            logger.error(f"Error adding message: {e}", exc_info=True)
 
 
 async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
@@ -548,7 +570,23 @@ async def entrypoint(ctx: JobContext):
                         agent = ViewerAgent(
                             brdge_id=current_slide["brdge_id"],
                             api_base_url=current_slide["api_base_url"],
+                            user_id=current_slide["user_id"],
                         )
+
+                        @agent.on("agent_speech_committed")
+                        def on_agent_speech_committed(msg: llm.ChatMessage):
+                            logger.info(f"Agent speech committed: {msg.content}")
+                            agent.add_message(
+                                current_slide["number"], "assistant", msg.content
+                            )
+
+                        @agent.on("user_speech_committed")
+                        def on_user_speech_committed(msg: llm.ChatMessage):
+                            logger.info(f"User speech committed: {msg.content}")
+                            agent.add_message(
+                                current_slide["number"], "user", msg.content
+                            )
+
                     else:  # edit mode
                         logger.info(
                             f"Initializing EditAgent for brdge {current_slide['brdge_id']}"

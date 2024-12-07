@@ -2310,12 +2310,17 @@ def add_viewer_conversation(brdge_id):
         if not all([viewer_id, message, role]):
             return jsonify({"error": "Missing required fields"}), 400
 
-        # If viewer_id starts with 'user_', extract the ID number
+        # Handle both int and string user IDs
         user_id = None
         anonymous_id = None
-        if viewer_id.startswith("user_"):
-            user_id = int(viewer_id.split("_")[1])
+
+        # If viewer_id is already an integer or can be converted to one
+        if isinstance(viewer_id, int) or (
+            isinstance(viewer_id, str) and viewer_id.isdigit()
+        ):
+            user_id = int(viewer_id)
         else:
+            # If it's a string starting with 'anon_', treat as anonymous
             anonymous_id = viewer_id
 
         conversation = ViewerConversation(
