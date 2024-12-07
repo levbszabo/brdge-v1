@@ -29,7 +29,7 @@ function AgentsPlayground({ brdgeId, agentType = 'edit', token }) {
                 }
 
                 const cleanApiBaseUrl = api.defaults.baseURL.replace(/\/$/, '');
-                const baseUrl = 'http://localhost:3001';
+                const baseUrl = process.env.REACT_APP_PLAYGROUND_URL || 'http://localhost:3001';
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     numSlides: brdgeData.num_slides.toString(),
