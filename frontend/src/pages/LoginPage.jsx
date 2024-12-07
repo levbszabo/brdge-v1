@@ -7,6 +7,7 @@ import { setAuthToken } from '../utils/auth';
 import { LockOpen, Email } from '@mui/icons-material';
 import { AuthContext } from '../App';
 import { GoogleLogin } from '@react-oauth/google';
+import { useSnackbar } from '../utils/snackbar';
 
 function LoginPage() {
     const [email, setEmail] = useState('');
@@ -16,6 +17,7 @@ function LoginPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { setIsAuthenticated } = useContext(AuthContext);
+    const { showSnackbar } = useSnackbar();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -32,29 +34,25 @@ function LoginPage() {
         }
     };
 
-    const handleGoogleSuccess = async (credentialResponse) => {
+    const handleGoogleSuccess = async (response) => {
         try {
-            console.log('Google response:', credentialResponse);
-
-            if (!credentialResponse.credential) {
-                setError('No credentials received from Google');
-                return;
-            }
-
-            const response = await api.post('/auth/google', {
-                credential: credentialResponse.credential
+            console.log('Google response:', response);
+            const result = await api.post('/auth/google', {
+                credential: response.credential
             });
+            console.log('Backend response:', result);
 
-            console.log('Backend response:', response);
-
-            if (response.data.access_token) {
-                setAuthToken(response.data.access_token);
+            if (result.data.access_token) {
+                localStorage.setItem('token', result.data.access_token);
                 setIsAuthenticated(true);
-                navigate('/brdges');
+
+                navigate('/brdges', { replace: true });
+
+                showSnackbar('Successfully logged in with Google', 'success');
             }
         } catch (error) {
-            console.error('Google login error:', error.response || error);
-            setError(error.response?.data?.error || 'Failed to login with Google');
+            console.error('Login error:', error);
+            showSnackbar('Failed to login with Google', 'error');
         }
     };
 

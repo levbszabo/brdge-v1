@@ -25,6 +25,7 @@ from typing import Optional
 import os.path
 from typing import Dict, List, Any
 from prompts import edit_agent_prompt
+from PIL import Image
 
 load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")

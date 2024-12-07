@@ -20,6 +20,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
+import logo from '../assets/Brdge-Logo-crop.png';
 
 function Header() {
     const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -30,13 +31,21 @@ function Header() {
     const [userEmail, setUserEmail] = useState('');
 
     useEffect(() => {
-        // Fetch user email when authenticated
+        // Add this console log to debug
+        console.log('Auth token:', localStorage.getItem('token'));
+
         if (isAuthenticated) {
             api.get('/user/profile')
                 .then(response => {
                     setUserEmail(response.data.email);
                 })
-                .catch(error => console.error('Error fetching user profile:', error));
+                .catch(error => {
+                    console.error('Error fetching user profile:', error);
+                    // If token is invalid/expired, handle logout
+                    if (error.response?.status === 401) {
+                        handleLogout();
+                    }
+                });
         }
     }, [isAuthenticated]);
 
@@ -124,14 +133,31 @@ function Header() {
             }}
         >
             <Toolbar>
-                <Typography variant="h6" component="div" sx={{
+                <Box sx={{
                     flexGrow: 1,
-                    color: 'white'
+                    display: 'flex',
+                    alignItems: 'center'
                 }}>
-                    <RouterLink to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-                        Brdge AI
+                    <RouterLink to="/" style={{
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                    }}>
+                        <img
+                            src={logo}
+                            alt="Brdge AI Logo"
+                            style={{
+                                height: '32px',
+                                width: 'auto'
+                            }}
+                        />
+                        <Typography variant="h6" component="div" sx={{ color: 'white' }}>
+                            Brdge AI
+                        </Typography>
                     </RouterLink>
-                </Typography>
+                </Box>
                 {isMobile ? (
                     <>
                         {isAuthenticated && (

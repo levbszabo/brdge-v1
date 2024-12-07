@@ -1,7 +1,16 @@
 # routes.py
 # brian voice :nPczCjzI2devNBz1zQrb
 import re
-from flask import request, jsonify, send_file, abort, url_for, current_app, Blueprint
+from flask import (
+    request,
+    jsonify,
+    send_file,
+    abort,
+    url_for,
+    current_app,
+    Blueprint,
+    make_response,
+)
 from flask_cors import CORS, cross_origin
 from werkzeug.utils import secure_filename
 import os
@@ -1070,6 +1079,7 @@ def login():
 
 @app.route("/api/check-auth", methods=["GET"])
 @jwt_required()
+@cross_origin()
 def check_auth():
     current_user_id = get_jwt_identity()
     return jsonify(logged_in_as=current_user_id), 200
@@ -1188,6 +1198,7 @@ def manage_brdge(user, brdge_id):
 
 
 @app.route("/api/auth/google", methods=["POST"])
+@cross_origin()
 def google_auth():
     try:
         data = request.get_json()
@@ -1290,6 +1301,7 @@ def verify_token():
 
 @app.route("/api/user/profile", methods=["GET"])
 @jwt_required()
+@cross_origin()
 def get_user_profile():
     current_user_id = get_jwt_identity()
     print(f"Fetching profile for user ID: {current_user_id}")  # Debug log
@@ -2385,3 +2397,13 @@ def get_viewer_conversations(brdge_id):
     except Exception as e:
         app.logger.error(f"Error fetching viewer conversations: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to response"""
+    response.headers["Content-Security-Policy"] = (
+        "frame-ancestors 'self' https://accounts.google.com/; frame-src 'self' https://accounts.google.com/;"
+    )
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    return response

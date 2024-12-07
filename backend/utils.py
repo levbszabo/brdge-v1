@@ -26,6 +26,7 @@ import requests
 import shutil
 import boto3
 import dotenv
+from PIL import Image
 
 dotenv.load_dotenv(".env")
 
