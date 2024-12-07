@@ -31,6 +31,70 @@ import StarIcon from '@mui/icons-material/Star';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { motion } from 'framer-motion';
 
+const typography = {
+    heading: {
+        fontSize: '1.5rem',
+        fontWeight: 700,
+        letterSpacing: '-0.02em',
+        lineHeight: 1.2,
+        color: 'white',
+        fontFamily: 'Satoshi'
+    },
+    subheading: {
+        fontSize: '1.1rem',
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontFamily: 'Satoshi'
+    },
+    body: {
+        fontSize: '0.9rem',
+        letterSpacing: '0.01em',
+        lineHeight: 1.5,
+        color: 'rgba(255, 255, 255, 0.7)',
+        fontFamily: 'Satoshi'
+    },
+    caption: {
+        fontSize: '0.8rem',
+        letterSpacing: '0.02em',
+        color: 'rgba(255, 255, 255, 0.5)',
+        fontFamily: 'Satoshi'
+    }
+};
+
+const cardStyles = {
+    background: 'rgba(255, 255, 255, 0.03)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '24px',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        background: 'rgba(255, 255, 255, 0.05)',
+        transform: 'translateY(-2px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+    }
+};
+
+const tierCardStyles = (isActive, isPremium) => ({
+    ...cardStyles,
+    p: 3,
+    border: isActive ? '2px solid rgba(0, 188, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
+    background: isPremium ?
+        'linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(0, 188, 212, 0.1) 100%)' :
+        'rgba(255, 255, 255, 0.02)',
+    position: 'relative',
+    overflow: 'hidden',
+    '&::before': isPremium ? {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: 'linear-gradient(90deg, #2196F3, #00BCD4)',
+    } : {}
+});
+
 const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClick, isPremium, tier }) => {
     const theme = useTheme();
     const handleClick = () => {
@@ -816,78 +880,33 @@ function UserProfilePage() {
                 <Grid container spacing={4}>
                     <Grid item xs={12} md={4}>
                         {/* Profile Card */}
-                        <Paper elevation={0} sx={{ ...styles.glassCard, p: 4 }}>
-                            <Box sx={{ textAlign: 'center' }}>
+                        <Paper elevation={0} sx={cardStyles}>
+                            <Box sx={{ p: 4, textAlign: 'center' }}>
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
                                     transition={{ type: "spring", stiffness: 300 }}
                                 >
                                     <Avatar
                                         sx={{
-                                            width: 120,
-                                            height: 120,
+                                            width: 100,
+                                            height: 100,
                                             bgcolor: 'transparent',
                                             margin: '0 auto',
                                             mb: 3,
-                                            background: 'linear-gradient(45deg, #2196F3, #00BCD4)',
-                                            border: '4px solid white',
+                                            background: 'linear-gradient(135deg, #2196F3, #00BCD4)',
+                                            border: '3px solid rgba(255, 255, 255, 0.1)',
                                             boxShadow: '0 8px 32px rgba(33, 150, 243, 0.2)'
                                         }}
                                     >
-                                        <PersonIcon sx={{ fontSize: 60, color: 'white' }} />
+                                        <PersonIcon sx={{ fontSize: 40, color: 'white' }} />
                                     </Avatar>
                                 </motion.div>
-                                <Typography
-                                    variant="h5"
-                                    gutterBottom
-                                    sx={{
-                                        ...styles.gradientText,
-                                        wordBreak: 'break-word',
-                                        fontSize: '1.2rem',
-                                        mb: 2
-                                    }}
-                                >
+                                <Typography sx={{ ...typography.heading, mb: 0.5 }}>
                                     {userProfile?.email}
                                 </Typography>
-
-                                <motion.div whileHover={{ scale: 1.05 }}>
-                                    <Chip
-                                        label={currentPlan.toUpperCase()}
-                                        sx={{
-                                            ...styles.premiumGradient,
-                                            fontWeight: 'bold',
-                                            fontSize: '0.875rem',
-                                            py: 1.5,
-                                            mb: 3,
-                                            '& .MuiChip-icon': {
-                                                color: 'white'
-                                            }
-                                        }}
-                                        icon={<WorkspacePremiumIcon />}
-                                    />
-                                </motion.div>
-
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mb: 2,
-                                    color: 'text.secondary',
-                                    '& svg': {
-                                        color: '#00BCD4'
-                                    }
-                                }}>
-                                    <CalendarTodayIcon sx={{ mr: 1, fontSize: '1rem' }} />
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            fontSize: '0.875rem',
-                                            color: 'text.secondary'
-                                        }}
-                                    >
-                                        Joined {formatDate(userProfile?.account?.created_at)}
-                                    </Typography>
-                                </Box>
+                                <Typography sx={{ ...typography.caption, mb: 3 }}>
+                                    Member since {formatDate(userProfile?.account?.created_at)}
+                                </Typography>
                             </Box>
                         </Paper>
 
@@ -903,92 +922,100 @@ function UserProfilePage() {
 
                     {/* Subscription Plans Section */}
                     <Grid item xs={12} md={8}>
-                        <Paper elevation={0} sx={{ ...styles.glassCard, p: 4 }}>
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 2,
-                                mb: 3,
-                                '& svg': {
-                                    color: '#00BCD4'
-                                }
-                            }}>
-                                <WorkspacePremiumIcon sx={{ fontSize: 32 }} />
-                                <div>
-                                    <Typography variant="h5" gutterBottom sx={styles.gradientText}>
-                                        Your Subscription
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {getSubscriptionDescription(currentPlan)}
-                                    </Typography>
-                                </div>
-                            </Box>
+                        <Paper elevation={0} sx={cardStyles}>
+                            <Box sx={{ p: 4 }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                    mb: 4
+                                }}>
+                                    <WorkspacePremiumIcon
+                                        sx={{
+                                            fontSize: 28,
+                                            color: '#00BCD4',
+                                            filter: 'drop-shadow(0 0 10px rgba(0, 188, 212, 0.3))'
+                                        }}
+                                    />
+                                    <div>
+                                        <Typography sx={{ ...typography.heading, mb: 0.5 }}>
+                                            Your Subscription
+                                        </Typography>
+                                        <Typography sx={typography.body}>
+                                            {getSubscriptionDescription(currentPlan)}
+                                        </Typography>
+                                    </div>
+                                </Box>
 
-                            <Grid container spacing={3}>
-                                {subscriptionTiers.map((tier, index) => (
-                                    <Grid item xs={12} key={index}>
-                                        <motion.div
-                                            whileHover={{ scale: 1.02 }}
-                                            transition={{ type: "spring", stiffness: 300 }}
-                                        >
-                                            <Card
-                                                elevation={0}
-                                                sx={{
-                                                    ...styles.glassCard,
-                                                    border: tier.isActive ? '2px solid #00BCD4' : '1px solid rgba(255, 255, 255, 0.2)',
-                                                    background: tier.isPremium ? styles.premiumGradient.background : 'rgba(255, 255, 255, 0.9)',
-                                                    color: tier.isPremium ? 'white' : 'inherit',
-                                                    transition: 'all 0.3s ease'
-                                                }}
+                                <Grid container spacing={2}>
+                                    {subscriptionTiers.map((tier, index) => (
+                                        <Grid item xs={12} key={index}>
+                                            <motion.div
+                                                whileHover={{ scale: 1.01 }}
+                                                transition={{ type: "spring", stiffness: 400 }}
                                             >
-                                                <CardContent sx={{ p: 3 }}>
-                                                    <Grid container alignItems="center" spacing={2}>
-                                                        <Grid item xs={12} sm={4}>
-                                                            <Typography variant="h6" component="div" fontWeight="bold">
-                                                                {tier.title}
-                                                            </Typography>
-                                                            <Typography variant="h5" component="div" fontWeight="bold">
-                                                                {tier.price}
-                                                            </Typography>
-                                                        </Grid>
-                                                        <Grid item xs={12} sm={5}>
-                                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                                {tier.features.map((feature, idx) => (
-                                                                    <Box key={idx} sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                        <CheckIcon sx={{ mr: 1, fontSize: '1rem' }} />
-                                                                        <Typography variant="body2">{feature}</Typography>
-                                                                    </Box>
-                                                                ))}
-                                                            </Box>
-                                                        </Grid>
-                                                        <Grid item xs={12} sm={3} sx={{ textAlign: 'right' }}>
-                                                            {tier.isActive ? (
-                                                                <Chip
-                                                                    label="Current Plan"
-                                                                    color="primary"
-                                                                    sx={{ fontWeight: 'bold' }}
-                                                                />
-                                                            ) : (
-                                                                !shouldShowUpgradeButton(currentPlan, tier.tier) ? null : (
-                                                                    <Button
-                                                                        variant={tier.isPremium ? "contained" : "outlined"}
+                                                <Card
+                                                    elevation={0}
+                                                    sx={tierCardStyles(tier.isActive, tier.isPremium)}
+                                                >
+                                                    <CardContent>
+                                                        <Grid container alignItems="center" spacing={2}>
+                                                            <Grid item xs={12} sm={4}>
+                                                                <Typography sx={{ ...typography.subheading, mb: 1 }}>
+                                                                    {tier.title}
+                                                                </Typography>
+                                                                <Typography sx={typography.heading}>
+                                                                    {tier.price}
+                                                                </Typography>
+                                                            </Grid>
+                                                            <Grid item xs={12} sm={5}>
+                                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                                    {tier.features.map((feature, idx) => (
+                                                                        <Box key={idx} sx={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 1
+                                                                        }}>
+                                                                            <CheckIcon sx={{
+                                                                                fontSize: '0.9rem',
+                                                                                color: tier.isPremium ? '#00BCD4' : '#4CAF50'
+                                                                            }} />
+                                                                            <Typography sx={typography.body}>
+                                                                                {feature}
+                                                                            </Typography>
+                                                                        </Box>
+                                                                    ))}
+                                                                </Box>
+                                                            </Grid>
+                                                            <Grid item xs={12} sm={3} sx={{ textAlign: 'right' }}>
+                                                                {tier.isActive ? (
+                                                                    <Chip
+                                                                        label="Current Plan"
                                                                         color="primary"
-                                                                        onClick={tier.onClick}
-                                                                        disabled={isProcessing}
-                                                                        sx={{ borderRadius: '50px' }}
-                                                                    >
-                                                                        {isProcessing ? 'Processing...' : tier.buttonText}
-                                                                    </Button>
-                                                                )
-                                                            )}
+                                                                        sx={{ fontWeight: 'bold' }}
+                                                                    />
+                                                                ) : (
+                                                                    !shouldShowUpgradeButton(currentPlan, tier.tier) ? null : (
+                                                                        <Button
+                                                                            variant={tier.isPremium ? "contained" : "outlined"}
+                                                                            color="primary"
+                                                                            onClick={tier.onClick}
+                                                                            disabled={isProcessing}
+                                                                            sx={{ borderRadius: '50px' }}
+                                                                        >
+                                                                            {isProcessing ? 'Processing...' : tier.buttonText}
+                                                                        </Button>
+                                                                    )
+                                                                )}
+                                                            </Grid>
                                                         </Grid>
-                                                    </Grid>
-                                                </CardContent>
-                                            </Card>
-                                        </motion.div>
-                                    </Grid>
-                                ))}
-                            </Grid>
+                                                    </CardContent>
+                                                </Card>
+                                            </motion.div>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                            </Box>
                         </Paper>
                     </Grid>
                 </Grid>
