@@ -96,6 +96,8 @@ function AgentsPlayground({ brdgeId, agentType = 'edit', token }) {
                 src={playgroundUrl}
                 title="Agents Playground"
                 allow="camera; microphone; display-capture; fullscreen"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                referrerPolicy="origin"
             />
         </Box>
     );
