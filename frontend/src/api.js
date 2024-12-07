@@ -1,25 +1,14 @@
 import axios from 'axios';
 
-
-import { BACKEND_URL as API_BASE_URL } from './config';
-
-const api = axios.create({
-    baseURL: API_BASE_URL,
+export const api = axios.create({
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
 });
 
-const unauthenticated_api = axios.create({
-    baseURL: API_BASE_URL
+// Add interceptor to include token in all requests
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
-
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('authToken');
-        if (token && !config.url.includes('/public/')) {
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-export { api, unauthenticated_api };

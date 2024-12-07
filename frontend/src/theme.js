@@ -3,59 +3,64 @@ import { createTheme } from '@mui/material/styles';
 const theme = createTheme({
     palette: {
         primary: {
-            main: '#2196f3', // Light blue
-            light: '#64b5f6',
-            dark: '#1976d2',
-            contrastText: '#FFFFFF',
+            main: '#0041C2',  // Dark Blue
+            light: '#00B4DB', // Bright Cyan
+            contrastText: '#ffffff'
         },
         secondary: {
-            main: '#0d47a1', // Darker blue for contrast
-            light: '#5472d3',
-            dark: '#002171',
-            contrastText: '#FFFFFF',
+            main: '#E7F6FB',  // Soft Light Blue
+            contrastText: '#000000'
         },
         background: {
-            default: '#F9F9F9',
-            paper: '#FFFFFF',
-        },
-        text: {
-            primary: '#333333',
-            secondary: '#666666',
-        },
+            default: '#ffffff',
+            paper: '#ffffff'
+        }
     },
     typography: {
-        fontFamily: 'Poppins, Arial, sans-serif',
+        // Default body font
+        fontFamily: 'Satoshi, sans-serif',
+
+        // Header styles
         h1: {
+            fontFamily: 'Satoshi, sans-serif',
             fontWeight: 700,
+            textTransform: 'uppercase'
         },
         h2: {
-            fontWeight: 600,
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 700,
+            textTransform: 'uppercase'
         },
         h3: {
-            fontWeight: 600,
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 700
         },
         h4: {
-            fontWeight: 600,
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 700
         },
         h5: {
-            fontWeight: 500,
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 700
         },
         h6: {
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 600
+        },
+        body1: {
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 400
+        },
+        body2: {
+            fontFamily: 'Satoshi, sans-serif',
+            fontWeight: 300
+        },
+        button: {
+            fontFamily: 'Satoshi, sans-serif',
             fontWeight: 500,
-        },
-    },
-    shape: {
-        borderRadius: 8,
-    },
-    components: {
-        MuiButton: {
-            styleOverrides: {
-                root: {
-                    textTransform: 'none',
-                },
-            },
-        },
-    },
+            textTransform: 'none'
+        }
+    }
 });
 
 export default theme;

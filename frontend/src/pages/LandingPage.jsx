@@ -4,24 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Typography, Button, Container, Grid, Box,
-    useTheme, Paper, Tabs, Tab, useMediaQuery, Icon
+    useTheme, Paper, Tabs, Tab, useMediaQuery, Icon,
+    Card, CardContent
 } from '@mui/material';
 import {
     CloudUpload, RecordVoiceOver, Slideshow,
     Group, Support, ArrowForward, School, Refresh, Chat,
     AutoAwesome, Speed, Mic, Description, VolumeUp, Share,
-    Handshake, TrendingUp, Devices, MenuBook
+    Handshake, TrendingUp, Devices, MenuBook, ArrowDownward,
+    Psychology, Link as LinkIcon, Analytics, BusinessCenter,
+    Laptop, Campaign, PlayArrow
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 import './LandingPage.css';
-import V1Diagram from '../components/V1Diagram';
-import V2Diagram from '../components/V2Diagram';
-import V3Diagram from '../components/V3Diagram';
-import EvolutionTimeline from '../components/EvolutionTimeline';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useInView } from 'react-intersection-observer';
 import HowItWorks from '../components/HowItWorks';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 // Reuse FeatureCard component
 const FeatureCard = ({ icon, title, description }) => {
@@ -92,153 +92,1216 @@ const FeatureItem = ({ icon, title, description }) => (
 
 // Introducing Brdge AI
 const IntroducingBrdgeAI = () => {
-    const theme = useTheme();
-    const [tabValue, setTabValue] = useState(0);
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-    const handleChange = (event, newValue) => {
-        setTabValue(newValue);
-    };
-
-    const tabDetails = [
-        {
-            label: "Static",
-            icon: <Slideshow />,
-            title: 'Static AI Presentation',
-            description: '',
-            component: <V1Diagram />,
-        },
-        {
-            label: "Agentic",
-            icon: <Chat />,
-            title: 'Agentic AI Presentation',
-            description: '',
-            component: <V2Diagram />,
-        },
-    ];
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
 
     return (
         <Box sx={{
-            my: { xs: 4, md: 16 },
-            background: 'linear-gradient(135deg, #f0f4f8 0%, #e0e8f0 100%)',
-            p: { xs: 3, md: 8 },
-            borderRadius: 4,
-            boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
+            py: { xs: 8, md: 16 },
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '10%',
+                left: '-10%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(0,255,204,0.08) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 15s infinite alternate'
+            },
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '10%',
+                right: '-10%',
+                width: '700px',
+                height: '700px',
+                background: 'radial-gradient(circle, rgba(0,180,219,0.08) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 20s infinite alternate-reverse'
+            }
         }}>
-            <Typography variant="h4" component="h2" gutterBottom fontWeight="bold" align="center" sx={{ mb: { xs: 3, md: 6 } }}>
-                Introducing Brdge AI
-            </Typography>
-            <Grid container spacing={4}>
-                <Grid item xs={12} md={5}>
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <Typography variant="body1" paragraph>
-                            With Brdge AI, transform any document into a presentation with your chosen script—consistent and ready to go.
-
-                            Simply upload your document, record your walkthrough, set your script, and deploy. Want more interaction?
-
-                            Our Agentic Brdge allows your presentations to respond to questions, creating an engaging, dynamic experience for your audience.
-                        </Typography>
-                        <Typography variant="h6" gutterBottom sx={{ mt: 4, mb: 2 }}>
-                            <strong>Key Use Cases:</strong>
-                        </Typography>
-                        <FeatureItem
-                            icon={Handshake}
-                            title="Effortlessly Guide New Hires"
-                            description="Create AI-powered onboarding sessions that guide new employees through policies, tools, and workflows. Ensure a consistent and engaging experience for every hire."
-                        />
-                        <FeatureItem
-                            icon={TrendingUp}
-                            title="Elevate Your Sales Pitches"
-                            description="Transform your sales presentations with AI-driven interactivity, adapting to client questions and ensuring every pitch is engaging and effective."
-                        />
-                        <FeatureItem
-                            icon={Devices}
-                            title="Showcase Your Products Like Never Before"
-                            description="Turn your product demos into dynamic, AI-led experiences that respond to your audience's interactions and highlight key features."
-                        />
-                    </motion.div>
-                </Grid>
-
-                <Grid item xs={12} md={7}>
+            <Container maxWidth="lg" ref={ref}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8 }}
+                >
+                    {/* Section Title */}
                     <Box sx={{
-                        backgroundColor: '#ffffff',
-                        borderRadius: 4,
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                        p: { xs: 2, md: 4 },
-                        height: '100%',
+                        mb: 12,
                         display: 'flex',
                         flexDirection: 'column',
+                        alignItems: 'center',
+                        position: 'relative'
                     }}>
-                        <Tabs
-                            value={tabValue}
-                            onChange={handleChange}
-                            variant="scrollable"
-                            scrollButtons="auto"
-                            allowScrollButtonsMobile
+                        <Box sx={{
+                            position: 'absolute',
+                            top: '-50%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '200px',
+                            height: '200px',
+                            background: 'linear-gradient(45deg, rgba(0,255,204,0.1), rgba(0,180,219,0.1))',
+                            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                            animation: 'rotate 20s linear infinite'
+                        }} />
+                        <Button
                             sx={{
-                                mb: 2,
-                                '& .MuiTabs-flexContainer': {
-                                    justifyContent: 'center',
+                                mb: 3,
+                                bgcolor: 'rgba(255,255,255,0.1)',
+                                color: 'white',
+                                borderRadius: '100px',
+                                px: 3,
+                                py: 1,
+                                textTransform: 'none',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&:hover': {
+                                    bgcolor: 'rgba(255,255,255,0.15)',
+                                    '&::after': {
+                                        transform: 'translateX(100%)'
+                                    }
                                 },
-                                '& .MuiTab-root': {
-                                    minWidth: 'auto',
-                                    px: { xs: 1, md: 2 },
-                                    color: 'text.secondary',
-                                    '&.Mui-selected': {
-                                        color: 'primary.main',
-                                        fontWeight: 'bold',
-                                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                                        borderRadius: '8px',
-                                    },
-                                },
-                                '& .MuiTabs-indicator': {
-                                    display: 'none',
-                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-100%',
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                    transition: 'transform 0.5s',
+                                }
                             }}
-                            aria-label="AI Presentation Versions"
                         >
-                            {tabDetails.map((tab, index) => (
-                                <Tab
-                                    key={index}
-                                    label={tab.label}
-                                    icon={tab.icon}
-                                    iconPosition="start"
+                            Why Brdge AI?
+                        </Button>
+                    </Box>
+
+                    {/* Main Content */}
+                    <Grid container spacing={8} alignItems="center">
+                        {/* Left Column - Visual */}
+                        <Grid item xs={12} md={6}>
+                            <motion.div
+                                initial={{ opacity: 0, x: -50 }}
+                                animate={inView ? { opacity: 1, x: 0 } : {}}
+                                transition={{ delay: 0.2, duration: 0.8 }}
+                            >
+                                <Box sx={{
+                                    position: 'relative',
+                                    height: '400px',
+                                    borderRadius: '30px',
+                                    overflow: 'hidden',
+                                    bgcolor: 'rgba(255,255,255,0.05)',
+                                    backdropFilter: 'blur(10px)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: 0,
+                                        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
+                                        opacity: 0.5
+                                    }
+                                }}>
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        width: '150%',
+                                        height: '150%',
+                                        background: 'radial-gradient(circle at center, rgba(0,255,204,0.15) 0%, transparent 70%)',
+                                        animation: 'pulse 3s infinite'
+                                    }} />
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        top: '20%',
+                                        left: '5%',
+                                        width: '300px',
+                                        height: '300px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '50%',
+                                        animation: 'rotate 20s linear infinite',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            inset: -1,
+                                            borderRadius: 'inherit',
+                                            padding: '1px',
+                                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                            WebkitMaskComposite: 'xor',
+                                            maskComposite: 'exclude'
+                                        }
+                                    }} />
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        bottom: '15%',
+                                        right: '10%',
+                                        width: '200px',
+                                        height: '200px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        borderRadius: '50%',
+                                        animation: 'rotate 15s linear infinite reverse',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            inset: -1,
+                                            borderRadius: 'inherit',
+                                            padding: '1px',
+                                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                            WebkitMaskComposite: 'xor',
+                                            maskComposite: 'exclude'
+                                        }
+                                    }} />
+                                    <SmartToyIcon sx={{
+                                        fontSize: '120px',
+                                        color: '#00ffcc',
+                                        filter: 'drop-shadow(0 0 20px rgba(0,255,204,0.5))',
+                                        animation: 'float 3s ease-in-out infinite',
+                                        position: 'relative',
+                                        zIndex: 1
+                                    }} />
+                                </Box>
+                            </motion.div>
+                        </Grid>
+
+                        {/* Right Column - Text Content */}
+                        <Grid item xs={12} md={6}>
+                            <motion.div
+                                initial={{ opacity: 0, x: 50 }}
+                                animate={inView ? { opacity: 1, x: 0 } : {}}
+                                transition={{ delay: 0.4, duration: 0.8 }}
+                            >
+                                <Typography variant="h3" sx={{
+                                    fontWeight: 600,
+                                    mb: 4,
+                                    background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    textShadow: '0 2px 10px rgba(255,255,255,0.3)',
+                                    position: 'relative',
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: '-10px',
+                                        left: 0,
+                                        width: '60px',
+                                        height: '4px',
+                                        background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
+                                        borderRadius: '2px',
+                                        boxShadow: '0 2px 10px rgba(255,255,255,0.2)'
+                                    }
+                                }}>
+                                    Redefining Knowledge Sharing
+                                </Typography>
+                                <Typography variant="h6" sx={{
+                                    color: '#FFFFFF',
+                                    mb: 4,
+                                    lineHeight: 1.8,
+                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                }}>
+                                    Create personalized AI representatives that deliver your message with precision and engage your audience in real-time conversations.
+                                </Typography>
+                                <Box sx={{
+                                    display: 'flex',
+                                    gap: 3,
+                                    mb: 6
+                                }}>
+                                    <Box sx={{
+                                        p: 3,
+                                        borderRadius: '20px',
+                                        bgcolor: 'rgba(255,255,255,0.1)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
+                                        }
+                                    }}>
+                                        <Typography variant="h4" sx={{ color: '#FFFFFF', mb: 1, textShadow: '0 2px 10px rgba(255,255,255,0.2)' }}>
+                                            Minutes
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                                            Setup Time
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{
+                                        p: 3,
+                                        borderRadius: '20px',
+                                        bgcolor: 'rgba(255,255,255,0.1)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255,255,255,0.2)',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
+                                        }
+                                    }}>
+                                        <Typography variant="h4" sx={{ color: '#FFFFFF', mb: 1, textShadow: '0 2px 10px rgba(255,255,255,0.2)' }}>
+                                            24/7
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+                                            Availability
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                                <Button
+                                    variant="contained"
+                                    size="large"
+                                    endIcon={<ArrowForward />}
                                     sx={{
-                                        flexDirection: { xs: 'column', md: 'row' },
-                                        alignItems: 'center',
+                                        background: 'linear-gradient(45deg, #FFFFFF, #E0E0E0)',
+                                        color: '#000000',
+                                        px: 4,
+                                        py: 2,
+                                        borderRadius: '100px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
+                                        '&:hover': {
+                                            background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
+                                            boxShadow: '0 6px 25px rgba(255,255,255,0.3)',
+                                            '&::after': {
+                                                transform: 'translateX(100%)'
+                                            }
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+                                            transition: 'transform 0.5s'
+                                        }
                                     }}
-                                />
-                            ))}
-                        </Tabs>
-                        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={tabValue}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.5 }}
-                                    style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}
                                 >
-                                    <Typography variant="h6" gutterBottom>
-                                        {tabDetails[tabValue].title}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                        {tabDetails[tabValue].description}
-                                    </Typography>
-                                    <Box sx={{ flexGrow: 1, width: '100%', position: 'relative' }}>
-                                        {tabDetails[tabValue].component}
+                                    Get Started
+                                </Button>
+                            </motion.div>
+                        </Grid>
+                    </Grid>
+                </motion.div>
+            </Container>
+
+            {/* Add keyframe animations */}
+            <style>
+                {`
+                    @keyframes pulse {
+                        0% { transform: scale(1); opacity: 0.5; }
+                        50% { transform: scale(1.1); opacity: 0.3; }
+                        100% { transform: scale(1); opacity: 0.5; }
+                    }
+                    @keyframes float {
+                        0% { transform: translateY(0px); }
+                        50% { transform: translateY(-20px); }
+                        100% { transform: translateY(0px); }
+                    }
+                    @keyframes rotate {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                `}
+            </style>
+        </Box>
+    );
+};
+
+// Update the HeroSection component
+const HeroSection = () => {
+    const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+    const iconAnimation = useAnimation();
+
+    const handleMouseMove = (event) => {
+        const { clientX, clientY } = event;
+        const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
+        const x = (clientX - left) / width;
+        const y = (clientY - top) / height;
+        setMousePosition({ x, y });
+    };
+
+    useEffect(() => {
+        const moveX = (mousePosition.x - 0.5) * 20;
+        const moveY = (mousePosition.y - 0.5) * 20;
+        iconAnimation.start({
+            x: moveX,
+            y: moveY,
+            transition: { type: "spring", stiffness: 300, damping: 30 }
+        });
+    }, [mousePosition, iconAnimation]);
+
+    return (
+        <Box sx={{
+            minHeight: '100vh',
+            width: '100vw',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            background: 'linear-gradient(180deg, #000000 0%, #000C1F 35%, #0041C2 70%, #00B4DB 100%)',
+            color: 'white',
+            overflow: 'hidden',
+            marginLeft: 'calc(-50vw + 50%)',
+            marginRight: 'calc(-50vw + 50%)',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'radial-gradient(circle at 30% 40%, rgba(0,65,194,0.4) 0%, transparent 60%)',
+                pointerEvents: 'none'
+            }
+        }}>
+            <Container maxWidth="lg" sx={{
+                position: 'relative',
+                zIndex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                mt: 8
+            }}>
+                {/* AI Presenter Visualization */}
+                <Box
+                    sx={{
+                        width: '200px',
+                        height: '200px',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        mb: 4,
+                        cursor: 'pointer'
+                    }}
+                    onMouseMove={handleMouseMove}
+                >
+                    <motion.div
+                        animate={iconAnimation}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <SmartToyIcon sx={{
+                            fontSize: '100px',
+                            color: 'white',
+                            filter: 'drop-shadow(0 0 20px rgba(0, 180, 219, 0.5))'
+                        }} />
+                    </motion.div>
+                </Box>
+
+                {/* Hero Content */}
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1 }}
+                >
+                    <Typography
+                        variant="h1"
+                        align="center"
+                        sx={{
+                            mb: { xs: 2, sm: 3 },
+                            fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                            lineHeight: 1.1,
+                            fontWeight: 700,
+                            textTransform: 'none',
+                            letterSpacing: '-0.02em'
+                        }}
+                    >
+                        Revolutionize Presentations with AI
+                    </Typography>
+                    <Typography
+                        variant="h5"
+                        align="center"
+                        sx={{
+                            mb: { xs: 4, sm: 6 },
+                            maxWidth: '800px',
+                            mx: 'auto',
+                            opacity: 0.8,
+                            fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                            fontWeight: 400
+                        }}
+                    >
+                        Meet the future of presentations: AI agents that deliver, explain, and interact—all in your voice.
+                    </Typography>
+
+                    <Box sx={{
+                        display: 'flex',
+                        gap: 2,
+                        justifyContent: 'center',
+                        mt: 4
+                    }}>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Button
+                                variant="contained"
+                                size="large"
+                                sx={{
+                                    bgcolor: 'white',
+                                    color: '#0041C2',
+                                    px: { xs: 4, md: 6 },
+                                    py: { xs: 1.5, md: 2 },
+                                    fontSize: { xs: '1rem', md: '1.2rem' },
+                                    fontWeight: 600,
+                                    borderRadius: '50px',
+                                    boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(255,255,255,0.9)',
+                                        boxShadow: '0 0 30px rgba(255,255,255,0.5)'
+                                    }
+                                }}
+                            >
+                                Start Free Today
+                            </Button>
+                        </motion.div>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Button
+                                variant="outlined"
+                                size="large"
+                                sx={{
+                                    color: 'white',
+                                    borderColor: 'rgba(255,255,255,0.5)',
+                                    borderWidth: '2px',
+                                    px: { xs: 4, md: 6 },
+                                    py: { xs: 1.5, md: 2 },
+                                    fontSize: { xs: '1rem', md: '1.2rem' },
+                                    fontWeight: 600,
+                                    borderRadius: '50px',
+                                    '&:hover': {
+                                        borderColor: 'white',
+                                        bgcolor: 'rgba(255,255,255,0.1)',
+                                        borderWidth: '2px'
+                                    }
+                                }}
+                            >
+                                Watch Demo
+                            </Button>
+                        </motion.div>
+                    </Box>
+                </motion.div>
+            </Container>
+
+            {/* Scroll Indicator */}
+            <Box sx={{
+                position: 'absolute',
+                bottom: 20,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                color: 'rgba(255,255,255,0.6)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1,
+                textTransform: 'uppercase'
+            }}>
+                <Typography variant="body2" sx={{
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    fontSize: '0.75rem',
+                    opacity: 0.7
+                }}>
+                    Scroll for more
+                </Typography>
+                <motion.div
+                    animate={{
+                        y: [0, 10, 0],
+                    }}
+                    transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                >
+                    <ArrowDownward sx={{ fontSize: 20 }} />
+                </motion.div>
+            </Box>
+        </Box>
+    );
+};
+
+// Update the How It Works section with the new design
+const HowItWorksSection = () => {
+    const steps = [
+        {
+            title: "Interact with AI",
+            description: "Engage with our AI to upload and explain your content effortlessly.",
+            icon: <CloudUpload sx={{ fontSize: 40 }} />,
+            color: "#00ffcc"
+        },
+        {
+            title: "Generate Script",
+            description: "Watch your input transform into a polished, editable script tailored to your voice and style.",
+            icon: <Description sx={{ fontSize: 40 }} />,
+            color: "#4dffdb"
+        },
+        {
+            title: "Configure the Agent",
+            description: "Clone your voice and fine-tune your AI presenter to deliver your message perfectly.",
+            icon: <SmartToyIcon sx={{ fontSize: 40 }} />,
+            color: "#80ffe6"
+        },
+        {
+            title: "Save & Share",
+            description: "Distribute your presentation with a shareable link—accessible anywhere.",
+            icon: <Share sx={{ fontSize: 40 }} />,
+            color: "#b3fff0"
+        },
+        {
+            title: "AI-Powered Playback",
+            description: "Let viewers interact with your AI representative in real-time for dynamic Q&A.",
+            icon: <Chat sx={{ fontSize: 40 }} />,
+            color: "#e6fffa"
+        }
+    ];
+
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
+    return (
+        <Box sx={{
+            py: { xs: 8, sm: 12, md: 16 },
+            position: 'relative',
+            background: 'linear-gradient(180deg, #00B4DB 0%, #0041C2 100%)',
+            mt: -1,
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '100px',
+                background: 'radial-gradient(50% 50% at 50% 0%, rgba(0,255,204,0.15) 0%, transparent 100%)',
+                pointerEvents: 'none'
+            }
+        }}>
+            <Container maxWidth="lg" ref={ref}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8 }}
+                >
+                    <Box sx={{
+                        position: 'relative',
+                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '60px',
+                        p: { xs: 4, md: 6 },
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '1px',
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                        }
+                    }}>
+                        <Typography variant="h2" align="center" sx={{
+                            fontSize: { xs: '2.5rem', md: '3.5rem' },
+                            fontWeight: 600,
+                            color: 'white',
+                            mb: 8,
+                            position: 'relative',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: '-16px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '80px',
+                                height: '4px',
+                                background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                                borderRadius: '2px'
+                            }
+                        }}>
+                            How Brdge AI Works
+                        </Typography>
+
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4
+                        }}>
+                            {steps.map((step, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+                                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                                    transition={{ delay: index * 0.2, duration: 0.8 }}
+                                >
+                                    <Box sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        p: 4,
+                                        borderRadius: '40px',
+                                        bgcolor: 'rgba(255, 255, 255, 0.03)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                                        transition: 'all 0.3s ease-in-out',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        '&:hover': {
+                                            transform: 'translateY(-5px)',
+                                            bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                            '& .step-icon': {
+                                                transform: 'scale(1.1)',
+                                            }
+                                        },
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
+                                        }
+                                    }}>
+                                        <Box
+                                            className="step-icon"
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                borderRadius: '30px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                                color: step.color,
+                                                transition: 'transform 0.3s ease-in-out',
+                                                position: 'relative',
+                                                '&::after': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    inset: -1,
+                                                    borderRadius: 'inherit',
+                                                    padding: '1px',
+                                                    background: `linear-gradient(45deg, transparent, ${step.color}40)`,
+                                                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                                    WebkitMaskComposite: 'xor',
+                                                    maskComposite: 'exclude'
+                                                }
+                                            }}
+                                        >
+                                            {step.icon}
+                                        </Box>
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography variant="h5" sx={{
+                                                color: step.color,
+                                                fontWeight: 600,
+                                                mb: 1,
+                                                fontSize: { xs: '1.25rem', md: '1.5rem' }
+                                            }}>
+                                                {step.title}
+                                            </Typography>
+                                            <Typography variant="body1" sx={{
+                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                fontSize: { xs: '0.9rem', md: '1rem' },
+                                                lineHeight: 1.6
+                                            }}>
+                                                {step.description}
+                                            </Typography>
+                                        </Box>
                                     </Box>
                                 </motion.div>
-                            </AnimatePresence>
+                            ))}
                         </Box>
                     </Box>
-                </Grid>
-            </Grid>
+                </motion.div>
+            </Container>
+
+            {/* Background Elements */}
+            <Box sx={{
+                position: 'absolute',
+                top: '10%',
+                left: '-10%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0,255,204,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 15s infinite alternate'
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: '10%',
+                right: '-10%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(0,180,219,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 20s infinite alternate-reverse'
+            }} />
+        </Box>
+    );
+};
+
+// Update the Final Call to Action section
+const FinalCTA = () => {
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
+    return (
+        <Box sx={{
+            my: { xs: 8, md: 16 },
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            <Container maxWidth="lg" ref={ref}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8 }}
+                >
+                    <Box sx={{
+                        position: 'relative',
+                        bgcolor: 'rgba(255, 255, 255, 0.03)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '60px',
+                        p: { xs: 6, md: 8 },
+                        textAlign: 'center',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'radial-gradient(70% 70% at 50% 0%, rgba(0,255,204,0.15), transparent 70%)',
+                            opacity: 0.5
+                        }
+                    }}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '1px',
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)'
+                        }} />
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.2, duration: 0.8 }}
+                        >
+                            <Typography variant="h2" sx={{
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontWeight: 600,
+                                color: 'white',
+                                mb: 3,
+                                background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>
+                                Ready to Transform Your Knowledge Sharing?
+                            </Typography>
+
+                            <Typography variant="h5" sx={{
+                                color: 'rgba(255,255,255,0.8)',
+                                mb: 6,
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                lineHeight: 1.6,
+                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
+                            }}>
+                                Join us today and revolutionize the way you share and interact with information.
+                            </Typography>
+
+                            <Box sx={{
+                                display: 'flex',
+                                gap: 3,
+                                justifyContent: 'center',
+                                flexWrap: 'wrap'
+                            }}>
+                                <Button
+                                    component={Link}
+                                    to="/signup"
+                                    variant="contained"
+                                    size="large"
+                                    endIcon={<ArrowForward />}
+                                    sx={{
+                                        bgcolor: '#00ffcc',
+                                        color: '#000B1F',
+                                        px: { xs: 4, md: 6 },
+                                        py: { xs: 1.5, md: 2 },
+                                        fontSize: { xs: '1rem', md: '1.1rem' },
+                                        fontWeight: 600,
+                                        borderRadius: '100px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease-in-out',
+                                        '&:hover': {
+                                            bgcolor: '#00ffcc',
+                                            transform: 'translateY(-3px)',
+                                            boxShadow: '0 10px 30px rgba(0,255,204,0.3)',
+                                            '&::after': {
+                                                transform: 'translateX(100%)'
+                                            }
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                                            transition: 'transform 0.5s'
+                                        }
+                                    }}
+                                >
+                                    Get Started Free
+                                </Button>
+
+                                <Button
+                                    variant="outlined"
+                                    size="large"
+                                    endIcon={<PlayArrow />}
+                                    sx={{
+                                        color: 'white',
+                                        borderColor: 'rgba(255,255,255,0.2)',
+                                        px: { xs: 4, md: 6 },
+                                        py: { xs: 1.5, md: 2 },
+                                        fontSize: { xs: '1rem', md: '1.1rem' },
+                                        fontWeight: 600,
+                                        borderRadius: '100px',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease-in-out',
+                                        '&:hover': {
+                                            borderColor: '#00ffcc',
+                                            transform: 'translateY(-3px)',
+                                            bgcolor: 'rgba(0,255,204,0.1)',
+                                            boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
+                                            '&::after': {
+                                                transform: 'translateX(100%)'
+                                            }
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: '-100%',
+                                            width: '100%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                            transition: 'transform 0.5s'
+                                        }
+                                    }}
+                                >
+                                    Watch Demo
+                                </Button>
+                            </Box>
+                        </motion.div>
+                    </Box>
+                </motion.div>
+            </Container>
+
+            {/* Background Elements */}
+            <Box sx={{
+                position: 'absolute',
+                top: '-20%',
+                left: '-10%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0,255,204,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 15s infinite alternate'
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: '-20%',
+                right: '-10%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(0,180,219,0.05) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(60px)',
+                animation: 'float 20s infinite alternate-reverse'
+            }} />
+        </Box>
+    );
+};
+
+// Key Use Cases Section
+const KeyUseCases = () => {
+    const useCases = [
+        {
+            title: "Effortless Onboarding",
+            description: "Streamline employee training with consistent, interactive AI sessions.",
+            icon: <School sx={{ fontSize: 40 }} />,
+            color: "#4dffdb"
+        },
+        {
+            title: "Sales Empowerment",
+            description: "Deliver engaging pitches that adapt to client questions on the spot.",
+            icon: <BusinessCenter sx={{ fontSize: 40 }} />,
+            color: "#00ffcc"
+        },
+        {
+            title: "Product Showcases",
+            description: "Create immersive product demos that respond to customer needs dynamically.",
+            icon: <Laptop sx={{ fontSize: 40 }} />,
+            color: "#80ffe6"
+        }
+    ];
+
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
+    return (
+        <Box sx={{
+            py: { xs: 8, sm: 12, md: 16 },
+            background: 'linear-gradient(180deg, #0041C2 0%, #000B1F 100%)',
+            position: 'relative'
+        }}>
+            <Container maxWidth="lg" ref={ref}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8 }}
+                >
+                    <Typography variant="h2" align="center" sx={{
+                        fontSize: { xs: '2.5rem', md: '3.5rem' },
+                        fontWeight: 600,
+                        color: 'white',
+                        mb: 8
+                    }}>
+                        Unlock the Power of AI Presentations
+                    </Typography>
+
+                    <Grid container spacing={4}>
+                        {useCases.map((useCase, index) => (
+                            <Grid item xs={12} md={4} key={index}>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                                    transition={{ delay: index * 0.2, duration: 0.8 }}
+                                >
+                                    <Paper sx={{
+                                        p: 4,
+                                        height: '100%',
+                                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                        backdropFilter: 'blur(10px)',
+                                        borderRadius: '20px',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        transition: 'transform 0.3s ease-in-out',
+                                        '&:hover': {
+                                            transform: 'translateY(-10px)',
+                                            '& .use-case-icon': {
+                                                transform: 'scale(1.1) rotate(10deg)',
+                                            }
+                                        }
+                                    }}>
+                                        <Box
+                                            className="use-case-icon"
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                borderRadius: '50%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                color: useCase.color,
+                                                transition: 'transform 0.3s ease-in-out',
+                                                mb: 3
+                                            }}
+                                        >
+                                            {useCase.icon}
+                                        </Box>
+                                        <Typography variant="h5" sx={{
+                                            color: useCase.color,
+                                            fontWeight: 600,
+                                            mb: 2
+                                        }}>
+                                            {useCase.title}
+                                        </Typography>
+                                        <Typography variant="body1" sx={{
+                                            color: 'rgba(255, 255, 255, 0.8)'
+                                        }}>
+                                            {useCase.description}
+                                        </Typography>
+                                    </Paper>
+                                </motion.div>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </motion.div>
+            </Container>
+        </Box>
+    );
+};
+
+// Feature Highlights Section
+const FeatureHighlights = () => {
+    const features = [
+        {
+            title: "AI Interaction First",
+            description: "Offload content directly to the AI, simplifying setup and creating smarter, faster presentations.",
+            icon: <Psychology sx={{ fontSize: 40 }} />,
+            color: "#00ffcc"
+        },
+        {
+            title: "Voice Cloning",
+            description: "Add a personal touch by cloning your voice, making your AI presenter uniquely yours.",
+            icon: <Campaign sx={{ fontSize: 40 }} />,
+            color: "#4dffdb"
+        },
+        {
+            title: "Dynamic Q&A",
+            description: "Engage your audience with interactive, real-time answers powered by AI.",
+            icon: <Chat sx={{ fontSize: 40 }} />,
+            color: "#80ffe6"
+        },
+        {
+            title: "Easy Sharing",
+            description: "Effortlessly distribute your AI-powered presentations through simple, shareable links.",
+            icon: <LinkIcon sx={{ fontSize: 40 }} />,
+            color: "#b3fff0"
+        },
+        {
+            title: "Scalable Use Cases",
+            description: "Adapt to any need—be it sales, onboarding, or team training—with seamless scalability.",
+            icon: <Analytics sx={{ fontSize: 40 }} />,
+            color: "#e6fffa"
+        }
+    ];
+
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
+    return (
+        <Box sx={{
+            py: { xs: 8, sm: 12, md: 16 },
+            background: 'linear-gradient(180deg, #000B1F 0%, #000000 100%)',
+            position: 'relative'
+        }}>
+            <Container maxWidth="lg" ref={ref}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8 }}
+                >
+                    <Typography variant="h2" align="center" sx={{
+                        fontSize: { xs: '2.5rem', md: '3.5rem' },
+                        fontWeight: 600,
+                        color: 'white',
+                        mb: 2
+                    }}>
+                        What Sets Brdge AI Apart
+                    </Typography>
+                    <Typography variant="h5" align="center" sx={{
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        mb: 8,
+                        maxWidth: '800px',
+                        mx: 'auto'
+                    }}>
+                        Revolutionizing Communication: Personalization and Engagement at Scale
+                    </Typography>
+
+                    <Grid container spacing={4}>
+                        {features.map((feature, index) => (
+                            <Grid item xs={12} sm={6} md={4} key={index}>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 30 }}
+                                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                                    transition={{ delay: index * 0.2, duration: 0.8 }}
+                                >
+                                    <Paper sx={{
+                                        p: 4,
+                                        height: '100%',
+                                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                        backdropFilter: 'blur(10px)',
+                                        borderRadius: '20px',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        transition: 'transform 0.3s ease-in-out',
+                                        '&:hover': {
+                                            transform: 'translateY(-10px)',
+                                            '& .feature-icon': {
+                                                transform: 'scale(1.1) rotate(10deg)',
+                                            }
+                                        }
+                                    }}>
+                                        <Box
+                                            className="feature-icon"
+                                            sx={{
+                                                width: 80,
+                                                height: 80,
+                                                borderRadius: '50%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                color: feature.color,
+                                                transition: 'transform 0.3s ease-in-out',
+                                                mb: 3
+                                            }}
+                                        >
+                                            {feature.icon}
+                                        </Box>
+                                        <Typography variant="h5" sx={{
+                                            color: feature.color,
+                                            fontWeight: 600,
+                                            mb: 2
+                                        }}>
+                                            {feature.title}
+                                        </Typography>
+                                        <Typography variant="body1" sx={{
+                                            color: 'rgba(255, 255, 255, 0.8)'
+                                        }}>
+                                            {feature.description}
+                                        </Typography>
+                                    </Paper>
+                                </motion.div>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </motion.div>
+            </Container>
         </Box>
     );
 };
@@ -255,119 +1318,31 @@ function LandingPage() {
 
     return (
         <ParallaxProvider>
-            <Box sx={{ flexGrow: 1, overflow: 'hidden', backgroundColor: '#f9f9f9' }}>
-                <Container maxWidth="lg" sx={{ py: { xs: 8, sm: 10, md: 12 } }}>
-                    {/* Hero Section */}
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 1 }}
-                    >
-                        <Typography variant="h2" component="h1" align="center" sx={{
-                            mb: { xs: 2, sm: 3 },
-                            fontWeight: 'bold',
-                            color: theme.palette.text.primary,
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                            lineHeight: 1.2
-                        }}>
-                            Autonomous AI Presentations
-                        </Typography>
-                        <Typography variant="h6" component="p" align="center" sx={{
-                            mb: { xs: 4, sm: 6 },
-                            color: theme.palette.text.secondary,
-                            maxWidth: '800px',
-                            mx: 'auto',
-                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
-                        }}>
-                            Let Brdge AI Agents Handle Onboarding, Sales, and Training for You.
-                        </Typography>
-                    </motion.div>
-
-                    {/* Call to Action Button */}
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: { xs: 6, sm: 8 } }}>
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                                component={Link}
-                                to="/demos"
-                                variant="contained"
-                                size="large"
-                                endIcon={<ArrowForward />}
-                                sx={{
-                                    py: { xs: 1.5, md: 2 },
-                                    px: { xs: 4, md: 6 },
-                                    fontSize: { xs: '1rem', md: '1.2rem' },
-                                    borderRadius: 2,
-                                    backgroundColor: theme.palette.primary.main,
-                                    '&:hover': {
-                                        backgroundColor: theme.palette.primary.dark,
-                                    },
-                                }}
-                            >
-                                Explore AI Use Cases
-                            </Button>
-                        </motion.div>
-                    </Box>
-
-                    {/* Evolution Timeline Section */}
-                    <EvolutionTimeline />
-
-                    {/* Introducing Brdge AI Section */}
+            <Box sx={{
+                flexGrow: 1,
+                overflow: 'hidden',
+                background: 'linear-gradient(180deg, #00B4DB 0%, #00d2ff 30%, #000B1F 65%, #000000 100%)',
+                color: 'white',
+                minHeight: '100vh',
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'radial-gradient(circle at 30% 40%, rgba(0,65,194,0.4) 0%, transparent 60%)',
+                    pointerEvents: 'none'
+                }
+            }}>
+                <HeroSection />
+                <Container maxWidth="lg">
                     <IntroducingBrdgeAI />
-
-                    {/* How It Works Section */}
-                    <HowItWorks />
-
-                    {/* Final Call to Action */}
-                    <Box sx={{
-                        my: { xs: 8, md: 16 },
-                        textAlign: 'center',
-                        py: { xs: 6, md: 8 },
-                        px: { xs: 2, md: 4 },
-                        background: 'linear-gradient(135deg, #00B4DB 0%, #0083B0 100%)',
-                        borderRadius: { xs: '24px', md: theme.shape.borderRadius },
-                        boxShadow: '0px 10px 30px rgba(0, 131, 176, 0.3)',
-                    }}>
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                            <Typography variant="h3" component="h2" gutterBottom sx={{
-                                fontWeight: 'bold',
-                                mb: { xs: 2, md: 4 },
-                                color: 'white',
-                                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-                            }}>
-                                Ready to <span style={{ color: '#00ffcc' }}>Transform</span> Your Knowledge Sharing?
-                            </Typography>
-                            <Typography variant="h6" component="p" gutterBottom sx={{
-                                mb: { xs: 3, md: 6 },
-                                maxWidth: '800px',
-                                mx: 'auto',
-                                color: 'rgba(255, 255, 255, 0.9)',
-                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
-                            }}>
-                                Join us today and revolutionize the way you share and interact with information.
-                            </Typography>
-                            <Button
-                                component={Link}
-                                to="/signup"
-                                variant="contained"
-                                size="large"
-                                endIcon={<ArrowForward />}
-                                sx={{
-                                    py: { xs: 1.5, md: 2 },
-                                    px: { xs: 4, md: 6 },
-                                    fontSize: { xs: '1rem', md: '1.2rem' },
-                                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                                    color: '#fff',
-                                    borderRadius: '50px',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                                    },
-                                    transition: 'all 0.3s ease-in-out',
-                                }}
-                            >
-                                Sign Up For Free
-                            </Button>
-                        </motion.div>
-                    </Box>
+                    <HowItWorksSection />
+                    <KeyUseCases />
+                    <FeatureHighlights />
+                    <FinalCTA />
                 </Container>
             </Box>
         </ParallaxProvider>

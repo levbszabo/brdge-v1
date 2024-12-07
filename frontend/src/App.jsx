@@ -12,7 +12,6 @@ import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
 import DemoPage from './pages/DemoPage';
-import AboutPage from './pages/AboutPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
@@ -26,6 +25,7 @@ import PolicyPage from './pages/PolicyPage';
 import UserProfilePage from './pages/UserProfilePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
+import RoomPage from './pages/RoomPage';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -87,7 +87,6 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/demos" element={<DemoPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
-                <Route path="/about" element={<AboutPage />} />
                 <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
                 <Route path="/b/:publicId" element={<ViewBrdgePage />} />
                 <Route
@@ -125,6 +124,7 @@ function App() {
                   }
                 />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                <Route path="/room" element={<RoomPage />} />
               </Routes>
             </Layout>
           </Router>

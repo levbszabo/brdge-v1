@@ -4,20 +4,37 @@ import { motion, useAnimation } from 'framer-motion';
 import { styled } from '@mui/material/styles';
 import { BusinessCenter, School, PresentToAll, AccessTime, ArrowForward, GroupAdd, MenuBook } from '@mui/icons-material';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
+import { useInView } from 'react-intersection-observer';
 
 const StyledCard = styled(Card)(({ theme }) => ({
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
     transition: 'all 0.3s ease-in-out',
-    borderRadius: '16px',
+    borderRadius: '24px',
     overflow: 'hidden',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    position: 'relative',
     '&:hover': {
         transform: 'translateY(-10px)',
         boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+        '&::before': {
+            opacity: 0.8,
+        }
     },
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+        opacity: 0.5,
+        transition: 'opacity 0.3s ease-in-out'
+    }
 }));
 
 const IconWrapper = styled(Box)(({ theme }) => ({
@@ -26,10 +43,17 @@ const IconWrapper = styled(Box)(({ theme }) => ({
     alignItems: 'center',
     height: '200px',
     width: '100%',
-    borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
-    backgroundColor: theme.palette.primary.light + '10',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
     position: 'relative',
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
+        opacity: 0.5
+    }
 }));
 
 const demoData = [
@@ -98,14 +122,88 @@ const AnimatedIcon = ({ icon }) => {
 function DemoPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
 
     return (
         <ParallaxProvider>
             <Box sx={{
-                background: 'linear-gradient(180deg, #f0f8ff 0%, #ffffff 100%)',
-                py: { xs: 6, md: 10 }
+                background: 'linear-gradient(180deg, #000B1F 0%, #0041C2 100%)',
+                py: { xs: 6, md: 10 },
+                minHeight: '100vh',
+                color: 'white',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '10%',
+                    left: '-10%',
+                    width: '500px',
+                    height: '500px',
+                    background: 'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    filter: 'blur(60px)',
+                    animation: 'float 15s infinite alternate'
+                },
+                '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: '10%',
+                    right: '-10%',
+                    width: '600px',
+                    height: '600px',
+                    background: 'radial-gradient(circle, rgba(0,65,194,0.15) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    filter: 'blur(60px)',
+                    animation: 'float 20s infinite alternate-reverse'
+                }
             }}>
-                <Container maxWidth="lg">
+                <Box sx={{
+                    position: 'absolute',
+                    top: '15%',
+                    left: '5%',
+                    width: '300px',
+                    height: '300px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '50%',
+                    animation: 'rotate 20s linear infinite',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        inset: -1,
+                        borderRadius: 'inherit',
+                        padding: '1px',
+                        background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude'
+                    }
+                }} />
+                <Box sx={{
+                    position: 'absolute',
+                    bottom: '15%',
+                    right: '5%',
+                    width: '200px',
+                    height: '200px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    transform: 'rotate(45deg)',
+                    animation: 'rotate 15s linear infinite reverse',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        inset: -1,
+                        padding: '1px',
+                        background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                        WebkitMaskComposite: 'xor',
+                        maskComposite: 'exclude'
+                    }
+                }} />
+
+                <Container maxWidth="lg" ref={ref}>
                     <motion.div
                         initial={{ opacity: 0, y: -50 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -114,13 +212,29 @@ function DemoPage() {
                         <Typography
                             variant={isMobile ? "h3" : "h2"}
                             component="h1"
-                            gutterBottom
                             align="center"
                             sx={{
                                 mb: { xs: 4, md: 6 },
-                                fontWeight: 'bold',
-                                color: theme.palette.primary.main,
-                                fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' }
+                                fontWeight: '600',
+                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                color: 'white',
+                                textTransform: 'none',
+                                letterSpacing: '-0.02em',
+                                lineHeight: 1.1,
+                                position: 'relative',
+                                textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-16px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '80px',
+                                    height: '4px',
+                                    background: 'rgba(255, 255, 255, 0.5)',
+                                    borderRadius: '2px',
+                                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
+                                }
                             }}
                         >
                             Experience Brdge AI in Action
@@ -128,43 +242,86 @@ function DemoPage() {
                         <Typography
                             variant={isMobile ? "h6" : "h5"}
                             align="center"
-                            sx={{ mb: 8, color: theme.palette.text.secondary, maxWidth: '800px', mx: 'auto' }}
+                            sx={{
+                                mb: 8,
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontWeight: '400',
+                                letterSpacing: '0.01em',
+                                lineHeight: 1.6
+                            }}
                         >
-                            AI-Narrated Walkthroughs Created in Minutes. Transform your content into engaging, interactive experiences with just a few clicks.
+                            AI-narrated walkthroughs created in minutes. Transform your content into engaging, interactive experiences with just a few clicks.
                         </Typography>
                     </motion.div>
 
                     <Grid container spacing={6}>
-                        {demoData.map((demo) => (
+                        {demoData.map((demo, index) => (
                             <Grid item xs={12} md={4} key={demo.id}>
                                 <Parallax translateY={[10, -10]} disabled={isMobile}>
                                     <motion.div
                                         initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.5, delay: demo.id * 0.1 }}
+                                        animate={inView ? { opacity: 1, y: 0 } : {}}
+                                        transition={{ duration: 0.5, delay: index * 0.2 }}
                                     >
                                         <StyledCard>
                                             <IconWrapper>
                                                 <AnimatedIcon icon={demo.icon} />
                                             </IconWrapper>
-                                            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3, height: '300px' }}>
-                                                <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 'bold', mb: 2, color: theme.palette.primary.main }}>
+                                            <CardContent sx={{
+                                                flexGrow: 1,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                p: 3,
+                                                height: '300px',
+                                                color: 'white'
+                                            }}>
+                                                <Typography
+                                                    variant="h5"
+                                                    component="h2"
+                                                    gutterBottom
+                                                    sx={{
+                                                        fontWeight: 'bold',
+                                                        mb: 2,
+                                                        color: '#4F9CF9'
+                                                    }}
+                                                >
                                                     {demo.title}
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, flexGrow: 1, overflow: 'auto' }}>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        mb: 3,
+                                                        flexGrow: 1,
+                                                        overflow: 'auto',
+                                                        color: 'rgba(255, 255, 255, 0.8)'
+                                                    }}
+                                                >
                                                     {demo.description}
                                                 </Typography>
                                                 <Box sx={{
-                                                    backgroundColor: theme.palette.primary.light + '20',
+                                                    backgroundColor: 'rgba(79, 156, 249, 0.1)',
                                                     p: 2,
                                                     borderRadius: '8px',
                                                     mb: 2,
-                                                    border: `1px solid ${theme.palette.primary.light}`
+                                                    border: '1px solid rgba(79, 156, 249, 0.2)'
                                                 }}>
-                                                    <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                                    <Typography
+                                                        variant="subtitle2"
+                                                        sx={{
+                                                            fontWeight: 'bold',
+                                                            mb: 1,
+                                                            color: '#4F9CF9'
+                                                        }}
+                                                    >
                                                         Key Benefits:
                                                     </Typography>
-                                                    <Typography variant="body2">
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                                                    >
                                                         {demo.value}
                                                     </Typography>
                                                 </Box>
@@ -172,21 +329,23 @@ function DemoPage() {
                                             <CardActions sx={{ justifyContent: 'center', p: 3 }}>
                                                 <Button
                                                     variant="contained"
-                                                    color="primary"
                                                     href={demo.link}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     startIcon={<AccessTime />}
                                                     fullWidth
                                                     sx={{
+                                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                                        color: 'white',
                                                         borderRadius: '50px',
-                                                        py: 1,
+                                                        py: 1.5,
                                                         fontSize: '0.9rem',
                                                         fontWeight: 'bold',
                                                         transition: 'all 0.3s ease-in-out',
                                                         '&:hover': {
+                                                            background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
                                                             transform: 'scale(1.05)',
-                                                            boxShadow: '0 6px 20px rgba(0, 180, 219, 0.4)',
+                                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
                                                         },
                                                     }}
                                                 >
@@ -199,38 +358,26 @@ function DemoPage() {
                             </Grid>
                         ))}
                     </Grid>
-
-                    <Box sx={{ mt: { xs: 8, md: 12 }, textAlign: 'center' }}>
-                        <Typography variant={isMobile ? "h4" : "h3"} gutterBottom sx={{ fontWeight: 'bold', color: theme.palette.primary.main }}>
-                            Ready to Create Your Own AI Presenter?
-                        </Typography>
-                        <Typography variant="body1" sx={{ mb: 4, maxWidth: '600px', mx: 'auto' }}>
-                            Sign up now and start creating your own AI-powered presentations in minutes.
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            size="large"
-                            component={Link}
-                            href="/signup"
-                            endIcon={<ArrowForward />}
-                            sx={{
-                                borderRadius: '50px',
-                                px: { xs: 4, md: 6 },
-                                py: { xs: 1.5, md: 2 },
-                                fontSize: { xs: '1rem', md: '1.2rem' },
-                                fontWeight: 'bold',
-                                transition: 'all 0.3s ease-in-out',
-                                '&:hover': {
-                                    transform: 'scale(1.05)',
-                                    boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
-                                },
-                            }}
-                        >
-                            Get Started Free
-                        </Button>
-                    </Box>
                 </Container>
+
+                <style>
+                    {`
+                        @keyframes float {
+                            0% { transform: translateY(0px); }
+                            50% { transform: translateY(-20px); }
+                            100% { transform: translateY(0px); }
+                        }
+                        @keyframes rotate {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                        @keyframes pulse {
+                            0% { opacity: 0.5; }
+                            50% { opacity: 0.8; }
+                            100% { opacity: 0.5; }
+                        }
+                    `}
+                </style>
             </Box>
         </ParallaxProvider>
     );

@@ -1,3 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@font-face {
+    font-family: 'Satoshi';
+    src: url('./assets/fonts/Satoshi-Regular.woff2') format('woff2'),
+        url('./assets/fonts/Satoshi-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+}
 
-/* We've removed the @font-face rules for GT America fonts */
+@font-face {
+    font-family: 'Satoshi';
+    src: url('./assets/fonts/Satoshi-Bold.woff2') format('woff2'),
+        url('./assets/fonts/Satoshi-Bold.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Satoshi';
+    src: url('./assets/fonts/Satoshi-Medium.woff2') format('woff2'),
+        url('./assets/fonts/Satoshi-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+}
+
+/* Base styles */
+body {
+    font-family: 'Satoshi';
+}

@@ -1,14 +1,31 @@
 # routes.py
 # brian voice :nPczCjzI2devNBz1zQrb
 import re
-from flask import request, jsonify, send_file, abort, url_for, current_app
+from flask import (
+    request,
+    jsonify,
+    send_file,
+    abort,
+    url_for,
+    current_app,
+    Blueprint,
+    make_response,
+)
 from flask_cors import CORS, cross_origin
-from app import app, db
 from werkzeug.utils import secure_filename
 import os
 import boto3
 import uuid
-from models import Brdge, User, UserAccount
+from models import (
+    Brdge,
+    User,
+    UserAccount,
+    Walkthrough,
+    WalkthroughMessage,
+    Scripts,
+    Voice,
+    ViewerConversation,
+)
 from utils import (
     clone_voice_helper,
     pdf_to_images,
@@ -32,6 +49,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import stripe
 from sqlalchemy import text
+from typing import Dict, List, Optional
+import openai
+import requests
+from app import app, db
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -45,7 +66,6 @@ S3_REGION = os.getenv("S3_REGION", "us-east-1")  # Default to 'us-east-1' if not
 s3_client = boto3.client("s3", region_name=S3_REGION)
 
 # Enable CORS for all routes
-CORS(app)
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
@@ -56,6 +76,9 @@ endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
 STRIPE_PRODUCT_PRICE = 5900  # Price in cents ($59.00)
 STRIPE_PRODUCT_CURRENCY = "usd"
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 @jwt_required(optional=True)
@@ -199,21 +222,70 @@ def delete_brdge(brdge_id):
     brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first_or_404()
 
     try:
-        # Delete associated files from S3
-        s3_folder = brdge.folder
-        s3_objects = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=s3_folder)
-        for obj in s3_objects.get("Contents", []):
-            s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
+        # Start a transaction
+        db.session.begin_nested()
 
-        # Delete the brdge from the database
-        db.session.delete(brdge)
-        db.session.commit()
+        try:
+            # Delete associated scripts first
+            Scripts.query.filter_by(brdge_id=brdge_id).delete()
 
-        return jsonify({"message": "Brdge deleted successfully"}), 200
+            # Delete associated walkthrough messages
+            walkthroughs = Walkthrough.query.filter_by(brdge_id=brdge_id).all()
+            for walkthrough in walkthroughs:
+                WalkthroughMessage.query.filter_by(
+                    walkthrough_id=walkthrough.id
+                ).delete()
+
+            # Delete walkthroughs
+            Walkthrough.query.filter_by(brdge_id=brdge_id).delete()
+
+            # Delete S3 files
+            s3_folder = brdge.folder
+            try:
+                # List all objects with this prefix
+                s3_objects = s3_client.list_objects_v2(
+                    Bucket=S3_BUCKET, Prefix=s3_folder
+                )
+
+                # Delete each object
+                for obj in s3_objects.get("Contents", []):
+                    app.logger.debug(f"Deleting S3 object: {obj['Key']}")
+                    s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
+
+                app.logger.info(f"Successfully deleted S3 files for brdge {brdge_id}")
+            except Exception as s3_error:
+                app.logger.error(f"Error deleting S3 files: {s3_error}")
+                raise
+
+            # Finally delete the brdge
+            db.session.delete(brdge)
+
+            # Commit the transaction
+            db.session.commit()
+            app.logger.info(
+                f"Successfully deleted brdge {brdge_id} and all related data"
+            )
+
+            return jsonify({"message": "Brdge deleted successfully"}), 200
+
+        except Exception as inner_error:
+            db.session.rollback()
+            app.logger.error(f"Error in delete transaction: {inner_error}")
+            raise
+
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error deleting brdge: {str(e)}")
-        return jsonify({"error": "An error occurred while deleting the brdge"}), 500
+        app.logger.error(f"Error deleting brdge: {e}")
+        return (
+            jsonify(
+                {
+                    "error": "Failed to delete brdge",
+                    "message": str(e),
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
+                }
+            ),
+            500,
+        )
 
 
 @app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
@@ -1007,6 +1079,7 @@ def login():
 
 @app.route("/api/check-auth", methods=["GET"])
 @jwt_required()
+@cross_origin()
 def check_auth():
     current_user_id = get_jwt_identity()
     return jsonify(logged_in_as=current_user_id), 200
@@ -1125,6 +1198,7 @@ def manage_brdge(user, brdge_id):
 
 
 @app.route("/api/auth/google", methods=["POST"])
+@cross_origin()
 def google_auth():
     try:
         data = request.get_json()
@@ -1139,11 +1213,14 @@ def google_auth():
                 credential,
                 google_requests.Request(),
                 os.getenv("GOOGLE_CLIENT_ID"),
-                clock_skew_in_seconds=60
+                clock_skew_in_seconds=60,
             )
 
             # Verify issuer
-            if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+            if idinfo["iss"] not in [
+                "accounts.google.com",
+                "https://accounts.google.com",
+            ]:
                 return jsonify({"error": "Wrong issuer"}), 400
 
             email = idinfo["email"]
@@ -1176,20 +1253,26 @@ def google_auth():
 
             # Generate JWT token
             access_token = create_access_token(
-                identity=user.id,
-                expires_delta=timedelta(hours=24)
+                identity=user.id, expires_delta=timedelta(hours=24)
             )
 
-            return jsonify({
-                "access_token": access_token,
-                "user": {
-                    "email": user.email,
-                    "name": idinfo.get("name"),
-                    "account_type": user.account.account_type if user.account else "free",
-                    "id": user.id
-                },
-                "message": "Successfully signed up with Google"
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "access_token": access_token,
+                        "user": {
+                            "email": user.email,
+                            "name": idinfo.get("name"),
+                            "account_type": (
+                                user.account.account_type if user.account else "free"
+                            ),
+                            "id": user.id,
+                        },
+                        "message": "Successfully signed up with Google",
+                    }
+                ),
+                200,
+            )
 
         except ValueError as token_error:
             return jsonify({"error": "Invalid token"}), 400
@@ -1206,6 +1289,7 @@ def log_request_info():
 
 @app.route("/api/auth/verify", methods=["GET"])
 @jwt_required()
+@cross_origin()
 def verify_token():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
@@ -1217,6 +1301,7 @@ def verify_token():
 
 @app.route("/api/user/profile", methods=["GET"])
 @jwt_required()
+@cross_origin()
 def get_user_profile():
     current_user_id = get_jwt_identity()
     print(f"Fetching profile for user ID: {current_user_id}")  # Debug log
@@ -1527,3 +1612,798 @@ def create_portal_session(user):
     except Exception as e:
         print(f"Error creating portal session: {str(e)}")
         return jsonify({"error": "Failed to create portal session"}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
+def generate_slide_scripts(brdge_id):
+    """Generate cleaned-up scripts using walkthrough data from database"""
+    try:
+        data = request.get_json()
+        walkthrough_id = data.get("walkthrough_id")
+
+        if not walkthrough_id:
+            return jsonify({"error": "Walkthrough ID required"}), 400
+
+        # Get walkthrough from database
+        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
+
+        # Verify walkthrough belongs to brdge
+        if walkthrough.brdge_id != brdge_id:
+            return jsonify({"error": "Walkthrough does not belong to this brdge"}), 403
+
+        # Check for existing scripts and update if found
+        existing_script = Scripts.query.filter_by(
+            brdge_id=brdge_id, walkthrough_id=walkthrough_id
+        ).first()
+
+        # Get all messages for this walkthrough
+        messages = (
+            WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
+            .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
+            .all()
+        )
+
+        # Organize messages by slide
+        slides_data = {}
+        for msg in messages:
+            slide_num = str(msg.slide_number)
+            if slide_num not in slides_data:
+                slides_data[slide_num] = []
+            slides_data[slide_num].append(
+                {
+                    "role": msg.role,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.isoformat(),
+                }
+            )
+
+        # Prepare the prompt with full instructions
+        prompt = """
+        You are provided with transcripts of a user's presentation across {num_slides} slides. For each slide, the user has discussed key points.
+        Your task is to generate a polished, cohesive script for each slide that effectively communicates the points the user intended to convey.
+        Paraphrase where appropriate to enhance clarity and flow, but maintain the user's tone and style. Do not delete any information thats relevant.
+        Instructions:
+
+        - Focus solely on the user's messages.
+        - Encapsulate the user's content for each slide into one coherent message. You can summarize if needed but do not remove important information
+        - Ensure the script for each slide is a single, natural-sounding message in the user's voice.
+        - Preserve important details and key points relevant to each slide.
+        - Avoid filler words, repetitions, and disfluencies.
+        - Present the scripts in JSON format as follows:
+
+        {{
+          "1": "User's script for slide 1",
+          "2": "User's script for slide 2",
+          ...
+        }}
+
+        - Ensure the scripts are suitable for text-to-speech conversion by avoiding special characters and complex formatting.
+        - Do not include any additional text or explanations outside the JSON format.
+
+        -----------Conversation Transcript-----------
+        {conversation_transcript}
+        """.format(
+            conversation_transcript=json.dumps(slides_data, indent=2),
+            num_slides=walkthrough.total_slides,
+        )
+
+        try:
+            # Generate scripts using OpenAI
+            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "user", "content": [{"type": "text", "text": prompt}]}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"},
+            )
+
+            slide_scripts = json.loads(response.choices[0].message.content)
+
+            # Save or update scripts in database
+            if existing_script:
+                existing_script.scripts = slide_scripts
+                existing_script.generated_at = datetime.utcnow()
+                script = existing_script
+            else:
+                script = Scripts(
+                    brdge_id=brdge_id,
+                    walkthrough_id=walkthrough_id,
+                    scripts=slide_scripts,
+                    generated_at=datetime.utcnow(),
+                )
+                db.session.add(script)
+
+            db.session.commit()
+            app.logger.info(f"Successfully saved scripts for brdge {brdge_id}")
+
+            return (
+                jsonify(
+                    {
+                        "message": "Scripts generated successfully",
+                        "scripts": script.scripts,
+                        "metadata": {
+                            "generated_at": script.generated_at.isoformat(),
+                            "walkthrough_id": walkthrough_id,
+                            "num_slides": len(slide_scripts),
+                        },
+                    }
+                ),
+                200,
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error generating scripts: {e}")
+            raise
+
+    except Exception as e:
+        app.logger.error(f"Error in script generation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
+def get_brdge_scripts(brdge_id):
+    """Get existing scripts for a brdge if they exist"""
+    try:
+        # Query the most recent script from database
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
+
+        if not script:
+            logger.info(f"No scripts found for brdge {brdge_id}")
+            return jsonify({"has_scripts": False, "message": "No scripts found"}), 200
+
+        logger.info(f"Found scripts for brdge {brdge_id}")
+        return (
+            jsonify(
+                {
+                    "has_scripts": True,
+                    "scripts": script.scripts,
+                    "metadata": {
+                        "generated_at": script.generated_at.isoformat(),
+                        "source_walkthrough_id": script.walkthrough_id,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching scripts: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching scripts",
+                    "details": {"brdge_id": brdge_id},
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/brdges/<int:brdge_id>/voice/clone", methods=["POST"])
+@cross_origin()
+def clone_voice_for_brdge(brdge_id):
+    """Clone a voice from uploaded audio sample using Cartesia API"""
+    try:
+        # Get the brdge to use its name as default
+        brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
+
+        # Get form data
+        audio_file = request.files.get("audio")
+        name = request.form.get("name", brdge.name)
+        description = request.form.get("description", f"Voice clone for {brdge.name}")
+        language = request.form.get("language", "en")
+        mode = request.form.get("mode", "stability")
+        enhance = request.form.get("enhance", "true").lower() == "true"
+        transcript = request.form.get("transcript", "")
+
+        if not audio_file:
+            return jsonify({"error": "No audio file provided"}), 400
+
+        # Create temporary directory for audio file
+        temp_dir = "/tmp/voice_clone"
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_audio_path = os.path.join(
+            temp_dir, f"temp_{brdge_id}_{secure_filename(audio_file.filename)}"
+        )
+
+        try:
+            # Save audio file temporarily
+            audio_file.save(temp_audio_path)
+
+            # Prepare the multipart form data for Cartesia API
+            files = {"clip": ("audio.wav", open(temp_audio_path, "rb"), "audio/wav")}
+            data = {
+                "name": name,
+                "description": description,
+                "language": language,
+                "mode": mode,
+                "enhance": str(enhance).lower(),
+            }
+            if transcript:
+                data["transcript"] = transcript
+
+            # Make request to Cartesia API
+            headers = {
+                "X-API-Key": os.getenv("CARTESIA_API_KEY"),
+                "Cartesia-Version": "2024-06-10",
+            }
+
+            response = requests.post(
+                "https://api.cartesia.ai/voices/clone",
+                headers=headers,
+                files=files,
+                data=data,
+            )
+
+            # Log the response for debugging
+            logger.info(f"Cartesia API response: {response.text}")
+
+            try:
+                # Try to parse the response data regardless of status code
+                voice_data = response.json()
+
+                # Check if we got the expected fields
+                if "id" in voice_data and "name" in voice_data:
+                    logger.info(f"Successfully parsed voice data: {voice_data}")
+
+                    voice = Voice.from_cartesia_response(brdge_id, voice_data)
+                    logger.info(f"Created voice record: {voice.to_dict()}")
+
+                    # Save to database
+                    db.session.add(voice)
+                    db.session.commit()
+                    logger.info(f"Successfully saved voice to database")
+
+                    return (
+                        jsonify(
+                            {
+                                "message": "Voice cloned successfully",
+                                "voice": voice.to_dict(),
+                            }
+                        ),
+                        201,
+                    )
+                else:
+                    logger.error(f"Missing required fields in response: {voice_data}")
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid response from voice service",
+                                "details": voice_data,
+                            }
+                        ),
+                        400,
+                    )
+
+            except Exception as db_error:
+                logger.error(f"Database error while saving voice: {db_error}")
+                db.session.rollback()
+                raise
+
+            finally:
+                # Clean up temporary file
+                if os.path.exists(temp_audio_path):
+                    os.remove(temp_audio_path)
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error cloning voice: {e}")
+            return jsonify({"error": "Failed to clone voice", "details": str(e)}), 500
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error cloning voice: {e}")
+        return jsonify({"error": "Failed to clone voice", "details": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/voices", methods=["GET"])
+@cross_origin()
+def get_brdge_voices(brdge_id):
+    """Get all saved voices for a brdge"""
+    try:
+        # Debug: Check what brdge_id we're querying
+        logger.info(f"Querying voices for brdge_id: {brdge_id}")
+
+        # Debug: Check all voices in the table
+        all_voices = Voice.query.all()
+        logger.info(f"Total voices in DB: {len(all_voices)}")
+        for v in all_voices:
+            logger.info(
+                f"DB Voice - brdge_id: {v.brdge_id}, voice_id: {v.cartesia_voice_id}, name: {v.name}"
+            )
+
+        # Get voices for this brdge
+        voices = (
+            Voice.query.filter_by(brdge_id=brdge_id, status="active")
+            .order_by(Voice.created_at.desc())
+            .all()
+        )
+
+        # Debug: Log what we found
+        logger.info(f"Found {len(voices)} active voices for brdge {brdge_id}")
+        for voice in voices:
+            logger.info(f"Voice details: {voice.to_dict()}")
+
+        # Format voices for frontend
+        voice_list = [
+            {
+                "id": voice.cartesia_voice_id,  # Frontend expects Cartesia's ID
+                "name": voice.name,
+                "created_at": voice.created_at.isoformat(),
+                "language": voice.language,
+                "description": voice.description,
+            }
+            for voice in voices
+        ]
+
+        # Debug: Log what we're returning
+        logger.info(f"Returning voice list: {voice_list}")
+
+        return (
+            jsonify(
+                {
+                    "has_voices": len(voice_list) > 0,
+                    "voices": voice_list,
+                    "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching voices: {e}")
+        # Debug: Log the full error details
+        logger.exception("Full error details:")
+        return (
+            jsonify(
+                {
+                    "has_voices": False,
+                    "voices": [],
+                    "error": "Failed to fetch voices",
+                    "details": str(e),
+                    "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/walkthroughs", methods=["POST"])
+def create_walkthrough():
+    """Create a new walkthrough"""
+    data = request.get_json()
+    brdge_id = data.get("brdge_id")
+    total_slides = data.get("total_slides")
+
+    try:
+        walkthrough = Walkthrough(brdge_id=brdge_id, total_slides=total_slides)
+        db.session.add(walkthrough)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "id": walkthrough.id,
+                    "brdge_id": walkthrough.brdge_id,
+                    "created_at": walkthrough.created_at.isoformat(),
+                    "status": walkthrough.status,
+                }
+            ),
+            201,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/walkthroughs/<int:walkthrough_id>/messages", methods=["POST"])
+def add_walkthrough_message(walkthrough_id):
+    """Add a message to a walkthrough"""
+    data = request.get_json()
+    slide_number = data.get("slide_number")
+    role = data.get("role")
+    content = data.get("content")
+
+    try:
+        message = WalkthroughMessage(
+            walkthrough_id=walkthrough_id,
+            slide_number=slide_number,
+            role=role,
+            content=content,
+        )
+        db.session.add(message)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "id": message.id,
+                    "slide_number": message.slide_number,
+                    "role": message.role,
+                    "timestamp": message.timestamp.isoformat(),
+                }
+            ),
+            201,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/walkthroughs/<int:walkthrough_id>/complete", methods=["POST"])
+def complete_walkthrough(walkthrough_id):
+    """Mark a walkthrough as completed"""
+    try:
+        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
+        walkthrough.status = "completed"
+        walkthrough.completed_at = datetime.utcnow()
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Walkthrough completed",
+                    "completed_at": walkthrough.completed_at.isoformat(),
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
+def get_brdge_walkthroughs(brdge_id):
+    """
+    Get a list of all walkthroughs available for a brdge.
+    Returns labeled walkthroughs that can be used in a dropdown selection.
+    """
+    try:
+        # Get current user but don't require it
+        current_user = get_current_user()
+        logger.info(f"Current user: {current_user.id if current_user else 'None'}")
+
+        # Query walkthroughs directly from database
+        walkthroughs = (
+            Walkthrough.query.filter_by(brdge_id=brdge_id)
+            .order_by(Walkthrough.created_at.desc())
+            .all()
+        )
+
+        if not walkthroughs:
+            logger.info(f"No walkthroughs found for brdge {brdge_id}")
+            return (
+                jsonify(
+                    {
+                        "has_walkthroughs": False,
+                        "walkthroughs": [],
+                        "message": "No walkthroughs found",
+                    }
+                ),
+                200,
+            )
+
+        # Format walkthrough data
+        walkthrough_list = [
+            {
+                "id": w.id,
+                "label": f"Walkthrough {idx + 1}",
+                "timestamp": w.created_at.isoformat(),
+                "slide_count": w.total_slides,
+                "status": w.status,
+                "message_count": w.messages.count(),
+            }
+            for idx, w in enumerate(walkthroughs)
+        ]
+
+        logger.info(
+            f"Found {len(walkthrough_list)} walkthrough(s) for brdge {brdge_id}"
+        )
+        return (
+            jsonify(
+                {
+                    "has_walkthroughs": True,
+                    "walkthroughs": walkthrough_list,
+                    "message": f"Found {len(walkthrough_list)} walkthrough(s)",
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching walkthroughs",
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/walkthroughs/<int:walkthrough_id>", methods=["GET"])
+def get_walkthrough(walkthrough_id):
+    """Get a specific walkthrough's details and messages"""
+    try:
+        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
+
+        # Get all messages for this walkthrough
+        messages = (
+            WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
+            .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
+            .all()
+        )
+
+        # Organize messages by slide
+        slides_data = {}
+        for msg in messages:
+            slide_num = str(msg.slide_number)
+            if slide_num not in slides_data:
+                slides_data[slide_num] = []
+            slides_data[slide_num].append(msg.to_dict())
+
+        return (
+            jsonify(
+                {
+                    "id": walkthrough.id,
+                    "brdge_id": walkthrough.brdge_id,
+                    "created_at": walkthrough.created_at.isoformat(),
+                    "completed_at": (
+                        walkthrough.completed_at.isoformat()
+                        if walkthrough.completed_at
+                        else None
+                    ),
+                    "status": walkthrough.status,
+                    "total_slides": walkthrough.total_slides,
+                    "slides": slides_data,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching walkthrough: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching walkthrough",
+                    "details": {
+                        "walkthrough_id": walkthrough_id,
+                        "error_type": type(e).__name__,
+                    },
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/brdges/<int:brdge_id>/scripts/debug", methods=["GET"])
+def debug_brdge_scripts(brdge_id):
+    """Debug endpoint to check script availability"""
+    try:
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
+
+        if not script:
+            return (
+                jsonify(
+                    {
+                        "has_scripts": False,
+                        "message": "No scripts found",
+                        "debug_info": {
+                            "brdge_id": brdge_id,
+                            "scripts_count": Scripts.query.filter_by(
+                                brdge_id=brdge_id
+                            ).count(),
+                        },
+                    }
+                ),
+                200,
+            )
+
+        return (
+            jsonify(
+                {
+                    "has_scripts": True,
+                    "scripts": script.scripts,
+                    "debug_info": {
+                        "brdge_id": brdge_id,
+                        "generated_at": script.generated_at.isoformat(),
+                        "walkthrough_id": script.walkthrough_id,
+                        "script_keys": list(script.scripts.keys()),
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error in debug_brdge_scripts: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error fetching scripts",
+                    "debug_info": {
+                        "brdge_id": brdge_id,
+                        "error_type": type(e).__name__,
+                    },
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/brdges/<int:brdge_id>/scripts/update", methods=["PUT", "OPTIONS"])
+@cross_origin()  # Add CORS support
+def update_brdge_scripts(brdge_id):
+    """Update scripts for a brdge"""
+    # Handle preflight request
+    if request.method == "OPTIONS":
+        return "", 200  # Respond to preflight request
+
+    try:
+        data = request.get_json()
+        updated_scripts = data.get("scripts")
+
+        if not updated_scripts:
+            return jsonify({"error": "No scripts provided"}), 400
+
+        # Get the most recent script
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
+
+        if not script:
+            return jsonify({"error": "No scripts found for this brdge"}), 404
+
+        # Update scripts
+        script.scripts = updated_scripts
+        script.generated_at = datetime.utcnow()
+        db.session.commit()
+
+        app.logger.info(f"Successfully updated scripts for brdge {brdge_id}")
+        return (
+            jsonify(
+                {
+                    "message": "Scripts updated successfully",
+                    "scripts": script.scripts,
+                    "metadata": {
+                        "generated_at": script.generated_at.isoformat(),
+                        "walkthrough_id": script.walkthrough_id,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating scripts: {e}")
+        return (
+            jsonify(
+                {
+                    "error": str(e),
+                    "message": "Error updating scripts",
+                    "details": {"brdge_id": brdge_id},
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["POST"])
+@jwt_required(optional=True)
+def add_viewer_conversation(brdge_id):
+    try:
+        data = request.get_json()
+        viewer_id = data.get("user_id")
+        message = data.get("message")
+        role = data.get("role")
+        slide_number = data.get("slide_number")
+
+        if not all([viewer_id, message, role]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Handle both int and string user IDs
+        user_id = None
+        anonymous_id = None
+
+        # If viewer_id is already an integer or can be converted to one
+        if isinstance(viewer_id, int) or (
+            isinstance(viewer_id, str) and viewer_id.isdigit()
+        ):
+            user_id = int(viewer_id)
+        else:
+            # If it's a string starting with 'anon_', treat as anonymous
+            anonymous_id = viewer_id
+
+        conversation = ViewerConversation(
+            user_id=user_id,
+            anonymous_id=anonymous_id,
+            brdge_id=brdge_id,
+            message=message,
+            role=role,
+            slide_number=slide_number,
+        )
+
+        db.session.add(conversation)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {"id": conversation.id, "timestamp": conversation.timestamp.isoformat()}
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error logging viewer conversation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["GET"])
+@jwt_required(optional=True)
+@cross_origin()
+def get_viewer_conversations(brdge_id):
+    """Get viewer conversations for a brdge"""
+    try:
+        current_user = get_current_user()
+
+        # Base query for the brdge
+        query = ViewerConversation.query.filter_by(brdge_id=brdge_id)
+
+        # If user is authenticated, get their conversations
+        if current_user:
+            query = query.filter_by(user_id=current_user.id)
+        else:
+            # Get anonymous ID from query params
+            anonymous_id = request.args.get("anonymous_id")
+            if anonymous_id:
+                query = query.filter_by(anonymous_id=anonymous_id)
+            else:
+                return (
+                    jsonify(
+                        {"error": "Anonymous ID required for non-authenticated users"}
+                    ),
+                    400,
+                )
+
+        conversations = query.order_by(ViewerConversation.timestamp.desc()).all()
+
+        return (
+            jsonify({"conversations": [conv.to_dict() for conv in conversations]}),
+            200,
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error fetching viewer conversations: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to response"""
+    response.headers["Content-Security-Policy"] = (
+        "frame-ancestors 'self' https://accounts.google.com/; frame-src 'self' https://accounts.google.com/;"
+    )
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
+    return response

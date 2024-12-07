@@ -18,11 +18,17 @@ import base64
 import imghdr
 import logging
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional
 import os
 from elevenlabs import ElevenLabs
 import os
 import requests
+import shutil
+import boto3
+import dotenv
+from PIL import Image
+
+dotenv.load_dotenv(".env")
 
 import json
 
@@ -30,6 +36,14 @@ CHUNK_SIZE = 1024  # Size of chunks to read/write at a time
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")  # Your API key for authentication
 # ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID")  # ID of the voice model to use
 
+# Add S3 configuration
+S3_BUCKET = os.getenv("S3_BUCKET")
+S3_REGION = os.getenv("S3_REGION", "us-east-1")
+
+# Add debug logging for S3 configuration
+
+
+s3_client = boto3.client("s3", region_name=S3_REGION)
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -201,6 +215,13 @@ def align_transcript_with_slides(
     return image_transcripts
 
 
+def generate_slide_scripts(brdge_id):
+    walkthrough_path = f"data/walkthroughs/brdge_{brdge_id}.json"
+    with open(walkthrough_path, "r") as f:
+        walkthroughs = json.load(f)
+    walkthrough = walkthroughs[-1]
+
+
 def clone_voice_helper(name, audio_file_path):
     """
     Clone a voice using the ElevenLabs API.
@@ -286,3 +307,226 @@ def generate_voice_helper(brdge_id, transcript, voice_id):
 # # slides_directory = "path/to/your/slides/directory"
 # result = align_transcript_with_slides(transcript_dir, slides_dir)
 # # print(result)
+
+
+def create_brdge_directory_structure(brdge_id: str) -> Dict[str, str]:
+    """
+    Create the directory structure for a brdge and return paths
+
+    Args:
+        brdge_id: The ID of the brdge
+
+    Returns:
+        Dictionary containing paths for each directory
+    """
+    base_dir = f"/tmp/brdge/{brdge_id}"
+    directories = {
+        "base": base_dir,
+        "source": f"{base_dir}/source",
+        "slides": f"{base_dir}/slides",
+        "scripts": f"{base_dir}/scripts",
+        "walkthroughs": f"{base_dir}/walkthroughs",
+        "voices": f"{base_dir}/voices",
+        "audio": f"{base_dir}/audio",
+    }
+
+    # Create directories
+    for dir_path in directories.values():
+        os.makedirs(dir_path, exist_ok=True)
+
+    return directories
+
+
+def cleanup_brdge_directory(brdge_id: str) -> None:
+    """
+    Clean up all temporary files for a brdge
+
+    Args:
+        brdge_id: The ID of the brdge to clean up
+    """
+    base_dir = f"/tmp/brdge/{brdge_id}"
+    if os.path.exists(base_dir):
+        shutil.rmtree(base_dir)
+
+
+def get_brdge_paths(brdge_id: str) -> Dict[str, str]:
+    """
+    Get the paths for a brdge's directory structure
+
+    Args:
+        brdge_id: The ID of the brdge
+
+    Returns:
+        Dictionary containing paths for each directory
+    """
+    base_dir = f"/tmp/brdge/{brdge_id}"
+    return {
+        "base": base_dir,
+        "source": f"{base_dir}/source",
+        "slides": f"{base_dir}/slides",
+        "scripts": f"{base_dir}/scripts",
+        "walkthroughs": f"{base_dir}/walkthroughs",
+        "voices": f"{base_dir}/voices",
+        "audio": f"{base_dir}/audio",
+    }
+
+
+def save_walkthrough(brdge_id: str, walkthrough_number: int, data: dict) -> bool:
+    """Save a single walkthrough to the filesystem and S3"""
+    try:
+        # Validate inputs
+        if not isinstance(brdge_id, str):
+            raise ValueError(f"brdge_id must be string, got {type(brdge_id)}")
+        if not isinstance(walkthrough_number, int):
+            raise ValueError(
+                f"walkthrough_number must be int, got {type(walkthrough_number)}"
+            )
+        if not isinstance(data, dict):
+            raise ValueError(f"data must be dict, got {type(data)}")
+
+        logger.debug("=== Save Walkthrough Debug Info ===")
+        logger.debug(f"brdge_id: {brdge_id} (type: {type(brdge_id)})")
+        logger.debug(
+            f"walkthrough_number: {walkthrough_number} (type: {type(walkthrough_number)})"
+        )
+        logger.debug(f"S3_BUCKET: {S3_BUCKET}")
+
+        # Get paths
+        paths = get_brdge_paths(str(brdge_id))
+        logger.debug(f"Local paths: {paths}")
+
+        # Local file path
+        local_path = os.path.join(
+            paths["walkthroughs"], f"walkthrough_{walkthrough_number}.json"
+        )
+        logger.debug(f"Local file path: {local_path}")
+
+        # First save locally
+        try:
+            with open(local_path, "w", encoding="utf-8") as f:
+                json_str = json.dumps(data, indent=2, default=str)
+                f.write(json_str)
+            logger.debug(f"Successfully saved local file: {local_path}")
+            logger.debug(f"File exists check: {os.path.exists(local_path)}")
+            logger.debug(f"File size: {os.path.getsize(local_path)} bytes")
+        except Exception as e:
+            logger.error(f"Error saving local file: {e}")
+            return False
+
+        # Then upload to S3
+        try:
+            s3_key = (
+                f"{str(brdge_id)}/walkthroughs/walkthrough_{walkthrough_number}.json"
+            )
+            logger.debug(f"Uploading to S3:")
+            logger.debug(f"  - Bucket: {S3_BUCKET}")
+            logger.debug(f"  - Key: {s3_key}")
+            logger.debug(f"  - Local file: {local_path}")
+
+            s3_client.upload_file(
+                local_path,
+                S3_BUCKET,
+                s3_key,
+                ExtraArgs={"ContentType": "application/json"},
+            )
+
+            # Verify upload
+            try:
+                s3_client.head_object(Bucket=S3_BUCKET, Key=s3_key)
+                logger.debug("S3 upload verified - file exists in bucket")
+            except Exception as e:
+                logger.error(f"S3 upload verification failed: {e}")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"S3 upload error: {e}")
+            logger.error(f"S3 key: {s3_key}")
+            logger.error(f"Local file exists: {os.path.exists(local_path)}")
+            return False
+
+    except Exception as e:
+        logger.error(f"Error in save_walkthrough: {e}")
+        logger.error(f"Full error details:", exc_info=True)
+        return False
+
+
+def get_walkthrough(brdge_id: str, walkthrough_number: int) -> Optional[dict]:
+    """Get a specific walkthrough"""
+    paths = get_brdge_paths(brdge_id)
+    local_path = os.path.join(
+        paths["walkthroughs"], f"walkthrough_{walkthrough_number}.json"
+    )
+
+    try:
+        if os.path.exists(local_path):
+            with open(local_path, "r") as f:
+                return json.load(f)
+
+        # If not in local cache, try S3
+        s3_key = f"{brdge_id}/walkthroughs/walkthrough_{walkthrough_number}.json"
+        response = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+        data = json.loads(response["Body"].read().decode("utf-8"))
+
+        # Cache it locally
+        os.makedirs(paths["walkthroughs"], exist_ok=True)
+        with open(local_path, "w") as f:
+            json.dump(data, f, indent=2)
+
+        return data
+    except Exception as e:
+        logger.error(f"Error getting walkthrough: {e}")
+        return None
+
+
+def get_walkthrough_count(brdge_id: str) -> int:
+    """Get the number of walkthroughs for a brdge"""
+    paths = get_brdge_paths(brdge_id)
+
+    try:
+        # Check local directory
+        if os.path.exists(paths["walkthroughs"]):
+            files = [
+                f
+                for f in os.listdir(paths["walkthroughs"])
+                if f.startswith("walkthrough_") and f.endswith(".json")
+            ]
+            return len(files)
+
+        # If not local, check S3
+        prefix = f"{brdge_id}/walkthroughs/"
+        response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=prefix)
+        return len(
+            [
+                obj
+                for obj in response.get("Contents", [])
+                if obj["Key"].endswith(".json")
+            ]
+        )
+    except Exception as e:
+        logger.error(f"Error getting walkthrough count: {e}")
+        return 0
+
+
+def list_walkthroughs(brdge_id: str) -> List[Dict]:
+    """List all walkthroughs with metadata"""
+    paths = get_brdge_paths(brdge_id)
+    walkthroughs = []
+
+    try:
+        count = get_walkthrough_count(brdge_id)
+        for i in range(1, count + 1):
+            walkthrough = get_walkthrough(brdge_id, i)
+            if walkthrough:
+                walkthroughs.append(
+                    {
+                        "id": i,
+                        "timestamp": walkthrough["timestamp"],
+                        "status": walkthrough["metadata"]["status"],
+                        "slide_count": walkthrough["metadata"]["total_slides"],
+                    }
+                )
+    except Exception as e:
+        logger.error(f"Error listing walkthroughs: {e}")
+
+    return walkthroughs

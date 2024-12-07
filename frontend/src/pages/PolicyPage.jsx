@@ -1,112 +1,172 @@
 import React from 'react';
-import { Container, Typography, Box, Paper, Divider, useTheme } from '@mui/material';
+import { Box, Container, Typography, Paper, Divider } from '@mui/material';
+import { motion } from 'framer-motion';
 
 function PolicyPage() {
-    const theme = useTheme();
-
-    const SectionTitle = ({ children }) => (
-        <Typography variant="h4" component="h2" gutterBottom sx={{ color: theme.palette.primary.main, fontWeight: 'bold', mt: 4 }}>
-            {children}
-        </Typography>
-    );
-
-    const SubSectionTitle = ({ children }) => (
-        <Typography variant="h6" component="h3" gutterBottom sx={{ color: theme.palette.secondary.main, fontWeight: 'bold', mt: 2 }}>
-            {children}
-        </Typography>
-    );
-
     return (
-        <Container maxWidth="md" sx={{ py: 8 }}>
-            <Paper elevation={3} sx={{ p: 4, borderRadius: '16px' }}>
-                <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
-                    Privacy Policy & Terms of Service
-                </Typography>
-                <Typography variant="subtitle1" align="center" gutterBottom>
-                    Last Updated: 10/27/2024
-                </Typography>
+        <Box sx={{
+            minHeight: '100vh',
+            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+            position: 'relative',
+            pt: 12,
+            pb: 8,
+            color: 'white',
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '5%',
+                left: '-5%',
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 20s infinite alternate',
+                zIndex: 0
+            },
+            '&::after': {
+                content: '""',
+                position: 'absolute',
+                bottom: '5%',
+                right: '-5%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                filter: 'blur(80px)',
+                animation: 'float 25s infinite alternate-reverse',
+                zIndex: 0
+            }
+        }}>
+            {/* Geometric Shapes */}
+            <Box sx={{
+                position: 'absolute',
+                top: '10%',
+                left: '15%',
+                width: '400px',
+                height: '400px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transform: 'rotate(45deg)',
+                animation: 'rotate 30s linear infinite',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: -1,
+                    padding: '1px',
+                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
+                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                    WebkitMaskComposite: 'xor',
+                    maskComposite: 'exclude'
+                }
+            }} />
 
-                <Divider sx={{ my: 4 }} />
+            <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <Typography variant="h2"
+                        sx={{
+                            textAlign: 'center',
+                            mb: 6,
+                            background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            fontWeight: 700
+                        }}
+                    >
+                        Privacy Policy
+                    </Typography>
 
-                <SectionTitle>Privacy Policy</SectionTitle>
-                <Typography paragraph>
-                    At Brdge AI, owned and operated by Journeyman AI LLC, we value your privacy and are committed to protecting your personal information. This Privacy Policy outlines how we collect, use, and protect the data you provide to us when using our platform.
-                </Typography>
+                    <Paper sx={{
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(20px)',
+                        borderRadius: '24px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        p: 4,
+                        color: 'white',
+                        '& h3': {
+                            color: '#00ffcc',
+                            mb: 2,
+                            mt: 4,
+                            fontWeight: 600
+                        },
+                        '& p': {
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            mb: 2,
+                            lineHeight: 1.7,
+                            fontSize: '1rem'
+                        }
+                    }}>
+                        <Typography variant="h6" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.9)' }}>
+                            Last updated: March 14, 2024
+                        </Typography>
 
-                <SubSectionTitle>1. Data Collection and Usage</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>Personal Information:</strong> When you sign up or log in through Google, we collect your name, email address, and Google ID for authentication purposes. We do not share this information directly with third parties.
-                </Typography>
-                <Typography paragraph>
-                    <strong>Content Data:</strong> Brdge AI uses secure AI processing services to generate and process content. Content data (such as documents or presentations) is processed solely for the purpose of creating AI-driven presentations and is not shared or stored for any use outside of Brdge AI's features.
-                </Typography>
+                        <Typography variant="body1" paragraph>
+                            At Brdge AI, we take your privacy seriously. This policy describes how we collect, use, and protect your personal information.
+                        </Typography>
 
-                <SubSectionTitle>2. Data Sharing and Security</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>No Unauthorized Sharing:</strong> Brdge AI does not share or sell your personal data to any third parties. All data processing is handled within authorized, secure frameworks.
-                </Typography>
-                <Typography paragraph>
-                    <strong>Secure Processing:</strong> Data is securely transmitted to our AI processing models, ensuring that your data is handled with strict security protocols.
-                </Typography>
+                        <Typography variant="h3">Information We Collect</Typography>
+                        <Typography variant="body1" paragraph>
+                            • Account information (email, name)<br />
+                            • Usage data and analytics<br />
+                            • Presentation content and metadata<br />
+                            • Payment information (processed securely via Stripe)
+                        </Typography>
 
-                <SubSectionTitle>3. Data Retention</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>Account Data:</strong> We retain your account data (name, email, Google ID) as long as your account remains active. You may request deletion of your account at any time.
-                </Typography>
-                <Typography paragraph>
-                    <strong>Content Data:</strong> Documents or presentations you upload are stored as needed for active use on the platform and may be deleted according to our data retention policy.
-                </Typography>
+                        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
-                <SubSectionTitle>4. Your Rights</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>Access and Control:</strong> You have the right to view, modify, or delete your personal data at any time by accessing your user profile or contacting support.
-                </Typography>
-                <Typography paragraph>
-                    If you have questions about your privacy, please reach out to our support team.
-                </Typography>
+                        <Typography variant="h3">How We Use Your Data</Typography>
+                        <Typography variant="body1" paragraph>
+                            • Providing and improving our services<br />
+                            • Processing payments and managing subscriptions<br />
+                            • Sending important updates and notifications<br />
+                            • Analyzing usage patterns to enhance user experience
+                        </Typography>
 
-                <Divider sx={{ my: 4 }} />
+                        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
-                <SectionTitle>Terms of Service</SectionTitle>
-                <Typography paragraph>
-                    Welcome to Brdge AI! Brdge AI is owned and operated by Journeyman AI LLC. By using our platform, you agree to the following terms and conditions. Please read them carefully.
-                </Typography>
+                        <Typography variant="h3">Data Protection</Typography>
+                        <Typography variant="body1" paragraph>
+                            We implement industry-standard security measures to protect your data. Your content is encrypted and stored securely.
+                        </Typography>
 
-                <SubSectionTitle>1. Use of the Platform</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>Authorized Use:</strong> Brdge AI is designed to help users create interactive presentations using AI-driven models. By using this platform, you agree not to misuse the services or content generated.
-                </Typography>
-                <Typography paragraph>
-                    <strong>Data Processing:</strong> Brdge AI uses secure AI models to process content. By uploading content, you acknowledge and consent to the use of these models solely for enhancing your experience on Brdge AI.
-                </Typography>
+                        <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.1)' }} />
 
-                <SubSectionTitle>2. User Responsibilities</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>Account Security:</strong> You are responsible for maintaining the confidentiality of your account credentials and for all activities conducted under your account.
-                </Typography>
-                <Typography paragraph>
-                    <strong>Prohibited Activities:</strong> You may not use Brdge AI to create, share, or distribute any content that is illegal, infringing, or violates others' rights.
-                </Typography>
+                        <Typography variant="h3">Your Rights</Typography>
+                        <Typography variant="body1" paragraph>
+                            You have the right to:<br />
+                            • Access your personal data<br />
+                            • Request data deletion<br />
+                            • Opt out of marketing communications<br />
+                            • Export your data
+                        </Typography>
 
-                <SubSectionTitle>3. Intellectual Property</SubSectionTitle>
-                <Typography paragraph>
-                    <strong>User Content:</strong> Any content you upload remains your intellectual property. Brdge AI only uses your content for processing and presentation purposes as permitted by these terms.
-                </Typography>
-                <Typography paragraph>
-                    <strong>Platform Content:</strong> Journeyman AI LLC retains all rights to the Brdge AI platform, services, and proprietary algorithms.
-                </Typography>
+                        <Box sx={{ mt: 4, p: 3, bgcolor: 'rgba(0, 255, 204, 0.05)', borderRadius: 2 }}>
+                            <Typography variant="body1" sx={{ color: '#00ffcc' }}>
+                                For any privacy-related questions, please contact us at levente@journeymanai.io
+                            </Typography>
+                        </Box>
+                    </Paper>
+                </motion.div>
+            </Container>
 
-                <SubSectionTitle>4. Limitation of Liability</SubSectionTitle>
-                <Typography paragraph>
-                    Brdge AI provides its services "as is" and makes no warranties regarding the accuracy, reliability, or quality of content generated by AI models.
-                </Typography>
-
-                <SubSectionTitle>5. Changes to Terms</SubSectionTitle>
-                <Typography paragraph>
-                    Journeyman AI LLC reserves the right to update these Terms of Service at any time. Notice of changes will be provided to users.
-                </Typography>
-            </Paper>
-        </Container>
+            <style>
+                {`
+                    @keyframes float {
+                        0% { transform: translateY(0px) rotate(0deg); }
+                        50% { transform: translateY(-20px) rotate(5deg); }
+                        100% { transform: translateY(0px) rotate(0deg); }
+                    }
+                    @keyframes rotate {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                `}
+            </style>
+        </Box>
     );
 }
 
