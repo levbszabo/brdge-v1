@@ -29,7 +29,7 @@ function AgentsPlayground({ brdgeId, agentType = 'edit', token }) {
                 }
 
                 const cleanApiBaseUrl = api.defaults.baseURL.replace(/\/$/, '');
-                const baseUrl = `${window.location.origin}/playground`;
+                const baseUrl = '/playground';
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     numSlides: brdgeData.num_slides.toString(),
@@ -97,7 +97,7 @@ function AgentsPlayground({ brdgeId, agentType = 'edit', token }) {
                 src={playgroundUrl}
                 title="Agents Playground"
                 allow="camera; microphone; display-capture; fullscreen"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
                 referrerPolicy="origin"
             />
         </Box>
