@@ -151,7 +151,11 @@ function SignUpPage() {
                 }
             }} />
 
-            <Container maxWidth="xs" sx={{ position: 'relative', zIndex: 1 }}>
+            <Container maxWidth="xs" sx={{
+                position: 'relative',
+                zIndex: 1,
+                mt: { xs: 8, md: 12 }
+            }}>
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -169,7 +173,7 @@ function SignUpPage() {
                             sx={{
                                 mb: { xs: 3, md: 4 },
                                 fontWeight: '600',
-                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
                                 color: 'white',
                                 textTransform: 'none',
                                 letterSpacing: '-0.02em',
@@ -200,7 +204,7 @@ function SignUpPage() {
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '300px',
                                 mx: 'auto',
-                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                                 fontWeight: '400',
                                 letterSpacing: '0.01em',
                                 lineHeight: 1.6
@@ -216,7 +220,7 @@ function SignUpPage() {
                                 textAlign: 'center',
                                 maxWidth: '90%',
                                 color: 'rgba(255, 255, 255, 0.6)',
-                                fontSize: '1rem',
+                                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
                                 lineHeight: 1.5
                             }}
                         >

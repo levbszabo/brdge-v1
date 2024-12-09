@@ -224,7 +224,7 @@ function PricingPage() {
                             sx={{
                                 mb: { xs: 4, md: 6 },
                                 fontWeight: '600',
-                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
                                 color: 'white',
                                 textTransform: 'none',
                                 letterSpacing: '-0.02em',
@@ -255,7 +255,7 @@ function PricingPage() {
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '800px',
                                 mx: 'auto',
-                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                                 fontWeight: '400',
                                 letterSpacing: '0.01em',
                                 lineHeight: 1.6

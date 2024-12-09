@@ -10,18 +10,24 @@ const StyledCard = styled(Card)(({ theme }) => ({
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'all 0.3s ease-in-out',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     borderRadius: '24px',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(0,180,219,0.03)',
     backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    border: '1px solid rgba(255,255,255,0.1)',
     position: 'relative',
+    boxShadow: '0 8px 32px rgba(0,180,219,0.1)',
     '&:hover': {
         transform: 'translateY(-10px)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-        '&::before': {
-            opacity: 0.8,
+        boxShadow: '0 20px 40px rgba(0,180,219,0.2)',
+        backgroundColor: 'rgba(0,180,219,0.05)',
+        '& .demo-icon': {
+            transform: 'scale(1.1) rotate(5deg)',
+            filter: 'drop-shadow(0 0 15px rgba(0,180,219,0.4))'
+        },
+        '& .card-content': {
+            transform: 'translateY(-5px)'
         }
     },
     '&::before': {
@@ -31,7 +37,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
         left: 0,
         right: 0,
         height: '1px',
-        background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+        background: 'linear-gradient(90deg, transparent, rgba(0,180,219,0.3), transparent)',
         opacity: 0.5,
         transition: 'opacity 0.3s ease-in-out'
     }
@@ -41,17 +47,21 @@ const IconWrapper = styled(Box)(({ theme }) => ({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    height: '200px',
+    height: '180px',
     width: '100%',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+    borderBottom: '1px solid rgba(255,255,255,0.1)',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    backgroundColor: 'rgba(0,180,219,0.02)',
     position: 'relative',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        backgroundColor: 'rgba(0,180,219,0.03)'
+    },
     '&::before': {
         content: '""',
         position: 'absolute',
         inset: 0,
-        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
+        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,180,219,0.02) 10px, rgba(0,180,219,0.02) 20px)',
         opacity: 0.5
     }
 }));
@@ -113,7 +123,15 @@ const AnimatedIcon = ({ icon }) => {
             sx={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
         >
             <motion.div animate={iconAnimation}>
-                {React.cloneElement(icon, { sx: { fontSize: '100px', color: 'primary.main' } })}
+                {React.cloneElement(icon, {
+                    sx: {
+                        fontSize: '80px',
+                        color: '#00B4DB',
+                        filter: 'drop-shadow(0 0 10px rgba(0,180,219,0.3))',
+                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                    },
+                    className: 'demo-icon'
+                })}
             </motion.div>
         </Box>
     );
@@ -216,7 +234,7 @@ function DemoPage() {
                             sx={{
                                 mb: { xs: 4, md: 6 },
                                 fontWeight: '600',
-                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
                                 color: 'white',
                                 textTransform: 'none',
                                 letterSpacing: '-0.02em',
@@ -247,7 +265,7 @@ function DemoPage() {
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '800px',
                                 mx: 'auto',
-                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                                 fontWeight: '400',
                                 letterSpacing: '0.01em',
                                 lineHeight: 1.6
@@ -270,22 +288,26 @@ function DemoPage() {
                                             <IconWrapper>
                                                 <AnimatedIcon icon={demo.icon} />
                                             </IconWrapper>
-                                            <CardContent sx={{
+                                            <CardContent className="card-content" sx={{
                                                 flexGrow: 1,
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 p: 3,
                                                 height: '300px',
-                                                color: 'white'
+                                                color: 'white',
+                                                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                                             }}>
                                                 <Typography
                                                     variant="h5"
                                                     component="h2"
                                                     gutterBottom
                                                     sx={{
-                                                        fontWeight: 'bold',
+                                                        fontWeight: 600,
                                                         mb: 2,
-                                                        color: '#4F9CF9'
+                                                        color: '#00B4DB',
+                                                        textShadow: '0 0 10px rgba(0,180,219,0.3)',
+                                                        fontSize: { xs: '1.3rem', sm: '1.4rem' },
+                                                        transition: 'color 0.3s ease'
                                                     }}
                                                 >
                                                     {demo.title}
@@ -296,31 +318,44 @@ function DemoPage() {
                                                         mb: 3,
                                                         flexGrow: 1,
                                                         overflow: 'auto',
-                                                        color: 'rgba(255, 255, 255, 0.8)'
+                                                        color: 'rgba(255,255,255,0.8)',
+                                                        fontSize: '0.95rem',
+                                                        lineHeight: 1.6
                                                     }}
                                                 >
                                                     {demo.description}
                                                 </Typography>
                                                 <Box sx={{
-                                                    backgroundColor: 'rgba(79, 156, 249, 0.1)',
-                                                    p: 2,
-                                                    borderRadius: '8px',
+                                                    backgroundColor: 'rgba(0,180,219,0.05)',
+                                                    p: 2.5,
+                                                    borderRadius: '16px',
                                                     mb: 2,
-                                                    border: '1px solid rgba(79, 156, 249, 0.2)'
+                                                    border: '1px solid rgba(0,180,219,0.1)',
+                                                    backdropFilter: 'blur(10px)',
+                                                    transition: 'all 0.3s ease',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(0,180,219,0.08)',
+                                                        transform: 'translateY(-2px)'
+                                                    }
                                                 }}>
                                                     <Typography
                                                         variant="subtitle2"
                                                         sx={{
-                                                            fontWeight: 'bold',
+                                                            fontWeight: 600,
                                                             mb: 1,
-                                                            color: '#4F9CF9'
+                                                            color: '#00B4DB',
+                                                            textShadow: '0 0 10px rgba(0,180,219,0.2)'
                                                         }}
                                                     >
                                                         Key Benefits:
                                                     </Typography>
                                                     <Typography
                                                         variant="body2"
-                                                        sx={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                                                        sx={{
+                                                            color: 'rgba(255,255,255,0.8)',
+                                                            fontSize: '0.9rem',
+                                                            lineHeight: 1.7
+                                                        }}
                                                     >
                                                         {demo.value}
                                                     </Typography>
@@ -335,18 +370,23 @@ function DemoPage() {
                                                     startIcon={<AccessTime />}
                                                     fullWidth
                                                     sx={{
-                                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                                        background: 'linear-gradient(45deg, #00B4DB, #0080bf)',
                                                         color: 'white',
                                                         borderRadius: '50px',
                                                         py: 1.5,
                                                         fontSize: '0.9rem',
-                                                        fontWeight: 'bold',
-                                                        transition: 'all 0.3s ease-in-out',
+                                                        fontWeight: 600,
+                                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                        border: '1px solid rgba(255,255,255,0.1)',
+                                                        backdropFilter: 'blur(10px)',
                                                         '&:hover': {
-                                                            background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
-                                                            transform: 'scale(1.05)',
-                                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
+                                                            background: 'linear-gradient(45deg, #0080bf, #00B4DB)',
+                                                            transform: 'scale(1.02)',
+                                                            boxShadow: '0 6px 20px rgba(0,180,219,0.4)',
                                                         },
+                                                        '&:active': {
+                                                            transform: 'scale(0.98)'
+                                                        }
                                                     }}
                                                 >
                                                     Try This Demo (2 min)
