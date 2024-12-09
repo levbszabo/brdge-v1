@@ -18,6 +18,11 @@ const StyledCard = styled(Card)(({ theme }) => ({
     border: '1px solid rgba(255,255,255,0.1)',
     position: 'relative',
     boxShadow: '0 8px 32px rgba(0,180,219,0.1)',
+    zIndex: 0,
+    '& > *': {
+        position: 'relative',
+        zIndex: 1,
+    },
     '&:hover': {
         transform: 'translateY(-10px)',
         boxShadow: '0 20px 40px rgba(0,180,219,0.2)',
@@ -39,8 +44,15 @@ const StyledCard = styled(Card)(({ theme }) => ({
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(0,180,219,0.3), transparent)',
         opacity: 0.5,
-        transition: 'opacity 0.3s ease-in-out'
-    }
+        transition: 'opacity 0.3s ease-in-out',
+        zIndex: 0
+    },
+    pointerEvents: 'auto',
+    touchAction: 'auto',
+    '& *': {
+        pointerEvents: 'auto',
+        touchAction: 'auto',
+    },
 }));
 
 const IconWrapper = styled(Box)(({ theme }) => ({
@@ -148,12 +160,11 @@ function DemoPage() {
     return (
         <ParallaxProvider>
             <Box sx={{
-                background: 'linear-gradient(180deg, #000B1F 0%, #0041C2 100%)',
-                py: { xs: 6, md: 10 },
                 minHeight: '100vh',
-                color: 'white',
+                background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
                 position: 'relative',
                 overflow: 'hidden',
+                py: { xs: 2, sm: 4, md: 6 },
                 '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -221,26 +232,32 @@ function DemoPage() {
                     }
                 }} />
 
-                <Container maxWidth="lg" ref={ref}>
+                <Container maxWidth="lg" ref={ref} sx={{
+                    px: { xs: 2, sm: 3, md: 4 },
+                    pt: { xs: 8, sm: 10, md: 12 },
+                }}>
                     <motion.div
                         initial={{ opacity: 0, y: -50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
+                        sx={{ mt: { xs: 4, sm: 6, md: 8 } }}
                     >
                         <Typography
                             variant={isMobile ? "h3" : "h2"}
                             component="h1"
                             align="center"
                             sx={{
-                                mb: { xs: 4, md: 6 },
+                                mb: { xs: 2, sm: 3, md: 4 },
                                 fontWeight: '600',
-                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
+                                fontSize: { xs: '1.5rem', sm: '2.25rem', md: '3.5rem' },
                                 color: 'white',
                                 textTransform: 'none',
                                 letterSpacing: '-0.02em',
                                 lineHeight: 1.1,
                                 position: 'relative',
                                 textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
+                                maxWidth: { xs: '100%', sm: '90%', md: '80%' },
+                                mx: 'auto',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
@@ -261,140 +278,170 @@ function DemoPage() {
                             variant={isMobile ? "h6" : "h5"}
                             align="center"
                             sx={{
-                                mb: 8,
+                                mb: { xs: 4, sm: 6, md: 8 },
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '800px',
                                 mx: 'auto',
                                 fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                                 fontWeight: '400',
                                 letterSpacing: '0.01em',
-                                lineHeight: 1.6
+                                lineHeight: 1.6,
+                                px: { xs: 2, sm: 0 },
+                                maxWidth: { xs: '100%', sm: '90%', md: '800px' },
                             }}
                         >
                             AI-narrated walkthroughs created in minutes. Transform your content into engaging, interactive experiences with just a few clicks.
                         </Typography>
                     </motion.div>
 
-                    <Grid container spacing={6}>
+                    <Grid container spacing={{ xs: 3, sm: 4, md: 6 }} sx={{ position: 'relative', zIndex: 1 }}>
                         {demoData.map((demo, index) => (
-                            <Grid item xs={12} md={4} key={demo.id}>
-                                <Parallax translateY={[10, -10]} disabled={isMobile}>
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={inView ? { opacity: 1, y: 0 } : {}}
-                                        transition={{ duration: 0.5, delay: index * 0.2 }}
-                                    >
-                                        <StyledCard>
-                                            <IconWrapper>
-                                                <AnimatedIcon icon={demo.icon} />
-                                            </IconWrapper>
-                                            <CardContent className="card-content" sx={{
-                                                flexGrow: 1,
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                p: 3,
-                                                height: '300px',
-                                                color: 'white',
-                                                transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                            <Grid item xs={12} sm={6} md={4} key={demo.id}>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                                    transition={{ duration: 0.5, delay: index * 0.2 }}
+                                    style={{ touchAction: 'auto' }}
+                                >
+                                    <StyledCard>
+                                        <IconWrapper>
+                                            <AnimatedIcon icon={demo.icon} />
+                                        </IconWrapper>
+                                        <CardContent className="card-content" sx={{
+                                            flexGrow: 1,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            p: 3,
+                                            height: { xs: 'auto', md: '300px' },
+                                            color: 'white',
+                                            transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        }}>
+                                            <Typography
+                                                variant="h5"
+                                                component="h2"
+                                                gutterBottom
+                                                sx={{
+                                                    fontWeight: 600,
+                                                    mb: 2,
+                                                    color: '#00B4DB',
+                                                    textShadow: '0 0 10px rgba(0,180,219,0.3)',
+                                                    fontSize: { xs: '1.3rem', sm: '1.4rem' },
+                                                    transition: 'color 0.3s ease'
+                                                }}
+                                            >
+                                                {demo.title}
+                                            </Typography>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    mb: 3,
+                                                    flexGrow: 1,
+                                                    overflow: 'auto',
+                                                    color: 'rgba(255,255,255,0.8)',
+                                                    fontSize: '0.95rem',
+                                                    lineHeight: 1.6
+                                                }}
+                                            >
+                                                {demo.description}
+                                            </Typography>
+                                            <Box sx={{
+                                                backgroundColor: 'rgba(0,180,219,0.05)',
+                                                p: { xs: 2, sm: 2.5 },
+                                                mb: { xs: 1.5, sm: 2 },
+                                                borderRadius: '16px',
+                                                border: '1px solid rgba(0,180,219,0.1)',
+                                                backdropFilter: 'blur(10px)',
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(0,180,219,0.08)',
+                                                    transform: 'translateY(-2px)'
+                                                }
                                             }}>
                                                 <Typography
-                                                    variant="h5"
-                                                    component="h2"
-                                                    gutterBottom
+                                                    variant="subtitle2"
                                                     sx={{
                                                         fontWeight: 600,
-                                                        mb: 2,
+                                                        mb: 1,
                                                         color: '#00B4DB',
-                                                        textShadow: '0 0 10px rgba(0,180,219,0.3)',
-                                                        fontSize: { xs: '1.3rem', sm: '1.4rem' },
-                                                        transition: 'color 0.3s ease'
+                                                        textShadow: '0 0 10px rgba(0,180,219,0.2)'
                                                     }}
                                                 >
-                                                    {demo.title}
+                                                    Key Benefits:
                                                 </Typography>
                                                 <Typography
                                                     variant="body2"
                                                     sx={{
-                                                        mb: 3,
-                                                        flexGrow: 1,
-                                                        overflow: 'auto',
                                                         color: 'rgba(255,255,255,0.8)',
-                                                        fontSize: '0.95rem',
-                                                        lineHeight: 1.6
-                                                    }}
-                                                >
-                                                    {demo.description}
-                                                </Typography>
-                                                <Box sx={{
-                                                    backgroundColor: 'rgba(0,180,219,0.05)',
-                                                    p: 2.5,
-                                                    borderRadius: '16px',
-                                                    mb: 2,
-                                                    border: '1px solid rgba(0,180,219,0.1)',
-                                                    backdropFilter: 'blur(10px)',
-                                                    transition: 'all 0.3s ease',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(0,180,219,0.08)',
-                                                        transform: 'translateY(-2px)'
-                                                    }
-                                                }}>
-                                                    <Typography
-                                                        variant="subtitle2"
-                                                        sx={{
-                                                            fontWeight: 600,
-                                                            mb: 1,
-                                                            color: '#00B4DB',
-                                                            textShadow: '0 0 10px rgba(0,180,219,0.2)'
-                                                        }}
-                                                    >
-                                                        Key Benefits:
-                                                    </Typography>
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            color: 'rgba(255,255,255,0.8)',
-                                                            fontSize: '0.9rem',
-                                                            lineHeight: 1.7
-                                                        }}
-                                                    >
-                                                        {demo.value}
-                                                    </Typography>
-                                                </Box>
-                                            </CardContent>
-                                            <CardActions sx={{ justifyContent: 'center', p: 3 }}>
-                                                <Button
-                                                    variant="contained"
-                                                    href={demo.link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    startIcon={<AccessTime />}
-                                                    fullWidth
-                                                    sx={{
-                                                        background: 'linear-gradient(45deg, #00B4DB, #0080bf)',
-                                                        color: 'white',
-                                                        borderRadius: '50px',
-                                                        py: 1.5,
                                                         fontSize: '0.9rem',
-                                                        fontWeight: 600,
-                                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                        border: '1px solid rgba(255,255,255,0.1)',
-                                                        backdropFilter: 'blur(10px)',
-                                                        '&:hover': {
-                                                            background: 'linear-gradient(45deg, #0080bf, #00B4DB)',
-                                                            transform: 'scale(1.02)',
-                                                            boxShadow: '0 6px 20px rgba(0,180,219,0.4)',
-                                                        },
-                                                        '&:active': {
-                                                            transform: 'scale(0.98)'
-                                                        }
+                                                        lineHeight: 1.7
                                                     }}
                                                 >
-                                                    Try This Demo (2 min)
-                                                </Button>
-                                            </CardActions>
-                                        </StyledCard>
-                                    </motion.div>
-                                </Parallax>
+                                                    {demo.value}
+                                                </Typography>
+                                            </Box>
+                                        </CardContent>
+                                        <CardActions sx={{
+                                            justifyContent: 'center',
+                                            p: 3,
+                                            position: 'relative',
+                                            zIndex: 10,
+                                            pointerEvents: 'auto',
+                                            touchAction: 'auto',
+                                        }}>
+                                            <Button
+                                                component="a"
+                                                variant="contained"
+                                                href={demo.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                startIcon={<AccessTime />}
+                                                fullWidth
+                                                sx={{
+                                                    background: 'linear-gradient(45deg, #00B4DB, #0080bf)',
+                                                    color: 'white',
+                                                    borderRadius: '50px',
+                                                    py: { xs: 1.25, sm: 1.5 },
+                                                    fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                                                    fontWeight: 600,
+                                                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    backdropFilter: 'blur(10px)',
+                                                    position: 'relative',
+                                                    zIndex: 10,
+                                                    cursor: 'pointer !important',
+                                                    userSelect: 'none',
+                                                    WebkitTapHighlightColor: 'transparent',
+                                                    pointerEvents: 'auto',
+                                                    touchAction: 'manipulation',
+                                                    '&::after': {
+                                                        content: '""',
+                                                        position: 'absolute',
+                                                        top: -10,
+                                                        left: -10,
+                                                        right: -10,
+                                                        bottom: -10,
+                                                        zIndex: 1
+                                                    },
+                                                    '&:hover': {
+                                                        background: 'linear-gradient(45deg, #0080bf, #00B4DB)',
+                                                        transform: 'scale(1.02)',
+                                                        boxShadow: '0 6px 20px rgba(0,180,219,0.4)',
+                                                    },
+                                                    '&:active': {
+                                                        transform: 'scale(0.98)'
+                                                    },
+                                                    mx: { xs: 'auto', sm: 0 },
+                                                    maxWidth: { xs: '100%', sm: 'none' },
+                                                }}
+                                                onClick={(e) => {
+                                                    window.open(demo.link, '_blank', 'noopener,noreferrer');
+                                                }}
+                                            >
+                                                Try This Demo (2 min)
+                                            </Button>
+                                        </CardActions>
+                                    </StyledCard>
+                                </motion.div>
                             </Grid>
                         ))}
                     </Grid>

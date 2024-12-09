@@ -26,7 +26,7 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     borderRadius: '24px',
                     overflow: 'hidden',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                    p: 4,
+                    p: { xs: 3, sm: 3.5, md: 4 },
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
@@ -64,7 +64,8 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     sx={{
                         mb: 2,
                         color: isPopular ? '#4F9CF9' : 'white',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' }
                     }}
                 >
                     {tier.name}
@@ -72,9 +73,9 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                 <Typography variant="body1" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.7)' }}>
                     {tier.description}
                 </Typography>
-                <Typography variant="h4" sx={{ mb: 4, color: 'white' }}>
+                <Typography variant="h4" sx={{ mb: 4, color: 'white', fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' } }}>
                     ${tier.price}
-                    <Typography component="span" variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                    <Typography component="span" variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                         /month
                     </Typography>
                 </Typography>
@@ -95,8 +96,9 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                         mt: 4,
                         background: isPopular ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)' : 'rgba(255, 255, 255, 0.1)',
                         color: 'white',
-                        py: 1.5,
+                        py: { xs: 1.25, sm: 1.5 },
                         borderRadius: '50px',
+                        fontSize: { xs: '0.9rem', sm: '1rem' },
                         '&:hover': {
                             background: isPopular ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)' : 'rgba(255, 255, 255, 0.2)',
                             transform: 'scale(1.05)',
@@ -265,9 +267,9 @@ function PricingPage() {
                         </Typography>
                     </motion.div>
 
-                    <Grid container spacing={4}>
+                    <Grid container spacing={{ xs: 3, sm: 4 }}>
                         {tiers.map((tier, index) => (
-                            <Grid item xs={12} md={4} key={tier.name}>
+                            <Grid item xs={12} sm={6} md={4} key={tier.name}>
                                 <PricingTier
                                     tier={tier}
                                     isPopular={index === 1}
