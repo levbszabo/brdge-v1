@@ -28,7 +28,7 @@ const FeatureCard = ({ icon, title, description }) => {
     const theme = useTheme();
     return (
         <Paper elevation={3} sx={{
-            p: 4,
+            p: { xs: 3, md: 4 },
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
@@ -99,7 +99,9 @@ const IntroducingBrdgeAI = () => {
 
     return (
         <Box sx={{
-            py: { xs: 4, md: 8 },
+            pt: { xs: 0, sm: 2, md: 4 },
+            pb: { xs: 4, sm: 6, md: 8 },
+            px: { xs: 3, sm: 3, md: 4 },
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -127,7 +129,10 @@ const IntroducingBrdgeAI = () => {
                 animation: 'float 20s infinite alternate-reverse'
             }
         }}>
-            <Container maxWidth="lg" ref={ref}>
+            <Container maxWidth="lg" ref={ref} sx={{
+                px: { xs: 2, sm: 3, md: 4 },
+                mx: 'auto',
+            }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -135,7 +140,7 @@ const IntroducingBrdgeAI = () => {
                 >
                     {/* Section Title */}
                     <Box sx={{
-                        mb: 12,
+                        mb: { xs: 4, sm: 6, md: 8 },
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
@@ -186,7 +191,7 @@ const IntroducingBrdgeAI = () => {
                     </Box>
 
                     {/* Main Content */}
-                    <Grid container spacing={8} alignItems="center">
+                    <Grid container spacing={{ xs: 4, md: 8 }} alignItems="center">
                         {/* Left Column - Visual */}
                         <Grid item xs={12} md={6}>
                             <motion.div
@@ -489,6 +494,7 @@ const IntroducingBrdgeAI = () => {
                                         position: 'relative',
                                         overflow: 'hidden',
                                         boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
+                                        width: { xs: '100%', sm: 'auto' },
                                         '&:hover': {
                                             background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
                                             boxShadow: '0 6px 25px rgba(255,255,255,0.3)',
@@ -583,7 +589,8 @@ const HeroSection = () => {
                 bottom: 0,
                 background: 'radial-gradient(circle at 30% 40%, rgba(0,65,194,0.4) 0%, transparent 60%)',
                 pointerEvents: 'none'
-            }
+            },
+            px: { xs: 2, sm: 0 },
         }}>
             <Container maxWidth="lg" sx={{
                 position: 'relative',
@@ -591,17 +598,20 @@ const HeroSection = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                mt: 8
+                mt: { xs: 4, sm: 8 },
+                px: { xs: 3, sm: 3, md: 4 },
+                width: '100%',
+                mx: 'auto',
             }}>
                 {/* AI Presenter Visualization */}
                 <Box
                     sx={{
-                        width: '200px',
-                        height: '200px',
+                        width: { xs: '140px', sm: '200px' },
+                        height: { xs: '140px', sm: '200px' },
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        mb: 4,
+                        mb: { xs: 2, sm: 4 },
                         cursor: 'pointer'
                     }}
                     onMouseMove={handleMouseMove}
@@ -629,12 +639,14 @@ const HeroSection = () => {
                         variant="h1"
                         align="center"
                         sx={{
-                            mb: { xs: 2, sm: 3 },
-                            fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                            mb: { xs: 1.5, sm: 2, md: 3 },
+                            fontSize: { xs: '2rem', sm: '3.5rem', md: '4.5rem' },
                             lineHeight: 1.1,
                             fontWeight: 700,
                             textTransform: 'none',
-                            letterSpacing: '-0.02em'
+                            letterSpacing: '-0.02em',
+                            mx: 'auto',
+                            maxWidth: { xs: '100%', sm: '90%', md: '80%' },
                         }}
                     >
                         Reimagine Communication
@@ -643,12 +655,13 @@ const HeroSection = () => {
                         variant="h5"
                         align="center"
                         sx={{
-                            mb: { xs: 4, sm: 6 },
+                            mb: { xs: 3, sm: 4, md: 6 },
                             maxWidth: '800px',
                             mx: 'auto',
                             opacity: 0.8,
-                            fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
-                            fontWeight: 400
+                            fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+                            fontWeight: 400,
+                            px: { xs: 2, sm: 0 },
                         }}
                     >
                         Make your knowledge talk. Transform any document, presentation, or training material into an interactive AI guide—available anytime, anywhere.
@@ -656,9 +669,12 @@ const HeroSection = () => {
 
                     <Box sx={{
                         display: 'flex',
-                        gap: 2,
+                        gap: { xs: 1.5, sm: 2 },
                         justifyContent: 'center',
-                        mt: 4
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        width: { xs: '90%', sm: 'auto' },
+                        px: { xs: 2, sm: 0 },
+                        mx: 'auto',
                     }}>
                         <motion.div
                             whileHover={{ scale: 1.05 }}
@@ -678,6 +694,7 @@ const HeroSection = () => {
                                     fontWeight: 600,
                                     borderRadius: '50px',
                                     boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+                                    width: { xs: '100%', sm: 'auto' },
                                     '&:hover': {
                                         bgcolor: 'rgba(255,255,255,0.9)',
                                         boxShadow: '0 0 30px rgba(255,255,255,0.5)'
@@ -705,6 +722,7 @@ const HeroSection = () => {
                                     fontSize: { xs: '1rem', md: '1.2rem' },
                                     fontWeight: 600,
                                     borderRadius: '50px',
+                                    width: { xs: '100%', sm: 'auto' },
                                     '&:hover': {
                                         borderColor: 'white',
                                         bgcolor: 'rgba(255,255,255,0.1)',
@@ -717,42 +735,44 @@ const HeroSection = () => {
                         </motion.div>
                     </Box>
                 </motion.div>
-            </Container>
 
-            {/* Scroll Indicator */}
-            <Box sx={{
-                position: 'absolute',
-                bottom: 20,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                color: 'rgba(255,255,255,0.6)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1,
-                textTransform: 'uppercase'
-            }}>
-                <Typography variant="body2" sx={{
+                {/* Move scroll indicator here, after the buttons */}
+                <Box sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 1,
+                    mt: { xs: 3, sm: 4 },
+                    color: 'rgba(255,255,255,0.8)',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    fontSize: '0.75rem',
-                    opacity: 0.7
                 }}>
-                    Scroll for more
-                </Typography>
-                <motion.div
-                    animate={{
-                        y: [0, 10, 0],
-                    }}
-                    transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
-                >
-                    <ArrowDownward sx={{ fontSize: 20 }} />
-                </motion.div>
-            </Box>
+                    <Typography variant="body2" sx={{
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        fontSize: '0.75rem',
+                        opacity: 0.9,
+                        fontWeight: 500,
+                    }}>
+                        Scroll for more
+                    </Typography>
+                    <motion.div
+                        animate={{
+                            y: [0, 10, 0],
+                        }}
+                        transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                    >
+                        <ArrowDownward sx={{
+                            fontSize: 24,
+                            color: '#00ffcc',
+                            filter: 'drop-shadow(0 0 8px rgba(0,255,204,0.4))'
+                        }} />
+                    </motion.div>
+                </Box>
+            </Container>
         </Box>
     );
 };
@@ -807,7 +827,9 @@ const HowItWorksSection = () => {
 
     return (
         <Box sx={{
-            py: { xs: 8, md: 12 },
+            pt: { xs: 2, sm: 4, md: 8 },
+            pb: { xs: 4, sm: 6, md: 8 },
+            px: { xs: 2, sm: 3, md: 4 },
             position: 'relative',
             overflow: 'hidden'
         }}>
@@ -821,7 +843,7 @@ const HowItWorksSection = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
-                        mb: 8,
+                        mb: { xs: 4, sm: 6, md: 8 },
                         textTransform: 'capitalize',
                         textShadow: '0 0 20px rgba(255,255,255,0.4)',
                         letterSpacing: '0.02em',
@@ -848,7 +870,7 @@ const HowItWorksSection = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         position: 'relative',
-                        gap: { xs: 4, md: 2 },
+                        gap: { xs: 2, md: 2 },
                         maxWidth: '1200px',
                         mx: 'auto',
                         px: 2
@@ -906,25 +928,37 @@ const HowItWorksSection = () => {
                                 </motion.div>
                                 {index < steps.length - 1 && (
                                     <motion.div
-                                        initial={{ opacity: 0, x: -10 }}
-                                        animate={inView ? { opacity: 1, x: 0 } : {}}
+                                        initial={{ opacity: 0 }}
+                                        animate={inView ? { opacity: 1 } : {}}
                                         transition={{ delay: index * 0.2 + 0.1, duration: 0.8 }}
-                                        style={{
-                                            display: { xs: 'none', md: 'block' }
-                                        }}
                                     >
                                         <Box sx={{
-                                            width: '40px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            justifyContent: 'center'
+                                            justifyContent: 'center',
+                                            width: { xs: '40px', md: '40px' },
+                                            height: { xs: '40px', md: '40px' },
+                                            my: { xs: 2, md: 0 }
                                         }}>
+                                            <ArrowDownward sx={{
+                                                color: '#00ffcc',
+                                                fontSize: 32,
+                                                opacity: 0.8,
+                                                filter: 'drop-shadow(0 0 12px rgba(0,255,204,0.4))',
+                                                transition: 'all 0.3s ease',
+                                                display: { xs: 'block', md: 'none' },
+                                                '&:hover': {
+                                                    transform: 'scale(1.1)',
+                                                    filter: 'drop-shadow(0 0 16px rgba(0,255,204,0.6))'
+                                                }
+                                            }} />
                                             <ArrowForward sx={{
                                                 color: '#00ffcc',
                                                 fontSize: 32,
                                                 opacity: 0.8,
                                                 filter: 'drop-shadow(0 0 12px rgba(0,255,204,0.4))',
                                                 transition: 'all 0.3s ease',
+                                                display: { xs: 'none', md: 'block' },
                                                 '&:hover': {
                                                     transform: 'scale(1.1)',
                                                     filter: 'drop-shadow(0 0 16px rgba(0,255,204,0.6))'
@@ -951,7 +985,9 @@ const FinalCTA = () => {
 
     return (
         <Box sx={{
-            py: { xs: 8, md: 12 },
+            pt: { xs: 2, sm: 4, md: 8 },
+            pb: { xs: 6, sm: 8, md: 12 },
+            px: { xs: 2, sm: 3, md: 4 },
             textAlign: 'center',
             position: 'relative'
         }}>
@@ -962,14 +998,15 @@ const FinalCTA = () => {
                     transition={{ duration: 0.8 }}
                 >
                     <Typography variant="h2" sx={{
-                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                        fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
                         mb: 3,
                         background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
-                        textTransform: 'none'
+                        textTransform: 'none',
+                        px: { xs: 2, sm: 0 },
                     }}>
                         Ready To Transform Your Knowledge Sharing?
                     </Typography>
@@ -978,15 +1015,18 @@ const FinalCTA = () => {
                         mb: 6,
                         fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                         fontWeight: 400,
-                        lineHeight: 1.6
+                        lineHeight: 1.6,
+                        px: { xs: 2, sm: 0 },
                     }}>
                         Join us today and revolutionize the way you share and interact with information.
                     </Typography>
                     <Box sx={{
                         display: 'flex',
-                        gap: 3,
+                        gap: { xs: 2, md: 3 },
                         justifyContent: 'center',
-                        flexWrap: 'wrap'
+                        flexWrap: 'wrap',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        width: { xs: '100%', sm: 'auto' },
                     }}>
                         <Button
                             component={Link}
@@ -1029,6 +1069,8 @@ const FinalCTA = () => {
                         </Button>
 
                         <Button
+                            component={Link}
+                            to="/demos"
                             variant="outlined"
                             size="large"
                             endIcon={<PlayArrow />}
@@ -1043,6 +1085,7 @@ const FinalCTA = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 transition: 'all 0.3s ease-in-out',
+                                width: { xs: '100%', sm: 'auto' },
                                 '&:hover': {
                                     borderColor: '#00ffcc',
                                     transform: 'translateY(-3px)',
@@ -1121,12 +1164,12 @@ const ImpactSection = () => {
                     description: "Employees feel supported from day one, reducing confusion and turnover."
                 },
                 {
-                    title: "ROI in Action",
-                    description: "By cutting repetitive training sessions, teams gain back hours each week. Imagine onboarding 10 new hires: if each saves 2 hours of manager Q&A, that's 20 hours reclaimed."
+                    title: "ROI Potential",
+                    description: "By cutting repetitive training sessions, teams can gain back hours each week. With 10 new hires, saving 2 hours of manager Q&A each means 20 hours reclaimed."
                 },
                 {
-                    title: "Real-World Impact",
-                    description: "A tech startup transformed its onboarding process, shortening ramp-up time by 30% and allowing managers to focus on strategic growth."
+                    title: "Projected Impact",
+                    description: "Transform your onboarding process to reduce ramp-up time and allow managers to focus on strategic growth rather than repetitive training."
                 }
             ]
         },
@@ -1138,19 +1181,19 @@ const ImpactSection = () => {
             details: [
                 {
                     title: "Accelerated Sales Cycles",
-                    description: "Prospects ask detailed questions at their convenience—no waiting for a salesperson's schedule."
+                    description: "Let prospects explore detailed product information at their convenience—no scheduling delays."
                 },
                 {
                     title: "Personalized Experience",
-                    description: "Each interaction feels tailored, guiding buyers through product features or property details and building trust."
+                    description: "Create tailored interactions that guide buyers through product features, building trust through consistent, accurate responses."
                 },
                 {
-                    title: "ROI in Action",
-                    description: "Shorter deal times mean more conversions per month. For a SaaS company, cutting follow-up time by even one day can significantly boost monthly revenue."
+                    title: "ROI Potential",
+                    description: "Reduce response times and increase conversion opportunities by providing instant, accurate product information when prospects need it most."
                 },
                 {
-                    title: "Real-World Impact",
-                    description: "A software vendor integrated Brdge AI to answer common pre-sale inquiries, increasing lead-to-close conversion rates by 15% and freeing the sales team to focus on high-value negotiations."
+                    title: "Projected Impact",
+                    description: "Enable your sales team to focus on high-value negotiations while AI handles common pre-sale inquiries and product questions 24/7."
                 }
             ]
         },
@@ -1162,19 +1205,19 @@ const ImpactSection = () => {
             details: [
                 {
                     title: "Instant Clarifications",
-                    description: "Learners ask 'How does this apply to my work?' and get immediate, contextual answers."
+                    description: "Enable learners to ask 'How does this apply to my work?' and receive immediate, contextual answers."
                 },
                 {
                     title: "Deeper Understanding",
-                    description: "Turn dry PDFs into dynamic Q&A sessions, improving comprehension and retention."
+                    description: "Convert static PDFs into dynamic Q&A sessions designed to improve comprehension and retention."
                 },
                 {
-                    title: "ROI in Action",
-                    description: "A course creator sees fewer support tickets and email inquiries, saving time and improving student satisfaction."
+                    title: "ROI Potential",
+                    description: "Reduce support tickets and email inquiries by providing instant, accurate responses to common student questions."
                 },
                 {
-                    title: "Real-World Impact",
-                    description: "An online training provider integrated Brdge AI into their course library, cutting down learner confusion and increasing positive feedback scores by 20%."
+                    title: "Projected Impact",
+                    description: "Enhance your course materials with AI-powered interactions that can provide 24/7 personalized learning support."
                 }
             ]
         }
@@ -1186,7 +1229,9 @@ const ImpactSection = () => {
 
     return (
         <Box sx={{
-            py: { xs: 8, md: 12 },
+            pt: { xs: 2, sm: 4, md: 8 },
+            pb: { xs: 4, sm: 6, md: 8 },
+            px: { xs: 2, sm: 3, md: 4 },
             position: 'relative',
             overflow: 'hidden'
         }}>
@@ -1200,7 +1245,7 @@ const ImpactSection = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
-                        mb: 2,
+                        mb: { xs: 4, sm: 6, md: 8 },
                         textTransform: 'capitalize',
                         textShadow: '0 0 20px rgba(255,255,255,0.4)',
                         letterSpacing: '0.02em',
@@ -1226,12 +1271,13 @@ const ImpactSection = () => {
                         mb: 8,
                         maxWidth: '800px',
                         mx: 'auto',
-                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' }
+                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+                        px: { xs: 2, sm: 0 },
                     }}>
                         Brdge AI adapts seamlessly to your field—boosting efficiency, engagement, and growth.
                     </Typography>
 
-                    <Grid container spacing={4}>
+                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                         {industries.map((industry, index) => (
                             <Grid item xs={12} md={4} key={industry.id}>
                                 <motion.div
@@ -1242,7 +1288,7 @@ const ImpactSection = () => {
                                     <Paper
                                         onClick={() => handleCardClick(industry.id)}
                                         sx={{
-                                            p: 4,
+                                            p: { xs: 3, md: 4 },
                                             bgcolor: 'rgba(0,255,204,0.03)',
                                             backdropFilter: 'blur(10px)',
                                             borderRadius: '24px',
@@ -1252,7 +1298,7 @@ const ImpactSection = () => {
                                             position: 'relative',
                                             overflow: 'hidden',
                                             boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                                            minHeight: '320px',
+                                            minHeight: { xs: 'auto', md: '320px' },
                                             display: 'flex',
                                             flexDirection: 'column',
                                             justifyContent: 'space-between',
@@ -1328,7 +1374,8 @@ const ImpactSection = () => {
                                             color: 'rgba(255,255,255,0.8)',
                                             mb: 2,
                                             lineHeight: 1.6,
-                                            fontSize: { xs: '0.95rem', sm: '1rem' }
+                                            fontSize: { xs: '0.95rem', sm: '1rem' },
+                                            px: { xs: 2, sm: 0 },
                                         }}>
                                             {industry.subtitle}
                                         </Typography>
@@ -1355,7 +1402,8 @@ const ImpactSection = () => {
                                                         <Typography variant="body2" sx={{
                                                             color: 'rgba(255,255,255,0.8)',
                                                             fontSize: '0.9rem',
-                                                            lineHeight: 1.7
+                                                            lineHeight: 1.7,
+                                                            px: { xs: 2, sm: 0 },
                                                         }}>
                                                             {detail.description}
                                                         </Typography>
