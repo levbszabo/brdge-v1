@@ -225,28 +225,93 @@ function CreateBrdgePage() {
                                     },
                                 }}
                             />
-                            <Box sx={{ mb: 3 }}>
+                            <Box sx={{ mb: 4, textAlign: 'center' }}>
                                 <input
-                                    accept=".pdf,.ppt,.pptx"
+                                    accept=".pdf"
                                     style={{ display: 'none' }}
                                     id="raised-button-file"
                                     type="file"
                                     onChange={(e) => setFile(e.target.files[0])}
                                 />
                                 <label htmlFor="raised-button-file">
-                                    <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />} sx={{
-                                        color: 'white',
-                                        borderColor: 'rgba(255,255,255,0.5)',
-                                        borderWidth: '2px',
-                                        '&:hover': {
-                                            borderColor: 'white',
-                                            bgcolor: 'rgba(255,255,255,0.1)',
-                                            borderWidth: '2px'
-                                        }
-                                    }}>
-                                        {file ? file.name : 'Upload Presentation'}
+                                    <Button
+                                        variant="outlined"
+                                        component="span"
+                                        startIcon={<CloudUploadIcon />}
+                                        sx={{
+                                            color: 'white',
+                                            borderColor: 'rgba(255,255,255,0.5)',
+                                            borderWidth: '2px',
+                                            padding: '12px 28px',
+                                            fontSize: '1rem',
+                                            transition: 'all 0.3s ease',
+                                            '&:hover': {
+                                                borderColor: '#4F9CF9',
+                                                bgcolor: 'rgba(79, 156, 249, 0.1)',
+                                                borderWidth: '2px',
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)'
+                                            }
+                                        }}
+                                    >
+                                        {file ? file.name : 'Select PDF File'}
                                     </Button>
                                 </label>
+
+                                <Box sx={{
+                                    mt: 3,
+                                    p: 3,
+                                    borderRadius: 2,
+                                    bgcolor: 'rgba(79, 156, 249, 0.05)',
+                                    border: '1px solid rgba(79, 156, 249, 0.1)'
+                                }}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            fontSize: '0.9rem',
+                                            fontWeight: 500,
+                                            mb: 2,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 1
+                                        }}
+                                    >
+                                        <span style={{ opacity: 0.9 }}>📄</span>
+                                        Upload your document (max 20MB)
+                                    </Typography>
+
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        gap: 4,
+                                        mb: 2,
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        fontSize: '0.85rem',
+                                    }}>
+                                        <span>📊 Presentations</span>
+                                        <span>📝 Documents</span>
+                                        <span>📚 Research</span>
+                                        <span>📖 Guides</span>
+                                    </Box>
+
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            fontSize: '0.8rem',
+                                            textAlign: 'center',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: 1
+                                        }}
+                                    >
+                                        <span style={{ color: '#4F9CF9' }}>✨</span>
+                                        Save your document as PDF for the best AI experience
+                                    </Typography>
+                                </Box>
                             </Box>
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                                 <Button

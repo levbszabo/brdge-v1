@@ -313,7 +313,7 @@ async def before_llm_callback(
                         base64_image = image_to_base64(image_path)
                         if base64_image:
                             slide_image = llm.ChatImage(
-                                image=f"data:image/png;base64,{base64_image}"
+                                image=f"data:image/jpeg;base64,{base64_image}"
                             )
                             image_message = llm.ChatMessage.create(
                                 role="user",
@@ -362,7 +362,7 @@ class EditAgent(VoicePipelineAgent):
         super().__init__(
             vad=silero.VAD.load(),
             stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o", temperature=0.5),
+            llm=openai.LLM(model="gpt-4o-mini", temperature=0.5),
             tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
             interrupt_speech_duration=0.1,
@@ -498,13 +498,27 @@ async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
 
 
 def image_to_base64(image_path: str) -> str:
-    """Convert image to base64 string"""
+    """Convert image to base64 string with size optimization"""
     try:
         with Image.open(image_path) as img:
+            # Convert to RGB if needed
             if img.mode != "RGB":
                 img = img.convert("RGB")
+
+            # Calculate new dimensions while maintaining aspect ratio
+            # Using a smaller size for optimization
+            max_size = 512  # Reduced from 1024 for better performance
+            ratio = min(max_size / float(img.size[0]), max_size / float(img.size[1]))
+            new_size = tuple(int(dim * ratio) for dim in img.size)
+
+            # Resize image
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+            # Compress image with higher compression
             buffer = io.BytesIO()
-            img.save(buffer, format="PNG")
+            img.save(
+                buffer, format="JPEG", quality=60, optimize=True
+            )  # Reduced quality for smaller size
             return base64.b64encode(buffer.getvalue()).decode("utf-8")
     except Exception as e:
         logger.error(f"Error converting image to base64: {e}")
@@ -661,7 +675,7 @@ async def entrypoint(ctx: JobContext):
                         base64_image = image_to_base64(image_path)
                         if base64_image:
                             slide_image = llm.ChatImage(
-                                image=f"data:image/png;base64,{base64_image}"
+                                image=f"data:image/jpeg;base64,{base64_image}"
                             )
                             image_message = llm.ChatMessage.create(
                                 role="user",
