@@ -102,6 +102,20 @@ rtc_logger = logging.getLogger("livekit.rtc")
 rtc_logger.setLevel(logging.DEBUG)
 
 
+def prewarm(proc: JobProcess):
+    """Prewarm function to load models once"""
+    try:
+        logger.info("Starting prewarm function...")
+        proc.userdata["vad"] = silero.VAD.load()
+        logger.info(
+            f"Prewarmed VAD model loaded successfully. Userdata keys: {proc.userdata.keys()}"
+        )
+    except Exception as e:
+        logger.error(f"Error loading VAD model in prewarm: {e}")
+        proc.userdata["prewarm_failed"] = True
+        logger.error(f"Prewarm failed. Userdata keys: {proc.userdata.keys()}")
+
+
 def initialize_walkthrough(brdge_id: str, total_slides: int) -> Dict[str, Any]:
     """Create a new walkthrough entry"""
     return {
@@ -345,6 +359,7 @@ class EditAgent(VoicePipelineAgent):
     def __init__(
         self,
         brdge_id: str,
+        vad,
         api_base_url: str = None,
         current_slide=None,
         walkthrough_manager=None,
@@ -360,7 +375,7 @@ class EditAgent(VoicePipelineAgent):
         logger.info(f"Using voice ID for EditAgent: {voice_id}")
 
         super().__init__(
-            vad=silero.VAD.load(),
+            vad=vad,
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini", temperature=0.5),
             tts=cartesia.TTS(voice=voice_id),
@@ -370,7 +385,9 @@ class EditAgent(VoicePipelineAgent):
 
 
 class ViewerAgent(VoicePipelineAgent):
-    def __init__(self, brdge_id: str, api_base_url: str = None, user_id: str = None):
+    def __init__(
+        self, brdge_id: str, vad, api_base_url: str = None, user_id: str = None
+    ):
         self.brdge_id = brdge_id
         self.api_base_url = api_base_url or os.getenv(
             "API_BASE_URL", "http://localhost:5000"
@@ -390,7 +407,7 @@ class ViewerAgent(VoicePipelineAgent):
         logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
 
         super().__init__(
-            vad=silero.VAD.load(),
+            vad=vad,
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
             tts=cartesia.TTS(voice=voice_id),
@@ -527,11 +544,32 @@ def image_to_base64(image_path: str) -> str:
 
 # Modify the entrypoint function to handle both modes
 async def entrypoint(ctx: JobContext):
+    logger.info(
+        f"Entrypoint started. Process userdata keys: {ctx.proc.userdata.keys()}"
+    )
     logger.info(f"connecting to room {ctx.room.name}")
     await ctx.connect()
 
     participant = await ctx.wait_for_participant()
     logger.info(f"starting assistant for participant {participant.identity}")
+
+    # Get the prewarmed VAD model with fallback
+    try:
+        if ctx.proc.userdata.get("prewarm_failed"):
+            logger.warning("Prewarm failed, loading VAD model directly")
+            vad = silero.VAD.load()
+        else:
+            vad = ctx.proc.userdata.get("vad")
+            if vad is None:
+                logger.warning("VAD not found in userdata, loading directly")
+                vad = silero.VAD.load()
+            else:
+                logger.info("Using prewarmed VAD model")
+    except Exception as e:
+        logger.error(f"Error loading VAD model: {e}")
+        # Fallback to creating a new VAD instance
+        logger.info("Falling back to new VAD instance")
+        vad = silero.VAD.load()
 
     initial_slide_received = asyncio.Event()
     walkthrough_manager = None
@@ -584,6 +622,7 @@ async def entrypoint(ctx: JobContext):
                         )
                         agent = ViewerAgent(
                             brdge_id=current_slide["brdge_id"],
+                            vad=vad,
                             api_base_url=current_slide["api_base_url"],
                             user_id=current_slide["user_id"],
                         )
@@ -608,6 +647,7 @@ async def entrypoint(ctx: JobContext):
                         )
                         agent = EditAgent(
                             brdge_id=current_slide["brdge_id"],
+                            vad=vad,
                             api_base_url=current_slide["api_base_url"],
                             current_slide=current_slide,
                             walkthrough_manager=walkthrough_manager,
@@ -848,4 +888,4 @@ async def entrypoint(ctx: JobContext):
 
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, prewarm_fnc=prewarm))
