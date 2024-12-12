@@ -13,6 +13,8 @@ import {
     Button,
     TextField,
     InputAdornment,
+    LinearProgress,
+    Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -37,7 +39,9 @@ function BrdgeListPage() {
     const [orderDirection, setOrderDirection] = useState('desc');
     const [userStats, setUserStats] = useState({
         brdges_created: 0,
-        brdges_limit: '2'
+        brdges_limit: '2',
+        minutes_used: 0,
+        minutes_limit: 30
     });
 
     const navigate = useNavigate();
@@ -48,10 +52,37 @@ function BrdgeListPage() {
         fetchStats();
     }, []);
 
+    const getBrdgeLimit = (accountType) => {
+        switch (accountType) {
+            case 'pro':
+                return 'Unlimited';
+            case 'standard':
+                return 10;
+            default:
+                return 1;
+        }
+    };
+
+    const getMinutesLimit = (accountType) => {
+        switch (accountType) {
+            case 'pro':
+                return 300;
+            case 'standard':
+                return 120;
+            default:
+                return 30;
+        }
+    };
+
     const fetchStats = async () => {
         try {
             const response = await api.get('/user/stats');
-            setUserStats(response.data);
+            const accountType = response.data.account_type || 'free';
+            setUserStats({
+                ...response.data,
+                brdges_limit: getBrdgeLimit(accountType),
+                minutes_limit: getMinutesLimit(accountType)
+            });
         } catch (error) {
             console.error('Error fetching stats:', error);
         }
@@ -245,7 +276,6 @@ function BrdgeListPage() {
                         alignItems: 'center'
                     }}>
                         <TextField
-                            fullWidth
                             placeholder="Search Brdges"
                             variant="outlined"
                             onChange={handleSearch}
@@ -257,7 +287,7 @@ function BrdgeListPage() {
                                 ),
                             }}
                             sx={{
-                                maxWidth: { sm: 400 },
+                                maxWidth: { sm: 300 },
                                 '& .MuiOutlinedInput-root': {
                                     color: 'white',
                                     backgroundColor: 'rgba(255, 255, 255, 0.02)',
@@ -285,6 +315,71 @@ function BrdgeListPage() {
                                 }
                             }}
                         />
+
+                        <Box sx={{
+                            display: 'flex',
+                            gap: 3,
+                            px: 3,
+                            py: 2,
+                            background: 'rgba(2, 6, 23, 0.5)',
+                            backdropFilter: 'blur(10px)',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            minWidth: '280px'
+                        }}>
+                            {/* Bridges Usage */}
+                            <Box sx={{ flex: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
+                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        Bridges
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: 'white' }}>
+                                        {userStats.brdges_created}/{userStats.brdges_limit === 'Unlimited' ? '∞' : userStats.brdges_limit}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={userStats.brdges_limit === 'Unlimited' ? 0 : (userStats.brdges_created / parseInt(userStats.brdges_limit)) * 100}
+                                    sx={{
+                                        height: 3,
+                                        borderRadius: 1.5,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                        '& .MuiLinearProgress-bar': {
+                                            background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
+                                            borderRadius: 1.5
+                                        }
+                                    }}
+                                />
+                            </Box>
+
+                            <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                            {/* Minutes Usage */}
+                            <Box sx={{ flex: 1 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
+                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        Minutes
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: 'white' }}>
+                                        {userStats.minutes_used || 0}/{userStats.minutes_limit || 30}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={((userStats.minutes_used || 0) / (userStats.minutes_limit || 30)) * 100}
+                                    sx={{
+                                        height: 3,
+                                        borderRadius: 1.5,
+                                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                        '& .MuiLinearProgress-bar': {
+                                            background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
+                                            borderRadius: 1.5
+                                        }
+                                    }}
+                                />
+                            </Box>
+                        </Box>
+
                         <motion.div
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
@@ -355,16 +450,6 @@ function BrdgeListPage() {
                     </Box>
                 </motion.div>
             </Container>
-
-            {/* Usage Indicator */}
-            <Box sx={{
-                position: 'fixed',
-                bottom: { xs: 16, sm: 24 },
-                right: { xs: 16, sm: 24 },
-                zIndex: 1000
-            }}>
-                <UsageIndicator stats={userStats} />
-            </Box>
 
             {/* Dialogs with updated styling */}
             <Dialog

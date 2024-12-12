@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import theme from './theme';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header'; // Make sure you have this component
@@ -32,6 +32,9 @@ export const AuthContext = React.createContext(null);
 
 function Layout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -43,16 +46,39 @@ function Layout({ children }) {
             headers: { Authorization: `Bearer ${token}` }
           });
           setIsAuthenticated(true);
+
+          // Redirect to /brdges if user is on login or signup page
+          if (['/login', '/signup'].includes(location.pathname)) {
+            navigate('/brdges', { replace: true });
+          }
         } catch (error) {
           console.error('Token verification failed:', error);
           logout();
           setIsAuthenticated(false);
+          // Only redirect to login if not on public routes
+          if (!['/demos', '/pricing', '/policy', '/'].includes(location.pathname)) {
+            navigate('/login', { replace: true });
+          }
+        }
+      } else {
+        // If no token and trying to access protected route, redirect to login
+        if (!['/login', '/signup', '/demos', '/pricing', '/policy', '/'].includes(location.pathname)) {
+          navigate('/login', { replace: true });
         }
       }
+      setIsLoading(false);
     };
 
     checkAuth();
-  }, []);
+  }, [navigate, location.pathname]);
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>

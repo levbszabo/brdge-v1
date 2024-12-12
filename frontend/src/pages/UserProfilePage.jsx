@@ -16,7 +16,9 @@ import {
     Alert,
     LinearProgress,
     Dialog,
-    DialogContent
+    DialogContent,
+    List,
+    ListItem
 } from '@mui/material';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
@@ -202,192 +204,316 @@ const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClic
 };
 
 const styles = {
-    gradientText: {
-        background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        fontWeight: 'bold'
+    pageBackground: {
+        background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 100%)',
+        minHeight: '100vh',
+        padding: '40px 0'
     },
-    glassCard: {
-        background: 'rgba(255, 255, 255, 0.05)',
-        backdropFilter: 'blur(20px)',
-        borderRadius: '24px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-        overflow: 'hidden',
-        position: 'relative',
-        '& .MuiTypography-root': {
-            color: 'rgba(255, 255, 255, 0.9)'
-        },
-        '& .MuiTypography-body2': {
-            color: 'rgba(255, 255, 255, 0.7)'
-        },
-        '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
+    card: {
+        background: 'rgba(2, 6, 23, 0.5)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
+        padding: '24px',
+        color: 'white',
+        transition: 'transform 0.2s ease',
+        '&:hover': {
+            transform: 'translateY(-2px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
         }
     },
-    premiumGradient: {
-        background: 'linear-gradient(135deg, #00B4DB 0%, #0041C2 100%)',
+    profileSection: {
+        textAlign: 'center',
+        padding: '32px 24px',
+        '& .MuiAvatar-root': {
+            width: 80,
+            height: 80,
+            margin: '0 auto 16px',
+            background: 'rgba(2, 6, 23, 0.7)',
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            color: 'rgba(255, 255, 255, 0.9)'
+        }
+    },
+    subscriptionCard: {
+        background: 'rgba(2, 6, 23, 0.5)',
+        borderRadius: '16px',
+        padding: '24px',
+        position: 'relative',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
+        '&.active': {
+            background: 'rgba(0, 122, 255, 0.1)',
+            border: '1px solid rgba(0, 122, 255, 0.3)',
+            '&::before': {
+                content: '"Current Plan"',
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: '#007AFF',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: 500
+            }
+        }
+    },
+    planPrice: {
+        fontSize: '32px',
+        fontWeight: 700,
         color: 'white',
-        transition: 'all 0.3s ease'
+        marginBottom: '8px'
+    },
+    planFeatures: {
+        '& li': {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '8px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            '& svg': {
+                color: '#00B4DB'
+            }
+        }
+    },
+    usageStats: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '24px',
+        '& .stat': {
+            textAlign: 'center',
+            '& .value': {
+                fontSize: '36px',
+                fontWeight: 700,
+                background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '4px'
+            },
+            '& .label': {
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '14px'
+            }
+        }
+    },
+    progressBar: {
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        '& .MuiLinearProgress-bar': {
+            background: 'linear-gradient(90deg, #007AFF, #00B4DB)'
+        }
+    },
+    button: {
+        borderRadius: '20px',
+        textTransform: 'none',
+        padding: '8px 16px',
+        fontSize: '14px',
+        fontWeight: 500,
+        '&.upgrade': {
+            background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
+            color: 'white',
+            '&:hover': {
+                background: 'linear-gradient(90deg, #0066CC, #0099CC)'
+            }
+        },
+        '&.cancel': {
+            color: '#FF3B30',
+            borderColor: '#FF3B30',
+            '&:hover': {
+                background: 'rgba(255, 59, 48, 0.1)'
+            }
+        }
+    },
+    billingInfo: {
+        '& .billing-header': {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '24px',
+            '& .MuiSvgIcon-root': {
+                color: '#007AFF',
+                fontSize: '20px'
+            },
+            '& .MuiTypography-root': {
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontSize: '16px',
+                fontWeight: 500
+            }
+        },
+        '& .billing-content': {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+        },
+        '& .billing-row': {
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '14px',
+            '& .label': {
+                color: 'rgba(255, 255, 255, 0.5)'
+            },
+            '& .value': {
+                color: 'rgba(255, 255, 255, 0.9)',
+                fontWeight: 500
+            }
+        },
+        '& .payment-chip': {
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '8px',
+            padding: '6px 12px',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            width: 'fit-content',
+            '& .MuiSvgIcon-root': {
+                fontSize: '16px',
+                color: 'rgba(255, 255, 255, 0.5)'
+            }
+        },
+        '& .cancel-button': {
+            marginTop: '24px',
+            color: '#FF3B30',
+            borderColor: 'rgba(255, 59, 48, 0.5)',
+            '&:hover': {
+                borderColor: '#FF3B30',
+                background: 'rgba(255, 59, 48, 0.1)'
+            }
+        }
     }
 };
 
-function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageSubscription }) {
+function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
-    const [cancelling, setCancelling] = useState(false);
-    const [cancelError, setCancelError] = useState(null);
-    const [cancelSuccess, setCancelSuccess] = useState(null);
 
-    // Calculate next billing date (one month from now)
-    const nextBillingDate = userProfile?.account?.next_billing_date ?
-        new Date(userProfile.account.next_billing_date) :
-        new Date(new Date().setMonth(new Date().getMonth() + 1));
-
-    const handleCancelSubscription = async () => {
-        setCancelling(true);
-        setCancelError(null);
-        try {
-            const response = await api.post('/cancel-subscription');
-            console.log('Cancellation response:', response.data);
-
-            setCancelSuccess(response.data);
-            // Close dialog after short delay
-            setTimeout(() => {
-                setOpenConfirmDialog(false);
-                // Refresh profile data
-                if (onSubscriptionChange) {
-                    onSubscriptionChange();
-                }
-            }, 2000);
-
-        } catch (error) {
-            console.error('Error canceling subscription:', error);
-            setCancelError(error.response?.data?.error || 'Failed to cancel subscription');
-        } finally {
-            setCancelling(false);
-        }
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+        });
     };
 
     return (
-        <Paper elevation={0} sx={{ ...styles.glassCard, p: 4, mt: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <ReceiptIcon color="primary" />
-                Billing Information
-            </Typography>
-            <Divider sx={{ my: 2 }} />
+        <Paper elevation={0} sx={styles.card}>
+            <Box sx={styles.billingInfo}>
+                <div className="billing-header">
+                    <ReceiptIcon />
+                    <Typography>Billing Information</Typography>
+                </div>
 
-            {currentPlan !== 'free' ? (
-                <>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                <Typography color="text.secondary">Plan</Typography>
-                                <Typography fontWeight="bold">
-                                    {currentPlan === 'pro' ? 'Premium' : 'Standard'} Plan
-                                </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                <Typography color="text.secondary">Billing Period</Typography>
-                                <Typography>Monthly</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                <Typography color="text.secondary">Next Payment</Typography>
-                                <Typography>{nextBillingDate.toLocaleDateString()}</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                <Typography color="text.secondary">Payment Method</Typography>
-                                <Chip
-                                    icon={<PaymentIcon />}
-                                    label="••••4242"
-                                    size="small"
-                                    variant="outlined"
-                                />
-                            </Box>
-                        </Grid>
-                        <Grid item xs={12}>
-                            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                                <Button
-                                    fullWidth
-                                    variant="outlined"
-                                    color="error"
-                                    startIcon={<CancelIcon />}
-                                    sx={{ borderRadius: '50px' }}
-                                    onClick={() => setOpenConfirmDialog(true)}
-                                >
-                                    Cancel Plan
-                                </Button>
-                            </Box>
-                        </Grid>
-                    </Grid>
+                <div className="billing-content">
+                    <div className="billing-row">
+                        <span className="label">Plan</span>
+                        <span className="value">
+                            {currentPlan === 'pro' ? 'Premium' :
+                                currentPlan === 'standard' ? 'Standard' : 'Free'} Plan
+                        </span>
+                    </div>
 
-                    <Dialog
-                        open={openConfirmDialog}
-                        onClose={() => !cancelling && setOpenConfirmDialog(false)}
-                    >
-                        <DialogContent sx={{ p: 4 }}>
-                            <Typography variant="h6" gutterBottom>
-                                Cancel Subscription?
-                            </Typography>
-                            <Typography color="text.secondary" sx={{ mb: 3 }}>
-                                By canceling your subscription:
-                                <ul>
-                                    <li>You'll be downgraded to the free plan</li>
-                                    <li>Only your first 2 Brdges will be kept</li>
-                                    <li>Additional Brdges will be deleted</li>
-                                </ul>
-                            </Typography>
+                    <div className="billing-row">
+                        <span className="label">Billing Period</span>
+                        <span className="value">Monthly</span>
+                    </div>
 
-                            {cancelError && (
-                                <Alert severity="error" sx={{ mb: 2 }}>
-                                    {cancelError}
-                                </Alert>
-                            )}
+                    {currentPlan !== 'free' && (
+                        <div className="billing-row">
+                            <span className="label">Next Payment</span>
+                            <span className="value">
+                                {formatDate(userProfile?.account?.next_billing_date)}
+                            </span>
+                        </div>
+                    )}
 
-                            {cancelSuccess && (
-                                <Alert severity="success" sx={{ mb: 2 }}>
-                                    Subscription canceled successfully.
-                                    Kept {cancelSuccess.brdges_kept} brdges,
-                                    deleted {cancelSuccess.brdges_deleted} brdges.
-                                </Alert>
-                            )}
+                    {currentPlan !== 'free' && (
+                        <div className="billing-row">
+                            <span className="label">Payment Method</span>
+                            <div className="payment-chip">
+                                <PaymentIcon />
+                                <span>••••4242</span>
+                            </div>
+                        </div>
+                    )}
 
-                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                                <Button
-                                    variant="outlined"
-                                    onClick={() => setOpenConfirmDialog(false)}
-                                    disabled={cancelling}
-                                >
-                                    Keep Subscription
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    color="error"
-                                    onClick={handleCancelSubscription}
-                                    disabled={cancelling}
-                                >
-                                    {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
-                                </Button>
-                            </Box>
-                        </DialogContent>
-                    </Dialog>
-                </>
-            ) : (
-                <Box sx={{ textAlign: 'center', py: 2 }}>
-                    <Typography color="text.secondary" paragraph>
-                        You're currently on the Free plan.
+                    {currentPlan !== 'free' && (
+                        <Button
+                            variant="outlined"
+                            startIcon={<CancelIcon />}
+                            fullWidth
+                            className="cancel-button"
+                            onClick={() => setOpenConfirmDialog(true)}
+                        >
+                            Cancel Plan
+                        </Button>
+                    )}
+                </div>
+            </Box>
+
+            <Dialog
+                open={openConfirmDialog}
+                onClose={() => setOpenConfirmDialog(false)}
+                PaperProps={{
+                    sx: {
+                        background: 'rgba(2, 6, 23, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '16px',
+                        color: 'white',
+                        maxWidth: '400px',
+                        width: '100%',
+                        p: 3
+                    }
+                }}
+            >
+                <DialogContent>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                        Cancel Subscription?
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" paragraph>
-                        Upgrade to unlock premium features and increase your limits.
+                    <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 3 }}>
+                        By canceling your subscription:
+                        <ul style={{ marginTop: '8px' }}>
+                            <li>You'll be downgraded to the free plan</li>
+                            <li>Only your first Bridge will be kept</li>
+                            <li>Additional Bridges will be deleted</li>
+                            <li>Usage will be limited to 30 minutes per month</li>
+                        </ul>
                     </Typography>
-                </Box>
-            )}
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setOpenConfirmDialog(false)}
+                            sx={{
+                                color: 'white',
+                                borderColor: 'rgba(255, 255, 255, 0.2)',
+                                '&:hover': {
+                                    borderColor: 'rgba(255, 255, 255, 0.5)',
+                                }
+                            }}
+                        >
+                            Keep Subscription
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            onClick={() => {
+                                // Handle cancellation
+                                setOpenConfirmDialog(false);
+                            }}
+                            sx={{
+                                bgcolor: '#FF3B30',
+                                '&:hover': {
+                                    bgcolor: '#FF453A'
+                                }
+                            }}
+                        >
+                            Confirm Cancellation
+                        </Button>
+                    </Box>
+                </DialogContent>
+            </Dialog>
         </Paper>
     );
 }
@@ -395,31 +521,62 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange, onManageS
 function UsageStats({ currentPlan }) {
     const [stats, setStats] = useState({
         brdges_created: 0,
-        brdges_limit: '2'
+        brdges_limit: '2',
+        minutes_used: 0,
+        minutes_limit: 30
     });
+
+    const getBrdgeLimit = (accountType) => {
+        switch (accountType) {
+            case 'pro':
+                return 'Unlimited';
+            case 'standard':
+                return 10;
+            default:
+                return 1;
+        }
+    };
+
+    const getMinutesLimit = (accountType) => {
+        switch (accountType) {
+            case 'pro':
+                return 300;
+            case 'standard':
+                return 120;
+            default:
+                return 30;
+        }
+    };
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
                 const response = await api.get('/user/stats');
-                setStats(response.data);
+                const accountType = response.data.account_type || 'free';
+                setStats({
+                    ...response.data,
+                    brdges_limit: getBrdgeLimit(accountType),
+                    minutes_limit: getMinutesLimit(accountType)
+                });
             } catch (error) {
-                if (process.env.NODE_ENV === 'development') {
-                    console.error('Error fetching stats:', error);
-                }
+                console.error('Error fetching stats:', error);
             }
         };
 
         fetchStats();
     }, []);
 
-    const getUsagePercentage = () => {
+    const getBrdgeUsagePercentage = () => {
         if (stats.brdges_limit === 'Unlimited') return 0;
         return (stats.brdges_created / parseInt(stats.brdges_limit)) * 100;
     };
 
+    const getMinutesUsagePercentage = () => {
+        return (stats.minutes_used / stats.minutes_limit) * 100;
+    };
+
     return (
-        <Paper elevation={0} sx={{ ...styles.glassCard, p: 4, mt: 3 }}>
+        <Paper elevation={0} sx={styles.card}>
             <Typography variant="h6" gutterBottom sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -429,96 +586,45 @@ function UsageStats({ currentPlan }) {
                 <StarIcon color="primary" />
                 Usage Statistics
             </Typography>
-            <Divider sx={{ mb: 4 }} />
 
-            <Grid container spacing={4} alignItems="center">
-                {/* Brdges Created */}
-                <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography
-                            variant="h2"
-                            fontWeight="bold"
-                            color="primary"
-                            sx={{
-                                mb: 1,
-                                fontSize: { xs: '2rem', sm: '2.5rem' }
-                            }}
-                        >
-                            {stats.brdges_created}
-                        </Typography>
-                        <Typography
-                            color="text.secondary"
-                            variant="subtitle1"
-                            sx={{ fontWeight: 500 }}
-                        >
-                            Brdges Created
-                        </Typography>
-                    </Box>
-                </Grid>
-
-                {/* Brdge Limit */}
-                <Grid item xs={6}>
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Typography
-                            variant="h2"
-                            fontWeight="bold"
-                            color="primary"
-                            sx={{
-                                mb: 1,
-                                fontSize: stats.brdges_limit === 'Unlimited'
-                                    ? { xs: '1.5rem', sm: '2rem' }
-                                    : { xs: '2rem', sm: '2.5rem' },
-                                background: stats.brdges_limit === 'Unlimited'
-                                    ? 'linear-gradient(45deg, #2196F3, #00BCD4)'
-                                    : 'inherit',
-                                WebkitBackgroundClip: stats.brdges_limit === 'Unlimited' ? 'text' : 'inherit',
-                                WebkitTextFillColor: stats.brdges_limit === 'Unlimited' ? 'transparent' : 'inherit',
-                            }}
-                        >
-                            {stats.brdges_limit}
-                        </Typography>
-                        <Typography
-                            color="text.secondary"
-                            variant="subtitle1"
-                            sx={{ fontWeight: 500 }}
-                        >
-                            Brdge Limit
-                        </Typography>
-                    </Box>
-                </Grid>
-
-                {/* Usage Bar - Only show if not unlimited */}
-                {stats.brdges_limit !== 'Unlimited' && (
-                    <Grid item xs={12}>
-                        <Box sx={{ mt: 2 }}>
-                            <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                mb: 1
-                            }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Usage
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {getUsagePercentage().toFixed(0)}%
-                                </Typography>
-                            </Box>
-                            <LinearProgress
-                                variant="determinate"
-                                value={getUsagePercentage()}
-                                sx={{
-                                    height: 8,
-                                    borderRadius: 4,
-                                    backgroundColor: 'rgba(0,0,0,0.05)',
-                                    '& .MuiLinearProgress-bar': {
-                                        borderRadius: 4,
-                                        background: 'linear-gradient(90deg, #2196F3, #00BCD4)'
-                                    }
-                                }}
-                            />
+            <Grid container spacing={4}>
+                {/* Bridges Usage */}
+                <Grid item xs={12}>
+                    <Box sx={{ mb: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Bridges Used
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'white' }}>
+                                {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
+                            </Typography>
                         </Box>
-                    </Grid>
-                )}
+                        <LinearProgress
+                            variant="determinate"
+                            value={getBrdgeUsagePercentage()}
+                            sx={styles.progressBar}
+                        />
+                    </Box>
+                </Grid>
+
+                {/* Minutes Usage */}
+                <Grid item xs={12}>
+                    <Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                Minutes Used
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: 'white' }}>
+                                {stats.minutes_used} / {stats.minutes_limit}
+                            </Typography>
+                        </Box>
+                        <LinearProgress
+                            variant="determinate"
+                            value={getMinutesUsagePercentage()}
+                            sx={styles.progressBar}
+                        />
+                    </Box>
+                </Grid>
             </Grid>
         </Paper>
     );
@@ -722,7 +828,8 @@ function UserProfilePage() {
             title: "Free",
             price: "$0/month",
             features: [
-                "Up to 2 Brdges",
+                "1 Bridge",
+                "30 Minutes Monthly Usage",
                 "Basic Customization",
                 "Limited Analytics",
                 "Standard Support"
@@ -735,7 +842,8 @@ function UserProfilePage() {
             title: "Standard",
             price: "$29/month",
             features: [
-                "Up to 20 Brdges",
+                "Up to 10 Bridges",
+                "120 Minutes Monthly Usage",
                 "Basic Customization",
                 "Basic Analytics",
                 "Standard Support"
@@ -749,7 +857,8 @@ function UserProfilePage() {
             title: "Premium",
             price: "$59/month",
             features: [
-                "Unlimited Brdges",
+                "Unlimited Bridges",
+                "300 Minutes Monthly Usage",
                 "Full Customization",
                 "Advanced Analytics",
                 "Priority Support"
@@ -774,41 +883,7 @@ function UserProfilePage() {
     };
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-            position: 'relative',
-            pt: 8,
-            pb: 8,
-            color: 'white',
-            overflow: 'hidden',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: '5%',
-                left: '-5%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 20s infinite alternate',
-                zIndex: 0
-            },
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: '5%',
-                right: '-5%',
-                width: '500px',
-                height: '500px',
-                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 25s infinite alternate-reverse',
-                zIndex: 0
-            }
-        }}>
+        <Box sx={styles.pageBackground}>
             <Box sx={{
                 position: 'absolute',
                 top: '10%',
@@ -880,8 +955,8 @@ function UserProfilePage() {
                 <Grid container spacing={4}>
                     <Grid item xs={12} md={4}>
                         {/* Profile Card */}
-                        <Paper elevation={0} sx={cardStyles}>
-                            <Box sx={{ p: 4, textAlign: 'center' }}>
+                        <Paper elevation={0} sx={styles.card}>
+                            <Box sx={styles.profileSection}>
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
                                     transition={{ type: "spring", stiffness: 300 }}
@@ -922,7 +997,7 @@ function UserProfilePage() {
 
                     {/* Subscription Plans Section */}
                     <Grid item xs={12} md={8}>
-                        <Paper elevation={0} sx={cardStyles}>
+                        <Paper elevation={0} sx={styles.card}>
                             <Box sx={{ p: 4 }}>
                                 <Box sx={{
                                     display: 'flex',

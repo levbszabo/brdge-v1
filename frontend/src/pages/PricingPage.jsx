@@ -127,7 +127,8 @@ function PricingPage() {
             price: '0',
             description: 'Perfect for getting started',
             features: [
-                'Up to 2 Brdges',
+                '1 Bridge',
+                '30 Minutes Monthly Usage',
                 'Basic Customization',
                 'Limited Analytics',
                 'Standard Support'
@@ -138,7 +139,8 @@ function PricingPage() {
             price: '29',
             description: 'For growing businesses',
             features: [
-                'Up to 20 Brdges',
+                'Up to 10 Bridges',
+                '120 Minutes Monthly Usage',
                 'Basic Customization',
                 'Basic Analytics',
                 'Standard Support'
@@ -149,7 +151,8 @@ function PricingPage() {
             price: '59',
             description: 'For teams and enterprises',
             features: [
-                'Unlimited Brdges',
+                'Unlimited Bridges',
+                '300 Minutes Monthly Usage',
                 'Full Customization',
                 'Advanced Analytics',
                 'Priority Support'
@@ -263,7 +266,7 @@ function PricingPage() {
                                 lineHeight: 1.6
                             }}
                         >
-                            Select the perfect plan for your needs
+                            Select the perfect plan for your needs. Usage minutes are calculated based on AI presentation time.
                         </Typography>
                     </motion.div>
 
