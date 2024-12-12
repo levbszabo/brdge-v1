@@ -53,43 +53,48 @@ Core Behaviors:
 Remember: Your presence should feel like a thoughtful observer rather than an active participant. The presenter should almost forget you're there.
 """
 
-# Add a new system prompt for the view mode
+# Update the VIEW_SYSTEM_PROMPT section
 VIEW_SYSTEM_PROMPT = """You are a Brdge Presentation Assistant, an AI that presents slides while being helpful, engaging, and responsive to user inquiries.
 
 Core Behaviors:
 
-Content Accuracy and Insightful Responses:
+Presentation Flow:
+- Present one slide at a time, focusing on the current slide's content
+- When presenting, use a natural, conversational tone
+- If interrupted, pause presentation, address the question fully, then smoothly return to where you left off
+- Don't move to the next slide until explicitly instructed
 
-Stay accurate to the information provided in the current slide and script.
-When users ask broader or deeper questions (e.g., "What is the impact of this?" or "How could this idea work for medical applications?"), provide thoughtful, contextually relevant answers based on your knowledge.
-If corrected by a user, acknowledge the correction and maintain the accurate information.
-If unsure about something, admit it rather than making assumptions.
-Adaptive Communication:
+Content Management:
+- You have access to scripts for all slides, but focus on presenting the current slide
+- Use knowledge of other slides only when answering broader questions
+- If a user asks about future content, acknowledge that it will be covered later
+- When returning to the presentation after an interruption, briefly remind the context before continuing
 
-Adjust your explanation style based on user requests (e.g., "explain like I'm 5" or "explain like a VC").
-Provide additional context, examples, or analogies to enhance understanding when appropriate.
-Translate content when asked, but only for the specific request.
-Engaging Interaction:
+Question Handling:
+- When interrupted with questions:
+  1. Stop presenting immediately
+  2. Answer the question comprehensively using knowledge from all available scripts
+  3. After answering, smoothly transition back to where you left off with a phrase like:
+     "Now, returning to what we were discussing..." or "To continue with our current slide..."
+  4. Resume the presentation from the point of interruption
 
-Encourage user engagement by being open to questions and discussions.
-Offer insights and draw connections to real-world applications when relevant and helpful.
-Maintain a balance between delivering the presentation and addressing user interests.
-Presentation Control:
+Content Accuracy and Style:
+- Stay accurate to the provided scripts
+- Provide thoughtful, contextual answers drawing from your knowledge of the entire presentation
+- If corrected by a user, acknowledge and maintain the accurate information
+- If unsure about something, admit it rather than making assumptions
 
-Don't automatically continue to "next topics" without user prompting.
-When interrupted with questions, focus fully on answering them.
-Only return to the presentation when the user's questions are fully addressed.
-Be clear about your limitations (e.g., cannot change voice or accent).
-Response Style:
+Communication Guidelines:
+- Adjust explanation style based on user requests (e.g., "explain like I'm 5")
+- Provide additional context or examples when helpful
+- Keep responses focused and relevant
+- Avoid using special characters (no "@" or "#") - use plain text
+- Use natural speech patterns (e.g., "hmm", "okay", "right")
 
-Keep answers informative and directly relevant to questions.
-Avoid unnecessary transitions or forced continuations.
-When corrected, gracefully acknowledge and adjust.
-Provide thoughtful, evidence-based responses without unwarranted speculation.
-DO NOT USE characters like "@" or "#" in your responses, it should all be plain text. You can use human
-like ways to emphasize points like 'hmmm' or 'oh' or 'okay' etc. We are feeding this into a TTS engine so the text 
-should be as plain as possible (regarding special characters)
-Remember: Your primary role is to accurately deliver information and respond helpfully to user questions. Focus on being engaging, insightful, and precise, enhancing the user's understanding and interest in the topic.
+----USE THE ENTIRE SCRIPT AS CONTEXT FOR YOUR RESPONSE---
+{entire_script}
+
+Remember: Your primary role is to deliver a clear, engaging presentation while handling interruptions gracefully. Focus on maintaining flow while ensuring every question is fully addressed before continuing.
 """
 
 # At the top of the file, add these logging configurations
@@ -355,36 +360,9 @@ async def before_llm_callback(
     return agent.llm.chat(chat_ctx=chat_ctx)
 
 
-class EditAgent(VoicePipelineAgent):
-    def __init__(
-        self,
-        brdge_id: str,
-        vad,
-        api_base_url: str = None,
-        current_slide=None,
-        walkthrough_manager=None,
-    ):
-        self.api_base_url = api_base_url or os.getenv(
-            "API_BASE_URL", "http://localhost:5000"
-        )
-        self.current_slide = current_slide or {}
-        self.walkthrough_manager = walkthrough_manager
-
-        # Pass api_base_url to get_brdge_voice_id
-        voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
-        logger.info(f"Using voice ID for EditAgent: {voice_id}")
-
-        super().__init__(
-            vad=vad,
-            stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o-mini", temperature=0.5),
-            tts=cartesia.TTS(voice=voice_id),
-            chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
-            interrupt_speech_duration=0.1,
-        )
-
-
 class ViewerAgent(VoicePipelineAgent):
+    """Agent that presents slides and responds to viewer questions"""
+
     def __init__(
         self, brdge_id: str, vad, api_base_url: str = None, user_id: str = None
     ):
@@ -392,34 +370,49 @@ class ViewerAgent(VoicePipelineAgent):
         self.api_base_url = api_base_url or os.getenv(
             "API_BASE_URL", "http://localhost:5000"
         )
-        logger.info(f"ViewerAgent initialized with API URL: {self.api_base_url}")
+        self.user_id = user_id
+        self.current_slide_number = None
 
         # Load scripts from database
         self.scripts = self._load_scripts()
-        self.current_slide = None
-        self.user_id = user_id
 
         # Get voice ID from database
-        logger.info(
-            f"Fetching voice ID from {self.api_base_url}/brdges/{brdge_id}/voices"
-        )
         voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
-
+        view_system_prompt = VIEW_SYSTEM_PROMPT.format(entire_script=self.scripts)
         super().__init__(
             vad=vad,
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o-mini"),
             tts=cartesia.TTS(voice=voice_id),
-            chat_ctx=llm.ChatContext().append(role="system", text=VIEW_SYSTEM_PROMPT),
+            chat_ctx=llm.ChatContext().append(role="system", text=view_system_prompt),
         )
+
+        # Set up event handlers
+        self._setup_event_handlers()
+
+    def _setup_event_handlers(self):
+        """Set up event handlers for speech events"""
+
+        @self.on("agent_speech_committed")
+        def on_agent_speech_committed(msg: llm.ChatMessage):
+            logger.info(f"Agent speech committed: {msg.content}")
+            self.add_message(self.current_slide_number, "assistant", msg.content)
+            logger.info(f"Current chat context: {self.chat_ctx}")
+
+        @self.on("user_speech_committed")
+        def on_user_speech_committed(msg: llm.ChatMessage):
+            logger.info(f"User speech committed: {msg.content}")
+            self.add_message(self.current_slide_number, "user", msg.content)
+
+        @self.on("agent_speech_interrupted")
+        def on_agent_speech_interrupted(msg: llm.ChatMessage):
+            logger.info(f"Agent speech interrupted: {msg.content}")
+            self.add_message(self.current_slide_number, "assistant", msg.content)
 
     def _load_scripts(self) -> dict:
         """Load scripts using API request"""
         try:
-            import requests
-
-            # Get scripts from API endpoint using same pattern as walkthrough manager
             response = requests.get(
                 f"{self.api_base_url}/brdges/{self.brdge_id}/scripts", timeout=10
             )
@@ -428,16 +421,11 @@ class ViewerAgent(VoicePipelineAgent):
             data = response.json()
             if data.get("has_scripts"):
                 scripts = data["scripts"]
-                logger.info(f"Found scripts for brdge {self.brdge_id}: {scripts}")
-                # Convert string keys to slide numbers if needed
+                logger.info(f"Found scripts for brdge {self.brdge_id}")
                 return {str(k): v for k, v in scripts.items()}
             else:
                 logger.warning(f"No scripts found for brdge {self.brdge_id}")
                 return {}
-
-        except requests.RequestException as e:
-            logger.error(f"Error fetching scripts from API: {e}", exc_info=True)
-            return {}
         except Exception as e:
             logger.error(f"Error loading scripts: {e}", exc_info=True)
             return {}
@@ -447,12 +435,12 @@ class ViewerAgent(VoicePipelineAgent):
         logger.info(f"Attempting to present slide {slide_number}")
 
         try:
-            if slide_number != self.current_slide:
-                self.current_slide = slide_number
+            if slide_number != self.current_slide_number:
+                self.current_slide_number = slide_number
                 script = self.scripts.get(str(slide_number))
 
                 if script:
-                    logger.info(f"Found script for slide {slide_number}: {script}")
+                    logger.info(f"Found script for slide {slide_number}")
                     await self.say(script, allow_interruptions=True)
                 else:
                     logger.warning(f"No script found for slide {slide_number}")
@@ -467,8 +455,39 @@ class ViewerAgent(VoicePipelineAgent):
                 allow_interruptions=True,
             )
 
+    async def handle_user_question(self, question: str):
+        """Handle user questions during presentation"""
+        try:
+            # Create context with current slide's script
+            current_script = self.scripts.get(str(self.current_slide_number), "")
+            context_message = llm.ChatMessage.create(
+                role="system",
+                text=f"""
+                Current slide: {self.current_slide_number}
+                Current script: {current_script}
+                
+                Please respond to the user's question in the context of the current slide and its script.
+                Keep responses concise and relevant to the presentation content.
+                """,
+            )
+
+            # Create temporary context with slide context
+            temp_ctx = self.chat_ctx.copy()
+            temp_ctx.messages.insert(-1, context_message)
+            temp_ctx.messages.append(llm.ChatMessage.create(role="user", text=question))
+
+            # Generate and speak response
+            await self.say(self.llm.chat(chat_ctx=temp_ctx), allow_interruptions=False)
+
+        except Exception as e:
+            logger.error(f"Error handling user question: {e}", exc_info=True)
+            await self.say(
+                "I apologize, but I encountered an error processing your question.",
+                allow_interruptions=False,
+            )
+
     def add_message(self, slide_number: int, role: str, message: str):
-        """Add a message to the conversation log"""
+        """Log messages to the conversation history"""
         if not self.brdge_id:
             logger.error("No brdge id")
             return
@@ -484,9 +503,124 @@ class ViewerAgent(VoicePipelineAgent):
                 },
             )
             response.raise_for_status()
-            # response_data = response.json()
         except Exception as e:
             logger.error(f"Error adding message: {e}", exc_info=True)
+
+
+class EditAgent(VoicePipelineAgent):
+    """Agent that helps edit and improve presentations"""
+
+    def __init__(
+        self,
+        brdge_id: str,
+        vad,
+        api_base_url: str = None,
+        current_slide=None,
+        walkthrough_manager=None,
+    ):
+        self.brdge_id = brdge_id
+        self.api_base_url = api_base_url or os.getenv(
+            "API_BASE_URL", "http://localhost:5000"
+        )
+        self.current_slide = current_slide or {
+            "number": None,
+            "url": None,
+            "initialized": False,
+            "last_processed": None,
+            "image_processed": False,
+        }
+        self.walkthrough_manager = walkthrough_manager
+
+        # Get voice ID from database
+        voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
+        logger.info(f"Using voice ID for EditAgent: {voice_id}")
+
+        super().__init__(
+            vad=vad,
+            stt=deepgram.STT(),
+            llm=openai.LLM(model="gpt-4o-mini", temperature=0.5),
+            tts=cartesia.TTS(voice=voice_id),
+            chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
+            interrupt_speech_duration=0.1,
+        )
+
+        # Set up event handlers
+        self._setup_event_handlers()
+
+    def _setup_event_handlers(self):
+        """Set up event handlers for speech events"""
+
+        @self.on("agent_speech_committed")
+        def on_agent_speech_committed(msg: llm.ChatMessage):
+            logger.info(f"Agent speech committed: {msg.content}")
+            if self.current_slide["number"] and self.walkthrough_manager:
+                self.walkthrough_manager.add_message(
+                    self.current_slide["number"], "assistant", msg.content
+                )
+
+        @self.on("user_speech_committed")
+        def on_user_speech_committed(msg: llm.ChatMessage):
+            logger.info(f"User speech committed: {msg.content}")
+            if self.current_slide["number"] and self.walkthrough_manager:
+                self.walkthrough_manager.add_message(
+                    self.current_slide["number"], "user", msg.content
+                )
+
+    async def process_new_slide(self, slide_number: int, slide_url: str):
+        """Process a new slide including downloading and analyzing the image"""
+        try:
+            # Download and process slide image
+            image_path = await get_slide_image(slide_url, self.brdge_id, slide_number)
+            if image_path and os.path.exists(image_path):
+                base64_image = image_to_base64(image_path)
+                if base64_image:
+                    self._add_slide_image_to_context(base64_image, slide_number)
+                    self.current_slide.update(
+                        {
+                            "number": slide_number,
+                            "last_processed": slide_number,
+                            "image_processed": True,
+                        }
+                    )
+        except Exception as e:
+            logger.error(f"Error processing new slide: {e}", exc_info=True)
+
+    def _add_slide_image_to_context(self, base64_image: str, slide_number: int):
+        """Add slide image to the chat context"""
+        slide_image = llm.ChatImage(image=f"data:image/jpeg;base64,{base64_image}")
+        image_message = llm.ChatMessage.create(
+            role="user",
+            text=f"""Slide:{slide_number}. 
+                As we discuss this slide, observe and analyze:
+                - Key messages and themes
+                - Technical terms or concepts that might need clarification
+                - The overall structure and flow
+                - Any visuals, diagrams, or data presented
+                You can refer to these as you analyze the slide.""",
+            images=[slide_image],
+        )
+        self.chat_ctx.messages.append(image_message)
+        logger.info(f"Added slide {slide_number} image to context")
+
+    async def handle_user_input(self, user_message: str):
+        """Handle user input during editing session"""
+        try:
+            self.chat_ctx.append(role="user", text=user_message)
+            response = await self.say(
+                self.llm.chat(chat_ctx=self.chat_ctx), allow_interruptions=True
+            )
+
+            # Log response to walkthrough
+            if self.current_slide["number"] and self.walkthrough_manager:
+                self.walkthrough_manager.add_message(
+                    self.current_slide["number"], "assistant", response
+                )
+        except Exception as e:
+            logger.error(f"Error handling user input: {e}", exc_info=True)
+            await self.say(
+                "I apologize, but I encountered an error processing your message.",
+                allow_interruptions=False,
+            )
 
 
 async def get_slide_image(url: str, brdge_id: str, slide_number: int) -> str:
@@ -626,20 +760,6 @@ async def entrypoint(ctx: JobContext):
                             api_base_url=current_slide["api_base_url"],
                             user_id=current_slide["user_id"],
                         )
-
-                        @agent.on("agent_speech_committed")
-                        def on_agent_speech_committed(msg: llm.ChatMessage):
-                            logger.info(f"Agent speech committed: {msg.content}")
-                            agent.add_message(
-                                current_slide["number"], "assistant", msg.content
-                            )
-
-                        @agent.on("user_speech_committed")
-                        def on_user_speech_committed(msg: llm.ChatMessage):
-                            logger.info(f"User speech committed: {msg.content}")
-                            agent.add_message(
-                                current_slide["number"], "user", msg.content
-                            )
 
                     else:  # edit mode
                         logger.info(
