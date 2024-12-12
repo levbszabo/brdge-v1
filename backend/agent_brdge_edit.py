@@ -78,6 +78,8 @@ Question Handling:
      "Now, returning to what we were discussing..." or "To continue with our current slide..."
   4. Resume the presentation from the point of interruption
 
+  
+
 Content Accuracy and Style:
 - Stay accurate to the provided scripts
 - Provide thoughtful, contextual answers drawing from your knowledge of the entire presentation
@@ -90,6 +92,15 @@ Communication Guidelines:
 - Keep responses focused and relevant
 - Avoid using special characters (no "@" or "#") - use plain text
 - Use natural speech patterns (e.g., "hmm", "okay", "right")
+
+
+IMPORTANT GUIDELINES:
+1. Focus primarily on the current slide's content
+2. Only reference other slides if the question explicitly requires broader context
+3. If the user asks about future content, politely suggest waiting for those slides
+4. After answering, return focus to the current slide
+5. If all current slide content is covered, suggest moving to the next slide
+
 
 ----USE THE ENTIRE SCRIPT AS CONTEXT FOR YOUR RESPONSE---
 {entire_script}
@@ -383,7 +394,7 @@ class ViewerAgent(VoicePipelineAgent):
         super().__init__(
             vad=vad,
             stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o-mini"),
+            llm=openai.LLM(model="gpt-4o"),
             tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=view_system_prompt),
         )
@@ -438,7 +449,13 @@ class ViewerAgent(VoicePipelineAgent):
             if slide_number != self.current_slide_number:
                 self.current_slide_number = slide_number
                 script = self.scripts.get(str(slide_number))
-
+                text = f"You are now presenting slide {slide_number}. Focus ONLY on this slide's content. Do not reference future slides unless explicitly asked. If you've covered all content for this slide, suggest moving to the next one."
+                self.chat_ctx.messages.append(
+                    llm.ChatMessage.create(
+                        role="system",
+                        text=text,
+                    )
+                )
                 if script:
                     logger.info(f"Found script for slide {slide_number}")
                     await self.say(script, allow_interruptions=True)
