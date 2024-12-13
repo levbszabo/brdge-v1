@@ -100,9 +100,9 @@ const IntroducingBrdgeAI = () => {
 
     return (
         <Box sx={{
-            pt: { xs: 0, sm: 2, md: 4 },
-            pb: { xs: 4, sm: 6, md: 8 },
-            px: { xs: 3, sm: 3, md: 4 },
+            pt: { xs: 0, sm: 2, md: 2 },
+            pb: { xs: 2, sm: 3, md: 4 },
+            px: { xs: 2, sm: 2, md: 3 },
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -131,7 +131,7 @@ const IntroducingBrdgeAI = () => {
             }
         }}>
             <Container maxWidth="lg" ref={ref} sx={{
-                px: { xs: 2, sm: 3, md: 4 },
+                px: { xs: 2, sm: 2, md: 3 },
                 mx: 'auto',
             }}>
                 <motion.div
@@ -139,59 +139,76 @@ const IntroducingBrdgeAI = () => {
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                 >
-                    {/* Section Title */}
-                    <Box sx={{
-                        mb: { xs: 4, sm: 6, md: 8 },
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        position: 'relative'
-                    }}>
-                        <Box sx={{
+                    <Typography variant="h2" align="center" sx={{
+                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                        fontWeight: 600,
+                        color: 'white',
+                        mb: { xs: 3, sm: 4, md: 5 },
+                        textTransform: 'capitalize',
+                        textShadow: '0 0 20px rgba(255,255,255,0.4)',
+                        letterSpacing: '0.02em',
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
                             position: 'absolute',
-                            top: '-50%',
+                            bottom: '-16px',
                             left: '50%',
                             transform: 'translateX(-50%)',
-                            width: '200px',
-                            height: '200px',
-                            background: 'linear-gradient(45deg, rgba(0,255,204,0.1), rgba(0,180,219,0.1))',
-                            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                            animation: 'rotate 20s linear infinite'
-                        }} />
-                    </Box>
+                            width: '80px',
+                            height: '4px',
+                            background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
+                            borderRadius: '2px',
+                            boxShadow: '0 2px 10px rgba(255,255,255,0.2)'
+                        }
+                    }}>
+                        Redefining Knowledge Sharing
+                    </Typography>
 
-                    {/* Main Content */}
                     <Grid
                         container
-                        spacing={{ xs: 2, md: 4 }}
-                        alignItems="flex-start"
-                        sx={{ mt: { xs: 2, md: -4 } }}
+                        spacing={{ xs: 1, md: 4 }}
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{
+                            mb: { xs: 2, md: 4 },
+                            px: { xs: 0, sm: 2 }
+                        }}
                     >
-                        {/* Left Column - Visual */}
                         <Grid item xs={12} md={6}>
                             <motion.div
                                 initial={{ opacity: 0, x: -50 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}
                                 transition={{ delay: 0.4, duration: 1.0 }}
-                                style={{ marginTop: '115px' }}
+                                style={{
+                                    margin: '0 -16px',
+                                    '@media (min-width: 600px)': {
+                                        margin: 0
+                                    }
+                                }}
                             >
                                 <Box sx={{
                                     position: 'relative',
                                     width: '100%',
                                     maxWidth: '900px',
                                     margin: '0 auto',
-                                    borderRadius: '16px',
+                                    borderRadius: '10px',
                                     overflow: 'hidden',
                                     bgcolor: 'rgba(2, 6, 23, 0.2)',
                                     backdropFilter: 'blur(10px)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                                    mb: { xs: 2, md: 0 },
-                                    '&::before': {
+                                    boxShadow: `
+                                        0 8px 32px rgba(0, 0, 0, 0.2),
+                                        0 0 40px rgba(0, 180, 219, 0.15),
+                                        inset 0 0 30px rgba(0, 180, 219, 0.1)
+                                    `,
+                                    mb: { xs: 1, md: 0 },
+                                    height: { xs: '300px', sm: '350px', md: '400px' },
+                                    '&::after': {
                                         content: '""',
-                                        display: 'block',
-                                        paddingTop: '56.25%'
-                                    }
+                                        position: 'absolute',
+                                        inset: '0',
+                                        background: 'linear-gradient(120deg, transparent 20%, rgba(255,255,255,0.1) 50%, transparent 80%)',
+                                        animation: 'shimmer 2s infinite',
+                                    },
                                 }}>
                                     <video
                                         autoPlay
@@ -215,249 +232,364 @@ const IntroducingBrdgeAI = () => {
                             </motion.div>
                         </Grid>
 
-                        {/* Right Column - Text Content */}
                         <Grid item xs={12} md={6} sx={{
                             pl: { md: 4 },
-                            mt: { xs: 2, md: 0 }
+                            mt: { xs: 1, md: 0 }
                         }}>
                             <motion.div
                                 initial={{ opacity: 0, x: 50 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}
                                 transition={{ delay: 0.4, duration: 0.8 }}
                             >
-                                <Typography variant="h3" sx={{
-                                    fontWeight: 600,
-                                    mb: 2,
-                                    fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
-                                    background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    textShadow: '0 2px 10px rgba(255,255,255,0.3)',
-                                    position: 'relative',
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: '-8px',
-                                        left: 0,
-                                        width: '60px',
-                                        height: '4px',
-                                        background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
-                                        borderRadius: '2px',
-                                        boxShadow: '0 2px 10px rgba(255,255,255,0.2)'
-                                    }
-                                }}>
-                                    Redefining Knowledge Sharing
-                                </Typography>
-                                <Typography variant="h5" sx={{
-                                    color: '#FFFFFF',
-                                    mb: 2,
-                                    maxWidth: '800px',
-                                    opacity: 0.8,
-                                    fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                                    fontWeight: 400,
-                                    lineHeight: 1.6,
-                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)'
-                                }}>
-                                    Brdge AI transforms static content into a living, conversational expert—no coding required. Simply chat with our system, provide your materials, and within minutes your AI guide is answering questions and engaging users anytime, anywhere.
-                                </Typography>
                                 <Typography variant="h5" sx={{
                                     color: '#FFFFFF',
                                     mb: 3,
                                     maxWidth: '800px',
-                                    opacity: 0.8,
-                                    fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                                    fontSize: { xs: '1.125rem', sm: '1.2rem', md: '1.25rem' },
                                     fontWeight: 400,
-                                    lineHeight: 1.6,
-                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)'
+                                    lineHeight: { xs: 1.5, md: 1.6 },
+                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                                    '& strong': {
+                                        color: '#00ffcc',
+                                        fontWeight: 600,
+                                        textShadow: '0 0 10px rgba(0,255,204,0.3)',
+                                    },
+                                    animation: 'fadeInUp 0.8s ease-out 0.4s backwards',
                                 }}>
-                                    From helping customers understand products, to training new hires, to deepening a learner's grasp of a course—
-                                    Brdge AI eliminates repetitive tasks so you can spend time on what truly matters by turning every interaction into a value-driven moment, and preserves the authenticity of your own voice to build trust with your audience.
-                                </Typography>
-                                <Typography variant="h5" sx={{
-                                    color: '#FFFFFF',
-                                    mb: 3,
-                                    maxWidth: '800px',
-                                    opacity: 0.8,
-                                    fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                                    fontWeight: 400,
-                                    lineHeight: 1.6,
-                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)'
-                                }}>
-                                    It's about extending your presence so your knowledge is always ready to enlighten, inspire, and connect.
+                                    Transform static content into a <strong>living, conversational expert</strong>—<strong>no coding required</strong>. Simply chat with our system and watch your knowledge come alive.
                                 </Typography>
 
-                                <Box sx={{
-                                    display: 'flex',
-                                    gap: 2,
-                                    mb: 4
+                                <Typography variant="h5" sx={{
+                                    color: '#FFFFFF',
+                                    mb: 3,
+                                    maxWidth: '800px',
+                                    fontSize: { xs: '1.125rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontWeight: 400,
+                                    lineHeight: { xs: 1.5, md: 1.6 },
+                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                                    '& strong': {
+                                        color: '#00ffcc',
+                                        fontWeight: 600,
+                                        textShadow: '0 0 10px rgba(0,255,204,0.3)',
+                                    },
+                                    animation: 'fadeInUp 0.8s ease-out 0.2s backwards',
                                 }}>
-                                    <Box sx={{
-                                        p: 2.5,
-                                        borderRadius: '16px',
-                                        bgcolor: 'rgba(255,255,255,0.1)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.2)',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                        flex: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        textAlign: 'center',
-                                        minHeight: '140px',
-                                        justifyContent: 'center',
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
-                                        }
-                                    }}>
-                                        <Typography variant="h5" sx={{
-                                            color: '#FFFFFF',
-                                            mb: 1,
-                                            textShadow: '0 2px 10px rgba(255,255,255,0.2)',
-                                            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }
-                                        }}>
-                                            Minutes
-                                        </Typography>
-                                        <Typography variant="body2" sx={{
-                                            color: 'rgba(255,255,255,0.9)',
-                                            fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
-                                            maxWidth: '160px'
-                                        }}>
-                                            Get started in under 10 minutes
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{
-                                        p: 2.5,
-                                        borderRadius: '16px',
-                                        bgcolor: 'rgba(255,255,255,0.1)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.2)',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                        flex: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        textAlign: 'center',
-                                        minHeight: '140px',
-                                        justifyContent: 'center',
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
-                                        }
-                                    }}>
-                                        <Typography variant="h5" sx={{
-                                            color: '#FFFFFF',
-                                            mb: 1,
-                                            textShadow: '0 2px 10px rgba(255,255,255,0.2)',
-                                            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }
-                                        }}>
-                                            24/7
-                                        </Typography>
-                                        <Typography variant="body2" sx={{
-                                            color: 'rgba(255,255,255,0.9)',
-                                            fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
-                                            maxWidth: '160px'
-                                        }}>
-                                            Always on, always ready to help
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{
-                                        p: 2.5,
-                                        borderRadius: '16px',
-                                        bgcolor: 'rgba(255,255,255,0.1)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255,255,255,0.2)',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                        flex: 1,
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        textAlign: 'center',
-                                        minHeight: '140px',
-                                        justifyContent: 'center',
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
-                                        }
-                                    }}>
-                                        <Typography variant="h5" sx={{
-                                            color: '#FFFFFF',
-                                            mb: 1,
-                                            textShadow: '0 2px 10px rgba(255,255,255,0.2)',
-                                            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }
-                                        }}>
-                                            Your Voice
-                                        </Typography>
-                                        <Typography variant="body2" sx={{
-                                            color: 'rgba(255,255,255,0.9)',
-                                            fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' },
-                                            maxWidth: '160px'
-                                        }}>
-                                            Present in your own authentic style
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                                <Button
-                                    component={Link}
-                                    to="/signup"
-                                    variant="contained"
-                                    size="large"
-                                    endIcon={<ArrowForward />}
-                                    sx={{
-                                        background: 'linear-gradient(45deg, #FFFFFF, #E0E0E0)',
-                                        color: '#000000',
-                                        px: 4,
-                                        py: 2,
-                                        borderRadius: '100px',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 4px 20px rgba(255,255,255,0.2)',
-                                        width: { xs: '100%', sm: 'auto' },
-                                        '&:hover': {
-                                            background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
-                                            boxShadow: '0 6px 25px rgba(255,255,255,0.3)',
-                                            '&::after': {
-                                                transform: 'translateX(100%)'
-                                            }
-                                        },
-                                        '&::after': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: '-100%',
-                                            width: '100%',
-                                            height: '100%',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
-                                            transition: 'transform 0.5s'
-                                        }
-                                    }}
-                                >
-                                    Get Started
-                                </Button>
+                                    From <strong>customer support</strong> to <strong>employee training</strong>, Brdge AI eliminates repetitive tasks while preserving your authentic voice. Turn every interaction into a <strong>value-driven moment</strong>, available <strong>24/7</strong>.
+                                </Typography>
+
+                                <Typography variant="h5" sx={{
+                                    color: '#FFFFFF',
+                                    mb: 3,
+                                    maxWidth: '800px',
+                                    fontSize: { xs: '1.125rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontWeight: 400,
+                                    lineHeight: { xs: 1.5, md: 1.6 },
+                                    textShadow: '0 2px 10px rgba(0,0,0,0.2)',
+                                    '& strong': {
+                                        color: '#00ffcc',
+                                        fontWeight: 600,
+                                        textShadow: '0 0 10px rgba(0,255,204,0.3)',
+                                    },
+                                    animation: 'fadeInUp 0.8s ease-out 0.4s backwards',
+                                }}>
+                                    Extend your presence and let your expertise <strong>enlighten, inspire, and connect</strong> with your audience—anytime, anywhere.
+                                </Typography>
                             </motion.div>
                         </Grid>
                     </Grid>
+
+                    <Box sx={{
+                        display: 'flex',
+                        gap: { xs: 3, sm: 2 },
+                        justifyContent: 'center',
+                        mt: { xs: 6, md: 4 },
+                        flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                        px: { xs: 2, sm: 0 },
+                    }}>
+                        <Box sx={{
+                            p: { xs: 3, sm: 2.5 },
+                            borderRadius: '16px',
+                            bgcolor: 'rgba(255,255,255,0.05)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255, 0.1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            boxShadow: `
+                                0 4px 20px rgba(0,0,0,0.2),
+                                0 0 0 1px rgba(255,255,255,0.1),
+                                0 0 40px rgba(0,180,219,0.1)
+                            `,
+                            flex: { xs: '1 1 100%', sm: '1' },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            minHeight: { xs: '120px', sm: '140px' },
+                            justifyContent: 'center',
+                            maxWidth: { xs: '100%', sm: '200px' },
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: `
+                                    0 8px 30px rgba(0,0,0,0.3),
+                                    0 0 0 1px rgba(255,255,255,0.2),
+                                    0 0 60px rgba(0,180,219,0.2)
+                                `,
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                            },
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '1px',
+                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
+                            },
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: '-50%',
+                                left: '-50%',
+                                width: '200%',
+                                height: '200%',
+                                background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                                opacity: 0,
+                                transition: 'opacity 0.3s ease-in-out',
+                            },
+                            '&:hover::after': {
+                                opacity: 1,
+                            }
+                        }}>
+                            <Typography variant="h5" sx={{
+                                color: '#FFFFFF',
+                                mb: 1,
+                                textShadow: '0 2px 10px rgba(255,255,255,0.2)',
+                                fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.75rem' }
+                            }}>
+                                Minutes
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: 'rgba(255,255,255,0.9)',
+                                fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' },
+                                maxWidth: '160px'
+                            }}>
+                                Get started in under 10 minutes
+                            </Typography>
+                        </Box>
+                        <Box sx={{
+                            p: { xs: 3, sm: 2.5 },
+                            borderRadius: '16px',
+                            bgcolor: 'rgba(255,255,255,0.05)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255, 0.1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            boxShadow: `
+                                0 4px 20px rgba(0,0,0,0.2),
+                                0 0 0 1px rgba(255,255,255,0.1),
+                                0 0 40px rgba(0,180,219,0.1)
+                            `,
+                            flex: { xs: '1 1 100%', sm: '1' },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            minHeight: { xs: '120px', sm: '140px' },
+                            justifyContent: 'center',
+                            maxWidth: { xs: '100%', sm: '200px' },
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: `
+                                    0 8px 30px rgba(0,0,0,0.3),
+                                    0 0 0 1px rgba(255,255,255,0.2),
+                                    0 0 60px rgba(0,180,219,0.2)
+                                `,
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                            },
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '1px',
+                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
+                            },
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: '-50%',
+                                left: '-50%',
+                                width: '200%',
+                                height: '200%',
+                                background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                                opacity: 0,
+                                transition: 'opacity 0.3s ease-in-out',
+                            },
+                            '&:hover::after': {
+                                opacity: 1,
+                            }
+                        }}>
+                            <Typography variant="h5" sx={{
+                                color: '#FFFFFF',
+                                mb: 1,
+                                textShadow: '0 2px 10px rgba(255,255,255,0.2)',
+                                fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.75rem' }
+                            }}>
+                                24/7
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: 'rgba(255,255,255,0.9)',
+                                fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' },
+                                maxWidth: '160px'
+                            }}>
+                                Always on, always ready to help
+                            </Typography>
+                        </Box>
+                        <Box sx={{
+                            p: { xs: 3, sm: 2.5 },
+                            borderRadius: '16px',
+                            bgcolor: 'rgba(255,255,255,0.05)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255, 0.1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            boxShadow: `
+                                0 4px 20px rgba(0,0,0,0.2),
+                                0 0 0 1px rgba(255,255,255,0.1),
+                                0 0 40px rgba(0,180,219,0.1)
+                            `,
+                            flex: { xs: '1 1 100%', sm: '1' },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            textAlign: 'center',
+                            minHeight: { xs: '120px', sm: '140px' },
+                            justifyContent: 'center',
+                            maxWidth: { xs: '100%', sm: '200px' },
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: `
+                                    0 8px 30px rgba(0,0,0,0.3),
+                                    0 0 0 1px rgba(255,255,255,0.2),
+                                    0 0 60px rgba(0,180,219,0.2)
+                                `,
+                                bgcolor: 'rgba(255,255,255,0.08)',
+                            },
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '1px',
+                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)'
+                            },
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: '-50%',
+                                left: '-50%',
+                                width: '200%',
+                                height: '200%',
+                                background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+                                opacity: 0,
+                                transition: 'opacity 0.3s ease-in-out',
+                            },
+                            '&:hover::after': {
+                                opacity: 1,
+                            }
+                        }}>
+                            <Typography variant="h5" sx={{
+                                color: '#FFFFFF',
+                                mb: 1,
+                                textShadow: '0 2px 10px rgba(255,255,255,0.2)',
+                                fontSize: { xs: '1.5rem', sm: '1.5rem', md: '1.75rem' }
+                            }}>
+                                Your Voice
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: 'rgba(255,255,255,0.9)',
+                                fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' },
+                                maxWidth: '160px'
+                            }}>
+                                Present in your own authentic style
+                            </Typography>
+                        </Box>
+                    </Box>
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        mt: { xs: 8, md: 6 },
+                        position: 'relative',
+                        px: { xs: 2, sm: 0 },
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '200px',
+                            height: '200px',
+                            background: 'radial-gradient(circle, rgba(0,255,204,0.1) 0%, transparent 70%)',
+                            filter: 'blur(20px)',
+                            zIndex: 0,
+                        }
+                    }}>
+                        <Button
+                            component={Link}
+                            to="/signup"
+                            variant="contained"
+                            size="large"
+                            endIcon={<ArrowForward />}
+                            sx={{
+                                background: 'linear-gradient(45deg, #FFFFFF, #E0E0E0)',
+                                color: '#000000',
+                                px: { xs: 4, sm: 6 },
+                                py: { xs: 1.5, sm: 2 },
+                                width: { xs: '100%', sm: 'auto' },
+                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                fontWeight: 600,
+                                borderRadius: '100px',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: `
+                                    0 4px 20px rgba(255,255,255,0.2),
+                                    0 0 0 1px rgba(255,255,255,0.1),
+                                    0 0 40px rgba(0,180,219,0.2)
+                                `,
+                                zIndex: 1,
+                                '&:hover': {
+                                    background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
+                                    boxShadow: `
+                                        0 6px 25px rgba(255,255,255,0.3),
+                                        0 0 0 1px rgba(255,255,255,0.2),
+                                        0 0 60px rgba(0,180,219,0.3)
+                                    `,
+                                    transform: 'translateY(-2px)',
+                                    '&::after': {
+                                        transform: 'translateX(100%)'
+                                    }
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-100%',
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+                                    transition: 'transform 0.5s'
+                                },
+                                transition: 'all 0.3s ease-in-out',
+                            }}
+                        >
+                            Get Started
+                        </Button>
+                    </Box>
                 </motion.div>
             </Container>
 
@@ -477,6 +609,26 @@ const IntroducingBrdgeAI = () => {
                     @keyframes rotate {
                         from { transform: rotate(0deg); }
                         to { transform: rotate(360deg); }
+                    }
+                    @keyframes borderGlow {
+                        0% { opacity: 0.5; }
+                        100% { opacity: 1; }
+                    }
+                    
+                    @keyframes shimmer {
+                        0% { transform: translateX(-100%); }
+                        100% { transform: translateX(100%); }
+                    }
+                    
+                    @keyframes fadeInUp {
+                        from {
+                            opacity: 0;
+                            transform: translateY(20px);
+                        }
+                        to {
+                            opacity: 1;
+                            transform: translateY(0);
+                        }
                     }
                 `}
             </style>
@@ -855,7 +1007,7 @@ const HowItWorksSection = () => {
                                         </Typography>
                                         <Typography variant="body1" sx={{
                                             color: 'rgba(255,255,255,0.9)',
-                                            fontSize: { xs: '0.9rem', sm: '1rem' },
+                                            fontSize: { xs: '0.95rem', sm: '1rem' },
                                             lineHeight: 1.5,
                                             maxWidth: '200px',
                                             textShadow: '0 0 10px rgba(255,255,255,0.2)',

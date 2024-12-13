@@ -309,295 +309,176 @@ const BrdgeList = ({
         </Box>
     );
 
-    // Add mobile-specific components
-    const MobileListItem = ({ brdge }) => (
+    // Add mobile-optimized card view
+    const MobileCard = ({ brdge }) => (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
         >
-            <Paper
+            <Box
                 sx={{
                     p: 2,
                     mb: 2,
-                    borderRadius: '12px',
-                    background: 'rgba(255, 255, 255, 0.9)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+                    '&:active': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    }
                 }}
+                onClick={() => onView(brdge)}
             >
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography
                         variant="h6"
                         sx={{
-                            fontSize: '1rem',
-                            fontWeight: 600,
-                            color: theme.palette.primary.main,
-                            mb: 1
+                            color: '#4F9CF9',
+                            fontWeight: 500,
+                            fontSize: '1.1rem'
                         }}
-                        onClick={() => onView(brdge)}
                     >
                         {brdge.name}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <StatusChip shareable={brdge.shareable} />
-                        <Typography variant="caption" color="text.secondary">
-                            Last edited {formatDate(brdge.updated_at || brdge.created_at)}
-                        </Typography>
-                    </Box>
+                    <StatusChip shareable={brdge.shareable} />
                 </Box>
-
-                <Divider sx={{ my: 1 }} />
 
                 <Box sx={{
                     display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    pt: 1
+                    gap: 1,
+                    mt: 2
                 }}>
-                    <Typography variant="caption" color="text.secondary">
-                        Created {formatDate(brdge.created_at)}
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton
-                            size="small"
-                            onClick={() => onView(brdge)}
-                            sx={{ padding: 1 }}
-                        >
-                            <VisibilityIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            size="small"
-                            onClick={() => onEdit(brdge)}
-                            sx={{ padding: 1 }}
-                        >
-                            <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            size="small"
-                            onClick={(e) => handleShareClick(brdge, e)}
-                            sx={{ padding: 1 }}
-                        >
-                            <ShareIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                            size="small"
-                            onClick={() => onDelete(brdge)}
-                            sx={{ padding: 1 }}
-                        >
-                            <DeleteIcon fontSize="small" />
-                        </IconButton>
-                    </Box>
-                </Box>
-            </Paper>
-        </motion.div>
-    );
-
-    // Add a new component for mobile sorting and upgrading
-    const MobileHeader = ({ orderBy, onSort, headers, stats }) => (
-        <Box sx={{ mb: 3 }}>
-            {/* Usage Stats for Mobile */}
-            <Box sx={{
-                mb: 3,
-                p: 2,
-                background: 'rgba(255, 255, 255, 0.9)',
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
-            }}>
-                <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    mb: 1
-                }}>
-                    <Typography variant="body2" fontWeight="medium">
-                        {stats.brdges_created} / {stats.brdges_limit} Brdges
-                    </Typography>
-                    <Button
-                        component={RouterLink}
-                        to="/profile"
+                    <IconButton
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(brdge);
+                        }}
                         size="small"
-                        variant="contained"
                         sx={{
-                            borderRadius: '20px',
-                            textTransform: 'none',
-                            fontSize: '0.75rem',
-                            background: 'linear-gradient(90deg, #2196F3, #00BCD4)',
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
                             '&:hover': {
-                                background: 'linear-gradient(90deg, #1976D2, #0097A7)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
                             }
                         }}
                     >
-                        Upgrade Now
-                    </Button>
-                </Box>
-                <LinearProgress
-                    variant="determinate"
-                    value={(stats.brdges_created / parseInt(stats.brdges_limit)) * 100}
-                    sx={{
-                        height: 4,
-                        borderRadius: 2,
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                        '& .MuiLinearProgress-bar': {
-                            borderRadius: 2,
-                            background: 'linear-gradient(90deg, #2196F3, #00BCD4)'
-                        }
-                    }}
-                />
-            </Box>
-
-            {/* Sorting Options */}
-            <Box sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mb: 2
-            }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                    Sort by: {headers.find(h => h.id === orderBy)?.label}
-                </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {headers.filter(h => h.sortable).map((header) => (
-                    <Chip
-                        key={header.id}
-                        label={header.label}
-                        onClick={() => onSort(header.id)}
-                        variant={orderBy === header.id ? "filled" : "outlined"}
-                        color={orderBy === header.id ? "primary" : "default"}
+                        <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onShare(brdge);
+                        }}
                         size="small"
-                        sx={{ borderRadius: '8px' }}
-                    />
-                ))}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            }
+                        }}
+                    >
+                        <ShareIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(brdge);
+                        }}
+                        size="small"
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            }
+                        }}
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
+                </Box>
             </Box>
-        </Box>
+        </motion.div>
     );
 
     return (
-        <>
-            {isMobile ? (
-                <Box sx={{ px: 2 }}>
-                    <MobileHeader
-                        orderBy={orderBy}
-                        onSort={onSort}
-                        headers={columns}
-                        stats={stats} // Pass stats to MobileHeader
-                    />
+        <Box sx={{ width: '100%' }}>
+            {/* Responsive list/table view */}
+            <Box sx={{
+                px: { xs: 2, sm: 0 },
+                pb: { xs: 2, sm: 0 }
+            }}>
+                {useMediaQuery(theme.breakpoints.down('sm')) ? (
+                    // Mobile card view
                     <AnimatePresence>
                         {brdges.map((brdge) => (
-                            <MobileListItem key={brdge.id} brdge={brdge} />
+                            <MobileCard key={brdge.id} brdge={brdge} />
                         ))}
                     </AnimatePresence>
-                </Box>
-            ) : (
-                // Desktop View - Keep existing table view
-                <TableContainer
-                    component={Paper}
-                    sx={{
-                        borderRadius: '24px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-                        overflow: 'hidden',
-                        '& .MuiTableCell-root': {
-                            borderColor: 'rgba(255, 255, 255, 0.05)',
-                            color: 'white'
-                        },
-                        '& .MuiTableRow-root:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                            transition: 'background-color 0.3s ease'
-                        }
-                    }}
-                >
-                    <Table>
-                        <TableHeader />
-                        <TableBody>
-                            <AnimatePresence>
-                                {brdges.map((brdge) => (
-                                    <motion.tr
-                                        key={brdge.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        whileHover={{
-                                            backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                            transition: { duration: 0.2 }
-                                        }}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <TableCell
-                                            onClick={() => onView(brdge)}
-                                            sx={{
-                                                color: '#2196F3',
-                                                fontWeight: 500
+                ) : (
+                    // Desktop table view - without dividers
+                    <TableContainer>
+                        <Table>
+                            <TableHead>
+                                <TableRow
+                                    sx={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                        backdropFilter: 'blur(10px)',
+                                        '& th': {
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            fontWeight: 600,
+                                            fontSize: '0.875rem',
+                                            letterSpacing: '0.02em',
+                                            borderBottom: 'none', // Remove bottom border
+                                            py: 2
+                                        }
+                                    }}
+                                >
+                                    <TableCell>Name</TableCell>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell>Actions</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                <AnimatePresence>
+                                    {brdges.map((brdge) => (
+                                        <motion.tr
+                                            key={brdge.id}
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            whileHover={{
+                                                backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                                transition: { duration: 0.2 }
                                             }}
+                                            style={{ cursor: 'pointer' }}
                                         >
-                                            {brdge.name}
-                                        </TableCell>
-                                        <TableCell>
-                                            <StatusChip shareable={brdge.shareable} />
-                                        </TableCell>
-                                        <TableCell>
-                                            <ActionButtons brdge={brdge} />
-                                        </TableCell>
-                                    </motion.tr>
-                                ))}
-                            </AnimatePresence>
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            )}
-
-            {/* Mobile Actions Menu */}
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-                TransitionComponent={Fade}
-                PaperProps={{
-                    sx: {
-                        borderRadius: '12px',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
-                        minWidth: '160px'
-                    }
-                }}
-            >
-                <MenuItem onClick={() => handleAction('view')}>
-                    <VisibilityIcon sx={{ mr: 1 }} /> View
-                </MenuItem>
-                <MenuItem onClick={() => handleAction('edit')}>
-                    <EditIcon sx={{ mr: 1 }} /> Edit
-                </MenuItem>
-                <MenuItem onClick={() => handleAction('share')}>
-                    <ShareIcon sx={{ mr: 1 }} /> Share
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={() => handleAction('delete')} sx={{ color: 'error.main' }}>
-                    <DeleteIcon sx={{ mr: 1 }} /> Delete
-                </MenuItem>
-            </Menu>
-
-            {/* Share Dialog */}
-            <ShareDialog
-                open={shareDialogOpen}
-                onClose={handleCloseShareDialog}
-                brdge={selectedBrdge}
-                onToggle={handleToggleShare}
-                onCopy={handleCopyLink}
-            />
-
-            {/* Copy Success Snackbar */}
-            <Snackbar
-                open={showCopySuccess}
-                autoHideDuration={3000}
-                onClose={() => setShowCopySuccess(false)}
-                message="Link copied to clipboard!"
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            />
-        </>
+                                            <TableCell
+                                                onClick={() => onView(brdge)}
+                                                sx={{
+                                                    color: '#2196F3',
+                                                    fontWeight: 500,
+                                                    borderBottom: 'none' // Remove bottom border
+                                                }}
+                                            >
+                                                {brdge.name}
+                                            </TableCell>
+                                            <TableCell sx={{ borderBottom: 'none' }}> {/* Remove bottom border */}
+                                                <StatusChip shareable={brdge.shareable} />
+                                            </TableCell>
+                                            <TableCell sx={{ borderBottom: 'none' }}> {/* Remove bottom border */}
+                                                <ActionButtons brdge={brdge} />
+                                            </TableCell>
+                                        </motion.tr>
+                                    ))}
+                                </AnimatePresence>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                )}
+            </Box>
+        </Box>
     );
 };
 

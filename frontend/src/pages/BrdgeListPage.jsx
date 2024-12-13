@@ -200,8 +200,8 @@ function BrdgeListPage() {
         <Box sx={{
             minHeight: '100vh',
             background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-            pt: 12, // Account for header
-            pb: 6,
+            pt: { xs: '80px', md: 12 },
+            pb: { xs: 4, md: 6 },
             position: 'relative',
             overflow: 'hidden',
             '&::before': {
@@ -229,7 +229,9 @@ function BrdgeListPage() {
                 animation: 'float 25s infinite alternate-reverse'
             }
         }}>
-            <Container maxWidth="lg">
+            <Container maxWidth="lg" sx={{
+                px: { xs: 0, md: 2 }
+            }}>
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -240,9 +242,10 @@ function BrdgeListPage() {
                         component="h1"
                         align="center"
                         sx={{
-                            mb: { xs: 3, md: 4 },
+                            mt: { xs: 4, md: 0 },
+                            mb: { xs: 2, md: 4 },
                             fontWeight: '600',
-                            fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                            fontSize: { xs: '1.75rem', md: '4.5rem' },
                             color: 'white',
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
@@ -252,11 +255,11 @@ function BrdgeListPage() {
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: '-16px',
+                                bottom: '-8px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '80px',
-                                height: '4px',
+                                width: '60px',
+                                height: '3px',
                                 background: 'rgba(255, 255, 255, 0.5)',
                                 borderRadius: '2px',
                                 boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
@@ -270,10 +273,10 @@ function BrdgeListPage() {
                         display: 'flex',
                         flexDirection: { xs: 'column', sm: 'row' },
                         gap: 2,
-                        mb: 6,
-                        mt: 8,
+                        mb: { xs: 2, sm: 6 },
+                        mt: { xs: 3, sm: 8 },
                         justifyContent: 'space-between',
-                        alignItems: 'center'
+                        alignItems: { xs: 'stretch', sm: 'center' }
                     }}>
                         <TextField
                             placeholder="Search Brdges"
@@ -288,7 +291,10 @@ function BrdgeListPage() {
                             }}
                             sx={{
                                 maxWidth: { sm: 300 },
+                                width: { xs: '100%', sm: 'auto' },
+                                mb: { xs: 2, sm: 0 },
                                 '& .MuiOutlinedInput-root': {
+                                    height: { xs: '45px', sm: 'auto' },
                                     color: 'white',
                                     backgroundColor: 'rgba(255, 255, 255, 0.02)',
                                     backdropFilter: 'blur(10px)',
@@ -325,15 +331,24 @@ function BrdgeListPage() {
                             backdropFilter: 'blur(10px)',
                             borderRadius: '12px',
                             border: '1px solid rgba(255, 255, 255, 0.05)',
-                            minWidth: '280px'
+                            minWidth: { xs: '100%', sm: '280px' },
                         }}>
-                            {/* Bridges Usage */}
-                            <Box sx={{ flex: 1 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    mb: 0.5
+                                }}>
+                                    <Typography variant="caption" sx={{
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                    }}>
                                         Bridges
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: 'white' }}>
+                                    <Typography variant="caption" sx={{
+                                        color: 'white',
+                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                    }}>
                                         {userStats.brdges_created}/{userStats.brdges_limit === 'Unlimited' ? '∞' : userStats.brdges_limit}
                                     </Typography>
                                 </Box>
@@ -341,7 +356,7 @@ function BrdgeListPage() {
                                     variant="determinate"
                                     value={userStats.brdges_limit === 'Unlimited' ? 0 : (userStats.brdges_created / parseInt(userStats.brdges_limit)) * 100}
                                     sx={{
-                                        height: 3,
+                                        height: 2,
                                         borderRadius: 1.5,
                                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
                                         '& .MuiLinearProgress-bar': {
@@ -354,13 +369,22 @@ function BrdgeListPage() {
 
                             <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
-                            {/* Minutes Usage */}
-                            <Box sx={{ flex: 1 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'center' }}>
-                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    mb: 0.5
+                                }}>
+                                    <Typography variant="caption" sx={{
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                    }}>
                                         Minutes
                                     </Typography>
-                                    <Typography variant="caption" sx={{ color: 'white' }}>
+                                    <Typography variant="caption" sx={{
+                                        color: 'white',
+                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                                    }}>
                                         {userStats.minutes_used || 0}/{userStats.minutes_limit || 30}
                                     </Typography>
                                 </Box>
@@ -368,7 +392,7 @@ function BrdgeListPage() {
                                     variant="determinate"
                                     value={((userStats.minutes_used || 0) / (userStats.minutes_limit || 30)) * 100}
                                     sx={{
-                                        height: 3,
+                                        height: 2,
                                         borderRadius: 1.5,
                                         backgroundColor: 'rgba(255, 255, 255, 0.05)',
                                         '& .MuiLinearProgress-bar': {
@@ -390,9 +414,9 @@ function BrdgeListPage() {
                                 onClick={() => navigate('/create')}
                                 disabled={!canCreateBrdge()}
                                 sx={{
-                                    minWidth: { xs: '100%', sm: 'auto' },
-                                    py: 1.5,
-                                    px: 4,
+                                    width: { xs: '100%', sm: 'auto' },
+                                    mt: { xs: 2, sm: 0 },
+                                    py: { xs: 1.2, sm: 1.5 },
                                     borderRadius: '50px',
                                     background: canCreateBrdge()
                                         ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)'
@@ -417,7 +441,7 @@ function BrdgeListPage() {
                     </Box>
 
                     <Box sx={{
-                        pb: { xs: 12, sm: 0 },
+                        pb: { xs: 8, sm: 0 },
                         position: 'relative',
                         zIndex: 1
                     }}>
@@ -451,7 +475,6 @@ function BrdgeListPage() {
                 </motion.div>
             </Container>
 
-            {/* Dialogs with updated styling */}
             <Dialog
                 open={deleteDialogOpen}
                 onClose={() => setDeleteDialogOpen(false)}
