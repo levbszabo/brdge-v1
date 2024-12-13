@@ -124,10 +124,13 @@ const BrdgeList = ({
         }
     };
 
-    const handleShareClick = (brdge) => {
+    const handleShareClick = (brdge, e) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         setSelectedBrdge(brdge);
         setShareDialogOpen(true);
-        handleMenuClose();
     };
 
     const handleCopyLink = () => {
@@ -227,10 +230,18 @@ const BrdgeList = ({
     );
 
     const ActionButtons = ({ brdge }) => (
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{
+            display: 'flex',
+            gap: 1,
+            position: 'relative',
+            zIndex: 20
+        }}>
             <IconButton
                 size="small"
-                onClick={() => onView(brdge)}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onView(brdge);
+                }}
                 sx={{
                     color: 'rgba(255, 255, 255, 0.7)',
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -265,47 +276,45 @@ const BrdgeList = ({
             >
                 <EditIcon fontSize="small" />
             </IconButton>
-            <Tooltip title={brdge.shareable ? "Manage Sharing" : "Share"}>
-                <IconButton
-                    size="small"
-                    onClick={(e) => handleShareClick(brdge, e)}
-                    sx={{
-                        color: brdge.shareable ? '#4F9CF9' : 'rgba(255, 255, 255, 0.7)',
-                        backgroundColor: brdge.shareable ? 'rgba(79, 156, 249, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            color: '#4F9CF9',
-                            backgroundColor: 'rgba(79, 156, 249, 0.15)',
-                            transform: 'translateY(-2px)'
-                        }
-                    }}
-                >
-                    <ShareIcon fontSize="small" />
-                </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-                <IconButton
-                    size="small"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(brdge);
-                    }}
-                    sx={{
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            color: '#4F9CF9',
-                            backgroundColor: 'rgba(79, 156, 249, 0.1)',
-                            transform: 'translateY(-2px)'
-                        }
-                    }}
-                >
-                    <DeleteIcon fontSize="small" />
-                </IconButton>
-            </Tooltip>
+            <IconButton
+                size="small"
+                onClick={(e) => handleShareClick(brdge, e)}
+                sx={{
+                    color: brdge.shareable ? '#4F9CF9' : 'rgba(255, 255, 255, 0.7)',
+                    backgroundColor: brdge.shareable ? 'rgba(79, 156, 249, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    zIndex: 21,
+                    '&:hover': {
+                        color: '#4F9CF9',
+                        backgroundColor: 'rgba(79, 156, 249, 0.15)',
+                        transform: 'translateY(-2px)'
+                    }
+                }}
+            >
+                <ShareIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+                size="small"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(brdge);
+                }}
+                sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        color: '#4F9CF9',
+                        backgroundColor: 'rgba(79, 156, 249, 0.1)',
+                        transform: 'translateY(-2px)'
+                    }
+                }}
+            >
+                <DeleteIcon fontSize="small" />
+            </IconButton>
         </Box>
     );
 
@@ -368,12 +377,12 @@ const BrdgeList = ({
                     <IconButton
                         onClick={(e) => {
                             e.stopPropagation();
-                            onShare(brdge);
+                            handleShareClick(brdge, e);
                         }}
                         size="small"
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                            color: brdge.shareable ? '#4F9CF9' : 'rgba(255, 255, 255, 0.7)',
+                            backgroundColor: brdge.shareable ? 'rgba(79, 156, 249, 0.1)' : 'rgba(255, 255, 255, 0.05)',
                             '&:hover': {
                                 backgroundColor: 'rgba(255, 255, 255, 0.1)',
                             }
@@ -403,7 +412,7 @@ const BrdgeList = ({
     );
 
     return (
-        <Box sx={{ width: '100%' }}>
+        <Box sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
             {/* Responsive list/table view */}
             <Box sx={{
                 px: { xs: 2, sm: 0 },
@@ -467,7 +476,11 @@ const BrdgeList = ({
                                             <TableCell sx={{ borderBottom: 'none' }}> {/* Remove bottom border */}
                                                 <StatusChip shareable={brdge.shareable} />
                                             </TableCell>
-                                            <TableCell sx={{ borderBottom: 'none' }}> {/* Remove bottom border */}
+                                            <TableCell sx={{
+                                                borderBottom: 'none',
+                                                position: 'relative',
+                                                zIndex: 9
+                                            }}>
                                                 <ActionButtons brdge={brdge} />
                                             </TableCell>
                                         </motion.tr>
@@ -478,27 +491,44 @@ const BrdgeList = ({
                     </TableContainer>
                 )}
             </Box>
+
+            {/* Move ShareDialog outside of any scrolling containers */}
+            <ShareDialog
+                open={shareDialogOpen}
+                onClose={() => setShareDialogOpen(false)}
+                brdge={selectedBrdge}
+                onToggle={() => {
+                    onShare(selectedBrdge);
+                    setShareDialogOpen(false);
+                }}
+                onCopy={handleCopyLink}
+            />
         </Box>
     );
 };
 
-// Remove the duplicate ShareDialog component and merge its functionality
+// Replace the empty Dialog with the proper ShareDialog component
 const ShareDialog = ({ open, onClose, brdge, onToggle, onCopy }) => {
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const shareableUrl = `${window.location.origin}/viewBrdge/${brdge?.id}`;
 
     return (
         <Dialog
             open={open}
             onClose={onClose}
+            fullScreen={isMobile}
             PaperProps={{
                 sx: {
-                    borderRadius: '16px',
-                    width: '440px',
+                    borderRadius: isMobile ? 0 : '16px',
+                    width: isMobile ? '100%' : '440px',
+                    maxWidth: '100%',
                     background: 'rgba(255, 255, 255, 0.95)',
                     backdropFilter: 'blur(10px)',
+                    margin: isMobile ? 0 : 'auto',
                 }
             }}
+            sx={{ zIndex: 1500 }}
         >
             <Box sx={{ p: 3 }}>
                 {/* Header */}
@@ -516,7 +546,7 @@ const ShareDialog = ({ open, onClose, brdge, onToggle, onCopy }) => {
                     </IconButton>
                 </Box>
 
-                {/* Share Link - Always visible */}
+                {/* Share Link */}
                 <Box sx={{ mb: 3 }}>
                     <Box sx={{
                         display: 'flex',

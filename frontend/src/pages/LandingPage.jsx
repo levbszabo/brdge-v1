@@ -1080,13 +1080,15 @@ const FinalCTA = () => {
             pb: { xs: 6, sm: 8, md: 12 },
             px: { xs: 2, sm: 3, md: 4 },
             textAlign: 'center',
-            position: 'relative'
+            position: 'relative',
+            zIndex: 1
         }}>
             <Container maxWidth="md" ref={ref}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
+                    style={{ position: 'relative', zIndex: 2 }}
                 >
                     <Typography variant="h2" sx={{
                         fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' },
@@ -1118,6 +1120,8 @@ const FinalCTA = () => {
                         flexWrap: 'wrap',
                         flexDirection: { xs: 'column', sm: 'row' },
                         width: { xs: '100%', sm: 'auto' },
+                        position: 'relative',
+                        zIndex: 3
                     }}>
                         <Button
                             component={Link}
