@@ -27,7 +27,8 @@ import {
     InputAdornment,
     Fade,
     Divider,
-    LinearProgress
+    LinearProgress,
+    Switch
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ShareIcon from '@mui/icons-material/Share';
@@ -38,6 +39,9 @@ import LinkIcon from '@mui/icons-material/Link';
 import LockIcon from '@mui/icons-material/Lock';
 import PublicIcon from '@mui/icons-material/Public';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CloseIcon from '@mui/icons-material/Close';
+import EmailIcon from '@mui/icons-material/Email';
+import TwitterIcon from '@mui/icons-material/Twitter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -127,9 +131,10 @@ const BrdgeList = ({
     };
 
     const handleCopyLink = () => {
-        const publicUrl = `${window.location.origin}/b/${selectedBrdge.public_id}`;
-        navigator.clipboard.writeText(publicUrl);
+        const shareableUrl = `${window.location.origin}/viewBrdge/${selectedBrdge.id}`;
+        navigator.clipboard.writeText(shareableUrl);
         setShowCopySuccess(true);
+        setTimeout(() => setShowCopySuccess(false), 3000);
     };
 
     const handleCloseShareDialog = () => {
@@ -599,76 +604,110 @@ const BrdgeList = ({
 // Remove the duplicate ShareDialog component and merge its functionality
 const ShareDialog = ({ open, onClose, brdge, onToggle, onCopy }) => {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const shareableUrl = `${window.location.origin}/viewBrdge/${brdge?.id}`;
 
     return (
         <Dialog
             open={open}
             onClose={onClose}
-            fullScreen={isMobile}
             PaperProps={{
                 sx: {
-                    borderRadius: isMobile ? 0 : '16px',
-                    width: isMobile ? '100%' : '400px',
-                    m: isMobile ? 0 : 2
+                    borderRadius: '16px',
+                    width: '440px',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
                 }
             }}
         >
-            <DialogTitle sx={{
-                pb: 1,
-                pt: isMobile ? 3 : 2,
-                px: isMobile ? 3 : 2
-            }}>
-                Share Brdge
-            </DialogTitle>
-            <DialogContent sx={{ px: isMobile ? 3 : 2 }}>
-                {brdge?.shareable ? (
-                    <Box sx={{ mt: 2 }}>
-                        <Typography variant="subtitle1" gutterBottom>
-                            Public Link
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TextField
-                                fullWidth
-                                value={`${window.location.origin}/b/${brdge.public_id}`}
-                                InputProps={{
-                                    readOnly: true,
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <LinkIcon color="primary" />
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-                            <IconButton
-                                onClick={onCopy}
-                                color="primary"
-                            >
-                                <ContentCopyIcon />
-                            </IconButton>
+            <Box sx={{ p: 3 }}>
+                {/* Header */}
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 3
+                }}>
+                    <Typography variant="h6">
+                        Share Brdge
+                    </Typography>
+                    <IconButton onClick={onClose} size="small">
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                </Box>
+
+                {/* Share Link - Always visible */}
+                <Box sx={{ mb: 3 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        gap: 1,
+                    }}>
+                        <TextField
+                            fullWidth
+                            value={shareableUrl}
+                            size="small"
+                            InputProps={{
+                                readOnly: true,
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <LinkIcon fontSize="small" color="primary" />
+                                    </InputAdornment>
+                                ),
+                                sx: {
+                                    borderRadius: 1,
+                                    bgcolor: 'rgba(0, 0, 0, 0.04)'
+                                }
+                            }}
+                        />
+                        <Button
+                            variant="contained"
+                            onClick={onCopy}
+                            sx={{
+                                minWidth: '100px',
+                                bgcolor: theme.palette.primary.main,
+                                '&:hover': {
+                                    bgcolor: theme.palette.primary.dark,
+                                }
+                            }}
+                        >
+                            Copy
+                        </Button>
+                    </Box>
+                </Box>
+
+                {/* Access Toggle */}
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'rgba(0, 0, 0, 0.03)',
+                    border: '1px solid rgba(0, 0, 0, 0.06)'
+                }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {brdge?.shareable ? (
+                            <PublicIcon color="primary" sx={{ opacity: 0.8 }} />
+                        ) : (
+                            <LockIcon sx={{ opacity: 0.5 }} />
+                        )}
+                        <Box>
+                            <Typography variant="subtitle2">
+                                {brdge?.shareable ? 'Public access' : 'Private access'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                {brdge?.shareable
+                                    ? 'Anyone with the link can view'
+                                    : 'Only you can view'}
+                            </Typography>
                         </Box>
                     </Box>
-                ) : (
-                    <Typography>
-                        Make this Brdge public to share it with others
-                    </Typography>
-                )}
-            </DialogContent>
-            <DialogActions sx={{
-                px: isMobile ? 3 : 2,
-                pb: isMobile ? 4 : 2
-            }}>
-                <Button onClick={onClose}>
-                    Close
-                </Button>
-                <Button
-                    onClick={onToggle}
-                    variant="contained"
-                    color="primary"
-                >
-                    {brdge?.shareable ? 'Make Private' : 'Make Public'}
-                </Button>
-            </DialogActions>
+                    <Switch
+                        checked={brdge?.shareable}
+                        onChange={onToggle}
+                        color="primary"
+                    />
+                </Box>
+            </Box>
         </Dialog>
     );
 };

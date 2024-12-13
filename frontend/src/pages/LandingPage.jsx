@@ -22,6 +22,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useInView } from 'react-intersection-observer';
 import HowItWorks from '../components/HowItWorks';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import demoVideo from '../assets/brdge-demo2.mp4';
 
 // Reuse FeatureCard component
 const FeatureCard = ({ icon, title, description }) => {
@@ -157,130 +158,68 @@ const IntroducingBrdgeAI = () => {
                             clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
                             animation: 'rotate 20s linear infinite'
                         }} />
-                        <Button
-                            sx={{
-                                mb: 3,
-                                bgcolor: 'rgba(255,255,255,0.1)',
-                                color: 'white',
-                                borderRadius: '100px',
-                                px: 3,
-                                py: 1,
-                                textTransform: 'none',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&:hover': {
-                                    bgcolor: 'rgba(255,255,255,0.15)',
-                                    '&::after': {
-                                        transform: 'translateX(100%)'
-                                    }
-                                },
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: '-100%',
-                                    width: '100%',
-                                    height: '100%',
-                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                                    transition: 'transform 0.5s',
-                                }
-                            }}
-                        >
-                            Why Brdge AI?
-                        </Button>
                     </Box>
 
                     {/* Main Content */}
-                    <Grid container spacing={{ xs: 4, md: 8 }} alignItems="center">
+                    <Grid
+                        container
+                        spacing={{ xs: 2, md: 4 }}
+                        alignItems="flex-start"
+                        sx={{ mt: { xs: 2, md: -4 } }}
+                    >
                         {/* Left Column - Visual */}
                         <Grid item xs={12} md={6}>
                             <motion.div
                                 initial={{ opacity: 0, x: -50 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}
-                                transition={{ delay: 0.2, duration: 0.8 }}
+                                transition={{ delay: 0.4, duration: 1.0 }}
+                                style={{ marginTop: '115px' }}
                             >
                                 <Box sx={{
                                     position: 'relative',
-                                    height: '400px',
-                                    borderRadius: '30px',
+                                    width: '100%',
+                                    maxWidth: '900px',
+                                    margin: '0 auto',
+                                    borderRadius: '16px',
                                     overflow: 'hidden',
-                                    bgcolor: 'rgba(255,255,255,0.05)',
+                                    bgcolor: 'rgba(2, 6, 23, 0.2)',
                                     backdropFilter: 'blur(10px)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                                    mb: { xs: 2, md: 0 },
                                     '&::before': {
                                         content: '""',
-                                        position: 'absolute',
-                                        inset: 0,
-                                        background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px)',
-                                        opacity: 0.5
+                                        display: 'block',
+                                        paddingTop: '56.25%'
                                     }
                                 }}>
-                                    <Box sx={{
-                                        position: 'absolute',
-                                        width: '150%',
-                                        height: '150%',
-                                        background: 'radial-gradient(circle at center, rgba(0,255,204,0.15) 0%, transparent 70%)',
-                                        animation: 'pulse 3s infinite'
-                                    }} />
-                                    <Box sx={{
-                                        position: 'absolute',
-                                        top: '20%',
-                                        left: '5%',
-                                        width: '300px',
-                                        height: '300px',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '50%',
-                                        animation: 'rotate 20s linear infinite',
-                                        '&::before': {
-                                            content: '""',
+                                    <video
+                                        autoPlay
+                                        muted
+                                        loop
+                                        playsInline
+                                        style={{
                                             position: 'absolute',
-                                            inset: -1,
-                                            borderRadius: 'inherit',
-                                            padding: '1px',
-                                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
-                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                                            WebkitMaskComposite: 'xor',
-                                            maskComposite: 'exclude'
-                                        }
-                                    }} />
-                                    <Box sx={{
-                                        position: 'absolute',
-                                        bottom: '15%',
-                                        right: '10%',
-                                        width: '200px',
-                                        height: '200px',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '50%',
-                                        animation: 'rotate 15s linear infinite reverse',
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            inset: -1,
-                                            borderRadius: 'inherit',
-                                            padding: '1px',
-                                            background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
-                                            WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                                            WebkitMaskComposite: 'xor',
-                                            maskComposite: 'exclude'
-                                        }
-                                    }} />
-                                    <SmartToyIcon sx={{
-                                        fontSize: '120px',
-                                        color: '#00ffcc',
-                                        filter: 'drop-shadow(0 0 20px rgba(0,255,204,0.5))',
-                                        animation: 'float 3s ease-in-out infinite',
-                                        position: 'relative',
-                                        zIndex: 1
-                                    }} />
+                                            top: '0',
+                                            left: '0',
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                            padding: '0',
+                                        }}
+                                    >
+                                        <source src={demoVideo} type="video/mp4" />
+                                        Your browser does not support the video tag.
+                                    </video>
                                 </Box>
                             </motion.div>
                         </Grid>
 
                         {/* Right Column - Text Content */}
-                        <Grid item xs={12} md={6}>
+                        <Grid item xs={12} md={6} sx={{
+                            pl: { md: 4 },
+                            mt: { xs: 2, md: 0 }
+                        }}>
                             <motion.div
                                 initial={{ opacity: 0, x: 50 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}

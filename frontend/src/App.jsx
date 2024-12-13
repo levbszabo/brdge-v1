@@ -36,41 +36,61 @@ function Layout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Define public routes
+  const publicRoutes = [
+    '/login',
+    '/signup',
+    '/demos',
+    '/pricing',
+    '/policy',
+    '/',
+  ];
+
+  // Check if the current path is a viewBrdge route
+  const isViewBrdgePath = (path) => {
+    return path.startsWith('/viewBrdge/') || path.startsWith('/b/');
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = getAuthToken();
+      const currentPath = location.pathname;
+
       if (token) {
         try {
-          // Verify the token with the backend
           await api.get('/auth/verify', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setIsAuthenticated(true);
 
-          // Redirect to /brdges if user is on login or signup page
-          if (['/login', '/signup'].includes(location.pathname)) {
+          // Only redirect to /brdges if on login/signup
+          if (['/login', '/signup'].includes(currentPath)) {
             navigate('/brdges', { replace: true });
           }
         } catch (error) {
           console.error('Token verification failed:', error);
           logout();
           setIsAuthenticated(false);
-          // Only redirect to login if not on public routes
-          if (!['/demos', '/pricing', '/policy', '/'].includes(location.pathname)) {
-            navigate('/login', { replace: true });
-          }
-        }
-      } else {
-        // If no token and trying to access protected route, redirect to login
-        if (!['/login', '/signup', '/demos', '/pricing', '/policy', '/'].includes(location.pathname)) {
-          navigate('/login', { replace: true });
         }
       }
+
+      // Only redirect to login if:
+      // 1. Not on a public route
+      // 2. Not on a viewBrdge route
+      // 3. Not authenticated
+      const needsAuth = !publicRoutes.includes(currentPath) &&
+        !isViewBrdgePath(currentPath) &&
+        !isAuthenticated;
+
+      if (needsAuth) {
+        navigate('/login', { replace: true });
+      }
+
       setIsLoading(false);
     };
 
     checkAuth();
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, isAuthenticated]);
 
   if (isLoading) {
     return (
