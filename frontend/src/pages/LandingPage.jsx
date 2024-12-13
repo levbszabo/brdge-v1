@@ -256,7 +256,7 @@ const IntroducingBrdgeAI = () => {
                                     },
                                     animation: 'fadeInUp 0.8s ease-out 0.4s backwards',
                                 }}>
-                                    Transform static content into a <strong>living, conversational expert</strong>—<strong>no coding required</strong>. Simply chat with our system and watch your knowledge come alive.
+                                    Transform static content into a <strong> voice-based AI Agent</strong>—<strong>no coding required</strong>. Simply chat with our system and watch your knowledge come alive.
                                 </Typography>
 
                                 <Typography variant="h5" sx={{
