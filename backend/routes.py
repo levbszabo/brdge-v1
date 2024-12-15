@@ -226,7 +226,10 @@ def delete_brdge(brdge_id):
         db.session.begin_nested()
 
         try:
-            # Delete associated scripts first
+            # First delete all viewer conversations
+            ViewerConversation.query.filter_by(brdge_id=brdge_id).delete()
+
+            # Delete associated scripts
             Scripts.query.filter_by(brdge_id=brdge_id).delete()
 
             # Delete associated walkthrough messages
