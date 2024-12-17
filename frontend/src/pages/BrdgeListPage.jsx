@@ -184,8 +184,24 @@ function BrdgeListPage() {
     };
 
     const canCreateBrdge = () => {
+        // Check if we have valid stats
+        if (!userStats) return false;
+
+        // Log current stats for debugging
+        console.log('Current stats:', {
+            created: userStats.brdges_created,
+            limit: userStats.brdges_limit,
+            accountType: userStats.account_type
+        });
+
+        // If on pro plan or unlimited limit, always return true
         if (userStats.brdges_limit === 'Unlimited') return true;
-        return userStats.brdges_created < parseInt(userStats.brdges_limit);
+
+        // For standard plan (20 brdges) or free plan (2 brdges)
+        const currentLimit = parseInt(userStats.brdges_limit);
+        const currentCount = parseInt(userStats.brdges_created);
+
+        return currentCount < currentLimit;
     };
 
     if (loading) {

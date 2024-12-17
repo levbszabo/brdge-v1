@@ -1339,19 +1339,35 @@ def get_user_stats():
         # Get brdge count
         brdges_count = Brdge.query.filter_by(user_id=current_user_id).count()
 
-        # Get limit based on account type
-        limit = {"free": 2, "standard": 20, "pro": float("inf")}.get(
-            user.account.account_type, 2
+        # Log current user account type for debugging
+        app.logger.info(
+            f"User {current_user_id} account type: {user.account.account_type}"
         )
 
-        return jsonify(
-            {
-                "brdges_created": brdges_count,
-                "brdges_limit": "Unlimited" if limit == float("inf") else str(limit),
-            }
-        )
+        # Get limit based on account type
+        limits = {"free": 2, "standard": 20, "pro": float("inf")}
+
+        account_type = user.account.account_type
+        limit = limits.get(account_type, 2)  # Default to 2 if unknown account type
+
+        # Log computed limit for debugging
+        app.logger.info(f"Computed limit for {account_type}: {limit}")
+
+        response_data = {
+            "brdges_created": brdges_count,
+            "brdges_limit": "Unlimited" if limit == float("inf") else str(limit),
+            "account_type": account_type,
+            "minutes_used": 0,  # Add these if you're tracking them
+            "minutes_limit": 120 if account_type == "standard" else 30,
+        }
+
+        # Log full response for debugging
+        app.logger.info(f"Returning stats: {response_data}")
+
+        return jsonify(response_data)
 
     except Exception as e:
+        app.logger.error(f"Error in get_user_stats: {str(e)}")
         return jsonify({"error": str(e)}), 400
 
 
@@ -1658,7 +1674,7 @@ def generate_slide_scripts(brdge_id):
                     "content": msg.content,
                     "timestamp": msg.timestamp.isoformat(),
                 }
-            )
+            )  # Close the append() parenthesis here
 
         # Prepare the prompt with full instructions
         prompt = """
