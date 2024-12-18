@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 import { useInView } from 'react-intersection-observer';
 import { Check, Star } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 
 const PricingTier = ({ tier, isPopular, delay }) => {
     const [ref, inView] = useInView({
@@ -90,8 +91,9 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     ))}
                 </Box>
                 <Button
-                    variant="contained"
-                    fullWidth
+                    component={Link}
+                    to="/signup"
+                    variant="outlined"
                     sx={{
                         mt: 4,
                         background: isPopular ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)' : 'rgba(255, 255, 255, 0.1)',

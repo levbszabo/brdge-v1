@@ -674,7 +674,7 @@ const HeroSection = () => {
                                     }
                                 }}
                             >
-                                Watch Demo
+                                Try Demo
                             </Button>
                         </motion.div>
                     </Box>
