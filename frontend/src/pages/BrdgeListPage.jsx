@@ -230,7 +230,8 @@ function BrdgeListPage() {
                 background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
                 borderRadius: '50%',
                 filter: 'blur(80px)',
-                animation: 'float 20s infinite alternate'
+                animation: 'float 20s infinite alternate',
+                zIndex: 0,
             },
             '&::after': {
                 content: '""',
@@ -242,7 +243,8 @@ function BrdgeListPage() {
                 background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
                 borderRadius: '50%',
                 filter: 'blur(80px)',
-                animation: 'float 25s infinite alternate-reverse'
+                animation: 'float 25s infinite alternate-reverse',
+                zIndex: 0,
             }
         }}>
             <Container maxWidth="lg" sx={{
@@ -292,7 +294,9 @@ function BrdgeListPage() {
                         mb: { xs: 2, sm: 6 },
                         mt: { xs: 3, sm: 8 },
                         justifyContent: 'space-between',
-                        alignItems: { xs: 'stretch', sm: 'center' }
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        position: 'relative',
+                        zIndex: 2,
                     }}>
                         <TextField
                             placeholder="Search Brdges"
@@ -423,6 +427,7 @@ function BrdgeListPage() {
                         <motion.div
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
+                            style={{ position: 'relative', zIndex: 2 }}
                         >
                             <Button
                                 variant="contained"
@@ -442,6 +447,8 @@ function BrdgeListPage() {
                                     letterSpacing: '0.02em',
                                     textTransform: 'none',
                                     boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
+                                    position: 'relative',
+                                    zIndex: 2,
                                     '&:hover': {
                                         background: canCreateBrdge()
                                             ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)'

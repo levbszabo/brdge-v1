@@ -375,7 +375,11 @@ class ViewerAgent(VoicePipelineAgent):
     """Agent that presents slides and responds to viewer questions"""
 
     def __init__(
-        self, brdge_id: str, vad, api_base_url: str = None, user_id: str = None
+        self,
+        brdge_id: str,
+        vad,
+        api_base_url: str = None,
+        user_id: str = None,
     ):
         self.brdge_id = brdge_id
         self.api_base_url = api_base_url or os.getenv(
@@ -420,6 +424,28 @@ class ViewerAgent(VoicePipelineAgent):
         def on_agent_speech_interrupted(msg: llm.ChatMessage):
             logger.info(f"Agent speech interrupted: {msg.content}")
             self.add_message(self.current_slide_number, "assistant", msg.content)
+
+        # @self.chat_rtc.on("message_received")
+        # async def on_message_received(msg: rtc.ChatMessage):
+        #     logger.info(f"Message received: {msg.message}")
+        #     self.add_message(self.current_slide_number, "user", msg.message)
+
+        #     # Create a new chat context for this message
+        #     temp_ctx = self.chat_ctx.copy()
+        #     temp_ctx.append(role="user", text=msg.message)
+
+        #     # Process the message
+        #     try:
+        #         await self.say(
+        #             self.llm.chat(chat_ctx=temp_ctx),
+        #             allow_interruptions=True,
+        #         )
+        #     except Exception as e:
+        #         logger.error(f"Error processing message: {e}")
+        #         await self.say(
+        #             "I apologize, but I encountered an error processing your message.",
+        #             allow_interruptions=False,
+        #         )
 
     def _load_scripts(self) -> dict:
         """Load scripts using API request"""
@@ -522,6 +548,22 @@ class ViewerAgent(VoicePipelineAgent):
             response.raise_for_status()
         except Exception as e:
             logger.error(f"Error adding message: {e}", exc_info=True)
+
+    async def stop_speaking(self):
+        """Stop current speech"""
+        if hasattr(self, "current_speech_task") and self.current_speech_task:
+            self.current_speech_task.cancel()
+            self.is_speaking = False
+            logger.info("Stopped current speech")
+
+    async def say(self, text, allow_interruptions=True):
+        """Override say method to track speaking state"""
+        self.is_speaking = True
+        try:
+            response = await super().say(text, allow_interruptions=allow_interruptions)
+            return response
+        finally:
+            self.is_speaking = False
 
 
 class EditAgent(VoicePipelineAgent):
@@ -924,54 +966,19 @@ async def entrypoint(ctx: JobContext):
 
             # Add message to agent's chat context
             agent.chat_ctx.append(role="user", text=cleaned_message)
+            # agent.emit("user_speech_committed", msg)
+            agent.emit("user_speech_committed", cleaned_message)
 
+            # Create and run the coroutine using create_task
             async def process_message():
                 try:
                     if current_slide["agent_type"] == "view":
-                        # For view mode, get current slide's script as context
-                        if isinstance(agent, ViewerAgent):
-                            current_script = agent.scripts.get(
-                                str(agent.current_slide), ""
-                            )
-                            # Create a new chat context with the script context
-                            context_message = llm.ChatMessage.create(
-                                role="system",
-                                text=f"""
-                                Current slide: {agent.current_slide}
-                                Current script: {current_script}
-                                
-                                Please respond to the user's question in the context of the current slide and its script.
-                                Keep responses concise and relevant to the presentation content.
-                                """,
-                            )
-                            # Add context message to chat context
-                            temp_ctx = agent.chat_ctx.copy()
-                            temp_ctx.messages.insert(-1, context_message)
-
-                            # Don't await the chat call, just pass the stream directly to say()
-                            await agent.say(
-                                agent.llm.chat(chat_ctx=temp_ctx),
-                                allow_interruptions=False,
-                            )
-
-                            # Log agent response
-                            if current_slide.get("user_id"):
-                                try:
-                                    requests.post(
-                                        f"{current_slide['api_base_url']}/brdges/{current_slide['brdge_id']}/viewer-conversations",
-                                        json={
-                                            "user_id": current_slide["user_id"],
-                                            "message": response,
-                                            "role": "agent",
-                                            "slide_number": current_slide["number"],
-                                        },
-                                    )
-                                except Exception as e:
-                                    logger.error(f"Error logging agent response: {e}")
+                        response = await agent.say(
+                            agent.llm.chat(chat_ctx=agent.chat_ctx),
+                            allow_interruptions=True,
+                        )
+                        logger.info(f"View agent response: {response}")
                     else:
-                        # For edit mode, use the callback -- need to fix this
-                        # stream = await before_llm_callback(agent, agent.chat_ctx)
-                        # response = await agent.say(stream, allow_interruptions=True)
                         response = await agent.say(
                             agent.llm.chat(chat_ctx=agent.chat_ctx),
                             allow_interruptions=True,
@@ -988,8 +995,9 @@ async def entrypoint(ctx: JobContext):
                         allow_interruptions=False,
                     )
 
-            # Create task to handle the async processing
-            asyncio.create_task(process_message())
+            # Schedule the coroutine to run using the current event loop
+            loop = asyncio.get_event_loop()
+            loop.create_task(process_message())
 
     # Send initial greeting
     await initial_slide_received.wait()
