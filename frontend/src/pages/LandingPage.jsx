@@ -12,7 +12,16 @@ import {
     AutoAwesome, Speed, Mic, Description, VolumeUp, Share,
     Handshake, TrendingUp, Devices, MenuBook, ArrowDownward,
     Psychology, Link as LinkIcon, Analytics, BusinessCenter,
-    Laptop, Campaign, PlayArrow, Add, AccessTime, AllInclusive
+    Laptop, Campaign, PlayArrow, Add, AccessTime, AllInclusive,
+    SupportAgent,
+    Assistant,
+    Face,
+    GraphicEq,
+    Hub,
+    Biotech,
+    Settings,
+    Memory,
+    Waves
 } from '@mui/icons-material';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
@@ -459,6 +468,15 @@ const IntroducingBrdgeAI = () => {
                             transform: translateY(0);
                         }
                     }
+                    @keyframes bounce {
+                        0%, 100% { transform: translateX(-50%) translateY(0); }
+                        50% { transform: translateX(-50%) translateY(-10px); }
+                    }
+                    
+                    @keyframes ripple {
+                        0% { transform: scale(1); opacity: 1; }
+                        100% { transform: scale(1.3); opacity: 0; }
+                    }
                 `}
             </style>
         </Box>
@@ -524,27 +542,79 @@ const HeroSection = () => {
                 mx: 'auto',
             }}>
                 <Box
+                    component="a"
+                    href="https://brdge-ai.com/viewBrdge/136"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     sx={{
-                        width: { xs: '120px', sm: '160px' },
-                        height: { xs: '120px', sm: '160px' },
+                        width: { xs: '160px', sm: '200px' },
+                        height: { xs: '160px', sm: '200px' },
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                         mb: { xs: 4, sm: 5, md: 6 },
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        position: 'relative',
+                        '&::after': {
+                            content: '"Click to chat"',
+                            position: 'absolute',
+                            bottom: '-35px',
+                            left: '50%',
+                            transform: 'translateX(-50%) translateY(10px)',
+                            backgroundColor: 'rgba(0, 255, 204, 0.1)',
+                            backdropFilter: 'blur(10px)',
+                            padding: '10px 20px',
+                            borderRadius: '24px',
+                            fontSize: '0.95rem',
+                            color: '#00ffcc',
+                            whiteSpace: 'nowrap',
+                            opacity: 0,
+                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            boxShadow: '0 4px 20px rgba(0, 255, 204, 0.2)',
+                            border: '1px solid rgba(0, 255, 204, 0.3)',
+                            zIndex: 10
+                        },
+                        '&:hover::after': {
+                            opacity: 1,
+                            transform: 'translateX(-50%) translateY(0)',
+                            boxShadow: '0 6px 30px rgba(0, 255, 204, 0.3)',
+                        },
+                        '&:hover .logo-icon': {
+                            filter: 'drop-shadow(0 0 40px rgba(0, 255, 204, 0.8))',
+                            transform: 'scale(1.05)',
+                        },
+                        '&:active .logo-icon': {
+                            transform: 'scale(0.95)',
+                        }
                     }}
                     onMouseMove={handleMouseMove}
                 >
                     <motion.div
                         animate={iconAnimation}
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        className="logo-icon"
+                        style={{
+                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        }}
                     >
-                        <SmartToyIcon sx={{
-                            fontSize: '80px',
-                            color: 'white',
-                            filter: 'drop-shadow(0 0 20px rgba(0, 180, 219, 0.5))'
-                        }} />
+                        <Box className="logo-icon" sx={{ position: 'relative' }}>
+                            <Psychology sx={{
+                                fontSize: '120px',
+                                color: 'white',
+                                filter: 'drop-shadow(0 0 20px rgba(0, 255, 204, 0.5))',
+                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            }} />
+                            <GraphicEq sx={{
+                                fontSize: '40px',
+                                color: '#00ffcc',
+                                position: 'absolute',
+                                bottom: -10,
+                                right: -10,
+                                filter: 'drop-shadow(0 0 15px rgba(0, 255, 204, 0.6))',
+                                animation: 'pulse 2s infinite',
+                            }} />
+                        </Box>
                     </motion.div>
                 </Box>
 
@@ -684,8 +754,9 @@ const HeroSection = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 1,
-                    mt: { xs: 3, sm: 4 },
+                    gap: 2,
+                    mt: { xs: 3, sm: 8 },
+                    mb: { xs: 3, sm: 4 }, // Added bottom margin
                     color: 'rgba(255,255,255,0.8)',
                     textTransform: 'uppercase',
                 }}>
@@ -700,12 +771,15 @@ const HeroSection = () => {
                     </Typography>
                     <motion.div
                         animate={{
-                            y: [0, 10, 0],
+                            y: [0, 15, 0], // Increased animation range
                         }}
                         transition={{
                             duration: 2,
                             repeat: Infinity,
                             ease: "easeInOut"
+                        }}
+                        style={{
+                            paddingBottom: '20px' // Added padding to contain animation
                         }}
                     >
                         <ArrowDownward sx={{
