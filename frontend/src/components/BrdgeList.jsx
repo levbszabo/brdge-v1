@@ -28,7 +28,13 @@ import {
     Fade,
     Divider,
     LinearProgress,
-    Switch
+    Switch,
+    Grid,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    CircularProgress,
+    Collapse
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import ShareIcon from '@mui/icons-material/Share';
@@ -44,6 +50,12 @@ import EmailIcon from '@mui/icons-material/Email';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 const BrdgeList = ({
     brdges,
@@ -54,7 +66,12 @@ const BrdgeList = ({
     orderBy,
     orderDirection,
     onSort,
-    stats
+    stats,
+    expandedBrdge,
+    setExpandedBrdge,
+    conversationData,
+    loadingConversations,
+    onExpandBrdge
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -411,6 +428,140 @@ const BrdgeList = ({
         </motion.div>
     );
 
+    const ConversationMetrics = ({ brdgeId }) => {
+        const data = conversationData[brdgeId] || {};
+        const totalUsers = Object.keys(data).length;
+        const totalInteractions = Object.values(data).reduce(
+            (sum, user) => sum + user.totalInteractions,
+            0
+        );
+        const averageInteractionsPerUser = totalUsers ? (totalInteractions / totalUsers).toFixed(1) : 0;
+
+        return (
+            <Box sx={{ p: 2, bgcolor: 'rgba(0, 41, 132, 0.1)', borderRadius: 1 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PersonOutlineIcon sx={{ color: '#4F9CF9' }} />
+                            <Box>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Total Users</Typography>
+                                <Typography variant="h6" color="white">{totalUsers}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <ChatBubbleOutlineIcon sx={{ color: '#4F9CF9' }} />
+                            <Box>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Total Interactions</Typography>
+                                <Typography variant="h6" color="white">{totalInteractions}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TimelineIcon sx={{ color: '#4F9CF9' }} />
+                            <Box>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Avg. Interactions/User</Typography>
+                                <Typography variant="h6" color="white">{averageInteractionsPerUser}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>
+        );
+    };
+
+    const UserConversationList = ({ brdgeId }) => {
+        const [expandedUser, setExpandedUser] = useState(null);
+        const data = conversationData[brdgeId] || {};
+
+        return (
+            <Box sx={{ mt: 2 }}>
+                {Object.entries(data).map(([userId, userData]) => (
+                    <Accordion
+                        key={userId}
+                        expanded={expandedUser === userId}
+                        onChange={() => setExpandedUser(expandedUser === userId ? null : userId)}
+                        sx={{
+                            bgcolor: 'rgba(0, 41, 132, 0.05)',
+                            '&:before': { display: 'none' },
+                            mb: 1,
+                            color: 'white'
+                        }}
+                    >
+                        <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                                <Box sx={{ flexGrow: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+                                        <PersonOutlineIcon fontSize="small" />
+                                        {userData.isAnonymous ? 'Anonymous User' : `User ${userId}`}
+                                        {userData.isAnonymous && (
+                                            <Chip
+                                                label="Anonymous"
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ ml: 1, color: 'rgba(255, 255, 255, 0.7)' }}
+                                            />
+                                        )}
+                                    </Typography>
+                                    <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">
+                                        Last active: {new Date(userData.lastInteraction).toLocaleDateString()}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                    <Tooltip title="Total Interactions">
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'white' }}>
+                                            <ChatBubbleOutlineIcon fontSize="small" />
+                                            <Typography>{userData.totalInteractions}</Typography>
+                                        </Box>
+                                    </Tooltip>
+                                    <Tooltip title="Unique Slides Viewed">
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'white' }}>
+                                            <TimelineIcon fontSize="small" />
+                                            <Typography>{userData.uniqueSlides.size}</Typography>
+                                        </Box>
+                                    </Tooltip>
+                                </Box>
+                            </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <Box sx={{
+                                maxHeight: '300px',
+                                overflowY: 'auto',
+                                p: 2,
+                                bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                borderRadius: 1
+                            }}>
+                                {userData.messages.map((message, index) => (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            mb: 1,
+                                            p: 1,
+                                            borderLeft: '2px solid',
+                                            borderColor: message.role === 'user' ? '#4F9CF9' : 'rgba(255, 255, 255, 0.3)',
+                                            bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                            borderRadius: '4px',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        <Typography variant="caption" color="rgba(255, 255, 255, 0.7)" display="block">
+                                            {new Date(message.timestamp).toLocaleString()} - Slide {message.slide_number}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                            {message.message}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </AccordionDetails>
+                    </Accordion>
+                ))}
+            </Box>
+        );
+    };
+
     return (
         <Box sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
             {/* Responsive list/table view */}
@@ -427,65 +578,99 @@ const BrdgeList = ({
                     </AnimatePresence>
                 ) : (
                     // Desktop table view - without dividers
-                    <TableContainer>
+                    <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}>
                         <Table>
-                            <TableHead>
-                                <TableRow
-                                    sx={{
-                                        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                                        backdropFilter: 'blur(10px)',
-                                        '& th': {
-                                            color: 'rgba(255, 255, 255, 0.7)',
-                                            fontWeight: 600,
-                                            fontSize: '0.875rem',
-                                            letterSpacing: '0.02em',
-                                            borderBottom: 'none', // Remove bottom border
-                                            py: 2
-                                        }
-                                    }}
-                                >
-                                    <TableCell>Name</TableCell>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell>Actions</TableCell>
-                                </TableRow>
-                            </TableHead>
+                            <TableHeader />
                             <TableBody>
-                                <AnimatePresence>
-                                    {brdges.map((brdge) => (
-                                        <motion.tr
-                                            key={brdge.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            whileHover={{
-                                                backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                                transition: { duration: 0.2 }
+                                {brdges.map((brdge) => (
+                                    <React.Fragment key={brdge.id}>
+                                        <TableRow
+                                            hover
+                                            onClick={() => onExpandBrdge(brdge.id)}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05) !important'
+                                                },
+                                                '& td': {
+                                                    color: 'rgba(255, 255, 255, 0.9)',
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                                                },
+                                                position: 'relative',
+                                                '&::after': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    left: 0,
+                                                    width: '3px',
+                                                    height: '100%',
+                                                    backgroundColor: 'transparent',
+                                                    transition: 'background-color 0.2s ease',
+                                                },
+                                                '&:hover::after': {
+                                                    backgroundColor: '#4F9CF9',
+                                                }
                                             }}
-                                            style={{ cursor: 'pointer' }}
                                         >
-                                            <TableCell
-                                                onClick={() => onView(brdge)}
-                                                sx={{
-                                                    color: '#2196F3',
-                                                    fontWeight: 500,
-                                                    borderBottom: 'none' // Remove bottom border
-                                                }}
-                                            >
-                                                {brdge.name}
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <IconButton
+                                                        size="small"
+                                                        sx={{
+                                                            transition: 'transform 0.2s ease',
+                                                            transform: expandedBrdge === brdge.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                            color: expandedBrdge === brdge.id ? '#4F9CF9' : 'rgba(255, 255, 255, 0.5)',
+                                                            '&:hover': {
+                                                                color: '#4F9CF9'
+                                                            }
+                                                        }}
+                                                    >
+                                                        <KeyboardArrowDownIcon />
+                                                    </IconButton>
+                                                    <Typography
+                                                        sx={{
+                                                            color: expandedBrdge === brdge.id ? '#4F9CF9' : 'inherit',
+                                                            transition: 'color 0.2s ease'
+                                                        }}
+                                                    >
+                                                        {brdge.name}
+                                                    </Typography>
+                                                </Box>
                                             </TableCell>
-                                            <TableCell sx={{ borderBottom: 'none' }}> {/* Remove bottom border */}
+                                            <TableCell>
                                                 <StatusChip shareable={brdge.shareable} />
                                             </TableCell>
-                                            <TableCell sx={{
-                                                borderBottom: 'none',
-                                                position: 'relative',
-                                                zIndex: 9
-                                            }}>
+                                            <TableCell>
                                                 <ActionButtons brdge={brdge} />
                                             </TableCell>
-                                        </motion.tr>
-                                    ))}
-                                </AnimatePresence>
+                                        </TableRow>
+                                        {expandedBrdge === brdge.id && (
+                                            <TableRow>
+                                                <TableCell colSpan={3} sx={{ p: 0, border: 'none' }}>
+                                                    <Collapse in={true}>
+                                                        <Box sx={{ p: 3, bgcolor: 'rgba(0, 0, 0, 0.2)' }}>
+                                                            {loadingConversations ? (
+                                                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                                                    <CircularProgress />
+                                                                </Box>
+                                                            ) : (
+                                                                <>
+                                                                    <Typography variant="h6" color="white" gutterBottom>
+                                                                        Conversation Metrics
+                                                                    </Typography>
+                                                                    <ConversationMetrics brdgeId={brdge.id} />
+                                                                    <Typography variant="h6" color="white" sx={{ mt: 4, mb: 2 }}>
+                                                                        User Interactions
+                                                                    </Typography>
+                                                                    <UserConversationList brdgeId={brdge.id} />
+                                                                </>
+                                                            )}
+                                                        </Box>
+                                                    </Collapse>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </React.Fragment>
+                                ))}
                             </TableBody>
                         </Table>
                     </TableContainer>

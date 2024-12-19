@@ -15,6 +15,12 @@ import {
     InputAdornment,
     LinearProgress,
     Divider,
+    Grid,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Tooltip,
+    Chip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -25,6 +31,10 @@ import { useSnackbar } from '../utils/snackbar';
 import BrdgeList from '../components/BrdgeList';
 import EmptyBrdgeState from '../components/EmptyBrdgeState';
 import UsageIndicator from '../components/UsageIndicator';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import TimelineIcon from '@mui/icons-material/Timeline';
 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
@@ -43,6 +53,9 @@ function BrdgeListPage() {
         minutes_used: 0,
         minutes_limit: 30
     });
+    const [expandedBrdge, setExpandedBrdge] = useState(null);
+    const [conversationData, setConversationData] = useState({});
+    const [loadingConversations, setLoadingConversations] = useState(false);
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -202,6 +215,180 @@ function BrdgeListPage() {
         const currentCount = parseInt(userStats.brdges_created);
 
         return currentCount < currentLimit;
+    };
+
+    const fetchConversationData = async (brdgeId) => {
+        setLoadingConversations(true);
+        try {
+            const response = await api.get(`/brdges/${brdgeId}/viewer-conversations`);
+            const conversations = response.data.conversations || [];
+
+            // Process conversations to group by user and calculate metrics
+            const processedData = conversations.reduce((acc, conv) => {
+                const userId = conv.user_id || conv.anonymous_id;
+                if (!acc[userId]) {
+                    acc[userId] = {
+                        messages: [],
+                        totalInteractions: 0,
+                        uniqueSlides: new Set(),
+                        firstInteraction: new Date(conv.timestamp),
+                        lastInteraction: new Date(conv.timestamp),
+                        isAnonymous: !conv.user_id
+                    };
+                }
+
+                acc[userId].messages.push(conv);
+                acc[userId].totalInteractions++;
+                acc[userId].uniqueSlides.add(conv.slide_number);
+                acc[userId].lastInteraction = new Date(Math.max(
+                    acc[userId].lastInteraction,
+                    new Date(conv.timestamp)
+                ));
+
+                return acc;
+            }, {});
+
+            setConversationData(prev => ({
+                ...prev,
+                [brdgeId]: processedData
+            }));
+        } catch (error) {
+            console.error('Error fetching conversation data:', error);
+            showSnackbar('Failed to load conversation data', 'error');
+        } finally {
+            setLoadingConversations(false);
+        }
+    };
+
+    const ConversationMetrics = ({ brdgeId, expanded }) => {
+        const data = conversationData[brdgeId] || {};
+        const totalUsers = Object.keys(data).length;
+        const totalInteractions = Object.values(data).reduce(
+            (sum, user) => sum + user.totalInteractions,
+            0
+        );
+        const averageInteractionsPerUser = totalUsers ? (totalInteractions / totalUsers).toFixed(1) : 0;
+
+        return (
+            <Box sx={{ p: 2, bgcolor: 'rgba(0, 41, 132, 0.1)', borderRadius: 1 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PersonOutlineIcon color="primary" />
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">Total Users</Typography>
+                                <Typography variant="h6">{totalUsers}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <ChatBubbleOutlineIcon color="primary" />
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">Total Interactions</Typography>
+                                <Typography variant="h6">{totalInteractions}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <TimelineIcon color="primary" />
+                            <Box>
+                                <Typography variant="body2" color="text.secondary">Avg. Interactions/User</Typography>
+                                <Typography variant="h6">{averageInteractionsPerUser}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                </Grid>
+            </Box>
+        );
+    };
+
+    const UserConversationList = ({ brdgeId, data }) => {
+        const [expandedUser, setExpandedUser] = useState(null);
+
+        return (
+            <Box sx={{ mt: 2 }}>
+                {Object.entries(data).map(([userId, userData]) => (
+                    <Accordion
+                        key={userId}
+                        expanded={expandedUser === userId}
+                        onChange={() => setExpandedUser(expandedUser === userId ? null : userId)}
+                        sx={{
+                            bgcolor: 'rgba(0, 41, 132, 0.05)',
+                            '&:before': { display: 'none' },
+                            mb: 1
+                        }}
+                    >
+                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
+                                <Box sx={{ flexGrow: 1 }}>
+                                    <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <PersonOutlineIcon fontSize="small" />
+                                        {userData.isAnonymous ? 'Anonymous User' : `User ${userId}`}
+                                        {userData.isAnonymous && (
+                                            <Chip
+                                                label="Anonymous"
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ ml: 1 }}
+                                            />
+                                        )}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Last active: {new Date(userData.lastInteraction).toLocaleDateString()}
+                                    </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                    <Tooltip title="Total Interactions">
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <ChatBubbleOutlineIcon fontSize="small" />
+                                            <Typography>{userData.totalInteractions}</Typography>
+                                        </Box>
+                                    </Tooltip>
+                                    <Tooltip title="Unique Slides Viewed">
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <TimelineIcon fontSize="small" />
+                                            <Typography>{userData.uniqueSlides.size}</Typography>
+                                        </Box>
+                                    </Tooltip>
+                                </Box>
+                            </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                            <Box sx={{
+                                maxHeight: '300px',
+                                overflowY: 'auto',
+                                p: 2,
+                                bgcolor: 'rgba(0, 0, 0, 0.02)',
+                                borderRadius: 1
+                            }}>
+                                {userData.messages.map((message, index) => (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            mb: 1,
+                                            p: 1,
+                                            borderLeft: '2px solid',
+                                            borderColor: message.role === 'user' ? 'primary.main' : 'secondary.main',
+                                            bgcolor: 'background.paper',
+                                            borderRadius: '4px'
+                                        }}
+                                    >
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            {new Date(message.timestamp).toLocaleString()} - Slide {message.slide_number}
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                            {message.message}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </AccordionDetails>
+                    </Accordion>
+                ))}
+            </Box>
+        );
     };
 
     if (loading) {
@@ -491,6 +678,16 @@ function BrdgeListPage() {
                                     orderDirection={orderDirection}
                                     onSort={handleSort}
                                     stats={userStats}
+                                    expandedBrdge={expandedBrdge}
+                                    setExpandedBrdge={setExpandedBrdge}
+                                    conversationData={conversationData}
+                                    loadingConversations={loadingConversations}
+                                    onExpandBrdge={(brdgeId) => {
+                                        if (!conversationData[brdgeId]) {
+                                            fetchConversationData(brdgeId);
+                                        }
+                                        setExpandedBrdge(expandedBrdge === brdgeId ? null : brdgeId);
+                                    }}
                                 />
                             </Box>
                         )}
