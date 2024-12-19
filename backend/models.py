@@ -3,6 +3,10 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import json
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 
 class User(db.Model):
@@ -250,21 +254,45 @@ class Voice(db.Model):
             "status": self.status,
         }
 
-    @staticmethod
-    def from_cartesia_response(brdge_id: int, voice_data: dict):
-        """Create a voice record from Cartesia API response"""
-        return Voice(
-            brdge_id=brdge_id,
-            cartesia_voice_id=voice_data["id"],
-            name=voice_data["name"],
-            description=voice_data.get("description"),
-            language=voice_data.get("language", "en"),
-            created_at=(
-                datetime.fromisoformat(voice_data["created_at"])
-                if "created_at" in voice_data
-                else datetime.utcnow()
-            ),
-        )
+    @classmethod
+    def from_cartesia_response(cls, brdge_id, response_data):
+        """Create a Voice instance from Cartesia API response"""
+        try:
+            # Parse the datetime string correctly
+            created_at_str = response_data.get("created_at", "")
+            if created_at_str:
+                # Remove microseconds precision beyond 6 digits
+                parts = created_at_str.split(".")
+                if len(parts) > 1:
+                    microseconds = parts[1].split("-")[0][
+                        :6
+                    ]  # Take only up to 6 digits
+                    created_at_str = f"{parts[0]}.{microseconds}{created_at_str[created_at_str.find('-'):]}"
+                created_at = datetime.fromisoformat(created_at_str)
+            else:
+                created_at = datetime.utcnow()
+
+            return cls(
+                brdge_id=brdge_id,
+                cartesia_voice_id=response_data.get("id"),
+                name=response_data.get("name"),
+                description=response_data.get("description"),
+                language=response_data.get("language", "en"),
+                status=response_data.get("api_status", "active"),
+                created_at=created_at,
+            )
+        except Exception as e:
+            logger.error(f"Error creating Voice from response: {e}")
+            # Fallback to current time if there's an error
+            return cls(
+                brdge_id=brdge_id,
+                cartesia_voice_id=response_data.get("id"),
+                name=response_data.get("name"),
+                description=response_data.get("description"),
+                language=response_data.get("language", "en"),
+                status=response_data.get("api_status", "active"),
+                created_at=datetime.utcnow(),
+            )
 
 
 class ViewerConversation(db.Model):

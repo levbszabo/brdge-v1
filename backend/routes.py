@@ -2040,6 +2040,22 @@ def clone_voice_for_brdge(brdge_id):
                 if "id" in voice_data and "name" in voice_data:
                     logger.info(f"Successfully parsed voice data: {voice_data}")
 
+                    # Parse the datetime string correctly
+                    try:
+                        # Remove microseconds if present and parse the timezone offset
+                        datetime_str = voice_data.get("created_at", "")
+                        if datetime_str:
+                            # Remove microseconds precision beyond 6 digits
+                            parts = datetime_str.split(".")
+                            if len(parts) > 1:
+                                microseconds = parts[1].split("-")[0][
+                                    :6
+                                ]  # Take only up to 6 digits
+                                datetime_str = f"{parts[0]}.{microseconds}{datetime_str[datetime_str.find('-'):]}"
+                    except Exception as dt_error:
+                        logger.error(f"Error parsing datetime: {dt_error}")
+                        datetime_str = datetime.utcnow().isoformat()
+
                     voice = Voice.from_cartesia_response(brdge_id, voice_data)
                     logger.info(f"Created voice record: {voice.to_dict()}")
 
