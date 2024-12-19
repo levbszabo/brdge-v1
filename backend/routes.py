@@ -1635,7 +1635,7 @@ def create_portal_session(user):
 
 @app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
 def generate_slide_scripts(brdge_id):
-    """Generate cleaned-up scripts using walkthrough data from database"""
+    """Generate cleaned-up scripts and agent prompts using walkthrough data"""
     try:
         data = request.get_json()
         walkthrough_id = data.get("walkthrough_id")
@@ -1646,14 +1646,8 @@ def generate_slide_scripts(brdge_id):
         # Get walkthrough from database
         walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
 
-        # Verify walkthrough belongs to brdge
         if walkthrough.brdge_id != brdge_id:
             return jsonify({"error": "Walkthrough does not belong to this brdge"}), 403
-
-        # Check for existing scripts and update if found
-        existing_script = Scripts.query.filter_by(
-            brdge_id=brdge_id, walkthrough_id=walkthrough_id
-        ).first()
 
         # Get all messages for this walkthrough
         messages = (
@@ -1674,30 +1668,105 @@ def generate_slide_scripts(brdge_id):
                     "content": msg.content,
                     "timestamp": msg.timestamp.isoformat(),
                 }
-            )  # Close the append() parenthesis here
+            )
 
-        # Prepare the prompt with full instructions
+        # Log the conversation transcript for debugging
+        app.logger.info(f"Conversation transcript: {json.dumps(slides_data, indent=2)}")
+
+        # Prepare the prompt with conversation transcript
         prompt = """
-        You are provided with transcripts of a user's presentation across {num_slides} slides. For each slide, the user has discussed key points.
-        Your task is to generate a polished, cohesive script for each slide that effectively communicates the points the user intended to convey.
-        Paraphrase where appropriate to enhance clarity and flow, but maintain the user's tone and style. Do not delete any information thats relevant.
-        Instructions:
+        You are provided with transcripts of a user's presentation across {num_slides} slides. Generate two components:
 
-        - Focus solely on the user's messages.
-        - Encapsulate the user's content for each slide into one coherent message. You can summarize if needed but do not remove important information
-        - Ensure the script for each slide is a single, natural-sounding message in the user's voice.
-        - Preserve important details and key points relevant to each slide.
-        - Avoid filler words, repetitions, and disfluencies.
-        - Present the scripts in JSON format as follows:
+        1. A TTS-friendly script that sounds natural and conversational
+        2. Detailed agent instructions for interactive presentation
 
+        Instructions for Scripts:
+        - Write in plain, natural conversational language
+        - Use contractions and casual phrases (I'm, let's, we're)
+        - NO special characters or formatting marks
+        - NO bracketed instructions or emphasis marks
+        - Include natural pauses through punctuation (commas, periods)
+        - Make it sound like someone talking to a friend
+        - Use simple transition words (so, now, anyway, you see)
+        - Keep sentences shorter and flowing
+        - Write numbers as they would be spoken
+        - Avoid symbols, abbreviations, or anything that might confuse TTS
+
+        Instructions for Agent Prompts:
+        Structure each agent prompt with these sections:
+
+        1. Core Message:
+           - Main points to emphasize
+           - Key concepts to highlight
+           - Important facts and figures
+           - Essential takeaways
+
+        2. Conversation Flows:
+           Primary Path:
+           - Initial question: "What's your experience with X?"
+           - If experienced → Dive into advanced aspects
+           - If beginner → Start with fundamentals
+           - If unsure → Provide real-world example
+
+           Technical Path:
+           - Detailed explanations ready
+           - Technical specifications
+           - Implementation details
+           - Performance metrics
+
+           Practical Path:
+           - Use case examples
+           - Success stories
+           - Common challenges
+           - Best practices
+
+        3. Question Handling:
+           Anticipate these types:
+           - "How does this compare to...?"
+           - "What about [common alternative]?"
+           - "Can you explain [technical term]?"
+           - "What's the benefit of...?"
+           
+           For each question type:
+           - Simple explanation
+           - Detailed explanation
+           - Real-world example
+           - Relevant metrics
+
+        4. Engagement Prompts:
+           - Experience questions: "Have you dealt with...?"
+           - Opinion questions: "What do you think about...?"
+           - Scenario questions: "Imagine you needed to..."
+           - Follow-up questions for each response type
+
+        Present the results in this JSON format:
         {{
-          "1": "User's script for slide 1",
-          "2": "User's script for slide 2",
+          "1": {{
+            "script": "Hi everyone! I'm really excited to talk about this with you today. You know how sometimes we struggle with managing large projects? Well, I've got something interesting to share that might help.",
+            "agent": "Core Message:
+                     - Focus on pain points: project management challenges
+                     - Highlight solution benefits: efficiency, cost savings
+                     - Emphasize real-world applicability
+                     
+                     Conversation Flows:
+                     Primary Path:
+                     - Ask: What project management tools do you currently use?
+                     - If using basic tools → Highlight advanced features
+                     - If using competitors → Focus on unique advantages
+                     - If new to topic → Start with common challenges
+                     
+                     Question Handling:
+                     - Cost questions: Discuss ROI, implementation costs, savings
+                     - Integration: Address common systems, API capabilities
+                     - Security: Detail protection measures, compliance
+                     
+                     Engagement Prompts:
+                     - What's your biggest project management challenge?
+                     - How do you handle resource allocation?
+                     - What would make your workflow easier?"
+          }},
           ...
         }}
-
-        - Ensure the scripts are suitable for text-to-speech conversion by avoiding special characters and complex formatting.
-        - Do not include any additional text or explanations outside the JSON format.
 
         -----------Conversation Transcript-----------
         {conversation_transcript}
@@ -1711,41 +1780,67 @@ def generate_slide_scripts(brdge_id):
             client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
             response = client.chat.completions.create(
                 model="gpt-4o",
-                messages=[
-                    {"role": "user", "content": [{"type": "text", "text": prompt}]}
-                ],
+                messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
                 response_format={"type": "json_object"},
             )
 
-            slide_scripts = json.loads(response.choices[0].message.content)
+            # Log the OpenAI response for debugging
+            app.logger.info(f"OpenAI response: {response.choices[0].message.content}")
 
-            # Save or update scripts in database
+            generated_content = json.loads(response.choices[0].message.content)
+
+            # Ensure proper format for each slide
+            formatted_scripts = {}
+            for slide_num, content in generated_content.items():
+                if (
+                    isinstance(content, dict)
+                    and "script" in content
+                    and "agent" in content
+                ):
+                    formatted_scripts[slide_num] = {
+                        "script": content["script"],
+                        "agent": content["agent"],
+                    }
+                else:
+                    # Handle legacy format or unexpected content
+                    formatted_scripts[slide_num] = {
+                        "script": content if isinstance(content, str) else str(content),
+                        "agent": "Discuss the key points presented in this slide. Ask viewers for their thoughts and experiences related to these concepts.",
+                    }
+
+            # Check for existing scripts and update if found
+            existing_script = Scripts.query.filter_by(
+                brdge_id=brdge_id, walkthrough_id=walkthrough_id
+            ).first()
+
             if existing_script:
-                existing_script.scripts = slide_scripts
+                existing_script.scripts = formatted_scripts
                 existing_script.generated_at = datetime.utcnow()
                 script = existing_script
             else:
                 script = Scripts(
                     brdge_id=brdge_id,
                     walkthrough_id=walkthrough_id,
-                    scripts=slide_scripts,
+                    scripts=formatted_scripts,
                     generated_at=datetime.utcnow(),
                 )
                 db.session.add(script)
 
             db.session.commit()
-            app.logger.info(f"Successfully saved scripts for brdge {brdge_id}")
+            app.logger.info(
+                f"Successfully saved scripts and agent prompts for brdge {brdge_id}"
+            )
 
             return (
                 jsonify(
                     {
-                        "message": "Scripts generated successfully",
+                        "message": "Scripts and agent prompts generated successfully",
                         "scripts": script.scripts,
                         "metadata": {
                             "generated_at": script.generated_at.isoformat(),
                             "walkthrough_id": walkthrough_id,
-                            "num_slides": len(slide_scripts),
+                            "num_slides": len(formatted_scripts),
                         },
                     }
                 ),
@@ -1754,7 +1849,7 @@ def generate_slide_scripts(brdge_id):
 
         except Exception as e:
             db.session.rollback()
-            app.logger.error(f"Error generating scripts: {e}")
+            app.logger.error(f"Error generating scripts and agent prompts: {e}")
             raise
 
     except Exception as e:
@@ -2137,6 +2232,7 @@ def get_brdge_walkthroughs(brdge_id):
             ),
             200,
         )
+
     except Exception as e:
         logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
         return (
@@ -2269,12 +2365,11 @@ def debug_brdge_scripts(brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>/scripts/update", methods=["PUT", "OPTIONS"])
-@cross_origin()  # Add CORS support
+@cross_origin()
 def update_brdge_scripts(brdge_id):
     """Update scripts for a brdge"""
-    # Handle preflight request
     if request.method == "OPTIONS":
-        return "", 200  # Respond to preflight request
+        return "", 200
 
     try:
         data = request.get_json()
@@ -2283,7 +2378,6 @@ def update_brdge_scripts(brdge_id):
         if not updated_scripts:
             return jsonify({"error": "No scripts provided"}), 400
 
-        # Get the most recent script
         script = (
             Scripts.query.filter_by(brdge_id=brdge_id)
             .order_by(Scripts.generated_at.desc())
@@ -2293,8 +2387,26 @@ def update_brdge_scripts(brdge_id):
         if not script:
             return jsonify({"error": "No scripts found for this brdge"}), 404
 
-        # Update scripts
-        script.scripts = updated_scripts
+        # Create a new scripts dictionary that will store both script and agent content
+        combined_scripts = script.scripts.copy() if script.scripts else {}
+
+        # Update with new content
+        for slide_num, content in updated_scripts.items():
+            # Ensure content is in the correct format
+            if isinstance(content, dict) and "script" in content:
+                combined_scripts[slide_num] = {
+                    "script": content.get("script", ""),
+                    "agent": content.get("agent", ""),
+                }
+            else:
+                # Handle legacy format or invalid data
+                app.logger.warning(
+                    f"Received unexpected format for slide {slide_num}: {content}"
+                )
+                combined_scripts[slide_num] = {"script": str(content), "agent": ""}
+
+        # Update scripts in database
+        script.scripts = combined_scripts
         script.generated_at = datetime.utcnow()
         db.session.commit()
 

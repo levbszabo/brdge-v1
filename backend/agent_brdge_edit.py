@@ -387,6 +387,7 @@ class ViewerAgent(VoicePipelineAgent):
         )
         self.user_id = user_id
         self.current_slide_number = None
+        self.current_agent_prompt = None
 
         # Load scripts from database
         self.scripts = self._load_scripts()
@@ -394,7 +395,11 @@ class ViewerAgent(VoicePipelineAgent):
         # Get voice ID from database
         voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
-        view_system_prompt = VIEW_SYSTEM_PROMPT.format(entire_script=self.scripts)
+
+        # Initialize with base system prompt
+        view_system_prompt = VIEW_SYSTEM_PROMPT.format(
+            entire_script=json.dumps(self.scripts, indent=2)
+        )
         super().__init__(
             vad=vad,
             stt=deepgram.STT(),
@@ -402,50 +407,6 @@ class ViewerAgent(VoicePipelineAgent):
             tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=view_system_prompt),
         )
-
-        # Set up event handlers
-        self._setup_event_handlers()
-
-    def _setup_event_handlers(self):
-        """Set up event handlers for speech events"""
-
-        @self.on("agent_speech_committed")
-        def on_agent_speech_committed(msg: llm.ChatMessage):
-            logger.info(f"Agent speech committed: {msg.content}")
-            self.add_message(self.current_slide_number, "assistant", msg.content)
-            logger.info(f"Current chat context: {self.chat_ctx}")
-
-        @self.on("user_speech_committed")
-        def on_user_speech_committed(msg: llm.ChatMessage):
-            logger.info(f"User speech committed: {msg.content}")
-            self.add_message(self.current_slide_number, "user", msg.content)
-
-        @self.on("agent_speech_interrupted")
-        def on_agent_speech_interrupted(msg: llm.ChatMessage):
-            logger.info(f"Agent speech interrupted: {msg.content}")
-            self.add_message(self.current_slide_number, "assistant", msg.content)
-
-        # @self.chat_rtc.on("message_received")
-        # async def on_message_received(msg: rtc.ChatMessage):
-        #     logger.info(f"Message received: {msg.message}")
-        #     self.add_message(self.current_slide_number, "user", msg.message)
-
-        #     # Create a new chat context for this message
-        #     temp_ctx = self.chat_ctx.copy()
-        #     temp_ctx.append(role="user", text=msg.message)
-
-        #     # Process the message
-        #     try:
-        #         await self.say(
-        #             self.llm.chat(chat_ctx=temp_ctx),
-        #             allow_interruptions=True,
-        #         )
-        #     except Exception as e:
-        #         logger.error(f"Error processing message: {e}")
-        #         await self.say(
-        #             "I apologize, but I encountered an error processing your message.",
-        #             allow_interruptions=False,
-        #         )
 
     def _load_scripts(self) -> dict:
         """Load scripts using API request"""
@@ -459,7 +420,21 @@ class ViewerAgent(VoicePipelineAgent):
             if data.get("has_scripts"):
                 scripts = data["scripts"]
                 logger.info(f"Found scripts for brdge {self.brdge_id}")
-                return {str(k): v for k, v in scripts.items()}
+                # Validate and format scripts
+                formatted_scripts = {}
+                for slide_num, content in scripts.items():
+                    if isinstance(content, dict):
+                        formatted_scripts[str(slide_num)] = {
+                            "script": content.get("script", ""),
+                            "agent": content.get("agent", ""),
+                        }
+                    else:
+                        # Handle legacy format
+                        formatted_scripts[str(slide_num)] = {
+                            "script": str(content),
+                            "agent": "",
+                        }
+                return formatted_scripts
             else:
                 logger.warning(f"No scripts found for brdge {self.brdge_id}")
                 return {}
@@ -474,21 +449,42 @@ class ViewerAgent(VoicePipelineAgent):
         try:
             if slide_number != self.current_slide_number:
                 self.current_slide_number = slide_number
-                script = self.scripts.get(str(slide_number))
-                text = f"You are now presenting slide {slide_number}. Focus ONLY on this slide's content. Do not reference future slides unless explicitly asked. If you've covered all content for this slide, suggest moving to the next one."
-                self.chat_ctx.messages.append(
-                    llm.ChatMessage.create(
-                        role="system",
-                        text=text,
-                    )
-                )
-                if script:
-                    logger.info(f"Found script for slide {slide_number}")
-                    await self.say(script, allow_interruptions=True)
+                slide_content = self.scripts.get(str(slide_number))
+
+                if slide_content and isinstance(slide_content, dict):
+                    script = slide_content.get("script", "")
+                    agent_prompt = slide_content.get("agent", "")
+
+                    # Update the agent's context with the new slide's agent prompt
+                    if agent_prompt:
+                        self.current_agent_prompt = agent_prompt
+                        context_message = llm.ChatMessage.create(
+                            role="system",
+                            text=f"""
+                            Current slide: {slide_number}
+                            Agent Instructions: {agent_prompt}
+                            
+                            Follow these delivery instructions carefully while presenting 
+                            the script and responding to questions.
+                            """,
+                        )
+                        # Insert the agent prompt before the last message
+                        self.chat_ctx.messages.insert(-1, context_message)
+
+                    if script:
+                        logger.info(f"Found script for slide {slide_number}")
+                        # Present the script following the agent's instructions
+                        await self.say(script, allow_interruptions=True)
+                    else:
+                        logger.warning(f"No script found for slide {slide_number}")
+                        await self.say(
+                            "I don't have any content for this slide.",
+                            allow_interruptions=True,
+                        )
                 else:
-                    logger.warning(f"No script found for slide {slide_number}")
+                    logger.warning(f"Invalid script format for slide {slide_number}")
                     await self.say(
-                        "I don't have any content for this slide.",
+                        "I'm having trouble accessing the content for this slide.",
                         allow_interruptions=True,
                     )
         except Exception as e:
@@ -501,16 +497,16 @@ class ViewerAgent(VoicePipelineAgent):
     async def handle_user_question(self, question: str):
         """Handle user questions during presentation"""
         try:
-            # Create context with current slide's script
-            current_script = self.scripts.get(str(self.current_slide_number), "")
+            # Include current slide's agent prompt in the context
             context_message = llm.ChatMessage.create(
                 role="system",
                 text=f"""
                 Current slide: {self.current_slide_number}
-                Current script: {current_script}
+                Agent Instructions: {self.current_agent_prompt}
+                Current script: {self.scripts.get(str(self.current_slide_number), {}).get('script', '')}
                 
-                Please respond to the user's question in the context of the current slide and its script.
-                Keep responses concise and relevant to the presentation content.
+                Follow the agent instructions while responding to the user's question.
+                Keep responses aligned with the current slide's content and presentation style.
                 """,
             )
 
@@ -597,7 +593,7 @@ class EditAgent(VoicePipelineAgent):
         super().__init__(
             vad=vad,
             stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o-mini", temperature=0.5),
+            llm=openai.LLM(model="gpt-4o", temperature=0.2),
             tts=cartesia.TTS(voice=voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
             interrupt_speech_duration=0.1,
@@ -967,7 +963,9 @@ async def entrypoint(ctx: JobContext):
             # Add message to agent's chat context
             agent.chat_ctx.append(role="user", text=cleaned_message)
             # agent.emit("user_speech_committed", msg)
-            agent.emit("user_speech_committed", cleaned_message)
+            agent.emit(
+                "user_speech_committed", rtc.ChatMessage(message=cleaned_message)
+            )
 
             # Create and run the coroutine using create_task
             async def process_message():
