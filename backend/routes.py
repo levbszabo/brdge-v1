@@ -48,7 +48,7 @@ from google.auth.transport import requests as google_requests
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 import stripe
-from sqlalchemy import text
+from sqlalchemy import text, func, distinct, or_
 from typing import Dict, List, Optional
 import openai
 import requests
@@ -986,8 +986,8 @@ def get_generated_audio_files_by_public_id(public_id):
     return jsonify({"files": audio_files}), 200
 
 
-@app.route("/api/brdges/<string:brdge_id>/audio/generated/<filename>", methods=["GET"])
 @app.route("/api/brdges/<int:brdge_id>/audio/generated/<filename>", methods=["GET"])
+@app.route("/api/brdges/<string:brdge_id>/audio/generated/<filename>", methods=["GET"])
 def get_generated_audio_file(brdge_id, filename):
     brdge = Brdge.query.filter(
         (Brdge.id == brdge_id) | (Brdge.public_id == brdge_id)
@@ -1040,8 +1040,8 @@ def get_cached_voice_clone(brdge_id):
                 jsonify({"error": "Error reading cached voice clone audio files"}),
                 500,
             )
-    else:
-        return jsonify({"cached": False}), 200
+        else:
+            return jsonify({"cached": False}), 200
 
 
 @app.route("/api/brdges/<int:brdge_id>/deploy", methods=["POST"])
@@ -2045,7 +2045,6 @@ def clone_voice_for_brdge(brdge_id):
                         ),
                         400,
                     )
-
             except Exception as db_error:
                 logger.error(f"Database error while saving voice: {db_error}")
                 db.session.rollback()
@@ -2539,6 +2538,70 @@ def add_viewer_conversation(brdge_id):
         return jsonify({"error": str(e)}), 500
 
 
+def get_unique_interaction_counts(brdge_id):
+    """Get counts of unique users who interacted with a brdge"""
+    try:
+        # Debug: Print raw query results
+        user_query = (
+            db.session.query(func.count(distinct(ViewerConversation.user_id)))
+            .filter(
+                ViewerConversation.brdge_id == brdge_id,
+                ViewerConversation.user_id.isnot(None),
+            )
+            .scalar()
+            or 0
+        )
+
+        anon_query = (
+            db.session.query(func.count(distinct(ViewerConversation.anonymous_id)))
+            .filter(
+                ViewerConversation.brdge_id == brdge_id,
+                ViewerConversation.anonymous_id.isnot(None),
+            )
+            .scalar()
+            or 0
+        )
+
+        total_query = (
+            db.session.query(ViewerConversation)
+            .filter(ViewerConversation.brdge_id == brdge_id)
+            .all()
+        )
+
+        app.logger.info(f"Debug - Brdge {brdge_id}:")
+        app.logger.info(f"Unique user IDs: {user_query}")
+        app.logger.info(f"Unique anonymous IDs: {anon_query}")
+        app.logger.info(f"Total conversations: {len(total_query)}")
+
+        # Count unique user_ids (excluding nulls)
+        unique_users = user_query
+
+        # Count unique anonymous_ids (excluding nulls)
+        unique_anon = anon_query
+
+        # Total interactions (messages)
+        total_interactions = len(total_query)
+
+        result = {
+            "unique_users": unique_users,
+            "unique_anonymous_users": unique_anon,
+            "total_unique_users": unique_users + unique_anon,
+            "total_interactions": total_interactions,
+        }
+
+        app.logger.info(f"Final metrics: {result}")
+        return result
+
+    except Exception as e:
+        app.logger.error(f"Error in get_unique_interaction_counts: {e}")
+        return {
+            "unique_users": 0,
+            "unique_anonymous_users": 0,
+            "total_unique_users": 0,
+            "total_interactions": 0,
+        }
+
+
 @app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["GET"])
 @jwt_required(optional=True)
 @cross_origin()
@@ -2546,18 +2609,34 @@ def get_viewer_conversations(brdge_id):
     """Get viewer conversations for a brdge"""
     try:
         current_user = get_current_user()
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        app.logger.info(f"Fetching conversations for Brdge {brdge_id}")
+        if current_user:
+            app.logger.info(f"Current user: {current_user.id}")
+
+        # Get interaction counts
+        interaction_stats = get_unique_interaction_counts(brdge_id)
+        app.logger.info(f"Interaction stats: {interaction_stats}")
 
         # Base query for the brdge
         query = ViewerConversation.query.filter_by(brdge_id=brdge_id)
 
-        # If user is authenticated, get their conversations
-        if current_user:
+        # If user owns the brdge, show all conversations
+        if current_user and current_user.id == brdge.user_id:
+            app.logger.info("User owns the Brdge - showing all conversations")
+        # If user is authenticated but doesn't own the brdge, show only their conversations
+        elif current_user:
             query = query.filter_by(user_id=current_user.id)
+            app.logger.info(f"Filtering conversations for user {current_user.id}")
+        # If user is not authenticated, require anonymous_id
         else:
-            # Get anonymous ID from query params
             anonymous_id = request.args.get("anonymous_id")
             if anonymous_id:
                 query = query.filter_by(anonymous_id=anonymous_id)
+                app.logger.info(
+                    f"Filtering conversations for anonymous user {anonymous_id}"
+                )
             else:
                 return (
                     jsonify(
@@ -2567,9 +2646,15 @@ def get_viewer_conversations(brdge_id):
                 )
 
         conversations = query.order_by(ViewerConversation.timestamp.desc()).all()
+        app.logger.info(f"Found {len(conversations)} conversations")
 
         return (
-            jsonify({"conversations": [conv.to_dict() for conv in conversations]}),
+            jsonify(
+                {
+                    "conversations": [conv.to_dict() for conv in conversations],
+                    "interaction_stats": interaction_stats,
+                }
+            ),
             200,
         )
 
@@ -2586,3 +2671,14 @@ def add_security_headers(response):
     )
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
     return response
+
+
+@app.route("/api/user/current", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_current_user_details():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify({"id": user.id, "email": user.email}), 200

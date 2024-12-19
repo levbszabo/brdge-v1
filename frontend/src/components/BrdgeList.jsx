@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Paper,
     Table,
@@ -430,40 +430,53 @@ const BrdgeList = ({
 
     const ConversationMetrics = ({ brdgeId }) => {
         const data = conversationData[brdgeId] || {};
-        const totalUsers = Object.keys(data).length;
-        const totalInteractions = Object.values(data).reduce(
-            (sum, user) => sum + user.totalInteractions,
-            0
-        );
-        const averageInteractionsPerUser = totalUsers ? (totalInteractions / totalUsers).toFixed(1) : 0;
+        console.log('ConversationMetrics - Raw data:', data);
+        console.log('ConversationMetrics - brdgeId:', brdgeId);
+
+        const metrics = data.interaction_stats || {
+            unique_users: 0,
+            unique_anonymous_users: 0,
+            total_unique_users: 0,
+            total_interactions: 0
+        };
+        console.log('ConversationMetrics - Processed metrics:', metrics);
 
         return (
             <Box sx={{ p: 2, bgcolor: 'rgba(0, 41, 132, 0.1)', borderRadius: 1 }}>
                 <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
+                    <Grid item xs={12} sm={3}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <PersonOutlineIcon sx={{ color: '#4F9CF9' }} />
                             <Box>
-                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Total Users</Typography>
-                                <Typography variant="h6" color="white">{totalUsers}</Typography>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Registered Users</Typography>
+                                <Typography variant="h6" color="white">{metrics.unique_users}</Typography>
                             </Box>
                         </Box>
                     </Grid>
-                    <Grid item xs={12} sm={4}>
+                    <Grid item xs={12} sm={3}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <PersonOutlineIcon sx={{ color: '#4F9CF9' }} />
+                            <Box>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Anonymous Users</Typography>
+                                <Typography variant="h6" color="white">{metrics.unique_anonymous_users}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={12} sm={3}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <ChatBubbleOutlineIcon sx={{ color: '#4F9CF9' }} />
                             <Box>
-                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Total Interactions</Typography>
-                                <Typography variant="h6" color="white">{totalInteractions}</Typography>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Total Users</Typography>
+                                <Typography variant="h6" color="white">{metrics.total_unique_users}</Typography>
                             </Box>
                         </Box>
                     </Grid>
-                    <Grid item xs={12} sm={4}>
+                    <Grid item xs={12} sm={3}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <TimelineIcon sx={{ color: '#4F9CF9' }} />
                             <Box>
-                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Avg. Interactions/User</Typography>
-                                <Typography variant="h6" color="white">{averageInteractionsPerUser}</Typography>
+                                <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">Total Interactions</Typography>
+                                <Typography variant="h6" color="white">{metrics.total_interactions}</Typography>
                             </Box>
                         </Box>
                     </Grid>
@@ -475,10 +488,39 @@ const BrdgeList = ({
     const UserConversationList = ({ brdgeId }) => {
         const [expandedUser, setExpandedUser] = useState(null);
         const data = conversationData[brdgeId] || {};
+        const conversations = data.conversations || [];
+
+        // Group conversations by user
+        const userGroups = conversations.reduce((groups, conv) => {
+            const userId = conv.user_id || conv.anonymous_id;
+            if (!groups[userId]) {
+                groups[userId] = {
+                    isAnonymous: !conv.user_id,
+                    messages: [],
+                    totalInteractions: 0,
+                    uniqueSlides: new Set(),
+                    lastInteraction: conv.timestamp
+                };
+            }
+            groups[userId].messages.push(conv);
+            groups[userId].totalInteractions++;
+            if (conv.slide_number) {
+                groups[userId].uniqueSlides.add(conv.slide_number);
+            }
+            if (new Date(conv.timestamp) > new Date(groups[userId].lastInteraction)) {
+                groups[userId].lastInteraction = conv.timestamp;
+            }
+            return groups;
+        }, {});
+
+        // Sort users by last interaction time (most recent first)
+        const sortedUsers = Object.entries(userGroups).sort((a, b) =>
+            new Date(b[1].lastInteraction) - new Date(a[1].lastInteraction)
+        );
 
         return (
             <Box sx={{ mt: 2 }}>
-                {Object.entries(data).map(([userId, userData]) => (
+                {sortedUsers.map(([userId, userData]) => (
                     <Accordion
                         key={userId}
                         expanded={expandedUser === userId}
@@ -533,7 +575,7 @@ const BrdgeList = ({
                                 bgcolor: 'rgba(0, 0, 0, 0.2)',
                                 borderRadius: 1
                             }}>
-                                {userData.messages.map((message, index) => (
+                                {userData.messages.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map((message, index) => (
                                     <Box
                                         key={index}
                                         sx={{
@@ -564,7 +606,7 @@ const BrdgeList = ({
 
     return (
         <Box sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
-            {/* Responsive list/table view */}
+            {console.log('BrdgeList - Full conversationData:', conversationData)}
             <Box sx={{
                 px: { xs: 2, sm: 0 },
                 pb: { xs: 2, sm: 0 }
@@ -577,107 +619,117 @@ const BrdgeList = ({
                         ))}
                     </AnimatePresence>
                 ) : (
-                    // Desktop table view - without dividers
+                    // Desktop table view
                     <TableContainer component={Paper} sx={{ backgroundColor: 'transparent', boxShadow: 'none' }}>
                         <Table>
                             <TableHeader />
                             <TableBody>
-                                {brdges.map((brdge) => (
-                                    <React.Fragment key={brdge.id}>
-                                        <TableRow
-                                            hover
-                                            onClick={() => onExpandBrdge(brdge.id)}
-                                            sx={{
-                                                cursor: 'pointer',
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.05) !important'
-                                                },
-                                                '& td': {
-                                                    color: 'rgba(255, 255, 255, 0.9)',
-                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                                                },
-                                                position: 'relative',
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    left: 0,
-                                                    width: '3px',
-                                                    height: '100%',
-                                                    backgroundColor: 'transparent',
-                                                    transition: 'background-color 0.2s ease',
-                                                },
-                                                '&:hover::after': {
-                                                    backgroundColor: '#4F9CF9',
-                                                }
-                                            }}
-                                        >
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <IconButton
-                                                        size="small"
-                                                        sx={{
-                                                            transition: 'transform 0.2s ease',
-                                                            transform: expandedBrdge === brdge.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                            color: expandedBrdge === brdge.id ? '#4F9CF9' : 'rgba(255, 255, 255, 0.5)',
-                                                            '&:hover': {
-                                                                color: '#4F9CF9'
-                                                            }
-                                                        }}
-                                                    >
-                                                        <KeyboardArrowDownIcon />
-                                                    </IconButton>
-                                                    <Typography
-                                                        sx={{
-                                                            color: expandedBrdge === brdge.id ? '#4F9CF9' : 'inherit',
-                                                            transition: 'color 0.2s ease'
-                                                        }}
-                                                    >
-                                                        {brdge.name}
-                                                    </Typography>
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <StatusChip shareable={brdge.shareable} />
-                                            </TableCell>
-                                            <TableCell>
-                                                <ActionButtons brdge={brdge} />
-                                            </TableCell>
-                                        </TableRow>
-                                        {expandedBrdge === brdge.id && (
-                                            <TableRow>
-                                                <TableCell colSpan={3} sx={{ p: 0, border: 'none' }}>
-                                                    <Collapse in={true}>
-                                                        <Box sx={{ p: 3, bgcolor: 'rgba(0, 0, 0, 0.2)' }}>
-                                                            {loadingConversations ? (
-                                                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                                                                    <CircularProgress />
-                                                                </Box>
-                                                            ) : (
-                                                                <>
-                                                                    <Typography variant="h6" color="white" gutterBottom>
-                                                                        Conversation Metrics
-                                                                    </Typography>
-                                                                    <ConversationMetrics brdgeId={brdge.id} />
-                                                                    <Typography variant="h6" color="white" sx={{ mt: 4, mb: 2 }}>
-                                                                        User Interactions
-                                                                    </Typography>
-                                                                    <UserConversationList brdgeId={brdge.id} />
-                                                                </>
-                                                            )}
-                                                        </Box>
-                                                    </Collapse>
+                                {brdges.map((brdge) => {
+                                    const metrics = conversationData[brdge.id]?.interaction_stats;
+                                    return (
+                                        <React.Fragment key={brdge.id}>
+                                            <TableRow
+                                                hover
+                                                onClick={() => onExpandBrdge(brdge.id)}
+                                                sx={{
+                                                    cursor: 'pointer',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.05) !important'
+                                                    },
+                                                    '& td': {
+                                                        color: 'rgba(255, 255, 255, 0.9)',
+                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                                                    },
+                                                    position: 'relative',
+                                                    '&::after': {
+                                                        content: '""',
+                                                        position: 'absolute',
+                                                        left: 0,
+                                                        width: '3px',
+                                                        height: '100%',
+                                                        backgroundColor: 'transparent',
+                                                        transition: 'background-color 0.2s ease',
+                                                    },
+                                                    '&:hover::after': {
+                                                        backgroundColor: '#4F9CF9',
+                                                    }
+                                                }}
+                                            >
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <IconButton
+                                                            size="small"
+                                                            sx={{
+                                                                transition: 'transform 0.2s ease',
+                                                                transform: expandedBrdge === brdge.id ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                                color: expandedBrdge === brdge.id ? '#4F9CF9' : 'rgba(255, 255, 255, 0.5)',
+                                                                '&:hover': {
+                                                                    color: '#4F9CF9'
+                                                                }
+                                                            }}
+                                                        >
+                                                            <KeyboardArrowDownIcon />
+                                                        </IconButton>
+                                                        <Typography
+                                                            sx={{
+                                                                color: expandedBrdge === brdge.id ? '#4F9CF9' : 'inherit',
+                                                                transition: 'color 0.2s ease'
+                                                            }}
+                                                        >
+                                                            {brdge.name}
+                                                        </Typography>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                        <StatusChip shareable={brdge.shareable} />
+                                                        {conversationData[brdge.id]?.interaction_stats && (
+                                                            <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">
+                                                                {conversationData[brdge.id].interaction_stats.total_unique_users} unique users • {conversationData[brdge.id].interaction_stats.total_interactions} interactions
+                                                            </Typography>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <ActionButtons brdge={brdge} />
                                                 </TableCell>
                                             </TableRow>
-                                        )}
-                                    </React.Fragment>
-                                ))}
+                                            {expandedBrdge === brdge.id && (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} sx={{ p: 0, border: 'none' }}>
+                                                        <Collapse in={true}>
+                                                            <Box sx={{ p: 3, bgcolor: 'rgba(0, 0, 0, 0.2)' }}>
+                                                                {loadingConversations ? (
+                                                                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                                                        <CircularProgress />
+                                                                    </Box>
+                                                                ) : (
+                                                                    <>
+                                                                        <Typography variant="h6" color="white" gutterBottom>
+                                                                            Conversation Metrics
+                                                                        </Typography>
+                                                                        <ConversationMetrics brdgeId={brdge.id} />
+                                                                        <Typography variant="h6" color="white" sx={{ mt: 4, mb: 2 }}>
+                                                                            User Interactions
+                                                                        </Typography>
+                                                                        <UserConversationList brdgeId={brdge.id} />
+                                                                    </>
+                                                                )}
+                                                            </Box>
+                                                        </Collapse>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </React.Fragment>
+                                    );
+                                })}
                             </TableBody>
                         </Table>
                     </TableContainer>
                 )}
             </Box>
 
-            {/* Move ShareDialog outside of any scrolling containers */}
+            {/* ShareDialog */}
             <ShareDialog
                 open={shareDialogOpen}
                 onClose={() => setShareDialogOpen(false)}

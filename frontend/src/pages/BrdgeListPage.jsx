@@ -222,31 +222,13 @@ function BrdgeListPage() {
         try {
             const response = await api.get(`/brdges/${brdgeId}/viewer-conversations`);
             const conversations = response.data.conversations || [];
+            const interaction_stats = response.data.interaction_stats;
 
             // Process conversations to group by user and calculate metrics
-            const processedData = conversations.reduce((acc, conv) => {
-                const userId = conv.user_id || conv.anonymous_id;
-                if (!acc[userId]) {
-                    acc[userId] = {
-                        messages: [],
-                        totalInteractions: 0,
-                        uniqueSlides: new Set(),
-                        firstInteraction: new Date(conv.timestamp),
-                        lastInteraction: new Date(conv.timestamp),
-                        isAnonymous: !conv.user_id
-                    };
-                }
-
-                acc[userId].messages.push(conv);
-                acc[userId].totalInteractions++;
-                acc[userId].uniqueSlides.add(conv.slide_number);
-                acc[userId].lastInteraction = new Date(Math.max(
-                    acc[userId].lastInteraction,
-                    new Date(conv.timestamp)
-                ));
-
-                return acc;
-            }, {});
+            const processedData = {
+                conversations: conversations,
+                interaction_stats: interaction_stats
+            };
 
             setConversationData(prev => ({
                 ...prev,

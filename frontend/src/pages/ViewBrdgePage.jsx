@@ -1,12 +1,85 @@
-import React from 'react';
-import { Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import AgentsPlayground from '../components/AgentsPlayground';
 import { getAuthToken } from '../utils/auth';
+import { api } from '../api';
 
 function ViewBrdgePage() {
     const { id } = useParams();
     const token = getAuthToken();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const checkAccess = async () => {
+            try {
+                // Get the Brdge details
+                const response = await api.get(`/brdges/${id}`);
+                const brdge = response.data;
+
+                // If Brdge is not shareable and user is not the owner, deny access
+                if (!brdge.shareable && token) {
+                    const userResponse = await api.get('/user/current');
+                    if (userResponse.data.id !== brdge.user_id) {
+                        setError('Brdge Is Not Public: Access Denied');
+                        setLoading(false);
+                        return;
+                    }
+                } else if (!brdge.shareable && !token) {
+                    setError('Brdge Is Not Public: Access Denied');
+                    setLoading(false);
+                    return;
+                }
+
+                setLoading(false);
+            } catch (error) {
+                console.error('Error checking Brdge access:', error);
+                setError('Brdge Is Not Public: Access Denied');
+                setLoading(false);
+            }
+        };
+
+        checkAccess();
+    }, [id, token]);
+
+    if (loading) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100vh',
+                    background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)'
+                }}
+            >
+                <CircularProgress sx={{ color: 'white' }} />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100vh',
+                    background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+                    color: 'white',
+                    textAlign: 'center',
+                    px: 3
+                }}
+            >
+                <Typography variant="h5" gutterBottom>
+                    {error}
+                </Typography>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{
