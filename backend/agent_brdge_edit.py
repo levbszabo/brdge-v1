@@ -387,25 +387,63 @@ class ViewerAgent(VoicePipelineAgent):
         )
         self.user_id = user_id
         self.current_slide_number = None
-        self.current_agent_prompt = None
+        self.total_slides = 0
+        self.waiting_for_next = False
 
         # Load scripts from database
         self.scripts = self._load_scripts()
+        if self.scripts:
+            self.total_slides = len(self.scripts)
+            logger.info(f"Loaded {self.total_slides} slides worth of scripts")
 
         # Get voice ID from database
         voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for ViewerAgent: {voice_id}")
 
-        # Initialize with base system prompt
-        view_system_prompt = VIEW_SYSTEM_PROMPT.format(
-            entire_script=json.dumps(self.scripts, indent=2)
-        )
+        # Initialize with refined system prompt
+        view_system_prompt = """
+        You are a Brdge Presentation Assistant guiding users through a presentation. You have access to all slides' content and agent prompts, which allows you to:
+
+        1. Present Current Slide:
+           - ONLY present the script for the current slide being viewed
+           - Never read scripts from other slides, even if asked
+           - Use the current slide's agent prompt to guide your interaction style
+           - Encourage questions and discussion about current topics
+
+        2. Answer Questions:
+           - Use knowledge from ALL slides to give informed answers to questions
+           - If a question relates to other slides' content, you can reference that knowledge
+           - When referencing future content, say something like "That's a great question! We'll cover more about that in upcoming slides, but I can briefly explain..."
+           - When referencing past content, say "As we saw earlier..."
+
+        3. Maintain Focus:
+           - Keep the conversation centered on the current slide's topics
+           - Use your knowledge of other slides only to enhance answers, not to present their content
+           - If users are very interested in future content, you can suggest "Would you like to move to the next slide to learn more about that?"
+
+        4. Navigation:
+           - You can suggest moving to the next slide when appropriate
+           - Use phrases like "Would you like to move to the next slide?" or "Shall we continue to the next slide?"
+           - Remember that only users can actually change slides by clicking Next/Previous
+           - Make sure each slide's discussion feels complete before suggesting progression
+
+        Current Presentation Scripts and Prompts:
+        {entire_script}
+
+        Remember: Your role is to make each slide's discussion valuable while using your knowledge of the entire presentation to give informed answers. You can suggest progression, but the user controls the pace.
+        """
+
         super().__init__(
             vad=vad,
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o"),
             tts=cartesia.TTS(voice=voice_id),
-            chat_ctx=llm.ChatContext().append(role="system", text=view_system_prompt),
+            chat_ctx=llm.ChatContext().append(
+                role="system",
+                text=view_system_prompt.format(
+                    entire_script=json.dumps(self.scripts, indent=2)
+                ),
+            ),
         )
 
     def _load_scripts(self) -> dict:
@@ -445,6 +483,7 @@ class ViewerAgent(VoicePipelineAgent):
     async def present_slide(self, slide_number: str):
         """Present the script for the current slide"""
         logger.info(f"Attempting to present slide {slide_number}")
+        self.waiting_for_next = False
 
         try:
             if slide_number != self.current_slide_number:
@@ -455,38 +494,32 @@ class ViewerAgent(VoicePipelineAgent):
                     script = slide_content.get("script", "")
                     agent_prompt = slide_content.get("agent", "")
 
-                    # Update the agent's context with the new slide's agent prompt
-                    if agent_prompt:
-                        self.current_agent_prompt = agent_prompt
-                        context_message = llm.ChatMessage.create(
-                            role="system",
-                            text=f"""
-                            Current slide: {slide_number}
-                            Agent Instructions: {agent_prompt}
-                            
-                            Follow these delivery instructions carefully while presenting 
-                            the script and responding to questions.
-                            """,
-                        )
-                        # Insert the agent prompt before the last message
-                        self.chat_ctx.messages.insert(-1, context_message)
+                    context_message = llm.ChatMessage.create(
+                        role="system",
+                        text=f"""
+                        Current Slide: {slide_number} of {self.total_slides}
+                        
+                        Current Agent Guidelines:
+                        {agent_prompt}
+
+                        Remember:
+                        1. Present this slide's content clearly
+                        2. Use the agent guidelines to shape interaction
+                        3. Reference other slides when relevant
+                        4. You can suggest moving forward, but WAIT for user to click 'Next'
+                        5. Do not attempt to change slides yourself
+                        """,
+                    )
+                    self.chat_ctx.messages.insert(-1, context_message)
 
                     if script:
-                        logger.info(f"Found script for slide {slide_number}")
-                        # Present the script following the agent's instructions
                         await self.say(script, allow_interruptions=True)
                     else:
-                        logger.warning(f"No script found for slide {slide_number}")
                         await self.say(
-                            "I don't have any content for this slide.",
+                            "I don't have specific content for this slide. Would you like to discuss what you see here?",
                             allow_interruptions=True,
                         )
-                else:
-                    logger.warning(f"Invalid script format for slide {slide_number}")
-                    await self.say(
-                        "I'm having trouble accessing the content for this slide.",
-                        allow_interruptions=True,
-                    )
+
         except Exception as e:
             logger.error(f"Error presenting slide: {e}", exc_info=True)
             await self.say(
@@ -494,29 +527,43 @@ class ViewerAgent(VoicePipelineAgent):
                 allow_interruptions=True,
             )
 
+    async def suggest_next_slide(self):
+        """Suggest moving to the next slide without actually moving"""
+        if not self.waiting_for_next:
+            self.waiting_for_next = True
+            await self.say(
+                "We've covered this slide well. Would you like to move to the next slide? Just click 'Next' when you're ready.",
+                allow_interruptions=True,
+            )
+
     async def handle_user_question(self, question: str):
-        """Handle user questions during presentation"""
+        """Handle user questions with awareness of entire presentation"""
         try:
-            # Include current slide's agent prompt in the context
             context_message = llm.ChatMessage.create(
                 role="system",
                 text=f"""
-                Current slide: {self.current_slide_number}
-                Agent Instructions: {self.current_agent_prompt}
-                Current script: {self.scripts.get(str(self.current_slide_number), {}).get('script', '')}
+                Current Slide: {self.current_slide_number} of {self.total_slides}
                 
-                Follow the agent instructions while responding to the user's question.
-                Keep responses aligned with the current slide's content and presentation style.
+                Consider:
+                1. Is this question best answered with current slide content?
+                2. Would this be better addressed in an upcoming slide?
+                3. Does this relate to previous slides we can reference?
+
+                IMPORTANT RULES:
+                - Never attempt to change slides yourself
+                - You can suggest moving forward but wait for user action
+                - If mentioning future content, make it clear user needs to click 'Next' to proceed
+
+                Current slide's agent guidelines:
+                {self.scripts.get(str(self.current_slide_number), {}).get('agent', '')}
                 """,
             )
 
-            # Create temporary context with slide context
             temp_ctx = self.chat_ctx.copy()
             temp_ctx.messages.insert(-1, context_message)
             temp_ctx.messages.append(llm.ChatMessage.create(role="user", text=question))
 
-            # Generate and speak response
-            await self.say(self.llm.chat(chat_ctx=temp_ctx), allow_interruptions=False)
+            await self.say(self.llm.chat(chat_ctx=temp_ctx), allow_interruptions=True)
 
         except Exception as e:
             logger.error(f"Error handling user question: {e}", exc_info=True)

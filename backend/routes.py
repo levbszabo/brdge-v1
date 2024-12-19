@@ -1678,7 +1678,7 @@ def generate_slide_scripts(brdge_id):
         You are provided with transcripts of a user's presentation across {num_slides} slides. Generate two components:
 
         1. A TTS-friendly script that sounds natural and conversational
-        2. Detailed agent instructions for interactive presentation
+        2. Detailed agent persona and interaction guidelines
 
         Instructions for Scripts:
         - Write in plain, natural conversational language
@@ -1692,87 +1692,104 @@ def generate_slide_scripts(brdge_id):
         - Write numbers as they would be spoken
         - Avoid symbols, abbreviations, or anything that might confuse TTS
 
-        Instructions for Agent Prompts:
-        Structure each agent prompt with these sections:
+        Instructions for Agent Definition:
+        Define a consistent agent persona that embodies the original presenter while operating in one of these modes. The agent should maintain the presenter's unique voice, expertise, and communication style throughout.
 
-        1. Core Message:
-           - Main points to emphasize
-           - Key concepts to highlight
-           - Important facts and figures
-           - Essential takeaways
+        1. Agent Identity & Mode:
+           First, establish the presenter's baseline characteristics:
+           - Communication style (from walkthrough conversation)
+           - Level of expertise and background
+           - Personal examples and experiences shared
+           - Unique perspectives and insights
 
-        2. Conversation Flows:
-           Primary Path:
-           - Initial question: "What's your experience with X?"
-           - If experienced → Dive into advanced aspects
-           - If beginner → Start with fundamentals
-           - If unsure → Provide real-world example
-
-           Technical Path:
-           - Detailed explanations ready
-           - Technical specifications
-           - Implementation details
-           - Performance metrics
-
-           Practical Path:
-           - Use case examples
-           - Success stories
-           - Common challenges
-           - Best practices
-
-        3. Question Handling:
-           Anticipate these types:
-           - "How does this compare to...?"
-           - "What about [common alternative]?"
-           - "Can you explain [technical term]?"
-           - "What's the benefit of...?"
+           Then, adapt one of these modes while maintaining the presenter's identity:
            
-           For each question type:
-           - Simple explanation
-           - Detailed explanation
-           - Real-world example
-           - Relevant metrics
+           - External Engagement Agent:
+             Purpose: Share presenter's insights with potential customers/partners
+             Style: Blend presenter's personality with professional presentation
+             Focus: Communicate presenter's value proposition and expertise
+           
+           - Internal Training Agent:
+             Purpose: Scale presenter's knowledge across the organization
+             Style: Maintain presenter's teaching approach and experience sharing
+             Focus: Transfer presenter's best practices and insights
+           
+           - Knowledge Collaboration Agent:
+             Purpose: Represent presenter in team discussions and knowledge sharing
+             Style: Mirror presenter's collaboration and consensus-building approach
+             Focus: Share presenter's expertise while gathering team input
+           
+           - Educational Guide Agent:
+             Purpose: Deliver presenter's teaching content interactively
+             Style: Maintain presenter's teaching philosophy and methods
+             Focus: Share presenter's knowledge in their authentic voice
 
-        4. Engagement Prompts:
-           - Experience questions: "Have you dealt with...?"
-           - Opinion questions: "What do you think about...?"
-           - Scenario questions: "Imagine you needed to..."
-           - Follow-up questions for each response type
+        2. Core Knowledge Base:
+           - Presenter's specific expertise and experience
+           - Real examples and cases from presenter's walkthrough
+           - Industry knowledge demonstrated in presentation
+           - Presenter's unique insights and methodologies
+
+        3. Interaction Strategy:
+           - Adopt presenter's way of gauging audience understanding
+           - Use presenter's preferred explanation methods
+           - Mirror presenter's engagement techniques
+           - Maintain presenter's tone and rapport-building style
+
+        4. Information Collection Goals:
+           - Gather information the presenter would find valuable
+           - Ask questions in presenter's style
+           - Focus on presenter's key areas of interest
+           - Identify action items aligned with presenter's goals
+
+        5. Conversation Navigation:
+           - Use presenter's conversation starters and transitions
+           - Handle questions as presenter would
+           - Address concerns using presenter's approach
+           - Guide conversations toward presenter's intended outcomes
+
+        Note: The agent should feel like having a conversation with the actual presenter, 
+        maintaining their personality while delivering structured content.
 
         Present the results in this JSON format:
         {{
           "1": {{
-            "script": "Hi everyone! I'm really excited to talk about this with you today. You know how sometimes we struggle with managing large projects? Well, I've got something interesting to share that might help.",
-            "agent": "Core Message:
-                     - Focus on pain points: project management challenges
-                     - Highlight solution benefits: efficiency, cost savings
-                     - Emphasize real-world applicability
+            "script": "Hi everyone! Today I want to share our team's approach to project management. I've been leading projects for over 5 years now, and I've learned some valuable lessons that I think will really help you.",
+            "agent": "Agent Mode: Internal Training Agent
                      
-                     Conversation Flows:
-                     Primary Path:
-                     - Ask: What project management tools do you currently use?
-                     - If using basic tools → Highlight advanced features
-                     - If using competitors → Focus on unique advantages
-                     - If new to topic → Start with common challenges
+                     Identity:
+                     - Embodies Sarah's hands-on leadership style
+                     - Maintains her focus on practical, tested solutions
+                     - Shares her authentic experiences and lessons learned
                      
-                     Question Handling:
-                     - Cost questions: Discuss ROI, implementation costs, savings
-                     - Integration: Address common systems, API capabilities
-                     - Security: Detail protection measures, compliance
+                     Knowledge Base:
+                     - Sarah's project management methodology
+                     - Real examples from her team's successes
+                     - Specific challenges she's overcome
                      
-                     Engagement Prompts:
-                     - What's your biggest project management challenge?
-                     - How do you handle resource allocation?
-                     - What would make your workflow easier?"
+                     Interaction Strategy:
+                     - Use Sarah's approachable questioning style
+                     - Share her personal anecdotes when relevant
+                     - Mirror her way of breaking down complex topics
+                     
+                     Information Goals:
+                     - Understand team's current challenges (as Sarah would)
+                     - Identify areas where her experience is most relevant
+                     - Gather feedback she would find valuable
+                     
+                     Conversation Flow:
+                     - Open with Sarah's welcoming style
+                     - Share her methodology through stories
+                     - Address concerns using her problem-solving approach
+                     - Close with her action-oriented next steps"
           }},
           ...
         }}
 
         -----------Conversation Transcript-----------
-        {conversation_transcript}
+        {transcript}
         """.format(
-            conversation_transcript=json.dumps(slides_data, indent=2),
-            num_slides=walkthrough.total_slides,
+            num_slides=len(slides_data), transcript=json.dumps(slides_data, indent=2)
         )
 
         try:
@@ -1852,9 +1869,41 @@ def generate_slide_scripts(brdge_id):
             app.logger.error(f"Error generating scripts and agent prompts: {e}")
             raise
 
+        # After successful generation and saving to database
+        script = Scripts.query.filter_by(
+            brdge_id=brdge_id, walkthrough_id=walkthrough_id
+        ).first()
+
+        if script:
+            return (
+                jsonify(
+                    {
+                        "message": "Scripts generated successfully",
+                        "has_scripts": True,  # Add this flag
+                        "scripts": script.scripts,
+                        "metadata": {
+                            "generated_at": script.generated_at.isoformat(),
+                            "walkthrough_id": walkthrough_id,
+                            "num_slides": len(script.scripts),
+                        },
+                    }
+                ),
+                200,
+            )
+        else:
+            return (
+                jsonify(
+                    {
+                        "error": "Failed to retrieve generated scripts",
+                        "has_scripts": False,
+                    }
+                ),
+                500,
+            )
+
     except Exception as e:
-        app.logger.error(f"Error in script generation: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error in script generation: {e}")
+        return jsonify({"error": str(e), "has_scripts": False}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
@@ -2484,7 +2533,6 @@ def add_viewer_conversation(brdge_id):
             ),
             201,
         )
-
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error logging viewer conversation: {e}")
