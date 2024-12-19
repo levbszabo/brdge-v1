@@ -606,24 +606,19 @@ function BrdgeListPage() {
                                 <Button
                                     variant="contained"
                                     onClick={() => navigate('/profile')}
+                                    startIcon={<AddIcon />}
                                     sx={{
-                                        width: { xs: '100%', sm: 'auto' },
-                                        mt: { xs: 2, sm: 0 },
-                                        py: { xs: 1.2, sm: 1.5 },
-                                        borderRadius: '50px',
-                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
-                                        fontSize: '1rem',
-                                        fontWeight: '600',
-                                        letterSpacing: '0.02em',
+                                        bgcolor: '#4F9CF9',
+                                        color: 'white',
+                                        px: 3,
+                                        py: 1,
+                                        borderRadius: '12px',
                                         textTransform: 'none',
-                                        boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
-                                        position: 'relative',
-                                        zIndex: 2,
+                                        fontSize: '1rem',
+                                        fontWeight: 500,
                                         '&:hover': {
-                                            background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
-                                        },
+                                            bgcolor: '#4589E1'
+                                        }
                                     }}
                                 >
                                     Upgrade Now
@@ -631,31 +626,20 @@ function BrdgeListPage() {
                             ) : (
                                 <Button
                                     variant="contained"
-                                    startIcon={<AddIcon />}
                                     onClick={() => navigate('/create')}
-                                    disabled={!canCreateBrdge()}
+                                    startIcon={<AddIcon />}
                                     sx={{
-                                        width: { xs: '100%', sm: 'auto' },
-                                        mt: { xs: 2, sm: 0 },
-                                        py: { xs: 1.2, sm: 1.5 },
-                                        borderRadius: '50px',
-                                        background: canCreateBrdge()
-                                            ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)'
-                                            : 'rgba(255, 255, 255, 0.1)',
-                                        fontSize: '1rem',
-                                        fontWeight: '600',
-                                        letterSpacing: '0.02em',
+                                        bgcolor: '#4F9CF9',
+                                        color: 'white',
+                                        px: 3,
+                                        py: 1,
+                                        borderRadius: '12px',
                                         textTransform: 'none',
-                                        boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
-                                        position: 'relative',
-                                        zIndex: 2,
+                                        fontSize: '1rem',
+                                        fontWeight: 500,
                                         '&:hover': {
-                                            background: canCreateBrdge()
-                                                ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)'
-                                                : 'rgba(255, 255, 255, 0.15)',
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
-                                        },
+                                            bgcolor: '#4589E1'
+                                        }
                                     }}
                                 >
                                     Create New Brdge
