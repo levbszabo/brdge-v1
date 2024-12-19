@@ -261,14 +261,23 @@ class Voice(db.Model):
             # Parse the datetime string correctly
             created_at_str = response_data.get("created_at", "")
             if created_at_str:
-                # Remove microseconds precision beyond 6 digits
-                parts = created_at_str.split(".")
-                if len(parts) > 1:
-                    microseconds = parts[1].split("-")[0][
-                        :6
-                    ]  # Take only up to 6 digits
-                    created_at_str = f"{parts[0]}.{microseconds}{created_at_str[created_at_str.find('-'):]}"
-                created_at = datetime.fromisoformat(created_at_str)
+                try:
+                    # First try direct parsing
+                    created_at = datetime.fromisoformat(created_at_str)
+                except ValueError:
+                    # If that fails, try to clean up the string
+                    try:
+                        # Extract the main part of the timestamp before any potential duplication
+                        timestamp_parts = created_at_str.split("-08:00")
+                        if len(timestamp_parts) > 1:
+                            # Take the first part and add the timezone back
+                            created_at_str = f"{timestamp_parts[0]}-08:00"
+                        created_at = datetime.fromisoformat(created_at_str)
+                    except (ValueError, IndexError):
+                        logger.error(
+                            f"Could not parse datetime string: {created_at_str}"
+                        )
+                        created_at = datetime.utcnow()
             else:
                 created_at = datetime.utcnow()
 

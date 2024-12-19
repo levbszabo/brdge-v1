@@ -2113,23 +2113,15 @@ def get_brdge_voices(brdge_id):
         # Debug: Check what brdge_id we're querying
         logger.info(f"Querying voices for brdge_id: {brdge_id}")
 
-        # Debug: Check all voices in the table
-        all_voices = Voice.query.all()
-        logger.info(f"Total voices in DB: {len(all_voices)}")
-        for v in all_voices:
-            logger.info(
-                f"DB Voice - brdge_id: {v.brdge_id}, voice_id: {v.cartesia_voice_id}, name: {v.name}"
-            )
-
-        # Get voices for this brdge
+        # Get all voices for this brdge (don't filter by status)
         voices = (
-            Voice.query.filter_by(brdge_id=brdge_id, status="active")
+            Voice.query.filter_by(brdge_id=brdge_id)
             .order_by(Voice.created_at.desc())
             .all()
         )
 
         # Debug: Log what we found
-        logger.info(f"Found {len(voices)} active voices for brdge {brdge_id}")
+        logger.info(f"Found {len(voices)} voices for brdge {brdge_id}")
         for voice in voices:
             logger.info(f"Voice details: {voice.to_dict()}")
 

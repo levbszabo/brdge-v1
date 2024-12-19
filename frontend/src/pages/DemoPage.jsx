@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { styled } from '@mui/material/styles';
 import { GroupAdd, MenuBook, PresentToAll, BusinessCenter } from '@mui/icons-material';
 import { useInView } from 'react-intersection-observer';
+import { useNavigate } from 'react-router-dom';
 
 // Styled Components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -58,6 +59,7 @@ const demos = [
         description: 'Automate lead qualification and FAQs so your team can focus on closing deals.',
         value: 'Shorten sales cycles and convert more leads effortlessly.',
         icon: <BusinessCenter />,
+        url: 'https://brdge-ai.com/viewBrdge/141'
     },
     {
         id: 2,
@@ -65,6 +67,7 @@ const demos = [
         description: 'Transform HR docs into an interactive guide for new employees.',
         value: 'Reduce repetitive Q&A and improve training engagement.',
         icon: <GroupAdd />,
+        url: 'https://brdge-ai.com/viewBrdge/144'
     },
     {
         id: 3,
@@ -72,6 +75,7 @@ const demos = [
         description: 'Centralize company knowledge and empower teams to self-serve answers.',
         value: 'Eliminate unnecessary meetings and reduce chat overload.',
         icon: <MenuBook />,
+        url: 'https://brdge-ai.com/viewBrdge/145'
     },
     {
         id: 4,
@@ -79,16 +83,22 @@ const demos = [
         description: 'Showcase your expertise with instant answers for your audience.',
         value: 'Scale your personal brand and monetize your skills.',
         icon: <PresentToAll />,
+        url: 'https://brdge-ai.com/viewBrdge/146'
     },
 ];
 
 const DemoPage = () => {
     const theme = useTheme();
+    const navigate = useNavigate();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [ref, inView] = useInView({
         threshold: 0.2,
         triggerOnce: true
     });
+
+    const handleExploreDemo = (url) => {
+        window.open(url, '_blank');
+    };
 
     return (
         <Box sx={{
@@ -209,6 +219,7 @@ const DemoPage = () => {
                                             <Button
                                                 fullWidth
                                                 variant="contained"
+                                                onClick={() => handleExploreDemo(demo.url)}
                                                 sx={{
                                                     background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
                                                     color: 'white',
