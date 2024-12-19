@@ -1339,31 +1339,54 @@ def get_user_stats():
         # Get brdge count
         brdges_count = Brdge.query.filter_by(user_id=current_user_id).count()
 
-        # Log current user account type for debugging
+        # Calculate minutes used based on word count from view conversations
+        user_brdges = Brdge.query.filter_by(user_id=current_user_id).all()
+        total_words = 0
+        agent_words = 0
+        user_words = 0
+
+        for brdge in user_brdges:
+            conversations = ViewerConversation.query.filter_by(brdge_id=brdge.id).all()
+            for conv in conversations:
+                # Count words in each message based on role
+                if conv.message:
+                    words = len(conv.message.split())
+                    if conv.role == "assistant":
+                        agent_words += words
+                    else:
+                        user_words += words
+                    total_words += words
+
+        # Calculate minutes using 150 words/minute heuristic
+        minutes_used = round(total_words / 150)
+
         app.logger.info(
-            f"User {current_user_id} account type: {user.account.account_type}"
+            f"User {current_user_id} stats: total_words={total_words} (agent={agent_words}, user={user_words}), minutes={minutes_used}"
         )
 
         # Get limit based on account type
         limits = {"free": 2, "standard": 20, "pro": float("inf")}
-
         account_type = user.account.account_type
         limit = limits.get(account_type, 2)  # Default to 2 if unknown account type
 
-        # Log computed limit for debugging
-        app.logger.info(f"Computed limit for {account_type}: {limit}")
+        # Get minutes limit based on account type
+        minutes_limits = {"free": 30, "standard": 120, "pro": 300}
+        minutes_limit = minutes_limits.get(account_type, 30)
 
         response_data = {
             "brdges_created": brdges_count,
             "brdges_limit": "Unlimited" if limit == float("inf") else str(limit),
             "account_type": account_type,
-            "minutes_used": 0,  # Add these if you're tracking them
-            "minutes_limit": 120 if account_type == "standard" else 30,
+            "minutes_used": minutes_used,
+            "minutes_limit": minutes_limit,
+            "word_counts": {
+                "total": total_words,
+                "agent": agent_words,
+                "user": user_words,
+            },
         }
 
-        # Log full response for debugging
         app.logger.info(f"Returning stats: {response_data}")
-
         return jsonify(response_data)
 
     except Exception as e:
@@ -2673,11 +2696,22 @@ def add_security_headers(response):
     return response
 
 
-@app.route("/api/user/current", methods=["GET"])
-@jwt_required()
+@app.route("/api/user/current", methods=["GET", "OPTIONS"])
 @cross_origin()
+@jwt_required(optional=True)
 def get_current_user_details():
+    if request.method == "OPTIONS":
+        response = make_response()
+        response.headers.add(
+            "Access-Control-Allow-Headers", "Authorization, Content-Type"
+        )
+        response.headers.add("Access-Control-Allow-Methods", "GET, OPTIONS")
+        return response
+
     current_user_id = get_jwt_identity()
+    if not current_user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     user = User.query.get(current_user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404

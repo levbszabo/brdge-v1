@@ -56,6 +56,8 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
 
 const BrdgeList = ({
     brdges,
@@ -350,80 +352,124 @@ const BrdgeList = ({
                     borderRadius: '16px',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     backdropFilter: 'blur(10px)',
-                    '&:active': {
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    }
                 }}
-                onClick={() => onView(brdge)}
             >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            color: '#4F9CF9',
-                            fontWeight: 500,
-                            fontSize: '1.1rem'
-                        }}
-                    >
-                        {brdge.name}
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <MobileExpandIndicator brdge={brdge} />
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                color: '#4F9CF9',
+                                fontWeight: 500,
+                                fontSize: '1.1rem'
+                            }}
+                        >
+                            {brdge.name}
+                        </Typography>
+                    </Box>
                     <StatusChip shareable={brdge.shareable} />
                 </Box>
 
                 <Box sx={{
                     display: 'flex',
                     gap: 1,
-                    mt: 2
+                    mt: 2,
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
                 }}>
-                    <IconButton
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(brdge);
-                        }}
-                        size="small"
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            }
-                        }}
-                    >
-                        <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleShareClick(brdge, e);
-                        }}
-                        size="small"
-                        sx={{
-                            color: brdge.shareable ? '#4F9CF9' : 'rgba(255, 255, 255, 0.7)',
-                            backgroundColor: brdge.shareable ? 'rgba(79, 156, 249, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            }
-                        }}
-                    >
-                        <ShareIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(brdge);
-                        }}
-                        size="small"
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                            '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            }
-                        }}
-                    >
-                        <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                        <IconButton
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onView(brdge);
+                            }}
+                            size="small"
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    color: '#4F9CF9',
+                                }
+                            }}
+                        >
+                            <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(brdge);
+                            }}
+                            size="small"
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    color: '#4F9CF9',
+                                }
+                            }}
+                        >
+                            <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleShareClick(brdge, e);
+                            }}
+                            size="small"
+                            sx={{
+                                color: brdge.shareable ? '#4F9CF9' : 'rgba(255, 255, 255, 0.7)',
+                                backgroundColor: brdge.shareable ? 'rgba(79, 156, 249, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    color: '#4F9CF9',
+                                }
+                            }}
+                        >
+                            <ShareIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(brdge);
+                            }}
+                            size="small"
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    color: '#4F9CF9',
+                                }
+                            }}
+                        >
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
                 </Box>
+
+                <Collapse in={expandedBrdge === brdge.id} timeout="auto" unmountOnExit>
+                    <Box sx={{ mt: 2, bgcolor: 'rgba(0, 0, 0, 0.2)', borderRadius: 1, p: 2 }}>
+                        {loadingConversations ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            <>
+                                <Typography variant="h6" color="white" gutterBottom>
+                                    Conversation Metrics
+                                </Typography>
+                                <ConversationMetrics brdgeId={brdge.id} />
+                                <Typography variant="h6" color="white" sx={{ mt: 4, mb: 2 }}>
+                                    User Interactions
+                                </Typography>
+                                <UserConversationList brdgeId={brdge.id} />
+                            </>
+                        )}
+                    </Box>
+                </Collapse>
             </Box>
         </motion.div>
     );
@@ -604,6 +650,29 @@ const BrdgeList = ({
         );
     };
 
+    const MobileExpandIndicator = ({ brdge }) => {
+        const isExpanded = expandedBrdge === brdge.id;
+        return (
+            <IconButton
+                size="small"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    onExpandBrdge(brdge.id);
+                }}
+                sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    transition: 'transform 0.3s ease',
+                    transform: isExpanded ? 'rotate(180deg)' : 'none',
+                    '&:hover': {
+                        color: 'rgba(255, 255, 255, 0.9)',
+                    }
+                }}
+            >
+                {isExpanded ? <RemoveIcon /> : <AddIcon />}
+            </IconButton>
+        );
+    };
+
     return (
         <Box sx={{ width: '100%', position: 'relative', zIndex: 1 }}>
             {console.log('BrdgeList - Full conversationData:', conversationData)}
@@ -624,105 +693,71 @@ const BrdgeList = ({
                         <Table>
                             <TableHeader />
                             <TableBody>
-                                {brdges.map((brdge) => {
-                                    const metrics = conversationData[brdge.id]?.interaction_stats;
-                                    return (
-                                        <React.Fragment key={brdge.id}>
-                                            <TableRow
-                                                hover
-                                                onClick={() => onExpandBrdge(brdge.id)}
-                                                sx={{
-                                                    cursor: 'pointer',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.05) !important'
-                                                    },
-                                                    '& td': {
-                                                        color: 'rgba(255, 255, 255, 0.9)',
-                                                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
-                                                    },
-                                                    position: 'relative',
-                                                    '&::after': {
-                                                        content: '""',
-                                                        position: 'absolute',
-                                                        left: 0,
-                                                        width: '3px',
-                                                        height: '100%',
-                                                        backgroundColor: 'transparent',
-                                                        transition: 'background-color 0.2s ease',
-                                                    },
-                                                    '&:hover::after': {
-                                                        backgroundColor: '#4F9CF9',
-                                                    }
-                                                }}
-                                            >
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <IconButton
-                                                            size="small"
-                                                            sx={{
-                                                                transition: 'transform 0.2s ease',
-                                                                transform: expandedBrdge === brdge.id ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                                color: expandedBrdge === brdge.id ? '#4F9CF9' : 'rgba(255, 255, 255, 0.5)',
-                                                                '&:hover': {
-                                                                    color: '#4F9CF9'
-                                                                }
-                                                            }}
-                                                        >
-                                                            <KeyboardArrowDownIcon />
-                                                        </IconButton>
-                                                        <Typography
-                                                            sx={{
-                                                                color: expandedBrdge === brdge.id ? '#4F9CF9' : 'inherit',
-                                                                transition: 'color 0.2s ease'
-                                                            }}
-                                                        >
-                                                            {brdge.name}
-                                                        </Typography>
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                                        <StatusChip shareable={brdge.shareable} />
-                                                        {conversationData[brdge.id]?.interaction_stats && (
-                                                            <Typography variant="body2" color="rgba(255, 255, 255, 0.7)">
-                                                                {conversationData[brdge.id].interaction_stats.total_unique_users} unique users • {conversationData[brdge.id].interaction_stats.total_interactions} interactions
-                                                            </Typography>
+                                {brdges.map((brdge) => (
+                                    <React.Fragment key={brdge.id}>
+                                        <TableRow
+                                            hover
+                                            onClick={() => onExpandBrdge(brdge.id)}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                                backdropFilter: 'blur(10px)',
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                                                },
+                                                '& > td': {
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                                }
+                                            }}
+                                        >
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    {isMobile && <MobileExpandIndicator brdge={brdge} />}
+                                                    <Typography
+                                                        variant="body1"
+                                                        sx={{
+                                                            color: 'rgba(255, 255, 255, 0.9)',
+                                                            fontWeight: 500
+                                                        }}
+                                                    >
+                                                        {brdge.name}
+                                                    </Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <StatusChip shareable={brdge.shareable} />
+                                            </TableCell>
+                                            <TableCell>
+                                                <ActionButtons brdge={brdge} />
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell colSpan={3} sx={{ p: 0, border: 0 }}>
+                                                <Collapse in={expandedBrdge === brdge.id} timeout="auto" unmountOnExit>
+                                                    <Box sx={{ p: 3, bgcolor: 'rgba(0, 0, 0, 0.2)' }}>
+                                                        {loadingConversations ? (
+                                                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                                                                <CircularProgress />
+                                                            </Box>
+                                                        ) : (
+                                                            <>
+                                                                <Typography variant="h6" color="white" gutterBottom>
+                                                                    Conversation Metrics
+                                                                </Typography>
+                                                                <ConversationMetrics brdgeId={brdge.id} />
+                                                                <Typography variant="h6" color="white" sx={{ mt: 4, mb: 2 }}>
+                                                                    User Interactions
+                                                                </Typography>
+                                                                <UserConversationList brdgeId={brdge.id} />
+                                                            </>
                                                         )}
                                                     </Box>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <ActionButtons brdge={brdge} />
-                                                </TableCell>
-                                            </TableRow>
-                                            {expandedBrdge === brdge.id && (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} sx={{ p: 0, border: 'none' }}>
-                                                        <Collapse in={true}>
-                                                            <Box sx={{ p: 3, bgcolor: 'rgba(0, 0, 0, 0.2)' }}>
-                                                                {loadingConversations ? (
-                                                                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                                                                        <CircularProgress />
-                                                                    </Box>
-                                                                ) : (
-                                                                    <>
-                                                                        <Typography variant="h6" color="white" gutterBottom>
-                                                                            Conversation Metrics
-                                                                        </Typography>
-                                                                        <ConversationMetrics brdgeId={brdge.id} />
-                                                                        <Typography variant="h6" color="white" sx={{ mt: 4, mb: 2 }}>
-                                                                            User Interactions
-                                                                        </Typography>
-                                                                        <UserConversationList brdgeId={brdge.id} />
-                                                                    </>
-                                                                )}
-                                                            </Box>
-                                                        </Collapse>
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </React.Fragment>
-                                    );
-                                })}
+                                                </Collapse>
+                                            </TableCell>
+                                        </TableRow>
+                                    </React.Fragment>
+                                ))}
                             </TableBody>
                         </Table>
                     </TableContainer>

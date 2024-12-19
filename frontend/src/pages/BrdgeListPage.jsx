@@ -196,16 +196,21 @@ function BrdgeListPage() {
         }
     };
 
+    const isOverLimit = () => {
+        if (!userStats) return false;
+
+        // Check if either brdges or minutes are over limit
+        const isBrdgesOverLimit = userStats.brdges_limit !== 'Unlimited' &&
+            parseInt(userStats.brdges_created) >= parseInt(userStats.brdges_limit);
+
+        const isMinutesOverLimit = parseInt(userStats.minutes_used) >= parseInt(userStats.minutes_limit);
+
+        return isBrdgesOverLimit || isMinutesOverLimit;
+    };
+
     const canCreateBrdge = () => {
         // Check if we have valid stats
         if (!userStats) return false;
-
-        // Log current stats for debugging
-        console.log('Current stats:', {
-            created: userStats.brdges_created,
-            limit: userStats.brdges_limit,
-            accountType: userStats.account_type
-        });
 
         // If on pro plan or unlimited limit, always return true
         if (userStats.brdges_limit === 'Unlimited') return true;
@@ -214,7 +219,11 @@ function BrdgeListPage() {
         const currentLimit = parseInt(userStats.brdges_limit);
         const currentCount = parseInt(userStats.brdges_created);
 
-        return currentCount < currentLimit;
+        // Check both brdges and minutes limits
+        const underBrdgeLimit = currentCount < currentLimit;
+        const underMinuteLimit = parseInt(userStats.minutes_used) < parseInt(userStats.minutes_limit);
+
+        return underBrdgeLimit && underMinuteLimit;
     };
 
     const fetchConversationData = async (brdgeId) => {
@@ -373,6 +382,55 @@ function BrdgeListPage() {
         );
     };
 
+    const BrdgeItem = ({ brdge }) => {
+        const [expanded, setExpanded] = useState(false);
+
+        const handleExpandClick = () => {
+            setExpanded(!expanded);
+        };
+
+        return (
+            <>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px',
+                        backgroundColor: '#1A1A1A',
+                        borderRadius: '8px',
+                        marginBottom: '10px',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.3s',
+                        '&:hover': {
+                            backgroundColor: '#333',
+                        },
+                    }}
+                    onClick={handleExpandClick}
+                >
+                    <Typography variant="h6" color="white">
+                        {brdge.name}
+                    </Typography>
+                    <ExpandMoreIcon
+                        sx={{
+                            color: 'white',
+                            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.3s',
+                        }}
+                    />
+                </Box>
+                {expanded && (
+                    <Box sx={{ padding: '10px', backgroundColor: '#2A2A2A', borderRadius: '8px' }}>
+                        {/* Metrics and session details go here */}
+                        <Typography variant="body2" color="white">
+                            Metrics and session details...
+                        </Typography>
+                    </Box>
+                )}
+            </>
+        );
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -522,75 +580,21 @@ function BrdgeListPage() {
                             border: '1px solid rgba(255, 255, 255, 0.05)',
                             minWidth: { xs: '100%', sm: '280px' },
                         }}>
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    mb: 0.5
-                                }}>
-                                    <Typography variant="caption" sx={{
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                                    }}>
-                                        Bridges
-                                    </Typography>
-                                    <Typography variant="caption" sx={{
-                                        color: 'white',
-                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                                    }}>
-                                        {userStats.brdges_created}/{userStats.brdges_limit === 'Unlimited' ? '∞' : userStats.brdges_limit}
-                                    </Typography>
-                                </Box>
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={userStats.brdges_limit === 'Unlimited' ? 0 : (userStats.brdges_created / parseInt(userStats.brdges_limit)) * 100}
-                                    sx={{
-                                        height: 2,
-                                        borderRadius: 1.5,
-                                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                        '& .MuiLinearProgress-bar': {
-                                            background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
-                                            borderRadius: 1.5
-                                        }
-                                    }}
-                                />
-                            </Box>
+                            <UsageIndicator
+                                title="Bridges"
+                                current={userStats.brdges_created}
+                                limit={userStats.brdges_limit}
+                                showExcess={true}
+                            />
 
                             <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
-                            <Box sx={{ flex: 1, minWidth: 0 }}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    mb: 0.5
-                                }}>
-                                    <Typography variant="caption" sx={{
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                                    }}>
-                                        Minutes
-                                    </Typography>
-                                    <Typography variant="caption" sx={{
-                                        color: 'white',
-                                        fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                                    }}>
-                                        {userStats.minutes_used || 0}/{userStats.minutes_limit || 30}
-                                    </Typography>
-                                </Box>
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={((userStats.minutes_used || 0) / (userStats.minutes_limit || 30)) * 100}
-                                    sx={{
-                                        height: 2,
-                                        borderRadius: 1.5,
-                                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                        '& .MuiLinearProgress-bar': {
-                                            background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
-                                            borderRadius: 1.5
-                                        }
-                                    }}
-                                />
-                            </Box>
+                            <UsageIndicator
+                                title="Minutes"
+                                current={userStats.minutes_used || 0}
+                                limit={userStats.minutes_limit || 30}
+                                showExcess={true}
+                            />
                         </Box>
 
                         <motion.div
@@ -598,37 +602,65 @@ function BrdgeListPage() {
                             whileTap={{ scale: 0.98 }}
                             style={{ position: 'relative', zIndex: 2 }}
                         >
-                            <Button
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={() => navigate('/create')}
-                                disabled={!canCreateBrdge()}
-                                sx={{
-                                    width: { xs: '100%', sm: 'auto' },
-                                    mt: { xs: 2, sm: 0 },
-                                    py: { xs: 1.2, sm: 1.5 },
-                                    borderRadius: '50px',
-                                    background: canCreateBrdge()
-                                        ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)'
-                                        : 'rgba(255, 255, 255, 0.1)',
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'none',
-                                    boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
-                                    position: 'relative',
-                                    zIndex: 2,
-                                    '&:hover': {
+                            {isOverLimit() ? (
+                                <Button
+                                    variant="contained"
+                                    onClick={() => navigate('/profile')}
+                                    sx={{
+                                        width: { xs: '100%', sm: 'auto' },
+                                        mt: { xs: 2, sm: 0 },
+                                        py: { xs: 1.2, sm: 1.5 },
+                                        borderRadius: '50px',
+                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        letterSpacing: '0.02em',
+                                        textTransform: 'none',
+                                        boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
+                                        position: 'relative',
+                                        zIndex: 2,
+                                        '&:hover': {
+                                            background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
+                                        },
+                                    }}
+                                >
+                                    Upgrade Now
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() => navigate('/create')}
+                                    disabled={!canCreateBrdge()}
+                                    sx={{
+                                        width: { xs: '100%', sm: 'auto' },
+                                        mt: { xs: 2, sm: 0 },
+                                        py: { xs: 1.2, sm: 1.5 },
+                                        borderRadius: '50px',
                                         background: canCreateBrdge()
-                                            ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)'
-                                            : 'rgba(255, 255, 255, 0.15)',
-                                        transform: 'translateY(-2px)',
-                                        boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
-                                    },
-                                }}
-                            >
-                                Create New Brdge
-                            </Button>
+                                            ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)'
+                                            : 'rgba(255, 255, 255, 0.1)',
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        letterSpacing: '0.02em',
+                                        textTransform: 'none',
+                                        boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
+                                        position: 'relative',
+                                        zIndex: 2,
+                                        '&:hover': {
+                                            background: canCreateBrdge()
+                                                ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)'
+                                                : 'rgba(255, 255, 255, 0.15)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
+                                        },
+                                    }}
+                                >
+                                    Create New Brdge
+                                </Button>
+                            )}
                         </motion.div>
                     </Box>
 
@@ -712,12 +744,12 @@ function BrdgeListPage() {
 
             <style>
                 {`
-                    @keyframes float {
-                        0% { transform: translateY(0px) rotate(0deg); }
-                        50% { transform: translateY(-20px) rotate(5deg); }
-                        100% { transform: translateY(0px) rotate(0deg); }
-                    }
-                `}
+                        @keyframes float {
+                            0% { transform: translateY(0px) rotate(0deg); }
+                            50% { transform: translateY(-20px) rotate(5deg); }
+                            100% { transform: translateY(0px) rotate(0deg); }
+                        }
+                    `}
             </style>
         </Box>
     );

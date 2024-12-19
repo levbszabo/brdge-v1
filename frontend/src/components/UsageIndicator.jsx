@@ -1,10 +1,18 @@
 import React from 'react';
-import { Box, Typography, LinearProgress } from '@mui/material';
+import { Box, Typography, LinearProgress, Tooltip } from '@mui/material';
 
-function UsageIndicator({ stats }) {
-    const limit = stats.brdges_limit;
-    const used = stats.brdges_created;
-    const percentage = limit === 'Unlimited' ? 0 : (used / limit) * 100;
+function UsageIndicator({ title, current, limit, showExcess = false }) {
+    const isUnlimited = limit === 'Unlimited';
+    const currentValue = parseInt(current);
+    const limitValue = isUnlimited ? Infinity : parseInt(limit);
+    const isOverLimit = currentValue > limitValue;
+    const percentage = isUnlimited ? 0 : Math.min((currentValue / limitValue) * 100, 100);
+
+    const getProgressColor = () => {
+        if (isOverLimit) return 'error.main';
+        if (percentage > 90) return 'warning.main';
+        return 'linear-gradient(90deg, #007AFF, #00B4DB)';
+    };
 
     return (
         <Box sx={{
@@ -16,14 +24,27 @@ function UsageIndicator({ stats }) {
             border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
             <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
-                Bridge Usage
+                {title}
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" sx={{ color: 'white' }}>
-                    {used} / {limit === 'Unlimited' ? '∞' : limit}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                    {limit === 'Unlimited' ? 'Unlimited' : `${Math.round(percentage)}%`}
+                <Tooltip title={isOverLimit ? "Exceeding limit" : ""} arrow>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: isOverLimit ? 'error.main' : 'white',
+                            fontWeight: isOverLimit ? 'bold' : 'normal'
+                        }}
+                    >
+                        {current} / {isUnlimited ? '∞' : limit}
+                    </Typography>
+                </Tooltip>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: isOverLimit ? 'error.main' : 'rgba(255, 255, 255, 0.5)'
+                    }}
+                >
+                    {isUnlimited ? 'Unlimited' : `${Math.round(percentage)}%`}
                 </Typography>
             </Box>
             <LinearProgress
@@ -34,7 +55,7 @@ function UsageIndicator({ stats }) {
                     borderRadius: 2,
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
                     '& .MuiLinearProgress-bar': {
-                        background: 'linear-gradient(90deg, #007AFF, #00B4DB)'
+                        background: getProgressColor()
                     }
                 }}
             />
