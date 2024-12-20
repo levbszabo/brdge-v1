@@ -53,6 +53,10 @@ from typing import Dict, List, Optional
 import openai
 import requests
 from app import app, db
+from PIL import Image
+import io
+import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -376,6 +380,196 @@ def get_brdges():
     return jsonify({"brdges": [brdge.to_dict() for brdge in brdges]}), 200
 
 
+def generate_initial_scripts(brdge_id: int, slide_images: list) -> dict:
+    """
+    Generate initial scripts from slide images without conversation history.
+    Args:
+        brdge_id: ID of the brdge
+        slide_images: List of PIL Image objects
+    Returns:
+        Generated scripts and agent personas
+    """
+    try:
+        # Create initial walkthrough
+        walkthrough = Walkthrough(
+            brdge_id=brdge_id, total_slides=len(slide_images), status="completed"
+        )
+        db.session.add(walkthrough)
+        db.session.flush()  # Get the walkthrough ID
+
+        # Process each slide image
+        slides_data = {}
+        for idx, image in enumerate(slide_images, 1):
+            try:
+                # Convert to RGB if necessary
+                if image.mode in ("RGBA", "P"):
+                    image = image.convert("RGB")
+
+                # Create a copy for compression
+                img_copy = image.copy()
+
+                # Resize to smaller dimensions while maintaining aspect ratio
+                max_size = (800, 800)
+                img_copy.thumbnail(max_size, Image.Resampling.LANCZOS)
+
+                # Compress to JPEG with reduced quality
+                buffer = io.BytesIO()
+                img_copy.save(buffer, format="JPEG", quality=60, optimize=True)
+                compressed_image = buffer.getvalue()
+
+                # Convert to base64
+                base64_image = base64.b64encode(compressed_image).decode("utf-8")
+                slides_data[str(idx)] = base64_image
+
+            except Exception as e:
+                print(f"Error processing slide {idx}: {e}")
+                continue
+
+        # Prepare the prompt for GPT-4 Vision
+        prompt = """
+        You are analyzing a series of presentation slides to generate two components for each slide:
+        
+        1. A TTS-friendly script that sounds natural and conversational
+        2. Detailed agent persona and interaction guidelines
+        
+        Instructions for Scripts:
+        - Write in plain, natural conversational language
+        - Use contractions and casual phrases (I'm, let's, we're)
+        - NO special characters or formatting marks
+        - NO bracketed instructions or emphasis marks
+        - Include natural pauses through punctuation (commas, periods)
+        - Make it sound like someone talking to a friend
+        - Use simple transition words (so, now, anyway, you see)
+        - Keep sentences shorter and flowing
+        - Write numbers as they would be spoken
+        - Avoid symbols, abbreviations, or anything that might confuse TTS
+        
+        Instructions for Agent Definition:
+        Define a consistent agent persona that embodies the presenter while operating in one of these modes:
+        
+        1. External Engagement Agent:
+           - Share insights with potential customers/partners
+           - Blend personality with professional presentation
+           - Communicate value proposition and expertise
+        
+        2. Internal Training Agent:
+           - Scale knowledge across the organization
+           - Maintain teaching approach and experience sharing
+           - Transfer best practices and insights
+        
+        3. Knowledge Collaboration Agent:
+           - Represent presenter in team discussions
+           - Mirror collaboration and consensus-building
+           - Share expertise while gathering team input
+        
+        4. Educational Guide Agent:
+           - Deliver teaching content interactively
+           - Maintain teaching philosophy and methods
+           - Share knowledge in authentic voice
+        
+        Present the results in this JSON format:
+        {
+          "1": {
+            "script": "Natural conversational script for this slide",
+            "agent": "Detailed agent persona and guidelines"
+          }
+        }
+        
+        Analyze each slide's content and generate appropriate scripts and agent personas.
+        """
+
+        # Call OpenAI API with vision model
+        client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+        # Prepare messages with images
+        messages = [
+            {"role": "system", "content": prompt},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Please analyze these slides and generate scripts and agent personas for each one.",
+                    }
+                ]
+                + [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{img_data}",
+                            "detail": "low",
+                        },
+                    }
+                    for img_data in slides_data.values()
+                ],
+            },
+        ]
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            max_tokens=4096,
+            temperature=0.3,
+            response_format={"type": "json_object"},
+        )
+
+        generated_content = json.loads(response.choices[0].message.content)
+
+        # Create walkthrough messages for each slide
+        for slide_num, content in generated_content.items():
+            # Add script as assistant message
+            script_message = WalkthroughMessage(
+                walkthrough_id=walkthrough.id,
+                slide_number=int(slide_num),
+                role="assistant",
+                content=content["script"],
+            )
+            db.session.add(script_message)
+
+            # Add agent persona as system message
+            agent_message = WalkthroughMessage(
+                walkthrough_id=walkthrough.id,
+                slide_number=int(slide_num),
+                role="system",
+                content=content["agent"],
+            )
+            db.session.add(agent_message)
+
+        # Save scripts to database
+        script = Scripts(
+            brdge_id=brdge_id,
+            walkthrough_id=walkthrough.id,
+            scripts=generated_content,
+            generated_at=datetime.utcnow(),
+        )
+        db.session.add(script)
+
+        # Mark walkthrough as completed
+        walkthrough.completed_at = datetime.utcnow()
+        db.session.commit()
+
+        return generated_content
+
+    except Exception as e:
+        print(f"Error generating initial scripts: {e}")
+        db.session.rollback()
+        return None
+
+
+def upload_image_to_s3(args):
+    """Helper function to upload a single image to S3"""
+    image, s3_key, s3_bucket = args
+    try:
+        img_byte_arr = BytesIO()
+        image.save(img_byte_arr, format="PNG")
+        img_byte_arr.seek(0)
+        s3_client.upload_fileobj(img_byte_arr, s3_bucket, s3_key)
+        return True
+    except Exception as e:
+        print(f"Error uploading {s3_key}: {e}")
+        return False
+
+
 @app.route("/api/brdges", methods=["POST"])
 @login_required
 def create_brdge(user):
@@ -409,6 +603,9 @@ def create_brdge(user):
         # Convert PDF to images
         slide_images = pdf_to_images(pdf_temp_path)
 
+        # Generate initial scripts from the images
+        initial_scripts = generate_initial_scripts(brdge.id, slide_images)
+
         # Update brdge data
         brdge.presentation_filename = presentation_filename
         brdge.folder = str(brdge.id)
@@ -418,18 +615,35 @@ def create_brdge(user):
         s3_presentation_key = f"{s3_folder}/{presentation_filename}"
         s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
 
-        # Upload slide images to S3
+        # Prepare all image upload tasks
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        upload_tasks = []
         for idx, image in enumerate(slide_images):
             image_filename = f"slide_{idx+1}.png"
             s3_image_key = f"{s3_folder}/slides/{image_filename}"
+            upload_tasks.append((image, s3_image_key, S3_BUCKET))
 
-            # Save image to a bytes buffer
-            img_byte_arr = BytesIO()
-            image.save(img_byte_arr, format="PNG")
-            img_byte_arr.seek(0)
+        # Upload images concurrently
+        failed_uploads = []
+        with ThreadPoolExecutor(max_workers=min(10, len(slide_images))) as executor:
+            future_to_key = {
+                executor.submit(upload_image_to_s3, task): task[1]
+                for task in upload_tasks
+            }
 
-            # Upload image to S3
-            s3_client.upload_fileobj(img_byte_arr, S3_BUCKET, s3_image_key)
+            for future in as_completed(future_to_key):
+                s3_key = future_to_key[future]
+                try:
+                    success = future.result()
+                    if not success:
+                        failed_uploads.append(s3_key)
+                except Exception as e:
+                    print(f"Error uploading {s3_key}: {e}")
+                    failed_uploads.append(s3_key)
+
+        if failed_uploads:
+            raise Exception(f"Failed to upload some images: {failed_uploads}")
 
         # Clean up temporary PDF file
         os.remove(pdf_temp_path)
@@ -442,6 +656,7 @@ def create_brdge(user):
                     "message": "Brdge created successfully",
                     "brdge": brdge.to_dict(),
                     "num_slides": len(slide_images),
+                    "initial_scripts": initial_scripts,
                 }
             ),
             201,
@@ -1085,7 +1300,7 @@ def login():
 @cross_origin()
 def check_auth():
     current_user_id = get_jwt_identity()
-    return jsonify(logged_in_as=current_user_id), 200
+    return jsonify(logged_in_as=currentuser_id), 200
 
 
 @app.route("/api/your-endpoint", methods=["GET"])
@@ -1819,7 +2034,7 @@ def generate_slide_scripts(brdge_id):
             # Generate scripts using OpenAI
             client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
                 response_format={"type": "json_object"},
@@ -2563,6 +2778,7 @@ def add_viewer_conversation(brdge_id):
             ),
             201,
         )
+
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error logging viewer conversation: {e}")
