@@ -37,14 +37,7 @@ function Layout({ children }) {
   const location = useLocation();
 
   // Define public routes
-  const publicRoutes = [
-    '/login',
-    '/signup',
-    '/demos',
-    '/pricing',
-    '/policy',
-    '/',
-  ];
+  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/'];
 
   // Check if the current path is a viewBrdge route
   const isViewBrdgePath = (path) => {
@@ -63,7 +56,7 @@ function Layout({ children }) {
           });
           setIsAuthenticated(true);
 
-          // Only redirect to /brdges if on login/signup
+          // Only redirect if specifically on login/signup pages
           if (['/login', '/signup'].includes(currentPath)) {
             navigate('/brdges', { replace: true });
           }
@@ -72,25 +65,19 @@ function Layout({ children }) {
           logout();
           setIsAuthenticated(false);
         }
-      }
-
-      // Only redirect to login if:
-      // 1. Not on a public route
-      // 2. Not on a viewBrdge route
-      // 3. Not authenticated
-      const needsAuth = !publicRoutes.includes(currentPath) &&
-        !isViewBrdgePath(currentPath) &&
-        !isAuthenticated;
-
-      if (needsAuth) {
-        navigate('/login', { replace: true });
+      } else {
+        // Only redirect to login if not on a public route and not on a viewBrdge route
+        const needsAuth = !publicRoutes.includes(currentPath) && !isViewBrdgePath(currentPath);
+        if (needsAuth) {
+          navigate('/login', { replace: true });
+        }
       }
 
       setIsLoading(false);
     };
 
     checkAuth();
-  }, [navigate, location.pathname, isAuthenticated]);
+  }, [navigate, location.pathname]);
 
   if (isLoading) {
     return (
