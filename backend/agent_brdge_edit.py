@@ -433,6 +433,13 @@ class ViewerAgent(VoicePipelineAgent):
         Remember: Your role is to make each slide's discussion valuable while using your knowledge of the entire presentation to give informed answers. You can suggest progression, but the user controls the pace.
         """
 
+        # Initialize speech tracking
+        self.current_speech = {
+            "started_at": None,
+            "message": None,
+            "was_interrupted": False,
+        }
+
         super().__init__(
             vad=vad,
             stt=deepgram.STT(),
@@ -445,6 +452,131 @@ class ViewerAgent(VoicePipelineAgent):
                 ),
             ),
         )
+
+        # Set up event handlers
+        self._setup_event_handlers()
+
+    def _setup_event_handlers(self):
+        """Set up event handlers for speech events and usage tracking"""
+
+        @self.on("agent_started_speaking")
+        def on_agent_speech_started():
+            """Track when agent starts speaking"""
+            self.current_speech = {
+                "started_at": datetime.utcnow(),
+                "message": None, 
+                "was_interrupted": False,
+            }
+
+            try:
+                # Create usage log entry without agent_message
+                viewer_user_id = None
+                anonymous_id = None
+
+                # Convert user_id to string for checking
+                user_id_str = str(self.user_id) if self.user_id is not None else None
+
+                if user_id_str:
+                    if user_id_str.startswith("anon_"):
+                        anonymous_id = user_id_str
+                    else:
+                        try:
+                            viewer_user_id = int(user_id_str)
+                        except ValueError:
+                            logger.error(f"Invalid user_id format: {self.user_id}")
+
+                response = requests.post(
+                    f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs",
+                    json={
+                        "brdge_id": self.brdge_id,
+                        "viewer_user_id": viewer_user_id,
+                        "anonymous_id": anonymous_id,
+                        "started_at": self.current_speech["started_at"].isoformat(),
+                        "was_interrupted": False,
+                    },
+                )
+                response.raise_for_status()
+                self.current_speech["log_id"] = response.json().get("id")
+            except Exception as e:
+                logger.error(f"Error creating usage log: {e}")
+
+        @self.on("agent_speech_committed")
+        def on_agent_speech_committed(msg: llm.ChatMessage):
+            """Track when agent finishes speaking normally"""
+            logger.info(f"Agent speech committed: {msg.content}")
+
+            if self.current_speech["started_at"]:
+                ended_at = datetime.utcnow()
+                duration = (
+                    ended_at - self.current_speech["started_at"]
+                ).total_seconds() / 60.0
+
+                try:
+                    # Update usage log with completion and agent_message
+                    if self.current_speech.get("log_id"):
+                        response = requests.put(
+                            f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs/{self.current_speech['log_id']}",
+                            json={
+                                "ended_at": ended_at.isoformat(),
+                                "duration_minutes": round(duration, 2),
+                                "was_interrupted": False,
+                                "agent_message": msg.content,
+                            },
+                        )
+                        response.raise_for_status()
+                except Exception as e:
+                    logger.error(f"Error updating usage log: {e}")
+
+                # Reset current speech tracking
+                self.current_speech = {
+                    "started_at": None,
+                    "message": None,
+                    "was_interrupted": False,
+                }
+
+        @self.on("agent_speech_interrupted")
+        def on_agent_speech_interrupted(msg: llm.ChatMessage):
+            """Track when agent's speech is interrupted"""
+            logger.info(f"Agent speech interrupted: {msg.content}")
+
+            if self.current_speech["started_at"]:
+                ended_at = datetime.utcnow()
+                duration = (
+                    ended_at - self.current_speech["started_at"]
+                ).total_seconds() / 60.0
+
+                try:
+                    # Update usage log with interruption and agent_message
+                    if self.current_speech.get("log_id"):
+                        response = requests.put(
+                            f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs/{self.current_speech['log_id']}",
+                            json={
+                                "ended_at": ended_at.isoformat(),
+                                "duration_minutes": round(duration, 2),
+                                "was_interrupted": True,
+                                "agent_message": msg.content,
+                            },
+                        )
+                        response.raise_for_status()
+                except Exception as e:
+                    logger.error(f"Error updating usage log: {e}")
+
+                # Reset current speech tracking
+                self.current_speech = {
+                    "started_at": None,
+                    "message": None,
+                    "was_interrupted": False,
+                }
+
+    def get_brdge_owner_id(self) -> int:
+        """Get the owner ID for the current brdge"""
+        try:
+            response = requests.get(f"{self.api_base_url}/brdges/{self.brdge_id}")
+            response.raise_for_status()
+            return response.json().get("user_id")
+        except Exception as e:
+            logger.error(f"Error getting brdge owner ID: {e}")
+            return None
 
     def _load_scripts(self) -> dict:
         """Load scripts using API request"""
@@ -527,51 +659,6 @@ class ViewerAgent(VoicePipelineAgent):
                 allow_interruptions=True,
             )
 
-    async def suggest_next_slide(self):
-        """Suggest moving to the next slide without actually moving"""
-        if not self.waiting_for_next:
-            self.waiting_for_next = True
-            await self.say(
-                "We've covered this slide well. Would you like to move to the next slide? Just click 'Next' when you're ready.",
-                allow_interruptions=True,
-            )
-
-    async def handle_user_question(self, question: str):
-        """Handle user questions with awareness of entire presentation"""
-        try:
-            context_message = llm.ChatMessage.create(
-                role="system",
-                text=f"""
-                Current Slide: {self.current_slide_number} of {self.total_slides}
-                
-                Consider:
-                1. Is this question best answered with current slide content?
-                2. Would this be better addressed in an upcoming slide?
-                3. Does this relate to previous slides we can reference?
-
-                IMPORTANT RULES:
-                - Never attempt to change slides yourself
-                - You can suggest moving forward but wait for user action
-                - If mentioning future content, make it clear user needs to click 'Next' to proceed
-
-                Current slide's agent guidelines:
-                {self.scripts.get(str(self.current_slide_number), {}).get('agent', '')}
-                """,
-            )
-
-            temp_ctx = self.chat_ctx.copy()
-            temp_ctx.messages.insert(-1, context_message)
-            temp_ctx.messages.append(llm.ChatMessage.create(role="user", text=question))
-
-            await self.say(self.llm.chat(chat_ctx=temp_ctx), allow_interruptions=True)
-
-        except Exception as e:
-            logger.error(f"Error handling user question: {e}", exc_info=True)
-            await self.say(
-                "I apologize, but I encountered an error processing your question.",
-                allow_interruptions=False,
-            )
-
     def add_message(self, slide_number: int, role: str, message: str):
         """Log messages to the conversation history"""
         if not self.brdge_id:
@@ -591,22 +678,6 @@ class ViewerAgent(VoicePipelineAgent):
             response.raise_for_status()
         except Exception as e:
             logger.error(f"Error adding message: {e}", exc_info=True)
-
-    async def stop_speaking(self):
-        """Stop current speech"""
-        if hasattr(self, "current_speech_task") and self.current_speech_task:
-            self.current_speech_task.cancel()
-            self.is_speaking = False
-            logger.info("Stopped current speech")
-
-    async def say(self, text, allow_interruptions=True):
-        """Override say method to track speaking state"""
-        self.is_speaking = True
-        try:
-            response = await super().say(text, allow_interruptions=allow_interruptions)
-            return response
-        finally:
-            self.is_speaking = False
 
 
 class EditAgent(VoicePipelineAgent):
@@ -969,7 +1040,6 @@ async def entrypoint(ctx: JobContext):
                     asyncio.create_task(
                         agent.present_slide(str(current_slide["number"]))
                     )
-
         except Exception as e:
             logger.error(f"Error processing data received: {e}", exc_info=True)
 

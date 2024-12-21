@@ -331,3 +331,45 @@ class ViewerConversation(db.Model):
             "timestamp": self.timestamp.isoformat(),
             "slide_number": self.slide_number,
         }
+
+
+class UsageLogs(db.Model):
+    """Tracks agent interaction durations and usage metrics"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    owner_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=False
+    )  # The brdge owner
+    viewer_user_id = db.Column(
+        db.Integer, db.ForeignKey("user.id"), nullable=True
+    )  # Registered user if any
+    anonymous_id = db.Column(db.String(255), nullable=True)  # For anonymous viewers
+    agent_message = db.Column(db.Text, nullable=False)
+    started_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    ended_at = db.Column(db.DateTime)
+    duration_minutes = db.Column(
+        db.Float, nullable=False, default=0.0
+    )  # Precision to 0.01
+    was_interrupted = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    brdge = db.relationship("Brdge", backref="usage_logs")
+    owner = db.relationship("User", foreign_keys=[owner_id], backref="owned_usage_logs")
+    viewer = db.relationship(
+        "User", foreign_keys=[viewer_user_id], backref="viewed_usage_logs"
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "owner_id": self.owner_id,
+            "viewer_user_id": self.viewer_user_id,
+            "anonymous_id": self.anonymous_id,
+            "agent_message": self.agent_message,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "ended_at": self.ended_at.isoformat() if self.ended_at else None,
+            "duration_minutes": self.duration_minutes,
+            "was_interrupted": self.was_interrupted,
+        }

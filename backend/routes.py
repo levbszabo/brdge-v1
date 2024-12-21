@@ -25,6 +25,7 @@ from models import (
     Scripts,
     Voice,
     ViewerConversation,
+    UsageLogs,
 )
 from utils import (
     clone_voice_helper,
@@ -1554,29 +1555,20 @@ def get_user_stats():
         # Get brdge count
         brdges_count = Brdge.query.filter_by(user_id=current_user_id).count()
 
-        # Calculate minutes used based on word count from view conversations
-        user_brdges = Brdge.query.filter_by(user_id=current_user_id).all()
-        total_words = 0
-        agent_words = 0
-        user_words = 0
+        # Calculate total minutes from UsageLogs
+        usage_logs = UsageLogs.query.filter_by(owner_id=current_user_id).all()
+        total_minutes = 0
 
-        for brdge in user_brdges:
-            conversations = ViewerConversation.query.filter_by(brdge_id=brdge.id).all()
-            for conv in conversations:
-                # Count words in each message based on role
-                if conv.message:
-                    words = len(conv.message.split())
-                    if conv.role == "assistant":
-                        agent_words += words
-                    else:
-                        user_words += words
-                    total_words += words
+        for log in usage_logs:
+            # Only count completed logs (those with duration_minutes)
+            if log.duration_minutes is not None:
+                total_minutes += log.duration_minutes
 
-        # Calculate minutes using 150 words/minute heuristic
-        minutes_used = round(total_words / 150)
+        # Round to nearest minute
+        minutes_used = round(total_minutes, 1)
 
         app.logger.info(
-            f"User {current_user_id} stats: total_words={total_words} (agent={agent_words}, user={user_words}), minutes={minutes_used}"
+            f"User {current_user_id} stats: minutes_used={minutes_used} from {len(usage_logs)} usage logs"
         )
 
         # Get limit based on account type
@@ -1594,10 +1586,14 @@ def get_user_stats():
             "account_type": account_type,
             "minutes_used": minutes_used,
             "minutes_limit": minutes_limit,
-            "word_counts": {
-                "total": total_words,
-                "agent": agent_words,
-                "user": user_words,
+            "usage_stats": {
+                "total_sessions": len(usage_logs),
+                "completed_sessions": len(
+                    [log for log in usage_logs if log.duration_minutes is not None]
+                ),
+                "interrupted_sessions": len(
+                    [log for log in usage_logs if log.was_interrupted]
+                ),
             },
         }
 
@@ -2940,3 +2936,67 @@ def get_current_user_details():
     if not user:
         return jsonify({"error": "User not found"}), 404
     return jsonify({"id": user.id, "email": user.email}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/usage-logs", methods=["POST"])
+def create_usage_log(brdge_id):
+    """Create a new usage log entry when agent starts speaking"""
+    try:
+        data = request.get_json()
+        owner_id = Brdge.query.get(brdge_id).user_id
+        # Create new usage log
+        usage_log = UsageLogs(
+            brdge_id=brdge_id,
+            owner_id=owner_id,
+            viewer_user_id=data.get("viewer_user_id"),
+            anonymous_id=data.get("anonymous_id"),
+            agent_message="",
+            started_at=datetime.fromisoformat(data["started_at"]),
+            was_interrupted=data.get("was_interrupted", False),
+        )
+
+        db.session.add(usage_log)
+        db.session.commit()
+
+        return (
+            jsonify({"id": usage_log.id, "message": "Usage log created successfully"}),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating usage log: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/usage-logs/<int:log_id>", methods=["PUT"])
+def update_usage_log(brdge_id, log_id):
+    """Update an existing usage log when speech ends or is interrupted"""
+    try:
+        data = request.get_json()
+        usage_log = UsageLogs.query.get(log_id)
+
+        if not usage_log:
+            return jsonify({"error": "Usage log not found"}), 404
+
+        if usage_log.brdge_id != brdge_id:
+            return jsonify({"error": "Usage log does not belong to this brdge"}), 403
+
+        # Update fields
+        if "ended_at" in data:
+            usage_log.ended_at = datetime.fromisoformat(data["ended_at"])
+        if "duration_minutes" in data:
+            usage_log.duration_minutes = data["duration_minutes"]
+        if "was_interrupted" in data:
+            usage_log.was_interrupted = data["was_interrupted"]
+        if "agent_message" in data:
+            usage_log.agent_message = data["agent_message"]
+
+        db.session.commit()
+
+        return jsonify({"message": "Usage log updated successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating usage log: {e}")
+        return jsonify({"error": str(e)}), 500
