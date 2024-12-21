@@ -31,6 +31,8 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import StarIcon from '@mui/icons-material/Star';
 import CancelIcon from '@mui/icons-material/Cancel';
+import SaveIcon from '@mui/icons-material/Save';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { motion } from 'framer-motion';
 
 const typography = {
@@ -79,11 +81,18 @@ const cardStyles = {
 
 const tierCardStyles = (isActive, isPremium) => ({
     ...cardStyles,
-    p: 3,
+    p: 2,
+    borderRadius: '16px',
     border: isActive ? '2px solid rgba(0, 188, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
-    background: isPremium ?
-        'linear-gradient(135deg, rgba(33, 150, 243, 0.1) 0%, rgba(0, 188, 212, 0.1) 100%)' :
-        'rgba(255, 255, 255, 0.02)',
+    background: isPremium
+        ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.05) 0%, rgba(0, 188, 212, 0.05) 100%)'
+        : 'rgba(255, 255, 255, 0.02)',
+    boxShadow: isActive ? '0 4px 12px rgba(0, 188, 212, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: '0 6px 16px rgba(0, 188, 212, 0.4)',
+    },
     position: 'relative',
     overflow: 'hidden',
     '&::before': isPremium ? {
@@ -97,7 +106,90 @@ const tierCardStyles = (isActive, isPremium) => ({
     } : {}
 });
 
-const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClick, isPremium, tier }) => {
+const TierButton = ({ isActive, isPremium, onClick, children }) => (
+    <Button
+        variant="contained"
+        disabled={isActive}
+        onClick={onClick}
+        sx={{
+            minWidth: '120px',
+            height: '36px',
+            borderRadius: '12px',
+            textTransform: 'none',
+            fontSize: '0.85rem',
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            boxShadow: 'none',
+            padding: '0 12px',
+            background: isActive
+                ? 'rgba(66, 133, 244, 0.1)'
+                : isPremium
+                    ? 'linear-gradient(to right, #4285F4, #5B9AF5)'
+                    : '#4285F4',
+            color: isActive
+                ? '#4285F4'
+                : '#FFFFFF',
+            border: 'none',
+            transition: 'all 0.2s ease',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            margin: '0 auto',
+            display: 'block',
+
+            '&:hover': {
+                background: isActive
+                    ? 'rgba(66, 133, 244, 0.1)'
+                    : isPremium
+                        ? 'linear-gradient(to right, #3B78E7, #4285F4)'
+                        : '#3B78E7',
+                boxShadow: '0 4px 12px rgba(66, 133, 244, 0.3)',
+                transform: 'translateY(-1px)'
+            },
+
+            '&.Mui-disabled': {
+                background: 'rgba(66, 133, 244, 0.1)',
+                color: '#4285F4',
+                opacity: 1
+            },
+
+            '&:active': {
+                transform: 'translateY(1px)',
+                boxShadow: 'none'
+            }
+        }}
+    >
+        <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            justifyContent: 'center',
+            width: '100%'
+        }}>
+            {isActive ? (
+                <>
+                    <CheckIcon sx={{
+                        fontSize: '16px',
+                        color: '#4285F4'
+                    }} />
+                    <span>Current Plan</span>
+                </>
+            ) : (
+                <>
+                    {isPremium && (
+                        <StarIcon sx={{
+                            fontSize: '16px',
+                            color: '#FFFFFF'
+                        }} />
+                    )}
+                    <span>{children}</span>
+                </>
+            )}
+        </Box>
+    </Button>
+);
+
+const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium, tier }) => {
     const theme = useTheme();
     const handleClick = () => {
         localStorage.setItem('selected_tier', tier);
@@ -107,97 +199,68 @@ const SubscriptionTier = ({ title, price, features, buttonText, isActive, onClic
     return (
         <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
             <Paper elevation={3} sx={{
-                p: 4,
+                p: 3,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 borderRadius: '24px',
                 background: isPremium
-                    ? 'linear-gradient(90deg, #00B4DB 0%, #0041C2 100%)'
-                    : '#ffffff',
-                border: isActive ? '2px solid #00B4DB' : 'none',
-                color: isPremium ? '#ffffff' : '#1a1a1a',
+                    ? 'linear-gradient(135deg, rgba(0, 82, 204, 0.1), rgba(7, 71, 166, 0.1))'
+                    : 'rgba(255, 255, 255, 0.02)',
+                border: isActive ? '2px solid #007AFF' : '1px solid rgba(255, 255, 255, 0.05)',
+                color: '#ffffff',
                 position: 'relative',
                 overflow: 'hidden',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                '& .MuiTypography-root': {
-                    color: isPremium ? 'rgba(255, 255, 255, 0.9)' : 'inherit'
-                },
-                '& .MuiTypography-h5': {
-                    fontSize: '1.5rem',
-                    fontWeight: 600,
-                    marginBottom: 1
-                },
-                '& .MuiTypography-h4': {
-                    fontSize: '2rem',
-                    fontWeight: 700,
-                    marginBottom: 2
-                },
-                '& .MuiTypography-body1': {
-                    color: isPremium ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)',
-                    fontSize: '0.95rem'
-                }
             }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box>
-                        <Typography variant="h5">{title}</Typography>
-                        <Typography variant="h4">{price}</Typography>
+                        <Typography variant="h5" sx={{
+                            fontSize: '1.5rem',
+                            fontWeight: 600,
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            mb: 1
+                        }}>
+                            {title}
+                        </Typography>
+                        <Typography variant="h4" sx={{
+                            fontSize: '2rem',
+                            fontWeight: 700,
+                            background: isPremium ? 'linear-gradient(135deg, #0052CC, #0747A6)' : 'none',
+                            WebkitBackgroundClip: isPremium ? 'text' : 'none',
+                            WebkitTextFillColor: isPremium ? 'transparent' : 'inherit',
+                            mb: 2
+                        }}>
+                            {price}
+                        </Typography>
                     </Box>
-                    {isActive && (
-                        <Button
-                            variant="contained"
-                            disabled
-                            sx={{
-                                backgroundColor: '#0052CC',
-                                color: 'white',
-                                borderRadius: '50px',
-                                textTransform: 'none',
-                                px: 3,
-                                '&.Mui-disabled': {
-                                    backgroundColor: '#0052CC',
-                                    color: 'white',
-                                }
-                            }}
-                        >
-                            Current Plan
-                        </Button>
-                    )}
+                    <TierButton
+                        isActive={isActive}
+                        isPremium={isPremium}
+                        onClick={handleClick}
+                    >
+                        {isPremium ? 'Upgrade' : 'Upgrade'}
+                    </TierButton>
                 </Box>
                 <Box sx={{ flexGrow: 1 }}>
                     {features.map((feature, index) => (
-                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <Box key={index} sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 1,
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }}>
                             <CheckIcon sx={{
                                 mr: 1.5,
-                                color: isPremium ? '#ffffff' : '#00B4DB',
+                                color: isPremium ? '#007AFF' : 'rgba(255, 255, 255, 0.5)',
                                 fontSize: '1.2rem'
                             }} />
-                            <Typography variant="body1">{feature}</Typography>
+                            <Typography variant="body1">
+                                {feature}
+                            </Typography>
                         </Box>
                     ))}
                 </Box>
-                {!isActive && (
-                    <Button
-                        variant={isPremium ? "contained" : "outlined"}
-                        onClick={handleClick}
-                        sx={{
-                            mt: 2,
-                            borderRadius: '50px',
-                            backgroundColor: isPremium ? '#0052CC' : 'transparent',
-                            color: isPremium ? '#ffffff' : '#0052CC',
-                            borderColor: isPremium ? 'transparent' : '#0052CC',
-                            textTransform: 'none',
-                            fontSize: '1rem',
-                            fontWeight: 500,
-                            py: 1,
-                            '&:hover': {
-                                backgroundColor: isPremium ? '#0747A6' : 'rgba(0, 82, 204, 0.04)',
-                                borderColor: isPremium ? 'transparent' : '#0052CC',
-                            }
-                        }}
-                    >
-                        {buttonText}
-                    </Button>
-                )}
             </Paper>
         </motion.div>
     );
@@ -387,6 +450,8 @@ const styles = {
 
 function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+    const [showCancelSuccess, setShowCancelSuccess] = useState(false);
+    const [error, setError] = useState(null);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -399,6 +464,26 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
 
     return (
         <Paper elevation={0} sx={styles.card}>
+            {showCancelSuccess && (
+                <Alert
+                    severity="success"
+                    onClose={() => setShowCancelSuccess(false)}
+                    sx={{ mb: 2 }}
+                >
+                    Your subscription has been successfully canceled.
+                </Alert>
+            )}
+
+            {error && (
+                <Alert
+                    severity="error"
+                    onClose={() => setError(null)}
+                    sx={{ mb: 2 }}
+                >
+                    {error}
+                </Alert>
+            )}
+
             <Box sx={styles.billingInfo}>
                 <div className="billing-header">
                     <ReceiptIcon />
@@ -457,39 +542,140 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                 onClose={() => setOpenConfirmDialog(false)}
                 PaperProps={{
                     sx: {
-                        background: 'rgba(2, 6, 23, 0.95)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '16px',
+                        background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.95), rgba(7, 11, 35, 0.95))',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.07)',
+                        borderRadius: '24px',
                         color: 'white',
-                        maxWidth: '400px',
+                        maxWidth: '480px',
                         width: '100%',
-                        p: 3
+                        p: 4,
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                        '& .MuiDialogContent-root': {
+                            padding: 0,
+                            mt: 2
+                        }
                     }
                 }}
             >
                 <DialogContent>
-                    <Typography variant="h6" sx={{ mb: 2 }}>
-                        Cancel Subscription?
-                    </Typography>
-                    <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 3 }}>
-                        By canceling your subscription:
-                        <ul style={{ marginTop: '8px' }}>
-                            <li>You'll be downgraded to the free plan</li>
-                            <li>Only your first Bridge will be kept</li>
-                            <li>Additional Bridges will be deleted</li>
-                            <li>Usage will be limited to 30 minutes per month</li>
-                        </ul>
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                    {/* Header Section */}
+                    <Box sx={{ textAlign: 'center', mb: 4 }}>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                fontWeight: 600,
+                                background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                mb: 2
+                            }}
+                        >
+                            Cancel Subscription?
+                        </Typography>
+                        <Typography
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                fontSize: '1.1rem',
+                                fontWeight: 500
+                            }}
+                        >
+                            We're sorry to see you go
+                        </Typography>
+                    </Box>
+
+                    {/* Info Cards */}
+                    <Box sx={{ mb: 4 }}>
+                        {[
+                            {
+                                title: 'Active Until Period End',
+                                description: 'Your subscription remains active until the end of your current billing period',
+                                icon: <CalendarTodayIcon />
+                            },
+                            {
+                                title: 'Preserved Content',
+                                description: 'Your brdges will be preserved but will become inactive',
+                                icon: <SaveIcon />
+                            },
+                            {
+                                title: 'Reactivate Anytime',
+                                description: 'You can reactivate your subscription at any time to regain access',
+                                icon: <AutorenewIcon />
+                            },
+                            {
+                                title: 'Free Tier Access',
+                                description: 'Free tier limits will apply after cancellation',
+                                icon: <LockOpenIcon />
+                            }
+                        ].map((item, index) => (
+                            <Box
+                                key={index}
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: 2,
+                                    mb: 3,
+                                    p: 2,
+                                    borderRadius: '12px',
+                                    background: 'rgba(255, 255, 255, 0.03)',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        transform: 'translateX(4px)'
+                                    }
+                                }}
+                            >
+                                <Box sx={{
+                                    p: 1,
+                                    borderRadius: '8px',
+                                    background: 'rgba(255, 59, 48, 0.1)',
+                                    color: '#FF3B30'
+                                }}>
+                                    {item.icon}
+                                </Box>
+                                <Box>
+                                    <Typography sx={{
+                                        fontWeight: 600,
+                                        mb: 0.5,
+                                        color: 'rgba(255, 255, 255, 0.9)'
+                                    }}>
+                                        {item.title}
+                                    </Typography>
+                                    <Typography sx={{
+                                        fontSize: '0.9rem',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        lineHeight: 1.4
+                                    }}>
+                                        {item.description}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        ))}
+                    </Box>
+
+                    {/* Action Buttons */}
+                    <Box sx={{
+                        display: 'flex',
+                        gap: 2,
+                        justifyContent: 'flex-end',
+                        mt: 4
+                    }}>
                         <Button
                             variant="outlined"
                             onClick={() => setOpenConfirmDialog(false)}
                             sx={{
                                 color: 'white',
                                 borderColor: 'rgba(255, 255, 255, 0.2)',
+                                borderRadius: '12px',
+                                px: 3,
+                                py: 1.2,
+                                textTransform: 'none',
+                                fontSize: '1rem',
+                                fontWeight: 500,
                                 '&:hover': {
                                     borderColor: 'rgba(255, 255, 255, 0.5)',
+                                    background: 'rgba(255, 255, 255, 0.05)'
                                 }
                             }}
                         >
@@ -497,15 +683,29 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                         </Button>
                         <Button
                             variant="contained"
-                            color="error"
-                            onClick={() => {
-                                // Handle cancellation
-                                setOpenConfirmDialog(false);
+                            onClick={async () => {
+                                try {
+                                    const response = await api.post('/cancel-subscription');
+                                    if (response.data.message) {
+                                        setShowCancelSuccess(true);
+                                        setOpenConfirmDialog(false);
+                                        onSubscriptionChange();
+                                    }
+                                } catch (error) {
+                                    console.error('Error canceling subscription:', error);
+                                    setError(error.response?.data?.error || 'Failed to cancel subscription');
+                                }
                             }}
                             sx={{
-                                bgcolor: '#FF3B30',
+                                background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
+                                borderRadius: '12px',
+                                px: 3,
+                                py: 1.2,
+                                textTransform: 'none',
+                                fontSize: '1rem',
+                                fontWeight: 500,
                                 '&:hover': {
-                                    bgcolor: '#FF453A'
+                                    background: 'linear-gradient(135deg, #FF453A, #FF5147)'
                                 }
                             }}
                         >
@@ -848,7 +1048,7 @@ function UserProfilePage() {
                 "Basic Analytics",
                 "Standard Support"
             ],
-            buttonText: "Upgrade to Standard",
+            buttonText: "Upgrade",
             isActive: currentPlan === 'standard',
             onClick: handleStandardUpgrade,
             tier: 'standard'
@@ -863,7 +1063,7 @@ function UserProfilePage() {
                 "Advanced Analytics",
                 "Priority Support"
             ],
-            buttonText: "Upgrade to Premium",
+            buttonText: "Upgrade",
             isActive: currentPlan === 'pro',
             onClick: handlePremiumUpgrade,
             isPremium: true,
@@ -926,7 +1126,14 @@ function UserProfilePage() {
                 }
             }} />
 
-            <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+            <Container
+                maxWidth="lg"
+                sx={{
+                    position: 'relative',
+                    zIndex: 1,
+                    px: { xs: 2, sm: 3, md: 4 } // Responsive padding
+                }}
+            >
                 {showSuccess && (
                     <Box sx={{ mb: 4 }}>
                         <motion.div
@@ -952,7 +1159,7 @@ function UserProfilePage() {
                     </Box>
                 )}
 
-                <Grid container spacing={4}>
+                <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                     <Grid item xs={12} md={4}>
                         {/* Profile Card */}
                         <Paper elevation={0} sx={styles.card}>
@@ -976,7 +1183,11 @@ function UserProfilePage() {
                                         <PersonIcon sx={{ fontSize: 40, color: 'white' }} />
                                     </Avatar>
                                 </motion.div>
-                                <Typography sx={{ ...typography.heading, mb: 0.5 }}>
+                                <Typography sx={{
+                                    ...typography.heading,
+                                    mb: 0.5,
+                                    fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                                }}>
                                     {userProfile?.email}
                                 </Typography>
                                 <Typography sx={{ ...typography.caption, mb: 3 }}>
@@ -997,7 +1208,10 @@ function UserProfilePage() {
 
                     {/* Subscription Plans Section */}
                     <Grid item xs={12} md={8}>
-                        <Paper elevation={0} sx={styles.card}>
+                        <Paper elevation={0} sx={{
+                            ...styles.card,
+                            padding: { xs: '16px', sm: '20px', md: '24px' }
+                        }}>
                             <Box sx={{ p: 4 }}>
                                 <Box sx={{
                                     display: 'flex',
@@ -1013,7 +1227,11 @@ function UserProfilePage() {
                                         }}
                                     />
                                     <div>
-                                        <Typography sx={{ ...typography.heading, mb: 0.5 }}>
+                                        <Typography sx={{
+                                            ...typography.heading,
+                                            mb: 0.5,
+                                            fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                                        }}>
                                             Your Subscription
                                         </Typography>
                                         <Typography sx={typography.body}>
@@ -1022,65 +1240,123 @@ function UserProfilePage() {
                                     </div>
                                 </Box>
 
-                                <Grid container spacing={2}>
+                                <Grid
+                                    container
+                                    spacing={{ xs: 1, sm: 2 }}
+                                    justifyContent="center"
+                                    sx={{
+                                        '& .MuiGrid-item': {
+                                            width: { xs: '100%', sm: '50%', md: '33.33%' }
+                                        }
+                                    }}
+                                >
                                     {subscriptionTiers.map((tier, index) => (
-                                        <Grid item xs={12} key={index}>
+                                        <Grid item xs={12} sm={6} md={4} key={index}>
                                             <motion.div
-                                                whileHover={{ scale: 1.01 }}
-                                                transition={{ type: "spring", stiffness: 400 }}
+                                                whileHover={{ scale: 1.02 }}
+                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                             >
                                                 <Card
                                                     elevation={0}
-                                                    sx={tierCardStyles(tier.isActive, tier.isPremium)}
+                                                    sx={{
+                                                        ...tierCardStyles(tier.isActive, tier.isPremium),
+                                                        minHeight: '380px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        justifyContent: 'space-between',
+                                                        p: 2,
+                                                    }}
                                                 >
-                                                    <CardContent>
-                                                        <Grid container alignItems="center" spacing={2}>
-                                                            <Grid item xs={12} sm={4}>
-                                                                <Typography sx={{ ...typography.subheading, mb: 1 }}>
+                                                    <CardContent sx={{
+                                                        height: '100%',
+                                                        p: { xs: 1.5, sm: 2 },
+                                                        '&:last-child': { pb: { xs: 2, sm: 2 } }
+                                                    }}>
+                                                        <Grid container spacing={2}>
+                                                            {/* Title and Price */}
+                                                            <Grid item xs={12} sx={{ textAlign: 'center', mb: 1 }}>
+                                                                <Typography
+                                                                    variant="h6"
+                                                                    sx={{
+                                                                        ...typography.subheading,
+                                                                        mb: { xs: 0.5, sm: 1 },
+                                                                        fontSize: { xs: '1rem', sm: '1.1rem' }
+                                                                    }}
+                                                                >
                                                                     {tier.title}
                                                                 </Typography>
-                                                                <Typography sx={typography.heading}>
+                                                                <Typography
+                                                                    variant="h5"
+                                                                    sx={{
+                                                                        ...typography.heading,
+                                                                        fontSize: { xs: '1.5rem', sm: '1.75rem' }
+                                                                    }}
+                                                                >
                                                                     {tier.price}
                                                                 </Typography>
                                                             </Grid>
-                                                            <Grid item xs={12} sm={5}>
-                                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+
+                                                            {/* Features List */}
+                                                            <Grid item xs={12}>
+                                                                <Box sx={{
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    gap: { xs: 0.75, sm: 1 },
+                                                                    my: { xs: 0.75, sm: 1 },
+                                                                    px: { xs: 0.5, sm: 1 }
+                                                                }}>
                                                                     {tier.features.map((feature, idx) => (
-                                                                        <Box key={idx} sx={{
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            gap: 1
-                                                                        }}>
+                                                                        <Box
+                                                                            key={idx}
+                                                                            sx={{
+                                                                                display: 'flex',
+                                                                                alignItems: 'center',
+                                                                                gap: 1,
+                                                                                opacity: 0.9,
+                                                                                transition: 'opacity 0.2s ease',
+                                                                                '&:hover': {
+                                                                                    opacity: 1
+                                                                                }
+                                                                            }}
+                                                                        >
                                                                             <CheckIcon sx={{
-                                                                                fontSize: '0.9rem',
-                                                                                color: tier.isPremium ? '#00BCD4' : '#4CAF50'
+                                                                                fontSize: '1rem',
+                                                                                color: tier.isPremium ? '#00BCD4' : '#4CAF50',
+                                                                                filter: 'drop-shadow(0 0 4px rgba(0, 188, 212, 0.3))'
                                                                             }} />
-                                                                            <Typography sx={typography.body}>
+                                                                            <Typography
+                                                                                variant="body2"
+                                                                                sx={{
+                                                                                    ...typography.body,
+                                                                                    fontSize: '0.9rem',
+                                                                                    lineHeight: '1.4'
+                                                                                }}
+                                                                            >
                                                                                 {feature}
                                                                             </Typography>
                                                                         </Box>
                                                                     ))}
                                                                 </Box>
                                                             </Grid>
-                                                            <Grid item xs={12} sm={3} sx={{ textAlign: 'right' }}>
+
+                                                            {/* Button Container */}
+                                                            <Grid item xs={12} sx={{
+                                                                textAlign: 'center',
+                                                                mt: 'auto',
+                                                                pt: 1
+                                                            }}>
                                                                 {tier.isActive ? (
-                                                                    <Chip
-                                                                        label="Current Plan"
-                                                                        color="primary"
-                                                                        sx={{ fontWeight: 'bold' }}
-                                                                    />
+                                                                    <TierButton isActive={true} isPremium={tier.isPremium}>
+                                                                        Current Plan
+                                                                    </TierButton>
                                                                 ) : (
-                                                                    !shouldShowUpgradeButton(currentPlan, tier.tier) ? null : (
-                                                                        <Button
-                                                                            variant={tier.isPremium ? "contained" : "outlined"}
-                                                                            color="primary"
-                                                                            onClick={tier.onClick}
-                                                                            disabled={isProcessing}
-                                                                            sx={{ borderRadius: '50px' }}
-                                                                        >
-                                                                            {isProcessing ? 'Processing...' : tier.buttonText}
-                                                                        </Button>
-                                                                    )
+                                                                    <TierButton
+                                                                        isActive={false}
+                                                                        isPremium={tier.isPremium}
+                                                                        onClick={tier.onClick}
+                                                                    >
+                                                                        {tier.buttonText}
+                                                                    </TierButton>
                                                                 )}
                                                             </Grid>
                                                         </Grid>
@@ -1110,6 +1386,22 @@ function UserProfilePage() {
                     @keyframes rotateReverse {
                         from { transform: rotate(360deg); }
                         to { transform: rotate(0deg); }
+                    }
+                    .tier-card {
+                        transition: transform 0.3s ease, box-shadow 0.3s ease;
+                    }
+                    .tier-card:hover {
+                        transform: translateY(-4px);
+                        box-shadow: 0 6px 16px rgba(0, 188, 212, 0.4);
+                    }
+                    @media (max-width: 600px) {
+                        .tier-card {
+                            margin-bottom: 16px;
+                        }
+                        .feature-list {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                        }
                     }
                 `}
             </style>

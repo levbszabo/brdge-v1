@@ -85,6 +85,26 @@ STRIPE_PRODUCT_CURRENCY = "usd"
 # Set up logger
 logger = logging.getLogger(__name__)
 
+# Add these constants at the top of routes.py with other configurations
+SUBSCRIPTION_TIERS = {
+    "free": {"brdges_limit": 2, "minutes_limit": 30},
+    "standard": {
+        "brdges_limit": 20,
+        "minutes_limit": 120,
+        "price_id": os.getenv("STRIPE_STANDARD_PRICE_ID"),
+    },
+    "pro": {  # Premium tier
+        "brdges_limit": float("inf"),  # Unlimited
+        "minutes_limit": 300,
+        "price_id": os.getenv("STRIPE_PREMIUM_PRICE_ID"),
+    },
+    "admin": {  # Admin tier - manually assigned only
+        "brdges_limit": float("inf"),  # Unlimited
+        "minutes_limit": 1000,
+        "price_id": None,  # No price ID since this is manually assigned
+    },
+}
+
 
 @jwt_required(optional=True)
 def get_current_user():
@@ -1552,40 +1572,27 @@ def get_user_stats():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
+        # Get account type and corresponding limits
+        account_type = user.account.account_type if user.account else "free"
+        tier_limits = SUBSCRIPTION_TIERS.get(account_type, SUBSCRIPTION_TIERS["free"])
+
         # Get brdge count
         brdges_count = Brdge.query.filter_by(user_id=current_user_id).count()
 
         # Calculate total minutes from UsageLogs
         usage_logs = UsageLogs.query.filter_by(owner_id=current_user_id).all()
-        total_minutes = 0
-
-        for log in usage_logs:
-            # Only count completed logs (those with duration_minutes)
-            if log.duration_minutes is not None:
-                total_minutes += log.duration_minutes
-
-        # Round to nearest minute
-        minutes_used = round(total_minutes, 1)
-
-        app.logger.info(
-            f"User {current_user_id} stats: minutes_used={minutes_used} from {len(usage_logs)} usage logs"
-        )
-
-        # Get limit based on account type
-        limits = {"free": 2, "standard": 20, "pro": float("inf")}
-        account_type = user.account.account_type
-        limit = limits.get(account_type, 2)  # Default to 2 if unknown account type
-
-        # Get minutes limit based on account type
-        minutes_limits = {"free": 30, "standard": 120, "pro": 300}
-        minutes_limit = minutes_limits.get(account_type, 30)
+        total_minutes = sum(log.duration_minutes or 0 for log in usage_logs)
 
         response_data = {
             "brdges_created": brdges_count,
-            "brdges_limit": "Unlimited" if limit == float("inf") else str(limit),
+            "brdges_limit": (
+                "Unlimited"
+                if tier_limits["brdges_limit"] == float("inf")
+                else tier_limits["brdges_limit"]
+            ),
             "account_type": account_type,
-            "minutes_used": minutes_used,
-            "minutes_limit": minutes_limit,
+            "minutes_used": round(total_minutes, 1),
+            "minutes_limit": tier_limits["minutes_limit"],
             "usage_stats": {
                 "total_sessions": len(usage_logs),
                 "completed_sessions": len(
@@ -1597,12 +1604,12 @@ def get_user_stats():
             },
         }
 
-        app.logger.info(f"Returning stats: {response_data}")
+        logger.info(f"User stats for {current_user_id}: {response_data}")
         return jsonify(response_data)
 
     except Exception as e:
-        app.logger.error(f"Error in get_user_stats: {str(e)}")
-        return jsonify({"error": str(e)}), 400
+        logger.error(f"Error in get_user_stats: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -1614,12 +1621,14 @@ def create_checkout_session(user):
     try:
         data = request.get_json()
         tier = data.get("tier")
-        print(f"Creating checkout session for tier: {tier}")
+        logger.info(f"Creating checkout session for tier: {tier}")
 
-        # Define price IDs (move these to .env in production)
+        # Map frontend tier names to price IDs
         price_ids = {
-            "standard": os.getenv("STRIPE_STANDARD_PRICE_ID"),
-            "premium": os.getenv("STRIPE_PREMIUM_PRICE_ID"),
+            "standard": SUBSCRIPTION_TIERS["standard"]["price_id"],
+            "premium": SUBSCRIPTION_TIERS["pro"][
+                "price_id"
+            ],  # Premium maps to 'pro' in backend
         }
 
         price_id = price_ids.get(tier)
@@ -1630,7 +1639,7 @@ def create_checkout_session(user):
         user_account = UserAccount.query.filter_by(user_id=user.id).first()
 
         try:
-            # Create basic checkout session
+            # Create checkout session with metadata
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 mode="subscription",
@@ -1644,17 +1653,18 @@ def create_checkout_session(user):
                     else None
                 ),
                 allow_promotion_codes=True,
+                metadata={"user_id": user.id, "tier": tier},
             )
 
-            print(f"Checkout session created: {session.id}")
+            logger.info(f"Checkout session created: {session.id}")
             return jsonify({"url": session.url}), 200
 
         except stripe.error.StripeError as e:
-            print(f"Stripe error: {str(e)}")
+            logger.error(f"Stripe error: {str(e)}")
             return jsonify({"error": str(e)}), 400
 
     except Exception as e:
-        print(f"Error creating checkout session: {e}")
+        logger.error(f"Error creating checkout session: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -1666,97 +1676,75 @@ def verify_subscription(user):
         tier = data.get("tier")
         session_id = data.get("session_id")
 
-        print(
-            f"Starting verify_subscription - User: {user.id}, Tier: {tier}, Session: {session_id}"
+        logger.info(
+            f"Verifying subscription - User: {user.id}, Tier: {tier}, Session: {session_id}"
         )
 
         if not tier or not session_id:
-            print("Missing parameters:", {"tier": tier, "session_id": session_id})
             return jsonify({"error": "Missing required parameters"}), 400
 
         # Map frontend tier names to database account types
-        tier_mapping = {"standard": "standard", "premium": "pro"}
+        tier_mapping = {
+            "standard": "standard",
+            "premium": "pro",  # Premium tier maps to 'pro' in database
+        }
         account_type = tier_mapping.get(tier)
 
-        print(f"Mapped tier '{tier}' to account_type '{account_type}'")
-
         if not account_type:
-            print(f"Invalid tier mapping for: {tier}")
             return jsonify({"error": "Invalid subscription tier"}), 400
 
-        # Retrieve the session
+        # Retrieve and verify the session
         try:
-            print(f"Retrieving Stripe session: {session_id}")
             session = stripe.checkout.Session.retrieve(
                 session_id, expand=["subscription"]
             )
-            print(
-                "Stripe session retrieved:",
-                {
-                    "payment_status": session.payment_status,
-                    "customer": session.customer,
-                    "subscription_status": (
-                        session.subscription.status if session.subscription else None
-                    ),
-                },
+
+            # Verify session belongs to user
+            if str(user.id) != session.client_reference_id:
+                logger.error(
+                    f"Session mismatch - Session user: {session.client_reference_id}, Current user: {user.id}"
+                )
+                return jsonify({"error": "Session does not match user"}), 403
+
+            # Get or create user account
+            user_account = UserAccount.query.filter_by(user_id=user.id).first()
+            if not user_account:
+                user_account = UserAccount(user_id=user.id)
+                db.session.add(user_account)
+
+            # Update account details
+            user_account.account_type = account_type
+            user_account.stripe_customer_id = session.customer
+            user_account.stripe_subscription_id = session.subscription.id
+            user_account.subscription_status = "active"
+            user_account.last_activity = datetime.utcnow()
+            user_account.next_billing_date = datetime.fromtimestamp(
+                session.subscription.current_period_end
             )
-        except stripe.error.StripeError as e:
-            print(f"Stripe error retrieving session: {e}")
-            return jsonify({"error": "Invalid session"}), 400
 
-        # Verify session belongs to user
-        if str(user.id) != session.client_reference_id:
-            print(
-                f"Session mismatch - Session user: {session.client_reference_id}, Current user: {user.id}"
-            )
-            return jsonify({"error": "Session does not match user"}), 403
-
-        # Get or create user account
-        user_account = UserAccount.query.filter_by(user_id=user.id).first()
-        if not user_account:
-            print(f"Creating new UserAccount for user {user.id}")
-            user_account = UserAccount(user_id=user.id)
-            db.session.add(user_account)
-
-        print(f"Current account state: {user_account.to_dict()}")
-
-        # Update account details
-        user_account.account_type = account_type
-        user_account.stripe_customer_id = session.customer
-        user_account.stripe_subscription_id = session.subscription.id
-        user_account.subscription_status = "active"
-        user_account.last_activity = datetime.utcnow()
-        user_account.next_billing_date = datetime.fromtimestamp(
-            session.subscription.current_period_end
-        )
-
-        print(f"Updated account state: {user_account.to_dict()}")
-
-        try:
             db.session.commit()
-            print("Database commit successful")
-        except Exception as e:
-            db.session.rollback()
-            print(f"Database error during commit: {e}")
-            return jsonify({"error": "Database error"}), 500
+            logger.info(
+                f"Successfully updated subscription for user {user.id} to {account_type}"
+            )
 
-        # Verify the changes were saved
-        refreshed_account = UserAccount.query.filter_by(user_id=user.id).first()
-        print(f"Account after commit: {refreshed_account.to_dict()}")
+            return (
+                jsonify(
+                    {
+                        "message": "Subscription verified and updated successfully",
+                        "account": user_account.to_dict(),
+                    }
+                ),
+                200,
+            )
 
-        return (
-            jsonify(
-                {
-                    "message": "Subscription verified and updated successfully",
-                    "account": refreshed_account.to_dict(),
-                }
-            ),
-            200,
-        )
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error: {str(e)}")
+            return jsonify({"error": str(e)}), 400
 
     except Exception as e:
-        print(f"Unexpected error in verify_subscription: {e}")
-        return jsonify({"error": "Failed to verify subscription"}), 500
+        logger.error(f"Error verifying subscription: {e}")
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/cancel-subscription", methods=["POST"])
@@ -1778,52 +1766,37 @@ def cancel_subscription(user):
             user_account.account_type = "free"
             user_account.subscription_status = "canceled"
 
-            # Get all user's brdges
-            all_brdges = Brdge.query.filter_by(user_id=user.id).all()
-
-            # Keep only first two brdges
-            if len(all_brdges) > 2:
-                brdges_to_delete = all_brdges[2:]
-
-                # Delete files from S3 for each brdge
-                for brdge in brdges_to_delete:
-                    try:
-                        # List all objects in the brdge's folder
-                        s3_objects = s3_client.list_objects_v2(
-                            Bucket=S3_BUCKET, Prefix=brdge.folder
-                        )
-
-                        # Delete all objects in the folder
-                        for obj in s3_objects.get("Contents", []):
-                            s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
-
-                        # Delete brdge from database
-                        db.session.delete(brdge)
-
-                    except Exception as e:
-                        print(f"Error deleting brdge {brdge.id}: {str(e)}")
-                        continue
-
-            # Commit all changes
+            # Save changes
             db.session.commit()
 
             return (
                 jsonify(
                     {
                         "message": "Subscription canceled successfully",
-                        "brdges_kept": min(2, len(all_brdges)),
-                        "brdges_deleted": max(0, len(all_brdges) - 2),
+                        "details": {
+                            "message": "Your subscription has been canceled. While your brdges will remain in your account, they will be inactive until you reactivate your subscription.",
+                            "effective_date": (
+                                datetime.fromtimestamp(
+                                    subscription.cancel_at
+                                ).isoformat()
+                                if subscription.cancel_at
+                                else None
+                            ),
+                            "current_period_end": datetime.fromtimestamp(
+                                subscription.current_period_end
+                            ).isoformat(),
+                        },
                     }
                 ),
                 200,
             )
 
         except stripe.error.StripeError as e:
-            print(f"Stripe error: {str(e)}")
+            logger.error(f"Stripe error: {str(e)}")
             return jsonify({"error": "Failed to cancel subscription with Stripe"}), 400
 
     except Exception as e:
-        print(f"Error canceling subscription: {str(e)}")
+        logger.error(f"Error canceling subscription: {str(e)}")
         db.session.rollback()
         return jsonify({"error": "Failed to cancel subscription"}), 500
 
