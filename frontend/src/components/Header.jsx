@@ -31,9 +31,6 @@ function Header() {
     const [userEmail, setUserEmail] = useState('');
 
     useEffect(() => {
-        // Add this console log to debug
-        console.log('Auth token:', localStorage.getItem('token'));
-
         if (isAuthenticated) {
             api.get('/user/profile')
                 .then(response => {

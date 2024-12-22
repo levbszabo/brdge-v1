@@ -46,8 +46,6 @@ function SignUpPage() {
 
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
-            console.log('Received Google sign-in response');
-
             if (!credentialResponse.credential) {
                 setError('No credentials received from Google');
                 return;
@@ -56,8 +54,6 @@ function SignUpPage() {
             const response = await api.post('/auth/google', {
                 credential: credentialResponse.credential
             });
-
-            console.log('Google authentication completed:', response.status === 200 ? 'success' : 'failed');
 
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);

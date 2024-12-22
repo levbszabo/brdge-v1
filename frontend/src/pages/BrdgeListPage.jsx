@@ -600,7 +600,7 @@ function BrdgeListPage() {
                         <motion.div
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            style={{ position: 'relative', zIndex: 2 }}
+                            style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '280px', margin: '0 auto' }}
                         >
                             {isOverLimit() ? (
                                 <Button
@@ -608,6 +608,9 @@ function BrdgeListPage() {
                                     onClick={() => navigate('/profile')}
                                     startIcon={<AddIcon />}
                                     sx={{
+                                        width: { xs: '100%', sm: 'auto' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
                                         bgcolor: '#4F9CF9',
                                         color: 'white',
                                         px: 3,
@@ -629,6 +632,9 @@ function BrdgeListPage() {
                                     onClick={() => navigate('/create')}
                                     startIcon={<AddIcon />}
                                     sx={{
+                                        width: { xs: '100%', sm: 'auto' },
+                                        display: 'flex',
+                                        justifyContent: 'center',
                                         bgcolor: '#4F9CF9',
                                         color: 'white',
                                         px: 3,

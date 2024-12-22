@@ -36,11 +36,9 @@ function LoginPage() {
 
     const handleGoogleSuccess = async (response) => {
         try {
-            console.log('Google response:', response);
             const result = await api.post('/auth/google', {
                 credential: response.credential
             });
-            console.log('Backend response:', result);
 
             if (result.data.access_token) {
                 localStorage.setItem('token', result.data.access_token);
