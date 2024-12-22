@@ -156,13 +156,15 @@ function CreateBrdgePage() {
                             color: 'white',
                             textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
                             textTransform: 'capitalize',
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3.75rem' },
+                            position: 'relative',
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
                                 bottom: '-10px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '60px',
+                                width: { xs: '40px', sm: '60px' },
                                 height: '4px',
                                 background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
                                 borderRadius: '2px'
@@ -172,7 +174,7 @@ function CreateBrdgePage() {
                         </Typography>
                     </motion.div>
                     <Paper elevation={3} sx={{
-                        p: 4,
+                        p: { xs: 2, sm: 3, md: 4 },
                         borderRadius: 2,
                         backgroundColor: 'rgba(255, 255, 255, 0.02)',
                         backdropFilter: 'blur(20px)',
@@ -260,7 +262,7 @@ function CreateBrdgePage() {
 
                                 <Box sx={{
                                     mt: 3,
-                                    p: 3,
+                                    p: { xs: 2, sm: 3 },
                                     borderRadius: 2,
                                     bgcolor: 'rgba(79, 156, 249, 0.05)',
                                     border: '1px solid rgba(79, 156, 249, 0.1)'
@@ -269,13 +271,14 @@ function CreateBrdgePage() {
                                         variant="body2"
                                         sx={{
                                             color: 'rgba(255, 255, 255, 0.9)',
-                                            fontSize: '0.9rem',
+                                            fontSize: { xs: '0.8rem', sm: '0.9rem' },
                                             fontWeight: 500,
                                             mb: 2,
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            gap: 1
+                                            gap: 1,
+                                            textAlign: 'center'
                                         }}
                                     >
                                         <span style={{ opacity: 0.9 }}>📄</span>
@@ -285,10 +288,11 @@ function CreateBrdgePage() {
                                     <Box sx={{
                                         display: 'flex',
                                         justifyContent: 'center',
-                                        gap: 4,
+                                        gap: { xs: 2, sm: 4 },
                                         mb: 2,
                                         color: 'rgba(255, 255, 255, 0.7)',
-                                        fontSize: '0.85rem',
+                                        fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                                        flexWrap: 'wrap',
                                     }}>
                                         <span>📊 Presentations</span>
                                         <span>📝 Documents</span>
@@ -321,8 +325,8 @@ function CreateBrdgePage() {
                                     fullWidth
                                     disabled={loading}
                                     sx={{
-                                        py: 1.5,
-                                        fontSize: '1.1rem',
+                                        py: { xs: 1.2, sm: 1.5 },
+                                        fontSize: { xs: '1rem', sm: '1.1rem' },
                                         borderRadius: '50px',
                                         background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
                                         fontWeight: '600',

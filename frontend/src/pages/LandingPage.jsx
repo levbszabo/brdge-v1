@@ -45,7 +45,7 @@ const IntroducingBrdgeAI = () => {
 
     return (
         <Box sx={{
-            pt: { xs: 0, sm: 2, md: 2 },
+            pt: { xs: 0, sm: 0, md: 0 },
             pb: { xs: 2, sm: 3, md: 4 },
             px: { xs: 2, sm: 2, md: 3 },
             position: 'relative',
@@ -75,7 +75,10 @@ const IntroducingBrdgeAI = () => {
                 animation: 'float 20s infinite alternate-reverse'
             }
         }}>
-            <Container maxWidth="lg" ref={ref} sx={{ px: { xs: 2, sm: 2, md: 3 }, mx: 'auto' }}>
+            <Container maxWidth="lg" ref={ref} sx={{
+                px: { xs: 0, sm: 3, md: 4 },
+                mt: { xs: 0, sm: 2, md: 0 }
+            }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -85,7 +88,7 @@ const IntroducingBrdgeAI = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
-                        mb: { xs: 3, sm: 4, md: 5 },
+                        mb: { xs: 3, sm: 4, md: 6 },
                         textTransform: 'capitalize',
                         textShadow: '0 0 20px rgba(255,255,255,0.4)',
                         letterSpacing: '0.02em',
@@ -106,29 +109,54 @@ const IntroducingBrdgeAI = () => {
                         Redefining Knowledge Sharing
                     </Typography>
 
-                    <Grid container spacing={{ xs: 2, md: 8 }} alignItems="center">
-                        <Grid item xs={12} md={6}>
+                    <Grid container spacing={{ xs: 0, sm: 2, md: 4 }}
+                        alignItems={{ xs: 'center', md: 'flex-start' }}
+                        sx={{
+                            mx: { xs: 0, sm: -2, md: -3 },
+                            px: { xs: 0, sm: 2, md: 3 },
+                            width: '100vw',
+                            position: { xs: 'relative', sm: 'static' },
+                            left: { xs: '50%', sm: 'auto' },
+                            transform: { xs: 'translateX(-50%)', sm: 'none' },
+                            mt: { xs: 0, sm: -2, md: 0 }
+                        }}>
+                        <Grid item xs={12} md={7} sx={{
+                            mt: { md: 5 }
+                        }}>
                             <motion.div
                                 initial={{ opacity: 0, x: -50 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}
                                 transition={{ duration: 0.8 }}
+                                sx={{
+                                    maxWidth: '100vw',
+                                    ml: { md: -4 },
+                                    px: { xs: 0, sm: 2 },
+                                    mx: { xs: 0, sm: 'auto' },
+                                }}
                             >
                                 <Box sx={{
                                     position: 'relative',
                                     width: '100%',
-                                    maxWidth: '900px',
+                                    maxWidth: { xs: '100vw', sm: '1000px' },
                                     margin: '0 auto',
-                                    borderRadius: '10px',
+                                    borderRadius: { xs: '4px', sm: '10px' },
                                     overflow: 'hidden',
                                     bgcolor: 'rgba(2, 6, 23, 0.2)',
                                     backdropFilter: 'blur(10px)',
-                                    boxShadow: `
-                                        0 8px 32px rgba(0, 0, 0, 0.2),
-                                        0 0 40px rgba(0, 180, 219, 0.15),
-                                        inset 0 0 30px rgba(0, 180, 219, 0.1)
-                                    `,
-                                    mb: { xs: 1, md: 0 },
-                                    height: { xs: '250px', sm: '300px', md: '350px' },
+                                    boxShadow: {
+                                        xs: 'none',
+                                        sm: `
+                                            0 8px 32px rgba(0, 0, 0, 0.2),
+                                            0 0 40px rgba(0, 180, 219, 0.15),
+                                            inset 0 0 30px rgba(0, 180, 219, 0.1)
+                                        `
+                                    },
+                                    mb: { xs: 0, md: 0 },
+                                    '&::before': {
+                                        content: '""',
+                                        display: 'block',
+                                        paddingTop: '56.25%',
+                                    },
                                 }}>
                                     <video
                                         autoPlay
@@ -141,8 +169,9 @@ const IntroducingBrdgeAI = () => {
                                             left: '0',
                                             width: '100%',
                                             height: '100%',
-                                            objectFit: 'cover',
-                                            padding: '0',
+                                            objectFit: 'contain',
+                                            padding: 0,
+                                            backgroundColor: 'rgba(2, 6, 23, 0.2)',
                                         }}
                                     >
                                         <source src={demoVideo} type="video/mp4" />
@@ -152,7 +181,11 @@ const IntroducingBrdgeAI = () => {
                             </motion.div>
                         </Grid>
 
-                        <Grid item xs={12} md={6} sx={{ pl: { md: 6 }, mt: { xs: 1, md: 0 } }}>
+                        <Grid item xs={12} md={5} sx={{
+                            pl: { md: 4 },
+                            mt: { xs: 3, md: 0 },
+                            px: { xs: 3, sm: 2 },
+                        }}>
                             <motion.div
                                 initial={{ opacity: 0, x: 50 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}
