@@ -2019,7 +2019,7 @@ def generate_slide_scripts(brdge_id):
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
+                temperature=0.1,
                 response_format={"type": "json_object"},
             )
 
