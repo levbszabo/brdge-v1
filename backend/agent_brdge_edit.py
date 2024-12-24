@@ -444,7 +444,7 @@ class ViewerAgent(VoicePipelineAgent):
             vad=vad,
             stt=deepgram.STT(),
             llm=openai.LLM(model="gpt-4o"),
-            tts=cartesia.TTS(voice=voice_id),
+            tts=cartesia.TTS(model="sonic", voice=voice_id),
             chat_ctx=llm.ChatContext().append(
                 role="system",
                 text=view_system_prompt.format(
@@ -464,7 +464,7 @@ class ViewerAgent(VoicePipelineAgent):
             """Track when agent starts speaking"""
             self.current_speech = {
                 "started_at": datetime.utcnow(),
-                "message": None, 
+                "message": None,
                 "was_interrupted": False,
             }
 
