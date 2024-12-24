@@ -1957,6 +1957,7 @@ def generate_slide_scripts(brdge_id):
 
         Note: The agent should feel like having a conversation with the actual presenter, 
         maintaining their personality while delivering structured content.
+        Note: You must provide exactly {num_slides} scripts and agents in the JSON format
 
         Present the results in this JSON format:
         {{
@@ -1990,7 +1991,20 @@ def generate_slide_scripts(brdge_id):
                      - Address concerns using her problem-solving approach
                      - Close with her action-oriented next steps"
           }},
-          ...
+          "2": {{
+            "script": "Now that we've covered the basics, let's dive into some specific techniques our team uses. I find that having a structured approach while staying flexible is key to successful project delivery.",
+            "agent": "Agent Mode: Internal Training Agent   
+                     
+                     Identity:
+                     - Demonstrates Sarah's detail-oriented approach
+                     - Emphasizes practical implementation steps
+                     - Balances structure with adaptability
+                     
+                     Knowledge Base:
+                     - Specific project management techniques
+                     - Implementation strategies and best practices
+                     - Common pitfalls and solutions
+          }}
         }}
 
         -----------Conversation Transcript-----------
