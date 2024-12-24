@@ -442,7 +442,7 @@ class ViewerAgent(VoicePipelineAgent):
 
         super().__init__(
             vad=vad,
-            stt=deepgram.STT(),
+            stt=deepgram.STT(model="nova-2-conversationalai"),
             llm=openai.LLM(model="gpt-4o"),
             tts=cartesia.TTS(model="sonic", voice=voice_id),
             chat_ctx=llm.ChatContext().append(
@@ -451,6 +451,7 @@ class ViewerAgent(VoicePipelineAgent):
                     entire_script=json.dumps(self.scripts, indent=2)
                 ),
             ),
+            preemptive_synthesis=True,
         )
 
         # Set up event handlers
@@ -707,12 +708,13 @@ class EditAgent(VoicePipelineAgent):
         # Get voice ID from database
         voice_id = get_brdge_voice_id(brdge_id, self.api_base_url)
         logger.info(f"Using voice ID for EditAgent: {voice_id}")
-
         super().__init__(
             vad=vad,
-            stt=deepgram.STT(),
-            llm=openai.LLM(model="gpt-4o", temperature=0.2),
-            tts=cartesia.TTS(voice=voice_id),
+            stt=deepgram.STT(model="nova-2-conversationalai"),
+            llm=openai.LLM(model="gpt-4o"),
+            tts=cartesia.TTS(
+                model="sonic", voice="8c030da1-fcf4-49a5-b20f-9e116156ded4"
+            ),
             chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
             interrupt_speech_duration=0.1,
         )
