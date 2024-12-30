@@ -75,7 +75,7 @@ const demos = [
         description: 'Centralize company knowledge and empower teams to self-serve answers.',
         value: 'Eliminate unnecessary meetings and reduce chat overload.',
         icon: <MenuBook />,
-        url: 'https://brdge-ai.com/viewBrdge/145'
+        url: 'https://brdge-ai.com/viewBrdge/173'
     },
     {
         id: 4,

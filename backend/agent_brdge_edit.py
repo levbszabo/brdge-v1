@@ -717,6 +717,7 @@ class EditAgent(VoicePipelineAgent):
             ),
             chat_ctx=llm.ChatContext().append(role="system", text=edit_agent_prompt),
             interrupt_speech_duration=0.1,
+            preemptive_synthesis=True,
         )
 
         # Set up event handlers
