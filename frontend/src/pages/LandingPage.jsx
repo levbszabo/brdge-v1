@@ -28,6 +28,7 @@ import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 import { useInView } from 'react-intersection-observer';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import demoVideo from '../assets/brdge-demo2.mp4';
+import logo from '../assets/new-img.png';
 import './LandingPage.css';
 
 // The user requested no errors, clear messaging, strong visuals, and good mobile rendering.
@@ -96,17 +97,17 @@ const IntroducingBrdgeAI = () => {
                         '&::after': {
                             content: '""',
                             position: 'absolute',
-                            bottom: '-16px',
+                            bottom: '-12px',
                             left: '50%',
                             transform: 'translateX(-50%)',
                             width: '80px',
-                            height: '4px',
+                            height: '3px',
                             background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
                             borderRadius: '2px',
-                            boxShadow: '0 2px 10px rgba(255,255,255,0.2)'
+                            boxShadow: '0 2px 8px rgba(255,255,255,0.2)'
                         }
                     }}>
-                        Redefining Knowledge Sharing
+                        Real Impact Across Industries
                     </Typography>
 
                     <Grid container spacing={{ xs: 0, sm: 2, md: 4 }}
@@ -437,7 +438,7 @@ const IntroducingBrdgeAI = () => {
                                 width: { xs: '100%', sm: 'auto' },
                                 fontSize: { xs: '1rem', sm: '1.1rem' },
                                 fontWeight: 600,
-                                borderRadius: '100px',
+                                borderRadius: '50px',
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
@@ -510,6 +511,134 @@ const IntroducingBrdgeAI = () => {
                         0% { transform: scale(1); opacity: 1; }
                         100% { transform: scale(1.3); opacity: 0; }
                     }
+
+                    @keyframes pulseGlow {
+                        0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.6; }
+                        50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.8; }
+                        100% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.6; }
+                    }
+
+                    @keyframes rotate {
+                        0% { transform: translate(-50%, -50%) rotate(0deg); }
+                        100% { transform: translate(-50%, -50%) rotate(360deg); }
+                    }
+
+                    @keyframes float {
+                        0% { transform: translateY(0px) translateZ(0); }
+                        50% { transform: translateY(-10px) translateZ(0); }
+                        100% { transform: translateY(0px) translateZ(0); }
+                    }
+
+                    @keyframes electricGlow {
+                        0% { opacity: 0.8; filter: brightness(1); }
+                        5% { opacity: 1; filter: brightness(1.2); }
+                        10% { opacity: 0.8; filter: brightness(1); }
+                        15% { opacity: 1; filter: brightness(1.1); }
+                        20% { opacity: 0.8; filter: brightness(1); }
+                        100% { opacity: 0.8; filter: brightness(1); }
+                    }
+
+                    @keyframes breathe {
+                        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+                        50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+                    }
+
+                    @keyframes breatheAndGlow {
+                        0%, 100% { 
+                            transform: translate(-50%, -50%) scale(0.95);
+                            opacity: 0.6;
+                            filter: blur(10px) brightness(1);
+                        }
+                        50% { 
+                            transform: translate(-50%, -50%) scale(1.05);
+                            opacity: 0.8;
+                            filter: blur(15px) brightness(1.2);
+                        }
+                    }
+
+                    @keyframes rotateAndPulse {
+                        0% { 
+                            transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                            border-color: rgba(255, 255, 255, 0.2);
+                        }
+                        50% { 
+                            transform: translate(-50%, -50%) rotate(180deg) scale(1.05);
+                            border-color: rgba(0, 255, 204, 0.3);
+                        }
+                        100% { 
+                            transform: translate(-50%, -50%) rotate(360deg) scale(1);
+                            border-color: rgba(255, 255, 255, 0.2);
+                        }
+                    }
+
+                    @keyframes floatAndGlow {
+                        0%, 100% { 
+                            transform: translateY(0px) translateZ(0);
+                            filter: drop-shadow(0 0 20px rgba(0, 255, 204, 0.3)) brightness(1);
+                        }
+                        50% { 
+                            transform: translateY(-10px) translateZ(0);
+                            filter: drop-shadow(0 0 30px rgba(0, 255, 204, 0.4)) brightness(1.1);
+                        }
+                    }
+
+                    @keyframes electricPulse {
+                        0%, 100% { opacity: 0.8; filter: brightness(1); }
+                        50% { opacity: 1; filter: brightness(1.2); }
+                    }
+
+                    @keyframes sparkle {
+                        0% { opacity: 0; height: 15px; }
+                        50% { opacity: 0.8; height: 25px; }
+                        100% { opacity: 0; height: 15px; }
+                    }
+
+                    @keyframes breatheAndGlow {
+                        0%, 100% { 
+                            transform: translate(-50%, -50%) scale(0.98);
+                            opacity: 0.6;
+                            filter: blur(8px) brightness(1);
+                        }
+                        50% { 
+                            transform: translate(-50%, -50%) scale(1.02);
+                            opacity: 0.8;
+                            filter: blur(12px) brightness(1.3);
+                        }
+                    }
+
+                    @keyframes rotateAndPulse {
+                        0% { 
+                            transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                            border-color: rgba(0, 255, 204, 0.2);
+                            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+                        }
+                        50% { 
+                            transform: translate(-50%, -50%) rotate(180deg) scale(1.02);
+                            border-color: rgba(0, 255, 204, 0.4);
+                            box-shadow: 0 0 25px rgba(0, 255, 204, 0.4);
+                        }
+                        100% { 
+                            transform: translate(-50%, -50%) rotate(360deg) scale(1);
+                            border-color: rgba(0, 255, 204, 0.2);
+                            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+                        }
+                    }
+
+                    @keyframes floatAndGlow {
+                        0%, 100% { 
+                            transform: translateY(0px) translateZ(0);
+                            filter: drop-shadow(0 0 15px rgba(0, 255, 204, 0.3)) brightness(1);
+                        }
+                        50% { 
+                            transform: translateY(-8px) translateZ(0);
+                            filter: drop-shadow(0 0 25px rgba(0, 255, 204, 0.5)) brightness(1.2);
+                        }
+                    }
+
+                    @keyframes electricPulse {
+                        0%, 100% { opacity: 0.6; filter: brightness(1); }
+                        50% { opacity: 1; filter: brightness(1.3); }
+                    }
                 `}
             </style>
         </Box>
@@ -541,12 +670,12 @@ const HeroSection = () => {
 
     return (
         <Box sx={{
-            minHeight: '100vh',
+            minHeight: '90vh',
             width: '100vw',
             position: 'relative',
             display: 'flex',
             alignItems: 'center',
-            background: 'linear-gradient(180deg, #000000 0%, #000C1F 35%, #0041C2 70%, #00B4DB 100%)',
+            background: 'transparent',
             color: 'white',
             overflow: 'hidden',
             marginLeft: 'calc(-50vw + 50%)',
@@ -558,8 +687,10 @@ const HeroSection = () => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'radial-gradient(circle at 30% 40%, rgba(0,65,194,0.4) 0%, transparent 60%)',
-                pointerEvents: 'none'
+                background: 'radial-gradient(circle at 50% 30%, rgba(0,65,194,0.4) 0%, transparent 80%)',
+                pointerEvents: 'none',
+                opacity: 0.9,
+                mixBlendMode: 'soft-light'
             },
             px: { xs: 2, sm: 0 },
         }}>
@@ -569,8 +700,9 @@ const HeroSection = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                mt: { xs: 4, sm: 8 },
-                px: { xs: 3, sm: 3, md: 4 },
+                mt: { xs: 4, sm: 6, md: 8 },
+                mb: { xs: 4, sm: 6, md: 8 },
+                px: { xs: 2, sm: 3, md: 4 },
                 width: '100%',
                 mx: 'auto',
             }}>
@@ -585,68 +717,154 @@ const HeroSection = () => {
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        mb: { xs: 4, sm: 5, md: 6 },
+                        mb: { xs: 6, sm: 8, md: 10 },
                         cursor: 'pointer',
                         position: 'relative',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '120%',
+                            height: '120%',
+                            background: 'radial-gradient(circle, rgba(0, 255, 204, 0.15) 0%, transparent 70%)',
+                            animation: 'breathe 4s ease-in-out infinite',
+                            zIndex: 0,
+                        },
                         '&::after': {
                             content: '"Click to chat"',
                             position: 'absolute',
                             bottom: '-35px',
                             left: '50%',
                             transform: 'translateX(-50%) translateY(10px)',
-                            backgroundColor: 'rgba(0, 255, 204, 0.1)',
+                            background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 180, 219, 0.1))',
                             backdropFilter: 'blur(10px)',
-                            padding: '10px 20px',
+                            padding: '12px 24px',
                             borderRadius: '24px',
                             fontSize: '0.95rem',
                             color: '#00ffcc',
                             whiteSpace: 'nowrap',
                             opacity: 0,
                             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                            boxShadow: '0 4px 20px rgba(0, 255, 204, 0.2)',
+                            boxShadow: `
+                                0 4px 20px rgba(0, 255, 204, 0.2),
+                                inset 0 0 20px rgba(0, 255, 204, 0.1)
+                            `,
                             border: '1px solid rgba(0, 255, 204, 0.3)',
-                            zIndex: 10
+                            zIndex: 10,
+                            letterSpacing: '0.5px',
+                            fontWeight: 500,
                         },
                         '&:hover::after': {
                             opacity: 1,
                             transform: 'translateX(-50%) translateY(0)',
-                            boxShadow: '0 6px 30px rgba(0, 255, 204, 0.3)',
-                        },
-                        '&:hover .logo-icon': {
-                            filter: 'drop-shadow(0 0 40px rgba(0, 255, 204, 0.8))',
-                            transform: 'scale(1.05)',
-                        },
-                        '&:active .logo-icon': {
-                            transform: 'scale(0.95)',
+                            boxShadow: `
+                                0 6px 30px rgba(0, 255, 204, 0.3),
+                                inset 0 0 30px rgba(0, 255, 204, 0.2)
+                            `,
                         }
                     }}
                     onMouseMove={handleMouseMove}
                 >
                     <motion.div
                         animate={iconAnimation}
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.05, rotate: 2 }}
                         whileTap={{ scale: 0.95 }}
-                        className="logo-icon"
                         style={{
+                            width: '100%',
+                            height: '100%',
+                            position: 'relative',
                             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                         }}
                     >
-                        <Box className="logo-icon" sx={{ position: 'relative' }}>
-                            <Psychology sx={{
-                                fontSize: '120px',
-                                color: 'white',
-                                filter: 'drop-shadow(0 0 20px rgba(0, 255, 204, 0.5))',
-                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                            }} />
-                            <GraphicEq sx={{
-                                fontSize: '40px',
-                                color: '#00ffcc',
-                                position: 'absolute',
-                                bottom: -10,
-                                right: -10,
-                                filter: 'drop-shadow(0 0 15px rgba(0, 255, 204, 0.6))',
-                                animation: 'pulse 2s infinite',
-                            }} />
+                        <Box
+                            sx={{
+                                position: 'relative',
+                                width: '100%',
+                                height: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    width: '88%',
+                                    height: '88%',
+                                    borderRadius: '50%',
+                                    background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
+                                    filter: 'blur(8px)',
+                                    animation: 'breatheAndGlow 4s infinite ease-in-out',
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    width: '86%',
+                                    height: '86%',
+                                    borderRadius: '50%',
+                                    border: '2px solid rgba(0, 255, 204, 0.3)',
+                                    boxShadow: `
+                                        0 0 15px rgba(0, 255, 204, 0.3),
+                                        inset 0 0 15px rgba(0, 255, 204, 0.2),
+                                        0 0 30px rgba(0, 255, 204, 0.2),
+                                        inset 0 0 30px rgba(0, 255, 204, 0.1)
+                                    `,
+                                    animation: 'rotateAndPulse 10s linear infinite',
+                                },
+                                '& .spark': {
+                                    position: 'absolute',
+                                    width: '2px',
+                                    height: '20px',
+                                    background: 'linear-gradient(to bottom, transparent, #00ffcc, transparent)',
+                                    animation: 'sparkle 1.5s infinite',
+                                    opacity: 0,
+                                },
+                                '& .spark1': { transform: 'rotate(0deg) translateY(-45px)', animationDelay: '0s' },
+                                '& .spark2': { transform: 'rotate(45deg) translateY(-45px)', animationDelay: '0.2s' },
+                                '& .spark3': { transform: 'rotate(90deg) translateY(-45px)', animationDelay: '0.4s' },
+                                '& .spark4': { transform: 'rotate(135deg) translateY(-45px)', animationDelay: '0.6s' },
+                                '& .spark5': { transform: 'rotate(180deg) translateY(-45px)', animationDelay: '0.8s' },
+                                '& .spark6': { transform: 'rotate(225deg) translateY(-45px)', animationDelay: '1.0s' },
+                                '& .spark7': { transform: 'rotate(270deg) translateY(-45px)', animationDelay: '1.2s' },
+                                '& .spark8': { transform: 'rotate(315deg) translateY(-45px)', animationDelay: '1.4s' },
+                            }}
+                        >
+                            {[...Array(8)].map((_, i) => (
+                                <div key={i} className={`spark spark${i + 1}`} />
+                            ))}
+                            <Box
+                                component="img"
+                                src={logo}
+                                alt="Brdge Logo"
+                                sx={{
+                                    width: '82%',
+                                    height: '82%',
+                                    objectFit: 'contain',
+                                    filter: `
+                                        drop-shadow(0 0 15px rgba(0, 255, 204, 0.4))
+                                        drop-shadow(0 0 30px rgba(0, 255, 204, 0.3))
+                                        brightness(1.1)
+                                    `,
+                                    transition: 'all 0.4s ease',
+                                    transform: 'translateZ(0)',
+                                    animation: 'floatAndGlow 6s ease-in-out infinite',
+                                    position: 'relative',
+                                    zIndex: 2,
+                                    '&:hover': {
+                                        filter: `
+                                            drop-shadow(0 0 25px rgba(0, 255, 204, 0.6))
+                                            drop-shadow(0 0 50px rgba(0, 255, 204, 0.4))
+                                            brightness(1.2)
+                                        `,
+                                    },
+                                }}
+                            />
                         </Box>
                     </motion.div>
                 </Box>
@@ -655,30 +873,47 @@ const HeroSection = () => {
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 1 }}
+                    style={{
+                        width: '100%',
+                        maxWidth: '1200px',
+                        padding: '0 16px',
+                    }}
                 >
                     <Typography
                         variant="h1"
                         align="center"
                         sx={{
-                            mb: { xs: 3, sm: 4, md: 5 },
-                            fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3.25rem' },
-                            lineHeight: 1.3,
+                            mb: { xs: 4, sm: 5, md: 6 },
+                            fontSize: { xs: '2.25rem', sm: '3.25rem', md: '3.75rem' },
+                            lineHeight: { xs: 1.25, sm: 1.2 },
                             fontWeight: 600,
                             textTransform: 'none',
-                            letterSpacing: '-0.01em',
+                            letterSpacing: '-0.02em',
                             mx: 'auto',
-                            maxWidth: { xs: '100%', sm: '85%', md: '75%' },
+                            maxWidth: { xs: '100%', sm: '85%', md: '80%' },
                             color: 'white',
-                            textShadow: '0 2px 20px rgba(0, 180, 219, 0.15)'
+                            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+                            position: 'relative',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: '-24px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '120px',
+                                height: '4px',
+                                background: 'linear-gradient(90deg, rgba(0,255,204,0.3), rgba(0,180,219,0.3))',
+                                borderRadius: '2px',
+                            }
                         }}
                     >
-                        Turn Your Expertise Into a Voice-Driven AI Assistant
+                        <strong>Speak Through AI</strong>
                         <Box
                             component="span"
                             sx={{
                                 display: 'block',
-                                mt: { xs: 1, sm: 2 },
-                                fontSize: { xs: '1.5rem', sm: '2rem', md: '2.75rem' },
+                                mt: { xs: 2, sm: 3 },
+                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.25rem' },
                                 fontWeight: 500,
                                 color: 'white',
                                 textShadow: `
@@ -690,38 +925,39 @@ const HeroSection = () => {
                                 opacity: 0.95
                             }}
                         >
-                            <strong>Always Ready, Always On</strong>
+                            <strong>Your Knowledge, Your Voice</strong>
                         </Box>
                     </Typography>
                     <Typography
                         variant="h5"
                         align="center"
                         sx={{
-                            mt: { xs: 3, sm: 4 },
-                            mb: { xs: 6, sm: 8, md: 10 },
-                            maxWidth: '700px',
+                            mt: { xs: 6, sm: 8 },
+                            mb: { xs: 8, sm: 10, md: 12 },
+                            maxWidth: '800px',
                             mx: 'auto',
-                            opacity: 0.85,
-                            fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                            opacity: 0.9,
+                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
                             fontWeight: 400,
-                            lineHeight: 1.8,
-                            px: { xs: 2, sm: 4 },
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            letterSpacing: '0.01em'
+                            lineHeight: 1.75,
+                            px: { xs: 3, sm: 4 },
+                            color: 'rgba(255, 255, 255, 0.95)',
+                            letterSpacing: '0.01em',
+                            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
                         }}
                     >
-                        Upload your docs and presentations, then let Brdge AI deliver them in your own voice—instantly answering questions, eliminating repetitive calls, and scaling your impact around the clock.
+                        Make your content come alive, turning your documents and presentations into an always-on voice assistant that sounds exactly like you.
+                        Brdge AI presents on your behalf, letting you focus on what truly matters.
                     </Typography>
 
                     <Box sx={{
                         display: 'flex',
-                        gap: { xs: 2, sm: 3 },
+                        gap: { xs: 3, sm: 4 },
                         justifyContent: 'center',
                         flexDirection: { xs: 'column', sm: 'row' },
                         width: { xs: '100%', sm: 'auto' },
-                        px: { xs: 3, sm: 0 },
-                        mx: 'auto',
-                        maxWidth: { xs: '320px', sm: 'none' }
+                        maxWidth: { xs: '320px', sm: 'none' },
+                        mb: { xs: 8, sm: 10, md: 12 }
                     }}>
                         <motion.div
                             whileHover={{ scale: 1.05 }}
@@ -735,15 +971,17 @@ const HeroSection = () => {
                                 sx={{
                                     bgcolor: 'white',
                                     color: '#0041C2',
-                                    px: { xs: 4, md: 6 },
-                                    py: { xs: 1.5, md: 2 },
-                                    fontSize: { xs: '1rem', md: '1.2rem' },
+                                    px: { xs: 6, md: 8 },
+                                    py: { xs: 2, md: 2.5 },
+                                    fontSize: { xs: '1.1rem', md: '1.25rem' },
                                     fontWeight: 600,
                                     borderRadius: '50px',
-                                    boxShadow: '0 0 20px rgba(255,255,255,0.3)',
+                                    boxShadow: '0 0 20px rgba(255,255,255,0.15)',
                                     width: { xs: '100%', sm: 'auto' },
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'none',
                                     '&:hover': {
-                                        bgcolor: 'rgba(255,255,255,0.9)',
+                                        bgcolor: 'rgba(255,255,255,0.95)',
                                         boxShadow: '0 0 30px rgba(255,255,255,0.5)'
                                     }
                                 }}
@@ -764,12 +1002,15 @@ const HeroSection = () => {
                                     color: 'white',
                                     borderColor: 'rgba(255,255,255,0.5)',
                                     borderWidth: '2px',
-                                    px: { xs: 4, md: 6 },
-                                    py: { xs: 1.5, md: 2 },
-                                    fontSize: { xs: '1rem', md: '1.2rem' },
+                                    px: { xs: 6, md: 8 },
+                                    py: { xs: 2, md: 2.5 },
+                                    fontSize: { xs: '1.1rem', md: '1.25rem' },
                                     fontWeight: 600,
                                     borderRadius: '50px',
                                     width: { xs: '100%', sm: 'auto' },
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'none',
+                                    backdropFilter: 'blur(10px)',
                                     '&:hover': {
                                         borderColor: 'white',
                                         bgcolor: 'rgba(255,255,255,0.1)',
@@ -788,8 +1029,8 @@ const HeroSection = () => {
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: 2,
-                    mt: { xs: 3, sm: 8 },
-                    mb: { xs: 3, sm: 4 }, // Added bottom margin
+                    mt: { xs: 4, sm: 6 },
+                    mb: { xs: 4, sm: 6 },
                     color: 'rgba(255,255,255,0.8)',
                     textTransform: 'uppercase',
                 }}>
@@ -804,7 +1045,7 @@ const HeroSection = () => {
                     </Typography>
                     <motion.div
                         animate={{
-                            y: [0, 15, 0], // Increased animation range
+                            y: [0, 15, 0],
                         }}
                         transition={{
                             duration: 2,
@@ -812,7 +1053,7 @@ const HeroSection = () => {
                             ease: "easeInOut"
                         }}
                         style={{
-                            paddingBottom: '20px' // Added padding to contain animation
+                            paddingBottom: '20px'
                         }}
                     >
                         <ArrowDownward sx={{
@@ -877,13 +1118,15 @@ const HowItWorksSection = () => {
     ];
 
     return (
-        <Box sx={{
-            pt: { xs: 2, sm: 4, md: 6 },
-            pb: { xs: 4, sm: 6, md: 6 },
-            px: { xs: 2, sm: 2, md: 2 },
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
+        <Box
+            sx={{
+                pt: { xs: 4, sm: 6, md: 8 },
+                pb: { xs: 4, sm: 6, md: 8 },
+                px: { xs: 2, sm: 4, md: 6 },
+                position: 'relative',
+                overflow: 'hidden'
+            }}
+        >
             <Container maxWidth="lg" ref={ref}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -896,20 +1139,20 @@ const HowItWorksSection = () => {
                         color: 'white',
                         mb: { xs: 4, sm: 5, md: 6 },
                         textTransform: 'capitalize',
-                        textShadow: '0 0 20px rgba(255,255,255,0.4)',
+                        textShadow: '0 0 20px rgba(255,255,255,0.3)',
                         letterSpacing: '0.02em',
                         position: 'relative',
                         '&::after': {
                             content: '""',
                             position: 'absolute',
-                            bottom: '-16px',
+                            bottom: '-12px',
                             left: '50%',
                             transform: 'translateX(-50%)',
                             width: '80px',
-                            height: '4px',
+                            height: '3px',
                             background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
                             borderRadius: '2px',
-                            boxShadow: '0 2px 10px rgba(255,255,255,0.2)'
+                            boxShadow: '0 2px 8px rgba(255,255,255,0.2)'
                         }
                     }}>
                         How It Works
@@ -958,7 +1201,7 @@ const HowItWorksSection = () => {
                                         <Typography variant="h5" sx={{
                                             color: 'white',
                                             fontWeight: 600,
-                                            mb: 1,
+                                            mb: 2,
                                             fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                             textShadow: '0 0 20px rgba(255,255,255,0.4)',
                                             letterSpacing: '0.02em'
@@ -966,12 +1209,10 @@ const HowItWorksSection = () => {
                                             {step.title}
                                         </Typography>
                                         <Typography variant="body1" sx={{
-                                            color: 'rgba(255,255,255,0.9)',
-                                            fontSize: { xs: '0.9rem', sm: '0.95rem' },
-                                            lineHeight: 1.4,
-                                            maxWidth: '180px',
-                                            textShadow: '0 0 10px rgba(255,255,255,0.2)',
-                                            minHeight: '42px'
+                                            color: 'rgba(255,255,255,0.8)',
+                                            mb: 2,
+                                            lineHeight: 1.6,
+                                            fontSize: { xs: '0.95rem', sm: '0.9rem' },
                                         }}>
                                             {step.description}
                                         </Typography>
@@ -1122,22 +1363,22 @@ const ImpactSection = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
-                        mb: { xs: 4, sm: 6, md: 8 },
+                        mb: { xs: 4, sm: 5, md: 6 },
                         textTransform: 'capitalize',
-                        textShadow: '0 0 20px rgba(255,255,255,0.4)',
+                        textShadow: '0 0 20px rgba(255,255,255,0.3)',
                         letterSpacing: '0.02em',
                         position: 'relative',
                         '&::after': {
                             content: '""',
                             position: 'absolute',
-                            bottom: '-16px',
+                            bottom: '-12px',
                             left: '50%',
                             transform: 'translateX(-50%)',
                             width: '80px',
-                            height: '4px',
-                            background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                            height: '3px',
+                            background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
                             borderRadius: '2px',
-                            boxShadow: '0 2px 10px rgba(0,255,204,0.3)'
+                            boxShadow: '0 2px 8px rgba(255,255,255,0.2)'
                         }
                     }}>
                         Real Impact Across Industries
@@ -1307,18 +1548,31 @@ const FinalCTA = () => {
                         fontWeight: 600,
                         color: 'white',
                         mb: 3,
-                        background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                        background: 'linear-gradient(90deg, #00ffcc 20%, #00B4DB 100%)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         textTransform: 'none',
                         px: { xs: 2, sm: 0 },
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: '-10px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '60%',
+                            height: '2px',
+                            background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
+                            borderRadius: '2px',
+                            opacity: 0.5
+                        }
                     }}>
                         Ready To Amplify Your Expertise?
                     </Typography>
                     <Typography variant="h5" sx={{
                         color: 'rgba(255,255,255,0.8)',
                         mb: 6,
-                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
                         fontWeight: 400,
                         lineHeight: 1.6,
                         px: { xs: 2, sm: 0 },
@@ -1332,6 +1586,7 @@ const FinalCTA = () => {
                         flexWrap: 'wrap',
                         flexDirection: { xs: 'column', sm: 'row' },
                         width: { xs: '100%', sm: 'auto' },
+                        maxWidth: { xs: '320px', sm: 'none' },
                         position: 'relative',
                         zIndex: 3
                     }}>
@@ -1340,7 +1595,6 @@ const FinalCTA = () => {
                             to="/signup"
                             variant="contained"
                             size="large"
-                            endIcon={<ArrowForward />}
                             sx={{
                                 bgcolor: '#00ffcc',
                                 color: '#000B1F',
@@ -1348,28 +1602,18 @@ const FinalCTA = () => {
                                 py: { xs: 1.5, md: 2 },
                                 fontSize: { xs: '1rem', md: '1.1rem' },
                                 fontWeight: 600,
-                                borderRadius: '100px',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                transition: 'all 0.3s ease-in-out',
+                                borderRadius: '50px',
+                                boxShadow: '0 0 20px rgba(255, 255, 255, 0.15)',
+                                width: { xs: '100%', sm: 'auto' },
+                                letterSpacing: '0.02em',
+                                textTransform: 'none',
                                 '&:hover': {
-                                    bgcolor: '#00ffcc',
-                                    transform: 'translateY(-3px)',
-                                    boxShadow: '0 10px 30px rgba(0,255,204,0.3)',
+                                    boxShadow: '0 0 30px rgba(255, 255, 255, 0.25)',
+                                    transform: 'translateY(-2px)',
                                 },
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: '-100%',
-                                    width: '100%',
-                                    height: '100%',
-                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                                    transition: 'transform 0.5s'
-                                }
                             }}
                         >
-                            Get Started Free
+                            Start Free Today
                         </Button>
 
                         <Button
@@ -1377,35 +1621,25 @@ const FinalCTA = () => {
                             to="/demos"
                             variant="outlined"
                             size="large"
-                            endIcon={<PlayArrow />}
                             sx={{
                                 color: 'white',
-                                borderColor: 'rgba(255,255,255,0.2)',
-                                px: { xs: 4, md: 6 },
+                                borderColor: 'rgba(255,255,255,0.5)',
+                                borderWidth: '2px',
+                                px: { xs: 6, md: 8 },
                                 py: { xs: 1.5, md: 2 },
-                                fontSize: { xs: '1rem', md: '1.1rem' },
+                                fontSize: { xs: '1rem', md: '1.25rem' },
                                 fontWeight: 600,
-                                borderRadius: '100px',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                transition: 'all 0.3s ease-in-out',
+                                borderRadius: '50px',
                                 width: { xs: '100%', sm: 'auto' },
+                                letterSpacing: '0.02em',
+                                textTransform: 'none',
+                                backdropFilter: 'blur(10px)',
                                 '&:hover': {
                                     borderColor: '#00ffcc',
                                     transform: 'translateY(-3px)',
                                     bgcolor: 'rgba(0,255,204,0.1)',
                                     boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
                                 },
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: '-100%',
-                                    width: '100%',
-                                    height: '100%',
-                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                                    transition: 'transform 0.5s'
-                                }
                             }}
                         >
                             Watch Demo
@@ -1453,7 +1687,7 @@ function LandingPage() {
             <Box sx={{
                 flexGrow: 1,
                 overflow: 'hidden',
-                background: 'linear-gradient(180deg, #2ebcda 0%, #00d2ff 30%, #111e38 65%, #0080bf 100%)',
+                background: 'linear-gradient(180deg, #001B3D 0%, #000C1F 15%, #001F5C 35%, #0041C2 60%, #00B4DB 100%)',
                 color: 'white',
                 minHeight: '100vh',
                 position: 'relative',
@@ -1464,12 +1698,38 @@ function LandingPage() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'radial-gradient(circle at 30% 40%, rgba(0,65,194,0.4) 0%, transparent 60%)',
-                    pointerEvents: 'none'
+                    background: 'radial-gradient(circle at 50% 30%, rgba(0,65,194,0.4) 0%, transparent 80%)',
+                    pointerEvents: 'none',
+                    opacity: 0.9,
+                    mixBlendMode: 'soft-light'
                 }
             }}>
                 <HeroSection />
-                <Container maxWidth="lg">
+                <Container
+                    maxWidth="lg"
+                    sx={{
+                        position: 'relative',
+                        zIndex: 1,
+                        pt: { xs: 2, sm: 4, md: 6 },
+                        pb: { xs: 6, sm: 8, md: 10 },
+                        px: { xs: 2, sm: 4, md: 6 },
+                        '& > *': {
+                            mb: { xs: 10, sm: 12, md: 16 },
+                            opacity: 0.98,
+                            backdropFilter: 'blur(10px)',
+                            borderRadius: '24px',
+                            p: { xs: 3, sm: 4, md: 5 },
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 100%)',
+                            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                            }
+                        }
+                    }}
+                >
                     <IntroducingBrdgeAI />
                     <HowItWorksSection />
                     <ImpactSection />

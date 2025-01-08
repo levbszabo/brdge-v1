@@ -20,7 +20,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
-import logo from '../assets/Brdge-Logo-crop.png';
+import logo from '../assets/new-img.png';
 
 function Header() {
     const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
