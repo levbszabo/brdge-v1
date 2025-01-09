@@ -21,7 +21,12 @@ import {
     Biotech,
     Settings,
     Memory,
-    Waves
+    Waves,
+    HomeRepairService,
+    AutoFixHigh,
+    VerifiedUser,
+    Explore,
+    RocketLaunch
 } from '@mui/icons-material';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
@@ -30,6 +35,8 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import demoVideo from '../assets/brdge-demo2.mp4';
 import logo from '../assets/new-img.png';
 import './LandingPage.css';
+import SchoolIcon from '@mui/icons-material/School';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 
 // The user requested no errors, clear messaging, strong visuals, and good mobile rendering.
 // HeroSection and "Redefining Knowledge Sharing" (IntroducingBrdgeAI) components are good as is,
@@ -89,7 +96,7 @@ const IntroducingBrdgeAI = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
-                        mb: { xs: 3, sm: 4, md: 6 },
+                        mb: { xs: 4, sm: 5, md: 6 },
                         textTransform: 'capitalize',
                         textShadow: '0 0 20px rgba(255,255,255,0.4)',
                         letterSpacing: '0.02em',
@@ -700,26 +707,86 @@ const HeroSection = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                mt: { xs: 4, sm: 6, md: 8 },
+                mt: { xs: '80px', sm: '72px' },
                 mb: { xs: 4, sm: 6, md: 8 },
                 px: { xs: 2, sm: 3, md: 4 },
                 width: '100%',
                 mx: 'auto',
             }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 1 }}
+                    style={{
+                        width: '100%',
+                        maxWidth: '1200px',
+                        padding: '0 16px',
+                        marginBottom: '24px',
+                    }}
+                >
+                    <Typography
+                        variant="h1"
+                        align="center"
+                        sx={{
+                            mb: { xs: 3, sm: 4 },
+                            fontSize: { xs: '2.25rem', sm: '3.25rem', md: '3.75rem' },
+                            lineHeight: { xs: 1.25, sm: 1.2 },
+                            fontWeight: 600,
+                            textTransform: 'none',
+                            letterSpacing: '-0.02em',
+                            mx: 'auto',
+                            maxWidth: { xs: '100%', sm: '85%', md: '80%' },
+                            color: 'white',
+                            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+                            position: 'relative',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: '-24px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '120px',
+                                height: '4px',
+                                background: 'linear-gradient(90deg, rgba(0,255,204,0.3), rgba(0,180,219,0.3))',
+                                borderRadius: '2px',
+                            }
+                        }}
+                    >
+                        <strong>Speak Through AI</strong>
+                        <Box
+                            component="span"
+                            sx={{
+                                display: 'block',
+                                mt: { xs: 2, sm: 3 },
+                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.25rem' },
+                                fontWeight: 500,
+                                color: 'white',
+                                textShadow: `
+                                    0 0 10px rgba(255, 255, 255, 0.4),
+                                    0 0 20px rgba(255, 255, 255, 0.2),
+                                    0 0 30px rgba(255, 255, 255, 0.1)
+                                `,
+                                letterSpacing: '0.02em',
+                                opacity: 0.95
+                            }}
+                        >
+                            <strong>Your Knowledge, Your Voice</strong>
+                        </Box>
+                    </Typography>
+                </motion.div>
+
                 <Box
                     component="a"
                     href="https://brdge-ai.com/viewBrdge/136"
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
-                        width: { xs: '160px', sm: '200px' },
-                        height: { xs: '160px', sm: '200px' },
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        mb: { xs: 6, sm: 8, md: 10 },
-                        cursor: 'pointer',
+                        width: { xs: '160px', sm: '180px', md: '200px' },
+                        height: { xs: '160px', sm: '180px', md: '200px' },
                         position: 'relative',
+                        cursor: 'pointer',
+                        mx: 'auto',
+                        mb: { xs: 3, sm: 4 },
                         '&::before': {
                             content: '""',
                             position: 'absolute',
@@ -735,34 +802,25 @@ const HeroSection = () => {
                         '&::after': {
                             content: '"Click to chat"',
                             position: 'absolute',
-                            bottom: '-35px',
+                            bottom: '-40px',
                             left: '50%',
-                            transform: 'translateX(-50%) translateY(10px)',
+                            transform: 'translateX(-50%)',
                             background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 180, 219, 0.1))',
                             backdropFilter: 'blur(10px)',
-                            padding: '12px 24px',
+                            padding: { xs: '8px 16px', sm: '12px 24px' },
                             borderRadius: '24px',
-                            fontSize: '0.95rem',
+                            fontSize: { xs: '0.85rem', sm: '0.95rem' },
                             color: '#00ffcc',
                             whiteSpace: 'nowrap',
                             opacity: 0,
-                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                            boxShadow: `
-                                0 4px 20px rgba(0, 255, 204, 0.2),
-                                inset 0 0 20px rgba(0, 255, 204, 0.1)
-                            `,
-                            border: '1px solid rgba(0, 255, 204, 0.3)',
+                            transition: 'all 0.3s ease',
+                            visibility: 'hidden',
                             zIndex: 10,
-                            letterSpacing: '0.5px',
-                            fontWeight: 500,
                         },
                         '&:hover::after': {
                             opacity: 1,
+                            visibility: 'visible',
                             transform: 'translateX(-50%) translateY(0)',
-                            boxShadow: `
-                                0 6px 30px rgba(0, 255, 204, 0.3),
-                                inset 0 0 30px rgba(0, 255, 204, 0.2)
-                            `,
                         }
                     }}
                     onMouseMove={handleMouseMove}
@@ -775,6 +833,9 @@ const HeroSection = () => {
                             width: '100%',
                             height: '100%',
                             position: 'relative',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
                             transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                         }}
                     >
@@ -869,160 +930,107 @@ const HeroSection = () => {
                     </motion.div>
                 </Box>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 1 }}
-                    style={{
-                        width: '100%',
-                        maxWidth: '1200px',
-                        padding: '0 16px',
+                <Typography
+                    variant="h5"
+                    align="center"
+                    sx={{
+                        mt: { xs: 2, sm: 3 },
+                        mb: { xs: 8, sm: 10, md: 12 },
+                        maxWidth: '800px',
+                        mx: 'auto',
+                        opacity: 0.9,
+                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+                        fontWeight: 400,
+                        lineHeight: 1.75,
+                        px: { xs: 3, sm: 4 },
+                        color: 'rgba(255, 255, 255, 0.95)',
+                        letterSpacing: '0.01em',
+                        textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
                     }}
                 >
-                    <Typography
-                        variant="h1"
-                        align="center"
-                        sx={{
-                            mb: { xs: 4, sm: 5, md: 6 },
-                            fontSize: { xs: '2.25rem', sm: '3.25rem', md: '3.75rem' },
-                            lineHeight: { xs: 1.25, sm: 1.2 },
-                            fontWeight: 600,
-                            textTransform: 'none',
-                            letterSpacing: '-0.02em',
-                            mx: 'auto',
-                            maxWidth: { xs: '100%', sm: '85%', md: '80%' },
-                            color: 'white',
-                            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
-                            position: 'relative',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-24px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '4px',
-                                background: 'linear-gradient(90deg, rgba(0,255,204,0.3), rgba(0,180,219,0.3))',
-                                borderRadius: '2px',
-                            }
-                        }}
+                    Make your content come alive, turning your documents and presentations into an always-on voice assistant that sounds exactly like you.
+                    Brdge AI presents on your behalf, letting you focus on what truly matters.
+                </Typography>
+
+                <Box sx={{
+                    display: 'flex',
+                    gap: { xs: 3, sm: 4 },
+                    justifyContent: 'center',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    width: '100%',
+                    maxWidth: { xs: '100%', sm: '600px' },
+                    mx: 'auto',
+                    mb: { xs: 8, sm: 10, md: 12 },
+                    px: { xs: 3, sm: 0 }
+                }}>
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ width: '100%' }}
                     >
-                        <strong>Speak Through AI</strong>
-                        <Box
-                            component="span"
+                        <Button
+                            component={Link}
+                            to="/signup"
+                            variant="contained"
+                            size="large"
+                            fullWidth
                             sx={{
-                                display: 'block',
-                                mt: { xs: 2, sm: 3 },
-                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.25rem' },
-                                fontWeight: 500,
-                                color: 'white',
-                                textShadow: `
-                                    0 0 10px rgba(255, 255, 255, 0.4),
-                                    0 0 20px rgba(255, 255, 255, 0.2),
-                                    0 0 30px rgba(255, 255, 255, 0.1)
-                                `,
+                                bgcolor: 'white',
+                                color: '#0041C2',
+                                px: { xs: 4, sm: 6, md: 8 },
+                                py: { xs: 2, sm: 2.5 },
+                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                fontWeight: 600,
+                                borderRadius: '50px',
+                                boxShadow: '0 0 20px rgba(255,255,255,0.15)',
                                 letterSpacing: '0.02em',
-                                opacity: 0.95
+                                textTransform: 'none',
+                                minWidth: { xs: '100%', sm: '220px' },
+                                '&:hover': {
+                                    bgcolor: 'rgba(255,255,255,0.95)',
+                                    boxShadow: '0 0 30px rgba(255,255,255,0.5)'
+                                }
                             }}
                         >
-                            <strong>Your Knowledge, Your Voice</strong>
-                        </Box>
-                    </Typography>
-                    <Typography
-                        variant="h5"
-                        align="center"
-                        sx={{
-                            mt: { xs: 6, sm: 8 },
-                            mb: { xs: 8, sm: 10, md: 12 },
-                            maxWidth: '800px',
-                            mx: 'auto',
-                            opacity: 0.9,
-                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
-                            fontWeight: 400,
-                            lineHeight: 1.75,
-                            px: { xs: 3, sm: 4 },
-                            color: 'rgba(255, 255, 255, 0.95)',
-                            letterSpacing: '0.01em',
-                            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
-                        }}
+                            Start Free Today
+                        </Button>
+                    </motion.div>
+                    <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{ width: '100%' }}
                     >
-                        Make your content come alive, turning your documents and presentations into an always-on voice assistant that sounds exactly like you.
-                        Brdge AI presents on your behalf, letting you focus on what truly matters.
-                    </Typography>
-
-                    <Box sx={{
-                        display: 'flex',
-                        gap: { xs: 3, sm: 4 },
-                        justifyContent: 'center',
-                        flexDirection: { xs: 'column', sm: 'row' },
-                        width: { xs: '100%', sm: 'auto' },
-                        maxWidth: { xs: '320px', sm: 'none' },
-                        mb: { xs: 8, sm: 10, md: 12 }
-                    }}>
-                        <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                        <Button
+                            component={Link}
+                            to="/demos"
+                            variant="outlined"
+                            size="large"
+                            fullWidth
+                            sx={{
+                                color: 'white',
+                                borderColor: 'rgba(255,255,255,0.5)',
+                                borderWidth: '2px',
+                                px: { xs: 4, sm: 6, md: 8 },
+                                py: { xs: 2, sm: 2.5 },
+                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                fontWeight: 600,
+                                borderRadius: '50px',
+                                minWidth: { xs: '100%', sm: '220px' },
+                                letterSpacing: '0.02em',
+                                textTransform: 'none',
+                                backdropFilter: 'blur(10px)',
+                                '&:hover': {
+                                    borderColor: 'white',
+                                    transform: 'translateY(-3px)',
+                                    bgcolor: 'rgba(0,255,204,0.1)',
+                                    boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
+                                },
+                            }}
                         >
-                            <Button
-                                component={Link}
-                                to="/signup"
-                                variant="contained"
-                                size="large"
-                                sx={{
-                                    bgcolor: 'white',
-                                    color: '#0041C2',
-                                    px: { xs: 6, md: 8 },
-                                    py: { xs: 2, md: 2.5 },
-                                    fontSize: { xs: '1.1rem', md: '1.25rem' },
-                                    fontWeight: 600,
-                                    borderRadius: '50px',
-                                    boxShadow: '0 0 20px rgba(255,255,255,0.15)',
-                                    width: { xs: '100%', sm: 'auto' },
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'none',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(255,255,255,0.95)',
-                                        boxShadow: '0 0 30px rgba(255,255,255,0.5)'
-                                    }
-                                }}
-                            >
-                                Start Free Today
-                            </Button>
-                        </motion.div>
-                        <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                        >
-                            <Button
-                                component={Link}
-                                to="/demos"
-                                variant="outlined"
-                                size="large"
-                                sx={{
-                                    color: 'white',
-                                    borderColor: 'rgba(255,255,255,0.5)',
-                                    borderWidth: '2px',
-                                    px: { xs: 6, md: 8 },
-                                    py: { xs: 2, md: 2.5 },
-                                    fontSize: { xs: '1.1rem', md: '1.25rem' },
-                                    fontWeight: 600,
-                                    borderRadius: '50px',
-                                    width: { xs: '100%', sm: 'auto' },
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'none',
-                                    backdropFilter: 'blur(10px)',
-                                    '&:hover': {
-                                        borderColor: 'white',
-                                        bgcolor: 'rgba(255,255,255,0.1)',
-                                        borderWidth: '2px'
-                                    }
-                                }}
-                            >
-                                Try Demo
-                            </Button>
-                        </motion.div>
-                    </Box>
-                </motion.div>
+                            Watch Demo
+                        </Button>
+                    </motion.div>
+                </Box>
 
                 <Box sx={{
                     display: 'flex',
@@ -1078,42 +1086,56 @@ const HowItWorksSection = () => {
 
     const steps = [
         {
-            icon: <Box sx={{ position: 'relative' }}>
-                <CloudUpload sx={{ fontSize: 48, color: '#00ffcc' }} />
-                <Description sx={{
-                    fontSize: 24,
-                    position: 'absolute',
-                    bottom: -10,
-                    right: -10,
-                    color: '#00ffcc'
-                }} />
-            </Box>,
+            icon: (
+                <HomeRepairService
+                    sx={{
+                        fontSize: 36,
+                        color: '#00ffcc',
+                        filter: 'drop-shadow(0 0 6px rgba(0,255,204,0.6))'
+                    }}
+                />
+            ),
             title: "Upload & Explain",
-            description: "Add your documents and outline their core insights in your voice."
+            description: "Add your documents and outline your core insights quickly."
         },
         {
-            icon: <SmartToyIcon sx={{ fontSize: 48, color: '#4dffdb' }} />,
+            icon: (
+                <AutoFixHigh
+                    sx={{
+                        fontSize: 36,
+                        color: '#00ffcc',
+                        filter: 'drop-shadow(0 0 6px rgba(0,255,204,0.6))'
+                    }}
+                />
+            ),
             title: "Train the AI",
-            description: "Guide the AI with clarifications so it truly mirrors your expertise."
+            description: "Refine the AI with clarifications so it reflects your expertise."
         },
         {
-            icon: <Mic sx={{ fontSize: 48, color: '#80ffe6' }} />,
+            icon: (
+                <VerifiedUser
+                    sx={{
+                        fontSize: 36,
+                        color: '#00ffcc',
+                        filter: 'drop-shadow(0 0 6px rgba(0,255,204,0.6))'
+                    }}
+                />
+            ),
             title: "Personalize Voice",
-            description: "Clone your voice for authentic delivery that resonates with your audience."
+            description: "Clone your voice for an experience that resonates with your audience."
         },
         {
-            icon: <Box sx={{ position: 'relative' }}>
-                <Share sx={{ fontSize: 48, color: '#b3fff0' }} />
-                <Chat sx={{
-                    fontSize: 24,
-                    position: 'absolute',
-                    bottom: -10,
-                    right: -10,
-                    color: '#b3fff0'
-                }} />
-            </Box>,
+            icon: (
+                <Explore
+                    sx={{
+                        fontSize: 36,
+                        color: '#00ffcc',
+                        filter: 'drop-shadow(0 0 6px rgba(0,255,204,0.6))'
+                    }}
+                />
+            ),
             title: "Share & Interact",
-            description: "Provide a link. Viewers ask questions. AI answers instantly, 24/7."
+            description: "Provide a link. Viewers ask questions. AI answers instantly, 24/7!"
         }
     ];
 
@@ -1124,7 +1146,9 @@ const HowItWorksSection = () => {
                 pb: { xs: 4, sm: 6, md: 8 },
                 px: { xs: 2, sm: 4, md: 6 },
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                backgroundColor: 'rgba(255,255,255,0.02)',
+                borderRadius: '24px'
             }}
         >
             <Container maxWidth="lg" ref={ref}>
@@ -1133,123 +1157,117 @@ const HowItWorksSection = () => {
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                 >
-                    <Typography variant="h2" align="center" sx={{
-                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                        fontWeight: 600,
-                        color: 'white',
-                        mb: { xs: 4, sm: 5, md: 6 },
-                        textTransform: 'capitalize',
-                        textShadow: '0 0 20px rgba(255,255,255,0.3)',
-                        letterSpacing: '0.02em',
-                        position: 'relative',
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: '-12px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '80px',
-                            height: '3px',
-                            background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
-                            borderRadius: '2px',
-                            boxShadow: '0 2px 8px rgba(255,255,255,0.2)'
-                        }
-                    }}>
+                    <Typography
+                        variant="h2"
+                        align="center"
+                        sx={{
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                            fontWeight: 600,
+                            color: 'white',
+                            mb: { xs: 4, sm: 5, md: 6 },
+                            textTransform: 'capitalize',
+                            textShadow: '0 0 20px rgba(255,255,255,0.3)',
+                            letterSpacing: '0.02em',
+                            position: 'relative',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: '-12px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '80px',
+                                height: '3px',
+                                background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
+                                borderRadius: '2px',
+                                boxShadow: '0 2px 8px rgba(255,255,255,0.2)'
+                            }
+                        }}
+                    >
                         How It Works
                     </Typography>
 
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: { xs: 4, md: 1 },
-                        maxWidth: '1200px',
-                        mx: 'auto',
-                        px: { xs: 2, md: 0 }
-                    }}>
+                    <Box
+                        sx={{
+                            position: 'relative',
+                            mx: 'auto',
+                            mt: { xs: 4, md: 6 },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            maxWidth: '800px',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '4px',
+                                height: '100%',
+                                background: 'linear-gradient(180deg, rgba(0,255,204,0.2), rgba(0,180,219,0.2))',
+                                borderRadius: '2px'
+                            }
+                        }}
+                    >
                         {steps.map((step, index) => (
-                            <React.Fragment key={index}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                                    transition={{ delay: index * 0.2, duration: 0.8 }}
-                                    style={{ zIndex: 1 }}
-                                >
-                                    <Box sx={{
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={inView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ delay: index * 0.2, duration: 0.8 }}
+                                style={{ width: '100%', position: 'relative' }}
+                            >
+                                <Box
+                                    sx={{
                                         display: 'flex',
-                                        flexDirection: 'column',
+                                        flexDirection: { xs: 'column', sm: 'row' },
                                         alignItems: 'center',
-                                        textAlign: 'center',
+                                        px: { xs: 2, sm: 4 },
+                                        py: { xs: 3, sm: 4 },
+                                        mb: { xs: 3, sm: 4 },
                                         position: 'relative',
-                                        maxWidth: '200px',
-                                        mx: 'auto'
-                                    }}>
-                                        <motion.div
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            style={{
-                                                padding: '16px',
-                                                marginBottom: '12px',
-                                                background: 'rgba(0,255,204,0.05)',
-                                                borderRadius: '16px',
-                                                boxShadow: '0 0 20px rgba(0,255,204,0.1)'
+                                        textAlign: { xs: 'center', sm: 'left' }
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            zIndex: 1,
+                                            minWidth: '60px',
+                                            minHeight: '60px',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            backgroundColor: 'rgba(0,255,204,0.08)',
+                                            borderRadius: '50%',
+                                            border: '2px solid rgba(255,255,255,0.1)',
+                                            boxShadow: '0 8px 20px rgba(0,255,204,0.2)',
+                                            mr: { xs: 0, sm: 3 },
+                                            mb: { xs: 2, sm: 0 },
+                                            mx: 'auto'
+                                        }}
+                                    >
+                                        {step.icon}
+                                    </Box>
+
+                                    <Box sx={{ flexGrow: 1 }}>
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                fontWeight: 600,
+                                                mb: 1,
+                                                color: '#fff'
                                             }}
                                         >
-                                            {step.icon}
-                                        </motion.div>
-                                        <Typography variant="h5" sx={{
-                                            color: 'white',
-                                            fontWeight: 600,
-                                            mb: 2,
-                                            fontSize: { xs: '1.1rem', sm: '1.2rem' },
-                                            textShadow: '0 0 20px rgba(255,255,255,0.4)',
-                                            letterSpacing: '0.02em'
-                                        }}>
                                             {step.title}
                                         </Typography>
-                                        <Typography variant="body1" sx={{
-                                            color: 'rgba(255,255,255,0.8)',
-                                            mb: 2,
-                                            lineHeight: 1.6,
-                                            fontSize: { xs: '0.95rem', sm: '0.9rem' },
-                                        }}>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{ color: 'rgba(255,255,255,0.8)' }}
+                                        >
                                             {step.description}
                                         </Typography>
                                     </Box>
-                                </motion.div>
-                                {index < steps.length - 1 && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={inView ? { opacity: 1 } : {}}
-                                        transition={{ delay: index * 0.2 + 0.1, duration: 0.8 }}
-                                    >
-                                        <Box sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            width: '32px',
-                                            height: '32px',
-                                            my: { xs: 2, md: 0 }
-                                        }}>
-                                            <ArrowDownward sx={{
-                                                color: '#00ffcc',
-                                                fontSize: 28,
-                                                opacity: 0.8,
-                                                filter: 'drop-shadow(0 0 12px rgba(0,255,204,0.4))',
-                                                display: { xs: 'block', md: 'none' }
-                                            }} />
-                                            <ArrowForward sx={{
-                                                color: '#00ffcc',
-                                                fontSize: 28,
-                                                opacity: 0.8,
-                                                filter: 'drop-shadow(0 0 12px rgba(0,255,204,0.4))',
-                                                display: { xs: 'none', md: 'block' }
-                                            }} />
-                                        </Box>
-                                    </motion.div>
-                                )}
-                            </React.Fragment>
+                                </Box>
+                            </motion.div>
                         ))}
                     </Box>
                 </motion.div>
@@ -1269,7 +1287,7 @@ const ImpactSection = () => {
     const industries = [
         {
             id: 'onboarding',
-            icon: <School />,
+            icon: <SchoolIcon />,
             title: "Onboarding & Training",
             subtitle: "Empower new hires and teams with on-demand, personalized guidance",
             details: [
@@ -1317,7 +1335,7 @@ const ImpactSection = () => {
         },
         {
             id: 'education',
-            icon: <MenuBook />,
+            icon: <RocketLaunchIcon />,
             title: "Education & Knowledge Hubs",
             subtitle: "Transform static lessons into interactive, AI-driven tutors",
             details: [
@@ -1347,9 +1365,9 @@ const ImpactSection = () => {
 
     return (
         <Box sx={{
-            pt: { xs: 2, sm: 4, md: 8 },
-            pb: { xs: 4, sm: 6, md: 8 },
-            px: { xs: 2, sm: 3, md: 4 },
+            pt: { xs: 4, sm: 6, md: 8 },
+            pb: { xs: 4, sm: 7, md: 10 },
+            px: { xs: 2, sm: 4, md: 6 },
             position: 'relative',
             overflow: 'hidden'
         }}>
@@ -1395,7 +1413,7 @@ const ImpactSection = () => {
                         Brdge AI adapts to your field—boosting efficiency, engagement, and growth wherever you apply it.
                     </Typography>
 
-                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+                    <Grid container spacing={{ xs: 3, md: 4 }}>
                         {industries.map((industry, index) => (
                             <Grid item xs={12} md={4} key={industry.id}>
                                 <motion.div
@@ -1407,101 +1425,89 @@ const ImpactSection = () => {
                                         onClick={() => handleCardClick(industry.id)}
                                         sx={{
                                             p: { xs: 3, md: 4 },
-                                            bgcolor: 'rgba(0,255,204,0.03)',
-                                            backdropFilter: 'blur(10px)',
-                                            borderRadius: '24px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.3s ease',
+                                            borderRadius: '16px',
+                                            backdropFilter: 'blur(12px)',
+                                            backgroundColor: 'rgba(255,255,255,0.03)',
                                             border: '1px solid rgba(255,255,255,0.1)',
                                             position: 'relative',
-                                            overflow: 'hidden',
-                                            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                                            minHeight: { xs: 'auto', md: '320px' },
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            justifyContent: 'space-between',
+                                            transition: 'all 0.3s ease',
+                                            cursor: 'pointer',
                                             '&:hover': {
-                                                transform: 'translateY(-5px)',
                                                 boxShadow: '0 15px 40px rgba(0,255,204,0.15)',
-                                                bgcolor: 'rgba(0,255,204,0.05)',
-                                                '& .industry-icon': {
-                                                    transform: 'scale(1.1) rotate(5deg)',
-                                                }
-                                            },
+                                                borderColor: 'rgba(0,255,204,0.3)',
+                                                transform: 'translateY(-5px)'
+                                            }
                                         }}
                                     >
-                                        <Box sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            mb: 3
-                                        }}>
-                                            <Box className="industry-icon" sx={{
-                                                transition: 'transform 0.4s ease',
-                                                background: 'rgba(0,255,204,0.1)',
-                                                borderRadius: '16px',
-                                                p: 2,
+                                        <Box
+                                            sx={{
+                                                mb: 3,
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                justifyContent: 'center'
+                                                gap: 1
+                                            }}
+                                        >
+                                            <Box sx={{
+                                                p: 1.5,
+                                                backgroundColor: 'rgba(0, 255, 204, 0.1)',
+                                                borderRadius: '50%',
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center'
                                             }}>
                                                 {React.cloneElement(industry.icon, {
                                                     sx: {
-                                                        fontSize: 48,
+                                                        fontSize: 32,
                                                         color: '#00ffcc',
-                                                        filter: 'drop-shadow(0 0 10px rgba(0,255,204,0.3))'
                                                     }
                                                 })}
                                             </Box>
-                                            <Add sx={{
-                                                color: 'white',
-                                                fontSize: 28,
-                                                transform: expandedCard === industry.id ? 'rotate(45deg)' : 'none',
-                                                transition: 'transform 0.3s ease',
-                                                opacity: 0.7,
-                                            }} />
+                                            <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        mb: 1,
+                                                        color: '#fff'
+                                                    }}
+                                                >
+                                                    {industry.title}
+                                                </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{ color: 'rgba(255,255,255,0.8)' }}
+                                                >
+                                                    {industry.subtitle}
+                                                </Typography>
+                                            </Box>
+                                            <Add
+                                                sx={{
+                                                    fontSize: 28,
+                                                    color: '#fff',
+                                                    transform: expandedCard === industry.id ? 'rotate(45deg)' : 'none',
+                                                    transition: 'transform 0.3s ease-in-out'
+                                                }}
+                                            />
                                         </Box>
-                                        <Typography variant="h5" sx={{
-                                            color: 'white',
-                                            fontWeight: 600,
-                                            mb: 2,
-                                            fontSize: { xs: '1.3rem', sm: '1.4rem' },
-                                            textShadow: '0 2px 10px rgba(0,255,204,0.2)'
-                                        }}>
-                                            {industry.title}
-                                        </Typography>
-                                        <Typography variant="body1" sx={{
-                                            color: 'rgba(255,255,255,0.8)',
-                                            mb: 2,
-                                            lineHeight: 1.6,
-                                            fontSize: { xs: '0.95rem', sm: '1rem' },
-                                        }}>
-                                            {industry.subtitle}
-                                        </Typography>
+
                                         <Collapse in={expandedCard === industry.id}>
                                             <Box sx={{
-                                                mt: 4,
-                                                pt: 3,
+                                                mt: 2,
+                                                pt: 2,
                                                 borderTop: '1px solid rgba(255,255,255,0.1)'
                                             }}>
                                                 {industry.details.map((detail, idx) => (
-                                                    <Box key={idx} sx={{
-                                                        mb: 3,
-                                                        '&:last-child': { mb: 0 }
-                                                    }}>
-                                                        <Typography variant="h6" sx={{
+                                                    <Box key={idx} sx={{ mb: 2 }}>
+                                                        <Typography variant="subtitle1" sx={{
                                                             color: '#00ffcc',
                                                             fontWeight: 600,
-                                                            mb: 1,
-                                                            fontSize: '1rem',
-                                                            textShadow: '0 0 10px rgba(0,255,204,0.3)'
+                                                            mb: 0.5
                                                         }}>
                                                             {detail.title}
                                                         </Typography>
                                                         <Typography variant="body2" sx={{
                                                             color: 'rgba(255,255,255,0.8)',
-                                                            fontSize: '0.9rem',
-                                                            lineHeight: 1.7,
+                                                            lineHeight: 1.6
                                                         }}>
                                                             {detail.description}
                                                         </Typography>
@@ -1585,65 +1591,79 @@ const FinalCTA = () => {
                         justifyContent: 'center',
                         flexWrap: 'wrap',
                         flexDirection: { xs: 'column', sm: 'row' },
-                        width: { xs: '100%', sm: 'auto' },
-                        maxWidth: { xs: '320px', sm: 'none' },
-                        position: 'relative',
-                        zIndex: 3
+                        width: '100%',
+                        maxWidth: { xs: '100%', sm: '600px' },
+                        mx: 'auto',
+                        mb: { xs: 8, sm: 10, md: 12 },
+                        px: { xs: 3, sm: 0 }
                     }}>
-                        <Button
-                            component={Link}
-                            to="/signup"
-                            variant="contained"
-                            size="large"
-                            sx={{
-                                bgcolor: '#00ffcc',
-                                color: '#000B1F',
-                                px: { xs: 4, md: 6 },
-                                py: { xs: 1.5, md: 2 },
-                                fontSize: { xs: '1rem', md: '1.1rem' },
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                boxShadow: '0 0 20px rgba(255, 255, 255, 0.15)',
-                                width: { xs: '100%', sm: 'auto' },
-                                letterSpacing: '0.02em',
-                                textTransform: 'none',
-                                '&:hover': {
-                                    boxShadow: '0 0 30px rgba(255, 255, 255, 0.25)',
-                                    transform: 'translateY(-2px)',
-                                },
-                            }}
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{ width: '100%' }}
                         >
-                            Start Free Today
-                        </Button>
-
-                        <Button
-                            component={Link}
-                            to="/demos"
-                            variant="outlined"
-                            size="large"
-                            sx={{
-                                color: 'white',
-                                borderColor: 'rgba(255,255,255,0.5)',
-                                borderWidth: '2px',
-                                px: { xs: 6, md: 8 },
-                                py: { xs: 1.5, md: 2 },
-                                fontSize: { xs: '1rem', md: '1.25rem' },
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                width: { xs: '100%', sm: 'auto' },
-                                letterSpacing: '0.02em',
-                                textTransform: 'none',
-                                backdropFilter: 'blur(10px)',
-                                '&:hover': {
-                                    borderColor: '#00ffcc',
-                                    transform: 'translateY(-3px)',
-                                    bgcolor: 'rgba(0,255,204,0.1)',
-                                    boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
-                                },
-                            }}
+                            <Button
+                                component={Link}
+                                to="/signup"
+                                variant="contained"
+                                size="large"
+                                fullWidth
+                                sx={{
+                                    bgcolor: 'white',
+                                    color: '#0041C2',
+                                    px: { xs: 4, sm: 6, md: 8 },
+                                    py: { xs: 2, sm: 2.5 },
+                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontWeight: 600,
+                                    borderRadius: '50px',
+                                    boxShadow: '0 0 20px rgba(255,255,255,0.15)',
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'none',
+                                    minWidth: { xs: '100%', sm: '220px' },
+                                    '&:hover': {
+                                        bgcolor: 'rgba(255,255,255,0.95)',
+                                        boxShadow: '0 0 30px rgba(255,255,255,0.5)'
+                                    }
+                                }}
+                            >
+                                Start Free Today
+                            </Button>
+                        </motion.div>
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{ width: '100%' }}
                         >
-                            Watch Demo
-                        </Button>
+                            <Button
+                                component={Link}
+                                to="/demos"
+                                variant="outlined"
+                                size="large"
+                                fullWidth
+                                sx={{
+                                    color: 'white',
+                                    borderColor: 'rgba(255,255,255,0.5)',
+                                    borderWidth: '2px',
+                                    px: { xs: 4, sm: 6, md: 8 },
+                                    py: { xs: 2, sm: 2.5 },
+                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontWeight: 600,
+                                    borderRadius: '50px',
+                                    minWidth: { xs: '100%', sm: '220px' },
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'none',
+                                    backdropFilter: 'blur(10px)',
+                                    '&:hover': {
+                                        borderColor: 'white',
+                                        transform: 'translateY(-3px)',
+                                        bgcolor: 'rgba(0,255,204,0.1)',
+                                        boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
+                                    },
+                                }}
+                            >
+                                Watch Demo
+                            </Button>
+                        </motion.div>
                     </Box>
                 </motion.div>
             </Container>

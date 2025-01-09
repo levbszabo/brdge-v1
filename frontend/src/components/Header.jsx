@@ -121,7 +121,7 @@ function Header() {
             sx={{
                 background: 'transparent',
                 backdropFilter: 'none',
-                pt: 2,
+                pt: { xs: 1, sm: 2 },
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -129,11 +129,17 @@ function Header() {
                 zIndex: 1000
             }}
         >
-            <Toolbar>
+            <Toolbar sx={{
+                minHeight: { xs: '72px', sm: '64px' },
+                px: { xs: 1.5, sm: 2 },
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
                 <Box sx={{
-                    flexGrow: 1,
                     display: 'flex',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    flex: { xs: '1', sm: '0 1 auto' }
                 }}>
                     <RouterLink to="/" style={{
                         color: 'inherit',
@@ -146,50 +152,115 @@ function Header() {
                             src={logo}
                             alt="Brdge AI Logo"
                             style={{
-                                height: '32px',
+                                height: '40px',
                                 width: 'auto'
                             }}
                         />
-                        <Typography variant="h6" component="div" sx={{ color: 'white' }}>
+                        <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{
+                                color: 'white',
+                                display: { xs: 'none', sm: 'block' }
+                            }}
+                        >
                             Brdge AI
                         </Typography>
                     </RouterLink>
                 </Box>
+
                 {isMobile ? (
-                    <>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5
+                    }}>
                         {isAuthenticated && (
                             <IconButton
                                 onClick={handleProfileClick}
-                                sx={{ mr: 2 }}
+                                sx={{
+                                    width: 44,
+                                    height: 44,
+                                    '& .MuiAvatar-root': {
+                                        width: 36,
+                                        height: 36
+                                    }
+                                }}
                             >
                                 <Avatar
                                     sx={{
-                                        width: 32,
-                                        height: 32,
                                         bgcolor: theme.palette.primary.main,
                                     }}
                                 >
-                                    <PersonIcon sx={{ fontSize: 20 }} />
+                                    <PersonIcon sx={{ fontSize: 24 }} />
                                 </Avatar>
                             </IconButton>
                         )}
                         <IconButton
-                            size="large"
-                            edge="start"
-                            color="inherit"
                             aria-label="menu"
                             onClick={() => setDrawerOpen(true)}
+                            sx={{
+                                width: 44,
+                                height: 44,
+                                color: 'white'
+                            }}
                         >
-                            <MenuIcon />
+                            <MenuIcon sx={{ fontSize: 28 }} />
                         </IconButton>
+
                         <Drawer
                             anchor="right"
                             open={drawerOpen}
                             onClose={() => setDrawerOpen(false)}
+                            PaperProps={{
+                                sx: {
+                                    width: '80%',
+                                    maxWidth: '300px',
+                                    background: '#001B3D',
+                                    color: 'white'
+                                }
+                            }}
                         >
-                            {renderMobileMenu()}
+                            <Box sx={{
+                                pt: 2,
+                                pb: 1,
+                                px: 2,
+                                borderBottom: '1px solid rgba(255,255,255,0.1)'
+                            }}>
+                                <Typography variant="h6" sx={{ color: 'white' }}>
+                                    Menu
+                                </Typography>
+                            </Box>
+                            <List sx={{ pt: 1 }}>
+                                {menuItems.map((item) => (
+                                    <ListItem
+                                        button
+                                        key={item.text}
+                                        component={item.link ? RouterLink : 'button'}
+                                        to={item.link}
+                                        onClick={() => {
+                                            setDrawerOpen(false);
+                                            if (item.onClick) item.onClick();
+                                        }}
+                                        sx={{
+                                            py: 2,
+                                            color: 'white',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255,255,255,0.1)'
+                                            }
+                                        }}
+                                    >
+                                        <ListItemText
+                                            primary={item.text}
+                                            primaryTypographyProps={{
+                                                sx: { fontSize: '1.1rem' }
+                                            }}
+                                        />
+                                    </ListItem>
+                                ))}
+                            </List>
                         </Drawer>
-                    </>
+                    </Box>
                 ) : (
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {renderMenuItems()}
