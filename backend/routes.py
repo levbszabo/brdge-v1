@@ -3025,6 +3025,8 @@ def ai_edit_script(brdge_id):
         - Preserve key information while implementing requested changes
         - Return only the modified content without explanations
         - Always return a valid JSON object with 'script' and 'agent' keys
+        - Both script and agent must be strings, not objects
+        - Start with the opening brace and write the JSON object token by token
         """
 
         user_prompt = f"""
@@ -3034,14 +3036,16 @@ def ai_edit_script(brdge_id):
         Edit Request: {edit_instruction}
         
         Please provide the updated versions maintaining the same structure but implementing the requested changes.
-        Return in JSON format with 'script' and 'agent' keys.
+        Return in JSON format with 'script' and 'agent' keys, where both values are strings.
+        Example format: {{"script": "Hello world", "agent": "Greet the audience warmly"}}
+        Write the response token by token, starting with the opening brace.
         """
 
         def generate():
             try:
                 client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
                 stream = client.chat.completions.create(
-                    model="gpt-4o",  # Fixed model name
+                    model="gpt-4o",
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt},
@@ -3052,36 +3056,49 @@ def ai_edit_script(brdge_id):
                 )
 
                 accumulated_response = ""
+                current_script = ""
+                current_agent = ""
+                in_script = False
+                in_agent = False
+
                 for chunk in stream:
                     if chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         accumulated_response += content
+                        app.logger.debug(f"Received token: {content}")
 
+                        # Send each token immediately
+                        yield f"data: {json.dumps({'token': content})}\n\n"
+
+                        # Try to parse the accumulated response to track state
                         try:
-                            # Try to parse the accumulated response
-                            parsed_content = json.loads(accumulated_response)
-                            if isinstance(parsed_content, dict) and (
-                                "script" in parsed_content or "agent" in parsed_content
-                            ):
-                                # Only send valid partial updates
-                                app.logger.debug(f"Sending update: {parsed_content}")
-                                yield f"data: {json.dumps({'content': json.dumps(parsed_content)})}\n\n"
+                            parsed = json.loads(accumulated_response)
+                            if isinstance(parsed, dict):
+                                if "script" in parsed and isinstance(
+                                    parsed["script"], str
+                                ):
+                                    current_script = parsed["script"]
+                                if "agent" in parsed and isinstance(
+                                    parsed["agent"], str
+                                ):
+                                    current_agent = parsed["agent"]
                         except json.JSONDecodeError:
-                            # Not valid JSON yet, continue accumulating
-                            continue
+                            pass  # Not valid JSON yet, continue accumulating
 
-                # Process final content
                 try:
+                    # Process final content
                     final_content = json.loads(accumulated_response)
                     app.logger.info(f"Final content: {final_content}")
 
-                    # Validate the content structure
+                    # Validate the content structure and types
                     if (
                         not isinstance(final_content, dict)
                         or "script" not in final_content
                         or "agent" not in final_content
+                        or not isinstance(final_content["script"], str)
+                        or not isinstance(final_content["agent"], str)
                     ):
-                        raise ValueError("Invalid content structure")
+                        raise ValueError("Invalid content structure or types")
 
                     # Ensure scripts dict exists
                     if not hasattr(script, "scripts") or script.scripts is None:
@@ -3098,8 +3115,6 @@ def ai_edit_script(brdge_id):
                         f"Database updated successfully for slide {slide_number}"
                     )
 
-                    # Send the final update
-                    yield f"data: {json.dumps({'content': json.dumps(final_content)})}\n\n"
                     yield "data: [DONE]\n\n"
                 except Exception as e:
                     app.logger.error(f"Error processing final content: {e}")
