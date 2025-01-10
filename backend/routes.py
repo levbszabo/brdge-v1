@@ -10,6 +10,8 @@ from flask import (
     current_app,
     Blueprint,
     make_response,
+    Response,
+    stream_with_context,
 )
 from flask_cors import CORS, cross_origin
 from werkzeug.utils import secure_filename
@@ -58,6 +60,8 @@ from PIL import Image
 import io
 import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from openai import AsyncOpenAI
+import asyncio
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -2986,4 +2990,137 @@ def update_usage_log(brdge_id, log_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating usage log: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Add this new route for AI script editing
+@app.route("/api/brdges/<int:brdge_id>/scripts/ai-edit", methods=["GET"])
+def ai_edit_script(brdge_id):
+    """Handle AI editing requests for scripts."""
+    try:
+        # Parse query params
+        slide_number = request.args.get("slideNumber")
+        edit_instruction = request.args.get("instruction")
+        if not slide_number or not edit_instruction:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        current_content_str = request.args.get("currentContent", "{}")
+        current_content = json.loads(current_content_str)
+
+        script = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .first()
+        )
+
+        if not script:
+            return jsonify({"error": "No scripts found for this brdge"}), 404
+
+        system_prompt = """You are an AI writing assistant helping to edit presentation scripts and agent instructions.
+        Follow these guidelines:
+        - Keep the tone natural and conversational
+        - Use contractions (I'm, we're, let's)
+        - Maintain professional but friendly language
+        - Ensure content is TTS-friendly
+        - Preserve key information while implementing requested changes
+        - Return only the modified content without explanations
+        - Always return a valid JSON object with 'script' and 'agent' keys
+        """
+
+        user_prompt = f"""
+        Original Script: {current_content.get('script', '')}
+        Original Agent Instructions: {current_content.get('agent', '')}
+        
+        Edit Request: {edit_instruction}
+        
+        Please provide the updated versions maintaining the same structure but implementing the requested changes.
+        Return in JSON format with 'script' and 'agent' keys.
+        """
+
+        def generate():
+            try:
+                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                stream = client.chat.completions.create(
+                    model="gpt-4o",  # Fixed model name
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    stream=True,
+                    temperature=0.7,
+                    response_format={"type": "json_object"},
+                )
+
+                accumulated_response = ""
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        accumulated_response += content
+
+                        try:
+                            # Try to parse the accumulated response
+                            parsed_content = json.loads(accumulated_response)
+                            if isinstance(parsed_content, dict) and (
+                                "script" in parsed_content or "agent" in parsed_content
+                            ):
+                                # Only send valid partial updates
+                                app.logger.debug(f"Sending update: {parsed_content}")
+                                yield f"data: {json.dumps({'content': json.dumps(parsed_content)})}\n\n"
+                        except json.JSONDecodeError:
+                            # Not valid JSON yet, continue accumulating
+                            continue
+
+                # Process final content
+                try:
+                    final_content = json.loads(accumulated_response)
+                    app.logger.info(f"Final content: {final_content}")
+
+                    # Validate the content structure
+                    if (
+                        not isinstance(final_content, dict)
+                        or "script" not in final_content
+                        or "agent" not in final_content
+                    ):
+                        raise ValueError("Invalid content structure")
+
+                    # Ensure scripts dict exists
+                    if not hasattr(script, "scripts") or script.scripts is None:
+                        script.scripts = {}
+
+                    # Update the database with string key
+                    script.scripts[str(slide_number)] = {
+                        "script": final_content["script"],
+                        "agent": final_content["agent"],
+                    }
+                    script.generated_at = datetime.utcnow()
+                    db.session.commit()
+                    app.logger.info(
+                        f"Database updated successfully for slide {slide_number}"
+                    )
+
+                    # Send the final update
+                    yield f"data: {json.dumps({'content': json.dumps(final_content)})}\n\n"
+                    yield "data: [DONE]\n\n"
+                except Exception as e:
+                    app.logger.error(f"Error processing final content: {e}")
+                    yield f"data: {json.dumps({'error': 'Failed to process final content'})}\n\n"
+                    return
+
+            except Exception as e:
+                app.logger.error(f"Error in stream generation: {e}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+                "X-Accel-Buffering": "no",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
+    except Exception as e:
+        app.logger.error(f"Error in ai_edit_script: {e}")
         return jsonify({"error": str(e)}), 500
