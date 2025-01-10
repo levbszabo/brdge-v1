@@ -7,31 +7,16 @@ import {
     useTheme, Paper, Collapse, Icon
 } from '@mui/material';
 import {
-    CloudUpload, RecordVoiceOver, Slideshow,
-    Group, Support, ArrowForward, School, Refresh, Chat,
-    AutoAwesome, Speed, Mic, Description, VolumeUp, Share,
-    Handshake, TrendingUp, Devices, MenuBook, ArrowDownward,
-    Psychology, Link as LinkIcon, Analytics, BusinessCenter,
-    Laptop, Campaign, PlayArrow, Add, AccessTime, AllInclusive,
-    SupportAgent,
-    Assistant,
-    Face,
-    GraphicEq,
-    Hub,
-    Biotech,
-    Settings,
-    Memory,
-    Waves,
+    ArrowForward, ArrowDownward, Link as LinkIcon, BusinessCenter, Add, AccessTime, AllInclusive,
+
     HomeRepairService,
     AutoFixHigh,
     VerifiedUser,
     Explore,
-    RocketLaunch
 } from '@mui/icons-material';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
 import { useInView } from 'react-intersection-observer';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import demoVideo from '../assets/brdge-demo2.mp4';
 import logo from '../assets/new-img.png';
 import './LandingPage.css';
