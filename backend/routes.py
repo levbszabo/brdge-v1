@@ -2406,13 +2406,18 @@ def update_usage_log(brdge_id, log_id):
 # Add this new route for AI script editing
 @app.route("/api/brdges/<int:brdge_id>/scripts/ai-edit", methods=["GET"])
 def ai_edit_script(brdge_id):
-    """Handle AI editing requests for scripts."""
     try:
         # Parse query params
         slide_number = request.args.get("slideNumber")
         edit_instruction = request.args.get("instruction")
+        edit_speech = request.args.get("editSpeech", "true").lower() == "true"
+        edit_knowledge = request.args.get("editKnowledge", "true").lower() == "true"
+
         if not slide_number or not edit_instruction:
             return jsonify({"error": "Missing required parameters"}), 400
+
+        if not edit_speech and not edit_knowledge:
+            return jsonify({"error": "At least one edit target must be selected"}), 400
 
         current_content_str = request.args.get("currentContent", "{}")
         current_content = json.loads(current_content_str)
@@ -2422,30 +2427,62 @@ def ai_edit_script(brdge_id):
             .order_by(Scripts.generated_at.desc())
             .first()
         )
-
         if not script:
             return jsonify({"error": "No scripts found for this brdge"}), 404
 
-        system_prompt = """You are an AI writing assistant helping to edit presentation scripts and agent instructions.
-        Follow these guidelines:
-        - Keep the tone natural and conversational
-        - Use contractions (I'm, we're, let's)
-        - Maintain professional but friendly language
-        - Ensure content is TTS-friendly
-        - Preserve key information while implementing requested changes
-        - Return only the modified content without explanations
-        - Always return a valid JSON object with 'script' and 'agent' keys
-        - Both script and agent must be strings, not objects
-        - Start with the opening brace and write the JSON object token by token
+        system_prompt = """You are an advanced AI writing assistant specializing in presentation content optimization.
+        Your role is to enhance both presentation scripts and AI agent knowledge bases while maintaining their distinct purposes.
+
+        Core Guidelines:
+        1. For Presentation Scripts:
+           - Write in plain text only - NO markup, NO special characters
+           - NO emphasis markers, NO pause indicators, NO annotations
+           - Use natural speech patterns and clear punctuation
+           - Write numbers as they should be spoken
+           - Use contractions naturally (I'm, we're, let's)
+           - Keep sentences concise and flowing
+           - Write exactly as it should be read aloud
+           - Avoid any formatting or special characters
+
+        2. For AI Knowledge Base:
+           - Structure information hierarchically
+           - Include key concepts and their relationships
+           - Add relevant examples and use cases
+           - Include domain-specific terminology
+           - Add engagement prompts and follow-up questions
+           - Focus on factual content and context
+
+        3. General Requirements:
+           - Preserve key information
+           - Maintain consistent terminology
+           - Ensure content flows logically
+           - Keep the original intent intact
+           - Follow proper JSON formatting
+           - Return only modified content without explanations
+           - Both script and agent must be strings in the JSON response
+           - Start response with opening brace and write token by token
+
+        4. Content Synchronization:
+           - Ensure script and knowledge base complement each other
+           - Maintain alignment between presentation flow and AI responses
+           - Create coherent transitions between topics
+
+        Remember: Focus only on the components selected for editing while preserving others exactly as provided.
         """
 
+        # Modify user prompt based on edit targets
         user_prompt = f"""
-        Original Script: {current_content.get('script', '')}
-        Original Agent Instructions: {current_content.get('agent', '')}
+        Original Content:
+        {"Script: " + current_content.get('script', '') if edit_speech else "Script will not be modified"}
+        {"Agent Instructions: " + current_content.get('agent', '') if edit_knowledge else "Agent instructions will not be modified"}
         
         Edit Request: {edit_instruction}
+        Edit Targets: {"Speech" if edit_speech else ""}{" and " if edit_speech and edit_knowledge else ""}{"Knowledge" if edit_knowledge else ""}
         
         Please provide the updated versions maintaining the same structure but implementing the requested changes.
+        {"Modify the script content according to the edit request." if edit_speech else "Keep the original script content unchanged."}
+        {"Modify the agent instructions according to the edit request." if edit_knowledge else "Keep the original agent instructions unchanged."}
+        
         Return in JSON format with 'script' and 'agent' keys, where both values are strings.
         Example format: {{"script": "Hello world", "agent": "Greet the audience warmly"}}
         Write the response token by token, starting with the opening brace.
@@ -2461,63 +2498,45 @@ def ai_edit_script(brdge_id):
                         {"role": "user", "content": user_prompt},
                     ],
                     stream=True,
-                    temperature=0.7,
+                    temperature=0.0,
                     response_format={"type": "json_object"},
                 )
 
-                accumulated_response = ""
-                current_script = ""
-                current_agent = ""
-                in_script = False
-                in_agent = False
+                current_json = {"script": "", "agent": ""}
+                buffer = ""
 
                 for chunk in stream:
                     if chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
-                        accumulated_response += content
-                        app.logger.debug(f"Received token: {content}")
+                        buffer += content
 
-                        # Send each token immediately
-                        yield f"data: {json.dumps({'token': content})}\n\n"
-
-                        # Try to parse the accumulated response to track state
+                        # Try to parse complete JSON objects
                         try:
-                            parsed = json.loads(accumulated_response)
-                            if isinstance(parsed, dict):
-                                if "script" in parsed and isinstance(
-                                    parsed["script"], str
-                                ):
-                                    current_script = parsed["script"]
-                                if "agent" in parsed and isinstance(
-                                    parsed["agent"], str
-                                ):
-                                    current_agent = parsed["agent"]
+                            complete_json = json.loads(buffer)
+                            if isinstance(complete_json, dict):
+                                if "script" in complete_json:
+                                    current_json["script"] = complete_json["script"]
+                                    # Send script update
+                                    yield f"data: {json.dumps({'script_update': complete_json['script']})}\n\n"
+                                if "agent" in complete_json:
+                                    current_json["agent"] = complete_json["agent"]
+                                    # Send agent update
+                                    yield f"data: {json.dumps({'agent_update': complete_json['agent']})}\n\n"
                         except json.JSONDecodeError:
-                            pass  # Not valid JSON yet, continue accumulating
+                            # If we can't parse as JSON yet, look for partial content
+                            script_match = re.search(
+                                r'"script"\s*:\s*"([^"]*)"', buffer
+                            )
+                            agent_match = re.search(r'"agent"\s*:\s*"([^"]*)"', buffer)
 
-                try:
-                    # Process final content
-                    final_content = json.loads(accumulated_response)
-                    app.logger.info(f"Final content: {final_content}")
+                            if script_match:
+                                yield f"data: {json.dumps({'script_update': script_match.group(1)})}\n\n"
+                            if agent_match:
+                                yield f"data: {json.dumps({'agent_update': agent_match.group(1)})}\n\n"
 
-                    # Validate the content structure and types
-                    if (
-                        not isinstance(final_content, dict)
-                        or "script" not in final_content
-                        or "agent" not in final_content
-                        or not isinstance(final_content["script"], str)
-                        or not isinstance(final_content["agent"], str)
-                    ):
-                        raise ValueError("Invalid content structure or types")
-
-                    # Send final content and done signal
-                    yield f"data: {json.dumps({'token': json.dumps(final_content)})}\n\n"
-                    yield "data: [DONE]\n\n"
-
-                except Exception as e:
-                    app.logger.error(f"Error processing final content: {e}")
-                    yield f"data: {json.dumps({'error': 'Failed to process final content'})}\n\n"
-                    return
+                # Send final content and done signal
+                yield f"data: {json.dumps({'final': current_json})}\n\n"
+                yield "data: [DONE]\n\n"
 
             except Exception as e:
                 app.logger.error(f"Error in stream generation: {e}")
