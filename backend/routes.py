@@ -1542,9 +1542,21 @@ def generate_slide_scripts(brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
+@jwt_required(optional=True)
+@cross_origin()
 def get_brdge_scripts(brdge_id):
     """Get existing scripts for a brdge if they exist"""
     try:
+        # Get current user (optional)
+        current_user = get_current_user()
+
+        # Get the brdge to check permissions
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Check if user has access (owner or public brdge)
+        if not brdge.shareable and current_user and current_user.id != brdge.user_id:
+            return jsonify({"error": "Unauthorized access"}), 403
+
         # Query the most recent script from database
         script = (
             Scripts.query.filter_by(brdge_id=brdge_id)
@@ -1554,7 +1566,16 @@ def get_brdge_scripts(brdge_id):
 
         if not script:
             logger.info(f"No scripts found for brdge {brdge_id}")
-            return jsonify({"has_scripts": False, "message": "No scripts found"}), 200
+            return (
+                jsonify(
+                    {
+                        "has_scripts": False,
+                        "message": "No scripts found",
+                        "brdge_id": brdge_id,
+                    }
+                ),
+                200,
+            )
 
         logger.info(f"Found scripts for brdge {brdge_id}")
         return (
@@ -1565,6 +1586,7 @@ def get_brdge_scripts(brdge_id):
                     "metadata": {
                         "generated_at": script.generated_at.isoformat(),
                         "source_walkthrough_id": script.walkthrough_id,
+                        "brdge_id": brdge_id,
                     },
                 }
             ),
@@ -1572,13 +1594,13 @@ def get_brdge_scripts(brdge_id):
         )
 
     except Exception as e:
-        logger.error(f"Error fetching scripts: {e}")
+        logger.error(f"Error fetching scripts for brdge {brdge_id}: {str(e)}")
         return (
             jsonify(
                 {
                     "error": str(e),
                     "message": "Error fetching scripts",
-                    "details": {"brdge_id": brdge_id},
+                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
                 }
             ),
             500,
@@ -2412,6 +2434,7 @@ def ai_edit_script(brdge_id):
         edit_instruction = request.args.get("instruction")
         edit_speech = request.args.get("editSpeech", "true").lower() == "true"
         edit_knowledge = request.args.get("editKnowledge", "true").lower() == "true"
+        walkthrough_id = request.args.get("walkthroughId")
 
         if not slide_number or not edit_instruction:
             return jsonify({"error": "Missing required parameters"}), 400
@@ -2422,6 +2445,7 @@ def ai_edit_script(brdge_id):
         current_content_str = request.args.get("currentContent", "{}")
         current_content = json.loads(current_content_str)
 
+        # Get the latest script to use as base for the new version
         script = (
             Scripts.query.filter_by(brdge_id=brdge_id)
             .order_by(Scripts.generated_at.desc())
@@ -2481,7 +2505,7 @@ def ai_edit_script(brdge_id):
                             knowledge_content += chunk.get("token", "")
                             yield f"data: {json.dumps({'type': 'agent', 'token': chunk.get('token', '')})}\n\n"
 
-                # Send final content
+                # Create new version with updated content
                 final_content = {
                     "script": (
                         script_content
@@ -2494,6 +2518,22 @@ def ai_edit_script(brdge_id):
                         else current_content.get("agent", "")
                     ),
                 }
+
+                # Create a new Scripts entry instead of updating the existing one
+                new_scripts = script.scripts.copy()  # Copy existing scripts
+                new_scripts[str(slide_number)] = (
+                    final_content  # Update only the edited slide
+                )
+
+                new_script_version = Scripts(
+                    brdge_id=brdge_id,
+                    walkthrough_id=script.walkthrough_id,
+                    scripts=new_scripts,
+                    generated_at=datetime.utcnow(),
+                )
+                db.session.add(new_script_version)
+                db.session.commit()
+
                 yield f"data: {json.dumps({'final': final_content})}\n\n"
                 yield "data: [DONE]\n\n"
 
@@ -2537,7 +2577,7 @@ def ai_edit_script(brdge_id):
             try:
                 client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
                 stream = client.chat.completions.create(
-                    model="gpt-4",
+                    model="gpt-4o",
                     messages=[
                         {"role": "system", "content": knowledge_system_prompt},
                         {
@@ -2578,4 +2618,47 @@ def ai_edit_script(brdge_id):
         )
     except Exception as e:
         app.logger.error(f"Error in ai_edit_script: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Add new endpoint to get script history
+@app.route("/api/brdges/<int:brdge_id>/scripts/history", methods=["GET"])
+def get_script_history(brdge_id):
+    try:
+        # Get all script versions for this brdge, ordered by timestamp
+        scripts = (
+            Scripts.query.filter_by(brdge_id=brdge_id)
+            .order_by(Scripts.generated_at.desc())
+            .all()
+        )
+        return jsonify([script.to_dict() for script in scripts])
+    except Exception as e:
+        app.logger.error(f"Error fetching script history: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Add endpoint to restore a previous version
+@app.route(
+    "/api/brdges/<int:brdge_id>/scripts/<int:script_id>/restore", methods=["POST"]
+)
+def restore_script_version(brdge_id, script_id):
+    try:
+        # Find the script version to restore
+        script_to_restore = Scripts.query.get(script_id)
+        if not script_to_restore or script_to_restore.brdge_id != brdge_id:
+            return jsonify({"error": "Script version not found"}), 404
+
+        # Create a new version with the restored content
+        new_script_version = Scripts(
+            brdge_id=brdge_id,
+            walkthrough_id=script_to_restore.walkthrough_id,
+            scripts=script_to_restore.scripts,
+            generated_at=datetime.utcnow(),
+        )
+        db.session.add(new_script_version)
+        db.session.commit()
+
+        return jsonify(new_script_version.to_dict())
+    except Exception as e:
+        app.logger.error(f"Error restoring script version: {e}")
         return jsonify({"error": str(e)}), 500
