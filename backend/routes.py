@@ -2077,20 +2077,12 @@ def debug_brdge_scripts(brdge_id):
         )
 
 
-@app.route("/api/brdges/<int:brdge_id>/scripts/update", methods=["PUT", "OPTIONS"])
-@cross_origin()
-def update_brdge_scripts(brdge_id):
-    """Update scripts for a brdge"""
-    if request.method == "OPTIONS":
-        return "", 200
-
+@app.route("/api/brdges/<int:brdge_id>/scripts/update", methods=["PUT"])
+def update_scripts(brdge_id):
     try:
-        data = request.get_json()
-        updated_scripts = data.get("scripts")
+        data = request.json.get("scripts", {})
 
-        if not updated_scripts:
-            return jsonify({"error": "No scripts provided"}), 400
-
+        # Get existing scripts
         script = (
             Scripts.query.filter_by(brdge_id=brdge_id)
             .order_by(Scripts.generated_at.desc())
@@ -2098,59 +2090,39 @@ def update_brdge_scripts(brdge_id):
         )
 
         if not script:
-            return jsonify({"error": "No scripts found for this brdge"}), 404
+            return jsonify({"error": "No scripts found"}), 404
 
-        # Create a new scripts dictionary that will store both script and agent content
-        combined_scripts = script.scripts.copy() if script.scripts else {}
+        existing_scripts = script.scripts
 
-        # Update with new content
-        for slide_num, content in updated_scripts.items():
-            # Ensure content is in the correct format
-            if isinstance(content, dict) and "script" in content:
-                combined_scripts[slide_num] = {
-                    "script": content.get("script", ""),
-                    "agent": content.get("agent", ""),
-                }
-            else:
-                # Handle legacy format or invalid data
-                app.logger.warning(
-                    f"Received unexpected format for slide {slide_num}: {content}"
-                )
-                combined_scripts[slide_num] = {"script": str(content), "agent": ""}
+        # Update only the fields that were sent
+        for slide_number, updated_content in data.items():
+            if slide_number not in existing_scripts:
+                existing_scripts[slide_number] = {}
 
-        # Update scripts in database
-        script.scripts = combined_scripts
-        script.generated_at = datetime.utcnow()
+            if "script" in updated_content:
+                existing_scripts[slide_number]["script"] = updated_content["script"]
+            if "agent" in updated_content:
+                existing_scripts[slide_number]["agent"] = updated_content["agent"]
+
+        # Create new version with updated content
+        new_script = Scripts(
+            brdge_id=brdge_id,
+            walkthrough_id=script.walkthrough_id,
+            scripts=existing_scripts,
+            generated_at=datetime.utcnow(),
+        )
+
+        db.session.add(new_script)
         db.session.commit()
 
-        app.logger.info(f"Successfully updated scripts for brdge {brdge_id}")
-        return (
-            jsonify(
-                {
-                    "message": "Scripts updated successfully",
-                    "scripts": script.scripts,
-                    "metadata": {
-                        "generated_at": script.generated_at.isoformat(),
-                        "walkthrough_id": script.walkthrough_id,
-                    },
-                }
-            ),
-            200,
+        return jsonify(
+            {"message": "Scripts updated successfully", "scripts": new_script.scripts}
         )
 
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error updating scripts: {e}")
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error updating scripts",
-                    "details": {"brdge_id": brdge_id},
-                }
-            ),
-            500,
-        )
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["POST"])
@@ -2486,53 +2458,44 @@ def ai_edit_script(brdge_id):
 
         def generate():
             try:
-                script_content = None
-                knowledge_content = None
+                results = {"script": None, "agent": None, "type": None}
 
                 # Generate script if requested
                 if edit_speech:
-                    script_content = ""
+                    results["type"] = "script"
                     for chunk in generate_script():
-                        if isinstance(chunk, dict):  # It's a streaming update
-                            script_content += chunk.get("token", "")
+                        if isinstance(chunk, dict):
                             yield f"data: {json.dumps({'type': 'script', 'token': chunk.get('token', '')})}\n\n"
+                            results["script"] = (results["script"] or "") + chunk.get(
+                                "token", ""
+                            )
 
                 # Generate knowledge if requested
                 if edit_knowledge:
-                    knowledge_content = ""
+                    results["type"] = "agent" if not edit_speech else "both"
                     for chunk in generate_knowledge():
-                        if isinstance(chunk, dict):  # It's a streaming update
-                            knowledge_content += chunk.get("token", "")
+                        if isinstance(chunk, dict):
                             yield f"data: {json.dumps({'type': 'agent', 'token': chunk.get('token', '')})}\n\n"
+                            results["agent"] = (results["agent"] or "") + chunk.get(
+                                "token", ""
+                            )
 
-                # Create new version with updated content
+                # Send final content with type information
                 final_content = {
-                    "script": (
-                        script_content
-                        if edit_speech
-                        else current_content.get("script", "")
-                    ),
-                    "agent": (
-                        knowledge_content
-                        if edit_knowledge
-                        else current_content.get("agent", "")
-                    ),
+                    "type": results["type"],
+                    "content": {
+                        "script": (
+                            results["script"]
+                            if edit_speech
+                            else current_content.get("script", "")
+                        ),
+                        "agent": (
+                            results["agent"]
+                            if edit_knowledge
+                            else current_content.get("agent", "")
+                        ),
+                    },
                 }
-
-                # Create a new Scripts entry instead of updating the existing one
-                new_scripts = script.scripts.copy()  # Copy existing scripts
-                new_scripts[str(slide_number)] = (
-                    final_content  # Update only the edited slide
-                )
-
-                new_script_version = Scripts(
-                    brdge_id=brdge_id,
-                    walkthrough_id=script.walkthrough_id,
-                    scripts=new_scripts,
-                    generated_at=datetime.utcnow(),
-                )
-                db.session.add(new_script_version)
-                db.session.commit()
 
                 yield f"data: {json.dumps({'final': final_content})}\n\n"
                 yield "data: [DONE]\n\n"
