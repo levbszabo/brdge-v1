@@ -2430,117 +2430,140 @@ def ai_edit_script(brdge_id):
         if not script:
             return jsonify({"error": "No scripts found for this brdge"}), 404
 
-        system_prompt = """You are an advanced AI writing assistant specializing in presentation content optimization.
-        Your role is to enhance both presentation scripts and AI agent knowledge bases while maintaining their distinct purposes.
+        script_system_prompt = """You are an advanced AI writing assistant specializing in presentation script optimization.
 
-        Core Guidelines:
-        1. For Presentation Scripts:
-           - Write in plain text only - NO markup, NO special characters
-           - NO emphasis markers, NO pause indicators, NO annotations
-           - Use natural speech patterns and clear punctuation
-           - Write numbers as they should be spoken
-           - Use contractions naturally (I'm, we're, let's)
-           - Keep sentences concise and flowing
-           - Write exactly as it should be read aloud
-           - Avoid any formatting or special characters
+        Core Guidelines for Presentation Scripts:
+        - Write in plain text only - NO markup, NO special characters
+        - NO emphasis markers, NO pause indicators, NO annotations
+        - Use natural speech patterns and clear punctuation
+        - Write numbers as they should be spoken
+        - Use contractions naturally (I'm, we're, let's)
+        - Keep sentences concise and flowing
+        - Write exactly as it should be read aloud
+        - Avoid any formatting or special characters
+        - Return only the script content, no additional text or markers
 
-        2. For AI Knowledge Base:
-           - Structure information hierarchically
-           - Include key concepts and their relationships
-           - Add relevant examples and use cases
-           - Include domain-specific terminology
-           - Add engagement prompts and follow-up questions
-           - Focus on factual content and context
-
-        3. General Requirements:
-           - Preserve key information
-           - Maintain consistent terminology
-           - Ensure content flows logically
-           - Keep the original intent intact
-           - Follow proper JSON formatting
-           - Return only modified content without explanations
-           - Both script and agent must be strings in the JSON response
-           - Start response with opening brace and write token by token
-
-        4. Content Synchronization:
-           - Ensure script and knowledge base complement each other
-           - Maintain alignment between presentation flow and AI responses
-           - Create coherent transitions between topics
-
-        Remember: Focus only on the components selected for editing while preserving others exactly as provided.
+        Remember: Focus on creating engaging, natural speech that flows well when spoken aloud.
         """
 
-        # Modify user prompt based on edit targets
-        user_prompt = f"""
-        Original Content:
-        {"Script: " + current_content.get('script', '') if edit_speech else "Script will not be modified"}
-        {"Agent Instructions: " + current_content.get('agent', '') if edit_knowledge else "Agent instructions will not be modified"}
-        
-        Edit Request: {edit_instruction}
-        Edit Targets: {"Speech" if edit_speech else ""}{" and " if edit_speech and edit_knowledge else ""}{"Knowledge" if edit_knowledge else ""}
-        
-        Please provide the updated versions maintaining the same structure but implementing the requested changes.
-        {"Modify the script content according to the edit request." if edit_speech else "Keep the original script content unchanged."}
-        {"Modify the agent instructions according to the edit request." if edit_knowledge else "Keep the original agent instructions unchanged."}
-        
-        Return in JSON format with 'script' and 'agent' keys, where both values are strings.
-        Example format: {{"script": "Hello world", "agent": "Greet the audience warmly"}}
-        Write the response token by token, starting with the opening brace.
+        knowledge_system_prompt = """You are an advanced AI writing assistant specializing in AI knowledge base optimization.
+
+        Core Guidelines for AI Knowledge Base:
+        - Structure information hierarchically
+        - Include key concepts and their relationships
+        - Add relevant examples and use cases
+        - Include domain-specific terminology
+        - Add engagement prompts and follow-up questions
+        - Focus on factual content and context
+        - Return only the knowledge content, no additional text or markers
+
+        Remember: Focus on creating comprehensive, well-structured knowledge that helps the AI understand and respond effectively.
         """
 
         def generate():
             try:
-                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-                stream = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    stream=True,
-                    temperature=0.0,
-                    response_format={"type": "json_object"},
-                )
+                script_content = None
+                knowledge_content = None
 
-                current_json = {"script": "", "agent": ""}
-                buffer = ""
+                # Generate script if requested
+                if edit_speech:
+                    script_content = ""
+                    for chunk in generate_script():
+                        if isinstance(chunk, dict):  # It's a streaming update
+                            script_content += chunk.get("token", "")
+                            yield f"data: {json.dumps({'type': 'script', 'token': chunk.get('token', '')})}\n\n"
 
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
-                        buffer += content
+                # Generate knowledge if requested
+                if edit_knowledge:
+                    knowledge_content = ""
+                    for chunk in generate_knowledge():
+                        if isinstance(chunk, dict):  # It's a streaming update
+                            knowledge_content += chunk.get("token", "")
+                            yield f"data: {json.dumps({'type': 'agent', 'token': chunk.get('token', '')})}\n\n"
 
-                        # Try to parse complete JSON objects
-                        try:
-                            complete_json = json.loads(buffer)
-                            if isinstance(complete_json, dict):
-                                if "script" in complete_json:
-                                    current_json["script"] = complete_json["script"]
-                                    # Send script update
-                                    yield f"data: {json.dumps({'script_update': complete_json['script']})}\n\n"
-                                if "agent" in complete_json:
-                                    current_json["agent"] = complete_json["agent"]
-                                    # Send agent update
-                                    yield f"data: {json.dumps({'agent_update': complete_json['agent']})}\n\n"
-                        except json.JSONDecodeError:
-                            # If we can't parse as JSON yet, look for partial content
-                            script_match = re.search(
-                                r'"script"\s*:\s*"([^"]*)"', buffer
-                            )
-                            agent_match = re.search(r'"agent"\s*:\s*"([^"]*)"', buffer)
-
-                            if script_match:
-                                yield f"data: {json.dumps({'script_update': script_match.group(1)})}\n\n"
-                            if agent_match:
-                                yield f"data: {json.dumps({'agent_update': agent_match.group(1)})}\n\n"
-
-                # Send final content and done signal
-                yield f"data: {json.dumps({'final': current_json})}\n\n"
+                # Send final content
+                final_content = {
+                    "script": (
+                        script_content
+                        if edit_speech
+                        else current_content.get("script", "")
+                    ),
+                    "agent": (
+                        knowledge_content
+                        if edit_knowledge
+                        else current_content.get("agent", "")
+                    ),
+                }
+                yield f"data: {json.dumps({'final': final_content})}\n\n"
                 yield "data: [DONE]\n\n"
 
             except Exception as e:
                 app.logger.error(f"Error in stream generation: {e}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+        def generate_script():
+            try:
+                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                stream = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": script_system_prompt},
+                        {
+                            "role": "user",
+                            "content": f"""
+                            Original Script: {current_content.get('script', '')}
+                            Edit Request: {edit_instruction}
+                            
+                            Please modify the script according to this request.
+                            Return only the modified script content.
+                        """,
+                        },
+                    ],
+                    stream=True,
+                    temperature=0.0,
+                )
+
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        if content.strip():
+                            yield {"token": content}
+
+            except Exception as e:
+                app.logger.error(f"Error generating script: {e}")
+                raise
+
+        def generate_knowledge():
+            try:
+                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+                stream = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": knowledge_system_prompt},
+                        {
+                            "role": "user",
+                            "content": f"""
+                            Original Knowledge: {current_content.get('agent', '')}
+                            Edit Request: {edit_instruction}
+                            
+                            Please modify the knowledge base according to this request.
+                            Return only the modified knowledge content.
+                        """,
+                        },
+                    ],
+                    stream=True,
+                    temperature=0.0,
+                )
+
+                for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        if content.strip():
+                            yield {"token": content}
+
+            except Exception as e:
+                app.logger.error(f"Error generating knowledge: {e}")
+                raise
 
         return Response(
             stream_with_context(generate()),
