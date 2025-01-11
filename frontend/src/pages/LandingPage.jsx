@@ -69,8 +69,10 @@ const IntroducingBrdgeAI = () => {
             }
         }}>
             <Container maxWidth="lg" ref={ref} sx={{
-                px: { xs: 0, sm: 3, md: 4 },
-                mt: { xs: 0, sm: 2, md: 0 }
+                px: { xs: 2, sm: 4, md: 6 },
+                mt: { xs: 4, sm: 6, md: 8 },
+                position: 'relative',
+                zIndex: 1
             }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
@@ -81,7 +83,8 @@ const IntroducingBrdgeAI = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
                         fontWeight: 600,
                         color: 'white',
-                        mb: { xs: 4, sm: 5, md: 6 },
+                        mt: { xs: 8, sm: 10, md: 12 },
+                        mb: { xs: 6, sm: 8, md: 10 },
                         textTransform: 'capitalize',
                         textShadow: '0 0 20px rgba(255,255,255,0.4)',
                         letterSpacing: '0.02em',
@@ -89,14 +92,25 @@ const IntroducingBrdgeAI = () => {
                         '&::after': {
                             content: '""',
                             position: 'absolute',
-                            bottom: '-12px',
+                            bottom: '-24px',
                             left: '50%',
                             transform: 'translateX(-50%)',
-                            width: '80px',
+                            width: '140px',
                             height: '3px',
-                            background: 'linear-gradient(90deg, #FFFFFF, #E0E0E0)',
+                            background: `linear-gradient(
+                                90deg,
+                                transparent 0%,
+                                rgba(0,255,204,0.2) 15%,
+                                rgba(0,255,204,0.5) 50%,
+                                rgba(0,255,204,0.2) 85%,
+                                transparent 100%
+                            )`,
                             borderRadius: '2px',
-                            boxShadow: '0 2px 8px rgba(255,255,255,0.2)'
+                            boxShadow: `
+                                0 0 10px rgba(0,255,204,0.3),
+                                0 0 20px rgba(0,255,204,0.2)
+                            `,
+                            animation: 'pulseUnderline 3s ease-in-out infinite'
                         }
                     }}>
                         Real Impact Across Industries
@@ -188,9 +202,10 @@ const IntroducingBrdgeAI = () => {
                                     color: '#FFFFFF',
                                     mb: 4,
                                     maxWidth: '800px',
-                                    fontSize: { xs: '1.125rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontSize: { xs: '1rem', sm: '1.1rem', md: '1.15rem' },
                                     fontWeight: 400,
-                                    lineHeight: { xs: 1.6, md: 1.7 },
+                                    lineHeight: { xs: 1.5, md: 1.6 },
+                                    pr: { md: 2 },  // Add right padding for better spacing
                                     '& strong': {
                                         color: '#00ffcc',
                                         fontWeight: 600,
@@ -204,9 +219,10 @@ const IntroducingBrdgeAI = () => {
                                     color: '#FFFFFF',
                                     mb: 4,
                                     maxWidth: '800px',
-                                    fontSize: { xs: '1.125rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontSize: { xs: '1rem', sm: '1.1rem', md: '1.15rem' },
                                     fontWeight: 400,
-                                    lineHeight: { xs: 1.6, md: 1.7 },
+                                    lineHeight: { xs: 1.5, md: 1.6 },
+                                    pr: { md: 2 },  // Add right padding for better spacing
                                     '& strong': {
                                         color: '#00ffcc',
                                         fontWeight: 600,
@@ -216,26 +232,57 @@ const IntroducingBrdgeAI = () => {
                                     Whether it's for <strong>sales funnels</strong>, <strong>onboarding</strong>, <strong>training sessions</strong>, or <strong>community education</strong>, your AI guide responds instantly—no more scheduling calls, repeating yourself, or leaving people waiting!
                                 </Typography>
 
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mt: 4 }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 2,
+                                    mt: 4
+                                }}>
                                     <Box sx={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 1,
-                                        color: '#00ffcc'
+                                        gap: 1.5,
+                                        color: '#00ffcc',
+                                        padding: '8px 16px',
+                                        background: 'rgba(0,255,204,0.05)',
+                                        borderRadius: '12px',
+                                        border: '1px solid rgba(0,255,204,0.1)',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            background: 'rgba(0,255,204,0.08)',
+                                            border: '1px solid rgba(0,255,204,0.2)',
+                                        }
                                     }}>
-                                        <AccessTime sx={{ fontSize: '1.5rem' }} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
+                                        <AccessTime sx={{ fontSize: '1.25rem' }} />
+                                        <Typography variant="subtitle1" sx={{
+                                            fontWeight: 500,
+                                            fontSize: '0.9rem',
+                                            letterSpacing: '0.02em'
+                                        }}>
                                             Under 10 Minutes Setup
                                         </Typography>
                                     </Box>
                                     <Box sx={{
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 1,
-                                        color: '#00ffcc'
+                                        gap: 1.5,
+                                        color: '#00ffcc',
+                                        padding: '8px 16px',
+                                        background: 'rgba(0,255,204,0.05)',
+                                        borderRadius: '12px',
+                                        border: '1px solid rgba(0,255,204,0.1)',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            background: 'rgba(0,255,204,0.08)',
+                                            border: '1px solid rgba(0,255,204,0.2)',
+                                        }
                                     }}>
-                                        <AllInclusive sx={{ fontSize: '1.5rem' }} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
+                                        <AllInclusive sx={{ fontSize: '1.25rem' }} />
+                                        <Typography variant="subtitle1" sx={{
+                                            fontWeight: 500,
+                                            fontSize: '0.9rem',
+                                            letterSpacing: '0.02em'
+                                        }}>
                                             24/7 Availability
                                         </Typography>
                                     </Box>
@@ -409,12 +456,19 @@ const IntroducingBrdgeAI = () => {
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            width: '200px',
-                            height: '200px',
-                            background: 'radial-gradient(circle, rgba(0,255,204,0.1) 0%, transparent 70%)',
-                            filter: 'blur(20px)',
+                            width: '400px',
+                            height: '400px',
+                            background: `
+                                radial-gradient(circle at center,
+                                rgba(0,255,204,0.15) 0%,
+                                rgba(0,255,204,0.1) 20%,
+                                rgba(0,180,219,0.05) 40%,
+                                transparent 70%)
+                            `,
+                            filter: 'blur(40px)',
                             zIndex: 0,
-                        }
+                            animation: 'pulse 2s ease-in-out infinite',
+                        },
                     }}>
                         <Button
                             component={Link}
@@ -631,6 +685,78 @@ const IntroducingBrdgeAI = () => {
                         0%, 100% { opacity: 0.6; filter: brightness(1); }
                         50% { opacity: 1; filter: brightness(1.3); }
                     }
+
+                    @keyframes sparkle {
+                        0% { opacity: 0; height: 15px; }
+                        50% { opacity: 0.8; height: 25px; }
+                        100% { opacity: 0; height: 15px; }
+                    }
+
+                    @keyframes breatheAndGlow {
+                        0%, 100% { 
+                            transform: translate(-50%, -50%) scale(0.98);
+                            opacity: 0.6;
+                            filter: blur(8px) brightness(1);
+                        }
+                        50% { 
+                            transform: translate(-50%, -50%) scale(1.02);
+                            opacity: 0.8;
+                            filter: blur(12px) brightness(1.3);
+                        }
+                    }
+
+                    @keyframes rotateAndPulse {
+                        0% { 
+                            transform: translate(-50%, -50%) rotate(0deg) scale(1);
+                            border-color: rgba(0, 255, 204, 0.2);
+                            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+                        }
+                        50% { 
+                            transform: translate(-50%, -50%) rotate(180deg) scale(1.02);
+                            border-color: rgba(0, 255, 204, 0.4);
+                            box-shadow: 0 0 25px rgba(0, 255, 204, 0.4);
+                        }
+                        100% { 
+                            transform: translate(-50%, -50%) rotate(360deg) scale(1);
+                            border-color: rgba(0, 255, 204, 0.2);
+                            box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+                        }
+                    }
+
+                    @keyframes floatAndGlow {
+                        0%, 100% { 
+                            transform: translateY(0px) translateZ(0);
+                            filter: drop-shadow(0 0 15px rgba(0, 255, 204, 0.3)) brightness(1);
+                        }
+                        50% { 
+                            transform: translateY(-8px) translateZ(0);
+                            filter: drop-shadow(0 0 25px rgba(0, 255, 204, 0.5)) brightness(1.2);
+                        }
+                    }
+
+                    @keyframes electricPulse {
+                        0%, 100% { opacity: 0.6; filter: brightness(1); }
+                        50% { opacity: 1; filter: brightness(1.3); }
+                    }
+
+                    @keyframes pulse {
+                        0% { opacity: 0.5; }
+                        50% { opacity: 1; }
+                        100% { opacity: 0.5; }
+                    }
+
+                    @keyframes pulseUnderline {
+                        0%, 100% {
+                            opacity: 0.5;
+                            transform: translateX(-50%) scaleX(0.95);
+                            filter: brightness(0.8);
+                        }
+                        50% {
+                            opacity: 1;
+                            transform: translateX(-50%) scaleX(1);
+                            filter: brightness(1.2);
+                        }
+                    }
                 `}
             </style>
         </Box>
@@ -730,14 +856,36 @@ const HeroSection = () => {
                                 bottom: '-24px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '4px',
-                                background: 'linear-gradient(90deg, rgba(0,255,204,0.3), rgba(0,180,219,0.3))',
-                                borderRadius: '2px',
+                                width: '180px',
+                                height: '2px',
+                                background: `linear-gradient(
+                                    90deg, 
+                                    transparent 0%,
+                                    rgba(0,255,204,0.2) 20%,
+                                    rgba(0,255,204,0.4) 50%,
+                                    rgba(0,255,204,0.2) 80%,
+                                    transparent 100%
+                                )`,
+                                borderRadius: '1px',
+                                boxShadow: `
+                                    0 0 10px rgba(0,255,204,0.3),
+                                    0 0 20px rgba(0,255,204,0.2)
+                                `
                             }
                         }}
                     >
-                        <strong>Speak Through AI</strong>
+                        <Box
+                            component="strong"
+                            sx={{
+                                textShadow: `
+                                    0 0 10px rgba(255, 255, 255, 0.4),
+                                    0 0 20px rgba(255, 255, 255, 0.2),
+                                    0 0 30px rgba(255, 255, 255, 0.1)
+                                `,
+                            }}
+                        >
+                            Speak Through AI
+                        </Box>
                         <Box
                             component="span"
                             sx={{
@@ -778,9 +926,10 @@ const HeroSection = () => {
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            width: '120%',
-                            height: '120%',
+                            width: '200%',  // Increased from 120% to 200%
+                            height: '200%', // Increased from 120% to 200%
                             background: 'radial-gradient(circle, rgba(0, 255, 204, 0.15) 0%, transparent 70%)',
+                            filter: 'blur(40px)',  // Added blur to soften the extended glow
                             animation: 'breathe 4s ease-in-out infinite',
                             zIndex: 0,
                         },
@@ -802,11 +951,6 @@ const HeroSection = () => {
                             visibility: 'hidden',
                             zIndex: 10,
                         },
-                        '&:hover::after': {
-                            opacity: 1,
-                            visibility: 'visible',
-                            transform: 'translateX(-50%) translateY(0)',
-                        }
                     }}
                     onMouseMove={handleMouseMove}
                 >
@@ -838,11 +982,11 @@ const HeroSection = () => {
                                     top: '50%',
                                     left: '50%',
                                     transform: 'translate(-50%, -50%)',
-                                    width: '88%',
-                                    height: '88%',
-                                    borderRadius: '50%',
+                                    width: '150%',  // Increased from 88% to 150%
+                                    height: '150%', // Increased from 88% to 150%
+                                    borderRadius: '20%',
                                     background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
-                                    filter: 'blur(8px)',
+                                    filter: 'blur(25px)',  // Increased blur for softer, wider glow
                                     animation: 'breatheAndGlow 4s infinite ease-in-out',
                                 },
                                 '&::after': {
@@ -856,61 +1000,104 @@ const HeroSection = () => {
                                     borderRadius: '50%',
                                     border: '2px solid rgba(0, 255, 204, 0.3)',
                                     boxShadow: `
-                                        0 0 15px rgba(0, 255, 204, 0.3),
-                                        inset 0 0 15px rgba(0, 255, 204, 0.2),
-                                        0 0 30px rgba(0, 255, 204, 0.2),
-                                        inset 0 0 30px rgba(0, 255, 204, 0.1)
+                                        0 0 30px rgba(0, 255, 204, 0.3),
+                                        inset 0 0 30px rgba(0, 255, 204, 0.2),
+                                        0 0 60px rgba(0, 255, 204, 0.2),
+                                        inset 0 0 60px rgba(0, 255, 204, 0.1),
+                                        0 0 100px rgba(0, 255, 204, 0.1)  // Added extra outer glow
                                     `,
                                     animation: 'rotateAndPulse 10s linear infinite',
-                                },
-                                '& .spark': {
-                                    position: 'absolute',
-                                    width: '2px',
-                                    height: '20px',
-                                    background: 'linear-gradient(to bottom, transparent, #00ffcc, transparent)',
-                                    animation: 'sparkle 1.5s infinite',
-                                    opacity: 0,
-                                },
-                                '& .spark1': { transform: 'rotate(0deg) translateY(-45px)', animationDelay: '0s' },
-                                '& .spark2': { transform: 'rotate(45deg) translateY(-45px)', animationDelay: '0.2s' },
-                                '& .spark3': { transform: 'rotate(90deg) translateY(-45px)', animationDelay: '0.4s' },
-                                '& .spark4': { transform: 'rotate(135deg) translateY(-45px)', animationDelay: '0.6s' },
-                                '& .spark5': { transform: 'rotate(180deg) translateY(-45px)', animationDelay: '0.8s' },
-                                '& .spark6': { transform: 'rotate(225deg) translateY(-45px)', animationDelay: '1.0s' },
-                                '& .spark7': { transform: 'rotate(270deg) translateY(-45px)', animationDelay: '1.2s' },
-                                '& .spark8': { transform: 'rotate(315deg) translateY(-45px)', animationDelay: '1.4s' },
+                                }
                             }}
                         >
-                            {[...Array(8)].map((_, i) => (
-                                <div key={i} className={`spark spark${i + 1}`} />
-                            ))}
                             <Box
-                                component="img"
-                                src={logo}
-                                alt="Brdge Logo"
                                 sx={{
-                                    width: '82%',
-                                    height: '82%',
-                                    objectFit: 'contain',
-                                    filter: `
-                                        drop-shadow(0 0 15px rgba(0, 255, 204, 0.4))
-                                        drop-shadow(0 0 30px rgba(0, 255, 204, 0.3))
-                                        brightness(1.1)
-                                    `,
-                                    transition: 'all 0.4s ease',
-                                    transform: 'translateZ(0)',
-                                    animation: 'floatAndGlow 6s ease-in-out infinite',
                                     position: 'relative',
-                                    zIndex: 2,
-                                    '&:hover': {
-                                        filter: `
-                                            drop-shadow(0 0 25px rgba(0, 255, 204, 0.6))
-                                            drop-shadow(0 0 50px rgba(0, 255, 204, 0.4))
-                                            brightness(1.2)
-                                        `,
+                                    width: '100%',
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '88%',
+                                        height: '88%',
+                                        borderRadius: '20%',
+                                        background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
+                                        filter: 'blur(8px)',
+                                        animation: 'breatheAndGlow 4s infinite ease-in-out',
                                     },
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '86%',
+                                        height: '86%',
+                                        borderRadius: '50%',
+                                        border: '2px solid rgba(0, 255, 204, 0.3)',
+                                        boxShadow: `
+                                            0 0 15px rgba(0, 255, 204, 0.3),
+                                            inset 0 0 15px rgba(0, 255, 204, 0.2),
+                                            0 0 30px rgba(0, 255, 204, 0.2),
+                                            inset 0 0 30px rgba(0, 255, 204, 0.1)
+                                        `,
+                                        animation: 'rotateAndPulse 10s linear infinite',
+                                    },
+                                    '& .spark': {
+                                        position: 'absolute',
+                                        width: '2px',
+                                        height: '20px',
+                                        background: 'linear-gradient(to bottom, transparent, #00ffcc, transparent)',
+                                        animation: 'sparkle 1.5s infinite',
+                                        opacity: 0,
+                                    },
+                                    '& .spark1': { transform: 'rotate(0deg) translateY(-45px)', animationDelay: '0s' },
+                                    '& .spark2': { transform: 'rotate(45deg) translateY(-45px)', animationDelay: '0.2s' },
+                                    '& .spark3': { transform: 'rotate(90deg) translateY(-45px)', animationDelay: '0.4s' },
+                                    '& .spark4': { transform: 'rotate(135deg) translateY(-45px)', animationDelay: '0.6s' },
+                                    '& .spark5': { transform: 'rotate(180deg) translateY(-45px)', animationDelay: '0.8s' },
+                                    '& .spark6': { transform: 'rotate(225deg) translateY(-45px)', animationDelay: '1.0s' },
+                                    '& .spark7': { transform: 'rotate(270deg) translateY(-45px)', animationDelay: '1.2s' },
+                                    '& .spark8': { transform: 'rotate(315deg) translateY(-45px)', animationDelay: '1.4s' },
                                 }}
-                            />
+                            >
+                                {[...Array(8)].map((_, i) => (
+                                    <div key={i} className={`spark spark${i + 1}`} />
+                                ))}
+                                <Box
+                                    component="img"
+                                    src={logo}
+                                    alt="Brdge Logo"
+                                    sx={{
+                                        width: '82%',
+                                        height: '82%',
+                                        objectFit: 'contain',
+                                        filter: `
+                                            drop-shadow(0 0 15px rgba(0, 255, 204, 0.4))
+                                            drop-shadow(0 0 30px rgba(0, 255, 204, 0.3))
+                                            brightness(1.1)
+                                        `,
+                                        transition: 'all 0.4s ease',
+                                        transform: 'translateZ(0)',
+                                        animation: 'floatAndGlow 6s ease-in-out infinite',
+                                        position: 'relative',
+                                        zIndex: 2,
+                                        '&:hover': {
+                                            filter: `
+                                                drop-shadow(0 0 25px rgba(0, 255, 204, 0.6))
+                                                drop-shadow(0 0 50px rgba(0, 255, 204, 0.4))
+                                                brightness(1.2)
+                                            `,
+                                        },
+                                    }}
+                                />
+                            </Box>
                         </Box>
                     </motion.div>
                 </Box>
@@ -926,15 +1113,24 @@ const HeroSection = () => {
                         opacity: 0.9,
                         fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
                         fontWeight: 400,
-                        lineHeight: 1.75,
+                        lineHeight: 1.85,  // Increased from 1.75 to 1.85 (approximately 5% increase)
                         px: { xs: 3, sm: 4 },
                         color: 'rgba(255, 255, 255, 0.95)',
                         letterSpacing: '0.01em',
-                        textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
+                        textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+                        '& strong': {
+                            fontWeight: 600,
+                            color: '#fff',
+                            textShadow: `
+                                0 0 10px rgba(255, 255, 255, 0.3),
+                                0 0 20px rgba(0, 255, 204, 0.2)
+                            `,
+                            letterSpacing: '0.02em'
+                        }
                     }}
                 >
-                    Make your content come alive, turning your documents and presentations into an always-on voice assistant that sounds exactly like you.
-                    Brdge AI presents on your behalf, letting you focus on what truly matters.
+                    Make your content come alive, turning your documents and presentations into an <strong>always-on voice assistant</strong> that sounds exactly like you.
+                    Brdge AI presents on your behalf, letting you <strong>focus on what truly matters</strong>.
                 </Typography>
 
                 <Box sx={{
@@ -1016,7 +1212,7 @@ const HeroSection = () => {
                                 },
                             }}
                         >
-                            Watch Demo
+                            See It In Action
                         </Button>
                     </motion.div>
                 </Box>

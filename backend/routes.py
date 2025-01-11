@@ -2625,3 +2625,25 @@ def restore_script_version(brdge_id, script_id):
     except Exception as e:
         app.logger.error(f"Error restoring script version: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/voices", methods=["GET"])
+def get_voices(brdge_id):
+    try:
+        voices = Voice.query.filter_by(brdge_id=brdge_id).all()
+        return jsonify(
+            {
+                "voices": [
+                    {
+                        "id": voice.id,
+                        "name": voice.name,
+                        "created_at": voice.created_at.isoformat(),
+                        "active": True,  # All voices are active by default for now
+                    }
+                    for voice in voices
+                ]
+            }
+        )
+    except Exception as e:
+        app.logger.error(f"Error fetching voices: {e}")
+        return jsonify({"error": str(e)}), 500

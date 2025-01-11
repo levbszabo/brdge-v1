@@ -20,7 +20,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
-import logo from '../assets/new-img.png';
 
 function Header() {
     const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -63,7 +62,7 @@ function Header() {
     // Different menu items based on authentication status
     const menuItems = isAuthenticated
         ? [
-            { text: 'My Brdges', link: '/brdges' },
+            { text: 'Brdges', link: '/brdges' },
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
@@ -146,22 +145,22 @@ function Header() {
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px'
                     }}>
-                        <img
-                            src={logo}
-                            alt="Brdge AI Logo"
-                            style={{
-                                height: '40px',
-                                width: 'auto'
-                            }}
-                        />
                         <Typography
                             variant="h6"
                             component="div"
                             sx={{
                                 color: 'white',
-                                display: { xs: 'none', sm: 'block' }
+                                display: 'block',
+                                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                fontWeight: 500,
+                                letterSpacing: '0.02em',
+                                lineHeight: 1,
+                                transform: 'translateY(-1px)',
+                                textShadow: '0 0 10px rgba(0,255,204,0.3)',
+                                '&:hover': {
+                                    textShadow: '0 0 15px rgba(0,255,204,0.4)',
+                                }
                             }}
                         >
                             Brdge AI

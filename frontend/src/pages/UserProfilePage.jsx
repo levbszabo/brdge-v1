@@ -80,30 +80,54 @@ const cardStyles = {
 };
 
 const tierCardStyles = (isActive, isPremium) => ({
-    ...cardStyles,
-    p: 2,
-    borderRadius: '16px',
-    border: isActive ? '2px solid rgba(0, 188, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)',
     background: isPremium
-        ? 'linear-gradient(135deg, rgba(33, 150, 243, 0.05) 0%, rgba(0, 188, 212, 0.05) 100%)'
-        : 'rgba(255, 255, 255, 0.02)',
-    boxShadow: isActive ? '0 4px 12px rgba(0, 188, 212, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 6px 16px rgba(0, 188, 212, 0.4)',
-    },
+        ? 'linear-gradient(145deg, rgba(13, 71, 161, 0.1) 0%, rgba(0, 29, 54, 0.1) 100%)'
+        : 'linear-gradient(145deg, rgba(10, 17, 40, 0.4) 0%, rgba(2, 6, 23, 0.4) 100%)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '28px',
+    border: isActive
+        ? '1px solid rgba(0, 188, 212, 0.3)'
+        : '1px solid rgba(255, 255, 255, 0.05)',
+    transition: 'all 0.4s ease',
     position: 'relative',
     overflow: 'hidden',
-    '&::before': isPremium ? {
+    height: '100%',
+    '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: isPremium
+            ? '0 8px 32px rgba(0, 188, 212, 0.15)'
+            : '0 8px 32px rgba(0, 0, 0, 0.2)',
+        border: isPremium
+            ? '1px solid rgba(0, 188, 212, 0.4)'
+            : '1px solid rgba(255, 255, 255, 0.1)',
+        '&::after': {
+            opacity: 0.1
+        }
+    },
+    '&::before': {
         content: '""',
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: '2px',
-        background: 'linear-gradient(90deg, #2196F3, #00BCD4)',
-    } : {}
+        height: '1px',
+        background: isPremium
+            ? 'linear-gradient(90deg, transparent, rgba(0, 188, 212, 0.3), transparent)'
+            : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
+    },
+    '&::after': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: isPremium
+            ? 'linear-gradient(145deg, rgba(33, 150, 243, 0.05) 0%, rgba(0, 188, 212, 0.05) 100%)'
+            : 'linear-gradient(145deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%)',
+        opacity: 0,
+        transition: 'opacity 0.4s ease'
+    }
 });
 
 const TierButton = ({ isActive, isPremium, onClick, children }) => (
@@ -890,12 +914,12 @@ function UserProfilePage() {
             });
 
             if (response.data.url) {
-                // Direct redirect to Stripe
                 window.location.href = response.data.url;
             }
         } catch (error) {
             console.error('Error:', error);
             setPaymentError(error.response?.data?.error || 'Failed to start checkout process');
+        } finally {
             setIsProcessing(false);
         }
     };
@@ -910,12 +934,12 @@ function UserProfilePage() {
             });
 
             if (response.data.url) {
-                // Direct redirect to Stripe
                 window.location.href = response.data.url;
             }
         } catch (error) {
             console.error('Error:', error);
             setPaymentError(error.response?.data?.error || 'Failed to start checkout process');
+        } finally {
             setIsProcessing(false);
         }
     };
@@ -1034,9 +1058,9 @@ function UserProfilePage() {
                 "Limited Analytics",
                 "Standard Support"
             ],
-            buttonText: "Current Plan",
             isActive: currentPlan === 'free',
-            tier: 'free'
+            tier: 'free',
+            onClick: handleManageSubscription
         },
         {
             title: "Standard",
@@ -1048,9 +1072,8 @@ function UserProfilePage() {
                 "Basic Analytics",
                 "Standard Support"
             ],
-            buttonText: "Upgrade",
             isActive: currentPlan === 'standard',
-            onClick: handleStandardUpgrade,
+            onClick: currentPlan === 'pro' ? handleManageSubscription : handleStandardUpgrade,
             tier: 'standard'
         },
         {
@@ -1063,7 +1086,6 @@ function UserProfilePage() {
                 "Advanced Analytics",
                 "Priority Support"
             ],
-            buttonText: "Upgrade",
             isActive: currentPlan === 'pro',
             onClick: handlePremiumUpgrade,
             isPremium: true,
@@ -1210,156 +1232,230 @@ function UserProfilePage() {
                     <Grid item xs={12} md={8}>
                         <Paper elevation={0} sx={{
                             ...styles.card,
-                            padding: { xs: '16px', sm: '20px', md: '24px' }
+                            padding: { xs: '24px', sm: '32px', md: '40px' },
+                            paddingLeft: { xs: '16px', sm: '24px', md: '32px' },
+                            paddingRight: { xs: '16px', sm: '24px', md: '32px' },
+                            background: 'linear-gradient(145deg, rgba(2, 6, 23, 0.98), rgba(7, 11, 35, 0.98))',
+                            backdropFilter: 'blur(20px)',
+                            borderRadius: '32px',
+                            position: 'relative',
+                            zIndex: 2
                         }}>
-                            <Box sx={{ p: 4 }}>
+                            <Box>
                                 <Box sx={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 2,
-                                    mb: 4
+                                    gap: 3,
+                                    mb: 8
                                 }}>
-                                    <WorkspacePremiumIcon
+                                    <Box
                                         sx={{
-                                            fontSize: 28,
-                                            color: '#00BCD4',
-                                            filter: 'drop-shadow(0 0 10px rgba(0, 188, 212, 0.3))'
+                                            width: 48,
+                                            height: 48,
+                                            borderRadius: '14px',
+                                            background: 'linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(33, 150, 243, 0.1))',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            boxShadow: '0 8px 32px rgba(0, 188, 212, 0.1)',
+                                            zIndex: 3
                                         }}
-                                    />
+                                    >
+                                        <StarIcon
+                                            sx={{
+                                                fontSize: 24,
+                                                color: '#00BCD4',
+                                                filter: 'drop-shadow(0 0 10px rgba(0, 188, 212, 0.3))'
+                                            }}
+                                        />
+                                    </Box>
                                     <div>
                                         <Typography sx={{
-                                            ...typography.heading,
-                                            mb: 0.5,
-                                            fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                                            fontSize: '2.5rem',
+                                            fontWeight: 600,
+                                            background: 'linear-gradient(to right, #FFFFFF, rgba(255, 255, 255, 0.8))',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                            mb: 1,
+                                            letterSpacing: '-0.02em'
                                         }}>
-                                            Your Subscription
+                                            Choose Your Plan
                                         </Typography>
-                                        <Typography sx={typography.body}>
+                                        <Typography sx={{
+                                            fontSize: '1.1rem',
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            fontWeight: 400
+                                        }}>
                                             {getSubscriptionDescription(currentPlan)}
                                         </Typography>
                                     </div>
                                 </Box>
 
-                                <Grid
-                                    container
-                                    spacing={{ xs: 1, sm: 2 }}
-                                    justifyContent="center"
-                                    sx={{
-                                        '& .MuiGrid-item': {
-                                            width: { xs: '100%', sm: '50%', md: '33.33%' }
-                                        }
-                                    }}
-                                >
+                                <Grid container spacing={1.5} sx={{ position: 'relative', zIndex: 2 }}>
                                     {subscriptionTiers.map((tier, index) => (
-                                        <Grid item xs={12} sm={6} md={4} key={index}>
+                                        <Grid item xs={12} sm={4} key={index}>
                                             <motion.div
-                                                whileHover={{ scale: 1.02 }}
-                                                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                                                whileHover={{ scale: 1.01 }}
+                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                                style={{ height: '100%', position: 'relative', zIndex: 2 }}
                                             >
                                                 <Card
                                                     elevation={0}
                                                     sx={{
                                                         ...tierCardStyles(tier.isActive, tier.isPremium),
-                                                        minHeight: '380px',
                                                         display: 'flex',
                                                         flexDirection: 'column',
-                                                        justifyContent: 'space-between',
-                                                        p: 2,
+                                                        position: 'relative',
+                                                        zIndex: 2
                                                     }}
                                                 >
                                                     <CardContent sx={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
                                                         height: '100%',
-                                                        p: { xs: 1.5, sm: 2 },
-                                                        '&:last-child': { pb: { xs: 2, sm: 2 } }
+                                                        p: 2.5,
+                                                        '&:last-child': { pb: 2.5 },
+                                                        position: 'relative',
+                                                        zIndex: 2
                                                     }}>
-                                                        <Grid container spacing={2}>
-                                                            {/* Title and Price */}
-                                                            <Grid item xs={12} sx={{ textAlign: 'center', mb: 1 }}>
-                                                                <Typography
-                                                                    variant="h6"
-                                                                    sx={{
-                                                                        ...typography.subheading,
-                                                                        mb: { xs: 0.5, sm: 1 },
-                                                                        fontSize: { xs: '1rem', sm: '1.1rem' }
-                                                                    }}
-                                                                >
-                                                                    {tier.title}
-                                                                </Typography>
-                                                                <Typography
-                                                                    variant="h5"
-                                                                    sx={{
-                                                                        ...typography.heading,
-                                                                        fontSize: { xs: '1.5rem', sm: '1.75rem' }
-                                                                    }}
-                                                                >
-                                                                    {tier.price}
-                                                                </Typography>
-                                                            </Grid>
+                                                        {/* Title and Price */}
+                                                        <Box sx={{ mb: 3, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+                                                            <Typography
+                                                                variant="h6"
+                                                                sx={{
+                                                                    fontSize: '1.1rem',
+                                                                    fontWeight: 500,
+                                                                    color: 'rgba(255, 255, 255, 0.9)',
+                                                                    mb: 2,
+                                                                    letterSpacing: '-0.01em'
+                                                                }}
+                                                            >
+                                                                {tier.title}
+                                                            </Typography>
+                                                            <Typography
+                                                                variant="h4"
+                                                                sx={{
+                                                                    fontSize: '2.5rem',
+                                                                    fontWeight: 600,
+                                                                    background: tier.isPremium
+                                                                        ? 'linear-gradient(135deg, #2196F3, #00BCD4)'
+                                                                        : 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+                                                                    WebkitBackgroundClip: 'text',
+                                                                    WebkitTextFillColor: 'transparent',
+                                                                    mb: 0.5,
+                                                                    letterSpacing: '-0.02em'
+                                                                }}
+                                                            >
+                                                                {tier.price.split('/')[0]}
+                                                            </Typography>
+                                                            <Typography
+                                                                sx={{
+                                                                    fontSize: '0.9rem',
+                                                                    color: 'rgba(255, 255, 255, 0.5)',
+                                                                    fontWeight: 400
+                                                                }}
+                                                            >
+                                                                per month
+                                                            </Typography>
+                                                        </Box>
 
-                                                            {/* Features List */}
-                                                            <Grid item xs={12}>
-                                                                <Box sx={{
-                                                                    display: 'flex',
-                                                                    flexDirection: 'column',
-                                                                    gap: { xs: 0.75, sm: 1 },
-                                                                    my: { xs: 0.75, sm: 1 },
-                                                                    px: { xs: 0.5, sm: 1 }
-                                                                }}>
-                                                                    {tier.features.map((feature, idx) => (
-                                                                        <Box
-                                                                            key={idx}
-                                                                            sx={{
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                gap: 1,
-                                                                                opacity: 0.9,
-                                                                                transition: 'opacity 0.2s ease',
-                                                                                '&:hover': {
-                                                                                    opacity: 1
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <CheckIcon sx={{
-                                                                                fontSize: '1rem',
-                                                                                color: tier.isPremium ? '#00BCD4' : '#4CAF50',
-                                                                                filter: 'drop-shadow(0 0 4px rgba(0, 188, 212, 0.3))'
-                                                                            }} />
-                                                                            <Typography
-                                                                                variant="body2"
-                                                                                sx={{
-                                                                                    ...typography.body,
-                                                                                    fontSize: '0.9rem',
-                                                                                    lineHeight: '1.4'
-                                                                                }}
-                                                                            >
-                                                                                {feature}
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    ))}
+                                                        {/* Features List */}
+                                                        <Box sx={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            gap: 2,
+                                                            mb: 3,
+                                                            flexGrow: 1,
+                                                            position: 'relative',
+                                                            zIndex: 2
+                                                        }}>
+                                                            {tier.features.map((feature, idx) => (
+                                                                <Box
+                                                                    key={idx}
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 2,
+                                                                        position: 'relative',
+                                                                        zIndex: 2
+                                                                    }}
+                                                                >
+                                                                    <CheckIcon sx={{
+                                                                        fontSize: '1rem',
+                                                                        color: tier.isPremium ? '#00BCD4' : '#4CAF50',
+                                                                        filter: tier.isPremium ? 'drop-shadow(0 0 6px rgba(0, 188, 212, 0.3))' : 'none'
+                                                                    }} />
+                                                                    <Typography sx={{
+                                                                        fontSize: '0.95rem',
+                                                                        color: 'rgba(255, 255, 255, 0.7)',
+                                                                        fontWeight: 400,
+                                                                        letterSpacing: '0.01em',
+                                                                        lineHeight: 1.2
+                                                                    }}>
+                                                                        {feature}
+                                                                    </Typography>
                                                                 </Box>
-                                                            </Grid>
+                                                            ))}
+                                                        </Box>
 
-                                                            {/* Button Container */}
-                                                            <Grid item xs={12} sx={{
-                                                                textAlign: 'center',
-                                                                mt: 'auto',
-                                                                pt: 1
-                                                            }}>
-                                                                {tier.isActive ? (
-                                                                    <TierButton isActive={true} isPremium={tier.isPremium}>
-                                                                        Current Plan
-                                                                    </TierButton>
-                                                                ) : (
-                                                                    <TierButton
-                                                                        isActive={false}
-                                                                        isPremium={tier.isPremium}
-                                                                        onClick={tier.onClick}
-                                                                    >
-                                                                        {tier.buttonText}
-                                                                    </TierButton>
-                                                                )}
-                                                            </Grid>
-                                                        </Grid>
+                                                        {/* Action Button */}
+                                                        <Box sx={{ mt: 'auto', position: 'relative', zIndex: 2 }}>
+                                                            <Button
+                                                                fullWidth
+                                                                variant={tier.isPremium ? "contained" : "outlined"}
+                                                                disabled={tier.isActive}
+                                                                onClick={tier.onClick}
+                                                                sx={{
+                                                                    py: 1.5,
+                                                                    borderRadius: '12px',
+                                                                    textTransform: 'none',
+                                                                    fontSize: '1rem',
+                                                                    fontWeight: 500,
+                                                                    letterSpacing: '0.01em',
+                                                                    background: tier.isPremium
+                                                                        ? 'linear-gradient(135deg, #00BCD4, #00ACC1)'
+                                                                        : 'transparent',
+                                                                    border: tier.isPremium
+                                                                        ? 'none'
+                                                                        : '1px solid rgba(255, 255, 255, 0.15)',
+                                                                    color: tier.isPremium ? 'white' : '#00BCD4',
+                                                                    boxShadow: tier.isPremium ? '0 8px 32px rgba(0, 188, 212, 0.15)' : 'none',
+                                                                    '&:hover': {
+                                                                        background: tier.isPremium
+                                                                            ? 'linear-gradient(135deg, #00ACC1, #0097A7)'
+                                                                            : 'rgba(0, 188, 212, 0.1)',
+                                                                        border: tier.isPremium
+                                                                            ? 'none'
+                                                                            : '1px solid #00BCD4',
+                                                                        boxShadow: tier.isPremium ? '0 12px 40px rgba(0, 188, 212, 0.2)' : 'none'
+                                                                    },
+                                                                    '&.Mui-disabled': {
+                                                                        background: 'rgba(255, 255, 255, 0.1)',
+                                                                        color: 'white',
+                                                                        border: 'none'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {tier.isActive ? 'Current Plan' :
+                                                                    (tier.title === 'Free' && currentPlan !== 'free') ? 'Downgrade' :
+                                                                        (tier.title === 'Standard' && currentPlan === 'free') ? 'Upgrade' :
+                                                                            (tier.title === 'Standard' && currentPlan === 'pro') ? 'Downgrade' :
+                                                                                (tier.title === 'Premium' && currentPlan !== 'pro') ? 'Upgrade' :
+                                                                                    'Select Plan'}
+                                                            </Button>
+                                                            {paymentError && (
+                                                                <Typography
+                                                                    color="error"
+                                                                    sx={{
+                                                                        mt: 1,
+                                                                        fontSize: '0.875rem',
+                                                                        textAlign: 'center'
+                                                                    }}
+                                                                >
+                                                                    {paymentError}
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
                                                     </CardContent>
                                                 </Card>
                                             </motion.div>

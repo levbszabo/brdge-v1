@@ -490,7 +490,7 @@ function BrdgeListPage() {
                             mt: { xs: 4, md: 0 },
                             mb: { xs: 2, md: 4 },
                             fontWeight: '600',
-                            fontSize: { xs: '1.75rem', md: '4.5rem' },
+                            fontSize: { xs: '1.75rem', md: '2.5rem' },
                             color: 'white',
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
@@ -500,18 +500,29 @@ function BrdgeListPage() {
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: '-8px',
+                                bottom: '-12px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '60px',
-                                height: '3px',
-                                background: 'rgba(255, 255, 255, 0.5)',
-                                borderRadius: '2px',
-                                boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
+                                width: '120px',
+                                height: '2px',
+                                background: `linear-gradient(
+                                    90deg,
+                                    transparent 0%,
+                                    rgba(0,255,204,0.2) 15%,
+                                    rgba(0,255,204,0.5) 50%,
+                                    rgba(0,255,204,0.2) 85%,
+                                    transparent 100%
+                                )`,
+                                borderRadius: '1px',
+                                boxShadow: `
+                                    0 0 10px rgba(0,255,204,0.3),
+                                    0 0 20px rgba(0,255,204,0.2)
+                                `,
+                                animation: 'pulseUnderline 3s ease-in-out infinite'
                             }
                         }}
                     >
-                        Your Brdges
+                        Brdges
                     </Typography>
 
                     <Box sx={{
@@ -581,7 +592,7 @@ function BrdgeListPage() {
                             minWidth: { xs: '100%', sm: '280px' },
                         }}>
                             <UsageIndicator
-                                title="Bridges"
+                                title="Brdges"
                                 current={userStats.brdges_created}
                                 limit={userStats.brdges_limit}
                                 showExcess={true}
@@ -670,7 +681,41 @@ function BrdgeListPage() {
                                 backdropFilter: 'blur(20px)',
                                 borderRadius: '24px',
                                 border: '1px solid rgba(255, 255, 255, 0.05)',
-                                overflow: 'hidden'
+                                overflow: 'hidden',
+                                boxShadow: `
+                                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+                                    0 0 1px 0 rgba(255, 255, 255, 0.05)
+                                `,
+                                position: 'relative',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '1px',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)'
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    inset: 0,
+                                    borderRadius: '24px',
+                                    padding: '1px',
+                                    background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent)',
+                                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                    WebkitMaskComposite: 'xor',
+                                    maskComposite: 'exclude',
+                                    pointerEvents: 'none'
+                                },
+                                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                                '&:hover': {
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: `
+                                        0 8px 32px -2px rgba(0, 0, 0, 0.25),
+                                        0 0 1px 0 rgba(255, 255, 255, 0.05)
+                                    `
+                                }
                             }}>
                                 <BrdgeList
                                     brdges={filteredBrdges}
@@ -738,6 +783,19 @@ function BrdgeListPage() {
                             0% { transform: translateY(0px) rotate(0deg); }
                             50% { transform: translateY(-20px) rotate(5deg); }
                             100% { transform: translateY(0px) rotate(0deg); }
+                        }
+
+                        @keyframes pulseUnderline {
+                            0%, 100% {
+                                opacity: 0.5;
+                                transform: translateX(-50%) scaleX(0.95);
+                                filter: brightness(0.8);
+                            }
+                            50% {
+                                opacity: 1;
+                                transform: translateX(-50%) scaleX(1);
+                                filter: brightness(1.2);
+                            }
                         }
                     `}
             </style>

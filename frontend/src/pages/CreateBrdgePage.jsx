@@ -152,22 +152,36 @@ function CreateBrdgePage() {
                     >
                         <Typography variant="h2" component="h1" align="center" sx={{
                             mb: 6,
-                            fontWeight: 700,
+                            fontWeight: 600,
+                            fontSize: { xs: '1.75rem', md: '2.5rem' },
                             color: 'white',
-                            textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
-                            textTransform: 'capitalize',
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3.75rem' },
+                            textTransform: 'none',
+                            letterSpacing: '-0.02em',
+                            lineHeight: 1.1,
                             position: 'relative',
+                            textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: '-10px',
+                                bottom: '-12px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: { xs: '40px', sm: '60px' },
-                                height: '4px',
-                                background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
-                                borderRadius: '2px'
+                                width: '120px',
+                                height: '2px',
+                                background: `linear-gradient(
+                                    90deg,
+                                    transparent 0%,
+                                    rgba(0,255,204,0.2) 15%,
+                                    rgba(0,255,204,0.5) 50%,
+                                    rgba(0,255,204,0.2) 85%,
+                                    transparent 100%
+                                )`,
+                                borderRadius: '1px',
+                                boxShadow: `
+                                    0 0 10px rgba(0,255,204,0.3),
+                                    0 0 20px rgba(0,255,204,0.2)
+                                `,
+                                animation: 'pulseUnderline 3s ease-in-out infinite'
                             }
                         }}>
                             {id ? 'Edit Brdge' : 'Create New Brdge'}
