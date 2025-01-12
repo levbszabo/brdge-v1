@@ -949,8 +949,12 @@ const HeroSection = () => {
                             opacity: 0,
                             transition: 'all 0.3s ease',
                             visibility: 'hidden',
-                            zIndex: 10,
+                            zIndex: 100,  // Increased from 10 to 100
                         },
+                        '&:hover::after': {  // Add this hover state
+                            opacity: 1,
+                            visibility: 'visible',
+                        }
                     }}
                     onMouseMove={handleMouseMove}
                 >
