@@ -440,6 +440,16 @@ class ViewerAgent(VoicePipelineAgent):
             "was_interrupted": False,
         }
 
+        # Add current_slide tracking similar to EditAgent
+        self.current_slide = {
+            "number": None,
+            "url": None,
+            "initialized": False,
+            "last_processed": None,
+            "image_processed": False,
+            "brdge_id": brdge_id,
+        }
+
         super().__init__(
             vad=vad,
             stt=deepgram.STT(model="nova-2-conversationalai"),
@@ -622,6 +632,29 @@ class ViewerAgent(VoicePipelineAgent):
             if slide_number != self.current_slide_number:
                 self.current_slide_number = slide_number
                 slide_content = self.scripts.get(str(slide_number))
+
+                # Add image processing here
+                image_path = (
+                    f"/tmp/brdge/slides_{self.brdge_id}/slide_{slide_number}.png"
+                )
+                if os.path.exists(image_path):
+                    base64_image = image_to_base64(image_path)
+                    if base64_image:
+                        slide_image = llm.ChatImage(
+                            image=f"data:image/jpeg;base64,{base64_image}"
+                        )
+                        image_message = llm.ChatMessage.create(
+                            role="user",
+                            text=f"""Examining slide {slide_number}. 
+                                Please analyze this slide's visual content as you present it:
+                                - Key visual elements and their significance
+                                - Any diagrams, charts, or graphics
+                                - How the visuals support the script content
+                                Present the content naturally while incorporating these visual elements.""",
+                            images=[slide_image],
+                        )
+                        self.chat_ctx.messages.append(image_message)
+                        logger.info(f"Added slide {slide_number} image to context")
 
                 if slide_content and isinstance(slide_content, dict):
                     script = slide_content.get("script", "")
@@ -992,12 +1025,8 @@ async def entrypoint(ctx: JobContext):
                             )
                             # Maybe send an error message to the client here
 
-                # Handle new slide image for edit mode
-                if (
-                    current_slide["agent_type"] == "edit"
-                    and new_slide
-                    and current_slide["url"]
-                ):
+                # Handle new slide image for both edit and view modes
+                if new_slide and current_slide["url"]:
                     asyncio.create_task(
                         get_slide_image(
                             current_slide["url"],
@@ -1005,8 +1034,9 @@ async def entrypoint(ctx: JobContext):
                             current_slide["number"],
                         )
                     )
-                    image_path = f"/tmp/brdge/slides_{agent.current_slide['brdge_id']}/slide_{agent.current_slide['number']}.png"
 
+                    # Process image for either agent type
+                    image_path = f"/tmp/brdge/slides_{current_slide['brdge_id']}/slide_{current_slide['number']}.png"
                     if os.path.exists(image_path):
                         base64_image = image_to_base64(image_path)
                         if base64_image:
@@ -1015,22 +1045,22 @@ async def entrypoint(ctx: JobContext):
                             )
                             image_message = llm.ChatMessage.create(
                                 role="user",
-                                text=f"""Slide:{agent.current_slide['number']}. 
+                                text=f"""Slide:{current_slide['number']}. 
                                     As we discuss this slide, observe and analyze:
                                     - Key messages and themes
-                                    - Technical terms or concepts that might need clarification
-                                    - The overall structure and flow
-                                    - Any visuals, diagrams, or data presented
-                                    You can refer to these as you analyze the slide.""",
+                                    - Visual elements and their significance
+                                    - How the visuals support the content
+                                    You can refer to these as you present the slide.""",
                                 images=[slide_image],
                             )
                             agent.chat_ctx.messages.append(image_message)
-                            agent.current_slide["last_processed"] = agent.current_slide[
-                                "number"
-                            ]
-                            agent.current_slide["image_processed"] = True
+                            if hasattr(agent, "current_slide"):
+                                agent.current_slide["last_processed"] = current_slide[
+                                    "number"
+                                ]
+                                agent.current_slide["image_processed"] = True
                             logger.info(
-                                f"Processed image for slide {agent.current_slide['number']}"
+                                f"Processed image for slide {current_slide['number']}"
                             )
 
                 if not initial_slide_received.is_set():
@@ -1044,7 +1074,22 @@ async def entrypoint(ctx: JobContext):
                         agent.present_slide(str(current_slide["number"]))
                     )
         except Exception as e:
-            logger.error(f"Error processing data received: {e}", exc_info=True)
+            logger.error(f"Error processing data packet: {e}", exc_info=True)
+            # If there's an error, try to send an error message to the client
+            try:
+                error_message = {
+                    "type": "error",
+                    "message": "Failed to process slide data",
+                    "details": str(e),
+                }
+                ctx.room.local_participant.publish_data(
+                    json.dumps(error_message).encode("utf-8")
+                )
+            except Exception as send_error:
+                logger.error(
+                    f"Failed to send error message to client: {send_error}",
+                    exc_info=True,
+                )
 
     # Handle chat messages
     @chat.on("message_received")
