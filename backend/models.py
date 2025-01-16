@@ -424,6 +424,12 @@ class BrdgeScript(db.Model):
             "brdge_id": self.brdge_id,
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "content": self.content,
+            "content": {
+                "transcript": self.content.get("transcript") if self.content else "",
+                "segments": self.content.get(
+                    "segments", []
+                ),  # Array of {text, start, end} objects
+                "words": self.content.get("words", []),  # Word-level timing data
+            },
             "metadata": self.script_metadata,
         }

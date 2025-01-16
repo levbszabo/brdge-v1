@@ -82,43 +82,62 @@ def pdf_to_images(pdf_path):
         return []
 
 
-def transcribe_audio_helper(audio_file_path: str, outdir_path: str) -> list:
-    # Create a Deepgram client
-    config = DeepgramClientOptions(verbose=verboselogs.SPAM)
-    deepgram = DeepgramClient(os.getenv("DEEPGRAM_API_KEY", ""), config)
+def transcribe_audio_helper(audio_file_path: str, output_path: str) -> dict:
+    """
+    Transcribe audio file using Deepgram API
+    Returns a dictionary containing the transcription data
+    """
+    try:
+        # Initialize the Deepgram SDK
+        deepgram = DeepgramClient(os.getenv("DEEPGRAM_API_KEY"))
 
-    # Prepare the audio file and options
-    with open(audio_file_path, "rb") as file:
-        payload: FileSource = {"buffer": file.read()}
+        # Open the audio file
+        with open(audio_file_path, "rb") as audio:
+            source = {
+                "buffer": audio,
+                "mimetype": "audio/webm",
+            }
 
-    options = PrerecordedOptions(
-        model="nova-2",
-        smart_format=True,
-        utterances=False,
-        punctuate=True,
-        diarize=True,
-    )
+            # Get response from Deepgram
+            response = deepgram.listen.prerecorded.v("1").transcribe_file(source)
 
-    # Transcribe the file
-    start_time = datetime.now()
-    response = deepgram.listen.rest.v("1").transcribe_file(
-        payload, options, timeout=httpx.Timeout(300.0, connect=10.0)
-    )
-    end_time = datetime.now()
+            # Convert response to dictionary
+            response_dict = response.to_dict()
 
-    # Print execution time
-    print(f"Execution time: {(end_time - start_time).seconds} seconds")
+            # Return the processed response
+            if "results" in response_dict:
+                return response_dict["results"]
+            else:
+                logger.error("No results in Deepgram response")
+                return {
+                    "channels": [
+                        {
+                            "alternatives": [
+                                {
+                                    "transcript": "Transcription failed: No results found",
+                                    "confidence": 0,
+                                    "words": [],
+                                }
+                            ]
+                        }
+                    ]
+                }
 
-    # Parse the response
-    response_json_dict = json.loads(response.to_json())
-    transcript = response_json_dict["results"]["channels"][0]["alternatives"][0][
-        "transcript"
-    ]
-
-    with open(outdir_path, "w") as f:
-        f.write(transcript)
-    return transcript
-    # parsed_content = []
+    except Exception as e:
+        logger.error(f"Error in transcribe_audio_helper: {e}")
+        return {
+            "channels": [
+                {
+                    "alternatives": [
+                        {
+                            "transcript": f"Transcription failed: {str(e)}",
+                            "confidence": 0,
+                            "words": [],
+                        }
+                    ]
+                }
+            ]
+        }
 
 
 def encode_image(image_path):

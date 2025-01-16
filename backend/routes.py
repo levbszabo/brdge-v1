@@ -697,14 +697,70 @@ def create_brdge(user):
 
             try:
                 # Transcribe the recording
-                transcript = transcribe_audio_helper(
+                transcript_data = transcribe_audio_helper(
                     temp_recording_path, f"/tmp/transcript_{brdge.id}.txt"
                 )
 
+                # Initialize empty lists for words and segments
+                words = []
+                segments = []
+                transcript_text = ""
+
+                try:
+                    # Get the first alternative from the first channel
+                    channels = transcript_data.get("channels", [])
+                    if channels and len(channels) > 0:
+                        alternatives = channels[0].get("alternatives", [])
+                        if alternatives and len(alternatives) > 0:
+                            alternative = alternatives[0]
+                            transcript_text = alternative.get("transcript", "")
+
+                            # Process word-level timing
+                            for word in alternative.get("words", []):
+                                words.append(
+                                    {
+                                        "word": word.get(
+                                            "punctuated_word", word.get("word", "")
+                                        ),
+                                        "start": word.get("start", 0),
+                                        "end": word.get("end", 0),
+                                        "confidence": word.get("confidence", 1.0),
+                                    }
+                                )
+
+                            # Create segments from the transcript if paragraphs not available
+                            if not segments:
+                                segments.append(
+                                    {
+                                        "text": transcript_text,
+                                        "start": 0,
+                                        "end": (
+                                            alternative.get("words", [])[-1].get(
+                                                "end", 0
+                                            )
+                                            if alternative.get("words")
+                                            else 0
+                                        ),
+                                        "speaker": "Speaker 0",
+                                    }
+                                )
+                except Exception as parse_error:
+                    logger.error(f"Error parsing transcript data: {parse_error}")
+                    transcript_text = "Error processing transcript"
+                    segments.append(
+                        {
+                            "text": transcript_text,
+                            "start": 0,
+                            "end": 0,
+                            "speaker": "Speaker 0",
+                        }
+                    )
+
                 # Update script object with transcript
                 script_obj.content = {
-                    "transcript": transcript,
-                    "segments": [],  # Can be enhanced with timestamp data if needed
+                    "transcript": transcript_text,
+                    "segments": segments,
+                    "words": words,
                 }
                 script_obj.status = "completed"
 
