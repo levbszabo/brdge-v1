@@ -30,6 +30,7 @@ from models import (
     UsageLogs,
     Recording,
     BrdgeScript,
+    KnowledgeBase,
 )
 from utils import (
     clone_voice_helper,
@@ -2821,4 +2822,80 @@ def get_brdge_script(brdge_id):
 
     except Exception as e:
         logger.error(f"Error fetching script: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["GET"])
+def get_agent_config(brdge_id):
+    try:
+        # Add debug logging
+        logger.info(f"Fetching agent config for brdge {brdge_id}")
+
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Debug log the brdge object
+        logger.info(f"Brdge data: {brdge.to_dict()}")
+
+        # Create config structure using the actual agent_personality from the brdge
+        config = {
+            "personality": (
+                brdge.agent_personality if hasattr(brdge, "agent_personality") else ""
+            ),
+            "knowledgeBase": [
+                {
+                    "id": "presentation",
+                    "type": "presentation",
+                    "name": brdge.presentation_filename,
+                    "content": "",
+                }
+            ],
+        }
+
+        # Add any additional knowledge base entries
+        knowledge_entries = KnowledgeBase.query.filter_by(brdge_id=brdge_id).all()
+        for entry in knowledge_entries:
+            config["knowledgeBase"].append(
+                {
+                    "id": str(entry.id),
+                    "type": "custom",
+                    "name": entry.name,
+                    "content": entry.content,
+                }
+            )
+
+        logger.info(f"Returning config: {config}")
+        return jsonify(config)
+
+    except Exception as e:
+        logger.error(f"Error fetching agent config: {e}")
+        # Add more detailed error logging
+        logger.error(f"Error details: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["PUT"])
+def update_agent_config(brdge_id):
+    try:
+        brdge = Brdge.query.get_or_404(brdge_id)
+        data = request.json
+
+        # Update personality
+        brdge.agent_personality = data.get("personality", "")
+
+        # Update knowledge base entries
+        KnowledgeBase.query.filter_by(brdge_id=brdge_id).delete()
+
+        for entry in data.get("knowledgeBase", []):
+            if entry["type"] != "presentation":  # Skip presentation entry
+                new_entry = KnowledgeBase(
+                    brdge_id=brdge_id, name=entry["name"], content=entry["content"]
+                )
+                db.session.add(new_entry)
+
+        db.session.commit()
+        return jsonify({"message": "Configuration updated successfully"})
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating agent config: {e}")
         return jsonify({"error": str(e)}), 500

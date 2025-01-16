@@ -433,3 +433,13 @@ class BrdgeScript(db.Model):
             },
             "metadata": self.script_metadata,
         }
+
+
+class KnowledgeBase(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    brdge = db.relationship("Brdge", backref="knowledge_entries")
