@@ -28,6 +28,8 @@ from models import (
     Voice,
     ViewerConversation,
     UsageLogs,
+    Recording,
+    BrdgeScript,
 )
 from utils import (
     clone_voice_helper,
@@ -62,6 +64,7 @@ import base64
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import AsyncOpenAI
 import asyncio
+from botocore.config import Config  # Add this import at the top
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -245,79 +248,68 @@ def get_public_brdge_by_id(public_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["DELETE"])
-@jwt_required()
 def delete_brdge(brdge_id):
-    current_user = get_current_user()
-    brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first_or_404()
-
     try:
-        # Start a transaction
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Start database transaction
         db.session.begin_nested()
 
         try:
-            # First delete all viewer conversations
-            ViewerConversation.query.filter_by(brdge_id=brdge_id).delete()
+            # 1. Delete associated scripts first
+            BrdgeScript.query.filter_by(brdge_id=brdge_id).delete()
 
-            # Delete associated scripts
-            Scripts.query.filter_by(brdge_id=brdge_id).delete()
+            # 2. Delete recordings
+            Recording.query.filter_by(brdge_id=brdge_id).delete()
 
-            # Delete associated walkthrough messages
-            walkthroughs = Walkthrough.query.filter_by(brdge_id=brdge_id).all()
-            for walkthrough in walkthroughs:
+            # 3. Delete walkthroughs and their messages
+            for walkthrough in brdge.walkthroughs:
                 WalkthroughMessage.query.filter_by(
                     walkthrough_id=walkthrough.id
                 ).delete()
-
-            # Delete walkthroughs
             Walkthrough.query.filter_by(brdge_id=brdge_id).delete()
 
-            # Delete S3 files
-            s3_folder = brdge.folder
+            # 4. Delete usage logs
+            UsageLogs.query.filter_by(brdge_id=brdge_id).delete()
+
+            # 5. Delete voices if they exist
+            Voice.query.filter_by(brdge_id=brdge_id).delete()
+
+            # 6. Delete S3 files
             try:
-                # List all objects with this prefix
-                s3_objects = s3_client.list_objects_v2(
-                    Bucket=S3_BUCKET, Prefix=s3_folder
-                )
+                # List all objects in the brdge's folder
+                prefix = f"{brdge.folder}/"
+                response = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=prefix)
 
                 # Delete each object
-                for obj in s3_objects.get("Contents", []):
-                    app.logger.debug(f"Deleting S3 object: {obj['Key']}")
+                for obj in response.get("Contents", []):
+                    logger.debug(f"Deleting S3 object: {obj['Key']}")
                     s3_client.delete_object(Bucket=S3_BUCKET, Key=obj["Key"])
 
-                app.logger.info(f"Successfully deleted S3 files for brdge {brdge_id}")
-            except Exception as s3_error:
-                app.logger.error(f"Error deleting S3 files: {s3_error}")
+                logger.info(f"Successfully deleted S3 files for brdge {brdge_id}")
+            except Exception as e:
+                logger.error(f"Error deleting S3 files: {e}")
                 raise
 
-            # Finally delete the brdge
+            # 7. Finally delete the brdge itself
             db.session.delete(brdge)
 
-            # Commit the transaction
+            # Commit all changes
             db.session.commit()
-            app.logger.info(
-                f"Successfully deleted brdge {brdge_id} and all related data"
-            )
 
             return jsonify({"message": "Brdge deleted successfully"}), 200
 
-        except Exception as inner_error:
+        except Exception as e:
+            # If anything fails, rollback the nested transaction
             db.session.rollback()
-            app.logger.error(f"Error in delete transaction: {inner_error}")
+            logger.error(f"Error in delete transaction: {e}")
             raise
 
     except Exception as e:
+        # Rollback the main transaction if there's an error
         db.session.rollback()
-        app.logger.error(f"Error deleting brdge: {e}")
-        return (
-            jsonify(
-                {
-                    "error": "Failed to delete brdge",
-                    "message": str(e),
-                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
-                }
-            ),
-            500,
-        )
+        logger.error(f"Error deleting brdge: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
@@ -599,99 +591,160 @@ def upload_image_to_s3(args):
 @login_required
 def create_brdge(user):
     try:
+        # Debug logging
+        logger.info(f"Received files: {request.files}")
+        logger.info(f"Received form data: {request.form}")
+
         name = request.form.get("name")
         presentation = request.files.get("presentation")
+        recording = request.files.get("screen_recording")
+        recording_metadata = request.form.get("recording_metadata")
 
-        if not all([name, presentation]):
-            return jsonify({"error": "Missing data"}), 400
+        # Validation...
+        missing_fields = []
+        if not name:
+            missing_fields.append("name")
+        if not presentation:
+            missing_fields.append("presentation")
+        if not recording:
+            missing_fields.append("screen_recording")
 
+        if missing_fields:
+            return (
+                jsonify(
+                    {
+                        "error": "Missing required fields",
+                        "missing_fields": missing_fields,
+                    }
+                ),
+                400,
+            )
+
+        # Parse recording metadata
+        recording_duration = None
+        if recording_metadata:
+            try:
+                metadata = json.loads(recording_metadata)
+                recording_duration = metadata.get("duration")
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse recording metadata")
+
+        # Step 1: Create Brdge object
         brdge = Brdge(
             name=name,
-            presentation_filename="",
-            audio_filename="",
-            folder="",
             user_id=user.id,
+            presentation_filename="temp",
+            audio_filename="",
+            folder="temp",
         )
         db.session.add(brdge)
         db.session.flush()
 
-        # Generate unique filename for the PDF
-        presentation_filename = secure_filename(
-            f"{uuid.uuid4()}_{presentation.filename}"
-        )
+        # Step 2: Set folder and process files
+        folder = str(brdge.id)
+        brdge.folder = folder
 
-        # Create directories for storing files
-        pdf_temp_path = os.path.join("/tmp/brdge", presentation_filename)
-        os.makedirs("/tmp/brdge", exist_ok=True)
-        presentation.save(pdf_temp_path)
-
-        # Convert PDF to images
-        slide_images = pdf_to_images(pdf_temp_path)
-
-        # Generate initial scripts from the images
-        initial_scripts = generate_initial_scripts(brdge.id, slide_images)
-
-        # Update brdge data
+        presentation_filename = secure_filename(presentation.filename)
+        recording_filename = secure_filename(recording.filename)
         brdge.presentation_filename = presentation_filename
-        brdge.folder = str(brdge.id)
 
-        # Upload PDF to S3
-        s3_folder = brdge.folder
-        s3_presentation_key = f"{s3_folder}/{presentation_filename}"
-        s3_client.upload_file(pdf_temp_path, S3_BUCKET, s3_presentation_key)
+        # Define S3 keys
+        presentation_key = f"{folder}/{presentation_filename}"
+        recording_key = f"{folder}/recordings/{recording_filename}"
 
-        # Prepare all image upload tasks
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
-        upload_tasks = []
-        for idx, image in enumerate(slide_images):
-            image_filename = f"slide_{idx+1}.png"
-            s3_image_key = f"{s3_folder}/slides/{image_filename}"
-            upload_tasks.append((image, s3_image_key, S3_BUCKET))
-
-        # Upload images concurrently
-        failed_uploads = []
-        with ThreadPoolExecutor(max_workers=min(10, len(slide_images))) as executor:
-            future_to_key = {
-                executor.submit(upload_image_to_s3, task): task[1]
-                for task in upload_tasks
-            }
-
-            for future in as_completed(future_to_key):
-                s3_key = future_to_key[future]
-                try:
-                    success = future.result()
-                    if not success:
-                        failed_uploads.append(s3_key)
-                except Exception as e:
-                    print(f"Error uploading {s3_key}: {e}")
-                    failed_uploads.append(s3_key)
-
-        if failed_uploads:
-            raise Exception(f"Failed to upload some images: {failed_uploads}")
-
-        # Clean up temporary PDF file
-        os.remove(pdf_temp_path)
-
-        db.session.commit()
-
-        return (
-            jsonify(
-                {
-                    "message": "Brdge created successfully",
-                    "brdge": brdge.to_dict(),
-                    "num_slides": len(slide_images),
-                    "initial_scripts": initial_scripts,
-                }
-            ),
-            201,
+        # Create Recording object
+        recording_obj = Recording(
+            brdge_id=brdge.id,
+            filename=recording_filename,
+            format="webm",
+            duration=recording_duration if recording_metadata else None,
         )
+        db.session.add(recording_obj)
 
-    except RequestEntityTooLarge:
-        return jsonify({"error": "File too large. Maximum size is 16 MB."}), 413
+        # Create initial BrdgeScript object
+        script_obj = BrdgeScript(
+            brdge_id=brdge.id,
+            status="pending",
+            script_metadata={
+                "recording_filename": recording_filename,
+                "duration": recording_duration,
+            },
+        )
+        db.session.add(script_obj)
+
+        try:
+            # Upload files to S3
+            presentation.seek(0)
+            recording.seek(0)
+
+            s3_client.upload_fileobj(
+                presentation,
+                S3_BUCKET,
+                presentation_key,
+                ExtraArgs={"ContentType": "application/pdf"},
+            )
+
+            s3_client.upload_fileobj(
+                recording,
+                S3_BUCKET,
+                recording_key,
+                ExtraArgs={"ContentType": "video/webm"},
+            )
+
+            # Download recording for transcription
+            temp_recording_path = f"/tmp/{recording_filename}"
+            s3_client.download_file(S3_BUCKET, recording_key, temp_recording_path)
+
+            try:
+                # Transcribe the recording
+                transcript = transcribe_audio_helper(
+                    temp_recording_path, f"/tmp/transcript_{brdge.id}.txt"
+                )
+
+                # Update script object with transcript
+                script_obj.content = {
+                    "transcript": transcript,
+                    "segments": [],  # Can be enhanced with timestamp data if needed
+                }
+                script_obj.status = "completed"
+
+            except Exception as e:
+                logger.error(f"Transcription error: {e}")
+                script_obj.status = "failed"
+                script_obj.script_metadata = {
+                    **script_obj.script_metadata,
+                    "error": str(e),
+                }
+
+            finally:
+                # Clean up temp files
+                if os.path.exists(temp_recording_path):
+                    os.remove(temp_recording_path)
+                if os.path.exists(f"/tmp/transcript_{brdge.id}.txt"):
+                    os.remove(f"/tmp/transcript_{brdge.id}.txt")
+
+            db.session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "message": "Brdge created successfully",
+                        "brdge": brdge.to_dict(),
+                        "script": script_obj.to_dict(),
+                    }
+                ),
+                201,
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"S3 upload error: {e}")
+            return jsonify({"error": "Failed to upload files", "detail": str(e)}), 500
+
     except Exception as e:
-        print(f"Error creating brdge: {e}")
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        db.session.rollback()
+        logger.error(f"Error creating brdge: {e}")
+        return jsonify({"error": "Error creating brdge", "detail": str(e)}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/deploy", methods=["POST"])
@@ -2646,4 +2699,70 @@ def get_voices(brdge_id):
         )
     except Exception as e:
         app.logger.error(f"Error fetching voices: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/recordings/latest/signed-url", methods=["GET"])
+def get_recording_signed_url(brdge_id):
+    try:
+        recording = (
+            Recording.query.filter_by(brdge_id=brdge_id)
+            .order_by(Recording.created_at.desc())
+            .first()
+        )
+
+        if not recording:
+            return jsonify({"error": "No recording found"}), 404
+
+        # Fixed: Use botocore.config.Config instead of boto3.config
+        s3_client = boto3.client(
+            "s3",
+            region_name=S3_REGION,
+            config=Config(signature_version="s3v4"),
+        )
+
+        # Updated S3 key path
+        s3_key = f"{recording.brdge.folder}/recordings/{recording.filename}"  # e.g. "201/recordings/recording.webm"
+
+        url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": S3_BUCKET,
+                "Key": s3_key,
+            },
+            ExpiresIn=3600,
+        )
+
+        return jsonify(
+            {
+                "url": url,
+                "format": recording.format,
+                "duration": recording.duration,
+                "created_at": (
+                    recording.created_at.isoformat() if recording.created_at else None
+                ),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating signed URL for recording: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/script", methods=["GET"])
+def get_brdge_script(brdge_id):
+    try:
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.created_at.desc())
+            .first()
+        )
+
+        if not script:
+            return jsonify({"error": "No script found"}), 404
+
+        return jsonify(script.to_dict())
+
+    except Exception as e:
+        logger.error(f"Error fetching script: {e}")
         return jsonify({"error": str(e)}), 500

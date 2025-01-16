@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import AgentsPlayground from '../components/AgentsPlayground';
+import AgentConnector from '../components/AgentConnector';
 
 function EditBrdgePage() {
     const { id } = useParams();
@@ -52,7 +52,7 @@ function EditBrdgePage() {
                 overflow: 'hidden',
                 zIndex: 1
             }}>
-                <AgentsPlayground brdgeId={id} agentType="edit" />
+                <AgentConnector brdgeId={id} agentType="edit" />
             </Box>
         </Box>
     );

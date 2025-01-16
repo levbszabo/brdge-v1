@@ -94,7 +94,7 @@ def transcribe_audio_helper(audio_file_path: str, outdir_path: str) -> list:
     options = PrerecordedOptions(
         model="nova-2",
         smart_format=True,
-        utterances=True,
+        utterances=False,
         punctuate=True,
         diarize=True,
     )

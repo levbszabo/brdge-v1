@@ -1,18 +1,25 @@
 // CreateBrdgePage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Typography, TextField, Button, Box, Paper, CircularProgress, Alert } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
+import { ArrowRight, Upload, Video, FileText, StopCircle } from 'lucide-react';
 
 function CreateBrdgePage() {
     const [name, setName] = useState('');
     const [file, setFile] = useState(null);
+    const [screenRecording, setScreenRecording] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingFormat, setRecordingFormat] = useState('16:9');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [mediaRecorder, setMediaRecorder] = useState(null);
+    const [recordedChunks, setRecordedChunks] = useState([]);
+    const recordingPreviewRef = useRef(null);
+    const timerRef = useRef(null);
     const { id } = useParams();
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -22,6 +29,17 @@ function CreateBrdgePage() {
             fetchBrdgeData();
         }
     }, [id]);
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        };
+    }, [mediaRecorder]);
 
     const fetchBrdgeData = async () => {
         try {
@@ -33,22 +51,209 @@ function CreateBrdgePage() {
         }
     };
 
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            console.log('Stopping recording...');
+            mediaRecorder.stop();
+            setIsRecording(false);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                setRecordingTime(0);
+            }
+        }
+    };
+
+    const updateVideoPreview = (blob) => {
+        if (recordingPreviewRef.current) {
+            // Create a new URL for the blob
+            const url = URL.createObjectURL(blob);
+
+            // Set the video source directly
+            recordingPreviewRef.current.src = url;
+
+            // Ensure the video loads and plays
+            recordingPreviewRef.current.load();
+
+            // Clean up the old URL when the component unmounts
+            return () => URL.revokeObjectURL(url);
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const constraints = {
+                audio: true,
+                video: {
+                    aspectRatio: recordingFormat === '16:9' ? 16 / 9 : 9 / 16,
+                    width: recordingFormat === '16:9' ? 1920 : 1080,
+                    height: recordingFormat === '16:9' ? 1080 : 1920
+                }
+            };
+
+            const screenStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            const combinedStream = new MediaStream([
+                ...screenStream.getVideoTracks(),
+                ...audioStream.getAudioTracks()
+            ]);
+
+            const recorder = new MediaRecorder(combinedStream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 3000000 // 3 Mbps for good quality
+            });
+
+            const chunks = [];
+
+            recorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    chunks.push(e.data);
+                }
+            };
+
+            recorder.onstart = () => {
+                console.log('Recording started');
+                setIsRecording(true);
+                let seconds = 0;
+                timerRef.current = setInterval(() => {
+                    seconds++;
+                    setRecordingTime(seconds);
+                }, 1000);
+            };
+
+            recorder.onstop = () => {
+                console.log('Recording stopped');
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const recordingFile = new File([blob], 'screen-recording.webm', { type: 'video/webm' });
+                setScreenRecording(recordingFile);
+
+                // Stop all tracks
+                screenStream.getTracks().forEach(track => track.stop());
+                audioStream.getTracks().forEach(track => track.stop());
+
+                // Update video preview
+                updateVideoPreview(blob);
+            };
+
+            setMediaRecorder(recorder);
+            setRecordedChunks(chunks);
+
+            recorder.start(1000);
+
+        } catch (error) {
+            console.error('Error starting screen recording:', error);
+            showSnackbar('Failed to start screen recording. Please grant necessary permissions.', 'error');
+        }
+    };
+
+    const validateAspectRatio = (file) => {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = () => {
+                window.URL.revokeObjectURL(video.src);
+                const aspectRatio = video.videoWidth / video.videoHeight;
+                const expectedRatio = recordingFormat === '16:9' ? 16 / 9 : 9 / 16;
+                const tolerance = 0.1;
+                resolve(Math.abs(aspectRatio - expectedRatio) < tolerance);
+            };
+            video.src = URL.createObjectURL(file);
+        });
+    };
+
+    const handleScreenRecordingUpload = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const validTypes = ['video/mp4', 'video/webm'];
+            if (!validTypes.includes(file.type)) {
+                showSnackbar('Please upload a valid video file (.mp4 or .webm)', 'error');
+                return;
+            }
+
+            if (file.size > 500 * 1024 * 1024) {
+                showSnackbar('File size exceeds 500MB limit', 'error');
+                return;
+            }
+
+            const isValidRatio = await validateAspectRatio(file);
+            if (!isValidRatio) {
+                showSnackbar(`Video must be in ${recordingFormat} format`, 'error');
+                return;
+            }
+
+            setScreenRecording(file);
+
+            // Update video preview for uploaded file
+            const blob = new Blob([file], { type: file.type });
+            updateVideoPreview(blob);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
-        if (file && file.size > 10 * 1024 * 1024) {  // 10MB in bytes
-            setError('File size exceeds 10MB limit. Please choose a smaller file.');
+        if (file && file.size > 20 * 1024 * 1024) {
+            setError('PDF file size exceeds 20MB limit');
+            setLoading(false);
+            return;
+        }
+
+        if (screenRecording && screenRecording.size > 500 * 1024 * 1024) {
+            setError('Screen recording size exceeds 500MB limit');
             setLoading(false);
             return;
         }
 
         const formData = new FormData();
         formData.append('name', name);
+
         if (file) {
             formData.append('presentation', file);
         }
+
+        if (screenRecording) {
+            console.log('Adding screen recording to form data:', screenRecording); // Debug log
+
+            // Get video duration
+            const duration = await new Promise((resolve) => {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = () => {
+                    window.URL.revokeObjectURL(video.src);
+                    resolve(Math.round(video.duration));
+                };
+                video.src = URL.createObjectURL(screenRecording);
+            });
+
+            // Ensure we're sending the actual File object
+            formData.append('screen_recording', screenRecording, screenRecording.name);
+            formData.append('recording_format', recordingFormat);
+            formData.append('recording_metadata', JSON.stringify({
+                format: recordingFormat,
+                duration: duration,
+                file_size: screenRecording.size / (1024 * 1024) // Convert to MB
+            }));
+
+            // Debug logs
+            console.log('Recording format:', recordingFormat);
+            console.log('Recording duration:', duration);
+            console.log('Recording size (MB):', screenRecording.size / (1024 * 1024));
+        }
+
+        // Debug log
+        console.log('Sending data:', {
+            name,
+            presentation: file,
+            recording: screenRecording
+        });
 
         try {
             if (id) {
@@ -69,300 +274,214 @@ function CreateBrdgePage() {
     };
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-            position: 'relative',
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: '5%',
-                left: '-5%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 20s infinite alternate'
-            },
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: '5%',
-                right: '-5%',
-                width: '500px',
-                height: '500px',
-                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 25s infinite alternate-reverse'
-            }
-        }}>
-            <Box sx={{
-                position: 'absolute',
-                top: '10%',
-                left: '15%',
-                width: '400px',
-                height: '400px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                transform: 'rotate(45deg)',
-                animation: 'rotate 30s linear infinite',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: -1,
-                    padding: '1px',
-                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
-                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude'
-                }
-            }} />
-            <Box sx={{
-                position: 'absolute',
-                bottom: '15%',
-                right: '10%',
-                width: '300px',
-                height: '300px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '50%',
-                animation: 'rotateReverse 25s linear infinite',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: -1,
-                    borderRadius: 'inherit',
-                    padding: '1px',
-                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
-                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude'
-                }
-            }} />
-            <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
-                <Box sx={{ my: 8 }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <Typography variant="h2" component="h1" align="center" sx={{
-                            mb: 6,
-                            fontWeight: 600,
-                            fontSize: { xs: '1.75rem', md: '2.5rem' },
-                            color: 'white',
-                            textTransform: 'none',
-                            letterSpacing: '-0.02em',
-                            lineHeight: 1.1,
-                            position: 'relative',
-                            textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-12px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '2px',
-                                background: `linear-gradient(
-                                    90deg,
-                                    transparent 0%,
-                                    rgba(0,255,204,0.2) 15%,
-                                    rgba(0,255,204,0.5) 50%,
-                                    rgba(0,255,204,0.2) 85%,
-                                    transparent 100%
-                                )`,
-                                borderRadius: '1px',
-                                boxShadow: `
-                                    0 0 10px rgba(0,255,204,0.3),
-                                    0 0 20px rgba(0,255,204,0.2)
-                                `,
-                                animation: 'pulseUnderline 3s ease-in-out infinite'
-                            }
-                        }}>
-                            {id ? 'Edit Brdge' : 'Create New Brdge'}
-                        </Typography>
-                    </motion.div>
-                    <Paper elevation={3} sx={{
-                        p: { xs: 2, sm: 3, md: 4 },
-                        borderRadius: 2,
-                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: '1px',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
-                        }
-                    }}>
-                        {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-                        <form onSubmit={handleSubmit}>
-                            <TextField
-                                fullWidth
-                                label="Brdge Name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                                sx={{
-                                    mb: 3,
-                                    '& .MuiOutlinedInput-root': {
-                                        color: 'white',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                        borderRadius: '12px',
-                                        '& fieldset': {
-                                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                                            transition: 'all 0.2s ease-in-out',
-                                        },
-                                        '&:hover fieldset': {
-                                            borderColor: 'rgba(79, 156, 249, 0.5)',
-                                        },
-                                        '&.Mui-focused fieldset': {
-                                            borderColor: '#4F9CF9',
-                                            borderWidth: '1px',
-                                            boxShadow: '0 0 10px rgba(79, 156, 249, 0.2)',
-                                        },
-                                    },
-                                    '& .MuiInputLabel-root': {
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        '&.Mui-focused': {
-                                            color: '#4F9CF9',
-                                        },
-                                    },
-                                }}
-                            />
-                            <Box sx={{ mb: 4, textAlign: 'center' }}>
-                                <input
-                                    accept=".pdf"
-                                    style={{ display: 'none' }}
-                                    id="raised-button-file"
-                                    type="file"
-                                    onChange={(e) => setFile(e.target.files[0])}
-                                />
-                                <label htmlFor="raised-button-file">
-                                    <Button
-                                        variant="outlined"
-                                        component="span"
-                                        startIcon={<CloudUploadIcon />}
-                                        sx={{
-                                            color: 'white',
-                                            borderColor: 'rgba(255,255,255,0.5)',
-                                            borderWidth: '2px',
-                                            padding: '12px 28px',
-                                            fontSize: '1rem',
-                                            transition: 'all 0.3s ease',
-                                            '&:hover': {
-                                                borderColor: '#4F9CF9',
-                                                bgcolor: 'rgba(79, 156, 249, 0.1)',
-                                                borderWidth: '2px',
-                                                transform: 'translateY(-2px)',
-                                                boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)'
-                                            }
-                                        }}
-                                    >
-                                        {file ? file.name : 'Select PDF File'}
-                                    </Button>
-                                </label>
+        <div className="min-h-screen bg-gradient-to-b from-[#0A1929] via-[#121212] to-[#0A1929] flex items-center justify-center relative overflow-hidden">
+            {/* Enhanced Background Effect */}
+            <div className="absolute inset-0 overflow-hidden">
+                {/* Single elegant gradient */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-blue-900/20 blur-[120px] animate-pulse-slow" />
+            </div>
 
-                                <Box sx={{
-                                    mt: 3,
-                                    p: { xs: 2, sm: 3 },
-                                    borderRadius: 2,
-                                    bgcolor: 'rgba(79, 156, 249, 0.05)',
-                                    border: '1px solid rgba(79, 156, 249, 0.1)'
-                                }}>
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: 'rgba(255, 255, 255, 0.9)',
-                                            fontSize: { xs: '0.8rem', sm: '0.9rem' },
-                                            fontWeight: 500,
-                                            mb: 2,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 1,
-                                            textAlign: 'center'
-                                        }}
-                                    >
-                                        <span style={{ opacity: 0.9 }}>📄</span>
-                                        Upload your document (max 20MB)
-                                    </Typography>
+            <div className="container max-w-2xl mx-auto px-4 py-8 relative z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <h1 className="text-3xl font-semibold text-white mb-8 text-center relative">
+                        Create New Brdge
+                        <div className="absolute left-1/2 -bottom-3 transform -translate-x-1/2 w-32 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+                    </h1>
 
-                                    <Box sx={{
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        gap: { xs: 2, sm: 4 },
-                                        mb: 2,
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                        fontSize: { xs: '0.75rem', sm: '0.85rem' },
-                                        flexWrap: 'wrap',
-                                    }}>
-                                        <span>📊 Presentations</span>
-                                        <span>📝 Documents</span>
-                                        <span>📚 Research</span>
-                                        <span>📖 Guides</span>
-                                    </Box>
+                    <div className="bg-gray-900/40 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-6 shadow-xl relative">
+                        {/* Card inner glow */}
+                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-blue-900/20 via-transparent to-transparent opacity-50" />
 
-                                    <Typography
-                                        variant="body2"
-                                        sx={{
-                                            color: 'rgba(255, 255, 255, 0.6)',
-                                            fontSize: '0.8rem',
-                                            textAlign: 'center',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 1
-                                        }}
+                        {/* Rest of the form content */}
+                        <div className="relative z-10">
+                            {error && (
+                                <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSubmit} className="space-y-8">
+                                {/* Brdge Name */}
+                                <div>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Brdge Name"
+                                        required
+                                        className="w-full bg-gray-900/50 border border-gray-700/50 rounded-lg px-4 py-3 text-gray-100 
+                                            placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 
+                                            hover:border-cyan-500/30 transition-all duration-200
+                                            shadow-[0_0_15px_rgba(0,0,0,0.2)] focus:shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                                    />
+                                </div>
+
+                                {/* Presentation Upload - Step 1 */}
+                                <div className="space-y-4">
+                                    <div className="text-gray-300 text-sm mb-2">
+                                        1. Upload your presentation (PDF required)
+                                    </div>
+                                    <motion.label
+                                        htmlFor="pdf-upload"
+                                        className={`flex items-center justify-center gap-2 py-3 rounded-lg 
+                                            border cursor-pointer transition-all duration-200
+                                            ${file
+                                                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                            }`}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
                                     >
-                                        <span style={{ color: '#4F9CF9' }}>✨</span>
-                                        Save your document as PDF for the best AI experience
-                                    </Typography>
-                                </Box>
-                            </Box>
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                                <Button
+                                        <FileText className="w-4 h-4" />
+                                        <span className="text-sm">
+                                            {file ? `Selected: ${file.name}` : 'Upload Presentation (PDF)'}
+                                        </span>
+                                        <input
+                                            type="file"
+                                            id="pdf-upload"
+                                            accept=".pdf"
+                                            onChange={(e) => setFile(e.target.files[0])}
+                                            required
+                                            className="hidden"
+                                        />
+                                    </motion.label>
+                                </div>
+
+                                {/* Screen Recording Section - Step 2 */}
+                                <div className="space-y-4">
+                                    <div className="text-gray-300 text-sm mb-2">
+                                        2. Record or upload a video presentation of your slides
+                                    </div>
+
+                                    {/* Format Selection */}
+                                    <div className="space-y-2">
+                                        <div className="text-gray-400 text-xs">
+                                            Choose recording format:
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {['16:9', '9:16'].map((format) => (
+                                                <button
+                                                    key={format}
+                                                    type="button"
+                                                    onClick={() => setRecordingFormat(format)}
+                                                    className={`flex-1 py-2 px-4 rounded-lg border transition-all duration-200 text-sm
+                                                        ${recordingFormat === format
+                                                            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
+                                                            : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
+                                                        }`}
+                                                >
+                                                    {format === '16:9' ? 'Landscape' : 'Portrait'} ({format})
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Recording Controls */}
+                                    <div className="flex gap-3">
+                                        <motion.button
+                                            type="button"
+                                            onClick={isRecording ? stopRecording : startRecording}
+                                            disabled={!file}
+                                            className={`flex-1 py-3 px-4 rounded-lg border transition-all duration-200
+                                                flex items-center justify-center gap-2 text-sm relative
+                                                ${isRecording
+                                                    ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+                                                    : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                                }
+                                                hover:shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:scale-[1.02]
+                                                active:scale-[0.98]
+                                                disabled:opacity-50 disabled:cursor-not-allowed
+                                                disabled:hover:scale-100 disabled:hover:shadow-none`}
+                                        >
+                                            {isRecording ? (
+                                                <>
+                                                    <StopCircle className="w-4 h-4" />
+                                                    <span>Stop Recording ({formatTime(recordingTime)})</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Video className="w-4 h-4" />
+                                                    <span>Record Presentation</span>
+                                                </>
+                                            )}
+                                        </motion.button>
+
+                                        <motion.label
+                                            htmlFor="video-upload"
+                                            className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg 
+                                                border border-gray-700/50 text-gray-400 cursor-pointer
+                                                hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]
+                                                transition-all duration-200
+                                                ${!file && 'opacity-50 cursor-not-allowed'}`}
+                                            whileHover={{ scale: file ? 1.02 : 1 }}
+                                            whileTap={{ scale: file ? 0.98 : 1 }}
+                                        >
+                                            <Upload className="w-4 h-4" />
+                                            <span className="text-sm">Upload Video</span>
+                                            <input
+                                                type="file"
+                                                id="video-upload"
+                                                accept="video/*"
+                                                onChange={handleScreenRecordingUpload}
+                                                disabled={!file}
+                                                className="hidden"
+                                            />
+                                        </motion.label>
+                                    </div>
+
+                                    {/* Video Preview */}
+                                    {screenRecording && (
+                                        <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+                                            <div className="flex items-center gap-2 text-cyan-400 text-sm">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                                Recording ready for review
+                                            </div>
+                                            <video
+                                                ref={recordingPreviewRef}
+                                                controls
+                                                playsInline
+                                                className="w-full mt-3 rounded-lg border border-gray-700/50"
+                                                style={{ maxHeight: '300px', backgroundColor: '#1a1a1a' }}
+                                            >
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Submit Button */}
+                                <motion.button
                                     type="submit"
-                                    variant="contained"
-                                    color="primary"
-                                    fullWidth
-                                    disabled={loading}
-                                    sx={{
-                                        py: { xs: 1.2, sm: 1.5 },
-                                        fontSize: { xs: '1rem', sm: '1.1rem' },
-                                        borderRadius: '50px',
-                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
-                                        fontWeight: '600',
-                                        letterSpacing: '0.02em',
-                                        textTransform: 'none',
-                                        transition: 'all 0.3s ease-in-out',
-                                        boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
-                                        '&:hover': {
-                                            background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
-                                        },
-                                    }}
+                                    disabled={loading || !file || !screenRecording}
+                                    className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500
+                                        text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                                        shadow-lg shadow-cyan-500/20 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]
+                                        transition-all duration-200 relative overflow-hidden
+                                        border border-cyan-500/20"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                 >
-                                    {loading ? <CircularProgress size={24} /> : (id ? 'Update Brdge' : 'Create Brdge')}
-                                </Button>
-                            </motion.div>
-                        </form>
-                    </Paper>
-                </Box>
-            </Container>
-        </Box>
+                                    <span className="relative z-10 flex items-center justify-center gap-2">
+                                        {loading ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            <>
+                                                Create Brdge
+                                                <ArrowRight className="w-4 h-4" />
+                                            </>
+                                        )}
+                                    </span>
+                                </motion.button>
+                            </form>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </div>
     );
 }
 

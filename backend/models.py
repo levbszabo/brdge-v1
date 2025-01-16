@@ -84,6 +84,15 @@ class Brdge(db.Model):
     shareable = db.Column(db.Boolean, default=False)
     public_id = db.Column(db.String(36), unique=True, nullable=True)
 
+    # Define recordings relationship with back_populates instead of backref
+    recordings = db.relationship(
+        "Recording",
+        back_populates="brdge",
+        foreign_keys="Recording.brdge_id",
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.public_id:
@@ -93,18 +102,34 @@ class Brdge(db.Model):
         return {
             "id": self.id,
             "name": self.name,
+            "user_id": self.user_id,
             "presentation_filename": self.presentation_filename,
             "audio_filename": self.audio_filename,
             "folder": self.folder,
             "shareable": self.shareable,
             "public_id": self.public_id,
-            "user_id": self.user_id,
-            "presentation_s3_key": f"{self.folder}/{self.presentation_filename}",
-            "audio_s3_key": (
-                f"{self.folder}/audio/{self.audio_filename}"
-                if self.audio_filename
-                else None
-            ),
+        }
+
+
+class Recording(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    format = db.Column(db.String(10), default="mp4")  # e.g., 'mp4', 'webm'
+    duration = db.Column(db.Float)  # Duration in seconds
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Define the relationship without backref to avoid circular reference
+    brdge = db.relationship("Brdge", foreign_keys=[brdge_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "filename": self.filename,
+            "format": self.format,
+            "duration": self.duration,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
 
@@ -372,4 +397,33 @@ class UsageLogs(db.Model):
             "ended_at": self.ended_at.isoformat() if self.ended_at else None,
             "duration_minutes": self.duration_minutes,
             "was_interrupted": self.was_interrupted,
+        }
+
+
+class BrdgeScript(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    content = db.Column(db.JSON)  # Stores the transcript in a flexible JSON format
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default="pending")  # pending, completed, failed
+    script_metadata = db.Column(
+        db.JSON, nullable=True
+    )  # Optional metadata like duration, speaker info
+
+    # Define the relationship here only, with cascade delete
+    brdge = db.relationship(
+        "Brdge",
+        backref=db.backref(
+            "transcription_scripts", cascade="all, delete-orphan", lazy="dynamic"
+        ),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "content": self.content,
+            "metadata": self.script_metadata,
         }
