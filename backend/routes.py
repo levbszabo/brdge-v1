@@ -2899,3 +2899,67 @@ def update_agent_config(brdge_id):
         db.session.rollback()
         logger.error(f"Error updating agent config: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/voice/activate", methods=["POST"])
+def activate_voice(brdge_id):
+    """Activate a voice for a brdge"""
+    try:
+        data = request.get_json()
+        voice_id = data.get("voice_id")
+
+        if not voice_id:
+            return jsonify({"error": "voice_id is required"}), 400
+
+        # First, set all voices for this brdge to inactive
+        voices = Voice.query.filter_by(brdge_id=brdge_id).all()
+        for voice in voices:
+            voice.status = "inactive"
+
+        # Then activate the selected voice
+        voice = Voice.query.filter_by(
+            brdge_id=brdge_id, cartesia_voice_id=voice_id
+        ).first()
+
+        if not voice:
+            return jsonify({"error": "Voice not found"}), 404
+
+        voice.status = "active"
+        db.session.commit()
+
+        return jsonify(
+            {"message": "Voice activated successfully", "voice": voice.to_dict()}
+        )
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error activating voice: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/voice/deactivate", methods=["POST"])
+def deactivate_voice(brdge_id):
+    """Deactivate a voice for a brdge"""
+    try:
+        data = request.get_json()
+        voice_id = data.get("voice_id")
+
+        if not voice_id:
+            return jsonify({"error": "voice_id is required"}), 400
+
+        voice = Voice.query.filter_by(
+            brdge_id=brdge_id, cartesia_voice_id=voice_id
+        ).first()
+
+        if not voice:
+            return jsonify({"error": "Voice not found"}), 404
+
+        voice.status = "inactive"
+        db.session.commit()
+
+        return jsonify(
+            {"message": "Voice deactivated successfully", "voice": voice.to_dict()}
+        )
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error deactivating voice: {str(e)}")
+        return jsonify({"error": str(e)}), 500
