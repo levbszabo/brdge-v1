@@ -113,6 +113,24 @@ SUBSCRIPTION_TIERS = {
     },
 }
 
+# Add these constants near the top with other configurations
+MAX_PDF_SIZE = 20 * 1024 * 1024  # 20MB in bytes
+MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB in bytes
+
+# Add this configuration right after creating the app
+app.config["MAX_CONTENT_LENGTH"] = (
+    MAX_VIDEO_SIZE + MAX_PDF_SIZE
+)  # Allow for both files plus some overhead
+
+
+# Add this error handler
+@app.errorhandler(RequestEntityTooLarge)
+def handle_large_request(e):
+    return (
+        jsonify({"error": "File too large. Video limit is 100MB, PDF limit is 20MB."}),
+        413,
+    )
+
 
 @jwt_required(optional=True)
 def get_current_user():
@@ -629,6 +647,13 @@ def create_brdge(user):
                 recording_duration = metadata.get("duration")
             except json.JSONDecodeError:
                 logger.warning("Failed to parse recording metadata")
+
+        # Add file size validation
+        if presentation and presentation.content_length > MAX_PDF_SIZE:
+            return jsonify({"error": "PDF file size exceeds 20MB limit"}), 400
+
+        if recording and recording.content_length > MAX_VIDEO_SIZE:
+            return jsonify({"error": "Video file size exceeds 100MB limit"}), 400
 
         # Step 1: Create Brdge object
         brdge = Brdge(

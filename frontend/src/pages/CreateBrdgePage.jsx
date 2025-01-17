@@ -7,6 +7,9 @@ import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, StopCircle } from 'lucide-react';
 
+const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB in bytes
+
 function CreateBrdgePage() {
     const [name, setName] = useState('');
     const [file, setFile] = useState(null);
@@ -90,9 +93,10 @@ function CreateBrdgePage() {
             const constraints = {
                 audio: true,
                 video: {
-                    aspectRatio: recordingFormat === '16:9' ? 16 / 9 : 9 / 16,
-                    width: recordingFormat === '16:9' ? 1920 : 1080,
-                    height: recordingFormat === '16:9' ? 1080 : 1920
+                    width: 1280,  // Reduced from 1920
+                    height: 720,  // Reduced from 1080
+                    frameRate: 15,  // Reduced from default
+                    aspectRatio: recordingFormat === '16:9' ? 16 / 9 : 9 / 16
                 }
             };
 
@@ -106,7 +110,7 @@ function CreateBrdgePage() {
 
             const recorder = new MediaRecorder(combinedStream, {
                 mimeType: 'video/webm;codecs=vp9',
-                videoBitsPerSecond: 3000000 // 3 Mbps for good quality
+                videoBitsPerSecond: 1000000  // ~1 Mbps
             });
 
             const chunks = [];
@@ -176,8 +180,8 @@ function CreateBrdgePage() {
                 return;
             }
 
-            if (file.size > 500 * 1024 * 1024) {
-                showSnackbar('File size exceeds 500MB limit', 'error');
+            if (file.size > MAX_VIDEO_SIZE) {
+                showSnackbar('File size exceeds 100MB limit', 'error');
                 return;
             }
 
@@ -200,14 +204,14 @@ function CreateBrdgePage() {
         setLoading(true);
         setError('');
 
-        if (file && file.size > 20 * 1024 * 1024) {
+        if (file && file.size > MAX_PDF_SIZE) {
             setError('PDF file size exceeds 20MB limit');
             setLoading(false);
             return;
         }
 
-        if (screenRecording && screenRecording.size > 500 * 1024 * 1024) {
-            setError('Screen recording size exceeds 500MB limit');
+        if (screenRecording && screenRecording.size > MAX_VIDEO_SIZE) {
+            setError('Screen recording size exceeds 100MB limit');
             setLoading(false);
             return;
         }
