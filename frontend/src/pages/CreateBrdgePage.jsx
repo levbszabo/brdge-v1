@@ -8,14 +8,14 @@ import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, StopCircle } from 'lucide-react';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB in bytes
+const MAX_VIDEO_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
 
 function CreateBrdgePage() {
     const [name, setName] = useState('');
     const [file, setFile] = useState(null);
     const [screenRecording, setScreenRecording] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [recordingFormat, setRecordingFormat] = useState('16:9');
+    const [recordingFormat, setRecordingFormat] = useState(window.innerWidth <= 768 ? '9:16' : '16:9');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [recordingTime, setRecordingTime] = useState(0);
@@ -26,6 +26,7 @@ function CreateBrdgePage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -43,6 +44,19 @@ function CreateBrdgePage() {
             }
         };
     }, [mediaRecorder]);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            const isMobileDevice = window.innerWidth <= 768;
+            setIsMobile(isMobileDevice);
+            if (isMobileDevice) {
+                setRecordingFormat('9:16');
+            }
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const fetchBrdgeData = async () => {
         try {
@@ -204,6 +218,7 @@ function CreateBrdgePage() {
         setLoading(true);
         setError('');
 
+        // Only validate PDF if one is uploaded
         if (file && file.size > MAX_PDF_SIZE) {
             setError('PDF file size exceeds 20MB limit');
             setLoading(false);
@@ -216,9 +231,17 @@ function CreateBrdgePage() {
             return;
         }
 
+        // Require screen recording
+        if (!screenRecording) {
+            setError('Please record or upload a video presentation');
+            setLoading(false);
+            return;
+        }
+
         const formData = new FormData();
         formData.append('name', name);
 
+        // PDF is optional now
         if (file) {
             formData.append('presentation', file);
         }
@@ -324,41 +347,18 @@ function CreateBrdgePage() {
                                     />
                                 </div>
 
-                                {/* Presentation Upload - Step 1 */}
+                                {/* Screen Recording Section - Now First */}
                                 <div className="space-y-4">
-                                    <div className="text-gray-300 text-sm mb-2">
-                                        1. Upload your presentation (PDF required)
-                                    </div>
-                                    <motion.label
-                                        htmlFor="pdf-upload"
-                                        className={`flex items-center justify-center gap-2 py-3 rounded-lg 
-                                            border cursor-pointer transition-all duration-200
-                                            ${file
-                                                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-                                            }`}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                    >
-                                        <FileText className="w-4 h-4" />
-                                        <span className="text-sm">
-                                            {file ? `Selected: ${file.name}` : 'Upload Presentation (PDF)'}
-                                        </span>
-                                        <input
-                                            type="file"
-                                            id="pdf-upload"
-                                            accept=".pdf"
-                                            onChange={(e) => setFile(e.target.files[0])}
-                                            required
-                                            className="hidden"
-                                        />
-                                    </motion.label>
-                                </div>
-
-                                {/* Screen Recording Section - Step 2 */}
-                                <div className="space-y-4">
-                                    <div className="text-gray-300 text-sm mb-2">
-                                        2. Record or upload a video presentation of your slides
+                                    <div className="space-y-2">
+                                        <div className="text-gray-300 text-sm">
+                                            1. {isMobile ? 'Record or upload a video' : 'Record or upload a video presentation of your slides'}
+                                        </div>
+                                        <div className="text-gray-400/70 text-xs italic">
+                                            {isMobile
+                                                ? "We'll transcribe your content and create an AI voice assistant that can engage with your audience"
+                                                : "We'll transcribe your presentation and create an AI voice assistant that can guide viewers through your slides"
+                                            }
+                                        </div>
                                     </div>
 
                                     {/* Format Selection */}
@@ -367,20 +367,27 @@ function CreateBrdgePage() {
                                             Choose recording format:
                                         </div>
                                         <div className="flex gap-2">
-                                            {['16:9', '9:16'].map((format) => (
-                                                <button
-                                                    key={format}
-                                                    type="button"
-                                                    onClick={() => setRecordingFormat(format)}
-                                                    className={`flex-1 py-2 px-4 rounded-lg border transition-all duration-200 text-sm
-                                                        ${recordingFormat === format
-                                                            ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
-                                                            : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                                                        }`}
-                                                >
-                                                    {format === '16:9' ? 'Landscape' : 'Portrait'} ({format})
-                                                </button>
-                                            ))}
+                                            {['16:9', '9:16'].map((format) => {
+                                                const isDisabled = isMobile && format === '16:9';
+                                                return (
+                                                    <button
+                                                        key={format}
+                                                        type="button"
+                                                        onClick={() => !isDisabled && setRecordingFormat(format)}
+                                                        className={`
+                                                            flex-1 py-2 px-4 rounded-lg border transition-all duration-200 text-sm
+                                                            ${recordingFormat === format
+                                                                ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
+                                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
+                                                            }
+                                                            ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
+                                                        `}
+                                                        title={isDisabled ? 'Portrait mode (9:16) is required on mobile devices' : ''}
+                                                    >
+                                                        {format === '16:9' ? 'Landscape' : 'Portrait'} ({format})
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 
@@ -389,7 +396,6 @@ function CreateBrdgePage() {
                                         <motion.button
                                             type="button"
                                             onClick={isRecording ? stopRecording : startRecording}
-                                            disabled={!file}
                                             className={`flex-1 py-3 px-4 rounded-lg border transition-all duration-200
                                                 flex items-center justify-center gap-2 text-sm relative
                                                 ${isRecording
@@ -397,9 +403,7 @@ function CreateBrdgePage() {
                                                     : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
                                                 }
                                                 hover:shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:scale-[1.02]
-                                                active:scale-[0.98]
-                                                disabled:opacity-50 disabled:cursor-not-allowed
-                                                disabled:hover:scale-100 disabled:hover:shadow-none`}
+                                                active:scale-[0.98]`}
                                         >
                                             {isRecording ? (
                                                 <>
@@ -409,7 +413,7 @@ function CreateBrdgePage() {
                                             ) : (
                                                 <>
                                                     <Video className="w-4 h-4" />
-                                                    <span>Record Presentation</span>
+                                                    <span>{isMobile ? 'Record Video' : 'Record Presentation'}</span>
                                                 </>
                                             )}
                                         </motion.button>
@@ -419,10 +423,9 @@ function CreateBrdgePage() {
                                             className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg 
                                                 border border-gray-700/50 text-gray-400 cursor-pointer
                                                 hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]
-                                                transition-all duration-200
-                                                ${!file && 'opacity-50 cursor-not-allowed'}`}
-                                            whileHover={{ scale: file ? 1.02 : 1 }}
-                                            whileTap={{ scale: file ? 0.98 : 1 }}
+                                                transition-all duration-200`}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
                                         >
                                             <Upload className="w-4 h-4" />
                                             <span className="text-sm">Upload Video</span>
@@ -431,7 +434,6 @@ function CreateBrdgePage() {
                                                 id="video-upload"
                                                 accept="video/*"
                                                 onChange={handleScreenRecordingUpload}
-                                                disabled={!file}
                                                 className="hidden"
                                             />
                                         </motion.label>
@@ -457,10 +459,48 @@ function CreateBrdgePage() {
                                     )}
                                 </div>
 
+                                {/* Presentation Upload - Now Second and Optional */}
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <div className="text-gray-300 text-sm">
+                                            2. (Optional) Upload your {isMobile ? 'content' : 'presentation'} (PDF)
+                                        </div>
+                                        <div className="text-gray-400/70 text-xs italic">
+                                            {isMobile
+                                                ? "Adding a PDF enhances your Brdge's understanding and improves its ability to assist your audience"
+                                                : "Adding a PDF enhances your Brdge's understanding and improves its ability to assist your audience"
+                                            }
+                                        </div>
+                                    </div>
+                                    <motion.label
+                                        htmlFor="pdf-upload"
+                                        className={`flex items-center justify-center gap-2 py-3 rounded-lg 
+                                            border cursor-pointer transition-all duration-200
+                                            ${file
+                                                ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                            }`}
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        <span className="text-sm">
+                                            {file ? `Selected: ${file.name}` : `Upload ${isMobile ? 'Content' : 'Presentation'} (PDF)`}
+                                        </span>
+                                        <input
+                                            type="file"
+                                            id="pdf-upload"
+                                            accept=".pdf"
+                                            onChange={(e) => setFile(e.target.files[0])}
+                                            className="hidden"
+                                        />
+                                    </motion.label>
+                                </div>
+
                                 {/* Submit Button */}
                                 <motion.button
                                     type="submit"
-                                    disabled={loading || !file || !screenRecording}
+                                    disabled={loading || !screenRecording}
                                     className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500
                                         text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed
                                         shadow-lg shadow-cyan-500/20 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]

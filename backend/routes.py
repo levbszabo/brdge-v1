@@ -623,8 +623,6 @@ def create_brdge(user):
         missing_fields = []
         if not name:
             missing_fields.append("name")
-        if not presentation:
-            missing_fields.append("presentation")
         if not recording:
             missing_fields.append("screen_recording")
 
@@ -659,7 +657,7 @@ def create_brdge(user):
         brdge = Brdge(
             name=name,
             user_id=user.id,
-            presentation_filename="temp",
+            presentation_filename="" if not presentation else "temp",
             audio_filename="",
             folder="temp",
         )
@@ -670,12 +668,21 @@ def create_brdge(user):
         folder = str(brdge.id)
         brdge.folder = folder
 
-        presentation_filename = secure_filename(presentation.filename)
-        recording_filename = secure_filename(recording.filename)
-        brdge.presentation_filename = presentation_filename
+        # Handle presentation file if it exists
+        if presentation:
+            presentation_filename = secure_filename(presentation.filename)
+            brdge.presentation_filename = presentation_filename
+            presentation_key = f"{folder}/{presentation_filename}"
+            presentation.seek(0)
+            s3_client.upload_fileobj(
+                presentation,
+                S3_BUCKET,
+                presentation_key,
+                ExtraArgs={"ContentType": "application/pdf"},
+            )
 
-        # Define S3 keys
-        presentation_key = f"{folder}/{presentation_filename}"
+        # Handle recording file (required)
+        recording_filename = secure_filename(recording.filename)
         recording_key = f"{folder}/recordings/{recording_filename}"
 
         # Create Recording object
@@ -699,17 +706,8 @@ def create_brdge(user):
         db.session.add(script_obj)
 
         try:
-            # Upload files to S3
-            presentation.seek(0)
+            # Upload recording to S3
             recording.seek(0)
-
-            s3_client.upload_fileobj(
-                presentation,
-                S3_BUCKET,
-                presentation_key,
-                ExtraArgs={"ContentType": "application/pdf"},
-            )
-
             s3_client.upload_fileobj(
                 recording,
                 S3_BUCKET,
@@ -2988,3 +2986,58 @@ def deactivate_voice(brdge_id):
         db.session.rollback()
         logger.error(f"Error deactivating voice: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/presentation", methods=["POST"])
+@login_required
+def upload_presentation(user, brdge_id):
+    try:
+        # Get the brdge and verify ownership
+        brdge = Brdge.query.get_or_404(brdge_id)
+        if brdge.user_id != user.id:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Check if brdge already has a presentation
+        if brdge.presentation_filename:
+            return jsonify({"error": "Brdge already has a presentation"}), 400
+
+        # Get the uploaded file
+        presentation = request.files.get("presentation")
+        if not presentation:
+            return jsonify({"error": "No presentation file provided"}), 400
+
+        # Validate file size
+        if presentation.content_length > MAX_PDF_SIZE:
+            return jsonify({"error": "PDF file size exceeds 20MB limit"}), 400
+
+        # Process and upload the file
+        presentation_filename = secure_filename(presentation.filename)
+        presentation_key = f"{brdge.folder}/{presentation_filename}"
+
+        # Upload to S3
+        presentation.seek(0)
+        s3_client.upload_fileobj(
+            presentation,
+            S3_BUCKET,
+            presentation_key,
+            ExtraArgs={"ContentType": "application/pdf"},
+        )
+
+        # Update brdge record
+        brdge.presentation_filename = presentation_filename
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Presentation uploaded successfully",
+                    "presentation_filename": presentation_filename,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error uploading presentation: {str(e)}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to upload presentation"}), 500

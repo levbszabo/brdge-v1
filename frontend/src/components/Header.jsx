@@ -120,7 +120,7 @@ function Header() {
             sx={{
                 background: 'transparent',
                 backdropFilter: 'none',
-                pt: { xs: 1, sm: 2 },
+                pt: { xs: 0.5, sm: 1 },
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -129,7 +129,7 @@ function Header() {
             }}
         >
             <Toolbar sx={{
-                minHeight: { xs: '72px', sm: '64px' },
+                minHeight: { xs: '48px', sm: '40px' },
                 px: { xs: 1.5, sm: 2 },
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -178,11 +178,11 @@ function Header() {
                             <IconButton
                                 onClick={handleProfileClick}
                                 sx={{
-                                    width: 44,
-                                    height: 44,
+                                    width: 36,
+                                    height: 36,
                                     '& .MuiAvatar-root': {
-                                        width: 36,
-                                        height: 36
+                                        width: 28,
+                                        height: 28
                                     }
                                 }}
                             >
@@ -199,12 +199,12 @@ function Header() {
                             aria-label="menu"
                             onClick={() => setDrawerOpen(true)}
                             sx={{
-                                width: 44,
-                                height: 44,
+                                width: 36,
+                                height: 36,
                                 color: 'white'
                             }}
                         >
-                            <MenuIcon sx={{ fontSize: 28 }} />
+                            <MenuIcon sx={{ fontSize: 24 }} />
                         </IconButton>
 
                         <Drawer
@@ -270,12 +270,12 @@ function Header() {
                             >
                                 <Avatar
                                     sx={{
-                                        width: 32,
-                                        height: 32,
+                                        width: 28,
+                                        height: 28,
                                         bgcolor: theme.palette.primary.main,
                                     }}
                                 >
-                                    <PersonIcon sx={{ fontSize: 20 }} />
+                                    <PersonIcon sx={{ fontSize: 18 }} />
                                 </Avatar>
                             </IconButton>
                         )}

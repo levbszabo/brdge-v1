@@ -13,7 +13,6 @@ import {
     Button,
     TextField,
     InputAdornment,
-    LinearProgress,
     Divider,
     Grid,
     Accordion,
@@ -21,9 +20,14 @@ import {
     AccordionDetails,
     Tooltip,
     Chip,
+    Switch,
+    InputBase,
+    Snackbar,
+    Alert,
+    IconButton,
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import AddIcon from '@mui/icons-material/Add';
+import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check } from 'lucide-react';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { motion } from 'framer-motion';
 import { api } from '../api';
 import { getAuthToken } from '../utils/auth';
@@ -31,10 +35,172 @@ import { useSnackbar } from '../utils/snackbar';
 import BrdgeList from '../components/BrdgeList';
 import EmptyBrdgeState from '../components/EmptyBrdgeState';
 import UsageIndicator from '../components/UsageIndicator';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import TimelineIcon from '@mui/icons-material/Timeline';
+
+// Unified theme colors
+const theme = {
+    colors: {
+        primary: '#4F9CF9',
+        background: '#0B0F1B',
+        backgroundLight: '#101727',
+        surface: 'rgba(255, 255, 255, 0.04)',
+        border: 'rgba(255, 255, 255, 0.1)',
+        text: {
+            primary: '#FFFFFF',
+            secondary: 'rgba(255, 255, 255, 0.7)'
+        }
+    },
+    transitions: {
+        default: 'all 0.2s ease-in-out'
+    }
+};
+
+// Unified styles
+const styles = {
+    pageContainer: {
+        minHeight: '100vh',
+        background: `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.backgroundLight} 100%)`,
+        py: 8
+    },
+    header: {
+        color: theme.colors.text.primary,
+        mb: 4,
+        fontWeight: 600,
+        textAlign: 'center',
+        position: 'relative'
+    },
+    controlsContainer: {
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        mb: 4,
+        gap: 2
+    },
+    searchField: {
+        width: { xs: '100%', md: '300px' },
+        '& .MuiOutlinedInput-root': {
+            color: theme.colors.text.primary,
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            borderRadius: 2,
+            transition: theme.transitions.default,
+            '& fieldset': {
+                borderColor: theme.colors.border
+            },
+            '&:hover fieldset': {
+                borderColor: theme.colors.primary
+            },
+            '&.Mui-focused fieldset': {
+                borderColor: theme.colors.primary
+            }
+        }
+    },
+    usageContainer: {
+        display: 'flex',
+        gap: 3,
+        p: 3,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderRadius: 2,
+        border: `1px solid ${theme.colors.border}`
+    },
+    actionButton: {
+        textTransform: 'none',
+        borderRadius: 2,
+        py: 1.5,
+        px: 3,
+        backgroundColor: 'rgba(34, 211, 238, 0.15)',
+        backdropFilter: 'blur(8px)',
+        color: '#22D3EE',
+        border: '1px solid rgba(34, 211, 238, 0.3)',
+        boxShadow: `
+            0 0 10px rgba(34, 211, 238, 0.2),
+            inset 0 0 20px rgba(34, 211, 238, 0.05)
+        `,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+            backgroundColor: 'rgba(34, 211, 238, 0.25)',
+            color: '#22D3EE',
+            boxShadow: `
+                0 0 20px rgba(34, 211, 238, 0.3),
+                0 0 40px rgba(34, 211, 238, 0.1),
+                inset 0 0 20px rgba(34, 211, 238, 0.1)
+            `,
+            border: '1px solid rgba(34, 211, 238, 0.5)',
+        },
+        '&:active': {
+            backgroundColor: 'rgba(34, 211, 238, 0.2)',
+            boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
+        }
+    },
+    listContainer: {
+        backgroundColor: theme.colors.surface,
+        borderRadius: 3,
+        border: `1px solid ${theme.colors.border}`,
+        overflow: 'hidden'
+    },
+    dialog: {
+        '& .MuiDialog-paper': {
+            backgroundColor: theme.colors.backgroundLight,
+            borderRadius: 3,
+            border: `1px solid ${theme.colors.border}`,
+            color: theme.colors.text.primary
+        }
+    },
+    shareDialog: {
+        '& .MuiDialog-paper': {
+            backgroundColor: theme.colors.backgroundLight,
+            borderRadius: 3,
+            border: `1px solid ${theme.colors.border}`,
+            color: theme.colors.text.primary,
+            minWidth: '400px',
+        }
+    },
+    shareLink: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        p: 2,
+        mt: 2,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        }
+    },
+    linkInput: {
+        flex: 1,
+        color: theme.colors.text.primary,
+        fontSize: '0.875rem',
+        '& input': {
+            padding: 0,
+        }
+    },
+    copyButton: {
+        color: theme.colors.text.secondary,
+        p: 1,
+        borderRadius: 1,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            color: '#22D3EE',
+        }
+    },
+    toggleContainer: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        mt: 3,
+        p: 2,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+    },
+    toggleInfo: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 0.5,
+    }
+};
 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
@@ -56,6 +222,7 @@ function BrdgeListPage() {
     const [expandedBrdge, setExpandedBrdge] = useState(null);
     const [conversationData, setConversationData] = useState({});
     const [loadingConversations, setLoadingConversations] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -158,9 +325,35 @@ function BrdgeListPage() {
         navigate(`/edit/${brdge.id}`);
     };
 
+    const handleShareToggle = async () => {
+        try {
+            const response = await api.post(`/brdges/${brdgeToShare.id}/toggle_shareable`);
+            // Update the local state with the new shareable status
+            setBrdgeToShare(prev => ({ ...prev, shareable: response.data.shareable }));
+            // Update the brdges list with the new status
+            setBrdges(brdges.map(b =>
+                b.id === brdgeToShare.id
+                    ? { ...b, shareable: response.data.shareable }
+                    : b
+            ));
+            showSnackbar(
+                `Brdge is now ${response.data.shareable ? 'public' : 'private'}`,
+                'success'
+            );
+        } catch (error) {
+            showSnackbar('Failed to update sharing settings', 'error');
+        }
+    };
+
     const handleShare = (brdge) => {
         setBrdgeToShare(brdge);
         setShareDialogOpen(true);
+    };
+
+    const handleCloseShare = () => {
+        setShareDialogOpen(false);
+        setBrdgeToShare(null);
+        setLinkCopied(false);
     };
 
     const handleDelete = (brdge) => {
@@ -177,22 +370,6 @@ function BrdgeListPage() {
             fetchStats(); // Refresh stats after deletion
         } catch (error) {
             showSnackbar('Failed to delete Brdge', 'error');
-        }
-    };
-
-    const confirmShare = async () => {
-        try {
-            const response = await api.post(`/brdges/${brdgeToShare.id}/toggle_shareable`);
-            const updatedBrdges = brdges.map(b =>
-                b.id === brdgeToShare.id
-                    ? { ...b, shareable: response.data.shareable }
-                    : b
-            );
-            setBrdges(updatedBrdges);
-            showSnackbar(`Brdge is now ${response.data.shareable ? 'public' : 'private'}`, 'success');
-            setShareDialogOpen(false);
-        } catch (error) {
-            showSnackbar('Failed to update sharing settings', 'error');
         }
     };
 
@@ -251,7 +428,7 @@ function BrdgeListPage() {
         }
     };
 
-    const ConversationMetrics = ({ brdgeId, expanded }) => {
+    const ConversationMetrics = ({ brdgeId }) => {
         const data = conversationData[brdgeId] || {};
         const totalUsers = Object.keys(data).length;
         const totalInteractions = Object.values(data).reduce(
@@ -265,28 +442,28 @@ function BrdgeListPage() {
                 <Grid container spacing={2}>
                     <Grid item xs={12} sm={4}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <PersonOutlineIcon color="primary" />
+                            <User size={18} className="text-cyan-400" />
                             <Box>
-                                <Typography variant="body2" color="text.secondary">Total Users</Typography>
-                                <Typography variant="h6">{totalUsers}</Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Users</Typography>
+                                <Typography variant="h6" sx={{ color: 'white' }}>{totalUsers}</Typography>
                             </Box>
                         </Box>
                     </Grid>
                     <Grid item xs={12} sm={4}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <ChatBubbleOutlineIcon color="primary" />
+                            <MessageSquare size={18} className="text-cyan-400" />
                             <Box>
-                                <Typography variant="body2" color="text.secondary">Total Interactions</Typography>
-                                <Typography variant="h6">{totalInteractions}</Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Interactions</Typography>
+                                <Typography variant="h6" sx={{ color: 'white' }}>{totalInteractions}</Typography>
                             </Box>
                         </Box>
                     </Grid>
                     <Grid item xs={12} sm={4}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <TimelineIcon color="primary" />
+                            <LineChart size={18} className="text-cyan-400" />
                             <Box>
-                                <Typography variant="body2" color="text.secondary">Avg. Interactions/User</Typography>
-                                <Typography variant="h6">{averageInteractionsPerUser}</Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Avg. Interactions/User</Typography>
+                                <Typography variant="h6" sx={{ color: 'white' }}>{averageInteractionsPerUser}</Typography>
                             </Box>
                         </Box>
                     </Grid>
@@ -295,8 +472,10 @@ function BrdgeListPage() {
         );
     };
 
-    const UserConversationList = ({ brdgeId, data }) => {
+    const UserConversationList = ({ brdgeId }) => {
         const [expandedUser, setExpandedUser] = useState(null);
+        const data = conversationData[brdgeId] || {};
+        const conversations = data.conversations || [];
 
         return (
             <Box sx={{ mt: 2 }}>
@@ -308,38 +487,39 @@ function BrdgeListPage() {
                         sx={{
                             bgcolor: 'rgba(0, 41, 132, 0.05)',
                             '&:before': { display: 'none' },
-                            mb: 1
+                            mb: 1,
+                            color: 'white'
                         }}
                     >
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <AccordionSummary expandIcon={<ChevronDown className="text-white" size={18} />}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
                                 <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <PersonOutlineIcon fontSize="small" />
+                                    <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
+                                        <User size={18} className="text-cyan-400" />
                                         {userData.isAnonymous ? 'Anonymous User' : `User ${userId}`}
                                         {userData.isAnonymous && (
                                             <Chip
                                                 label="Anonymous"
                                                 size="small"
                                                 variant="outlined"
-                                                sx={{ ml: 1 }}
+                                                sx={{ ml: 1, color: 'rgba(255, 255, 255, 0.7)' }}
                                             />
                                         )}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                                         Last active: {new Date(userData.lastInteraction).toLocaleDateString()}
                                     </Typography>
                                 </Box>
                                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                                     <Tooltip title="Total Interactions">
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <ChatBubbleOutlineIcon fontSize="small" />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'white' }}>
+                                            <MessageSquare size={18} className="text-cyan-400" />
                                             <Typography>{userData.totalInteractions}</Typography>
                                         </Box>
                                     </Tooltip>
                                     <Tooltip title="Unique Slides Viewed">
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <TimelineIcon fontSize="small" />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'white' }}>
+                                            <LineChart size={18} className="text-cyan-400" />
                                             <Typography>{userData.uniqueSlides.size}</Typography>
                                         </Box>
                                     </Tooltip>
@@ -351,8 +531,9 @@ function BrdgeListPage() {
                                 maxHeight: '300px',
                                 overflowY: 'auto',
                                 p: 2,
-                                bgcolor: 'rgba(0, 0, 0, 0.02)',
-                                borderRadius: 1
+                                bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                borderRadius: 1,
+                                color: 'white'
                             }}>
                                 {userData.messages.map((message, index) => (
                                     <Box
@@ -361,15 +542,16 @@ function BrdgeListPage() {
                                             mb: 1,
                                             p: 1,
                                             borderLeft: '2px solid',
-                                            borderColor: message.role === 'user' ? 'primary.main' : 'secondary.main',
-                                            bgcolor: 'background.paper',
-                                            borderRadius: '4px'
+                                            borderColor: message.role === 'user' ? '#4F9CF9' : 'rgba(255, 255, 255, 0.3)',
+                                            bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                            borderRadius: '4px',
+                                            color: 'white'
                                         }}
                                     >
-                                        <Typography variant="caption" color="text.secondary" display="block">
+                                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} display="block">
                                             {new Date(message.timestamp).toLocaleString()} - Slide {message.slide_number}
                                         </Typography>
-                                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                        <Typography variant="body2" sx={{ mt: 0.5, color: 'white' }}>
                                             {message.message}
                                         </Typography>
                                     </Box>
@@ -431,374 +613,211 @@ function BrdgeListPage() {
         );
     };
 
+    const handleCopyLink = () => {
+        const shareableUrl = `${window.location.origin}/viewBrdge/${brdgeToShare?.id}`;
+        navigator.clipboard.writeText(shareableUrl);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-                <CircularProgress />
+                <CircularProgress sx={{ color: theme.colors.primary }} />
             </Box>
         );
     }
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-            pt: { xs: '80px', md: 12 },
-            pb: { xs: 4, md: 6 },
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: '5%',
-                left: '-5%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 20s infinite alternate',
-                zIndex: 0,
-            },
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: '5%',
-                right: '-5%',
-                width: '500px',
-                height: '500px',
-                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 25s infinite alternate-reverse',
-                zIndex: 0,
-            }
-        }}>
-            <Container maxWidth="lg" sx={{
-                px: { xs: 0, md: 2 }
-            }}>
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                >
-                    <Typography
-                        variant="h2"
-                        component="h1"
-                        align="center"
-                        sx={{
-                            mt: { xs: 4, md: 0 },
-                            mb: { xs: 2, md: 4 },
-                            fontWeight: '600',
-                            fontSize: { xs: '1.75rem', md: '2.5rem' },
-                            color: 'white',
-                            textTransform: 'none',
-                            letterSpacing: '-0.02em',
-                            lineHeight: 1.1,
-                            position: 'relative',
-                            textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-12px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '2px',
-                                background: `linear-gradient(
-                                    90deg,
-                                    transparent 0%,
-                                    rgba(0,255,204,0.2) 15%,
-                                    rgba(0,255,204,0.5) 50%,
-                                    rgba(0,255,204,0.2) 85%,
-                                    transparent 100%
-                                )`,
-                                borderRadius: '1px',
-                                boxShadow: `
-                                    0 0 10px rgba(0,255,204,0.3),
-                                    0 0 20px rgba(0,255,204,0.2)
-                                `,
-                                animation: 'pulseUnderline 3s ease-in-out infinite'
-                            }
+        <Box sx={styles.pageContainer}>
+            <Container maxWidth="lg">
+                <Typography variant="h4" sx={styles.header}>
+                    Your Brdges
+                </Typography>
+
+                <Box sx={styles.controlsContainer}>
+                    <TextField
+                        placeholder="Search Brdges"
+                        variant="outlined"
+                        onChange={handleSearch}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search color={theme.colors.text.secondary} />
+                                </InputAdornment>
+                            ),
                         }}
-                    >
-                        Brdges
-                    </Typography>
+                        sx={styles.searchField}
+                    />
 
-                    <Box sx={{
-                        display: 'flex',
-                        flexDirection: { xs: 'column', sm: 'row' },
-                        gap: 2,
-                        mb: { xs: 2, sm: 6 },
-                        mt: { xs: 3, sm: 8 },
-                        justifyContent: 'space-between',
-                        alignItems: { xs: 'stretch', sm: 'center' },
-                        position: 'relative',
-                        zIndex: 2,
-                    }}>
-                        <TextField
-                            placeholder="Search Brdges"
-                            variant="outlined"
-                            onChange={handleSearch}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.6)' }} />
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{
-                                maxWidth: { sm: 300 },
-                                width: { xs: '100%', sm: 'auto' },
-                                mb: { xs: 2, sm: 0 },
-                                '& .MuiOutlinedInput-root': {
-                                    height: { xs: '45px', sm: 'auto' },
-                                    color: 'white',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    backdropFilter: 'blur(10px)',
-                                    borderRadius: '12px',
-                                    '& fieldset': {
-                                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                                        transition: 'all 0.2s ease-in-out',
-                                    },
-                                    '&:hover fieldset': {
-                                        borderColor: 'rgba(79, 156, 249, 0.5)',
-                                    },
-                                    '&.Mui-focused fieldset': {
-                                        borderColor: '#4F9CF9',
-                                        borderWidth: '1px',
-                                        boxShadow: '0 0 10px rgba(79, 156, 249, 0.2)',
-                                    },
-                                },
-                                '& .MuiInputLabel-root': {
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                },
-                                '& input::placeholder': {
-                                    color: 'rgba(255, 255, 255, 0.6)',
-                                    opacity: 1,
-                                }
-                            }}
+                    <Box sx={styles.usageContainer}>
+                        <UsageIndicator
+                            title="Brdges"
+                            current={userStats.brdges_created}
+                            limit={userStats.brdges_limit}
                         />
-
-                        <Box sx={{
-                            display: 'flex',
-                            gap: 3,
-                            px: 3,
-                            py: 2,
-                            background: 'rgba(2, 6, 23, 0.5)',
-                            backdropFilter: 'blur(10px)',
-                            borderRadius: '12px',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            minWidth: { xs: '100%', sm: '280px' },
-                        }}>
-                            <UsageIndicator
-                                title="Brdges"
-                                current={userStats.brdges_created}
-                                limit={userStats.brdges_limit}
-                                showExcess={true}
-                            />
-
-                            <Divider orientation="vertical" flexItem sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-
-                            <UsageIndicator
-                                title="Minutes"
-                                current={userStats.minutes_used || 0}
-                                limit={userStats.minutes_limit || 30}
-                                showExcess={true}
-                            />
-                        </Box>
-
-                        <motion.div
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: '280px', margin: '0 auto' }}
-                        >
-                            {isOverLimit() ? (
-                                <Button
-                                    variant="contained"
-                                    onClick={() => navigate('/profile')}
-                                    startIcon={<AddIcon />}
-                                    sx={{
-                                        width: { xs: '100%', sm: 'auto' },
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        bgcolor: '#4F9CF9',
-                                        color: 'white',
-                                        px: 3,
-                                        py: 1,
-                                        borderRadius: '12px',
-                                        textTransform: 'none',
-                                        fontSize: '1rem',
-                                        fontWeight: 500,
-                                        '&:hover': {
-                                            bgcolor: '#4589E1'
-                                        }
-                                    }}
-                                >
-                                    Upgrade Now
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="contained"
-                                    onClick={() => navigate('/create')}
-                                    startIcon={<AddIcon />}
-                                    sx={{
-                                        width: { xs: '100%', sm: 'auto' },
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        bgcolor: '#4F9CF9',
-                                        color: 'white',
-                                        px: 3,
-                                        py: 1,
-                                        borderRadius: '12px',
-                                        textTransform: 'none',
-                                        fontSize: '1rem',
-                                        fontWeight: 500,
-                                        '&:hover': {
-                                            bgcolor: '#4589E1'
-                                        }
-                                    }}
-                                >
-                                    Create New Brdge
-                                </Button>
-                            )}
-                        </motion.div>
+                        <Divider orientation="vertical" flexItem sx={{ borderColor: theme.colors.border }} />
+                        <UsageIndicator
+                            title="Minutes"
+                            current={userStats.minutes_used}
+                            limit={userStats.minutes_limit}
+                        />
                     </Box>
 
-                    <Box sx={{
-                        pb: { xs: 8, sm: 0 },
-                        position: 'relative',
-                        zIndex: 1
-                    }}>
-                        {filteredBrdges.length === 0 ? (
-                            <EmptyBrdgeState
-                                onCreateClick={() => navigate('/create')}
-                                canCreate={canCreateBrdge()}
+                    <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
+                        <Button
+                            variant="contained"
+                            startIcon={<Plus size={18} />}
+                            onClick={() => isOverLimit() ? navigate('/profile') : navigate('/create')}
+                            sx={styles.actionButton}
+                        >
+                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Brdge'}
+                        </Button>
+                    </motion.div>
+                </Box>
+
+                <Box>
+                    {filteredBrdges.length === 0 ? (
+                        <EmptyBrdgeState
+                            onCreateClick={() => navigate('/create')}
+                            canCreate={canCreateBrdge()}
+                        />
+                    ) : (
+                        <Box sx={styles.listContainer}>
+                            <BrdgeList
+                                brdges={filteredBrdges}
+                                onView={handleView}
+                                onEdit={handleEdit}
+                                onShare={handleShare}
+                                onDelete={handleDelete}
+                                orderBy={orderBy}
+                                orderDirection={orderDirection}
+                                onSort={handleSort}
+                                stats={userStats}
                             />
-                        ) : (
-                            <Box sx={{
-                                backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                backdropFilter: 'blur(20px)',
-                                borderRadius: '24px',
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
-                                overflow: 'hidden',
-                                boxShadow: `
-                                    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-                                    0 0 1px 0 rgba(255, 255, 255, 0.05)
-                                `,
-                                position: 'relative',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: '1px',
-                                    background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)'
-                                },
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    inset: 0,
-                                    borderRadius: '24px',
-                                    padding: '1px',
-                                    background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent)',
-                                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                                    WebkitMaskComposite: 'xor',
-                                    maskComposite: 'exclude',
-                                    pointerEvents: 'none'
-                                },
-                                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                                '&:hover': {
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: `
-                                        0 8px 32px -2px rgba(0, 0, 0, 0.25),
-                                        0 0 1px 0 rgba(255, 255, 255, 0.05)
-                                    `
-                                }
-                            }}>
-                                <BrdgeList
-                                    brdges={filteredBrdges}
-                                    onView={handleView}
-                                    onEdit={handleEdit}
-                                    onShare={handleShare}
-                                    onDelete={handleDelete}
-                                    orderBy={orderBy}
-                                    orderDirection={orderDirection}
-                                    onSort={handleSort}
-                                    stats={userStats}
-                                    expandedBrdge={expandedBrdge}
-                                    setExpandedBrdge={setExpandedBrdge}
-                                    conversationData={conversationData}
-                                    loadingConversations={loadingConversations}
-                                    onExpandBrdge={(brdgeId) => {
-                                        if (!conversationData[brdgeId]) {
-                                            fetchConversationData(brdgeId);
+                        </Box>
+                    )}
+                </Box>
+
+                <Dialog
+                    open={deleteDialogOpen}
+                    onClose={() => setDeleteDialogOpen(false)}
+                    sx={styles.dialog}
+                >
+                    <DialogTitle>Delete Brdge</DialogTitle>
+                    <DialogContent>
+                        Are you sure you want to delete this Brdge? This action cannot be undone.
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: theme.colors.text.primary }}>
+                            Cancel
+                        </Button>
+                        <Button onClick={confirmDelete} color="error">
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={shareDialogOpen}
+                    onClose={handleCloseShare}
+                    sx={styles.shareDialog}
+                >
+                    <DialogTitle sx={{
+                        borderBottom: `1px solid ${theme.colors.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <Typography variant="h6">Share Brdge</Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: theme.colors.text.secondary,
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                px: 1.5,
+                                py: 0.5,
+                                borderRadius: 1,
+                            }}
+                        >
+                            {brdgeToShare?.name}
+                        </Typography>
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box sx={{ mt: 2 }}>
+                            <Box sx={styles.toggleContainer}>
+                                <Box sx={styles.toggleInfo}>
+                                    <Typography variant="subtitle2" sx={{ color: theme.colors.text.primary }}>
+                                        {brdgeToShare?.shareable ? 'Public access' : 'Private access'}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: theme.colors.text.secondary }}>
+                                        {brdgeToShare?.shareable
+                                            ? 'Anyone with the link can view this Brdge'
+                                            : 'Only you can view this Brdge'}
+                                    </Typography>
+                                </Box>
+                                <Switch
+                                    checked={brdgeToShare?.shareable || false}
+                                    onChange={handleShareToggle}
+                                    sx={{
+                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                            color: '#22D3EE',
+                                        },
+                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                            backgroundColor: '#22D3EE',
                                         }
-                                        setExpandedBrdge(expandedBrdge === brdgeId ? null : brdgeId);
                                     }}
                                 />
                             </Box>
-                        )}
-                    </Box>
-                </motion.div>
+
+                            <Box sx={styles.shareLink}>
+                                <InputBase
+                                    value={brdgeToShare ? `${window.location.origin}/viewBrdge/${brdgeToShare.id}` : ''}
+                                    readOnly
+                                    fullWidth
+                                    sx={styles.linkInput}
+                                />
+                                <IconButton
+                                    onClick={handleCopyLink}
+                                    size="small"
+                                    sx={styles.copyButton}
+                                >
+                                    {linkCopied ? <Check size={18} /> : <Copy size={18} />}
+                                </IconButton>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{
+                        borderTop: `1px solid ${theme.colors.border}`,
+                        p: 2,
+                        justifyContent: 'space-between'
+                    }}>
+                        <Typography variant="caption" sx={{ color: theme.colors.text.secondary }}>
+                            {linkCopied ? 'Link copied!' : 'Click the copy button to copy the link'}
+                        </Typography>
+                        <Button
+                            onClick={handleCloseShare}
+                            sx={{ color: theme.colors.text.secondary }}
+                        >
+                            Done
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Snackbar
+                    open={linkCopied}
+                    autoHideDuration={2000}
+                    onClose={() => setLinkCopied(false)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                    <Alert severity="success" sx={{ backgroundColor: '#22D3EE', color: 'white' }}>
+                        Link copied to clipboard
+                    </Alert>
+                </Snackbar>
             </Container>
-
-            <Dialog
-                open={deleteDialogOpen}
-                onClose={() => setDeleteDialogOpen(false)}
-                PaperProps={{
-                    sx: {
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                        backdropFilter: 'blur(20px)',
-                        borderRadius: '24px',
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-                    }
-                }}
-            >
-                <DialogTitle>Delete Brdge</DialogTitle>
-                <DialogContent>
-                    Are you sure you want to delete this Brdge? This action cannot be undone.
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={confirmDelete} color="error">Delete</Button>
-                </DialogActions>
-            </Dialog>
-
-            <Dialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)}>
-                <DialogTitle>Share Brdge</DialogTitle>
-                <DialogContent>
-                    Do you want to make this Brdge {brdgeToShare?.shareable ? 'private' : 'public'}?
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setShareDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={confirmShare} color="primary">Confirm</Button>
-                </DialogActions>
-            </Dialog>
-
-            <style>
-                {`
-                        @keyframes float {
-                            0% { transform: translateY(0px) rotate(0deg); }
-                            50% { transform: translateY(-20px) rotate(5deg); }
-                            100% { transform: translateY(0px) rotate(0deg); }
-                        }
-
-                        @keyframes pulseUnderline {
-                            0%, 100% {
-                                opacity: 0.5;
-                                transform: translateX(-50%) scaleX(0.95);
-                                filter: brightness(0.8);
-                            }
-                            50% {
-                                opacity: 1;
-                                transform: translateX(-50%) scaleX(1);
-                                filter: brightness(1.2);
-                            }
-                        }
-                    `}
-            </style>
         </Box>
     );
 }
