@@ -83,6 +83,9 @@ class Brdge(db.Model):
     folder = db.Column(db.String(255), nullable=False)
     shareable = db.Column(db.Boolean, default=False)
     public_id = db.Column(db.String(36), unique=True, nullable=True)
+    agent_personality = db.Column(
+        db.Text, nullable=True, default="friendly ai assistant"
+    )
 
     # Define recordings relationship with back_populates instead of backref
     recordings = db.relationship(
@@ -108,6 +111,7 @@ class Brdge(db.Model):
             "folder": self.folder,
             "shareable": self.shareable,
             "public_id": self.public_id,
+            "agent_personality": self.agent_personality,
         }
 
 

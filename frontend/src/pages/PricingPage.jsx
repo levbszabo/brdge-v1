@@ -230,6 +230,7 @@ function PricingPage() {
                             align="center"
                             sx={{
                                 mb: { xs: 4, md: 6 },
+                                fontFamily: 'Satoshi',
                                 fontWeight: '600',
                                 fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
                                 color: 'white',
@@ -237,18 +238,18 @@ function PricingPage() {
                                 letterSpacing: '-0.02em',
                                 lineHeight: 1.1,
                                 position: 'relative',
-                                textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
+                                textShadow: '0 0 40px rgba(34, 211, 238, 0.25)',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
                                     bottom: '-16px',
                                     left: '50%',
                                     transform: 'translateX(-50%)',
-                                    width: '80px',
-                                    height: '4px',
-                                    background: 'rgba(255, 255, 255, 0.5)',
-                                    borderRadius: '2px',
-                                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
+                                    width: '120px',
+                                    height: '1px',
+                                    background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                                    borderRadius: '1px',
+                                    boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
                                 }
                             }}
                         >
@@ -259,6 +260,7 @@ function PricingPage() {
                             align="center"
                             sx={{
                                 mb: 8,
+                                fontFamily: 'Satoshi',
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '800px',
                                 mx: 'auto',

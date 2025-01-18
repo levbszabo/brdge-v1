@@ -1,66 +1,52 @@
-import React from 'react';
-import { Box, Typography, LinearProgress, Tooltip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
-function UsageIndicator({ title, current, limit, showExcess = false }) {
+const UsageIndicator = ({ title, current, limit }) => {
     const isUnlimited = limit === 'Unlimited';
-    const currentValue = parseInt(current);
-    const limitValue = isUnlimited ? Infinity : parseInt(limit);
-    const isOverLimit = currentValue > limitValue;
-    const percentage = isUnlimited ? 0 : Math.min((currentValue / limitValue) * 100, 100);
-
-    const getProgressColor = () => {
-        if (isOverLimit) return 'error.main';
-        if (percentage > 90) return 'warning.main';
-        return 'linear-gradient(90deg, #007AFF, #00B4DB)';
-    };
+    const percentage = isUnlimited ? 0 : (current / limit) * 100;
 
     return (
         <Box sx={{
-            background: 'rgba(2, 6, 23, 0.8)',
-            backdropFilter: 'blur(10px)',
-            borderRadius: '16px',
-            padding: '16px',
-            minWidth: '200px',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            px: 1
         }}>
-            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    minWidth: '50px'
+                }}
+            >
                 {title}
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Tooltip title={isOverLimit ? "Exceeding limit" : ""} arrow>
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: isOverLimit ? 'error.main' : 'white',
-                            fontWeight: isOverLimit ? 'bold' : 'normal'
-                        }}
-                    >
-                        {current} / {isUnlimited ? '∞' : limit}
-                    </Typography>
-                </Tooltip>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: 'white',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5
+                }}
+            >
+                {current}
                 <Typography
-                    variant="body2"
+                    component="span"
                     sx={{
-                        color: isOverLimit ? 'error.main' : 'rgba(255, 255, 255, 0.5)'
+                        color: 'rgba(255,255,255,0.5)',
+                        fontSize: '0.875rem',
+                        fontWeight: 400
                     }}
                 >
-                    {isUnlimited ? 'Unlimited' : `${Math.round(percentage)}%`}
+                    / {limit}
                 </Typography>
-            </Box>
-            <LinearProgress
-                variant="determinate"
-                value={percentage}
-                sx={{
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    '& .MuiLinearProgress-bar': {
-                        background: getProgressColor()
-                    }
-                }}
-            />
+            </Typography>
         </Box>
     );
-}
+};
 
 export default UsageIndicator; 

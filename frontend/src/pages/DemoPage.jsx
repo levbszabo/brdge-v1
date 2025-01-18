@@ -13,22 +13,28 @@ import {
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { styled } from '@mui/material/styles';
-import { GroupAdd, MenuBook, PresentToAll, BusinessCenter } from '@mui/icons-material';
+import {
+    GroupAdd,
+    MenuBook,
+    PresentToAll,
+    BusinessCenter,
+} from '@mui/icons-material';
 import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
 
-// Styled Components
+// Styled Card with glassy look + subtle gradient
 const StyledCard = styled(Card)(({ theme }) => ({
     height: '100%',
+    minHeight: '420px',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'all 0.3s ease-in-out',
     borderRadius: '16px',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    backdropFilter: 'blur(10px)',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backdropFilter: 'blur(15px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+    transition: 'all 0.3s ease-in-out',
     '&:hover': {
         transform: 'translateY(-10px)',
         boxShadow: '0 12px 40px rgba(0, 180, 219, 0.2)',
@@ -38,6 +44,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
     },
 }));
 
+// Icon container with hover glow
 const IconWrapper = styled(Box)({
     display: 'flex',
     justifyContent: 'center',
@@ -48,6 +55,13 @@ const IconWrapper = styled(Box)({
     '& .MuiSvgIcon-root': {
         fontSize: '2.5rem',
         color: '#4F9CF9',
+        transition: 'color 0.3s',
+    },
+    '&:hover': {
+        boxShadow: '0 0 15px rgba(79, 156, 249, 0.4)',
+        '& .MuiSvgIcon-root': {
+            color: '#00FFCC',
+        }
     }
 });
 
@@ -56,34 +70,38 @@ const demos = [
     {
         id: 1,
         title: '24/7 Sales Assistant',
-        description: 'Automate lead qualification and FAQs so your team can focus on closing deals.',
+        description:
+            'Automate lead qualification and FAQs so your team can focus on closing deals.',
         value: 'Shorten sales cycles and convert more leads effortlessly.',
         icon: <BusinessCenter />,
-        url: 'https://brdge-ai.com/viewBrdge/141'
+        url: 'https://brdge-ai.com/viewBrdge/141',
     },
     {
         id: 2,
         title: 'Onboarding AI Guide',
-        description: 'Transform HR docs into an interactive guide for new employees.',
+        description:
+            'Transform HR docs into an interactive guide for new employees.',
         value: 'Reduce repetitive Q&A and improve training engagement.',
         icon: <GroupAdd />,
-        url: 'https://brdge-ai.com/viewBrdge/144'
+        url: 'https://brdge-ai.com/viewBrdge/144',
     },
     {
         id: 3,
         title: 'Team Knowledge Hub',
-        description: 'Centralize company knowledge and empower teams to self-serve answers.',
+        description:
+            'Centralize company knowledge and empower teams to self-serve answers.',
         value: 'Eliminate unnecessary meetings and reduce chat overload.',
         icon: <MenuBook />,
-        url: 'https://brdge-ai.com/viewBrdge/173'
+        url: 'https://brdge-ai.com/viewBrdge/173',
     },
     {
         id: 4,
         title: 'Expert Portfolio & Q&A',
-        description: 'Showcase your expertise with instant answers for your audience.',
+        description:
+            'Showcase your expertise with instant answers for your audience.',
         value: 'Scale your personal brand and monetize your skills.',
         icon: <PresentToAll />,
-        url: 'https://brdge-ai.com/viewBrdge/146'
+        url: 'https://brdge-ai.com/viewBrdge/146',
     },
 ];
 
@@ -93,7 +111,7 @@ const DemoPage = () => {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [ref, inView] = useInView({
         threshold: 0.2,
-        triggerOnce: true
+        triggerOnce: true,
     });
 
     const handleExploreDemo = (url) => {
@@ -101,37 +119,40 @@ const DemoPage = () => {
     };
 
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-            position: 'relative',
-            overflow: 'hidden',
-            py: { xs: 8, md: 12 },
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: '10%',
-                left: '-10%',
-                width: '500px',
-                height: '500px',
-                background: 'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(60px)',
-                animation: 'float 15s infinite alternate'
-            }
-        }}>
+        <Box
+            sx={{
+                minHeight: '100vh',
+                background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+                position: 'relative',
+                overflow: 'hidden',
+                py: { xs: 8, md: 12 },
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: '10%',
+                    left: '-10%',
+                    width: '500px',
+                    height: '500px',
+                    background: 'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    filter: 'blur(60px)',
+                    animation: 'float 15s infinite alternate',
+                },
+            }}
+        >
             <Container maxWidth="lg" ref={ref}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                 >
                     <Typography
-                        variant={isMobile ? "h3" : "h2"}
+                        variant={isMobile ? 'h3' : 'h2'}
                         component="h1"
                         align="center"
                         sx={{
                             mb: { xs: 2, md: 3 },
+                            fontFamily: 'Satoshi',
                             fontWeight: '600',
                             fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
                             color: 'white',
@@ -139,18 +160,18 @@ const DemoPage = () => {
                             letterSpacing: '-0.02em',
                             lineHeight: 1.1,
                             position: 'relative',
-                            textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
+                            textShadow: '0 0 40px rgba(34, 211, 238, 0.25)',
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
                                 bottom: '-16px',
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '80px',
-                                height: '4px',
-                                background: 'rgba(255, 255, 255, 0.5)',
-                                borderRadius: '2px',
-                                boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
+                                width: '120px',
+                                height: '1px',
+                                background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                                borderRadius: '1px',
+                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
                             }
                         }}
                     >
@@ -162,6 +183,7 @@ const DemoPage = () => {
                         align="center"
                         sx={{
                             mb: { xs: 6, md: 8 },
+                            fontFamily: 'Satoshi',
                             color: 'rgba(255, 255, 255, 0.8)',
                             maxWidth: '800px',
                             mx: 'auto',
@@ -179,18 +201,25 @@ const DemoPage = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={inView ? { opacity: 1, y: 0 } : {}}
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
+                                    style={{ height: '100%' }}
                                 >
                                     <StyledCard>
                                         <IconWrapper className="icon-wrapper">
                                             {demo.icon}
                                         </IconWrapper>
-                                        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                                        <CardContent sx={{
+                                            flexGrow: 1,
+                                            p: 3,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 2
+                                        }}>
                                             <Typography
                                                 variant="h6"
                                                 sx={{
                                                     fontWeight: 600,
-                                                    mb: 2,
-                                                    color: '#4F9CF9'
+                                                    color: '#4F9CF9',
+                                                    fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                                 }}
                                             >
                                                 {demo.title}
@@ -198,9 +227,8 @@ const DemoPage = () => {
                                             <Typography
                                                 variant="body2"
                                                 sx={{
-                                                    mb: 2,
                                                     color: 'rgba(255, 255, 255, 0.9)',
-                                                    lineHeight: 1.6
+                                                    lineHeight: 1.6,
                                                 }}
                                             >
                                                 {demo.description}
@@ -209,7 +237,8 @@ const DemoPage = () => {
                                                 variant="body2"
                                                 sx={{
                                                     color: 'rgba(255, 255, 255, 0.6)',
-                                                    fontStyle: 'italic'
+                                                    fontStyle: 'italic',
+                                                    mt: 'auto'
                                                 }}
                                             >
                                                 {demo.value}
@@ -221,14 +250,14 @@ const DemoPage = () => {
                                                 variant="contained"
                                                 onClick={() => handleExploreDemo(demo.url)}
                                                 sx={{
-                                                    background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                                    background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
                                                     color: 'white',
                                                     borderRadius: '50px',
                                                     py: 1.5,
                                                     textTransform: 'none',
                                                     fontSize: '1rem',
                                                     '&:hover': {
-                                                        background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
                                                     },
                                                 }}
                                             >
@@ -242,6 +271,14 @@ const DemoPage = () => {
                     </Grid>
                 </motion.div>
             </Container>
+
+            {/* Keyframe for the "float" animation */}
+            <style>{`
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          100% { transform: translateY(20px); }
+        }
+      `}</style>
         </Box>
     );
 };

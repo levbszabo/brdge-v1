@@ -10,6 +10,7 @@ import {
     Box,
     TableSortLabel,
     Tooltip,
+    Typography
 } from '@mui/material';
 import { Eye, Pencil, Share2, Trash2, Globe, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -112,20 +113,23 @@ const BrdgeList = ({
 
     const StatusChip = ({ shareable }) => (
         <Box sx={{
-            ...styles.statusChip,
-            ...(shareable ? { className: 'public' } : { className: 'private' })
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            color: shareable ? '#22D3EE' : 'rgba(255,255,255,0.7)',
+            transition: 'all 0.2s ease'
         }}>
             {shareable ? (
-                <>
-                    <Globe size={16} />
-                    Public
-                </>
+                <Globe size={18} style={{
+                    filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.4))',
+                    transition: 'all 0.2s ease'
+                }} />
             ) : (
-                <>
-                    <Lock size={16} />
-                    Private
-                </>
+                <Lock size={18} />
             )}
+            <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                {shareable ? 'Public' : 'Private'}
+            </Typography>
         </Box>
     );
 

@@ -37,29 +37,32 @@ import { motion } from 'framer-motion';
 
 const typography = {
     heading: {
-        fontSize: '1.5rem',
+        fontSize: { xs: '1.25rem', sm: '1.5rem' },
         fontWeight: 700,
         letterSpacing: '-0.02em',
         lineHeight: 1.2,
         color: 'white',
-        fontFamily: 'Satoshi'
+        fontFamily: 'Satoshi',
+        background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
     },
     subheading: {
-        fontSize: '1.1rem',
+        fontSize: { xs: '1rem', sm: '1.1rem' },
         fontWeight: 600,
         letterSpacing: '-0.01em',
         color: 'rgba(255, 255, 255, 0.9)',
         fontFamily: 'Satoshi'
     },
     body: {
-        fontSize: '0.9rem',
+        fontSize: { xs: '0.875rem', sm: '0.9rem' },
         letterSpacing: '0.01em',
         lineHeight: 1.5,
         color: 'rgba(255, 255, 255, 0.7)',
         fontFamily: 'Satoshi'
     },
     caption: {
-        fontSize: '0.8rem',
+        fontSize: { xs: '0.75rem', sm: '0.8rem' },
         letterSpacing: '0.02em',
         color: 'rgba(255, 255, 255, 0.5)',
         fontFamily: 'Satoshi'
@@ -67,27 +70,28 @@ const typography = {
 };
 
 const cardStyles = {
-    background: 'rgba(255, 255, 255, 0.03)',
+    background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.9), rgba(7, 11, 35, 0.9))',
     backdropFilter: 'blur(20px)',
     borderRadius: '24px',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
     transition: 'all 0.3s ease',
     '&:hover': {
-        background: 'rgba(255, 255, 255, 0.05)',
-        transform: 'translateY(-2px)',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+        transform: 'translateY(-3px)',
+        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
+        border: '1px solid rgba(255, 255, 255, 0.12)'
     }
 };
 
 const tierCardStyles = (isActive, isPremium) => ({
     background: isPremium
-        ? 'linear-gradient(145deg, rgba(13, 71, 161, 0.1) 0%, rgba(0, 29, 54, 0.1) 100%)'
-        : 'linear-gradient(145deg, rgba(10, 17, 40, 0.4) 0%, rgba(2, 6, 23, 0.4) 100%)',
+        ? 'linear-gradient(135deg, rgba(0, 82, 204, 0.15), rgba(7, 71, 166, 0.15))'
+        : 'rgba(255, 255, 255, 0.02)',
     backdropFilter: 'blur(20px)',
     borderRadius: '28px',
     border: isActive
-        ? '1px solid rgba(0, 188, 212, 0.3)'
-        : '1px solid rgba(255, 255, 255, 0.05)',
+        ? '1px solid rgba(34, 211, 238, 0.3)'
+        : '1px solid rgba(255, 255, 255, 0.08)',
     transition: 'all 0.4s ease',
     position: 'relative',
     overflow: 'hidden',
@@ -95,14 +99,11 @@ const tierCardStyles = (isActive, isPremium) => ({
     '&:hover': {
         transform: 'translateY(-4px)',
         boxShadow: isPremium
-            ? '0 8px 32px rgba(0, 188, 212, 0.15)'
-            : '0 8px 32px rgba(0, 0, 0, 0.2)',
+            ? '0 8px 32px rgba(34, 211, 238, 0.3)'
+            : '0 8px 32px rgba(255, 255, 255, 0.1)',
         border: isPremium
-            ? '1px solid rgba(0, 188, 212, 0.4)'
-            : '1px solid rgba(255, 255, 255, 0.1)',
-        '&::after': {
-            opacity: 0.1
-        }
+            ? '1px solid rgba(34, 211, 238, 0.4)'
+            : '1px solid rgba(255, 255, 255, 0.12)',
     },
     '&::before': {
         content: '""',
@@ -112,21 +113,8 @@ const tierCardStyles = (isActive, isPremium) => ({
         right: 0,
         height: '1px',
         background: isPremium
-            ? 'linear-gradient(90deg, transparent, rgba(0, 188, 212, 0.3), transparent)'
+            ? 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)'
             : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
-    },
-    '&::after': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: isPremium
-            ? 'linear-gradient(145deg, rgba(33, 150, 243, 0.05) 0%, rgba(0, 188, 212, 0.05) 100%)'
-            : 'linear-gradient(145deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%)',
-        opacity: 0,
-        transition: 'opacity 0.4s ease'
     }
 });
 
@@ -221,39 +209,59 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
     };
 
     return (
-        <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+        <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+            style={{ height: '100%' }}
+        >
             <Paper elevation={3} sx={{
-                p: 3,
+                p: { xs: 3, sm: 4 },
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 borderRadius: '24px',
                 background: isPremium
-                    ? 'linear-gradient(135deg, rgba(0, 82, 204, 0.1), rgba(7, 71, 166, 0.1))'
+                    ? 'linear-gradient(135deg, rgba(0, 82, 204, 0.15), rgba(7, 71, 166, 0.15))'
                     : 'rgba(255, 255, 255, 0.02)',
-                border: isActive ? '2px solid #007AFF' : '1px solid rgba(255, 255, 255, 0.05)',
+                border: isActive ? '2px solid #22D3EE' : '1px solid rgba(255, 255, 255, 0.08)',
                 color: '#ffffff',
                 position: 'relative',
                 overflow: 'hidden',
+                backdropFilter: 'blur(20px)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                    boxShadow: isPremium
+                        ? '0 12px 40px rgba(34, 211, 238, 0.3)'
+                        : '0 12px 40px rgba(0, 0, 0, 0.3)',
+                    border: isActive
+                        ? '2px solid #22D3EE'
+                        : `1px solid ${isPremium ? 'rgba(34, 211, 238, 0.4)' : 'rgba(255, 255, 255, 0.12)'}`,
+                }
             }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
                     <Box>
                         <Typography variant="h5" sx={{
-                            fontSize: '1.5rem',
-                            fontWeight: 600,
+                            fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                            fontWeight: 700,
+                            letterSpacing: '-0.02em',
                             color: 'rgba(255, 255, 255, 0.9)',
-                            mb: 1
+                            mb: 1,
+                            fontFamily: 'Satoshi'
                         }}>
                             {title}
                         </Typography>
                         <Typography variant="h4" sx={{
-                            fontSize: '2rem',
-                            fontWeight: 700,
-                            background: isPremium ? 'linear-gradient(135deg, #0052CC, #0747A6)' : 'none',
-                            WebkitBackgroundClip: isPremium ? 'text' : 'none',
-                            WebkitTextFillColor: isPremium ? 'transparent' : 'inherit',
-                            mb: 2
+                            fontSize: { xs: '2rem', sm: '2.5rem' },
+                            fontWeight: 800,
+                            letterSpacing: '-0.03em',
+                            background: isPremium
+                                ? 'linear-gradient(135deg, #22D3EE, #0EA5E9)'
+                                : 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            mb: 2,
+                            fontFamily: 'Satoshi'
                         }}>
                             {price}
                         </Typography>
@@ -263,7 +271,7 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
                         isPremium={isPremium}
                         onClick={handleClick}
                     >
-                        {isPremium ? 'Upgrade' : 'Upgrade'}
+                        {isActive ? 'Current Plan' : 'Upgrade'}
                     </TierButton>
                 </Box>
                 <Box sx={{ flexGrow: 1 }}>
@@ -271,15 +279,20 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
                         <Box key={index} sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            mb: 1,
-                            color: 'rgba(255, 255, 255, 0.7)'
+                            mb: 2,
+                            color: 'rgba(255, 255, 255, 0.8)'
                         }}>
                             <CheckIcon sx={{
                                 mr: 1.5,
-                                color: isPremium ? '#007AFF' : 'rgba(255, 255, 255, 0.5)',
+                                color: isPremium ? '#22D3EE' : 'rgba(255, 255, 255, 0.5)',
                                 fontSize: '1.2rem'
                             }} />
-                            <Typography variant="body1">
+                            <Typography sx={{
+                                fontSize: '1rem',
+                                lineHeight: 1.5,
+                                letterSpacing: '0.01em',
+                                fontFamily: 'Satoshi'
+                            }}>
                                 {feature}
                             </Typography>
                         </Box>
@@ -294,30 +307,26 @@ const styles = {
     pageBackground: {
         background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 100%)',
         minHeight: '100vh',
-        padding: '40px 0'
+        padding: '40px 0',
+        position: 'relative',
+        overflow: 'hidden'
     },
     card: {
-        background: 'rgba(2, 6, 23, 0.5)',
-        backdropFilter: 'blur(10px)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
+        ...cardStyles,
         padding: '24px',
         color: 'white',
-        transition: 'transform 0.2s ease',
-        '&:hover': {
-            transform: 'translateY(-2px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-        }
+        marginBottom: '24px'
     },
     profileSection: {
         textAlign: 'center',
-        padding: '32px 24px',
+        padding: { xs: '24px', md: '32px' },
         '& .MuiAvatar-root': {
-            width: 80,
-            height: 80,
+            width: { xs: 80, md: 100 },
+            height: { xs: 80, md: 100 },
             margin: '0 auto 16px',
-            background: 'rgba(2, 6, 23, 0.7)',
-            border: '2px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(34, 211, 238, 0.2))',
+            border: '2px solid rgba(34, 211, 238, 0.3)',
+            boxShadow: '0 8px 32px rgba(34, 211, 238, 0.2)',
             color: 'rgba(255, 255, 255, 0.9)'
         }
     },
@@ -487,258 +496,294 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
     };
 
     return (
-        <Paper elevation={0} sx={styles.card}>
-            {showCancelSuccess && (
-                <Alert
-                    severity="success"
-                    onClose={() => setShowCancelSuccess(false)}
-                    sx={{ mb: 2 }}
-                >
-                    Your subscription has been successfully canceled.
-                </Alert>
-            )}
+        <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+            <Paper elevation={0} sx={styles.card}>
+                {showCancelSuccess && (
+                    <Alert
+                        severity="success"
+                        onClose={() => setShowCancelSuccess(false)}
+                        sx={{
+                            mb: 2,
+                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                            color: '#22D3EE',
+                            border: '1px solid rgba(34, 211, 238, 0.2)',
+                            '& .MuiAlert-icon': { color: '#22D3EE' }
+                        }}
+                    >
+                        Your subscription has been successfully canceled.
+                    </Alert>
+                )}
 
-            {error && (
-                <Alert
-                    severity="error"
-                    onClose={() => setError(null)}
-                    sx={{ mb: 2 }}
-                >
-                    {error}
-                </Alert>
-            )}
+                {error && (
+                    <Alert
+                        severity="error"
+                        onClose={() => setError(null)}
+                        sx={{
+                            mb: 2,
+                            backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                            color: '#FF4B4B',
+                            border: '1px solid rgba(255, 75, 75, 0.2)',
+                            '& .MuiAlert-icon': { color: '#FF4B4B' }
+                        }}
+                    >
+                        {error}
+                    </Alert>
+                )}
 
-            <Box sx={styles.billingInfo}>
-                <div className="billing-header">
-                    <ReceiptIcon />
-                    <Typography>Billing Information</Typography>
-                </div>
-
-                <div className="billing-content">
-                    <div className="billing-row">
-                        <span className="label">Plan</span>
-                        <span className="value">
-                            {currentPlan === 'pro' ? 'Premium' :
-                                currentPlan === 'standard' ? 'Standard' : 'Free'} Plan
-                        </span>
+                <Box sx={styles.billingInfo}>
+                    <div className="billing-header">
+                        <ReceiptIcon sx={{ color: '#22D3EE' }} />
+                        <Typography sx={{
+                            background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                        }}>
+                            Billing Information
+                        </Typography>
                     </div>
 
-                    <div className="billing-row">
-                        <span className="label">Billing Period</span>
-                        <span className="value">Monthly</span>
-                    </div>
-
-                    {currentPlan !== 'free' && (
+                    <div className="billing-content">
                         <div className="billing-row">
-                            <span className="label">Next Payment</span>
-                            <span className="value">
-                                {formatDate(userProfile?.account?.next_billing_date)}
-                            </span>
-                        </div>
-                    )}
-
-                    {currentPlan !== 'free' && (
-                        <div className="billing-row">
-                            <span className="label">Payment Method</span>
-                            <div className="payment-chip">
-                                <PaymentIcon />
-                                <span>••••4242</span>
-                            </div>
-                        </div>
-                    )}
-
-                    {currentPlan !== 'free' && (
-                        <Button
-                            variant="outlined"
-                            startIcon={<CancelIcon />}
-                            fullWidth
-                            className="cancel-button"
-                            onClick={() => setOpenConfirmDialog(true)}
-                        >
-                            Cancel Plan
-                        </Button>
-                    )}
-                </div>
-            </Box>
-
-            <Dialog
-                open={openConfirmDialog}
-                onClose={() => setOpenConfirmDialog(false)}
-                PaperProps={{
-                    sx: {
-                        background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.95), rgba(7, 11, 35, 0.95))',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.07)',
-                        borderRadius: '24px',
-                        color: 'white',
-                        maxWidth: '480px',
-                        width: '100%',
-                        p: 4,
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                        '& .MuiDialogContent-root': {
-                            padding: 0,
-                            mt: 2
-                        }
-                    }
-                }}
-            >
-                <DialogContent>
-                    {/* Header Section */}
-                    <Box sx={{ textAlign: 'center', mb: 4 }}>
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                fontWeight: 600,
-                                background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
+                            <span className="label">Plan</span>
+                            <span className="value" style={{
+                                background: 'linear-gradient(90deg, #22D3EE, #0EA5E9)',
                                 WebkitBackgroundClip: 'text',
                                 WebkitTextFillColor: 'transparent',
-                                mb: 2
-                            }}
-                        >
-                            Cancel Subscription?
-                        </Typography>
-                        <Typography
-                            sx={{
-                                color: 'rgba(255, 255, 255, 0.7)',
-                                fontSize: '1.1rem',
-                                fontWeight: 500
-                            }}
-                        >
-                            We're sorry to see you go
-                        </Typography>
-                    </Box>
+                                fontWeight: 600
+                            }}>
+                                {currentPlan === 'pro' ? 'Premium' :
+                                    currentPlan === 'standard' ? 'Standard' : 'Free'} Plan
+                            </span>
+                        </div>
 
-                    {/* Info Cards */}
-                    <Box sx={{ mb: 4 }}>
-                        {[
-                            {
-                                title: 'Active Until Period End',
-                                description: 'Your subscription remains active until the end of your current billing period',
-                                icon: <CalendarTodayIcon />
-                            },
-                            {
-                                title: 'Preserved Content',
-                                description: 'Your brdges will be preserved but will become inactive',
-                                icon: <SaveIcon />
-                            },
-                            {
-                                title: 'Reactivate Anytime',
-                                description: 'You can reactivate your subscription at any time to regain access',
-                                icon: <AutorenewIcon />
-                            },
-                            {
-                                title: 'Free Tier Access',
-                                description: 'Free tier limits will apply after cancellation',
-                                icon: <LockOpenIcon />
-                            }
-                        ].map((item, index) => (
-                            <Box
-                                key={index}
+                        <div className="billing-row">
+                            <span className="label">Billing Period</span>
+                            <span className="value">Monthly</span>
+                        </div>
+
+                        {currentPlan !== 'free' && (
+                            <div className="billing-row">
+                                <span className="label">Next Payment</span>
+                                <span className="value">
+                                    {formatDate(userProfile?.account?.next_billing_date)}
+                                </span>
+                            </div>
+                        )}
+
+                        {currentPlan !== 'free' && (
+                            <div className="billing-row">
+                                <span className="label">Payment Method</span>
+                                <div className="payment-chip">
+                                    <PaymentIcon />
+                                    <span>••••4242</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPlan !== 'free' && (
+                            <Button
+                                variant="outlined"
+                                startIcon={<CancelIcon />}
+                                fullWidth
                                 sx={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: 2,
-                                    mb: 3,
-                                    p: 2,
-                                    borderRadius: '12px',
-                                    background: 'rgba(255, 255, 255, 0.03)',
-                                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                                    transition: 'all 0.2s ease',
+                                    mt: 3,
+                                    color: '#FF4B4B',
+                                    borderColor: 'rgba(255, 75, 75, 0.3)',
                                     '&:hover': {
-                                        background: 'rgba(255, 255, 255, 0.05)',
-                                        transform: 'translateX(4px)'
+                                        borderColor: '#FF4B4B',
+                                        backgroundColor: 'rgba(255, 75, 75, 0.1)'
+                                    }
+                                }}
+                                onClick={() => setOpenConfirmDialog(true)}
+                            >
+                                Cancel Plan
+                            </Button>
+                        )}
+                    </div>
+                </Box>
+
+                <Dialog
+                    open={openConfirmDialog}
+                    onClose={() => setOpenConfirmDialog(false)}
+                    PaperProps={{
+                        sx: {
+                            background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.95), rgba(7, 11, 35, 0.95))',
+                            backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(255, 255, 255, 0.07)',
+                            borderRadius: '24px',
+                            color: 'white',
+                            maxWidth: '480px',
+                            width: '100%',
+                            p: 4,
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                            '& .MuiDialogContent-root': {
+                                padding: 0,
+                                mt: 2
+                            }
+                        }
+                    }}
+                >
+                    <DialogContent>
+                        <Box sx={{ textAlign: 'center', mb: 4 }}>
+                            <Typography
+                                variant="h5"
+                                sx={{
+                                    fontWeight: 600,
+                                    background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    mb: 2,
+                                    fontFamily: 'Satoshi'
+                                }}
+                            >
+                                Cancel Subscription?
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    fontSize: '1.1rem',
+                                    fontWeight: 500,
+                                    fontFamily: 'Satoshi'
+                                }}
+                            >
+                                We're sorry to see you go
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{ mb: 4 }}>
+                            {[
+                                {
+                                    title: 'Active Until Period End',
+                                    description: 'Your subscription remains active until the end of your current billing period',
+                                    icon: <CalendarTodayIcon />
+                                },
+                                {
+                                    title: 'Preserved Content',
+                                    description: 'Your brdges will be preserved but will become inactive',
+                                    icon: <SaveIcon />
+                                },
+                                {
+                                    title: 'Reactivate Anytime',
+                                    description: 'You can reactivate your subscription at any time to regain access',
+                                    icon: <AutorenewIcon />
+                                },
+                                {
+                                    title: 'Free Tier Access',
+                                    description: 'Free tier limits will apply after cancellation',
+                                    icon: <LockOpenIcon />
+                                }
+                            ].map((item, index) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 2,
+                                        mb: 3,
+                                        p: 2,
+                                        borderRadius: '12px',
+                                        background: 'rgba(255, 255, 255, 0.03)',
+                                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            transform: 'translateX(4px)'
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{
+                                        p: 1,
+                                        borderRadius: '8px',
+                                        background: 'rgba(255, 59, 48, 0.1)',
+                                        color: '#FF3B30'
+                                    }}>
+                                        {item.icon}
+                                    </Box>
+                                    <Box>
+                                        <Typography sx={{
+                                            fontWeight: 600,
+                                            mb: 0.5,
+                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            fontFamily: 'Satoshi'
+                                        }}>
+                                            {item.title}
+                                        </Typography>
+                                        <Typography sx={{
+                                            fontSize: '0.9rem',
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            lineHeight: 1.4,
+                                            fontFamily: 'Satoshi'
+                                        }}>
+                                            {item.description}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ))}
+                        </Box>
+
+                        <Box sx={{
+                            display: 'flex',
+                            gap: 2,
+                            justifyContent: 'flex-end',
+                            mt: 4
+                        }}>
+                            <Button
+                                variant="outlined"
+                                onClick={() => setOpenConfirmDialog(false)}
+                                sx={{
+                                    color: 'white',
+                                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                                    borderRadius: '12px',
+                                    px: 3,
+                                    py: 1.2,
+                                    textTransform: 'none',
+                                    fontSize: '1rem',
+                                    fontWeight: 500,
+                                    fontFamily: 'Satoshi',
+                                    '&:hover': {
+                                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                                        background: 'rgba(255, 255, 255, 0.05)'
                                     }
                                 }}
                             >
-                                <Box sx={{
-                                    p: 1,
-                                    borderRadius: '8px',
-                                    background: 'rgba(255, 59, 48, 0.1)',
-                                    color: '#FF3B30'
-                                }}>
-                                    {item.icon}
-                                </Box>
-                                <Box>
-                                    <Typography sx={{
-                                        fontWeight: 600,
-                                        mb: 0.5,
-                                        color: 'rgba(255, 255, 255, 0.9)'
-                                    }}>
-                                        {item.title}
-                                    </Typography>
-                                    <Typography sx={{
-                                        fontSize: '0.9rem',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        lineHeight: 1.4
-                                    }}>
-                                        {item.description}
-                                    </Typography>
-                                </Box>
-                            </Box>
-                        ))}
-                    </Box>
-
-                    {/* Action Buttons */}
-                    <Box sx={{
-                        display: 'flex',
-                        gap: 2,
-                        justifyContent: 'flex-end',
-                        mt: 4
-                    }}>
-                        <Button
-                            variant="outlined"
-                            onClick={() => setOpenConfirmDialog(false)}
-                            sx={{
-                                color: 'white',
-                                borderColor: 'rgba(255, 255, 255, 0.2)',
-                                borderRadius: '12px',
-                                px: 3,
-                                py: 1.2,
-                                textTransform: 'none',
-                                fontSize: '1rem',
-                                fontWeight: 500,
-                                '&:hover': {
-                                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                                    background: 'rgba(255, 255, 255, 0.05)'
-                                }
-                            }}
-                        >
-                            Keep Subscription
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={async () => {
-                                try {
-                                    const response = await api.post('/cancel-subscription');
-                                    if (response.data.message) {
-                                        setShowCancelSuccess(true);
-                                        setOpenConfirmDialog(false);
-                                        onSubscriptionChange();
+                                Keep Subscription
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={async () => {
+                                    try {
+                                        const response = await api.post('/cancel-subscription');
+                                        if (response.data.message) {
+                                            setShowCancelSuccess(true);
+                                            setOpenConfirmDialog(false);
+                                            onSubscriptionChange();
+                                        }
+                                    } catch (error) {
+                                        console.error('Error canceling subscription:', error);
+                                        setError(error.response?.data?.error || 'Failed to cancel subscription');
                                     }
-                                } catch (error) {
-                                    console.error('Error canceling subscription:', error);
-                                    setError(error.response?.data?.error || 'Failed to cancel subscription');
-                                }
-                            }}
-                            sx={{
-                                background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
-                                borderRadius: '12px',
-                                px: 3,
-                                py: 1.2,
-                                textTransform: 'none',
-                                fontSize: '1rem',
-                                fontWeight: 500,
-                                '&:hover': {
-                                    background: 'linear-gradient(135deg, #FF453A, #FF5147)'
-                                }
-                            }}
-                        >
-                            Confirm Cancellation
-                        </Button>
-                    </Box>
-                </DialogContent>
-            </Dialog>
-        </Paper>
+                                }}
+                                sx={{
+                                    background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
+                                    borderRadius: '12px',
+                                    px: 3,
+                                    py: 1.2,
+                                    textTransform: 'none',
+                                    fontSize: '1rem',
+                                    fontWeight: 500,
+                                    fontFamily: 'Satoshi',
+                                    '&:hover': {
+                                        background: 'linear-gradient(135deg, #FF453A, #FF5147)'
+                                    }
+                                }}
+                            >
+                                Confirm Cancellation
+                            </Button>
+                        </Box>
+                    </DialogContent>
+                </Dialog>
+            </Paper>
+        </motion.div>
     );
 }
 
@@ -800,57 +845,74 @@ function UsageStats({ currentPlan }) {
     };
 
     return (
-        <Paper elevation={0} sx={styles.card}>
-            <Typography variant="h6" gutterBottom sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                mb: 3
-            }}>
-                <StarIcon color="primary" />
-                Usage Statistics
-            </Typography>
+        <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
+            <Paper elevation={0} sx={styles.card}>
+                <Typography variant="h6" gutterBottom sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mb: 3,
+                    background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                }}>
+                    <StarIcon sx={{ color: '#22D3EE' }} />
+                    Usage Statistics
+                </Typography>
 
-            <Grid container spacing={4}>
-                {/* Bridges Usage */}
-                <Grid item xs={12}>
-                    <Box sx={{ mb: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                Bridges Used
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'white' }}>
-                                {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
-                            </Typography>
+                <Grid container spacing={4}>
+                    <Grid item xs={12}>
+                        <Box sx={{ mb: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                    Bridges Used
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'white' }}>
+                                    {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
+                                </Typography>
+                            </Box>
+                            <LinearProgress
+                                variant="determinate"
+                                value={getBrdgeUsagePercentage()}
+                                sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                    '& .MuiLinearProgress-bar': {
+                                        background: 'linear-gradient(90deg, #22D3EE, #0EA5E9)'
+                                    }
+                                }}
+                            />
                         </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={getBrdgeUsagePercentage()}
-                            sx={styles.progressBar}
-                        />
-                    </Box>
-                </Grid>
+                    </Grid>
 
-                {/* Minutes Usage */}
-                <Grid item xs={12}>
-                    <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                Minutes Used
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'white' }}>
-                                {stats.minutes_used} / {stats.minutes_limit}
-                            </Typography>
+                    <Grid item xs={12}>
+                        <Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                    Minutes Used
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'white' }}>
+                                    {stats.minutes_used} / {stats.minutes_limit}
+                                </Typography>
+                            </Box>
+                            <LinearProgress
+                                variant="determinate"
+                                value={getMinutesUsagePercentage()}
+                                sx={{
+                                    height: 4,
+                                    borderRadius: 2,
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                    '& .MuiLinearProgress-bar': {
+                                        background: 'linear-gradient(90deg, #22D3EE, #0EA5E9)'
+                                    }
+                                }}
+                            />
                         </Box>
-                        <LinearProgress
-                            variant="determinate"
-                            value={getMinutesUsagePercentage()}
-                            sx={styles.progressBar}
-                        />
-                    </Box>
+                    </Grid>
                 </Grid>
-            </Grid>
-        </Paper>
+            </Paper>
+        </motion.div>
     );
 }
 

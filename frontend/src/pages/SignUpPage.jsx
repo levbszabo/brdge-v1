@@ -31,16 +31,25 @@ function SignUpPage() {
 
         try {
             const response = await api.post('/register', { email, password });
-            if (response.status === 201) {
-                setSuccess('User registered successfully. You can now log in.');
+
+            // Check if we have the access token in the response
+            if (response.data && response.data.access_token) {
+                // Set the token in localStorage
+                setAuthToken(response.data.access_token);
+                // Update authentication state
                 setIsAuthenticated(true);
-                setTimeout(() => navigate('/login'), 3000);
+                // Show success message
+                setSuccess('Account created successfully!');
+                // Navigate to brdges page
+                navigate('/brdges', { replace: true });
             } else {
-                throw new Error('Registration failed');
+                console.error('No access token in response:', response);
+                setError('Registration successful but login failed. Please try logging in.');
+                navigate('/login');
             }
         } catch (err) {
-            console.error('Registration error:', err.message);
-            setError(err.response?.data?.error || 'An error occurred');
+            console.error('Registration error:', err);
+            setError(err.response?.data?.error || 'An error occurred during registration');
         }
     };
 
@@ -59,9 +68,7 @@ function SignUpPage() {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
                 setSuccess('Successfully signed up with Google!');
-                setTimeout(() => {
-                    navigate('/brdges');
-                }, 1000);
+                navigate('/brdges', { replace: true });
             } else {
                 throw new Error('No access token received');
             }
@@ -168,6 +175,7 @@ function SignUpPage() {
                             align="center"
                             sx={{
                                 mb: { xs: 3, md: 4 },
+                                fontFamily: 'Satoshi',
                                 fontWeight: '600',
                                 fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
                                 color: 'white',
@@ -175,18 +183,18 @@ function SignUpPage() {
                                 letterSpacing: '-0.02em',
                                 lineHeight: 1.1,
                                 position: 'relative',
-                                textShadow: '0 0 40px rgba(255, 255, 255, 0.25)',
+                                textShadow: '0 0 40px rgba(34, 211, 238, 0.25)',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
                                     bottom: '-16px',
                                     left: '50%',
                                     transform: 'translateX(-50%)',
-                                    width: '80px',
-                                    height: '4px',
-                                    background: 'rgba(255, 255, 255, 0.5)',
-                                    borderRadius: '2px',
-                                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)'
+                                    width: '120px',
+                                    height: '1px',
+                                    background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                                    borderRadius: '1px',
+                                    boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
                                 }
                             }}
                         >
@@ -197,6 +205,7 @@ function SignUpPage() {
                             align="center"
                             sx={{
                                 mb: 2,
+                                fontFamily: 'Satoshi',
                                 color: 'rgba(255, 255, 255, 0.8)',
                                 maxWidth: '300px',
                                 mx: 'auto',
@@ -213,6 +222,7 @@ function SignUpPage() {
                             variant="body1"
                             sx={{
                                 mb: 3,
+                                fontFamily: 'Satoshi',
                                 textAlign: 'center',
                                 maxWidth: '90%',
                                 color: 'rgba(255, 255, 255, 0.6)',
@@ -220,7 +230,7 @@ function SignUpPage() {
                                 lineHeight: 1.5
                             }}
                         >
-                            Try Brdge AI and see how easy it is to create interactive presentations.
+                            Try Brdge AI and <strong>experience the future</strong> of interactive content.
                         </Typography>
 
                         {/* Form Container */}
@@ -230,8 +240,8 @@ function SignUpPage() {
                             backdropFilter: 'blur(20px)',
                             borderRadius: '24px',
                             p: 4,
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid rgba(34, 211, 238, 0.1)',
+                            boxShadow: '0 4px 30px rgba(34, 211, 238, 0.05)',
                             position: 'relative',
                             overflow: 'hidden',
                             '&::before': {
@@ -241,7 +251,7 @@ function SignUpPage() {
                                 left: 0,
                                 right: 0,
                                 height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)'
+                                background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.1), transparent)'
                             }
                         }}>
                             {error && (
@@ -457,17 +467,18 @@ function SignUpPage() {
                                         sx={{
                                             py: 1.5,
                                             borderRadius: '50px',
-                                            background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                            background: 'linear-gradient(45deg, rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.6))',
                                             fontSize: '1rem',
+                                            fontFamily: 'Satoshi',
                                             fontWeight: '600',
                                             letterSpacing: '0.02em',
                                             textTransform: 'none',
                                             transition: 'all 0.3s ease-in-out',
-                                            boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
+                                            boxShadow: '0 4px 15px rgba(34, 211, 238, 0.2)',
                                             '&:hover': {
-                                                background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                                background: 'linear-gradient(45deg, rgba(34, 211, 238, 0.9), rgba(34, 211, 238, 0.7))',
                                                 transform: 'translateY(-2px)',
-                                                boxShadow: '0 6px 20px rgba(79, 156, 249, 0.4)',
+                                                boxShadow: '0 6px 20px rgba(34, 211, 238, 0.4)',
                                             },
                                         }}
                                     >

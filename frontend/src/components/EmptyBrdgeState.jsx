@@ -8,24 +8,35 @@ import { Link as RouterLink } from 'react-router-dom';
 const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
         >
             <Box sx={{
                 textAlign: 'center',
                 py: { xs: 8, sm: 10 },
                 px: { xs: 3, sm: 4 },
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.9), rgba(7, 11, 35, 0.9))',
                 borderRadius: '24px',
                 backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.07)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                }
             }}>
                 <motion.div
                     animate={{ y: [0, -8, 0] }}
                     transition={{
-                        duration: 2,
+                        duration: 3,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
@@ -34,28 +45,33 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                         width: { xs: 80, sm: 100 },
                         height: { xs: 80, sm: 100 },
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #4F9CF9, #00B4DB)',
+                        background: 'linear-gradient(135deg, #22D3EE, #0EA5E9)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         margin: '0 auto',
                         mb: 4,
-                        boxShadow: '0 12px 24px rgba(0,180,219,0.2)',
+                        boxShadow: '0 12px 24px rgba(34, 211, 238, 0.2)',
+                        border: '1px solid rgba(34, 211, 238, 0.3)',
                     }}>
                         <PresentationIcon sx={{
                             fontSize: { xs: 36, sm: 42 },
                             color: 'white',
-                            filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))'
+                            filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.5))'
                         }} />
                     </Box>
                 </motion.div>
 
                 <Typography variant="h4" sx={{
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: 'white',
-                    fontSize: { xs: '1.5rem', sm: '2rem' },
-                    mb: 3,
-                    textShadow: '0 0 20px rgba(255,255,255,0.2)',
+                    fontSize: { xs: '1.75rem', sm: '2.25rem' },
+                    mb: 2,
+                    background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    letterSpacing: '-0.02em',
+                    fontFamily: 'Satoshi',
                 }}>
                     Create Your First Brdge
                 </Typography>
@@ -64,15 +80,19 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                     mb: 6,
                     maxWidth: '500px',
                     mx: 'auto',
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
+                    fontSize: { xs: '1rem', sm: '1.1rem' },
                     lineHeight: 1.6,
-                    color: 'rgba(255,255,255,0.8)',
+                    color: 'rgba(255,255,255,0.7)',
+                    fontFamily: 'Satoshi',
                 }}>
                     Turn your content into an interactive AI experience with your own voice assistant.
                 </Typography>
 
                 {canCreate ? (
-                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                    >
                         <Button
                             variant="contained"
                             startIcon={<AddIcon />}
@@ -80,15 +100,19 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                             sx={{
                                 py: 1.5,
                                 px: 4,
-                                borderRadius: '50px',
+                                borderRadius: '12px',
                                 fontSize: '1rem',
-                                background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                background: 'linear-gradient(135deg, #22D3EE, #0EA5E9)',
                                 color: 'white',
                                 fontWeight: 600,
                                 textTransform: 'none',
-                                boxShadow: '0 4px 15px rgba(79, 156, 249, 0.2)',
+                                fontFamily: 'Satoshi',
+                                boxShadow: '0 8px 24px rgba(34, 211, 238, 0.25)',
+                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                backdropFilter: 'blur(8px)',
                                 '&:hover': {
-                                    background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                    background: 'linear-gradient(135deg, #0EA5E9, #22D3EE)',
+                                    boxShadow: '0 8px 32px rgba(34, 211, 238, 0.35)',
                                 }
                             }}
                         >
@@ -101,16 +125,21 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                         to="/profile"
                         variant="contained"
                         sx={{
-                            borderRadius: '50px',
+                            borderRadius: '12px',
                             py: 1.5,
                             px: 4,
-                            background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                            background: 'linear-gradient(135deg, #22D3EE, #0EA5E9)',
                             color: 'white',
                             textTransform: 'none',
                             fontSize: '1rem',
                             fontWeight: 600,
+                            fontFamily: 'Satoshi',
+                            boxShadow: '0 8px 24px rgba(34, 211, 238, 0.25)',
+                            border: '1px solid rgba(34, 211, 238, 0.3)',
+                            backdropFilter: 'blur(8px)',
                             '&:hover': {
-                                background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                background: 'linear-gradient(135deg, #0EA5E9, #22D3EE)',
+                                boxShadow: '0 8px 32px rgba(34, 211, 238, 0.35)',
                             }
                         }}
                     >
