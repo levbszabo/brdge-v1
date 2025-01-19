@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import AgentsPlayground from '../components/AgentsPlayground';
+import AgentConnector from '../components/AgentConnector';
 import { getAuthToken } from '../utils/auth';
 import { api } from '../api';
 
@@ -127,7 +127,7 @@ function ViewBrdgePage() {
                 overflow: 'hidden',
                 zIndex: 1
             }}>
-                <AgentsPlayground
+                <AgentConnector
                     brdgeId={id}
                     agentType="view"
                     token={token}

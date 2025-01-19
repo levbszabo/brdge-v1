@@ -23,21 +23,37 @@ load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
 
 # Enhanced system prompt that incorporates personality, knowledge base and transcript
-SYSTEM_PROMPT_BASE = """You are the creator and presenter of this content, speaking directly to your audience. 
-You must incorporate:
-1) The Agent Personality - This defines your speaking style and presentation manner
-2) The Knowledge Base - Your deep understanding of the topic and additional context
-3) The Presentation Transcript - What you've covered so far in your presentation
+SYSTEM_PROMPT_BASE = """
+You are both the creator and a real-time co-presenter of this content. You are speaking naturally to your audience as if they are right here with you.
 
-When responding:
-- Speak naturally as if you're the actual presenter explaining your own content
-- Stay in character and maintain the flow of the presentation
-- Use phrases like "As I mentioned earlier..." or "We'll get to that later in the presentation" when appropriate
-- If asked about something you haven't covered yet, say something like "I'll be covering that in more detail later" or "We'll get to that point shortly"
-- Draw from your knowledge base to provide richer context, but present it as if it's your own expertise
-- Keep the conversational flow natural, as if you're having a real-time discussion during your presentation
+You have three key resources:
+1) Personality: your personal speaking style, tone, and mannerisms.
+2) Knowledge Base: deeper background or supporting facts, as if it's your own expertise.
+3) Presentation Transcript: an ongoing record of what has been covered so far (and what's left).
 
-Remember: You are the creator of this content. Make your responses feel like a natural part of the presentation experience.
+Your goals:
+- Provide a smooth, conversational experience as if you are personally guiding the audience.
+- Weave in relevant details from your knowledge base naturally, without explicitly naming it.
+- Continuously reflect the personality described.
+- Sound genuine, concise, and coherent.
+
+When Responding:
+• Use a relaxed, first-person, natural speaking tone.  
+• Keep responses concise: A few words if possible, or up to 1-2 short paragraphs or a few sentences if necessary.
+• Reference previously covered points with phrases like “I mentioned earlier…” or “We recently looked at…”.  
+• If asked about future topics you have not yet covered, say “We'll explore that soon,” or “I'll be covering that in a bit.”  
+• Never overuse the phrase "in this presentation"—speak as if you're chatting in real-time.  
+• Avoid lengthy or repetitive explanations; aim for brevity.  
+• If knowledge base info is relevant, weave it in as if it's your personal expertise.  
+• Always maintain a sense of direct conversation with the audience—like a casual yet informed talk.
+
+IMPORTANT: 
+- You are the actual presenter. 
+- Do not disclaim yourself as an AI model. 
+- Do not reveal the knowledge base explicitly.
+- Keep it human, short, and friendly.
+
+Let's begin.
 """
 
 
@@ -61,6 +77,7 @@ class ChatAssistant(VoicePipelineAgent):
         self.transcript_read = []
         self.transcript_remaining = []
         self.current_position = 0  # Track current position in seconds
+        self.agent_config_received = False  # Add this flag
 
         super().__init__(
             vad=vad,
@@ -75,11 +92,35 @@ class ChatAssistant(VoicePipelineAgent):
             preemptive_synthesis=True,
         )
 
-    def update_agent_config(self, personality: str, knowledge_base: str):
-        """Update the agent's personality and knowledge base"""
-        self.personality = personality
-        self.knowledge_content = knowledge_base
-        self._rebuild_system_prompt()
+    def update_agent_config(self, config_data: dict):
+        """Update the agent's configuration from received data"""
+        try:
+            if (
+                not self.agent_config_received
+            ):  # Only process the first config we receive
+                personality = config_data.get("personality", "")
+                knowledge_base = config_data.get("knowledgeBase", [])
+
+                # Build knowledge base string
+                knowledge_content = ""
+                for entry in knowledge_base:
+                    if (
+                        isinstance(entry, dict)
+                        and "name" in entry
+                        and "content" in entry
+                    ):
+                        knowledge_content += (
+                            f"\n# {entry['name']}\n{entry['content']}\n"
+                        )
+
+                self.personality = personality
+                self.knowledge_content = knowledge_content
+                self._rebuild_system_prompt()
+
+                self.agent_config_received = True
+                logger.info("Agent configuration updated successfully")
+        except Exception as e:
+            logger.error(f"Error updating agent config: {e}")
 
     def _rebuild_system_prompt(self):
         """Rebuild the system prompt incorporating all current context"""
@@ -153,6 +194,11 @@ async def entrypoint(ctx: JobContext):
             json_data = json.loads(decoded_message)
             logger.debug(f"Received data packet: {json_data}")
 
+            # Handle agent configuration updates
+            if "agent_config" in json_data:
+                logger.info("Received agent configuration")
+                agent.update_agent_config(json_data["agent_config"])
+
             # Handle transcript position updates
             if "transcript_position" in json_data:
                 read_segments = json_data["transcript_position"].get("read", [])
@@ -170,31 +216,6 @@ async def entrypoint(ctx: JobContext):
                     f"Updating transcript position. Read segments: {len(read_segments)}, Remaining: {len(remaining_segments)}"
                 )
                 agent.update_transcript_position(read_segments, remaining_segments)
-
-            # Handle agent configuration updates
-            if "agent_config" in json_data:
-                config = json_data["agent_config"]
-                personality = config.get("personality", "")
-                kb_items = config.get("knowledgeBase", [])
-
-                if not isinstance(kb_items, list):
-                    logger.error("Invalid knowledge base format")
-                    return
-
-                # Build knowledge base string with better formatting
-                knowledge_base_str = ""
-                for entry in kb_items:
-                    if not all(k in entry for k in ["name", "content"]):
-                        logger.warning(
-                            f"Skipping invalid knowledge base entry: {entry}"
-                        )
-                        continue
-                    knowledge_base_str += f"\n# {entry['name']}\n{entry['content']}\n"
-
-                logger.info(
-                    f"Updating agent config. Personality length: {len(personality)}, KB items: {len(kb_items)}"
-                )
-                agent.update_agent_config(personality, knowledge_base_str)
 
         except json.JSONDecodeError:
             logger.error("Failed to decode JSON from data packet")
