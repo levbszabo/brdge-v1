@@ -28,9 +28,10 @@ from models import (
     Voice,
     ViewerConversation,
     UsageLogs,
-    Recording,
     BrdgeScript,
     KnowledgeBase,
+    DocumentKnowledge,
+    Recording,
 )
 from utils import (
     clone_voice_helper,
@@ -66,6 +67,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import AsyncOpenAI
 import asyncio
 from botocore.config import Config  # Add this import at the top
+from threading import Thread
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -294,7 +296,13 @@ def delete_brdge(brdge_id):
             # 5. Delete voices if they exist
             Voice.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 6. Delete S3 files
+            # 6. Delete document knowledge entries
+            DocumentKnowledge.query.filter_by(brdge_id=brdge_id).delete()
+
+            # 7. Delete knowledge base entries
+            KnowledgeBase.query.filter_by(brdge_id=brdge_id).delete()
+
+            # 8. Delete S3 files
             try:
                 # List all objects in the brdge's folder
                 prefix = f"{brdge.folder}/"
@@ -310,7 +318,7 @@ def delete_brdge(brdge_id):
                 logger.error(f"Error deleting S3 files: {e}")
                 raise
 
-            # 7. Finally delete the brdge itself
+            # 9. Finally delete the brdge itself
             db.session.delete(brdge)
 
             # Commit all changes
@@ -610,10 +618,6 @@ def upload_image_to_s3(args):
 @login_required
 def create_brdge(user):
     try:
-        # Debug logging
-        logger.info(f"Received files: {request.files}")
-        logger.info(f"Received form data: {request.form}")
-
         name = request.form.get("name")
         presentation = request.files.get("presentation")
         recording = request.files.get("screen_recording")
@@ -670,9 +674,12 @@ def create_brdge(user):
 
         # Handle presentation file if it exists
         if presentation:
-            presentation_filename = secure_filename(presentation.filename)
-            brdge.presentation_filename = presentation_filename
+            original_filename = presentation.filename
+            presentation_filename = secure_filename(
+                f"{uuid.uuid4()}_{original_filename}"
+            )
             presentation_key = f"{folder}/{presentation_filename}"
+
             presentation.seek(0)
             s3_client.upload_fileobj(
                 presentation,
@@ -680,6 +687,11 @@ def create_brdge(user):
                 presentation_key,
                 ExtraArgs={"ContentType": "application/pdf"},
             )
+
+            brdge.presentation_filename = presentation_filename
+
+            # Start async processing after successful upload
+            start_async_pdf_processing(brdge.id, original_filename, presentation_key)
 
         # Handle recording file (required)
         recording_filename = secure_filename(recording.filename)
@@ -811,6 +823,7 @@ def create_brdge(user):
                         "message": "Brdge created successfully",
                         "brdge": brdge.to_dict(),
                         "script": script_obj.to_dict(),
+                        "processing_status": "started" if presentation else None,
                     }
                 ),
                 201,
@@ -2988,11 +3001,137 @@ def deactivate_voice(brdge_id):
         return jsonify({"error": str(e)}), 500
 
 
+async def process_pdf_document(brdge_id: int, presentation_filename: str, s3_key: str):
+    """
+    Asynchronously process a PDF document and store extracted information using GPT-4V
+    """
+    try:
+        # Create initial document knowledge entry
+        doc_knowledge = DocumentKnowledge(
+            brdge_id=brdge_id,
+            presentation_filename=presentation_filename,
+            s3_location=s3_key,
+            status="processing",
+        )
+        db.session.add(doc_knowledge)
+        db.session.commit()
+
+        # Download PDF from S3
+        temp_pdf_path = f"/tmp/{presentation_filename}"
+        s3_client.download_file(S3_BUCKET, s3_key, temp_pdf_path)
+
+        # Convert PDF to images using pdf_to_images utility
+        slide_images = pdf_to_images(temp_pdf_path)
+        total_pages = len(slide_images)
+
+        # Prepare images for GPT-4V
+        image_data = []
+        for idx, image in enumerate(slide_images, 1):
+            # Convert PIL Image to base64
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG", quality=60)
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            image_data.append(
+                {"slide_number": str(idx), "image": f"data:image/jpeg;base64,{img_str}"}
+            )
+
+        # Use OpenAI to analyze content with GPT-4V
+        client = openai.OpenAI()
+        analysis_prompt = """Analyze these presentation slides and extract:
+        1. Main topics and themes
+        2. Key points per slide
+        3. Important entities (people, companies, technical terms, etc.)
+        4. Text content from each slide
+        
+        Return a JSON object with these keys:
+        {
+            "topics": ["topic1", "topic2", ...],
+            "key_points": {"1": ["point1", "point2"], "2": ["point1", "point2"], ...},
+            "entities": {
+                "technical_terms": ["term1", "term2"],
+                "people": ["person1", "person2"],
+                "companies": ["company1", "company2"],
+                "other": ["entity1", "entity2"]
+            },
+            "slide_contents": {"1": "text content", "2": "text content", ...}
+        }
+        """
+
+        # Prepare messages with images
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": analysis_prompt},
+                    *[
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": slide["image"], "detail": "low"},
+                        }
+                        for slide in image_data
+                    ],
+                ],
+            }
+        ]
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.2,
+        )
+
+        analysis_result = json.loads(response.choices[0].message.content)
+
+        # Calculate total words from extracted text
+        total_words = sum(
+            len(text.split())
+            for text in analysis_result.get("slide_contents", {}).values()
+        )
+
+        # Update document knowledge
+        doc_knowledge.total_pages = total_pages
+        doc_knowledge.total_words = total_words
+        doc_knowledge.slide_contents = analysis_result.get("slide_contents", {})
+        doc_knowledge.topics = analysis_result.get("topics", [])
+        doc_knowledge.key_points = analysis_result.get("key_points", {})
+        doc_knowledge.entities = analysis_result.get("entities", {})
+        doc_knowledge.status = "completed"
+        db.session.commit()
+
+        # Cleanup
+        os.remove(temp_pdf_path)
+
+    except Exception as e:
+        logger.error(f"Error processing PDF: {str(e)}")
+        if "doc_knowledge" in locals():
+            doc_knowledge.status = "failed"
+            doc_knowledge.error_message = str(e)
+            db.session.commit()
+
+
+def start_async_pdf_processing(brdge_id: int, presentation_filename: str, s3_key: str):
+    """
+    Start asynchronous PDF processing in a separate thread
+    """
+
+    def run_async():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(
+            process_pdf_document(brdge_id, presentation_filename, s3_key)
+        )
+        loop.close()
+
+    Thread(target=run_async).start()
+
+
 @app.route("/api/brdges/<int:brdge_id>/presentation", methods=["POST"])
 def upload_presentation(brdge_id):
     try:
         # Get the brdge and verify ownership
         brdge = Brdge.query.get_or_404(brdge_id)
+
         # Get the uploaded file
         if "presentation" not in request.files:
             return jsonify({"error": "No presentation file in request"}), 422
@@ -3010,10 +3149,9 @@ def upload_presentation(brdge_id):
             return jsonify({"error": "PDF file size exceeds 20MB limit"}), 422
 
         # Generate unique filename and update brdge
-        brdge.presentation_filename = presentation.filename
-        presentation_filename = secure_filename(
-            f"{uuid.uuid4()}_{presentation.filename}"
-        )
+        original_filename = presentation.filename
+        presentation_filename = secure_filename(f"{uuid.uuid4()}_{original_filename}")
+
         # Upload to S3 using the brdge's folder
         presentation_key = f"{brdge.folder}/{presentation_filename}"
         presentation.seek(0)
@@ -3023,7 +3161,13 @@ def upload_presentation(brdge_id):
             presentation_key,
             ExtraArgs={"ContentType": "application/pdf"},
         )
+
+        # Update brdge
+        brdge.presentation_filename = presentation_filename
         db.session.commit()
+
+        # Start async processing
+        start_async_pdf_processing(brdge_id, original_filename, presentation_key)
 
         return (
             jsonify(
@@ -3031,6 +3175,7 @@ def upload_presentation(brdge_id):
                     "message": "Presentation uploaded successfully",
                     "presentation_filename": presentation_filename,
                     "folder": brdge.folder,
+                    "processing_status": "started",
                 }
             ),
             200,
@@ -3039,4 +3184,51 @@ def upload_presentation(brdge_id):
     except Exception as e:
         logger.error(f"Error uploading presentation: {str(e)}")
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+# Add a new endpoint to check processing status
+@app.route("/api/brdges/<int:brdge_id>/presentation/status", methods=["GET"])
+def get_presentation_processing_status(brdge_id):
+    try:
+        doc_knowledge = (
+            DocumentKnowledge.query.filter_by(brdge_id=brdge_id)
+            .order_by(DocumentKnowledge.created_at.desc())
+            .first()
+        )
+
+        if not doc_knowledge:
+            return (
+                jsonify(
+                    {"status": "not_found", "message": "No document processing found"}
+                ),
+                404,
+            )
+
+        return jsonify(
+            {
+                "status": doc_knowledge.status,
+                "error_message": (
+                    doc_knowledge.error_message
+                    if doc_knowledge.status == "failed"
+                    else None
+                ),
+                "metadata": (
+                    {
+                        "total_pages": doc_knowledge.total_pages,
+                        "total_words": doc_knowledge.total_words,
+                        "created_at": doc_knowledge.created_at.isoformat(),
+                        "updated_at": (
+                            doc_knowledge.updated_at.isoformat()
+                            if doc_knowledge.updated_at
+                            else None
+                        ),
+                    }
+                    if doc_knowledge.status == "completed"
+                    else None
+                ),
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error checking presentation status: {str(e)}")
         return jsonify({"error": str(e)}), 500

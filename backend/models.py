@@ -447,3 +447,51 @@ class KnowledgeBase(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     brdge = db.relationship("Brdge", backref="knowledge_entries")
+
+
+class DocumentKnowledge(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    presentation_filename = db.Column(
+        db.String(255), nullable=False
+    )  # Original filename
+    s3_location = db.Column(db.String(255), nullable=False)  # S3 path
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    # Document metadata
+    total_pages = db.Column(db.Integer)
+    total_words = db.Column(db.Integer)
+
+    # Extracted content (stored as JSON)
+    slide_contents = db.Column(db.JSON)  # Detailed text content per slide
+    topics = db.Column(db.JSON)  # Main topics/themes identified
+    key_points = db.Column(db.JSON)  # Key points per slide
+    entities = db.Column(db.JSON)  # Named entities, terms, definitions
+
+    # Processing status
+    status = db.Column(
+        db.String(50), default="pending"
+    )  # pending, processing, completed, failed
+    error_message = db.Column(db.Text)
+
+    # Relationships
+    brdge = db.relationship("Brdge", backref="document_knowledge")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "presentation_filename": self.presentation_filename,
+            "s3_location": self.s3_location,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "total_pages": self.total_pages,
+            "total_words": self.total_words,
+            "slide_contents": self.slide_contents,
+            "topics": self.topics,
+            "key_points": self.key_points,
+            "entities": self.entities,
+            "status": self.status,
+            "error_message": self.error_message,
+        }
