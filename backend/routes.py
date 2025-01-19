@@ -2989,32 +2989,33 @@ def deactivate_voice(brdge_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>/presentation", methods=["POST"])
-@login_required
-def upload_presentation(user, brdge_id):
+def upload_presentation(brdge_id):
     try:
         # Get the brdge and verify ownership
         brdge = Brdge.query.get_or_404(brdge_id)
-        if brdge.user_id != user.id:
-            return jsonify({"error": "Unauthorized"}), 403
-
-        # Check if brdge already has a presentation
-        if brdge.presentation_filename:
-            return jsonify({"error": "Brdge already has a presentation"}), 400
-
         # Get the uploaded file
-        presentation = request.files.get("presentation")
-        if not presentation:
-            return jsonify({"error": "No presentation file provided"}), 400
+        if "presentation" not in request.files:
+            return jsonify({"error": "No presentation file in request"}), 422
+
+        presentation = request.files["presentation"]
+        if not presentation.filename:
+            return jsonify({"error": "No selected file"}), 422
+
+        # Check file type
+        if not presentation.filename.lower().endswith(".pdf"):
+            return jsonify({"error": "Only PDF files are allowed"}), 422
 
         # Validate file size
         if presentation.content_length > MAX_PDF_SIZE:
-            return jsonify({"error": "PDF file size exceeds 20MB limit"}), 400
+            return jsonify({"error": "PDF file size exceeds 20MB limit"}), 422
 
-        # Process and upload the file
-        presentation_filename = secure_filename(presentation.filename)
+        # Generate unique filename and update brdge
+        brdge.presentation_filename = presentation.filename
+        presentation_filename = secure_filename(
+            f"{uuid.uuid4()}_{presentation.filename}"
+        )
+        # Upload to S3 using the brdge's folder
         presentation_key = f"{brdge.folder}/{presentation_filename}"
-
-        # Upload to S3
         presentation.seek(0)
         s3_client.upload_fileobj(
             presentation,
@@ -3022,9 +3023,6 @@ def upload_presentation(user, brdge_id):
             presentation_key,
             ExtraArgs={"ContentType": "application/pdf"},
         )
-
-        # Update brdge record
-        brdge.presentation_filename = presentation_filename
         db.session.commit()
 
         return (
@@ -3032,6 +3030,7 @@ def upload_presentation(user, brdge_id):
                 {
                     "message": "Presentation uploaded successfully",
                     "presentation_filename": presentation_filename,
+                    "folder": brdge.folder,
                 }
             ),
             200,
@@ -3040,4 +3039,4 @@ def upload_presentation(user, brdge_id):
     except Exception as e:
         logger.error(f"Error uploading presentation: {str(e)}")
         db.session.rollback()
-        return jsonify({"error": "Failed to upload presentation"}), 500
+        return jsonify({"error": str(e)}), 500
