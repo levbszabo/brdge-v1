@@ -56,44 +56,31 @@ const CookieConsent = () => {
             <Box
                 sx={{
                     position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
                     zIndex: 9999,
+                    background: 'rgba(0, 27, 61, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    borderTop: '1px solid rgba(34, 211, 238, 0.1)',
+                    boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.2)',
                     p: { xs: 2, sm: 3 },
                     display: 'flex',
-                    gap: 2,
-                    // Different styling for mobile and desktop
-                    ...(window.innerWidth < 600 ? {
-                        // Mobile: Full width banner at bottom
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        flexDirection: 'column',
-                        background: 'rgba(0, 27, 61, 0.95)',
-                        borderTop: '1px solid rgba(34, 211, 238, 0.1)',
-                        boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.2)',
-                    } : {
-                        // Desktop: Compact box in bottom-right corner
-                        bottom: 20,
-                        right: 20,
-                        maxWidth: '400px',
-                        flexDirection: 'column',
-                        background: 'rgba(0, 27, 61, 0.98)',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(34, 211, 238, 0.1)',
-                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)',
-                    }),
-                    backdropFilter: 'blur(10px)',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'stretch', md: 'center' },
+                    justifyContent: 'center',
+                    gap: 2
                 }}
             >
                 <Typography
                     variant="body2"
                     sx={{
                         color: 'rgba(255, 255, 255, 0.8)',
-                        textAlign: { xs: 'center', sm: 'left' },
-                        fontSize: { xs: '0.875rem', sm: '0.8rem' },
-                        lineHeight: 1.5,
+                        textAlign: { xs: 'center', md: 'left' },
+                        maxWidth: '800px'
                     }}
                 >
-                    We use cookies and Google Analytics to enhance your experience. By continuing, you agree to our{' '}
+                    We use cookies and Google Analytics to enhance your experience and analyze site usage. By clicking "Accept", you consent to our use of cookies. Read our{' '}
                     <Link
                         to="/policy#privacy"
                         style={{
@@ -102,22 +89,21 @@ const CookieConsent = () => {
                         }}
                     >
                         Privacy Policy
-                    </Link>.
+                    </Link>
+                    {' '}to learn more.
                 </Typography>
                 <Box sx={{
                     display: 'flex',
                     gap: 2,
-                    justifyContent: 'center',
+                    justifyContent: { xs: 'center', md: 'flex-end' },
+                    minWidth: { md: '300px' }
                 }}>
                     <Button
-                        size="small"
                         variant="outlined"
                         onClick={handleDecline}
                         sx={{
                             color: 'rgba(255, 255, 255, 0.8)',
                             borderColor: 'rgba(34, 211, 238, 0.3)',
-                            fontSize: '0.8rem',
-                            py: 0.5,
                             '&:hover': {
                                 borderColor: 'rgba(34, 211, 238, 0.5)',
                                 background: 'rgba(34, 211, 238, 0.05)'
@@ -127,13 +113,10 @@ const CookieConsent = () => {
                         Decline
                     </Button>
                     <Button
-                        size="small"
                         variant="contained"
                         onClick={handleAccept}
                         sx={{
                             background: 'linear-gradient(45deg, rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.6))',
-                            fontSize: '0.8rem',
-                            py: 0.5,
                             '&:hover': {
                                 background: 'linear-gradient(45deg, rgba(34, 211, 238, 0.9), rgba(34, 211, 238, 0.7))',
                             }
