@@ -26,6 +26,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
 import RoomPage from './pages/RoomPage';
+import CookieConsent from './components/CookieConsent';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -160,6 +161,7 @@ function App() {
                 <Route path="/room" element={<RoomPage />} />
               </Routes>
             </Layout>
+            <CookieConsent />
           </Router>
         </SnackbarProvider>
       </ThemeProvider>

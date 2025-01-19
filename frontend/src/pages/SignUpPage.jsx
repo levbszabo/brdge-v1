@@ -489,6 +489,36 @@ function SignUpPage() {
                         </Box>
 
                         <Box mt={3}>
+                            <Typography
+                                variant="body2"
+                                align="center"
+                                sx={{
+                                    color: 'rgba(255, 255, 255, 0.5)',
+                                    fontSize: '0.8rem',
+                                    mb: 2
+                                }}
+                            >
+                                By signing up, you acknowledge and agree to our{' '}
+                                <Link
+                                    to="/policy#privacy"
+                                    style={{
+                                        color: 'rgba(79, 156, 249, 0.8)',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    Privacy Policy
+                                </Link>
+                                {' '}and{' '}
+                                <Link
+                                    to="/policy#terms"
+                                    style={{
+                                        color: 'rgba(79, 156, 249, 0.8)',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    Terms of Service
+                                </Link>
+                            </Typography>
                             <Typography variant="body1" align="center" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
                                 Already have an account?{' '}
                                 <Link

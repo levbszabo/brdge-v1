@@ -46,6 +46,7 @@ import '../fonts.css';
 import './LandingPage.css';
 import SchoolIcon from '@mui/icons-material/School';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import Footer from '../components/Footer';
 
 const fontFamily = 'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -244,7 +245,7 @@ const IntroducingBrdgeAI = () => {
                                 >
                                     Turn your <em>static slideshows</em> and <em>pre-recorded videos</em> into{' '}
                                     <strong>dynamic, interactive sessions</strong>. Let viewers pause, ask
-                                    questions, and get immediate answers in your voice—even when you’re away.
+                                    questions, and get immediate answers in your voice—even when you're away.
                                 </Typography>
 
                                 {/* PARAGRAPH #2 */}
@@ -1402,7 +1403,7 @@ const ImpactSection = () => {
                 {
                     title: 'Build Trust',
                     description:
-                        'Consistent, accurate answers prove you’re the expert they can count on.'
+                        'Consistent, accurate answers prove you\'re the expert they can count on.'
                 },
                 {
                     title: 'Shorten the Funnel',
@@ -1815,6 +1816,8 @@ function LandingPage() {
                 color: 'white',
                 minHeight: '100vh',
                 position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
                 '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -1837,6 +1840,7 @@ function LandingPage() {
                         pt: { xs: 2, sm: 4, md: 6 },
                         pb: { xs: 6, sm: 8, md: 10 },
                         px: { xs: 2, sm: 4, md: 6 },
+                        flex: 1,
                         '& > *': {
                             mb: { xs: 10, sm: 12, md: 16 },
                             opacity: 0.98,
@@ -1859,6 +1863,7 @@ function LandingPage() {
                     <ImpactSection />
                     <FinalCTA />
                 </Container>
+                <Footer />
             </Box>
         </ParallaxProvider>
     );
