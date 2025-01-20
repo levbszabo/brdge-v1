@@ -3335,3 +3335,49 @@ async def process_pdf_document(brdge_id: int, presentation_filename: str, s3_key
         raise
     finally:
         thread_session.remove()  # Clean up the session
+
+
+@app.route("/api/brdges/<int:brdge_id>/document-knowledge", methods=["GET"])
+def get_document_knowledge(brdge_id):
+    """Get the document knowledge content for a brdge"""
+    try:
+        # Get the latest document knowledge entry
+        doc_knowledge = (
+            DocumentKnowledge.query.filter_by(brdge_id=brdge_id)
+            .order_by(DocumentKnowledge.created_at.desc())
+            .first()
+        )
+
+        if not doc_knowledge or doc_knowledge.status != "completed":
+            return (
+                jsonify(
+                    {
+                        "topics": [],
+                        "key_points": {},
+                        "entities": {
+                            "technical_terms": [],
+                            "people": [],
+                            "companies": [],
+                            "other": [],
+                        },
+                        "slide_contents": {},
+                    }
+                ),
+                200,
+            )
+
+        return (
+            jsonify(
+                {
+                    "topics": doc_knowledge.topics,
+                    "key_points": doc_knowledge.key_points,
+                    "entities": doc_knowledge.entities,
+                    "slide_contents": doc_knowledge.slide_contents,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching document knowledge: {str(e)}")
+        return jsonify({"error": str(e)}), 500

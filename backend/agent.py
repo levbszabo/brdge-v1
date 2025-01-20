@@ -252,6 +252,42 @@ class ChatAssistant(VoicePipelineAgent):
                 personality = config_data.get("personality", "")
                 knowledge_base = config_data.get("knowledgeBase", [])
 
+                # Fetch document knowledge from API
+                try:
+                    response = requests.get(
+                        f"{self.api_base_url}/brdges/{self.brdge_id}/document-knowledge"
+                    )
+                    response.raise_for_status()
+                    doc_knowledge = response.json()
+
+                    # Add document knowledge to knowledge base
+                    if doc_knowledge:
+                        knowledge_base.append(
+                            {
+                                "name": "Document Analysis",
+                                "content": f"""
+Key Topics: {', '.join(doc_knowledge.get('topics', []))}
+
+Key Points by Slide:
+{json.dumps(doc_knowledge.get('key_points', {}), indent=2)}
+
+Important Entities:
+- Technical Terms: {', '.join(doc_knowledge.get('entities', {}).get('technical_terms', []))}
+- People: {', '.join(doc_knowledge.get('entities', {}).get('people', []))}
+- Companies: {', '.join(doc_knowledge.get('entities', {}).get('companies', []))}
+- Other: {', '.join(doc_knowledge.get('entities', {}).get('other', []))}
+
+Slide Contents:
+{json.dumps(doc_knowledge.get('slide_contents', {}), indent=2)}
+""",
+                            }
+                        )
+                        logger.info(
+                            "Successfully added document knowledge to knowledge base"
+                        )
+                except Exception as e:
+                    logger.error(f"Error fetching document knowledge: {e}")
+
                 # Build knowledge base string
                 knowledge_content = ""
                 for entry in knowledge_base:
