@@ -1508,22 +1508,22 @@ const ImpactSection = () => {
                             justifyContent: 'center',
                             mt: { xs: 4, md: 6 },
                             px: { xs: 2, sm: 0 },
-                            alignItems: 'flex-start'
+                            alignItems: 'stretch'
                         }}
                     >
                         {industries.map((industry, index) => (
                             <Box
                                 key={industry.id}
                                 sx={{
-                                    flex: { xs: '1', sm: '0 1 auto' },
-                                    width: { sm: '300px' },
-                                    alignSelf: 'stretch'
+                                    flex: { xs: '1', sm: '1 1 0' },
+                                    width: { sm: '33.33%' },
+                                    minHeight: '100%'
                                 }}
                             >
                                 <Paper
                                     onClick={() => handleCardClick(industry.id)}
                                     sx={{
-                                        height: 'auto',
+                                        height: '100%',
                                         p: { xs: 3, md: 4 },
                                         borderRadius: '16px',
                                         backdropFilter: 'blur(12px)',
