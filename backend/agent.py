@@ -21,7 +21,7 @@ import os
 
 load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
-
+os.getenv("API_BASE_URL")
 # Enhanced system prompt that incorporates personality, knowledge base and transcript
 SYSTEM_PROMPT_BASE = """
 You are both the creator and a real-time co-presenter of this content. You are speaking naturally to your audience as if they are right here with you.
@@ -40,8 +40,8 @@ Your goals:
 When Responding:
 • Use a relaxed, first-person, natural speaking tone.  
 • Keep responses concise: A few words if possible, or up to 1-2 short paragraphs or a few sentences if necessary.
-• Reference previously covered points with phrases like “I mentioned earlier…” or “We recently looked at…”.  
-• If asked about future topics you have not yet covered, say “We'll explore that soon,” or “I'll be covering that in a bit.”  
+• Reference previously covered points with phrases like "I mentioned earlier..." or "We recently looked at...".  
+• If asked about future topics you have not yet covered, say "We'll explore that soon," or "I'll be covering that in a bit."  
 • Never overuse the phrase "in this presentation"—speak as if you're chatting in real-time.  
 • Avoid lengthy or repetitive explanations; aim for brevity.  
 • If knowledge base info is relevant, weave it in as if it's your personal expertise.  
@@ -78,6 +78,9 @@ class ChatAssistant(VoicePipelineAgent):
         self.transcript_remaining = []
         self.current_position = 0  # Track current position in seconds
         self.agent_config_received = False  # Add this flag
+        # Add new attributes for user and brdge IDs
+        self.user_id = None
+        self.brdge_id = None
 
         super().__init__(
             vad=vad,
@@ -92,12 +95,21 @@ class ChatAssistant(VoicePipelineAgent):
             preemptive_synthesis=True,
         )
 
-    def update_agent_config(self, config_data: dict):
+    def update_agent_config(
+        self, config_data: dict, user_id: str = None, brdge_id: str = None
+    ):
         """Update the agent's configuration from received data"""
         try:
             if (
                 not self.agent_config_received
             ):  # Only process the first config we receive
+                # Store user and brdge IDs
+                self.user_id = user_id
+                self.brdge_id = brdge_id
+                logger.info(
+                    f"Configured agent for user_id: {user_id}, brdge_id: {brdge_id}"
+                )
+
                 personality = config_data.get("personality", "")
                 knowledge_base = config_data.get("knowledgeBase", [])
 
@@ -197,7 +209,12 @@ async def entrypoint(ctx: JobContext):
             # Handle agent configuration updates
             if "agent_config" in json_data:
                 logger.info("Received agent configuration")
-                agent.update_agent_config(json_data["agent_config"])
+                # Extract user_id and brdge_id from the payload
+                user_id = json_data.get("user_id")
+                brdge_id = json_data.get("brdge_id")
+                agent.update_agent_config(
+                    json_data["agent_config"], user_id=user_id, brdge_id=brdge_id
+                )
 
             # Handle transcript position updates
             if "transcript_position" in json_data:

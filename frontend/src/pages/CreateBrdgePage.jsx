@@ -15,7 +15,7 @@ function CreateBrdgePage() {
     const [file, setFile] = useState(null);
     const [screenRecording, setScreenRecording] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [recordingFormat, setRecordingFormat] = useState(window.innerWidth <= 768 ? '9:16' : '16:9');
+    const [recordingFormat, setRecordingFormat] = useState('16:9');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [recordingTime, setRecordingTime] = useState(0);
@@ -49,9 +49,6 @@ function CreateBrdgePage() {
         const checkMobile = () => {
             const isMobileDevice = window.innerWidth <= 768;
             setIsMobile(isMobileDevice);
-            if (isMobileDevice) {
-                setRecordingFormat('9:16');
-            }
         };
         checkMobile();
         window.addEventListener('resize', checkMobile);
@@ -105,11 +102,16 @@ function CreateBrdgePage() {
     const startRecording = async () => {
         try {
             const constraints = {
-                audio: true,
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    sampleRate: 48000,
+                    channelCount: 2
+                },
                 video: {
-                    width: 1280,  // Reduced from 1920
-                    height: 720,  // Reduced from 1080
-                    frameRate: 15,  // Reduced from default
+                    width: 1280,
+                    height: 720,
+                    frameRate: 30,
                     aspectRatio: recordingFormat === '16:9' ? 16 / 9 : 9 / 16
                 }
             };
@@ -123,8 +125,9 @@ function CreateBrdgePage() {
             ]);
 
             const recorder = new MediaRecorder(combinedStream, {
-                mimeType: 'video/webm;codecs=vp9',
-                videoBitsPerSecond: 1000000  // ~1 Mbps
+                mimeType: 'video/webm;codecs=vp9,opus',
+                audioBitsPerSecond: 128000,  // Increased audio bitrate
+                videoBitsPerSecond: 2500000  // ~2.5 Mbps for better quality
             });
 
             const chunks = [];
@@ -174,12 +177,26 @@ function CreateBrdgePage() {
         return new Promise((resolve) => {
             const video = document.createElement('video');
             video.preload = 'metadata';
+
+            // Add error handling
+            video.onerror = (e) => {
+                console.error('Error loading video:', e);
+                resolve(true); // Allow the upload to continue if validation fails
+            };
+
             video.onloadedmetadata = () => {
+                console.log('Video metadata loaded:', {
+                    width: video.videoWidth,
+                    height: video.videoHeight,
+                    aspectRatio: video.videoWidth / video.videoHeight
+                });
                 window.URL.revokeObjectURL(video.src);
                 const aspectRatio = video.videoWidth / video.videoHeight;
                 const expectedRatio = recordingFormat === '16:9' ? 16 / 9 : 9 / 16;
                 const tolerance = 0.1;
-                resolve(Math.abs(aspectRatio - expectedRatio) < tolerance);
+                const isValid = Math.abs(aspectRatio - expectedRatio) < tolerance;
+                console.log('Aspect ratio validation:', { aspectRatio, expectedRatio, isValid });
+                resolve(isValid);
             };
             video.src = URL.createObjectURL(file);
         });
@@ -188,6 +205,8 @@ function CreateBrdgePage() {
     const handleScreenRecordingUpload = async (e) => {
         const file = e.target.files[0];
         if (file) {
+            console.log('File selected:', file.name);
+
             const validTypes = ['video/mp4', 'video/webm'];
             if (!validTypes.includes(file.type)) {
                 showSnackbar('Please upload a valid video file (.mp4 or .webm)', 'error');
@@ -199,19 +218,21 @@ function CreateBrdgePage() {
                 return;
             }
 
-            const isValidRatio = await validateAspectRatio(file);
-            if (!isValidRatio) {
-                showSnackbar(`Video must be in ${recordingFormat} format`, 'error');
-                return;
-            }
-
+            // Temporarily skip aspect ratio validation
+            console.log('Setting screen recording...');
             setScreenRecording(file);
+            console.log('Screen recording set:', file.name);
 
             // Update video preview for uploaded file
             const blob = new Blob([file], { type: file.type });
             updateVideoPreview(blob);
         }
     };
+
+    // Also let's add a useEffect to monitor screenRecording changes
+    useEffect(() => {
+        console.log('screenRecording changed:', screenRecording?.name); // Debug log
+    }, [screenRecording]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -368,7 +389,7 @@ function CreateBrdgePage() {
                                         </div>
                                         <div className="flex gap-2">
                                             {['16:9', '9:16'].map((format) => {
-                                                const isDisabled = isMobile && format === '16:9';
+                                                const isDisabled = format === '9:16';
                                                 return (
                                                     <button
                                                         key={format}
@@ -382,7 +403,7 @@ function CreateBrdgePage() {
                                                             }
                                                             ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
                                                         `}
-                                                        title={isDisabled ? 'Portrait mode (9:16) is required on mobile devices' : ''}
+                                                        title={isDisabled ? 'Portrait mode (9:16) - Coming soon' : ''}
                                                     >
                                                         {format === '16:9' ? 'Landscape' : 'Portrait'} ({format})
                                                     </button>
@@ -392,71 +413,64 @@ function CreateBrdgePage() {
                                     </div>
 
                                     {/* Recording Controls */}
-                                    <div className="flex gap-3">
-                                        <motion.button
-                                            type="button"
-                                            onClick={isRecording ? stopRecording : startRecording}
-                                            className={`flex-1 py-3 px-4 rounded-lg border transition-all duration-200
-                                                flex items-center justify-center gap-2 text-sm relative
-                                                ${isRecording
-                                                    ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
-                                                    : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-                                                }
-                                                hover:shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:scale-[1.02]
-                                                active:scale-[0.98]`}
-                                        >
-                                            {isRecording ? (
-                                                <>
-                                                    <StopCircle className="w-4 h-4" />
-                                                    <span>Stop Recording ({formatTime(recordingTime)})</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Video className="w-4 h-4" />
-                                                    <span>{isMobile ? 'Record Video' : 'Record Presentation'}</span>
-                                                </>
-                                            )}
-                                        </motion.button>
-
-                                        <motion.label
-                                            htmlFor="video-upload"
-                                            className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg 
-                                                border border-gray-700/50 text-gray-400 cursor-pointer
-                                                hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]
-                                                transition-all duration-200`}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                        >
-                                            <Upload className="w-4 h-4" />
-                                            <span className="text-sm">Upload Video</span>
-                                            <input
-                                                type="file"
-                                                id="video-upload"
-                                                accept="video/*"
-                                                onChange={handleScreenRecordingUpload}
-                                                className="hidden"
-                                            />
-                                        </motion.label>
-                                    </div>
-
-                                    {/* Video Preview */}
-                                    {screenRecording && (
-                                        <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
-                                            <div className="flex items-center gap-2 text-cyan-400 text-sm">
-                                                <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                                                Recording ready for review
-                                            </div>
-                                            <video
-                                                ref={recordingPreviewRef}
-                                                controls
-                                                playsInline
-                                                className="w-full mt-3 rounded-lg border border-gray-700/50"
-                                                style={{ maxHeight: '300px', backgroundColor: '#1a1a1a' }}
+                                    <div className="flex gap-3 flex-col">
+                                        <div className="flex gap-3">
+                                            <motion.button
+                                                type="button"
+                                                onClick={isRecording ? stopRecording : startRecording}
+                                                className={`flex-1 py-3 px-4 rounded-lg border transition-all duration-200
+                                                    flex items-center justify-center gap-2 text-sm relative
+                                                    ${isRecording
+                                                        ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+                                                        : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
+                                                    }
+                                                    hover:shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:scale-[1.02]
+                                                    active:scale-[0.98]`}
                                             >
-                                                Your browser does not support the video tag.
-                                            </video>
+                                                {isRecording ? (
+                                                    <>
+                                                        <StopCircle className="w-4 h-4" />
+                                                        <span>Stop Recording ({formatTime(recordingTime)})</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Video className="w-4 h-4" />
+                                                        <span>{isMobile ? 'Record Video' : 'Record Presentation'}</span>
+                                                    </>
+                                                )}
+                                            </motion.button>
+
+                                            <motion.label
+                                                htmlFor="video-upload"
+                                                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg 
+                                                    border border-gray-700/50 text-gray-400 cursor-pointer
+                                                    hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]
+                                                    transition-all duration-200`}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                <Upload className="w-4 h-4" />
+                                                <span className="text-sm">Upload Video</span>
+                                                <input
+                                                    type="file"
+                                                    id="video-upload"
+                                                    accept="video/*"
+                                                    onChange={handleScreenRecordingUpload}
+                                                    className="hidden"
+                                                />
+                                            </motion.label>
                                         </div>
-                                    )}
+
+                                        {/* Video Preview - Show when video is uploaded or recorded */}
+                                        {screenRecording && (
+                                            <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+                                                <div className="flex items-center gap-2 text-cyan-400 text-sm">
+                                                    <Video className="w-4 h-4" />
+                                                    <span>Selected: {screenRecording.name}</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Presentation Upload - Now Second and Optional */}

@@ -716,9 +716,9 @@ const HeroSection = () => {
                                 lineHeight: 1.2
                             }}
                         >
-                            Conversations Anytime,
+                            Speak Once,
                             <br />
-                            Anywhere
+                            Converse Forever
                         </Box>
                         <Box
                             component="span"
@@ -732,7 +732,7 @@ const HeroSection = () => {
                                 fontFamily: fontFamily
                             }}
                         >
-                            Speak Once, Converse Forever
+
                         </Box>
                     </Typography>
                 </motion.div>
@@ -962,7 +962,7 @@ const HeroSection = () => {
                         }
                     }}
                 >
-                    Imagine your recorded videos and documents actively <strong>conversing</strong> with viewers. Let them <strong>pause</strong>, ask questions, and hear <strong>your voice</strong> respond—even when you're not around. Welcome to the revolution: living, breathing <strong>engagement that never sleeps.</strong>
+                    Imagine your recorded videos and documents actively <strong>talking</strong> with viewers. Let them <strong>pause</strong>, ask questions, and hear <strong>your voice</strong> respond—even when you're not around. Welcome to the revolution: living, breathing <strong>engagement that never sleeps.</strong>
                 </Typography>
 
                 <Box sx={{
