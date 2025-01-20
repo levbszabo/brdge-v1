@@ -1507,16 +1507,14 @@ const ImpactSection = () => {
                         sx={{
                             justifyContent: 'center',
                             mt: { xs: 4, md: 6 },
-                            px: { xs: 2, sm: 0 }
+                            px: { xs: 2, sm: 0 },
+                            alignItems: 'stretch'
                         }}
                     >
                         {industries.map((industry, index) => (
-                            <motion.div
+                            <Box
                                 key={industry.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={inView ? { opacity: 1, y: 0 } : {}}
-                                transition={{ delay: index * 0.2, duration: 0.8 }}
-                                style={{
+                                sx={{
                                     flex: 1,
                                     minWidth: { sm: '300px' },
                                     maxWidth: { sm: '380px' }
@@ -1526,18 +1524,17 @@ const ImpactSection = () => {
                                     onClick={() => handleCardClick(industry.id)}
                                     sx={{
                                         height: '100%',
-                                        minHeight: { xs: 'auto', sm: '220px' },
                                         p: { xs: 3, md: 4 },
                                         borderRadius: '16px',
                                         backdropFilter: 'blur(12px)',
-                                        backgroundColor: 'rgba(255,255,255,0.03)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        backgroundColor: expandedCard === industry.id ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+                                        border: '1px solid',
+                                        borderColor: expandedCard === industry.id ? 'rgba(0,255,204,0.2)' : 'rgba(255,255,255,0.1)',
                                         position: 'relative',
                                         transition: 'all 0.3s ease',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        justifyContent: 'flex-start',
                                         '&:hover': {
                                             boxShadow: '0 15px 40px rgba(0,255,204,0.15)',
                                             borderColor: 'rgba(0,255,204,0.3)',
@@ -1548,23 +1545,24 @@ const ImpactSection = () => {
                                     {/* CARD HEADER */}
                                     <Box
                                         sx={{
-                                            mb: 3,
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: 1
+                                            gap: 2,
+                                            mb: expandedCard === industry.id ? 3 : 0,
+                                            transition: 'margin 0.3s ease'
                                         }}
                                     >
                                         <Box
                                             sx={{
                                                 p: 1.5,
-                                                backgroundColor: 'rgba(0, 255, 204, 0.1)',
+                                                backgroundColor: expandedCard === industry.id ? 'rgba(0, 255, 204, 0.15)' : 'rgba(0, 255, 204, 0.1)',
                                                 borderRadius: '50%',
                                                 display: 'flex',
                                                 justifyContent: 'center',
-                                                alignItems: 'center'
+                                                alignItems: 'center',
+                                                transition: 'all 0.3s ease'
                                             }}
                                         >
-                                            {/* Icon */}
                                             {React.cloneElement(industry.icon, {
                                                 sx: {
                                                     fontSize: 32,
@@ -1572,12 +1570,11 @@ const ImpactSection = () => {
                                                 }
                                             })}
                                         </Box>
-                                        <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
+                                        <Box sx={{ flexGrow: 1 }}>
                                             <Typography
                                                 variant="h6"
                                                 sx={{
                                                     fontWeight: 600,
-                                                    mb: 0.5,
                                                     color: '#fff',
                                                 }}
                                             >
@@ -1585,39 +1582,45 @@ const ImpactSection = () => {
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: 'rgba(255,255,255,0.8)' }}
+                                                sx={{
+                                                    color: 'rgba(255,255,255,0.8)',
+                                                    mt: 0.5
+                                                }}
                                             >
                                                 {industry.subtitle}
                                             </Typography>
                                         </Box>
-                                        {/* Expand Icon */}
                                         <Add
                                             sx={{
-                                                fontSize: 28,
+                                                fontSize: 24,
                                                 color: '#fff',
                                                 transform: expandedCard === industry.id ? 'rotate(45deg)' : 'none',
-                                                transition: 'transform 0.3s ease-in-out'
+                                                transition: 'transform 0.3s ease'
                                             }}
                                         />
                                     </Box>
 
-                                    {/* COLLAPSIBLE DETAILS */}
                                     <Collapse in={expandedCard === industry.id}>
                                         <Box
                                             sx={{
-                                                mt: 1,
-                                                pt: 1,
+                                                mt: 3,
+                                                pt: 3,
                                                 borderTop: '1px solid rgba(255,255,255,0.1)'
                                             }}
                                         >
                                             {industry.details.map((detail, idx) => (
-                                                <Box key={idx} sx={{ mb: 2 }}>
+                                                <Box
+                                                    key={idx}
+                                                    sx={{
+                                                        mb: idx !== industry.details.length - 1 ? 3 : 0
+                                                    }}
+                                                >
                                                     <Typography
                                                         variant="subtitle1"
                                                         sx={{
                                                             color: '#00ffcc',
                                                             fontWeight: 600,
-                                                            mb: 0.5,
+                                                            mb: 1,
                                                             fontSize: '0.95rem'
                                                         }}
                                                     >
@@ -1637,7 +1640,7 @@ const ImpactSection = () => {
                                         </Box>
                                     </Collapse>
                                 </Paper>
-                            </motion.div>
+                            </Box>
                         ))}
                     </Stack>
                 </motion.div>

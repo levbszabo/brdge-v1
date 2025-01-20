@@ -95,7 +95,7 @@ class ChatAssistant(VoicePipelineAgent):
             llm=openai.LLM(model="gpt-4o"),
             tts=cartesia.TTS(
                 model="sonic",
-                voice="85100d63-eb8a-4225-9750-803920c3c8d3",
+                voice="4c74993b-be03-4436-8ef0-10586550b5f2",
             ),
             chat_ctx=llm.ChatContext().append(role="system", text=SYSTEM_PROMPT_BASE),
             interrupt_speech_duration=0.1,
