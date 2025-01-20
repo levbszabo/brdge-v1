@@ -8,6 +8,7 @@ from livekit.agents import (
     cli,
     llm,
 )
+import requests
 import asyncio
 from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import openai, deepgram, silero, cartesia
@@ -81,6 +82,12 @@ class ChatAssistant(VoicePipelineAgent):
         # Add new attributes for user and brdge IDs
         self.user_id = None
         self.brdge_id = None
+        self.api_base_url = os.getenv("API_BASE_URL")
+        self.current_speech = {
+            "started_at": None,
+            "message": None,
+            "was_interrupted": False,
+        }
 
         super().__init__(
             vad=vad,
@@ -94,6 +101,138 @@ class ChatAssistant(VoicePipelineAgent):
             interrupt_speech_duration=0.1,
             preemptive_synthesis=True,
         )
+        self._setup_event_handlers()
+
+    def _setup_event_handlers(self):
+        @self.on("agent_started_speaking")
+        def on_agent_speaking():
+            print("Agent started speaking")
+            self.current_speech = {
+                "started_at": datetime.utcnow(),
+                "message": None,
+                "was_interrupted": False,
+            }
+            try:
+                viewer_user_id = None
+                anonymous_id = None
+
+                # Convert user_id to string for checking
+                user_id_str = str(self.user_id) if self.user_id is not None else None
+                if user_id_str:
+                    if user_id_str.startswith("anon_"):
+                        anonymous_id = user_id_str
+                    else:
+                        try:
+                            viewer_user_id = int(user_id_str)
+                        except ValueError:
+                            logger.error(f"Invalid user_id format: {self.user_id}")
+
+                if not self.api_base_url:
+                    logger.error("API_BASE_URL environment variable is not set")
+                    return
+
+                if not self.brdge_id:
+                    logger.error("brdge_id is not set")
+                    return
+
+                response = requests.post(
+                    f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs",
+                    json={
+                        "brdge_id": self.brdge_id,
+                        "viewer_user_id": viewer_user_id,
+                        "anonymous_id": anonymous_id,
+                        "started_at": self.current_speech["started_at"].isoformat(),
+                        "was_interrupted": False,
+                    },
+                )
+                response.raise_for_status()
+                self.current_speech["log_id"] = response.json().get("id")
+                logger.info(
+                    f"Created usage log with ID: {self.current_speech['log_id']}"
+                )
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"HTTP Error creating usage log: {e}")
+            except Exception as e:
+                logger.error(f"Error creating usage log: {e}")
+
+        @self.on("agent_speech_interrupted")
+        def on_agent_speech_interrupted(msg: llm.ChatMessage):
+            """Track when agent's speech is interrupted"""
+            logger.info(f"Agent speech interrupted: {msg.content}")
+
+            if self.current_speech["started_at"]:
+                ended_at = datetime.utcnow()
+                duration = (
+                    ended_at - self.current_speech["started_at"]
+                ).total_seconds() / 60.0
+
+                try:
+                    # Update usage log with interruption and agent_message
+                    if self.current_speech.get("log_id"):
+                        response = requests.put(
+                            f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs/{self.current_speech['log_id']}",
+                            json={
+                                "ended_at": ended_at.isoformat(),
+                                "duration_minutes": round(duration, 2),
+                                "was_interrupted": True,
+                                "agent_message": msg.content,
+                            },
+                        )
+                        response.raise_for_status()
+                        logger.info(
+                            f"Updated usage log {self.current_speech['log_id']} with interruption"
+                        )
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"HTTP Error updating usage log: {e}")
+                except Exception as e:
+                    logger.error(f"Error updating usage log: {e}")
+
+                # Reset current speech tracking
+                self.current_speech = {
+                    "started_at": None,
+                    "message": None,
+                    "was_interrupted": False,
+                }
+
+        @self.on("agent_speech_committed")
+        def on_agent_speech_completed(msg: llm.ChatMessage):
+            """Track when agent's speech completes normally"""
+            logger.info(f"Agent speech completed: {msg.content}")
+
+            if self.current_speech["started_at"]:
+                ended_at = datetime.utcnow()
+                duration = (
+                    ended_at - self.current_speech["started_at"]
+                ).total_seconds() / 60.0
+
+                try:
+                    # Update usage log with completion and agent_message
+                    if self.current_speech.get("log_id"):
+                        response = requests.put(
+                            f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs/{self.current_speech['log_id']}",
+                            json={
+                                "ended_at": ended_at.isoformat(),
+                                "duration_minutes": round(duration, 2),
+                                "was_interrupted": False,
+                                "agent_message": msg.content,
+                            },
+                        )
+                        response.raise_for_status()
+                        logger.info(
+                            f"Updated usage log {self.current_speech['log_id']} with completion"
+                        )
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"HTTP Error updating usage log: {e}")
+                except Exception as e:
+                    logger.error(f"Error updating usage log: {e}")
+
+                # Reset current speech tracking
+                self.current_speech = {
+                    "started_at": None,
+                    "message": None,
+                    "was_interrupted": False,
+                }
 
     def update_agent_config(
         self, config_data: dict, user_id: str = None, brdge_id: str = None
