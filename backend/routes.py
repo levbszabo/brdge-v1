@@ -68,6 +68,7 @@ from openai import AsyncOpenAI
 import asyncio
 from botocore.config import Config  # Add this import at the top
 from threading import Thread
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -3001,129 +3002,55 @@ def deactivate_voice(brdge_id):
         return jsonify({"error": str(e)}), 500
 
 
-async def process_pdf_document(brdge_id: int, presentation_filename: str, s3_key: str):
-    """
-    Asynchronously process a PDF document and store extracted information using GPT-4V
-    """
-    try:
-        # Create initial document knowledge entry
-        doc_knowledge = DocumentKnowledge(
-            brdge_id=brdge_id,
-            presentation_filename=presentation_filename,
-            s3_location=s3_key,
-            status="processing",
-        )
-        db.session.add(doc_knowledge)
-        db.session.commit()
-
-        # Download PDF from S3
-        temp_pdf_path = f"/tmp/{presentation_filename}"
-        s3_client.download_file(S3_BUCKET, s3_key, temp_pdf_path)
-
-        # Convert PDF to images using pdf_to_images utility
-        slide_images = pdf_to_images(temp_pdf_path)
-        total_pages = len(slide_images)
-
-        # Prepare images for GPT-4V
-        image_data = []
-        for idx, image in enumerate(slide_images, 1):
-            # Convert PIL Image to base64
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG", quality=60)
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            image_data.append(
-                {"slide_number": str(idx), "image": f"data:image/jpeg;base64,{img_str}"}
-            )
-
-        # Use OpenAI to analyze content with GPT-4V
-        client = openai.OpenAI()
-        analysis_prompt = """Analyze these presentation slides and extract:
-        1. Main topics and themes
-        2. Key points per slide
-        3. Important entities (people, companies, technical terms, etc.)
-        4. Text content from each slide
-        
-        Return a JSON object with these keys:
-        {
-            "topics": ["topic1", "topic2", ...],
-            "key_points": {"1": ["point1", "point2"], "2": ["point1", "point2"], ...},
-            "entities": {
-                "technical_terms": ["term1", "term2"],
-                "people": ["person1", "person2"],
-                "companies": ["company1", "company2"],
-                "other": ["entity1", "entity2"]
-            },
-            "slide_contents": {"1": "text content", "2": "text content", ...}
-        }
-        """
-
-        # Prepare messages with images
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": analysis_prompt},
-                    *[
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": slide["image"], "detail": "low"},
-                        }
-                        for slide in image_data
-                    ],
-                ],
-            }
-        ]
-
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0.2,
-        )
-
-        analysis_result = json.loads(response.choices[0].message.content)
-
-        # Calculate total words from extracted text
-        total_words = sum(
-            len(text.split())
-            for text in analysis_result.get("slide_contents", {}).values()
-        )
-
-        # Update document knowledge
-        doc_knowledge.total_pages = total_pages
-        doc_knowledge.total_words = total_words
-        doc_knowledge.slide_contents = analysis_result.get("slide_contents", {})
-        doc_knowledge.topics = analysis_result.get("topics", [])
-        doc_knowledge.key_points = analysis_result.get("key_points", {})
-        doc_knowledge.entities = analysis_result.get("entities", {})
-        doc_knowledge.status = "completed"
-        db.session.commit()
-
-        # Cleanup
-        os.remove(temp_pdf_path)
-
-    except Exception as e:
-        logger.error(f"Error processing PDF: {str(e)}")
-        if "doc_knowledge" in locals():
-            doc_knowledge.status = "failed"
-            doc_knowledge.error_message = str(e)
-            db.session.commit()
-
-
 def start_async_pdf_processing(brdge_id: int, presentation_filename: str, s3_key: str):
     """
     Start asynchronous PDF processing in a separate thread
     """
 
     def run_async():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(
-            process_pdf_document(brdge_id, presentation_filename, s3_key)
-        )
-        loop.close()
+        try:
+            # Create application context
+            with app.app_context():
+                # Create a new scoped session for this thread
+                thread_session = scoped_session(sessionmaker(bind=db.engine))
 
-    Thread(target=run_async).start()
+                # Create event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+                # Run the processing
+                try:
+                    loop.run_until_complete(
+                        process_pdf_document(brdge_id, presentation_filename, s3_key)
+                    )
+                except Exception as e:
+                    logger.error(f"Error in PDF processing: {str(e)}")
+                    # Update document status to failed
+                    doc_knowledge = (
+                        thread_session.query(DocumentKnowledge)
+                        .filter_by(
+                            brdge_id=brdge_id,
+                            presentation_filename=presentation_filename,
+                        )
+                        .first()
+                    )
+                    if doc_knowledge:
+                        doc_knowledge.status = "failed"
+                        doc_knowledge.error_message = str(e)
+                        thread_session.commit()
+                finally:
+                    loop.close()
+                    thread_session.remove()
+
+        except Exception as e:
+            logger.error(f"Critical error in processing thread: {str(e)}")
+
+    # Create and start the processing thread
+    processing_thread = Thread(target=run_async)
+    processing_thread.daemon = True  # Make thread daemon so it doesn't block shutdown
+    processing_thread.start()
+
+    logger.info(f"Started PDF processing thread for brdge {brdge_id}")
 
 
 @app.route("/api/brdges/<int:brdge_id>/presentation", methods=["POST"])
@@ -3232,3 +3159,179 @@ def get_presentation_processing_status(brdge_id):
     except Exception as e:
         logger.error(f"Error checking presentation status: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/pdf/status", methods=["GET"])
+def get_pdf_processing_status(brdge_id):
+    """Get the status of PDF processing for a brdge"""
+    try:
+        doc_knowledge = (
+            DocumentKnowledge.query.filter_by(brdge_id=brdge_id)
+            .order_by(DocumentKnowledge.created_at.desc())
+            .first()
+        )
+
+        if not doc_knowledge:
+            return (
+                jsonify(
+                    {
+                        "status": "not_found",
+                        "message": "No PDF processing found for this brdge",
+                    }
+                ),
+                404,
+            )
+
+        return jsonify(
+            {
+                "status": doc_knowledge.status,
+                "error": (
+                    doc_knowledge.error_message
+                    if doc_knowledge.status == "failed"
+                    else None
+                ),
+                "progress": (
+                    {
+                        "total_pages": doc_knowledge.total_pages,
+                        "total_words": doc_knowledge.total_words,
+                        "created_at": doc_knowledge.created_at.isoformat(),
+                        "updated_at": (
+                            doc_knowledge.updated_at.isoformat()
+                            if doc_knowledge.updated_at
+                            else None
+                        ),
+                    }
+                    if doc_knowledge.status == "completed"
+                    else None
+                ),
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking PDF status: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+async def process_pdf_document(brdge_id: int, presentation_filename: str, s3_key: str):
+    """
+    Asynchronously process a PDF document and store extracted information using GPT-4V
+    """
+    # Get the thread-local session
+    thread_session = scoped_session(sessionmaker(bind=db.engine))
+
+    try:
+        logger.info(f"Starting PDF processing for brdge {brdge_id}")
+
+        # Create initial document knowledge entry
+        doc_knowledge = DocumentKnowledge(
+            brdge_id=brdge_id,
+            presentation_filename=presentation_filename,
+            s3_location=s3_key,
+            status="processing",
+        )
+        thread_session.add(doc_knowledge)
+        thread_session.commit()
+        logger.info(f"Created document knowledge entry for brdge {brdge_id}")
+
+        # Download PDF from S3
+        temp_pdf_path = f"/tmp/{presentation_filename}"
+        s3_client.download_file(S3_BUCKET, s3_key, temp_pdf_path)
+        logger.info(f"Downloaded PDF from S3 for brdge {brdge_id}")
+
+        # Convert PDF to images using pdf_to_images utility
+        slide_images = pdf_to_images(temp_pdf_path)
+        total_pages = len(slide_images)
+        logger.info(f"Converted {total_pages} pages to images for brdge {brdge_id}")
+
+        # Prepare images for GPT-4V
+        image_data = []
+        for idx, image in enumerate(slide_images, 1):
+            # Convert PIL Image to base64
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG", quality=60)
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            image_data.append(
+                {"slide_number": str(idx), "image": f"data:image/jpeg;base64,{img_str}"}
+            )
+        logger.info(f"Prepared image data for GPT-4V for brdge {brdge_id}")
+
+        # Use OpenAI to analyze content with GPT-4V
+        client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        analysis_prompt = """Analyze these presentation slides and extract:
+        1. Main topics and themes
+        2. Key points per slide
+        3. Important entities (people, companies, technical terms, etc.)
+        4. Text content from each slide
+        
+        Return a JSON object with these keys:
+        {
+            "topics": ["topic1", "topic2", ...],
+            "key_points": {"1": ["point1", "point2"], "2": ["point1", "point2"], ...},
+            "entities": {
+                "technical_terms": ["term1", "term2"],
+                "people": ["person1", "person2"],
+                "companies": ["company1", "company2"],
+                "other": ["entity1", "entity2"]
+            },
+            "slide_contents": {"1": "text content", "2": "text content", ...}
+        }
+        """
+
+        # Prepare messages with images
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": analysis_prompt},
+                    *[
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": slide["image"], "detail": "low"},
+                        }
+                        for slide in image_data
+                    ],
+                ],
+            }
+        ]
+
+        logger.info(f"Calling GPT-4V for analysis for brdge {brdge_id}")
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            response_format={"type": "json_object"},
+            temperature=0.2,
+        )
+
+        analysis_result = json.loads(response.choices[0].message.content)
+        logger.info(f"Received analysis from GPT-4V for brdge {brdge_id}")
+
+        # Calculate total words from extracted text
+        total_words = sum(
+            len(text.split())
+            for text in analysis_result.get("slide_contents", {}).values()
+        )
+
+        # Update document knowledge
+        doc_knowledge.total_pages = total_pages
+        doc_knowledge.total_words = total_words
+        doc_knowledge.slide_contents = analysis_result.get("slide_contents", {})
+        doc_knowledge.topics = analysis_result.get("topics", [])
+        doc_knowledge.key_points = analysis_result.get("key_points", {})
+        doc_knowledge.entities = analysis_result.get("entities", {})
+        doc_knowledge.status = "completed"
+        thread_session.commit()
+        logger.info(f"Updated document knowledge with analysis for brdge {brdge_id}")
+
+        # Cleanup
+        os.remove(temp_pdf_path)
+        logger.info(f"Completed PDF processing for brdge {brdge_id}")
+
+    except Exception as e:
+        logger.error(f"Error processing PDF for brdge {brdge_id}: {str(e)}")
+        if "doc_knowledge" in locals():
+            doc_knowledge.status = "failed"
+            doc_knowledge.error_message = str(e)
+            thread_session.commit()
+        raise
+    finally:
+        thread_session.remove()  # Clean up the session
