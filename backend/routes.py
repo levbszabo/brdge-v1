@@ -2808,21 +2808,32 @@ def get_recording_signed_url(brdge_id):
         if not recording:
             return jsonify({"error": "No recording found"}), 404
 
-        # Fixed: Use botocore.config.Config instead of boto3.config
+        # Configure S3 client with the correct signature version
         s3_client = boto3.client(
             "s3",
             region_name=S3_REGION,
-            config=Config(signature_version="s3v4"),
+            config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
         )
 
-        # Updated S3 key path
-        s3_key = f"{recording.brdge.folder}/recordings/{recording.filename}"  # e.g. "201/recordings/recording.webm"
+        s3_key = f"{recording.brdge.folder}/recordings/{recording.filename}"
 
+        # Determine content type based on file extension
+        content_type = "video/*"  # Default to any video format
+        if recording.filename.endswith(".webm"):
+            content_type = "video/webm"
+        elif recording.filename.endswith(".mp4"):
+            content_type = "video/mp4"
+
+        # Generate signed URL with generic video content type
         url = s3_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": S3_BUCKET,
                 "Key": s3_key,
+                "ResponseContentType": content_type,
+                "ResponseContentDisposition": "inline",
+                "ResponseCacheControl": "no-cache",
+                "ResponseExpires": "0",
             },
             ExpiresIn=3600,
         )
