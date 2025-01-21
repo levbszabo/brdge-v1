@@ -91,8 +91,8 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
             <iframe
                 src={connectorUrl}
                 title="Agent Connector"
-                allow="camera; microphone; display-capture; fullscreen"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
+                allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads allow-top-navigation-by-user-activation"
                 referrerPolicy="origin"
             />
         </Box>
