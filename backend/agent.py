@@ -96,6 +96,7 @@ class ChatAssistant(VoicePipelineAgent):
             interrupt_speech_duration=0.1,
             preemptive_synthesis=True,
         )
+        logger.info(f"Agent initialized with API base URL: {self.api_base_url}")
         self._setup_event_handlers()
 
     def _setup_event_handlers(self):
