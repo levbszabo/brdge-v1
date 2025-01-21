@@ -26,18 +26,15 @@ os.getenv("API_BASE_URL")
 # Enhanced system prompt that incorporates personality, knowledge base and transcript
 SYSTEM_PROMPT_BASE = """
 You are both the creator and a real-time co-presenter of this content. You are speaking naturally to your audience as if they are right here with you.
-
 You have three key resources:
 1) Personality: your personal speaking style, tone, and mannerisms.
 2) Knowledge Base: deeper background or supporting facts, as if it's your own expertise.
 3) Presentation Transcript: an ongoing record of what has been covered so far (and what's left).
-
 Your goals:
 - Provide a smooth, conversational experience as if you are personally guiding the audience.
 - Weave in relevant details from your knowledge base naturally, without explicitly naming it.
 - Continuously reflect the personality described.
 - Sound genuine, concise, and coherent.
-
 When Responding:
 • Use a relaxed, first-person, natural speaking tone.  
 • Keep responses concise: A few words if possible, or up to 1-2 short paragraphs or a few sentences if necessary.
@@ -47,13 +44,11 @@ When Responding:
 • Avoid lengthy or repetitive explanations; aim for brevity.  
 • If knowledge base info is relevant, weave it in as if it's your personal expertise.  
 • Always maintain a sense of direct conversation with the audience—like a casual yet informed talk.
-
 IMPORTANT: 
 - You are the actual presenter. 
 - Do not disclaim yourself as an AI model. 
 - Do not reveal the knowledge base explicitly.
 - Keep it human, short, and friendly.
-
 Let's begin.
 """
 
@@ -75,7 +70,6 @@ class ChatAssistant(VoicePipelineAgent):
     def __init__(self, vad):
         self.personality = ""
         self.knowledge_content = ""
-        self.document_knowledge = None  # Add document knowledge storage
         self.transcript_read = []
         self.transcript_remaining = []
         self.current_position = 0  # Track current position in seconds
@@ -259,16 +253,34 @@ class ChatAssistant(VoicePipelineAgent):
                         f"{self.api_base_url}/brdges/{self.brdge_id}/document-knowledge"
                     )
                     response.raise_for_status()
-                    self.document_knowledge = (
-                        response.json()
-                    )  # Store the raw document knowledge
-                    logger.info("Successfully fetched document knowledge")
+                    doc_knowledge = response.json()
 
+                    # Add document knowledge to knowledge base
+                    if doc_knowledge:
+                        knowledge_base.append(
+                            {
+                                "name": "Document Analysis",
+                                "content": f"""
+Key Topics: {', '.join(doc_knowledge.get('topics', []))}
+Key Points by Slide:
+{json.dumps(doc_knowledge.get('key_points', {}), indent=2)}
+Important Entities:
+- Technical Terms: {', '.join(doc_knowledge.get('entities', {}).get('technical_terms', []))}
+- People: {', '.join(doc_knowledge.get('entities', {}).get('people', []))}
+- Companies: {', '.join(doc_knowledge.get('entities', {}).get('companies', []))}
+- Other: {', '.join(doc_knowledge.get('entities', {}).get('other', []))}
+Slide Contents:
+{json.dumps(doc_knowledge.get('slide_contents', {}), indent=2)}
+""",
+                            }
+                        )
+                        logger.info(
+                            "Successfully added document knowledge to knowledge base"
+                        )
                 except Exception as e:
                     logger.error(f"Error fetching document knowledge: {e}")
-                    self.document_knowledge = None
 
-                # Build knowledge base string from provided knowledge base entries
+                # Build knowledge base string
                 knowledge_content = ""
                 for entry in knowledge_base:
                     if (
@@ -294,41 +306,17 @@ class ChatAssistant(VoicePipelineAgent):
         # Find the most recent context from transcript
         recent_context = ""
         if self.transcript_read:
-            recent_segments = self.transcript_read[-3:]
+            # Get the last few segments for immediate context
+            recent_segments = self.transcript_read[-3:]  # Last 3 segments for context
             recent_context = " ".join(recent_segments)
 
-        # Build document knowledge section if available
-        document_knowledge_section = ""
-        if self.document_knowledge:
-            document_knowledge_section = f"""
-Document Knowledge:
-Key Topics: {', '.join(self.document_knowledge.get('topics', []))}
-
-Key Points by Slide:
-{json.dumps(self.document_knowledge.get('key_points', {}), indent=2)}
-
-Important Entities:
-- Technical Terms: {', '.join(self.document_knowledge.get('entities', {}).get('technical_terms', []))}
-- People: {', '.join(self.document_knowledge.get('entities', {}).get('people', []))}
-- Companies: {', '.join(self.document_knowledge.get('entities', {}).get('companies', []))}
-- Other: {', '.join(self.document_knowledge.get('entities', {}).get('other', []))}
-
-Slide Contents:
-{json.dumps(self.document_knowledge.get('slide_contents', {}), indent=2)}
-"""
-
         merged_system_text = f"""{SYSTEM_PROMPT_BASE}
-
 Agent Personality:
 {self.personality}
-
 Knowledge Base:
 {self.knowledge_content}
-{document_knowledge_section}
-
 Current Presentation Context:
 You are currently at a point where you've just discussed: {recent_context}
-
 Full Transcript Coverage:
 Already Covered: {' '.join(self.transcript_read)}
 Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_remaining else "End of presentation"}
