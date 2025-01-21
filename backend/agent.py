@@ -393,9 +393,6 @@ async def entrypoint(ctx: JobContext):
                     logger.error("Invalid transcript position format")
                     return
 
-                logger.info(
-                    f"Updating transcript position. Read segments: {len(read_segments)}, Remaining: {len(remaining_segments)}"
-                )
                 agent.update_transcript_position(read_segments, remaining_segments)
 
         except json.JSONDecodeError:
