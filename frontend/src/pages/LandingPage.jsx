@@ -718,7 +718,7 @@ const HeroSection = () => {
                         >
                             Speak Once,
                             <br />
-                            Converse Forever
+                            Connect Forever
                         </Box>
                         <Box
                             component="span"
