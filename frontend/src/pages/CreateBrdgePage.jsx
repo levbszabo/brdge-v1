@@ -8,7 +8,7 @@ import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, StopCircle } from 'lucide-react';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
-const MAX_VIDEO_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB in bytes
 
 function CreateBrdgePage() {
     const [name, setName] = useState('');
@@ -27,6 +27,15 @@ function CreateBrdgePage() {
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
     const [isMobile, setIsMobile] = useState(false);
+    const [loadingPhase, setLoadingPhase] = useState(0);
+    const [loadingMessage, setLoadingMessage] = useState('');
+
+    const loadingPhases = [
+        { message: "Processing video...", duration: 4500 },
+        { message: "Generating transcript...", duration: 4500 },
+        { message: "Processing document...", duration: 4500 },
+        { message: "Creating Brdge...", duration: 4500 }
+    ];
 
     useEffect(() => {
         if (id) {
@@ -207,23 +216,31 @@ function CreateBrdgePage() {
         if (file) {
             console.log('File selected:', file.name);
 
+            // Check file format
             const validTypes = ['video/mp4', 'video/webm'];
             if (!validTypes.includes(file.type)) {
-                showSnackbar('Please upload a valid video file (.mp4 or .webm)', 'error');
+                showSnackbar(
+                    'Invalid video format. Please upload either an MP4 or WebM video file.',
+                    'error'
+                );
+                e.target.value = ''; // Clear the input
                 return;
             }
 
+            // Check file size
             if (file.size > MAX_VIDEO_SIZE) {
-                showSnackbar('File size exceeds 100MB limit', 'error');
+                showSnackbar(
+                    `Video file size exceeds 100MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`,
+                    'error'
+                );
+                e.target.value = ''; // Clear the input
                 return;
             }
 
-            // Temporarily skip aspect ratio validation
             console.log('Setting screen recording...');
             setScreenRecording(file);
             console.log('Screen recording set:', file.name);
 
-            // Update video preview for uploaded file
             const blob = new Blob([file], { type: file.type });
             updateVideoPreview(blob);
         }
@@ -234,21 +251,49 @@ function CreateBrdgePage() {
         console.log('screenRecording changed:', screenRecording?.name); // Debug log
     }, [screenRecording]);
 
+    const startLoadingSequence = () => {
+        let currentPhase = 0;
+
+        const updatePhase = () => {
+            if (currentPhase < loadingPhases.length) {
+                setLoadingPhase(currentPhase);
+                setLoadingMessage(loadingPhases[currentPhase].message);
+                currentPhase++;
+            }
+        };
+
+        // Start the sequence
+        updatePhase();
+
+        // Schedule subsequent phases
+        loadingPhases.forEach((phase, index) => {
+            if (index > 0) {
+                setTimeout(() => {
+                    updatePhase();
+                }, loadingPhases.slice(0, index).reduce((acc, p) => acc + p.duration, 0));
+            }
+        });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+        startLoadingSequence(); // Start the loading sequence
 
-        // Only validate PDF if one is uploaded
         if (file && file.size > MAX_PDF_SIZE) {
-            setError('PDF file size exceeds 20MB limit');
+            showSnackbar('PDF file size exceeds 20MB limit', 'error');
             setLoading(false);
+            setLoadingPhase(0);
+            setLoadingMessage('');
             return;
         }
 
         if (screenRecording && screenRecording.size > MAX_VIDEO_SIZE) {
-            setError('Screen recording size exceeds 100MB limit');
+            showSnackbar('Video file size exceeds 100MB limit', 'error');
             setLoading(false);
+            setLoadingPhase(0);
+            setLoadingMessage('');
             return;
         }
 
@@ -256,6 +301,8 @@ function CreateBrdgePage() {
         if (!screenRecording) {
             setError('Please record or upload a video presentation');
             setLoading(false);
+            setLoadingPhase(0);
+            setLoadingMessage('');
             return;
         }
 
@@ -318,7 +365,65 @@ function CreateBrdgePage() {
             setError('An error occurred. Please try again.');
         } finally {
             setLoading(false);
+            setLoadingPhase(0);
+            setLoadingMessage('');
         }
+    };
+
+    const LoadingBar = ({ phase, message }) => {
+        const baseProgress = (phase / loadingPhases.length) * 100;
+        const progressPerPhase = 100 / loadingPhases.length;
+        const progress = Math.min(baseProgress + progressPerPhase, 100);
+
+        return (
+            <div className="w-full space-y-3">
+                <div className="relative h-1 bg-gray-800/50 rounded-full overflow-hidden">
+                    <motion.div
+                        className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-cyan-400 rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{
+                            duration: 4.5, // Updated to match new phase duration
+                            ease: "linear",
+                            type: "tween"
+                        }}
+                    />
+
+                    {/* Animated glow effect */}
+                    <motion.div
+                        className="absolute inset-y-0 w-20 bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent"
+                        initial={{ x: "-100%" }}
+                        animate={{ x: "100%" }}
+                        transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "linear"
+                        }}
+                    />
+                </div>
+
+                {/* Message and percentage */}
+                <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={message} // Add key to trigger animation on message change
+                    transition={{ duration: 0.3 }}
+                    className="flex justify-between items-center"
+                >
+                    <motion.span
+                        className="text-[11px] text-cyan-400/90 font-medium tracking-wide"
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        key={message} // Add key to trigger animation on message change
+                    >
+                        {message}
+                    </motion.span>
+                    <span className="text-[11px] text-gray-500">
+                        {Math.round(progress)}%
+                    </span>
+                </motion.div>
+            </div>
+        );
     };
 
     return (
@@ -451,10 +556,11 @@ function CreateBrdgePage() {
                                             >
                                                 <Upload className="w-4 h-4" />
                                                 <span className="text-sm">Upload Video</span>
+                                                <span className="text-[10px] text-gray-500 ml-1">(.mp4/.webm)</span>
                                                 <input
                                                     type="file"
                                                     id="video-upload"
-                                                    accept="video/*"
+                                                    accept="video/mp4,video/webm"
                                                     onChange={handleScreenRecordingUpload}
                                                     className="hidden"
                                                 />
@@ -512,28 +618,42 @@ function CreateBrdgePage() {
                                 </div>
 
                                 {/* Submit Button */}
-                                <motion.button
-                                    type="submit"
-                                    disabled={loading || !screenRecording}
-                                    className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500
-                                        text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                                        shadow-lg shadow-cyan-500/20 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]
-                                        transition-all duration-200 relative overflow-hidden
-                                        border border-cyan-500/20"
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    <span className="relative z-10 flex items-center justify-center gap-2">
-                                        {loading ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        ) : (
-                                            <>
-                                                Create Brdge
-                                                <ArrowRight className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </span>
-                                </motion.button>
+                                <div className="space-y-4">
+                                    <motion.button
+                                        type="submit"
+                                        disabled={loading || !screenRecording}
+                                        className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500
+                                            text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed
+                                            shadow-lg shadow-cyan-500/20 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]
+                                            transition-all duration-200 relative overflow-hidden
+                                            border border-cyan-500/20"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        <span className="relative z-10 flex items-center justify-center gap-2">
+                                            {loading ? (
+                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            ) : (
+                                                <>
+                                                    Create Brdge
+                                                    <ArrowRight className="w-4 h-4" />
+                                                </>
+                                            )}
+                                        </span>
+                                    </motion.button>
+
+                                    {/* Loading Progress */}
+                                    {loading && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="p-4 rounded-lg bg-gray-900/40 backdrop-blur-sm border border-gray-800/50"
+                                        >
+                                            <LoadingBar phase={loadingPhase} message={loadingMessage} />
+                                        </motion.div>
+                                    )}
+                                </div>
                             </form>
                         </div>
                     </div>

@@ -174,26 +174,12 @@ const IntroducingBrdgeAI = () => {
                                     sx={{
                                         position: 'relative',
                                         width: '100%',
-                                        maxWidth: { xs: '100vw', sm: '1000px' },
-                                        margin: '0 auto',
-                                        borderRadius: { xs: '4px', sm: '10px' },
+                                        paddingTop: '56.25%',
+                                        borderRadius: '12px',
                                         overflow: 'hidden',
-                                        bgcolor: 'rgba(2, 6, 23, 0.2)',
-                                        backdropFilter: 'blur(10px)',
-                                        boxShadow: {
-                                            xs: 'none',
-                                            sm: `
-                          0 8px 32px rgba(0, 0, 0, 0.2),
-                          0 0 40px rgba(0, 180, 219, 0.15),
-                          inset 0 0 30px rgba(0, 180, 219, 0.1)
-                        `
-                                        },
-                                        mb: { xs: 0, md: 0 },
-                                        '&::before': {
-                                            content: '""',
-                                            display: 'block',
-                                            paddingTop: '56.25%'
-                                        }
+                                        background: 'rgba(2, 6, 23, 0.2)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
                                     }}
                                 >
                                     <video
@@ -207,7 +193,7 @@ const IntroducingBrdgeAI = () => {
                                             left: '0',
                                             width: '100%',
                                             height: '100%',
-                                            objectFit: 'contain',
+                                            objectFit: 'cover',
                                             padding: 0,
                                             backgroundColor: 'rgba(2, 6, 23, 0.2)'
                                         }}

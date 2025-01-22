@@ -43,6 +43,20 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
         initConnection();
     }, [brdgeId, agentType, token]);
 
+    useEffect(() => {
+        const initAudio = async () => {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                const audioContext = new AudioContextClass();
+                await audioContext.resume();
+            } catch (error) {
+                console.error('Error initializing audio:', error);
+            }
+        };
+
+        initAudio();
+    }, []);
+
     if (isLoading) {
         return (
             <Box sx={{

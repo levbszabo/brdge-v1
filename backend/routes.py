@@ -117,13 +117,16 @@ SUBSCRIPTION_TIERS = {
 }
 
 # Add these constants near the top with other configurations
-MAX_PDF_SIZE = 20 * 1024 * 1024  # 20MB in bytes
-MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB in bytes
+MAX_PDF_SIZE = 20 * 1024 * 1024  # 20MB
+MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB
 
 # Add this configuration right after creating the app
 app.config["MAX_CONTENT_LENGTH"] = (
     MAX_VIDEO_SIZE + MAX_PDF_SIZE
 )  # Allow for both files plus some overhead
+
+# Add this constant with the other file configurations
+ALLOWED_VIDEO_FORMATS = ["video/mp4", "video/webm"]
 
 
 # Add this error handler
@@ -642,6 +645,59 @@ def create_brdge(user):
                 400,
             )
 
+        # Add file format validation for video
+        if recording:
+            if recording.content_type not in ALLOWED_VIDEO_FORMATS:
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid video format",
+                            "message": "Please upload either an MP4 or WebM video file.",
+                            "allowed_formats": [".mp4", ".webm"],
+                        }
+                    ),
+                    400,
+                )
+
+            # Size validation
+            if recording.content_length > MAX_VIDEO_SIZE:
+                return (
+                    jsonify(
+                        {
+                            "error": "Video file size too large",
+                            "message": "Video file size exceeds 100MB limit. Please upload a smaller file.",
+                            "max_size_mb": MAX_VIDEO_SIZE / (1024 * 1024),
+                        }
+                    ),
+                    400,
+                )
+
+        # PDF validation
+        if presentation:
+            if not presentation.filename.lower().endswith(".pdf"):
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid file format",
+                            "message": "Please upload a PDF file.",
+                            "allowed_formats": [".pdf"],
+                        }
+                    ),
+                    400,
+                )
+
+            if presentation.content_length > MAX_PDF_SIZE:
+                return (
+                    jsonify(
+                        {
+                            "error": "PDF file size too large",
+                            "message": "PDF file size exceeds 20MB limit. Please upload a smaller file.",
+                            "max_size_mb": MAX_PDF_SIZE / (1024 * 1024),
+                        }
+                    ),
+                    400,
+                )
+
         # Parse recording metadata
         recording_duration = None
         if recording_metadata:
@@ -650,13 +706,6 @@ def create_brdge(user):
                 recording_duration = metadata.get("duration")
             except json.JSONDecodeError:
                 logger.warning("Failed to parse recording metadata")
-
-        # Add file size validation
-        if presentation and presentation.content_length > MAX_PDF_SIZE:
-            return jsonify({"error": "PDF file size exceeds 20MB limit"}), 400
-
-        if recording and recording.content_length > MAX_VIDEO_SIZE:
-            return jsonify({"error": "Video file size exceeds 100MB limit"}), 400
 
         # Step 1: Create Brdge object
         brdge = Brdge(
@@ -3084,7 +3133,16 @@ def upload_presentation(brdge_id):
 
         # Validate file size
         if presentation.content_length > MAX_PDF_SIZE:
-            return jsonify({"error": "PDF file size exceeds 20MB limit"}), 422
+            return (
+                jsonify(
+                    {
+                        "error": "PDF file size too large",
+                        "message": "PDF file size exceeds 20MB limit. Please upload a smaller file.",
+                        "max_size_mb": MAX_PDF_SIZE / (1024 * 1024),
+                    }
+                ),
+                422,
+            )
 
         # Generate unique filename and update brdge
         original_filename = presentation.filename
