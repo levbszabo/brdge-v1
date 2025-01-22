@@ -66,34 +66,26 @@ const IntroducingBrdgeAI = () => {
     return (
         <Box
             sx={{
-                pt: { xs: 0, md: 0 },
-                pb: { xs: 2, sm: 3, md: 4 },
-                px: { xs: 2, sm: 2, md: 3 },
+                pt: { xs: 4, md: 6 },
+                pb: { xs: 4, sm: 6, md: 8 },
                 position: 'relative',
-                overflow: 'hidden',
+                backgroundColor: 'rgba(0, 65, 194, 0.08)', // Lighter blue background
+                borderRadius: '24px',
+                border: '1px solid rgba(0, 180, 219, 0.12)',
+                boxShadow: `
+                    inset 0 0 100px rgba(0, 180, 219, 0.05),
+                    0 4px 20px rgba(0, 0, 0, 0.1)
+                `,
                 '&::before': {
                     content: '""',
                     position: 'absolute',
-                    top: '10%',
-                    left: '-10%',
-                    width: '600px',
-                    height: '600px',
-                    background: 'radial-gradient(circle, rgba(0,255,204,0.08) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    filter: 'blur(60px)',
-                    animation: 'float 15s infinite alternate'
-                },
-                '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    bottom: '10%',
-                    right: '-10%',
-                    width: '700px',
-                    height: '700px',
-                    background: 'radial-gradient(circle, rgba(0,180,219,0.08) 0%, transparent 70%)',
-                    borderRadius: '50%',
-                    filter: 'blur(60px)',
-                    animation: 'float 20s infinite alternate-reverse'
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(180deg, rgba(0, 65, 194, 0.03) 0%, rgba(0, 180, 219, 0.03) 100%)',
+                    borderRadius: '24px',
+                    pointerEvents: 'none'
                 }
             }}
         >
@@ -101,8 +93,6 @@ const IntroducingBrdgeAI = () => {
                 maxWidth="lg"
                 ref={ref}
                 sx={{
-                    px: { xs: 2, sm: 4, md: 6 },
-                    mt: { xs: 4, sm: 6, md: 8 },
                     position: 'relative',
                     zIndex: 1
                 }}
@@ -117,201 +107,282 @@ const IntroducingBrdgeAI = () => {
                         variant="h2"
                         align="center"
                         sx={{
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-                            fontWeight: 600,
+                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                            fontWeight: 700,
                             color: 'white',
-                            mb: { xs: 3, sm: 4, md: 5 },
-                            letterSpacing: '0.02em',
-                            textShadow: '0 0 20px rgba(255,255,255,0.3)',
-                            position: 'relative',
+                            mb: { xs: 3, sm: 4 },
+                            letterSpacing: '-0.02em',
+                            textShadow: '0 0 20px rgba(255,255,255,0.2)',
                             textTransform: 'none',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-16px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.3), transparent)',
-                                boxShadow: '0 0 10px rgba(0,255,204,0.2)',
-                                borderRadius: '1px'
+                            '& .highlight': {
+                                background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                position: 'relative',
+                                display: 'inline-block',
+                                textShadow: 'none',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-4px',
+                                    left: 0,
+                                    width: '100%',
+                                    height: '2px',
+                                    background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
+                                    opacity: 0.4
+                                }
                             }
                         }}
                     >
-                        Make Your Content Speak
+                        Make Your Content <span className="highlight">Speak</span>
                     </Typography>
 
-                    {/* MAIN STACK */}
-                    <Stack
-                        direction={{ xs: 'column', md: 'row' }}
-                        spacing={{ xs: 0, sm: 2, md: 4 }}
-                        alignItems={{ xs: 'center', md: 'flex-start' }}
-                        sx={{
-                            mx: { xs: 0, sm: -2, md: -3 },
-                            px: { xs: 0, sm: 2, md: 3 },
-                            width: '100%',
-                            position: { xs: 'relative', sm: 'static' },
-                            left: { xs: '50%', sm: 'auto' },
-                            transform: { xs: 'translateX(-50%)', sm: 'none' },
-                            mt: { xs: 0, sm: -2, md: 0 }
-                        }}
-                    >
-                        {/* LEFT SIDE: Demo Video */}
-                        <Box flex={{ xs: '1', md: '7' }} sx={{ mt: { md: 5 } }}>
-                            <motion.div
-                                initial={{ opacity: 0, x: -50 }}
-                                animate={inView ? { opacity: 1, x: 0 } : {}}
-                                transition={{ duration: 0.8 }}
+                    {/* TOP TEXT SECTION */}
+                    <Box sx={{
+                        maxWidth: '800px',
+                        mx: 'auto',
+                        mb: { xs: 6, sm: 8 },
+                    }}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.2, duration: 0.8 }}
+                        >
+                            <Typography
+                                variant="h5"
                                 sx={{
-                                    maxWidth: '100vw',
-                                    ml: { md: -4 },
-                                    px: { xs: 0, sm: 2 },
-                                    mx: { xs: 0, sm: 'auto' }
+                                    color: 'rgba(255,255,255,0.95)',
+                                    mb: 3,
+                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontWeight: 400,
+                                    lineHeight: 1.6,
+                                    textAlign: 'center',
+                                    '& strong': {
+                                        color: '#00ffcc',
+                                        fontWeight: 600,
+                                    },
+                                    '& em': {
+                                        fontStyle: 'normal',
+                                        color: 'rgba(255,255,255,0.8)',
+                                    }
                                 }}
                             >
+                                Turn your <em>static slideshows</em> and <em>pre-recorded videos</em> into{' '}
+                                <strong>dynamic, interactive sessions</strong>. Let viewers pause, ask
+                                questions, and get immediate answers in your voice—even when you're away.
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                sx={{
+                                    color: 'rgba(255,255,255,0.95)',
+                                    mb: 5,
+                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                    fontWeight: 400,
+                                    lineHeight: 1.6,
+                                    textAlign: 'center',
+                                    '& strong': {
+                                        color: '#00ffcc',
+                                        fontWeight: 600,
+                                    }
+                                }}
+                            >
+                                Watch as <strong>engagement soars</strong>, your <strong>time frees up</strong>,
+                                and your unique style stays front and center—even while you focus elsewhere.
+                                With Brdge AI, your content never clocks out.
+                            </Typography>
+
+                            {/* Feature bullets */}
+                            <Box sx={{
+                                display: { xs: 'none', sm: 'flex' }, // Hide on mobile, show on tablet and up
+                                flexDirection: 'row',
+                                gap: 3,
+                                justifyContent: 'center',
+                                flexWrap: 'wrap'
+                            }}>
                                 <Box
                                     sx={{
-                                        position: 'relative',
-                                        width: '100%',
-                                        paddingTop: '56.25%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1.5,
+                                        color: '#00B4DB',
+                                        padding: '12px 24px',
+                                        background: 'rgba(0, 41, 122, 0.2)',
                                         borderRadius: '12px',
+                                        border: '1px solid rgba(0, 180, 219, 0.2)',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        flex: { xs: '1 1 100%', sm: '0 1 auto' },
+                                        maxWidth: { xs: '100%', sm: '280px' },
+                                        position: 'relative',
                                         overflow: 'hidden',
-                                        background: 'rgba(2, 6, 23, 0.2)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-                                    }}
-                                >
-                                    <video
-                                        autoPlay
-                                        muted
-                                        loop
-                                        playsInline
-                                        style={{
+                                        '&:hover': {
+                                            background: 'rgba(0, 41, 122, 0.3)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: `
+                                                0 4px 20px rgba(0, 180, 219, 0.15),
+                                                0 0 0 1px rgba(0, 180, 219, 0.3),
+                                                inset 0 0 20px rgba(0, 180, 219, 0.05)
+                                            `
+                                        },
+                                        '&::before': {
+                                            content: '""',
                                             position: 'absolute',
-                                            top: '0',
-                                            left: '0',
-                                            width: '100%',
-                                            height: '100%',
-                                            objectFit: 'cover',
-                                            padding: 0,
-                                            backgroundColor: 'rgba(2, 6, 23, 0.2)'
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(0, 180, 219, 0.2), transparent)',
+                                            opacity: 0,
+                                            transition: 'opacity 0.3s ease',
+                                        },
+                                        '&:hover::before': {
+                                            opacity: 1
+                                        }
+                                    }}
+                                >
+                                    <AccessTime sx={{ fontSize: '1.5rem' }} />
+                                    <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                            fontWeight: 500,
+                                            fontSize: '1rem',
+                                            letterSpacing: '0.02em',
+                                            whiteSpace: 'nowrap'
                                         }}
                                     >
-                                        <source src={demoVideo} type="video/mp4" />
-                                        Your browser does not support the video tag.
-                                    </video>
+                                        Seamless Setup
+                                    </Typography>
                                 </Box>
-                            </motion.div>
-                        </Box>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1.5,
+                                        color: '#00B4DB',
+                                        padding: '12px 24px',
+                                        background: 'rgba(0, 41, 122, 0.2)',
+                                        borderRadius: '12px',
+                                        border: '1px solid rgba(0, 180, 219, 0.2)',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        flex: { xs: '1 1 100%', sm: '0 1 auto' },
+                                        maxWidth: { xs: '100%', sm: '280px' },
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        '&:hover': {
+                                            background: 'rgba(0, 41, 122, 0.3)',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: `
+                                                0 4px 20px rgba(0, 180, 219, 0.15),
+                                                0 0 0 1px rgba(0, 180, 219, 0.3),
+                                                inset 0 0 20px rgba(0, 180, 219, 0.05)
+                                            `
+                                        },
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '1px',
+                                            background: 'linear-gradient(90deg, transparent, rgba(0, 180, 219, 0.2), transparent)',
+                                            opacity: 0,
+                                            transition: 'opacity 0.3s ease',
+                                        },
+                                        '&:hover::before': {
+                                            opacity: 1
+                                        }
+                                    }}
+                                >
+                                    <AllInclusive sx={{ fontSize: '1.5rem' }} />
+                                    <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                            fontWeight: 500,
+                                            fontSize: '1rem',
+                                            letterSpacing: '0.02em',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        24/7 Engagement
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </motion.div>
+                    </Box>
 
-                        {/* RIGHT SIDE: Text & Bullets */}
-                        <Box flex={{ xs: '1', md: '5' }} sx={{ pl: { md: 4 }, mt: { xs: 3, md: 0 }, px: { xs: 3, sm: 2 } }}>
-                            <motion.div
-                                initial={{ opacity: 0, x: 50 }}
-                                animate={inView ? { opacity: 1, x: 0 } : {}}
-                                transition={{ delay: 0.4, duration: 0.8 }}
+                    {/* VIDEO SECTION */}
+                    <Box sx={{
+                        width: '100%',
+                        mb: { xs: 6, sm: 8 },
+                        maxWidth: '1000px',
+                        mx: 'auto',
+                        position: 'relative',
+                        display: { xs: 'none', sm: 'block' }, // Hide on mobile, show on tablet and up
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '100%',
+                            height: '100%',
+                            background: 'radial-gradient(circle at center, rgba(0, 180, 219, 0.12), transparent 70%)',
+                            filter: 'blur(40px)',
+                            zIndex: 0
+                        }
+                    }}>
+                        <motion.div>
+                            <Box
+                                sx={{
+                                    position: 'relative',
+                                    width: '100%',
+                                    paddingTop: '56.25%',
+                                    borderRadius: '20px',
+                                    overflow: 'hidden',
+                                    background: 'rgba(0, 41, 122, 0.3)', // Darker blue for video background
+                                    border: '1px solid rgba(0, 180, 219, 0.2)',
+                                    boxShadow: `
+                                        0 8px 32px rgba(0, 0, 0, 0.2),
+                                        0 4px 8px rgba(0, 0, 0, 0.1),
+                                        0 0 0 1px rgba(0, 180, 219, 0.1),
+                                        inset 0 0 32px rgba(0, 180, 219, 0.05)
+                                    `,
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: 0,
+                                        borderRadius: '20px',
+                                        padding: '1px',
+                                        background: 'linear-gradient(180deg, rgba(0, 180, 219, 0.2), rgba(0, 65, 194, 0.1))',
+                                        WebkitMask:
+                                            'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                        WebkitMaskComposite: 'xor',
+                                        maskComposite: 'exclude',
+                                        zIndex: 1
+                                    }
+                                }}
                             >
-                                {/* PARAGRAPH #1 */}
-                                <Typography
-                                    variant="h5"
-                                    sx={{
-                                        color: '#FFFFFF',
-                                        mb: 4,
-                                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.15rem' },
-                                        fontWeight: 400,
-                                        lineHeight: { xs: 1.5, md: 1.6 },
-                                        pr: { md: 2 },
-                                        '& strong': {
-                                            color: '#00ffcc',
-                                            fontWeight: 600,
-                                            textShadow: '0 0 10px rgba(0,255,204,0.3)'
-                                        }
+                                <video
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    style={{
+                                        position: 'absolute',
+                                        top: '0',
+                                        left: '0',
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        padding: 0,
                                     }}
                                 >
-                                    Turn your <em>static slideshows</em> and <em>pre-recorded videos</em> into{' '}
-                                    <strong>dynamic, interactive sessions</strong>. Let viewers pause, ask
-                                    questions, and get immediate answers in your voice—even when you're away.
-                                </Typography>
-
-                                {/* PARAGRAPH #2 */}
-                                <Typography
-                                    variant="h5"
-                                    sx={{
-                                        color: '#FFFFFF',
-                                        mb: 4,
-                                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.15rem' },
-                                        fontWeight: 400,
-                                        lineHeight: { xs: 1.5, md: 1.6 },
-                                        pr: { md: 2 },
-                                        '& strong': {
-                                            color: '#00ffcc',
-                                            fontWeight: 600,
-                                            textShadow: '0 0 10px rgba(0,255,204,0.3)'
-                                        }
-                                    }}
-                                >
-                                    Watch as <strong>engagement soars</strong>, your <strong>time frees up</strong>,
-                                    and your unique style stays front and center—even while you focus elsewhere.
-                                    With Brdge AI, your content never clocks out.
-                                </Typography>
-
-                                {/* BULLETS */}
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1.5,
-                                            color: '#00ffcc',
-                                            padding: '8px 16px',
-                                            background: 'rgba(0,255,204,0.05)',
-                                            borderRadius: '12px',
-                                            border: '1px solid rgba(0,255,204,0.1)',
-                                            transition: 'all 0.3s ease',
-                                            '&:hover': {
-                                                background: 'rgba(0,255,204,0.08)',
-                                                border: '1px solid rgba(0,255,204,0.2)'
-                                            }
-                                        }}
-                                    >
-                                        <AccessTime sx={{ fontSize: '1.25rem' }} />
-                                        <Typography
-                                            variant="subtitle1"
-                                            sx={{ fontWeight: 500, fontSize: '0.9rem', letterSpacing: '0.02em' }}
-                                        >
-                                            Seamless Setup
-                                        </Typography>
-                                    </Box>
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1.5,
-                                            color: '#00ffcc',
-                                            padding: '8px 16px',
-                                            background: 'rgba(0,255,204,0.05)',
-                                            borderRadius: '12px',
-                                            border: '1px solid rgba(0,255,204,0.1)',
-                                            transition: 'all 0.3s ease',
-                                            '&:hover': {
-                                                background: 'rgba(0,255,204,0.08)',
-                                                border: '1px solid rgba(0,255,204,0.2)'
-                                            }
-                                        }}
-                                    >
-                                        <AllInclusive sx={{ fontSize: '1.25rem' }} />
-                                        <Typography
-                                            variant="subtitle1"
-                                            sx={{ fontWeight: 500, fontSize: '0.9rem', letterSpacing: '0.02em' }}
-                                        >
-                                            Around-the-Clock Engagement
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            </motion.div>
-                        </Box>
-                    </Stack>
+                                    <source src={demoVideo} type="video/mp4" />
+                                    Your browser does not support the video tag.
+                                </video>
+                            </Box>
+                        </motion.div>
+                    </Box>
 
                     {/* THREE FEATURE CARDS */}
                     <Stack
@@ -319,7 +390,6 @@ const IntroducingBrdgeAI = () => {
                         spacing={{ xs: 2, sm: 3, md: 4 }}
                         sx={{
                             justifyContent: 'center',
-                            mt: { xs: 6, md: 8 },
                             px: { xs: 2, sm: 0 }
                         }}
                     >
@@ -328,9 +398,9 @@ const IntroducingBrdgeAI = () => {
                             sx={{
                                 p: { xs: 3, sm: 3.5 },
                                 borderRadius: '16px',
-                                bgcolor: 'rgba(255,255,255,0.05)',
+                                bgcolor: 'rgba(0, 41, 122, 0.2)',
                                 backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(255,255,255, 0.1)',
+                                border: '1px solid rgba(0, 180, 219, 0.2)',
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
@@ -350,11 +420,11 @@ const IntroducingBrdgeAI = () => {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: `
-                      0 8px 30px rgba(0,0,0,0.3),
-                      0 0 0 1px rgba(255,255,255,0.2),
-                      0 0 60px rgba(0,180,219,0.2)
+                      0 8px 30px rgba(0,0,0,0.2),
+                      0 0 0 1px rgba(0, 180, 219, 0.3),
+                      0 0 60px rgba(0, 180, 219, 0.1)
                     `,
-                                    bgcolor: 'rgba(255,255,255,0.08)'
+                                    bgcolor: 'rgba(0, 41, 122, 0.3)'
                                 }
                             }}
                         >
@@ -383,9 +453,9 @@ const IntroducingBrdgeAI = () => {
                             sx={{
                                 p: { xs: 3, sm: 3.5 },
                                 borderRadius: '16px',
-                                bgcolor: 'rgba(255,255,255,0.05)',
+                                bgcolor: 'rgba(0, 41, 122, 0.2)',
                                 backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(255,255,255, 0.1)',
+                                border: '1px solid rgba(0, 180, 219, 0.2)',
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
@@ -405,11 +475,11 @@ const IntroducingBrdgeAI = () => {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: `
-                      0 8px 30px rgba(0,0,0,0.3),
-                      0 0 0 1px rgba(255,255,255,0.2),
-                      0 0 60px rgba(0,180,219,0.2)
+                      0 8px 30px rgba(0,0,0,0.2),
+                      0 0 0 1px rgba(0, 180, 219, 0.3),
+                      0 0 60px rgba(0, 180, 219, 0.1)
                     `,
-                                    bgcolor: 'rgba(255,255,255,0.08)'
+                                    bgcolor: 'rgba(0, 41, 122, 0.3)'
                                 }
                             }}
                         >
@@ -438,9 +508,9 @@ const IntroducingBrdgeAI = () => {
                             sx={{
                                 p: { xs: 3, sm: 3.5 },
                                 borderRadius: '16px',
-                                bgcolor: 'rgba(255,255,255,0.05)',
+                                bgcolor: 'rgba(0, 41, 122, 0.2)',
                                 backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(255,255,255, 0.1)',
+                                border: '1px solid rgba(0, 180, 219, 0.2)',
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
@@ -460,11 +530,11 @@ const IntroducingBrdgeAI = () => {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: `
-                      0 8px 30px rgba(0,0,0,0.3),
-                      0 0 0 1px rgba(255,255,255,0.2),
-                      0 0 60px rgba(0,180,219,0.2)
+                      0 8px 30px rgba(0,0,0,0.2),
+                      0 0 0 1px rgba(0, 180, 219, 0.3),
+                      0 0 60px rgba(0, 180, 219, 0.1)
                     `,
-                                    bgcolor: 'rgba(255,255,255,0.08)'
+                                    bgcolor: 'rgba(0, 41, 122, 0.3)'
                                 }
                             }}
                         >
@@ -704,7 +774,16 @@ const HeroSection = () => {
                         >
                             Speak Once,
                             <br />
-                            Connect Forever
+                            <span className="highlight" style={{
+                                background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                position: 'relative',
+                                display: 'inline-block',
+                                textShadow: 'none',
+                            }}>
+                                Connect Forever
+                            </span>
                         </Box>
                         <Box
                             component="span"
@@ -1150,8 +1229,7 @@ const HowItWorksSection = () => {
                                 transform: 'translateX(-50%)',
                                 width: '120px',
                                 height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.3), transparent)',
-                                boxShadow: '0 0 10px rgba(0,255,204,0.2)',
+                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.4), transparent)',
                                 borderRadius: '1px'
                             }
                         }}
@@ -1343,8 +1421,13 @@ const HowItWorksSection = () => {
 
 // Updated ImpactSection with clearer messaging and more mobile-friendly layout
 const ImpactSection = () => {
+    const [ref, inView] = useInView({
+        threshold: 0.2,
+        triggerOnce: true
+    });
+
+    // Add state for expanded cards
     const [expandedCard, setExpandedCard] = useState(null);
-    const [ref, inView] = useInView({ threshold: 0.2, triggerOnce: true });
 
     const handleCardClick = (id) => {
         setExpandedCard(expandedCard === id ? null : id);
@@ -1450,20 +1533,7 @@ const ImpactSection = () => {
                             mb: { xs: 3, sm: 4, md: 5 },
                             letterSpacing: '0.02em',
                             textShadow: '0 0 20px rgba(255,255,255,0.3)',
-                            position: 'relative',
                             textTransform: 'none',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-16px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.3), transparent)',
-                                boxShadow: '0 0 10px rgba(0,255,204,0.2)',
-                                borderRadius: '1px'
-                            }
                         }}
                     >
                         One Platform, Countless Possibilities
@@ -1769,7 +1839,11 @@ const FinalCTA = () => {
                                     fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                     fontWeight: 600,
                                     borderRadius: '50px',
+                                    minWidth: { xs: '100%', sm: '220px' },
+                                    letterSpacing: '0.02em',
                                     textTransform: 'none',
+                                    whiteSpace: 'nowrap',
+                                    height: 'fit-content',
                                     backdropFilter: 'blur(10px)',
                                     transition: 'all 0.3s ease',
                                     '&:hover': {

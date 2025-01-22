@@ -24,7 +24,14 @@ body,
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-.use-case-card:hover {
+/* Remove the general hover effect */
+/* .use-case-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+} */
+
+/* Add specific hover effects for each card */
+.use-case-card[data-expanded="true"] {
     transform: scale(1.05);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
 }
@@ -40,7 +47,7 @@ body,
 }
 
 @media (max-width: 600px) {
-    .use-case-card:hover {
+    .use-case-card[data-expanded="true"] {
         transform: none;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }

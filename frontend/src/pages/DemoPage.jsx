@@ -23,7 +23,7 @@ import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
 
 // Styled Card with glassy look + subtle gradient
-const StyledCard = styled(Card)(({ theme }) => ({
+const StyledCard = styled(Card)(({ theme, disabled }) => ({
     height: '100%',
     minHeight: '420px',
     display: 'flex',
@@ -35,11 +35,13 @@ const StyledCard = styled(Card)(({ theme }) => ({
     border: '1px solid rgba(255, 255, 255, 0.1)',
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
     transition: 'all 0.3s ease-in-out',
+    position: 'relative',
+    filter: disabled ? 'grayscale(20%)' : 'none',
     '&:hover': {
-        transform: 'translateY(-10px)',
-        boxShadow: '0 12px 40px rgba(0, 180, 219, 0.2)',
+        transform: disabled ? 'none' : 'translateY(-10px)',
+        boxShadow: disabled ? '0 8px 32px rgba(0, 0, 0, 0.2)' : '0 12px 40px rgba(0, 180, 219, 0.2)',
         '& .icon-wrapper': {
-            background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+            background: disabled ? 'rgba(79, 156, 249, 0.1)' : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
         }
     },
 }));
@@ -65,6 +67,22 @@ const IconWrapper = styled(Box)({
     }
 });
 
+// Add a new Coming Soon Banner component
+const ComingSoonBanner = styled(Box)({
+    position: 'absolute',
+    top: '24px',
+    right: '-35px',
+    transform: 'rotate(45deg)',
+    backgroundColor: '#4F9CF9',
+    color: 'white',
+    padding: '6px 40px',
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    zIndex: 2,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+    letterSpacing: '0.05em'
+});
+
 // Demo Data
 const demos = [
     {
@@ -75,6 +93,7 @@ const demos = [
         value: 'Shorten sales cycles and convert more leads effortlessly.',
         icon: <BusinessCenter />,
         url: 'https://brdge-ai.com/viewBrdge/141',
+        disabled: true
     },
     {
         id: 2,
@@ -84,6 +103,7 @@ const demos = [
         value: 'Reduce repetitive Q&A and improve training engagement.',
         icon: <GroupAdd />,
         url: 'https://brdge-ai.com/viewBrdge/144',
+        disabled: true
     },
     {
         id: 3,
@@ -93,6 +113,7 @@ const demos = [
         value: 'Eliminate unnecessary meetings and reduce chat overload.',
         icon: <MenuBook />,
         url: 'https://brdge-ai.com/viewBrdge/173',
+        disabled: true
     },
     {
         id: 4,
@@ -102,6 +123,7 @@ const demos = [
         value: 'Scale your personal brand and monetize your skills.',
         icon: <PresentToAll />,
         url: 'https://brdge-ai.com/viewBrdge/146',
+        disabled: true
     },
 ];
 
@@ -114,7 +136,8 @@ const DemoPage = () => {
         triggerOnce: true,
     });
 
-    const handleExploreDemo = (url) => {
+    const handleExploreDemo = (url, disabled) => {
+        if (disabled) return;
         window.open(url, '_blank');
     };
 
@@ -203,8 +226,18 @@ const DemoPage = () => {
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
                                     style={{ height: '100%' }}
                                 >
-                                    <StyledCard>
-                                        <IconWrapper className="icon-wrapper">
+                                    <StyledCard disabled={demo.disabled}>
+                                        {demo.disabled && (
+                                            <ComingSoonBanner>
+                                                Coming Soon
+                                            </ComingSoonBanner>
+                                        )}
+                                        <IconWrapper
+                                            className="icon-wrapper"
+                                            sx={{
+                                                opacity: demo.disabled ? 0.7 : 1
+                                            }}
+                                        >
                                             {demo.icon}
                                         </IconWrapper>
                                         <CardContent sx={{
@@ -212,7 +245,8 @@ const DemoPage = () => {
                                             p: 3,
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: 2
+                                            gap: 2,
+                                            opacity: demo.disabled ? 0.7 : 1
                                         }}>
                                             <Typography
                                                 variant="h6"
@@ -248,20 +282,26 @@ const DemoPage = () => {
                                             <Button
                                                 fullWidth
                                                 variant="contained"
-                                                onClick={() => handleExploreDemo(demo.url)}
+                                                disabled={demo.disabled}
+                                                onClick={() => handleExploreDemo(demo.url, demo.disabled)}
                                                 sx={{
-                                                    background: 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
+                                                    background: demo.disabled
+                                                        ? 'rgba(79, 156, 249, 0.3)'
+                                                        : 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
                                                     color: 'white',
                                                     borderRadius: '50px',
                                                     py: 1.5,
                                                     textTransform: 'none',
                                                     fontSize: '1rem',
+                                                    cursor: demo.disabled ? 'not-allowed' : 'pointer',
                                                     '&:hover': {
-                                                        background: 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                                        background: demo.disabled
+                                                            ? 'rgba(79, 156, 249, 0.3)'
+                                                            : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
                                                     },
                                                 }}
                                             >
-                                                Explore Demo
+                                                {demo.disabled ? 'Coming Soon' : 'Explore Demo'}
                                             </Button>
                                         </CardActions>
                                     </StyledCard>
