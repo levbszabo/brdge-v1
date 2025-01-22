@@ -3450,3 +3450,25 @@ def get_document_knowledge(brdge_id):
     except Exception as e:
         logger.error(f"Error fetching document knowledge: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdge/<int:brdge_id>/check-auth", methods=["GET"])
+@jwt_required()
+def check_brdge_auth(brdge_id):
+    """Check if current user is authenticated and owns the brdge"""
+    try:
+        # Get current user from JWT token
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            return jsonify({"error": "Authentication required"}), 401
+
+        # Check if brdge exists and belongs to user
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user_id).first()
+        if not brdge:
+            return jsonify({"error": "Not authorized to edit this brdge"}), 403
+
+        return jsonify({"authorized": True}), 200
+
+    except Exception as e:
+        logger.error(f"Error checking brdge authorization: {e}")
+        return jsonify({"error": "Authorization check failed"}), 500

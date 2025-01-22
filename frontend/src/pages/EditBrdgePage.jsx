@@ -1,12 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
+import { api } from '../api';
 
 function EditBrdgePage() {
     const theme = useTheme();
     const isMobile = useMediaQuery('(max-width:640px)');
     const { id } = useParams();
+    const navigate = useNavigate();
+    const [isAuthorized, setIsAuthorized] = useState(false);
+
+    useEffect(() => {
+        const checkAuthorization = async () => {
+            try {
+                const response = await api.get(`/brdge/${id}/check-auth`);
+
+                setIsAuthorized(true);
+            } catch (error) {
+                console.error('Authorization check failed:', error);
+                navigate('/');
+            }
+        };
+
+        checkAuthorization();
+    }, [id, navigate]);
 
     if (isMobile) {
         return (
@@ -68,6 +86,11 @@ function EditBrdgePage() {
                 </Box>
             </Box>
         );
+    }
+
+    // Only render the main content if authorized
+    if (!isAuthorized) {
+        return null; // Or a loading spinner
     }
 
     return (
