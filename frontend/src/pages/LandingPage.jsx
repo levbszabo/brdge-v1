@@ -804,7 +804,7 @@ const HeroSection = () => {
 
                 <Box
                     component="a"
-                    href="https://brdge-ai.com/viewBrdge/136"
+                    href="https://brdge-ai.com/viewBrdge/252"
                     target="_blank"
                     rel="noopener noreferrer"
                     sx={{
