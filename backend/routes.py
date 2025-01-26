@@ -3519,7 +3519,14 @@ def get_agent_data(brdge_id):
 
         # Get document knowledge
         doc_knowledge = DocumentKnowledge.query.filter_by(brdge_id=brdge_id).first()
-        document_knowledge_data = doc_knowledge.to_dict() if doc_knowledge else {}
+        document_knowledge_data = {}
+        if doc_knowledge:
+            document_knowledge_data = {
+                "slide_contents": doc_knowledge.slide_contents,
+                "topics": doc_knowledge.topics,
+                "key_points": doc_knowledge.key_points,
+                "entities": doc_knowledge.entities,
+            }
 
         # Get active voice
         active_voice = Voice.query.filter_by(brdge_id=brdge_id, status="active").first()
