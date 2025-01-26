@@ -79,7 +79,7 @@ class ChatAssistant(VoicePipelineAgent):
         self.script = (None,)
         self.current_position = 0
         self.user_id = None
-        self.voice_id = None
+        self.voice_id = "4c74993b-be03-4436-8ef0-10586550b5f2"
         self.current_speech = {
             "started_at": None,
             "message": None,
