@@ -803,112 +803,84 @@ const HeroSection = () => {
                 </motion.div>
 
                 <Box
-                    component="a"
-                    href="https://brdge-ai.com/viewBrdge/252"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     sx={{
-                        width: { xs: '160px', sm: '180px', md: '200px' },
-                        height: { xs: '160px', sm: '180px', md: '200px' },
-                        position: 'relative',
-                        cursor: 'pointer',
-                        mx: 'auto',  // This ensures horizontal centering
-                        display: 'flex',  // Added to help with centering
-                        justifyContent: 'center',  // Added to help with centering
-                        alignItems: 'center',  // Added to help with centering
-                        mb: { xs: 3, sm: 4 },
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: '200%',  // Increased from 120% to 200%
-                            height: '200%', // Increased from 120% to 200%
-                            background: 'radial-gradient(circle, rgba(0, 255, 204, 0.15) 0%, transparent 70%)',
-                            filter: 'blur(40px)',  // Added blur to soften the extended glow
-                            animation: 'breathe 4s ease-in-out infinite',
-                            zIndex: 0,
-                        },
-                        '&::after': {
-                            content: '"Click to chat"',
-                            position: 'absolute',
-                            bottom: '-40px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 180, 219, 0.1))',
-                            backdropFilter: 'blur(10px)',
-                            padding: { xs: '8px 16px', sm: '12px 24px' },
-                            borderRadius: '24px',
-                            fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                            color: '#00ffcc',
-                            whiteSpace: 'nowrap',
-                            opacity: 0,
-                            transition: 'all 0.3s ease',
-                            visibility: 'hidden',
-                            zIndex: 100,  // Increased from 10 to 100
-                        },
-                        '&:hover::after': {  // Add this hover state
-                            opacity: 1,
-                            visibility: 'visible',
-                        }
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        mb: { xs: 3, sm: 4 }
                     }}
-                    onMouseMove={handleMouseMove}
                 >
-                    <motion.div
-                        animate={iconAnimation}
-                        whileHover={{ scale: 1.05, rotate: 2 }}
-                        whileTap={{ scale: 0.95 }}
-                        style={{
-                            width: '100%',
-                            height: '100%',
+                    <Box
+                        component="a"
+                        href="https://brdge-ai.com/viewBrdge/252"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                            width: { xs: '160px', sm: '180px', md: '200px' },
+                            height: { xs: '160px', sm: '180px', md: '200px' },
                             position: 'relative',
+                            cursor: 'pointer',
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '200%',
+                                height: '200%',
+                                background: 'radial-gradient(circle, rgba(0, 255, 204, 0.15) 0%, transparent 70%)',
+                                filter: 'blur(40px)',
+                                animation: 'breathe 4s ease-in-out infinite',
+                                zIndex: 0,
+                            },
+                            '&::after': {
+                                content: '"Click to chat"',
+                                position: 'absolute',
+                                bottom: '-40px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 180, 219, 0.1))',
+                                backdropFilter: 'blur(10px)',
+                                padding: { xs: '8px 16px', sm: '12px 24px' },
+                                borderRadius: '24px',
+                                fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                                color: '#00ffcc',
+                                whiteSpace: 'nowrap',
+                                opacity: 1,
+                                transition: 'all 0.3s ease',
+                                visibility: 'visible',
+                                zIndex: 100,
+                                border: '1px solid rgba(0, 255, 204, 0.2)',
+                                boxShadow: '0 4px 12px rgba(0, 255, 204, 0.1)',
+                                '&:hover': {
+                                    background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 180, 219, 0.15))',
+                                    boxShadow: '0 4px 20px rgba(0, 255, 204, 0.2)',
+                                }
+                            },
+                            '&:hover::after': {
+                                transform: 'translateX(-50%) translateY(-2px)',
+                                boxShadow: '0 6px 24px rgba(0, 255, 204, 0.2)',
+                                border: '1px solid rgba(0, 255, 204, 0.3)',
+                            }
                         }}
+                        onMouseMove={handleMouseMove}
                     >
-                        <Box
-                            sx={{
-                                position: 'relative',
+                        <motion.div
+                            animate={iconAnimation}
+                            whileHover={{ scale: 1.05, rotate: 2 }}
+                            whileTap={{ scale: 0.95 }}
+                            style={{
                                 width: '100%',
                                 height: '100%',
+                                position: 'relative',
                                 display: 'flex',
-                                alignItems: 'center',
                                 justifyContent: 'center',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    width: '150%',  // Increased from 88% to 150%
-                                    height: '150%', // Increased from 88% to 150%
-                                    borderRadius: '20%',
-                                    background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
-                                    filter: 'blur(25px)',  // Increased blur for softer, wider glow
-                                    animation: 'breatheAndGlow 4s infinite ease-in-out',
-                                },
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    width: '86%',
-                                    height: '86%',
-                                    borderRadius: '50%',
-                                    border: '2px solid rgba(0, 255, 204, 0.3)',
-                                    boxShadow: `
-                                        0 0 30px rgba(0, 255, 204, 0.3),
-                                        inset 0 0 30px rgba(0, 255, 204, 0.2),
-                                        0 0 60px rgba(0, 255, 204, 0.2),
-                                        inset 0 0 60px rgba(0, 255, 204, 0.1),
-                                        0 0 100px rgba(0, 255, 204, 0.1)  // Added extra outer glow
-                                    `,
-                                    animation: 'rotateAndPulse 10s linear infinite',
-                                }
+                                alignItems: 'center',
+                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                             }}
                         >
                             <Box
@@ -925,11 +897,11 @@ const HeroSection = () => {
                                         top: '50%',
                                         left: '50%',
                                         transform: 'translate(-50%, -50%)',
-                                        width: '88%',
-                                        height: '88%',
+                                        width: '150%',
+                                        height: '150%',
                                         borderRadius: '20%',
                                         background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
-                                        filter: 'blur(8px)',
+                                        filter: 'blur(25px)',
                                         animation: 'breatheAndGlow 4s infinite ease-in-out',
                                     },
                                     '&::after': {
@@ -943,64 +915,107 @@ const HeroSection = () => {
                                         borderRadius: '50%',
                                         border: '2px solid rgba(0, 255, 204, 0.3)',
                                         boxShadow: `
-                                            0 0 15px rgba(0, 255, 204, 0.3),
-                                            inset 0 0 15px rgba(0, 255, 204, 0.2),
-                                            0 0 30px rgba(0, 255, 204, 0.2),
-                                            inset 0 0 30px rgba(0, 255, 204, 0.1)
+                                            0 0 30px rgba(0, 255, 204, 0.3),
+                                            inset 0 0 30px rgba(0, 255, 204, 0.2),
+                                            0 0 60px rgba(0, 255, 204, 0.2),
+                                            inset 0 0 60px rgba(0, 255, 204, 0.1),
+                                            0 0 100px rgba(0, 255, 204, 0.1)
                                         `,
                                         animation: 'rotateAndPulse 10s linear infinite',
-                                    },
-                                    '& .spark': {
-                                        position: 'absolute',
-                                        width: '2px',
-                                        height: '20px',
-                                        background: 'linear-gradient(to bottom, transparent, #00ffcc, transparent)',
-                                        animation: 'sparkle 1.5s infinite',
-                                        opacity: 0,
-                                    },
-                                    '& .spark1': { transform: 'rotate(0deg) translateY(-45px)', animationDelay: '0s' },
-                                    '& .spark2': { transform: 'rotate(45deg) translateY(-45px)', animationDelay: '0.2s' },
-                                    '& .spark3': { transform: 'rotate(90deg) translateY(-45px)', animationDelay: '0.4s' },
-                                    '& .spark4': { transform: 'rotate(135deg) translateY(-45px)', animationDelay: '0.6s' },
-                                    '& .spark5': { transform: 'rotate(180deg) translateY(-45px)', animationDelay: '0.8s' },
-                                    '& .spark6': { transform: 'rotate(225deg) translateY(-45px)', animationDelay: '1.0s' },
-                                    '& .spark7': { transform: 'rotate(270deg) translateY(-45px)', animationDelay: '1.2s' },
-                                    '& .spark8': { transform: 'rotate(315deg) translateY(-45px)', animationDelay: '1.4s' },
+                                    }
                                 }}
                             >
-                                {[...Array(8)].map((_, i) => (
-                                    <div key={i} className={`spark spark${i + 1}`} />
-                                ))}
                                 <Box
-                                    component="img"
-                                    src={logo}
-                                    alt="Brdge Logo"
                                     sx={{
-                                        width: '82%',
-                                        height: '82%',
-                                        objectFit: 'contain',
-                                        filter: `
-                                            drop-shadow(0 0 15px rgba(0, 255, 204, 0.4))
-                                            drop-shadow(0 0 30px rgba(0, 255, 204, 0.3))
-                                            brightness(1.1)
-                                        `,
-                                        transition: 'all 0.4s ease',
-                                        transform: 'translateZ(0)',
-                                        animation: 'floatAndGlow 6s ease-in-out infinite',
                                         position: 'relative',
-                                        zIndex: 2,
-                                        '&:hover': {
-                                            filter: `
-                                                drop-shadow(0 0 25px rgba(0, 255, 204, 0.6))
-                                                drop-shadow(0 0 50px rgba(0, 255, 204, 0.4))
-                                                brightness(1.2)
-                                            `,
+                                        width: '100%',
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            width: '88%',
+                                            height: '88%',
+                                            borderRadius: '20%',
+                                            background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
+                                            filter: 'blur(8px)',
+                                            animation: 'breatheAndGlow 4s infinite ease-in-out',
                                         },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            width: '86%',
+                                            height: '86%',
+                                            borderRadius: '50%',
+                                            border: '2px solid rgba(0, 255, 204, 0.3)',
+                                            boxShadow: `
+                                                0 0 15px rgba(0, 255, 204, 0.3),
+                                                inset 0 0 15px rgba(0, 255, 204, 0.2),
+                                                0 0 30px rgba(0, 255, 204, 0.2),
+                                                inset 0 0 30px rgba(0, 255, 204, 0.1)
+                                            `,
+                                            animation: 'rotateAndPulse 10s linear infinite',
+                                        },
+                                        '& .spark': {
+                                            position: 'absolute',
+                                            width: '2px',
+                                            height: '20px',
+                                            background: 'linear-gradient(to bottom, transparent, #00ffcc, transparent)',
+                                            animation: 'sparkle 1.5s infinite',
+                                            opacity: 0,
+                                        },
+                                        '& .spark1': { transform: 'rotate(0deg) translateY(-45px)', animationDelay: '0s' },
+                                        '& .spark2': { transform: 'rotate(45deg) translateY(-45px)', animationDelay: '0.2s' },
+                                        '& .spark3': { transform: 'rotate(90deg) translateY(-45px)', animationDelay: '0.4s' },
+                                        '& .spark4': { transform: 'rotate(135deg) translateY(-45px)', animationDelay: '0.6s' },
+                                        '& .spark5': { transform: 'rotate(180deg) translateY(-45px)', animationDelay: '0.8s' },
+                                        '& .spark6': { transform: 'rotate(225deg) translateY(-45px)', animationDelay: '1.0s' },
+                                        '& .spark7': { transform: 'rotate(270deg) translateY(-45px)', animationDelay: '1.2s' },
+                                        '& .spark8': { transform: 'rotate(315deg) translateY(-45px)', animationDelay: '1.4s' },
                                     }}
-                                />
+                                >
+                                    {[...Array(8)].map((_, i) => (
+                                        <div key={i} className={`spark spark${i + 1}`} />
+                                    ))}
+                                    <Box
+                                        component="img"
+                                        src={logo}
+                                        alt="Brdge Logo"
+                                        sx={{
+                                            width: '82%',
+                                            height: '82%',
+                                            objectFit: 'contain',
+                                            filter: `
+                                                drop-shadow(0 0 15px rgba(0, 255, 204, 0.4))
+                                                drop-shadow(0 0 30px rgba(0, 255, 204, 0.3))
+                                                brightness(1.1)
+                                            `,
+                                            transition: 'all 0.4s ease',
+                                            transform: 'translateZ(0)',
+                                            animation: 'floatAndGlow 6s ease-in-out infinite',
+                                            position: 'relative',
+                                            zIndex: 2,
+                                            '&:hover': {
+                                                filter: `
+                                                    drop-shadow(0 0 25px rgba(0, 255, 204, 0.6))
+                                                    drop-shadow(0 0 50px rgba(0, 255, 204, 0.4))
+                                                    brightness(1.2)
+                                                `,
+                                            },
+                                        }}
+                                    />
+                                </Box>
                             </Box>
-                        </Box>
-                    </motion.div>
+                        </motion.div>
+                    </Box>
                 </Box>
 
                 <Typography
@@ -1104,6 +1119,7 @@ const HeroSection = () => {
                                 whiteSpace: 'nowrap',
                                 height: 'fit-content',
                                 backdropFilter: 'blur(10px)',
+                                transition: 'all 0.3s ease',
                                 '&:hover': {
                                     borderColor: 'white',
                                     transform: 'translateY(-3px)',
@@ -1744,7 +1760,6 @@ const FinalCTA = () => {
                             color: 'white',
                             mb: 2,
                             textTransform: 'none',
-                            letterSpacing: '-0.02em'
                         }}
                     >
                         Ready to Let Your Content

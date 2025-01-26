@@ -22,14 +22,15 @@ import os
 
 load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
-os.getenv("API_BASE_URL")
+API_BASE_URL = os.getenv("API_BASE_URL")
+
 # Enhanced system prompt that incorporates personality, knowledge base and transcript
 SYSTEM_PROMPT_BASE = """
 You are both the creator and a real-time co-presenter of this content. You are speaking naturally to your audience as if they are right here with you.
 You have three key resources:
 1) Personality: your personal speaking style, tone, and mannerisms.
 2) Knowledge Base: deeper background or supporting facts, as if it's your own expertise.
-3) Presentation Transcript: an ongoing record of what has been covered so far (and what's left).
+3) Presentation Transcript: an ongoing record of what's said in the content.
 Your goals:
 - Provide a smooth, conversational experience as if you are personally guiding the audience.
 - Weave in relevant details from your knowledge base naturally, without explicitly naming it.
@@ -67,37 +68,137 @@ def prewarm(proc: JobProcess):
 class ChatAssistant(VoicePipelineAgent):
     """Enhanced voice assistant that handles chat interactions with personality and knowledge base"""
 
-    def __init__(self, vad):
+    def __init__(self, vad, brdge_id: str = None):
+        self.brdge_id = brdge_id
+        self.api_base_url = API_BASE_URL
         self.personality = ""
         self.knowledge_content = ""
+        self.document_knowledge = ""
         self.transcript_read = []
         self.transcript_remaining = []
-        self.current_position = 0  # Track current position in seconds
-        self.agent_config_received = False  # Add this flag
-        # Add new attributes for user and brdge IDs
+        self.script = (None,)
+        self.current_position = 0
         self.user_id = None
-        self.brdge_id = None
-        self.api_base_url = os.getenv("API_BASE_URL")
+        self.voice_id = None
         self.current_speech = {
             "started_at": None,
             "message": None,
             "was_interrupted": False,
         }
+        self.system_prompt = None
 
+        self.initialize()
+        # Initialize with default TTS voice
         super().__init__(
             vad=vad,
             stt=deepgram.STT(model="nova-2-conversationalai"),
             llm=openai.LLM(model="gpt-4o"),
             tts=cartesia.TTS(
                 model="sonic",
-                voice="4c74993b-be03-4436-8ef0-10586550b5f2",
+                voice=self.voice_id,
             ),
-            chat_ctx=llm.ChatContext().append(role="system", text=SYSTEM_PROMPT_BASE),
+            chat_ctx=llm.ChatContext().append(role="system", text=self.system_prompt),
             interrupt_speech_duration=0.1,
             preemptive_synthesis=True,
         )
         logger.info(f"Agent initialized with API base URL: {self.api_base_url}")
         self._setup_event_handlers()
+
+    def initialize(self):
+        """Initialize the agent by fetching all necessary data"""
+        if not self.brdge_id or not self.api_base_url:
+            logger.error("Missing brdge_id or API_BASE_URL")
+            return False
+
+        try:
+            # Fetch consolidated agent data
+            response = requests.get(
+                f"{self.api_base_url}/brdges/{self.brdge_id}/agent-data"
+            )
+            response.raise_for_status()
+            agent_data = response.json()
+
+            # Update agent attributes
+            self.personality = agent_data.get("personality", "")
+            self.knowledge_content = self._build_knowledge_content(
+                agent_data.get("knowledgeBase", [])
+            )
+            self.document_knowledge = agent_data.get("documentKnowledge", "")
+            self.user_id = agent_data.get("userId")
+
+            # Update TTS voice if available
+            active_voice = agent_data.get("activeVoice")
+            if active_voice and active_voice.get("cartesia_voice_id"):
+                self.voice_id = active_voice["cartesia_voice_id"]
+                logger.info(
+                    f"Updated TTS voice to {active_voice.get('name')} (ID: {active_voice['cartesia_voice_id']})"
+                )
+
+            # Process transcript
+            transcript_data = agent_data.get("transcript", {})
+            # if transcript_data:
+            #     self._process_transcript(transcript_data)
+            self.script = (
+                agent_data.get("transcript", {})
+                .get("content", {})
+                .get("transcript", "")
+            )
+
+            # Rebuild system prompt with all data
+            self.system_prompt = (
+                SYSTEM_PROMPT_BASE
+                + f"""
+
+Agent Personality:
+{self.personality}
+
+Knowledge Base:
+{self.knowledge_content}
+
+Document Knowledge:
+{self.document_knowledge}
+
+Transcript:
+{json.dumps(self.script, indent=2) if self.script else "No transcript available"}
+"""
+            )
+            # self._rebuild_system_prompt()
+
+            logger.info("Agent initialization completed successfully")
+            logger.info(f"System prompt set to: {self.system_prompt}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error initializing agent: {e}")
+            return False
+
+    def _build_knowledge_content(self, knowledge_base):
+        """Build knowledge content string from knowledge base entries"""
+        content = ""
+        for entry in knowledge_base:
+            if isinstance(entry, dict) and "name" in entry and "content" in entry:
+                content += f"\n# {entry['name']}\n{entry['content']}\n"
+        return content
+
+    def _process_transcript(self, transcript_data):
+        """Process transcript data into read and remaining segments"""
+        # Implementation depends on your transcript data structure
+        # This is a placeholder implementation
+        if "segments" in transcript_data:
+            segments = transcript_data.get("segments", [])
+            current_position = transcript_data.get("current_position", 0)
+
+            # Split segments into read and remaining based on current_position
+            self.transcript_read = [
+                seg["text"]
+                for seg in segments
+                if seg.get("start", 0) < current_position
+            ]
+            self.transcript_remaining = [
+                seg["text"]
+                for seg in segments
+                if seg.get("start", 0) >= current_position
+            ]
 
     def _setup_event_handlers(self):
         @self.on("agent_started_speaking")
@@ -164,7 +265,6 @@ class ChatAssistant(VoicePipelineAgent):
                 ).total_seconds() / 60.0
 
                 try:
-                    # Update usage log with interruption and agent_message
                     if self.current_speech.get("log_id"):
                         response = requests.put(
                             f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs/{self.current_speech['log_id']}",
@@ -184,7 +284,6 @@ class ChatAssistant(VoicePipelineAgent):
                 except Exception as e:
                     logger.error(f"Error updating usage log: {e}")
 
-                # Reset current speech tracking
                 self.current_speech = {
                     "started_at": None,
                     "message": None,
@@ -203,7 +302,6 @@ class ChatAssistant(VoicePipelineAgent):
                 ).total_seconds() / 60.0
 
                 try:
-                    # Update usage log with completion and agent_message
                     if self.current_speech.get("log_id"):
                         response = requests.put(
                             f"{self.api_base_url}/brdges/{self.brdge_id}/usage-logs/{self.current_speech['log_id']}",
@@ -223,92 +321,17 @@ class ChatAssistant(VoicePipelineAgent):
                 except Exception as e:
                     logger.error(f"Error updating usage log: {e}")
 
-                # Reset current speech tracking
                 self.current_speech = {
                     "started_at": None,
                     "message": None,
                     "was_interrupted": False,
                 }
 
-    def update_agent_config(
-        self, config_data: dict, user_id: str = None, brdge_id: str = None
-    ):
-        """Update the agent's configuration from received data"""
-        try:
-            if (
-                not self.agent_config_received
-            ):  # Only process the first config we receive
-                # Store user and brdge IDs
-                self.user_id = user_id
-                self.brdge_id = brdge_id
-                logger.info(
-                    f"Configured agent for user_id: {user_id}, brdge_id: {brdge_id}"
-                )
-
-                personality = config_data.get("personality", "")
-                knowledge_base = config_data.get("knowledgeBase", [])
-
-                # Fetch document knowledge from API
-                try:
-                    response = requests.get(
-                        f"{self.api_base_url}/brdges/{self.brdge_id}/document-knowledge"
-                    )
-                    response.raise_for_status()
-                    doc_knowledge = response.json()
-
-                    # Add document knowledge to knowledge base
-                    if doc_knowledge:
-                        knowledge_base.append(
-                            {
-                                "name": "Document Analysis",
-                                "content": f"""
-Key Topics: {', '.join(doc_knowledge.get('topics', []))}
-Key Points by Slide:
-{json.dumps(doc_knowledge.get('key_points', {}), indent=2)}
-Important Entities:
-- Technical Terms: {', '.join(doc_knowledge.get('entities', {}).get('technical_terms', []))}
-- People: {', '.join(doc_knowledge.get('entities', {}).get('people', []))}
-- Companies: {', '.join(doc_knowledge.get('entities', {}).get('companies', []))}
-- Other: {', '.join(doc_knowledge.get('entities', {}).get('other', []))}
-Slide Contents:
-{json.dumps(doc_knowledge.get('slide_contents', {}), indent=2)}
-""",
-                            }
-                        )
-                        logger.info(
-                            "Successfully added document knowledge to knowledge base"
-                        )
-                except Exception as e:
-                    logger.error(f"Error fetching document knowledge: {e}")
-
-                # Build knowledge base string
-                knowledge_content = ""
-                for entry in knowledge_base:
-                    if (
-                        isinstance(entry, dict)
-                        and "name" in entry
-                        and "content" in entry
-                    ):
-                        knowledge_content += (
-                            f"\n# {entry['name']}\n{entry['content']}\n"
-                        )
-
-                self.personality = personality
-                self.knowledge_content = knowledge_content
-                self._rebuild_system_prompt()
-
-                self.agent_config_received = True
-                logger.info("Agent configuration updated successfully")
-        except Exception as e:
-            logger.error(f"Error updating agent config: {e}")
-
     def _rebuild_system_prompt(self):
         """Rebuild the system prompt incorporating all current context"""
-        # Find the most recent context from transcript
         recent_context = ""
         if self.transcript_read:
-            # Get the last few segments for immediate context
-            recent_segments = self.transcript_read[-3:]  # Last 3 segments for context
+            recent_segments = self.transcript_read[-3:]
             recent_context = " ".join(recent_segments)
 
         merged_system_text = f"""{SYSTEM_PROMPT_BASE}
@@ -316,13 +339,14 @@ Agent Personality:
 {self.personality}
 Knowledge Base:
 {self.knowledge_content}
+Document Knowledge:
+{self.document_knowledge}
 Current Presentation Context:
 You are currently at a point where you've just discussed: {recent_context}
 Full Transcript Coverage:
 Already Covered: {' '.join(self.transcript_read)}
 Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_remaining else "End of presentation"}
 """
-        # Replace the system prompt in the chat context
         if self.chat_ctx.messages:
             self.chat_ctx.messages[0] = llm.ChatMessage.create(
                 role="system",
@@ -331,13 +355,6 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
         else:
             self.chat_ctx.append(role="system", text=merged_system_text)
 
-    def update_transcript_position(self, read_segments, remaining_segments):
-        """Update the assistant's knowledge of what content has been covered"""
-        self.transcript_read = read_segments
-        self.transcript_remaining = remaining_segments
-        # Rebuild system prompt to include newly read transcript
-        self._rebuild_system_prompt()
-
 
 async def entrypoint(ctx: JobContext):
     logger.info("Entrypoint started")
@@ -345,6 +362,17 @@ async def entrypoint(ctx: JobContext):
 
     participant = await ctx.wait_for_participant()
     logger.info(f"Starting assistant for participant {participant.identity}")
+
+    # Extract brdge_id from participant identity
+    try:
+        # Expected format: "brdge_<brdge_id>_<user_id>"
+        identity_parts = participant.identity.split("-")
+        brdge_id = identity_parts[1]
+    except Exception as e:
+        logger.error(f"Error parsing participant identity: {e}")
+        return
+
+    logger.info(f"Extracted brdge_id: {brdge_id}")
 
     # Get the prewarmed VAD model with fallback
     try:
@@ -360,46 +388,10 @@ async def entrypoint(ctx: JobContext):
         logger.error(f"Error loading VAD model: {e}")
         vad = silero.VAD.load()
 
-    agent = ChatAssistant(vad)
+    # Initialize agent with brdge_id
+    agent = ChatAssistant(vad, brdge_id)
+
     chat = rtc.ChatManager(ctx.room)
-
-    @ctx.room.on("data_received")
-    def on_data_received(data_packet: DataPacket):
-        try:
-            decoded_message = data_packet.data.decode("utf-8")
-            json_data = json.loads(decoded_message)
-            logger.debug(f"Received data packet: {json_data}")
-
-            # Handle agent configuration updates
-            if "agent_config" in json_data:
-                logger.info("Received agent configuration")
-                # Extract user_id and brdge_id from the payload
-                user_id = json_data.get("user_id")
-                brdge_id = json_data.get("brdge_id")
-                agent.update_agent_config(
-                    json_data["agent_config"], user_id=user_id, brdge_id=brdge_id
-                )
-
-            # Handle transcript position updates
-            if "transcript_position" in json_data:
-                read_segments = json_data["transcript_position"].get("read", [])
-                remaining_segments = json_data["transcript_position"].get(
-                    "remaining", []
-                )
-
-                if not isinstance(read_segments, list) or not isinstance(
-                    remaining_segments, list
-                ):
-                    logger.error("Invalid transcript position format")
-                    return
-
-                agent.update_transcript_position(read_segments, remaining_segments)
-
-        except json.JSONDecodeError:
-            logger.error("Failed to decode JSON from data packet")
-        except Exception as e:
-            logger.error(f"Error processing data packet: {str(e)}")
-            logger.exception(e)  # Log full traceback for debugging
 
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
@@ -414,7 +406,6 @@ async def entrypoint(ctx: JobContext):
             # Add message to agent's chat context
             agent.chat_ctx.append(role="user", text=cleaned_message)
 
-            # Create and run the coroutine using create_task
             async def process_message():
                 try:
                     response = await agent.say(
@@ -429,7 +420,6 @@ async def entrypoint(ctx: JobContext):
                         allow_interruptions=False,
                     )
 
-            # Schedule the coroutine to run
             asyncio.create_task(process_message())
 
     # Start the agent pipeline

@@ -1889,6 +1889,14 @@ def clone_voice_for_brdge(brdge_id):
                     voice = Voice.from_cartesia_response(brdge_id, voice_data)
                     logger.info(f"Created voice record: {voice.to_dict()}")
 
+                    # Deactivate all other voices for this brdge
+                    existing_voices = Voice.query.filter_by(brdge_id=brdge_id).all()
+                    for v in existing_voices:
+                        v.status = "inactive"
+
+                    # Set the newly created voice to active
+                    voice.status = "active"
+
                     # Save to database
                     db.session.add(voice)
                     db.session.commit()
@@ -3472,3 +3480,73 @@ def check_brdge_auth(brdge_id):
     except Exception as e:
         logger.error(f"Error checking brdge authorization: {e}")
         return jsonify({"error": "Authorization check failed"}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/agent-data", methods=["GET"])
+def get_agent_data(brdge_id):
+    try:
+        logger.info(f"Fetching consolidated agent data for brdge {brdge_id}")
+
+        # Get the brdge
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Get agent config (personality and knowledge base)
+        config = {
+            "personality": (
+                brdge.agent_personality if hasattr(brdge, "agent_personality") else ""
+            ),
+            "knowledgeBase": [
+                {
+                    "id": "presentation",
+                    "type": "presentation",
+                    "name": brdge.presentation_filename,
+                    "content": "",
+                }
+            ],
+        }
+
+        # Add knowledge base entries
+        knowledge_entries = KnowledgeBase.query.filter_by(brdge_id=brdge_id).all()
+        for entry in knowledge_entries:
+            config["knowledgeBase"].append(
+                {
+                    "id": str(entry.id),
+                    "type": "custom",
+                    "name": entry.name,
+                    "content": entry.content,
+                }
+            )
+
+        # Get document knowledge
+        doc_knowledge = DocumentKnowledge.query.filter_by(brdge_id=brdge_id).first()
+        document_knowledge_data = doc_knowledge.to_dict() if doc_knowledge else {}
+
+        # Get active voice
+        active_voice = Voice.query.filter_by(brdge_id=brdge_id, status="active").first()
+        voice_data = active_voice.to_dict() if active_voice else None
+
+        # Get latest script/transcript
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.created_at.desc())
+            .first()
+        )
+        script_data = script.to_dict() if script else {}
+
+        # Combine all data
+        consolidated_data = {
+            "personality": config["personality"],
+            "knowledgeBase": config["knowledgeBase"],
+            "documentKnowledge": document_knowledge_data,
+            "activeVoice": voice_data,
+            "transcript": script_data,
+            "brdgeId": brdge_id,
+            "userId": brdge.user_id,
+        }
+
+        logger.info("Successfully compiled consolidated agent data")
+        return jsonify(consolidated_data)
+
+    except Exception as e:
+        logger.error(f"Error fetching consolidated agent data: {e}")
+        return jsonify({"error": str(e)}), 500
