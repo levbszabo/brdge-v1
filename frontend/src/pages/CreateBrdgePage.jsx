@@ -21,6 +21,7 @@ function CreateBrdgePage() {
     const [recordingTime, setRecordingTime] = useState(0);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [recordedChunks, setRecordedChunks] = useState([]);
+    const [recordingMode, setRecordingMode] = useState('screen');
     const recordingPreviewRef = useRef(null);
     const timerRef = useRef(null);
     const { id } = useParams();
@@ -125,18 +126,30 @@ function CreateBrdgePage() {
                 }
             };
 
-            const screenStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+            let videoStream;
+            if (recordingMode === 'screen') {
+                videoStream = await navigator.mediaDevices.getDisplayMedia(constraints);
+            } else {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    ...constraints,
+                    video: {
+                        ...constraints.video,
+                        facingMode: 'user'
+                    }
+                });
+            }
+
             const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             const combinedStream = new MediaStream([
-                ...screenStream.getVideoTracks(),
+                ...videoStream.getVideoTracks(),
                 ...audioStream.getAudioTracks()
             ]);
 
             const recorder = new MediaRecorder(combinedStream, {
                 mimeType: 'video/webm;codecs=vp9,opus',
-                audioBitsPerSecond: 128000,  // Increased audio bitrate
-                videoBitsPerSecond: 2500000  // ~2.5 Mbps for better quality
+                audioBitsPerSecond: 128000,
+                videoBitsPerSecond: 2500000
             });
 
             const chunks = [];
@@ -164,7 +177,7 @@ function CreateBrdgePage() {
                 setScreenRecording(recordingFile);
 
                 // Stop all tracks
-                screenStream.getTracks().forEach(track => track.stop());
+                videoStream.getTracks().forEach(track => track.stop());
                 audioStream.getTracks().forEach(track => track.stop());
 
                 // Update video preview
@@ -177,8 +190,8 @@ function CreateBrdgePage() {
             recorder.start(1000);
 
         } catch (error) {
-            console.error('Error starting screen recording:', error);
-            showSnackbar('Failed to start screen recording. Please grant necessary permissions.', 'error');
+            console.error('Error starting recording:', error);
+            showSnackbar('Failed to start recording. Please grant necessary permissions.', 'error');
         }
     };
 
@@ -519,6 +532,36 @@ function CreateBrdgePage() {
 
                                     {/* Recording Controls */}
                                     <div className="flex gap-3 flex-col">
+                                        {/* Recording Mode Selection */}
+                                        <div className="space-y-2">
+                                            <div className="text-gray-400 text-xs">
+                                                Choose recording mode:
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {[
+                                                    { id: 'screen', label: 'Screen Recording', icon: <Video className="w-4 h-4" /> },
+                                                    { id: 'webcam', label: 'Webcam Recording', icon: <Video className="w-4 h-4" /> }
+                                                ].map((mode) => (
+                                                    <button
+                                                        key={mode.id}
+                                                        type="button"
+                                                        onClick={() => setRecordingMode(mode.id)}
+                                                        className={`
+                                                            flex-1 py-2 px-4 rounded-lg border transition-all duration-200 text-sm
+                                                            flex items-center justify-center gap-2
+                                                            ${recordingMode === mode.id
+                                                                ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
+                                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
+                                                            }
+                                                        `}
+                                                    >
+                                                        {mode.icon}
+                                                        {mode.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
                                         <div className="flex gap-3">
                                             <motion.button
                                                 type="button"
@@ -539,8 +582,17 @@ function CreateBrdgePage() {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Video className="w-4 h-4" />
-                                                        <span>{isMobile ? 'Record Video' : 'Record Presentation'}</span>
+                                                        {recordingMode === 'screen' ? (
+                                                            <>
+                                                                <Video className="w-4 h-4" />
+                                                                <span>{isMobile ? 'Record Video' : 'Record Screen'}</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Video className="w-4 h-4" />
+                                                                <span>Record Webcam</span>
+                                                            </>
+                                                        )}
                                                     </>
                                                 )}
                                             </motion.button>

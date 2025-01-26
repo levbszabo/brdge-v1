@@ -812,7 +812,10 @@ const HeroSection = () => {
                         height: { xs: '160px', sm: '180px', md: '200px' },
                         position: 'relative',
                         cursor: 'pointer',
-                        mx: 'auto',
+                        mx: 'auto',  // This ensures horizontal centering
+                        display: 'flex',  // Added to help with centering
+                        justifyContent: 'center',  // Added to help with centering
+                        alignItems: 'center',  // Added to help with centering
                         mb: { xs: 3, sm: 4 },
                         '&::before': {
                             content: '""',
