@@ -605,49 +605,47 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                         {/* Add overage toggle for standard and premium plans */}
                         {(currentPlan === 'standard' || currentPlan === 'pro') && (
                             <Box sx={{
-                                mt: 3,
-                                p: 2,
-                                borderRadius: '12px',
-                                background: 'rgba(255, 255, 255, 0.03)',
+                                mt: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                borderRadius: '8px',
+                                background: 'rgba(255, 255, 255, 0.02)',
                                 border: '1px solid rgba(255, 255, 255, 0.05)',
+                                p: 1.5,
                             }}>
-                                <Box sx={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                }}>
-                                    <Box>
-                                        <Typography sx={{
-                                            color: 'rgba(255, 255, 255, 0.9)',
-                                            fontSize: '0.95rem',
-                                            fontWeight: 500,
-                                            mb: 0.5
-                                        }}>
-                                            Allow Overage Usage
-                                        </Typography>
-                                        <Typography sx={{
-                                            color: 'rgba(255, 255, 255, 0.6)',
-                                            fontSize: '0.85rem',
-                                        }}>
-                                            When enabled, you'll be billed $0.12/min for usage above your plan's limit
-                                        </Typography>
-                                    </Box>
-                                    <Switch
-                                        checked={allowOverage}
-                                        onChange={handleOverageToggle}
-                                        sx={{
-                                            '& .MuiSwitch-switchBase.Mui-checked': {
-                                                color: '#22D3EE',
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(34, 211, 238, 0.08)',
-                                                },
-                                            },
-                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                backgroundColor: '#22D3EE',
-                                            },
-                                        }}
-                                    />
+                                <Box>
+                                    <Typography sx={{
+                                        color: 'rgba(255, 255, 255, 0.9)',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                        lineHeight: 1.2,
+                                    }}>
+                                        Allow overage usage
+                                    </Typography>
+                                    <Typography sx={{
+                                        color: 'rgba(255, 255, 255, 0.5)',
+                                        fontSize: '0.75rem',
+                                        mt: 0.5,
+                                    }}>
+                                        $0.12/min above plan limit
+                                    </Typography>
                                 </Box>
+                                <Switch
+                                    checked={allowOverage}
+                                    onChange={handleOverageToggle}
+                                    sx={{
+                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                            color: '#22D3EE',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(34, 211, 238, 0.08)',
+                                            },
+                                        },
+                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                            backgroundColor: '#22D3EE',
+                                        },
+                                    }}
+                                />
                             </Box>
                         )}
 
