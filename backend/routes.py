@@ -3557,3 +3557,36 @@ def get_agent_data(brdge_id):
     except Exception as e:
         logger.error(f"Error fetching consolidated agent data: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/update-overage-settings", methods=["POST"])
+@login_required
+def update_overage_settings(user):
+    try:
+        data = request.get_json()
+        allow_overage = data.get("allow_overage")
+
+        if allow_overage is None:
+            return jsonify({"error": "allow_overage parameter is required"}), 400
+
+        # Get user account
+        user_account = UserAccount.query.filter_by(user_id=user.id).first()
+        if not user_account:
+            return jsonify({"error": "User account not found"}), 404
+
+        # Update the setting
+        user_account.allow_overage = allow_overage
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Overage settings updated successfully",
+                "allow_overage": user_account.allow_overage,
+            }
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating overage settings: {e}")
+        return jsonify({"error": str(e)}), 500

@@ -285,6 +285,28 @@ function PricingPage() {
                             </Grid>
                         ))}
                     </Grid>
+
+                    <Typography
+                        variant="h5"
+                        align="center"
+                        sx={{
+                            mt: 4,
+                            fontFamily: 'Satoshi',
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            maxWidth: '800px',
+                            mx: 'auto',
+                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                            fontWeight: '400',
+                            letterSpacing: '0.01em',
+                            lineHeight: 1.6,
+                            '& span': {
+                                color: '#4F9CF9',
+                                fontWeight: 500
+                            }
+                        }}
+                    >
+                        Standard and Premium plans are billed at <span>$0.12 per minute</span> for usage above the included monthly minutes.
+                    </Typography>
                 </Container>
 
                 <style>

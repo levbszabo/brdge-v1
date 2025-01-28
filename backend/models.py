@@ -38,6 +38,9 @@ class UserAccount(db.Model):
     # Account Details
     account_type = db.Column(db.String(20), default="free")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    allow_overage = db.Column(
+        db.Boolean, default=True
+    )  # New column for overage control
 
     # Stripe Integration
     stripe_customer_id = db.Column(db.String(255))
@@ -64,6 +67,7 @@ class UserAccount(db.Model):
             ),
             "stripe_customer_id": self.stripe_customer_id,
             "stripe_subscription_id": self.stripe_subscription_id,
+            "allow_overage": self.allow_overage,
             "usage_stats": {
                 "total_brdges": self.total_brdges,
                 "storage_used": self.storage_used,

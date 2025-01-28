@@ -18,7 +18,8 @@ import {
     Dialog,
     DialogContent,
     List,
-    ListItem
+    ListItem,
+    Switch
 } from '@mui/material';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
@@ -485,6 +486,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [showCancelSuccess, setShowCancelSuccess] = useState(false);
     const [error, setError] = useState(null);
+    const [allowOverage, setAllowOverage] = useState(true);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -494,6 +496,26 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
             day: 'numeric'
         });
     };
+
+    const handleOverageToggle = async () => {
+        try {
+            const response = await api.post('/update-overage-settings', {
+                allow_overage: !allowOverage
+            });
+            if (response.data.success) {
+                setAllowOverage(!allowOverage);
+            }
+        } catch (error) {
+            setError(error.response?.data?.error || 'Failed to update overage settings');
+        }
+    };
+
+    useEffect(() => {
+        // Initialize allowOverage from user profile if available
+        if (userProfile?.account?.allow_overage !== undefined) {
+            setAllowOverage(userProfile.account.allow_overage);
+        }
+    }, [userProfile]);
 
     return (
         <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
@@ -578,6 +600,55 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                     <span>••••4242</span>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Add overage toggle for standard and premium plans */}
+                        {(currentPlan === 'standard' || currentPlan === 'pro') && (
+                            <Box sx={{
+                                mt: 3,
+                                p: 2,
+                                borderRadius: '12px',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                            }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                }}>
+                                    <Box>
+                                        <Typography sx={{
+                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            fontSize: '0.95rem',
+                                            fontWeight: 500,
+                                            mb: 0.5
+                                        }}>
+                                            Allow Overage Usage
+                                        </Typography>
+                                        <Typography sx={{
+                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            fontSize: '0.85rem',
+                                        }}>
+                                            When enabled, you'll be billed $0.12/min for usage above your plan's limit
+                                        </Typography>
+                                    </Box>
+                                    <Switch
+                                        checked={allowOverage}
+                                        onChange={handleOverageToggle}
+                                        sx={{
+                                            '& .MuiSwitch-switchBase.Mui-checked': {
+                                                color: '#22D3EE',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(34, 211, 238, 0.08)',
+                                                },
+                                            },
+                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                                backgroundColor: '#22D3EE',
+                                            },
+                                        }}
+                                    />
+                                </Box>
+                            </Box>
                         )}
 
                         {currentPlan !== 'free' && (
@@ -1524,6 +1595,25 @@ function UserProfilePage() {
                                         </Grid>
                                     ))}
                                 </Grid>
+
+                                <Typography
+                                    sx={{
+                                        mt: 4,
+                                        textAlign: 'center',
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        fontSize: '1rem',
+                                        fontWeight: 400,
+                                        letterSpacing: '0.01em',
+                                        lineHeight: 1.6,
+                                        fontFamily: 'Satoshi',
+                                        '& span': {
+                                            color: '#22D3EE',
+                                            fontWeight: 500
+                                        }
+                                    }}
+                                >
+                                    Standard and Premium plans are billed at <span>$0.12 per minute</span> for usage above the included monthly minutes.
+                                </Typography>
                             </Box>
                         </Paper>
                     </Grid>
