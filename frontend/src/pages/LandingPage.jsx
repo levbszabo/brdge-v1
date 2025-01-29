@@ -1880,40 +1880,92 @@ const FinalCTA = () => {
     );
 };
 
+// Define animation variants at the top level
+const fadeInUpVariant = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 15,
+            mass: 1
+        }
+    }
+};
+
 function LandingPage() {
+    // Add intersection observer hook
+    const [ref, inView] = useInView({
+        threshold: 0.1,
+        triggerOnce: true,
+        rootMargin: '50px'
+    });
+
     useEffect(() => {
+        // Preload video
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'video';
+        link.href = demoVideo;
+        document.head.appendChild(link);
+
+        // Smooth scroll behavior
         document.documentElement.style.scrollBehavior = 'smooth';
+
         return () => {
+            document.head.removeChild(link);
             document.documentElement.style.scrollBehavior = 'auto';
         };
     }, []);
 
     return (
         <ParallaxProvider>
-            <Box sx={{
-                flexGrow: 1,
-                overflow: 'hidden',
-                background: 'linear-gradient(180deg, #001B3D 0%, #000C1F 15%, #001F5C 35%, #0041C2 60%, #00B4DB 100%)',
-                color: 'white',
-                minHeight: '100vh',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'radial-gradient(circle at 50% 30%, rgba(0,65,194,0.4) 0%, transparent 80%)',
-                    pointerEvents: 'none',
-                    opacity: 0.9,
-                    mixBlendMode: 'soft-light'
-                }
-            }}>
+            <Box
+                className="gradient-animate"
+                sx={{
+                    flexGrow: 1,
+                    overflow: 'hidden',
+                    background: 'linear-gradient(180deg, #001B3D 0%, #000C1F 25%, #001F5C 50%, #0041C2 75%, #00B4DB 100%)',
+                    backgroundSize: '200% 200%',
+                    color: 'white',
+                    minHeight: '100vh',
+                    position: 'relative',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'radial-gradient(circle at 50% 30%, rgba(0,65,194,0.2) 0%, transparent 70%)',
+                        pointerEvents: 'none',
+                        opacity: 0.6,
+                        mixBlendMode: 'soft-light',
+                        transform: 'translateZ(0)',
+                        willChange: 'opacity',
+                        transition: 'opacity 0.3s ease-out'
+                    }
+                }}
+            >
+                <style jsx global>{`
+                    @keyframes gradientShift {
+                        0% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                        100% { background-position: 0% 50%; }
+                    }
+                    .gradient-animate {
+                        animation: gradientShift 15s ease infinite;
+                    }
+                `}</style>
+
                 <HeroSection />
+
                 <Container
+                    ref={ref}
                     maxWidth="lg"
                     sx={{
                         position: 'relative',
@@ -1922,27 +1974,38 @@ function LandingPage() {
                         pb: { xs: 6, sm: 8, md: 10 },
                         px: { xs: 2, sm: 4, md: 6 },
                         flex: 1,
+                        perspective: '1000px',
                         '& > *': {
                             mb: { xs: 10, sm: 12, md: 16 },
                             opacity: 0.98,
                             backdropFilter: 'blur(10px)',
                             borderRadius: '24px',
                             p: { xs: 3, sm: 4, md: 5 },
-                            background: 'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 100%)',
+                            background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.04) 100%)',
                             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            transition: 'all 0.3s ease-in-out',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            willChange: 'transform, opacity',
+                            transform: 'translateZ(0)',
+                            backfaceVisibility: 'hidden',
+                            WebkitFontSmoothing: 'subpixel-antialiased',
+                            transition: 'transform 0.3s ease-out, box-shadow 0.3s ease-out',
                             '&:hover': {
-                                transform: 'translateY(-4px)',
+                                transform: 'translateY(-4px) translateZ(0) scale(1.01)',
                                 boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
                             }
                         }
                     }}
                 >
-                    <IntroducingBrdgeAI />
-                    <HowItWorksSection />
-                    <ImpactSection />
-                    <FinalCTA />
+                    <motion.div
+                        variants={fadeInUpVariant}
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                    >
+                        <IntroducingBrdgeAI />
+                        <HowItWorksSection />
+                        <ImpactSection />
+                        <FinalCTA />
+                    </motion.div>
                 </Container>
                 <Footer />
             </Box>
