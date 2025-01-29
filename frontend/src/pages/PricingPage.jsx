@@ -18,6 +18,7 @@ const PricingTier = ({ tier, isPopular, delay }) => {
             initial={{ opacity: 0, y: 50 }}
             animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8, delay }}
+            style={{ position: 'relative', zIndex: isPopular ? 2 : 1 }}
         >
             <Box
                 sx={{
@@ -31,9 +32,11 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'transform 0.3s ease-in-out',
+                    transition: 'transform 0.3s ease-in-out, z-index 0s',
+                    zIndex: 1,
                     '&:hover': {
                         transform: 'translateY(-10px)',
+                        zIndex: 3,
                     },
                     ...(isPopular && {
                         '&::before': {
@@ -45,6 +48,7 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                             WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
                             WebkitMaskComposite: 'xor',
                             maskComposite: 'exclude',
+                            zIndex: 0,
                         }
                     })
                 }}
@@ -96,6 +100,8 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     variant="outlined"
                     sx={{
                         mt: 4,
+                        position: 'relative',
+                        zIndex: 2,
                         background: isPopular ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)' : 'rgba(255, 255, 255, 0.1)',
                         color: 'white',
                         py: { xs: 1.25, sm: 1.5 },
