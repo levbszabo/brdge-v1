@@ -18,7 +18,7 @@ import base64
 import imghdr
 import logging
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import os
 from elevenlabs import ElevenLabs
 import os
@@ -27,6 +27,7 @@ import shutil
 import boto3
 import dotenv
 from PIL import Image
+import ffmpeg
 
 dotenv.load_dotenv(".env")
 
@@ -549,3 +550,35 @@ def list_walkthroughs(brdge_id: str) -> List[Dict]:
         logger.error(f"Error listing walkthroughs: {e}")
 
     return walkthroughs
+
+
+def convert_webm_to_mp4(input_path: str) -> Tuple[str, bool]:
+    """
+    Convert WebM to MP4 while maintaining quality.
+    Returns tuple of (output_path, success)
+    """
+    try:
+        output_path = input_path.rsplit(".", 1)[0] + ".mp4"
+
+        # Configure ffmpeg with settings for quality preservation
+        stream = ffmpeg.input(input_path)
+        stream = ffmpeg.output(
+            stream,
+            output_path,
+            vcodec="libx264",  # H.264 video codec
+            acodec="aac",  # AAC audio codec
+            video_bitrate="3000k",  # Maintain good video quality
+            audio_bitrate="192k",  # High quality audio
+            preset="medium",  # Balance between quality and speed
+            movflags="+faststart",  # Enable fast start for web playback
+        )
+
+        # Run the conversion
+        ffmpeg.run(
+            stream, overwrite_output=True, capture_stdout=True, capture_stderr=True
+        )
+
+        return output_path, True
+    except Exception as e:
+        print(f"Error converting video: {str(e)}")
+        return None, False
