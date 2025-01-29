@@ -65,7 +65,8 @@ const styles = {
     pageContainer: {
         minHeight: '100vh',
         background: `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.backgroundLight} 100%)`,
-        py: 8
+        py: 8,
+        boxShadow: 'inset 0 0 60px rgba(0, 0, 0, 0.4)',
     },
     header: {
         color: theme.colors.text.primary,
@@ -205,7 +206,25 @@ const styles = {
         display: 'flex',
         flexDirection: 'column',
         gap: 0.5,
-    }
+    },
+    statsCard: {
+        padding: {
+            xs: '8px',
+            sm: '16px'
+        },
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        borderRadius: '8px',
+        border: `1px solid ${theme.colors.border}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        transition: theme.transitions.default,
+        '&:hover': {
+            backgroundColor: 'rgba(34, 211, 238, 0.07)',
+            boxShadow: '0 0 20px rgba(34, 211, 238, 0.15)',
+        },
+    },
 };
 
 function BrdgeListPage() {
@@ -764,63 +783,62 @@ function BrdgeListPage() {
                         />
                     </Box>
 
-                    <Box sx={{
-                        display: 'flex',
-                        gap: 2,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flex: { xs: '1 1 100%', sm: '0 1 auto' },
-                        height: '40px',
-                        backgroundColor: 'rgba(255,255,255,0.04)',
-                        borderRadius: '20px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        px: 2
-                    }}>
-                        <UsageIndicator
-                            title="Brdges"
-                            current={userStats.brdges_created}
-                            limit={userStats.brdges_limit}
-                        />
-                        <Divider orientation="vertical" flexItem sx={{
-                            borderColor: 'rgba(255,255,255,0.1)',
-                            height: '20px',
-                            my: 'auto'
-                        }} />
-                        <UsageIndicator
-                            title="Minutes"
-                            current={userStats.minutes_used}
-                            limit={userStats.minutes_limit}
-                        />
-                    </Box>
+                    <Grid container spacing={2} sx={{ flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
+                        <Grid item xs={12} sm={6}>
+                            <Box sx={styles.statsCard}>
+                                <Typography variant="subtitle1" sx={{ color: '#22D3EE', mb: 1, fontWeight: 'bold' }}>
+                                    Brdges
+                                </Typography>
+                                <UsageIndicator
+                                    title="Brdges"
+                                    current={userStats.brdges_created}
+                                    limit={userStats.brdges_limit}
+                                />
+                            </Box>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <Box sx={styles.statsCard}>
+                                <Typography variant="subtitle1" sx={{ color: '#22D3EE', mb: 1, fontWeight: 'bold' }}>
+                                    Minutes
+                                </Typography>
+                                <UsageIndicator
+                                    title="Minutes"
+                                    current={userStats.minutes_used}
+                                    limit={userStats.minutes_limit}
+                                />
+                            </Box>
+                        </Grid>
+                    </Grid>
 
-                    <Button
-                        variant="contained"
-                        startIcon={<Plus size={20} />}
-                        onClick={() => isOverLimit() ? navigate('/profile') : navigate('/create')}
-                        sx={{
-                            ml: { xs: 0, sm: 'auto' },
-                            width: { xs: '100%', sm: 'auto' },
-                            bgcolor: 'rgba(34,211,238,0.1)',
-                            color: '#22D3EE',
-                            borderRadius: '50px',
-                            px: 3,
-                            py: 1,
-                            height: '40px',
-                            fontSize: '0.95rem',
-                            fontWeight: 600,
-                            border: '1px solid rgba(34,211,238,0.2)',
-                            backdropFilter: 'blur(10px)',
-                            textTransform: 'none',
-                            boxShadow: '0 0 20px rgba(34,211,238,0.1)',
-                            transition: 'all 0.2s ease',
-                            '&:hover': {
-                                bgcolor: 'rgba(34,211,238,0.15)',
-                                boxShadow: '0 0 30px rgba(34,211,238,0.2)'
-                            }
-                        }}
-                    >
-                        {isOverLimit() ? 'Upgrade Plan' : 'Create New Brdge'}
-                    </Button>
+                    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<Plus size={20} />}
+                            onClick={() => isOverLimit() ? navigate('/profile') : navigate('/create')}
+                            sx={{
+                                width: { xs: '100%', sm: 'auto' },
+                                bgcolor: 'rgba(34,211,238,0.1)',
+                                color: '#22D3EE',
+                                borderRadius: '50px',
+                                px: 3,
+                                py: 1,
+                                height: '40px',
+                                fontSize: '0.95rem',
+                                fontWeight: 600,
+                                border: '1px solid rgba(34,211,238,0.2)',
+                                backdropFilter: 'blur(10px)',
+                                textTransform: 'none',
+                                boxShadow: '0 0 20px rgba(34,211,238,0.1)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    bgcolor: 'rgba(34,211,238,0.15)',
+                                    boxShadow: '0 0 30px rgba(34,211,238,0.2)'
+                                }
+                            }}
+                        >
+                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Brdge'}
+                        </Button>
+                    </Box>
                 </Box>
 
                 <Box>

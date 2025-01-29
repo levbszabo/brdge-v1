@@ -6,9 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, StopCircle } from 'lucide-react';
+import { Box } from '@mui/material';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB in bytes
+const MAX_RECORDING_MINUTES = 5;
 
 function CreateBrdgePage() {
     const [name, setName] = useState('');
@@ -21,7 +23,7 @@ function CreateBrdgePage() {
     const [recordingTime, setRecordingTime] = useState(0);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [recordedChunks, setRecordedChunks] = useState([]);
-    const [recordingMode, setRecordingMode] = useState('screen');
+    const [recordingMode, setRecordingMode] = useState('upload');
     const recordingPreviewRef = useRef(null);
     const timerRef = useRef(null);
     const { id } = useParams();
@@ -30,6 +32,10 @@ function CreateBrdgePage() {
     const [isMobile, setIsMobile] = useState(false);
     const [loadingPhase, setLoadingPhase] = useState(0);
     const [loadingMessage, setLoadingMessage] = useState('');
+    const [webcamStream, setWebcamStream] = useState(null);
+    const [showWebcam, setShowWebcam] = useState(false);
+    const [showScreen, setShowScreen] = useState(true);
+    const [isDragging, setIsDragging] = useState(false);
 
     const loadingPhases = [
         { message: "Processing video...", duration: 4500 },
@@ -52,8 +58,11 @@ function CreateBrdgePage() {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 mediaRecorder.stop();
             }
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+            }
         };
-    }, [mediaRecorder]);
+    }, [mediaRecorder, webcamStream]);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -111,45 +120,64 @@ function CreateBrdgePage() {
 
     const startRecording = async () => {
         try {
-            const constraints = {
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    sampleRate: 48000,
-                    channelCount: 2
-                },
-                video: {
-                    width: 1280,
-                    height: 720,
-                    frameRate: 30,
-                    aspectRatio: recordingFormat === '16:9' ? 16 / 9 : 9 / 16
-                }
+            let stream;
+            const audioConstraints = {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 48000,
+                channelCount: 2,
+                bitrate: 256000
             };
 
-            let videoStream;
-            if (recordingMode === 'screen') {
-                videoStream = await navigator.mediaDevices.getDisplayMedia(constraints);
-            } else {
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    ...constraints,
+            const videoConstraints = {
+                width: 1920,
+                height: 1080,
+                frameRate: 30,
+            };
+
+            if (showScreen) {
+                const displayStream = await navigator.mediaDevices.getDisplayMedia({
                     video: {
-                        ...constraints.video,
+                        ...videoConstraints,
+                        cursor: 'always',
+                        displaySurface: 'monitor'
+                    },
+                    audio: {
+                        ...audioConstraints,
+                        autoGainControl: false
+                    }
+                });
+
+                const micStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        ...audioConstraints,
+                        autoGainControl: true
+                    },
+                    video: false
+                });
+
+                const tracks = [
+                    ...displayStream.getVideoTracks(),
+                    ...displayStream.getAudioTracks(),
+                    ...micStream.getAudioTracks()
+                ];
+
+                stream = new MediaStream(tracks);
+            } else {
+                // Webcam recording (simplified)
+                stream = await navigator.mediaDevices.getUserMedia({
+                    audio: audioConstraints,
+                    video: {
+                        ...videoConstraints,
                         facingMode: 'user'
                     }
                 });
             }
 
-            const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-            const combinedStream = new MediaStream([
-                ...videoStream.getVideoTracks(),
-                ...audioStream.getAudioTracks()
-            ]);
-
-            const recorder = new MediaRecorder(combinedStream, {
+            const recorder = new MediaRecorder(stream, {
                 mimeType: 'video/webm;codecs=vp9,opus',
-                audioBitsPerSecond: 128000,
-                videoBitsPerSecond: 2500000
+                audioBitsPerSecond: 256000,
+                videoBitsPerSecond: 3500000
             });
 
             const chunks = [];
@@ -161,7 +189,7 @@ function CreateBrdgePage() {
             };
 
             recorder.onstart = () => {
-                console.log('Recording started');
+                setRecordingMode('record');
                 setIsRecording(true);
                 let seconds = 0;
                 timerRef.current = setInterval(() => {
@@ -171,27 +199,40 @@ function CreateBrdgePage() {
             };
 
             recorder.onstop = () => {
-                console.log('Recording stopped');
                 const blob = new Blob(chunks, { type: 'video/webm' });
-                const recordingFile = new File([blob], 'screen-recording.webm', { type: 'video/webm' });
+                const recordingFile = new File([blob], `${showScreen ? 'screen' : 'webcam'}-recording.webm`, { type: 'video/webm' });
                 setScreenRecording(recordingFile);
 
-                // Stop all tracks
-                videoStream.getTracks().forEach(track => track.stop());
-                audioStream.getTracks().forEach(track => track.stop());
+                // Clean up tracks
+                stream.getTracks().forEach(track => {
+                    track.stop();
+                });
 
-                // Update video preview
                 updateVideoPreview(blob);
             };
 
             setMediaRecorder(recorder);
-            setRecordedChunks(chunks);
-
             recorder.start(1000);
+
+            // Add recording time limit
+            const timeLimit = MAX_RECORDING_MINUTES * 60;
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => {
+                    if (prev >= timeLimit - 1) {
+                        stopRecording();
+                        return 0;
+                    }
+                    return prev + 1;
+                });
+            }, 1000);
 
         } catch (error) {
             console.error('Error starting recording:', error);
-            showSnackbar('Failed to start recording. Please grant necessary permissions.', 'error');
+            if (error.name === 'NotAllowedError') {
+                showSnackbar('Please allow access to your camera and microphone to record.', 'error');
+            } else {
+                showSnackbar('Failed to start recording. Please check your permissions and try again.', 'error');
+            }
         }
     };
 
@@ -224,39 +265,42 @@ function CreateBrdgePage() {
         });
     };
 
-    const handleScreenRecordingUpload = async (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            console.log('File selected:', file.name);
+    const validateVideoFile = (file) => {
+        const validTypes = ['video/mp4', 'video/webm'];
+        const maxSize = 100 * 1024 * 1024; // 100MB in bytes
 
-            // Check file format
-            const validTypes = ['video/mp4', 'video/webm'];
-            if (!validTypes.includes(file.type)) {
-                showSnackbar(
-                    'Invalid video format. Please upload either an MP4 or WebM video file.',
-                    'error'
-                );
-                e.target.value = ''; // Clear the input
-                return;
-            }
-
-            // Check file size
-            if (file.size > MAX_VIDEO_SIZE) {
-                showSnackbar(
-                    `Video file size exceeds 100MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`,
-                    'error'
-                );
-                e.target.value = ''; // Clear the input
-                return;
-            }
-
-            console.log('Setting screen recording...');
-            setScreenRecording(file);
-            console.log('Screen recording set:', file.name);
-
-            const blob = new Blob([file], { type: file.type });
-            updateVideoPreview(blob);
+        if (!validTypes.includes(file.type)) {
+            return {
+                isValid: false,
+                error: 'Invalid file type. Please upload MP4 or WebM video files only.'
+            };
         }
+
+        if (file.size > maxSize) {
+            return {
+                isValid: false,
+                error: `File is too large. Maximum size is 100MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
+            };
+        }
+
+        return { isValid: true };
+    };
+
+    const handleScreenRecordingUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const validation = validateVideoFile(file);
+        if (!validation.isValid) {
+            showSnackbar(validation.error, 'error');
+            e.target.value = ''; // Clear the input
+            return;
+        }
+
+        setRecordingMode('upload'); // Set mode to upload when file is selected
+        setScreenRecording(file);
+        const blob = new Blob([file], { type: file.type });
+        updateVideoPreview(blob);
     };
 
     // Also let's add a useEffect to monitor screenRecording changes
@@ -383,6 +427,35 @@ function CreateBrdgePage() {
         }
     };
 
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+
+        const validation = validateVideoFile(file);
+        if (!validation.isValid) {
+            showSnackbar(validation.error, 'error');
+            return;
+        }
+
+        setRecordingMode('upload'); // Set mode to upload when file is dropped
+        setScreenRecording(file);
+        const blob = new Blob([file], { type: file.type });
+        updateVideoPreview(blob);
+    };
+
     const LoadingBar = ({ phase, message }) => {
         const baseProgress = (phase / loadingPhases.length) * 100;
         const progressPerPhase = 100 / loadingPhases.length;
@@ -439,6 +512,249 @@ function CreateBrdgePage() {
         );
     };
 
+    const RecordingOptions = () => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Upload Option Box */}
+            <div className={`
+                p-4 rounded-lg border transition-all duration-300
+                min-h-[200px] flex flex-col
+                ${recordingMode === 'upload'
+                    ? 'bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_30px_rgba(34,211,238,0.15)]'
+                    : 'bg-gray-900/40 border-gray-700/50 hover:border-cyan-500/20'
+                }
+            `}>
+                <button
+                    onClick={() => {
+                        setRecordingMode('upload');
+                        if (isRecording) stopRecording();
+                        setShowScreen(false);
+                        setShowWebcam(false);
+                    }}
+                    className="w-full flex items-center gap-3"
+                >
+                    <div className={`
+                        p-2.5 rounded-lg transition-all duration-300
+                        ${recordingMode === 'upload'
+                            ? 'bg-cyan-500/20 border border-cyan-500/30'
+                            : 'bg-gray-800/50 border border-gray-700/50'
+                        }
+                    `}>
+                        <Upload className={`w-5 h-5 ${recordingMode === 'upload' ? 'text-cyan-400' : 'text-gray-400'}`} />
+                    </div>
+                    <div className="text-left flex-1">
+                        <h3 className={`text-base font-medium mb-0.5 transition-colors duration-300 
+                            ${recordingMode === 'upload' ? 'text-cyan-400' : 'text-gray-200'}`}>
+                            Upload Video
+                        </h3>
+                        <p className="text-xs text-gray-400">MP4 or WebM, max 100MB</p>
+                    </div>
+                </button>
+
+                <div className="mt-3 pt-3 border-t border-gray-700/50 flex-1">
+                    {(!screenRecording || recordingMode !== 'upload') ? (
+                        <div
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`
+                                h-full relative
+                                ${isDragging ? 'bg-cyan-500/10' : ''}
+                                transition-colors duration-200
+                            `}
+                        >
+                            <label className={`
+                                h-full flex flex-col items-center justify-center gap-4 
+                                border-2 border-dashed rounded-lg p-8
+                                cursor-pointer transition-all duration-200
+                                ${isDragging
+                                    ? 'border-cyan-400 bg-cyan-500/5'
+                                    : 'border-gray-700/50 hover:border-cyan-500/30'
+                                }
+                                group
+                            `}>
+                                <div className="p-4 rounded-full bg-gray-800/50 group-hover:bg-cyan-500/10 transition-all duration-200">
+                                    <Upload className="w-6 h-6 text-gray-400 group-hover:text-cyan-400" />
+                                </div>
+                                <div className="text-center space-y-2">
+                                    <p className="text-sm font-medium text-gray-300 group-hover:text-cyan-400">
+                                        {isDragging ? 'Drop your video here' : 'Drag and drop or click to upload'}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        Supported formats: MP4, WebM
+                                    </p>
+                                    <p className="text-[11px] text-gray-500">
+                                        Maximum file size: 100MB
+                                    </p>
+                                </div>
+                                <input
+                                    type="file"
+                                    onChange={handleScreenRecordingUpload}
+                                    accept="video/mp4,video/webm"
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+                                <div className="p-2 rounded-lg bg-cyan-500/20">
+                                    <Video className="w-5 h-5 text-cyan-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-cyan-400 truncate">
+                                        {screenRecording.name}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                        {(screenRecording.size / (1024 * 1024)).toFixed(1)} MB
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setScreenRecording(null)}
+                                    className="p-2 hover:bg-red-500/20 rounded-lg text-red-400"
+                                >
+                                    <StopCircle className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Record Option Box */}
+            <div className={`
+                p-4 rounded-lg border transition-all duration-300
+                min-h-[200px] flex flex-col
+                ${recordingMode === 'record'
+                    ? 'bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_30px_rgba(34,211,238,0.15)]'
+                    : 'bg-gray-900/40 border-gray-700/50 hover:border-cyan-500/20'
+                }
+            `}>
+                <button
+                    onClick={() => {
+                        setRecordingMode('record');
+                        setScreenRecording(null);
+                    }}
+                    className="w-full flex items-center gap-3"
+                >
+                    <div className={`
+                        p-2.5 rounded-lg transition-all duration-300
+                        ${recordingMode === 'record'
+                            ? 'bg-cyan-500/20 border border-cyan-500/30'
+                            : 'bg-gray-800/50 border border-gray-700/50'
+                        }
+                    `}>
+                        <Video className={`w-5 h-5 ${recordingMode === 'record' ? 'text-cyan-400' : 'text-gray-400'}`} />
+                    </div>
+                    <div className="text-left">
+                        <h3 className={`text-base font-medium mb-0.5 transition-colors duration-300 
+                            ${recordingMode === 'record' ? 'text-cyan-400' : 'text-gray-200'}`}>
+                            Record Video
+                        </h3>
+                        <p className="text-xs text-gray-400">Screen or webcam recording</p>
+                    </div>
+                </button>
+
+                <div className="mt-3 pt-3 border-t border-gray-700/50 flex-1">
+                    {(!screenRecording || recordingMode !== 'record') ? (
+                        <div className="space-y-3 h-full">
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-gray-900/40">
+                                <button
+                                    onClick={() => {
+                                        setShowScreen(true);
+                                        setShowWebcam(false);
+                                    }}
+                                    className={`
+                                        flex-1 py-2 px-3 rounded-lg transition-all duration-200
+                                        flex items-center justify-center gap-2 text-sm
+                                        ${showScreen ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'}
+                                    `}
+                                >
+                                    <Video className="w-4 h-4" />
+                                    Screen
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowScreen(false);
+                                        setShowWebcam(true);
+                                    }}
+                                    className={`
+                                        flex-1 py-2 px-3 rounded-lg transition-all duration-200
+                                        flex items-center justify-center gap-2 text-sm
+                                        ${showWebcam && !showScreen ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'}
+                                    `}
+                                >
+                                    <Video className="w-4 h-4" />
+                                    Webcam
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={isRecording ? stopRecording : startRecording}
+                                className={`
+                                    w-full py-2.5 px-4 rounded-lg border transition-all duration-200
+                                    flex items-center justify-center gap-2 text-sm
+                                    ${isRecording
+                                        ? 'bg-red-500/20 border-red-500/40 text-red-400'
+                                        : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400'
+                                    }
+                                    hover:shadow-[0_0_20px_rgba(34,211,238,0.2)]
+                                `}
+                            >
+                                {isRecording ? (
+                                    <>
+                                        <StopCircle className="w-4 h-4" />
+                                        <span>
+                                            Stop Recording ({formatTime(recordingTime)})
+                                            <span className="text-xs opacity-70 ml-1">
+                                                / {MAX_RECORDING_MINUTES}:00
+                                            </span>
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Video className="w-4 h-4" />
+                                        <span>
+                                            Start Recording
+                                            <span className="text-xs opacity-70 ml-1">
+                                                (max {MAX_RECORDING_MINUTES} min)
+                                            </span>
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
+                                <div className="p-2 rounded-lg bg-cyan-500/20">
+                                    <Video className="w-5 h-5 text-cyan-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-cyan-400 truncate">
+                                        {screenRecording.name}
+                                    </p>
+                                    <p className="text-xs text-gray-400">
+                                        {(screenRecording.size / (1024 * 1024)).toFixed(1)} MB
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setScreenRecording(null)}
+                                    className="p-2 hover:bg-red-500/20 rounded-lg text-red-400"
+                                >
+                                    <StopCircle className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-400 italic text-center">
+                                Click the remove button above to record again
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#0A1929] via-[#121212] to-[#0A1929] flex items-center justify-center relative overflow-hidden">
             {/* Enhanced Background Effect */}
@@ -447,22 +763,18 @@ function CreateBrdgePage() {
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-blue-900/20 blur-[120px] animate-pulse-slow" />
             </div>
 
-            <div className="container max-w-2xl mx-auto px-4 py-8 relative z-10">
+            <div className="container max-w-3xl mx-auto px-4 py-12 relative z-10">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <h1 className="text-3xl font-semibold text-white mb-8 text-center relative">
+                    <h1 className="text-4xl font-semibold text-white mb-12 text-center relative">
                         Create New Brdge
-                        <div className="absolute left-1/2 -bottom-3 transform -translate-x-1/2 w-32 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
+                        <div className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-40 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
                     </h1>
 
-                    <div className="bg-gray-900/40 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-6 shadow-xl relative">
-                        {/* Card inner glow */}
-                        <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-blue-900/20 via-transparent to-transparent opacity-50" />
-
-                        {/* Rest of the form content */}
+                    <div className="bg-gray-900/40 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-8 shadow-xl">
                         <div className="relative z-10">
                             {error && (
                                 <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -470,19 +782,24 @@ function CreateBrdgePage() {
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-8">
-                                {/* Brdge Name */}
-                                <div>
+                            <form onSubmit={handleSubmit} className="space-y-10">
+                                {/* Brdge Name with improved styling */}
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                                        Brdge Name
+                                    </label>
                                     <input
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        placeholder="Brdge Name"
+                                        placeholder="Enter a name for your Brdge"
                                         required
-                                        className="w-full bg-gray-900/50 border border-gray-700/50 rounded-lg px-4 py-3 text-gray-100 
-                                            placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 
-                                            hover:border-cyan-500/30 transition-all duration-200
-                                            shadow-[0_0_15px_rgba(0,0,0,0.2)] focus:shadow-[0_0_20px_rgba(34,211,238,0.15)]"
+                                        className="w-full bg-gray-900/40 border border-gray-700/50 rounded-lg 
+                                            px-4 py-2.5 text-base text-gray-100
+                                            placeholder:text-gray-500 
+                                            focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 
+                                            hover:border-cyan-500/30 
+                                            transition-all duration-200"
                                     />
                                 </div>
 
@@ -500,135 +817,7 @@ function CreateBrdgePage() {
                                         </div>
                                     </div>
 
-                                    {/* Format Selection */}
-                                    <div className="space-y-2">
-                                        <div className="text-gray-400 text-xs">
-                                            Choose recording format:
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {['16:9', '9:16'].map((format) => {
-                                                const isDisabled = format === '9:16';
-                                                return (
-                                                    <button
-                                                        key={format}
-                                                        type="button"
-                                                        onClick={() => !isDisabled && setRecordingFormat(format)}
-                                                        className={`
-                                                            flex-1 py-2 px-4 rounded-lg border transition-all duration-200 text-sm
-                                                            ${recordingFormat === format
-                                                                ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
-                                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                                                            }
-                                                            ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
-                                                        `}
-                                                        title={isDisabled ? 'Portrait mode (9:16) - Coming soon' : ''}
-                                                    >
-                                                        {format === '16:9' ? 'Landscape' : 'Portrait'} ({format})
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Recording Controls */}
-                                    <div className="flex gap-3 flex-col">
-                                        {/* Recording Mode Selection */}
-                                        <div className="space-y-2">
-                                            <div className="text-gray-400 text-xs">
-                                                Choose recording mode:
-                                            </div>
-                                            <div className="flex gap-2">
-                                                {[
-                                                    { id: 'screen', label: 'Screen Recording', icon: <Video className="w-4 h-4" /> },
-                                                    { id: 'webcam', label: 'Webcam Recording', icon: <Video className="w-4 h-4" /> }
-                                                ].map((mode) => (
-                                                    <button
-                                                        key={mode.id}
-                                                        type="button"
-                                                        onClick={() => setRecordingMode(mode.id)}
-                                                        className={`
-                                                            flex-1 py-2 px-4 rounded-lg border transition-all duration-200 text-sm
-                                                            flex items-center justify-center gap-2
-                                                            ${recordingMode === mode.id
-                                                                ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.15)]'
-                                                                : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/30 hover:text-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                                                            }
-                                                        `}
-                                                    >
-                                                        {mode.icon}
-                                                        {mode.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex gap-3">
-                                            <motion.button
-                                                type="button"
-                                                onClick={isRecording ? stopRecording : startRecording}
-                                                className={`flex-1 py-3 px-4 rounded-lg border transition-all duration-200
-                                                    flex items-center justify-center gap-2 text-sm relative
-                                                    ${isRecording
-                                                        ? 'bg-red-500/20 border-red-500/40 text-red-400 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
-                                                        : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-                                                    }
-                                                    hover:shadow-[0_0_25px_rgba(34,211,238,0.25)] hover:scale-[1.02]
-                                                    active:scale-[0.98]`}
-                                            >
-                                                {isRecording ? (
-                                                    <>
-                                                        <StopCircle className="w-4 h-4" />
-                                                        <span>Stop Recording ({formatTime(recordingTime)})</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {recordingMode === 'screen' ? (
-                                                            <>
-                                                                <Video className="w-4 h-4" />
-                                                                <span>{isMobile ? 'Record Video' : 'Record Screen'}</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Video className="w-4 h-4" />
-                                                                <span>Record Webcam</span>
-                                                            </>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </motion.button>
-
-                                            <motion.label
-                                                htmlFor="video-upload"
-                                                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg 
-                                                    border border-gray-700/50 text-gray-400 cursor-pointer
-                                                    hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]
-                                                    transition-all duration-200`}
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                            >
-                                                <Upload className="w-4 h-4" />
-                                                <span className="text-sm">Upload Video</span>
-                                                <span className="text-[10px] text-gray-500 ml-1">(.mp4/.webm)</span>
-                                                <input
-                                                    type="file"
-                                                    id="video-upload"
-                                                    accept="video/mp4,video/webm"
-                                                    onChange={handleScreenRecordingUpload}
-                                                    className="hidden"
-                                                />
-                                            </motion.label>
-                                        </div>
-
-                                        {/* Video Preview - Show when video is uploaded or recorded */}
-                                        {screenRecording && (
-                                            <div className="p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
-                                                <div className="flex items-center gap-2 text-cyan-400 text-sm">
-                                                    <Video className="w-4 h-4" />
-                                                    <span>Selected: {screenRecording.name}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    <RecordingOptions />
                                 </div>
 
                                 {/* Presentation Upload - Now Second and Optional */}

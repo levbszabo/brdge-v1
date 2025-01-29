@@ -19,7 +19,11 @@ import {
     DialogContent,
     List,
     ListItem,
-    Switch
+    Switch,
+    TextField,
+    DialogTitle,
+    DialogActions,
+    IconButton
 } from '@mui/material';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
@@ -34,6 +38,7 @@ import StarIcon from '@mui/icons-material/Star';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SaveIcon from '@mui/icons-material/Save';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import CloseIcon from '@mui/icons-material/Close';
 import { motion } from 'framer-motion';
 
 const typography = {
@@ -994,6 +999,10 @@ function UserProfilePage() {
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState(null);
+    const [openContactDialog, setOpenContactDialog] = useState(false);
+    const [contactMessage, setContactMessage] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     const fetchUserProfile = async () => {
         try {
@@ -1160,6 +1169,26 @@ function UserProfilePage() {
         }
     };
 
+    const handleContactSubmit = async () => {
+        if (!contactMessage.trim()) return;
+
+        setIsSending(true);
+        try {
+            const response = await api.post('/contact', { message: contactMessage });
+            if (response.data.success) {
+                setContactMessage('');
+                setOpenContactDialog(false);
+                setShowSuccess(true);
+                setSuccessMessage("Your message has been submitted. We'll get back to you soon!");
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            setError('Failed to send message. Please try again.');
+        } finally {
+            setIsSending(false);
+        }
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
@@ -1306,7 +1335,7 @@ function UserProfilePage() {
                                 }}
                                 onClose={() => setShowSuccess(false)}
                             >
-                                Your subscription has been updated successfully!
+                                {successMessage || 'Your subscription has been updated successfully!'}
                             </Alert>
                         </motion.div>
                     </Box>
@@ -1346,6 +1375,31 @@ function UserProfilePage() {
                                 <Typography sx={{ ...typography.caption, mb: 3 }}>
                                     Member since {formatDate(userProfile?.account?.created_at)}
                                 </Typography>
+
+                                <Button
+                                    onClick={() => setOpenContactDialog(true)}
+                                    sx={{
+                                        color: 'rgba(255, 255, 255, 0.5)',
+                                        fontSize: '0.85rem',
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            color: '#22D3EE',
+                                            background: 'rgba(34, 211, 238, 0.05)'
+                                        },
+                                        padding: '4px 12px',
+                                        borderRadius: '8px',
+                                        minWidth: 'auto',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        mx: 'auto'
+                                    }}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor" />
+                                    </svg>
+                                    Contact Support
+                                </Button>
                             </Box>
                         </Paper>
 
@@ -1617,6 +1671,119 @@ function UserProfilePage() {
                     </Grid>
                 </Grid>
             </Container>
+
+            <Dialog
+                open={openContactDialog}
+                onClose={() => setOpenContactDialog(false)}
+                maxWidth="sm"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        background: 'linear-gradient(145deg, rgba(2, 6, 23, 0.98), rgba(7, 11, 35, 0.98))',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    color: 'white',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    pb: 1
+                }}>
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            fontWeight: 600
+                        }}
+                    >
+                        Contact Us
+                    </Typography>
+                    <IconButton
+                        onClick={() => setOpenContactDialog(false)}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            '&:hover': { color: 'white' }
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            mb: 2,
+                            fontSize: '0.95rem'
+                        }}
+                    >
+                        Have questions or need assistance? We're here to help!
+                    </Typography>
+                    <TextField
+                        multiline
+                        rows={4}
+                        fullWidth
+                        placeholder="Type your message here..."
+                        value={contactMessage}
+                        onChange={(e) => setContactMessage(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                color: 'white',
+                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                borderRadius: '12px',
+                                '& fieldset': {
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                },
+                                '&:hover fieldset': {
+                                    borderColor: 'rgba(34, 211, 238, 0.3)',
+                                },
+                                '&.Mui-focused fieldset': {
+                                    borderColor: '#22D3EE',
+                                },
+                            },
+                            '& .MuiInputBase-input::placeholder': {
+                                color: 'rgba(255, 255, 255, 0.5)',
+                                opacity: 1,
+                            },
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions sx={{ p: 2, pt: 1 }}>
+                    <Button
+                        onClick={() => setOpenContactDialog(false)}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            '&:hover': {
+                                background: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleContactSubmit}
+                        disabled={!contactMessage.trim() || isSending}
+                        sx={{
+                            background: 'linear-gradient(135deg, #22D3EE, #0EA5E9)',
+                            color: 'white',
+                            px: 3,
+                            '&:hover': {
+                                background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
+                            },
+                            '&.Mui-disabled': {
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                color: 'rgba(255, 255, 255, 0.3)',
+                            }
+                        }}
+                    >
+                        {isSending ? 'Sending...' : 'Send Message'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <style>
                 {`

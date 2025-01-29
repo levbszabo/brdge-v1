@@ -499,3 +499,29 @@ class DocumentKnowledge(db.Model):
             "status": self.status,
             "error_message": self.error_message,
         }
+
+
+class UserIssues(db.Model):
+    __tablename__ = "user_issues"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(
+        db.String(20), default="pending"
+    )  # pending, in_progress, resolved
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    resolved_at = db.Column(db.DateTime, nullable=True)
+
+    # Relationships
+    user = db.relationship("User", backref=db.backref("issues", lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "message": self.message,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+        }

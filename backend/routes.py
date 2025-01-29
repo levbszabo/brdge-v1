@@ -32,6 +32,7 @@ from models import (
     KnowledgeBase,
     DocumentKnowledge,
     Recording,
+    UserIssues,
 )
 from utils import (
     clone_voice_helper,
@@ -3589,4 +3590,41 @@ def update_overage_settings(user):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating overage settings: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/contact", methods=["POST"])
+@login_required
+def contact(user):
+    try:
+        data = request.get_json()
+        message = data.get("message")
+
+        if not message:
+            return jsonify({"error": "Message is required"}), 400
+
+        # Get user's email directly from the User object
+        if not user.email:
+            return jsonify({"error": "User email not found"}), 404
+
+        # Log the issue in the database
+        new_issue = UserIssues(user_id=user.id, message=message, status="pending")
+        db.session.add(new_issue)
+        db.session.commit()
+
+        logger.info(
+            f"New support request logged - Issue ID: {new_issue.id}, User: {user.email}"
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Your message has been sent successfully",
+                "issue_id": new_issue.id,
+            }
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error logging contact request: {e}")
         return jsonify({"error": str(e)}), 500
