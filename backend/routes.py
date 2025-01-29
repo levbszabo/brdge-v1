@@ -40,6 +40,7 @@ from utils import (
     transcribe_audio_helper,
     align_transcript_with_slides,
     generate_voice_helper,
+    convert_webm_to_mp4,
 )
 from io import BytesIO
 import botocore
@@ -745,105 +746,101 @@ def create_brdge(user):
             start_async_pdf_processing(brdge.id, original_filename, presentation_key)
 
         # Handle recording file (required)
-        recording_filename = secure_filename(recording.filename)
-        recording_key = f"{folder}/recordings/{recording_filename}"
+        recording = request.files.get("screen_recording")
+        if not recording:
+            return jsonify({"error": "Recording file is required"}), 400
 
-        # Create Recording object
-        recording_obj = Recording(
-            brdge_id=brdge.id,
-            filename=recording_filename,
-            format="webm",
-            duration=recording_duration if recording_metadata else None,
-        )
-        db.session.add(recording_obj)
-
-        # Create initial BrdgeScript object
-        script_obj = BrdgeScript(
-            brdge_id=brdge.id,
-            status="pending",
-            script_metadata={
-                "recording_filename": recording_filename,
-                "duration": recording_duration,
-            },
-        )
-        db.session.add(script_obj)
+        # Save original WebM temporarily for processing
+        temp_webm_path = f"/tmp/{str(uuid.uuid4())}.webm"
+        recording.save(temp_webm_path)
 
         try:
-            # Upload recording to S3
-            recording.seek(0)
-            s3_client.upload_fileobj(
-                recording,
-                S3_BUCKET,
-                recording_key,
-                ExtraArgs={"ContentType": "video/webm"},
+            # Start transcription with WebM file (can happen in parallel)
+            transcript_data = transcribe_audio_helper(
+                temp_webm_path, f"/tmp/transcript_{brdge.id}.txt"
             )
 
-            # Download recording for transcription
-            temp_recording_path = f"/tmp/{recording_filename}"
-            s3_client.download_file(S3_BUCKET, recording_key, temp_recording_path)
+            # Convert WebM to MP4
+            mp4_path, conversion_success = convert_webm_to_mp4(temp_webm_path)
 
-            try:
-                # Transcribe the recording
-                transcript_data = transcribe_audio_helper(
-                    temp_recording_path, f"/tmp/transcript_{brdge.id}.txt"
+            if not conversion_success:
+                raise Exception("Failed to convert video to MP4 format")
+
+            # Upload MP4 to S3
+            mp4_filename = os.path.basename(mp4_path)
+            recording_key = f"{folder}/recordings/{mp4_filename}"
+
+            with open(mp4_path, "rb") as mp4_file:
+                s3_client.upload_fileobj(
+                    mp4_file,
+                    S3_BUCKET,
+                    recording_key,
+                    ExtraArgs={"ContentType": "video/mp4"},
                 )
 
+            # Create Recording object with MP4 info
+            recording_obj = Recording(
+                brdge_id=brdge.id,
+                filename=mp4_filename,
+                format="mp4",
+                duration=recording_duration if recording_metadata else None,
+            )
+            db.session.add(recording_obj)
+
+            # Create initial BrdgeScript object
+            script_obj = BrdgeScript(
+                brdge_id=brdge.id,
+                status="pending",
+                script_metadata={
+                    "recording_filename": mp4_filename,
+                    "duration": recording_duration,
+                },
+            )
+            db.session.add(script_obj)
+
+            try:
                 # Initialize empty lists for words and segments
                 words = []
                 segments = []
                 transcript_text = ""
 
-                try:
-                    # Get the first alternative from the first channel
-                    channels = transcript_data.get("channels", [])
-                    if channels and len(channels) > 0:
-                        alternatives = channels[0].get("alternatives", [])
-                        if alternatives and len(alternatives) > 0:
-                            alternative = alternatives[0]
-                            transcript_text = alternative.get("transcript", "")
+                # Get the first alternative from the first channel
+                channels = transcript_data.get("channels", [])
+                if channels and len(channels) > 0:
+                    alternatives = channels[0].get("alternatives", [])
+                    if alternatives and len(alternatives) > 0:
+                        alternative = alternatives[0]
+                        transcript_text = alternative.get("transcript", "")
 
-                            # Process word-level timing
-                            for word in alternative.get("words", []):
-                                words.append(
-                                    {
-                                        "word": word.get(
-                                            "punctuated_word", word.get("word", "")
-                                        ),
-                                        "start": word.get("start", 0),
-                                        "end": word.get("end", 0),
-                                        "confidence": word.get("confidence", 1.0),
-                                    }
-                                )
+                        # Process word-level timing
+                        for word in alternative.get("words", []):
+                            words.append(
+                                {
+                                    "word": word.get(
+                                        "punctuated_word", word.get("word", "")
+                                    ),
+                                    "start": word.get("start", 0),
+                                    "end": word.get("end", 0),
+                                    "confidence": word.get("confidence", 1.0),
+                                }
+                            )
 
-                            # Create segments from the transcript if paragraphs not available
-                            if not segments:
-                                segments.append(
-                                    {
-                                        "text": transcript_text,
-                                        "start": 0,
-                                        "end": (
-                                            alternative.get("words", [])[-1].get(
-                                                "end", 0
-                                            )
-                                            if alternative.get("words")
-                                            else 0
-                                        ),
-                                        "speaker": "Speaker 0",
-                                    }
-                                )
-                except Exception as parse_error:
-                    logger.error(f"Error parsing transcript data: {parse_error}")
-                    transcript_text = "Error processing transcript"
-                    segments.append(
-                        {
-                            "text": transcript_text,
-                            "start": 0,
-                            "end": 0,
-                            "speaker": "Speaker 0",
-                        }
-                    )
+                        # Create segments from the transcript if paragraphs not available
+                        if not segments:
+                            segments.append(
+                                {
+                                    "text": transcript_text,
+                                    "start": 0,
+                                    "end": (
+                                        alternative.get("words", [])[-1].get("end", 0)
+                                        if alternative.get("words")
+                                        else 0
+                                    ),
+                                    "speaker": "Speaker 0",
+                                }
+                            )
 
-                # Update script object with transcript
+                # Update script object with processed transcript data
                 script_obj.content = {
                     "transcript": transcript_text,
                     "segments": segments,
@@ -861,8 +858,10 @@ def create_brdge(user):
 
             finally:
                 # Clean up temp files
-                if os.path.exists(temp_recording_path):
-                    os.remove(temp_recording_path)
+                if os.path.exists(temp_webm_path):
+                    os.remove(temp_webm_path)
+                if os.path.exists(mp4_path):
+                    os.remove(mp4_path)
                 if os.path.exists(f"/tmp/transcript_{brdge.id}.txt"):
                     os.remove(f"/tmp/transcript_{brdge.id}.txt")
 
