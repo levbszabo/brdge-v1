@@ -50,13 +50,13 @@ import Footer from '../components/Footer';
 
 const fontFamily = 'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-// The user requested no errors, clear messaging, strong visuals, and good mobile rendering.
-// HeroSection and "Redefining Knowledge Sharing" (IntroducingBrdgeAI) components are good as is,
-// so we will keep them mostly intact, just ensuring no breakage.
-// The rest of the page (HowItWorksSection, ImpactSection, FinalCTA) will be refined for stronger messaging,
-// better mobile responsiveness, and clearer visuals.
+// The following components maintain the same structure and design,
+// but the copy now emphasizes how Brdge AI augments video content with
+// voice-based AI assistants to make sales pitches, Loom videos, onboarding walkthroughs, and training sessions interactive.
 
-// IntroducingBrdgeAI (the "Redefining Knowledge Sharing" component) - we keep as user said they work well
+//
+// IntroducingBrdgeAI - "Redefining Knowledge Sharing"
+//
 const IntroducingBrdgeAI = () => {
     const [ref, inView] = useInView({
         threshold: 0.2,
@@ -167,9 +167,7 @@ const IntroducingBrdgeAI = () => {
                                     }
                                 }}
                             >
-                                Turn your <em>static slideshows</em> and <em>pre-recorded videos</em> into{' '}
-                                <strong>dynamic, interactive sessions</strong>. Let viewers pause, ask
-                                questions, and get immediate answers in your voice—even when you're away.
+                                Transform your static videos, demos, and training sessions into interactive conversations. Brdge AI infuses your authentic content with a voice-powered assistant that answers questions instantly, ensuring your message is always on-brand and available 24/7.
                             </Typography>
 
                             <Typography
@@ -187,14 +185,12 @@ const IntroducingBrdgeAI = () => {
                                     }
                                 }}
                             >
-                                Watch as <strong>engagement soars</strong>, your <strong>time frees up</strong>,
-                                and your unique style stays front and center—even while you focus elsewhere.
-                                With Brdge AI, your content never clocks out.
+                                Give viewers the power to get instant answers and self-serve information—while you build stronger connections with your prospects. Every video transforms into an interactive conversation, streamlining your ˆworkflow, driving conversions, and building lasting trust.
                             </Typography>
 
                             {/* Feature bullets */}
                             <Box sx={{
-                                display: { xs: 'none', sm: 'flex' }, // Hide on mobile, show on tablet and up
+                                display: { xs: 'none', sm: 'flex' },
                                 flexDirection: 'row',
                                 gap: 3,
                                 justifyContent: 'center',
@@ -317,7 +313,7 @@ const IntroducingBrdgeAI = () => {
                         maxWidth: '1000px',
                         mx: 'auto',
                         position: 'relative',
-                        display: { xs: 'none', sm: 'block' }, // Hide on mobile, show on tablet and up
+                        display: { xs: 'none', sm: 'block' },
                         '&::before': {
                             content: '""',
                             position: 'absolute',
@@ -339,7 +335,7 @@ const IntroducingBrdgeAI = () => {
                                     paddingTop: '56.25%',
                                     borderRadius: '20px',
                                     overflow: 'hidden',
-                                    background: 'rgba(0, 41, 122, 0.3)', // Darker blue for video background
+                                    background: 'rgba(0, 41, 122, 0.3)',
                                     border: '1px solid rgba(0, 180, 219, 0.2)',
                                     boxShadow: `
                                         0 8px 32px rgba(0, 0, 0, 0.2),
@@ -404,10 +400,10 @@ const IntroducingBrdgeAI = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
-                    0 4px 20px rgba(0,0,0,0.2),
-                    0 0 0 1px rgba(255,255,255,0.1),
-                    0 0 40px rgba(0,180,219,0.1)
-                  `,
+                                    0 4px 20px rgba(0,0,0,0.2),
+                                    0 0 0 1px rgba(255,255,255,0.1),
+                                    0 0 40px rgba(0,180,219,0.1)
+                                `,
                                 flex: { xs: '1 1 100%', sm: '1' },
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -420,10 +416,10 @@ const IntroducingBrdgeAI = () => {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: `
-                      0 8px 30px rgba(0,0,0,0.2),
-                      0 0 0 1px rgba(0, 180, 219, 0.3),
-                      0 0 60px rgba(0, 180, 219, 0.1)
-                    `,
+                                        0 8px 30px rgba(0,0,0,0.2),
+                                        0 0 0 1px rgba(0, 180, 219, 0.3),
+                                        0 0 60px rgba(0, 180, 219, 0.1)
+                                    `,
                                     bgcolor: 'rgba(0, 41, 122, 0.3)'
                                 }
                             }}
@@ -444,7 +440,7 @@ const IntroducingBrdgeAI = () => {
                                 variant="body2"
                                 sx={{ color: 'rgba(255,255,255,0.9)', maxWidth: '160px', fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' } }}
                             >
-                                No delays or repeated calls—your AI answers viewer questions right away.
+                                Answer viewer questions in real time—no delays, no repeated calls. Your AI assistant responds instantly in your voice.
                             </Typography>
                         </Box>
 
@@ -459,10 +455,10 @@ const IntroducingBrdgeAI = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
-                    0 4px 20px rgba(0,0,0,0.2),
-                    0 0 0 1px rgba(255,255,255,0.1),
-                    0 0 40px rgba(0,180,219,0.1)
-                  `,
+                                    0 4px 20px rgba(0,0,0,0.2),
+                                    0 0 0 1px rgba(255,255,255,0.1),
+                                    0 0 40px rgba(0,180,219,0.1)
+                                `,
                                 flex: { xs: '1 1 100%', sm: '1' },
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -475,10 +471,10 @@ const IntroducingBrdgeAI = () => {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: `
-                      0 8px 30px rgba(0,0,0,0.2),
-                      0 0 0 1px rgba(0, 180, 219, 0.3),
-                      0 0 60px rgba(0, 180, 219, 0.1)
-                    `,
+                                        0 8px 30px rgba(0,0,0,0.2),
+                                        0 0 0 1px rgba(0, 180, 219, 0.3),
+                                        0 0 60px rgba(0, 180, 219, 0.1)
+                                    `,
                                     bgcolor: 'rgba(0, 41, 122, 0.3)'
                                 }
                             }}
@@ -499,7 +495,7 @@ const IntroducingBrdgeAI = () => {
                                 variant="body2"
                                 sx={{ color: 'rgba(255,255,255,0.9)', maxWidth: '160px', fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' } }}
                             >
-                                Share once, let Brdge AI handle unlimited requests—without repeating yourself.
+                                Upload your video once and let Brdge AI field unlimited inquiries—keeping your content interactive around the clock.
                             </Typography>
                         </Box>
 
@@ -514,10 +510,10 @@ const IntroducingBrdgeAI = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
-                    0 4px 20px rgba(0,0,0,0.2),
-                    0 0 0 1px rgba(255,255,255,0.1),
-                    0 0 40px rgba(0,180,219,0.1)
-                  `,
+                                    0 4px 20px rgba(0,0,0,0.2),
+                                    0 0 0 1px rgba(255,255,255,0.1),
+                                    0 0 40px rgba(0,180,219,0.1)
+                                `,
                                 flex: { xs: '1 1 100%', sm: '1' },
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -530,10 +526,10 @@ const IntroducingBrdgeAI = () => {
                                 '&:hover': {
                                     transform: 'translateY(-5px)',
                                     boxShadow: `
-                      0 8px 30px rgba(0,0,0,0.2),
-                      0 0 0 1px rgba(0, 180, 219, 0.3),
-                      0 0 60px rgba(0, 180, 219, 0.1)
-                    `,
+                                        0 8px 30px rgba(0,0,0,0.2),
+                                        0 0 0 1px rgba(0, 180, 219, 0.3),
+                                        0 0 60px rgba(0, 180, 219, 0.1)
+                                    `,
                                     bgcolor: 'rgba(0, 41, 122, 0.3)'
                                 }
                             }}
@@ -554,7 +550,7 @@ const IntroducingBrdgeAI = () => {
                                 variant="body2"
                                 sx={{ color: 'rgba(255,255,255,0.9)', maxWidth: '160px', fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' } }}
                             >
-                                Track engagement, see common questions, and refine your strategy based on real-time data.
+                                Gain real-time data on viewer questions to refine your sales pitch and training strategy.
                             </Typography>
                         </Box>
                     </Stack>
@@ -576,12 +572,12 @@ const IntroducingBrdgeAI = () => {
                                 width: '400px',
                                 height: '400px',
                                 background: `
-                    radial-gradient(circle at center,
-                    rgba(0,255,204,0.15) 0%,
-                    rgba(0,255,204,0.1) 20%,
-                    rgba(0,180,219,0.05) 40%,
-                    transparent 70%)
-                  `,
+                                    radial-gradient(circle at center,
+                                    rgba(0,255,204,0.15) 0%,
+                                    rgba(0,255,204,0.1) 20%,
+                                    rgba(0,180,219,0.05) 40%,
+                                    transparent 70%)
+                                `,
                                 filter: 'blur(40px)',
                                 zIndex: 0,
                                 animation: 'pulse 2s ease-in-out infinite'
@@ -606,18 +602,18 @@ const IntroducingBrdgeAI = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 boxShadow: `
-                    0 4px 20px rgba(255,255,255,0.2),
-                    0 0 0 1px rgba(255,255,255,0.1),
-                    0 0 40px rgba(0,180,219,0.2)
-                  `,
+                                    0 4px 20px rgba(255,255,255,0.2),
+                                    0 0 0 1px rgba(255,255,255,0.1),
+                                    0 0 40px rgba(0,180,219,0.2)
+                                `,
                                 zIndex: 1,
                                 '&:hover': {
                                     background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
                                     boxShadow: `
-                      0 6px 25px rgba(255,255,255,0.3),
-                      0 0 0 1px rgba(255,255,255,0.2),
-                      0 0 60px rgba(0,180,219,0.3)
-                    `,
+                                        0 6px 25px rgba(255,255,255,0.3),
+                                        0 0 0 1px rgba(255,255,255,0.2),
+                                        0 0 60px rgba(0,180,219,0.3)
+                                    `,
                                     transform: 'translateY(-2px)'
                                 },
                                 transition: 'all 0.3s ease-in-out'
@@ -629,34 +625,36 @@ const IntroducingBrdgeAI = () => {
                 </motion.div>
             </Container>
 
-            {/* Keyframe animations (same as before) */}
+            {/* Keyframe animations */}
             <style>
                 {`
-            @keyframes pulse {
-              0% { opacity: 0.5; }
-              50% { opacity: 1; }
-              100% { opacity: 0.5; }
-            }
-            @keyframes float {
-              0% { transform: translateY(0px) }
-              50% { transform: translateY(-20px) }
-              100% { transform: translateY(0px) }
-            }
-            @keyframes pulseUnderline {
-              0%, 100% {
-                opacity: 0.5; transform: translateX(-50%) scaleX(0.95); filter: brightness(0.8);
-              }
-              50% {
-                opacity: 1; transform: translateX(-50%) scaleX(1); filter: brightness(1.2);
-              }
-            }
-          `}
+                    @keyframes pulse {
+                      0% { opacity: 0.5; }
+                      50% { opacity: 1; }
+                      100% { opacity: 0.5; }
+                    }
+                    @keyframes float {
+                      0% { transform: translateY(0px) }
+                      50% { transform: translateY(-20px) }
+                      100% { transform: translateY(0px) }
+                    }
+                    @keyframes pulseUnderline {
+                      0%, 100% {
+                        opacity: 0.5; transform: translateX(-50%) scaleX(0.95); filter: brightness(0.8);
+                      }
+                      50% {
+                        opacity: 1; transform: translateX(-50%) scaleX(1); filter: brightness(1.2);
+                      }
+                    }
+                `}
             </style>
         </Box>
     );
 };
 
-// HeroSection - user said it works well, so minimal changes
+//
+// HeroSection - Keeping the dynamic, interactive feel and the "Speak Once, Connect Forever" message
+//
 const HeroSection = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const iconAnimation = useAnimation();
@@ -797,7 +795,6 @@ const HeroSection = () => {
                                 fontFamily: fontFamily
                             }}
                         >
-
                         </Box>
                     </Typography>
                 </motion.div>
@@ -1045,7 +1042,7 @@ const HeroSection = () => {
                         }
                     }}
                 >
-                    Imagine your recorded videos and documents actively <strong>talking</strong> with viewers. Let them <strong>pause</strong>, ask questions, and hear <strong>your voice</strong> respond—even when you're not around. Welcome to the revolution: living, breathing <strong>engagement that never sleeps.</strong>
+                    Imagine your sales demos and onboarding videos sparking real-time conversation. With Brdge AI, your video content becomes interactive—viewers can pause, ask questions, and instantly hear your authentic voice.
                 </Typography>
 
                 <Box sx={{
@@ -1121,11 +1118,9 @@ const HeroSection = () => {
                                 backdropFilter: 'blur(10px)',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
-                                    borderColor: 'white',
-                                    transform: 'translateY(-3px)',
-                                    bgcolor: 'rgba(0,255,204,0.1)',
-                                    boxShadow: '0 10px 30px rgba(0,255,204,0.15)',
-                                },
+                                    borderColor: 'rgba(255,255,255,0.4)',
+                                    backgroundColor: 'rgba(255,255,255,0.05)'
+                                }
                             }}
                         >
                             See It In Action
@@ -1177,8 +1172,9 @@ const HeroSection = () => {
     );
 };
 
-// Updated HowItWorksSection
-// Make messaging crisper and visually cleaner. Ensure mobile-friendly layout.
+//
+// HowItWorksSection - A simple 4-step process that turns your videos into interactive conversations
+//
 const HowItWorksSection = () => {
     const [ref, inView] = useInView({
         threshold: 0.2,
@@ -1189,25 +1185,25 @@ const HowItWorksSection = () => {
             number: "01",
             icon: <Upload size={32} />,
             title: "Upload or Record",
-            description: "Include a <strong>screen recording</strong> plus an optional PDF. Brdge transcribes everything for your AI. "
+            description: "Submit your screen recording, sales pitch, or onboarding video. Brdge AI transcribes and prepares your content for interactive engagement."
         },
         {
             number: "02",
             icon: <Sparkles size={32} />,
             title: "Define the Agent",
-            description: "Pick a personality and <strong>configure your knowledge base </strong>. Tailor the AIs responses to match your style."
+            description: "Customize your AI assistant by picking a personality and configuring its knowledge base. Tailor its responses to reflect your unique style and brand voice."
         },
         {
             number: "03",
             icon: <Mic size={32} />,
             title: "Clone Your Voice",
-            description: "Clone your distinct sound so every response feels like <strong> you're guiding the conversation.</strong>"
+            description: "Let your voice power every response. Clone your authentic sound so your AI delivers answers that feel truly personal."
         },
         {
             number: "04",
             icon: <Share2 size={32} />,
             title: "Share & Engage",
-            description: "Send one link. As viewers watch, they pause, ask, and the <strong>AI instantly replies</strong> in your voice."
+            description: "Distribute one link. As viewers watch, they pause, ask questions, and get immediate, voice-driven answers that keep them hooked."
         }
     ];
 
@@ -1269,7 +1265,7 @@ const HowItWorksSection = () => {
                             lineHeight: 1.6
                         }}
                     >
-                        Turn your slides and videos into a 24/7 conversation in just four steps.
+                        Turn your videos into a 24/7 interactive conversation with these 4 simple steps.
                     </Typography>
 
                     <Box sx={{
@@ -1438,42 +1434,43 @@ const HowItWorksSection = () => {
     );
 };
 
-// Updated ImpactSection with clearer messaging and more mobile-friendly layout
+//
+// ImpactSection - Showcasing the broad potential: interactive onboarding, sales, and education
+//
 const ImpactSection = () => {
     const [ref, inView] = useInView({
         threshold: 0.2,
         triggerOnce: true
     });
 
-    // Add state for expanded cards
+    // State for expanded cards
     const [expandedCard, setExpandedCard] = useState(null);
 
     const handleCardClick = (id) => {
         setExpandedCard(expandedCard === id ? null : id);
     };
 
-    // UPDATED copy: shorter, more direct
     const industries = [
         {
             id: 'onboarding',
             icon: <SchoolIcon />,
             title: 'Onboarding & Training',
-            subtitle: 'Empower new hires instantly',
+            subtitle: 'Engage new hires with interactive video walkthroughs',
             details: [
                 {
                     title: 'Streamline Orientation',
                     description:
-                        'Stop repeating policies or product intros—your AI fields common questions with perfect consistency.'
+                        'Eliminate repetitive onboarding sessions. Your AI assistant handles FAQs with consistent, on‑brand responses.'
                 },
                 {
                     title: 'Boost Confidence',
                     description:
-                        'New hires get clarity right when they need it, reducing confusion or delays.'
+                        'Empower new hires to explore your content interactively, getting clarity right when they need it.'
                 },
                 {
-                    title: 'Time Savings',
+                    title: 'Save Time',
                     description:
-                        'Automate basic Q&A so managers can focus on strategic growth.'
+                        'Automate basic Q&A so managers can focus on strategic initiatives.'
                 }
             ]
         },
@@ -1481,22 +1478,22 @@ const ImpactSection = () => {
             id: 'sales',
             icon: <BusinessCenter />,
             title: 'Sales & Customer Engagement',
-            subtitle: 'Close deals faster with real-time Q&A',
+            subtitle: 'Turn every sales pitch into an interactive conversation',
             details: [
                 {
                     title: '24/7 Demos',
                     description:
-                        'Prospects ask about pricing or features on their schedule—no more missed leads.'
+                        'Prospects can interact with your sales videos on their own time, asking questions and exploring features instantly.'
                 },
                 {
                     title: 'Build Trust',
                     description:
-                        'Consistent, accurate answers prove you\'re the expert they can count on.'
+                        'Deliver consistent, personalized answers that showcase your expertise and create stronger customer connections.'
                 },
                 {
-                    title: 'Shorten the Funnel',
+                    title: 'Accelerate Conversions',
                     description:
-                        'Instant clarifications speed up decisions, boosting conversions.'
+                        'Instant clarifications shorten the sales cycle and boost conversion rates.'
                 }
             ]
         },
@@ -1504,22 +1501,22 @@ const ImpactSection = () => {
             id: 'education',
             icon: <RocketLaunchIcon />,
             title: 'Education & Knowledge Hubs',
-            subtitle: 'Turn lectures into a living tutor',
+            subtitle: 'Transform lectures into interactive learning sessions',
             details: [
                 {
-                    title: 'Immediate Clarity',
+                    title: 'Instant Clarity',
                     description:
-                        'Students pause recorded lessons, ask deeper questions, and get real-time insight.'
+                        'Enable students to pause, ask questions, and get real-time insights—making every lesson more engaging.'
                 },
                 {
-                    title: 'Engaging Learning',
+                    title: 'Active Learning',
                     description:
-                        'Interactive Q&A improves comprehension more than passive videos.'
+                        'Replace passive watching with interactive Q&A that reinforces understanding and retention.'
                 },
                 {
-                    title: 'Scale Effortlessly',
+                    title: 'Scalable Teaching',
                     description:
-                        'Whether 5 or 5,000 students, your AI answers in detail so you can handle advanced needs.'
+                        'Whether for a small class or a massive online course, your AI assistant adapts to every student’s pace.'
                 }
             ]
         }
@@ -1571,8 +1568,7 @@ const ImpactSection = () => {
                             px: { xs: 2, sm: 0 },
                         }}
                     >
-                        Brdge AI supercharges your entire organization—
-                        driving efficiency, engagement, and unstoppable growth, no matter your field..
+                        Brdge AI empowers your organization by turning your videos into interactive, voice-powered experiences that drive efficiency and engagement across sales, onboarding, and education.
                     </Typography>
 
                     {/* CARDS */}
@@ -1586,7 +1582,7 @@ const ImpactSection = () => {
                             alignItems: 'stretch'
                         }}
                     >
-                        {industries.map((industry, index) => (
+                        {industries.map((industry) => (
                             <Box
                                 key={industry.id}
                                 sx={{
@@ -1724,7 +1720,9 @@ const ImpactSection = () => {
     );
 };
 
-// Updated FinalCTA for stronger clarity and visuals
+//
+// FinalCTA - A powerful invitation to join the revolution in interactive, voice-augmented video content
+//
 const FinalCTA = () => {
     const [ref, inView] = useInView({
         threshold: 0.2,
@@ -1793,7 +1791,7 @@ const FinalCTA = () => {
                             lineHeight: 1.6
                         }}
                     >
-                        Join the Brdge AI revolution and watch every video or document become an endless, interactive conversation.
+                        Join the Brdge AI revolution and transform every video—be it a sales pitch, onboarding walkthrough, or training session—into an endless, interactive conversation that drives results.
                     </Typography>
 
                     <Box sx={{
@@ -1896,7 +1894,7 @@ const fadeInUpVariant = {
 };
 
 function LandingPage() {
-    // Add intersection observer hook
+    // Intersection observer hook
     const [ref, inView] = useInView({
         threshold: 0.1,
         triggerOnce: true,
