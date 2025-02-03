@@ -6,6 +6,17 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
     const [connectorUrl, setConnectorUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const initConnection = async () => {
@@ -26,22 +37,24 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
                     brdgeId: brdgeId.toString(),
                     apiBaseUrl: cleanApiBaseUrl,
                     agentType: agentType,
-                    token: token || ''
+                    token: token || '',
+                    mobile: isMobile ? '1' : '0'
                 });
 
                 const url = `${baseUrl}?${params.toString()}`;
+                console.log('Connector URL:', url);
                 setConnectorUrl(url);
                 setError(null);
             } catch (error) {
-                setError(error.message || 'Failed to initialize connection');
                 console.error('Connection error:', error);
+                setError(error.message || 'Failed to initialize connection');
             } finally {
                 setIsLoading(false);
             }
         };
 
         initConnection();
-    }, [brdgeId, agentType, token]);
+    }, [brdgeId, agentType, token, isMobile]);
 
     useEffect(() => {
         const initAudio = async () => {
