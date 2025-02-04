@@ -602,7 +602,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 <span className="label">Payment Method</span>
                                 <div className="payment-chip">
                                     <PaymentIcon />
-                                    <span>••••4242</span>
+                                    <span>••••{userProfile?.payment_method_last4 || '****'}</span>
                                 </div>
                             </div>
                         )}

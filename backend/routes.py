@@ -1156,22 +1156,62 @@ def verify_token():
 @cross_origin()
 def get_user_profile():
     current_user_id = get_jwt_identity()
-    print(f"Fetching profile for user ID: {current_user_id}")  # Debug log
-
     user = User.query.get(current_user_id)
     if not user:
-        print("User not found")  # Debug log
         return jsonify({"error": "User not found"}), 404
 
     # Get or create user account
     user_account = user.account or UserAccount(user_id=user.id)
-    if not user.account:
-        print("Creating new user account")  # Debug log
-        db.session.add(user_account)
-        db.session.commit()
 
-    response_data = {"email": user.email, "account": user_account.to_dict()}
-    print("Response data:", response_data)  # Debug log
+    # Get payment method details if user has a Stripe customer ID
+    payment_method_last4 = None
+    if user_account.stripe_customer_id:
+        try:
+            # First get the customer
+            customer = stripe.Customer.retrieve(user_account.stripe_customer_id)
+
+            # If customer has an active subscription, get its payment method
+            if user_account.stripe_subscription_id:
+                subscription = stripe.Subscription.retrieve(
+                    user_account.stripe_subscription_id
+                )
+                # Get the payment method directly from the subscription's payment method
+                if subscription.default_payment_method:
+                    payment_method = stripe.PaymentMethod.retrieve(
+                        subscription.default_payment_method
+                    )
+                    if payment_method.card:
+                        payment_method_last4 = payment_method.card.last4
+            # Fallback to customer payment methods if no subscription
+            else:
+                # Check invoice_settings.default_payment_method first
+                payment_method_id = customer.invoice_settings.default_payment_method
+
+                if payment_method_id:
+                    payment_method = stripe.PaymentMethod.retrieve(payment_method_id)
+                    if payment_method.card:
+                        payment_method_last4 = payment_method.card.last4
+                # If no default payment method, check default_source
+                elif customer.default_source:
+                    payment_source = stripe.PaymentMethod.retrieve(
+                        customer.default_source
+                    )
+                    if hasattr(payment_source, "card"):
+                        payment_method_last4 = payment_source.card.last4
+
+            logger.info(f"Payment method found: {payment_method_last4 is not None}")
+
+        except Exception as e:
+            logger.error("Error fetching payment method details")
+            logger.debug(
+                f"Error type: {type(e).__name__}"
+            )  # Log only error type, not details
+
+    response_data = {
+        "email": user.email,
+        "account": user_account.to_dict(),
+        "payment_method_last4": payment_method_last4,
+    }
     return jsonify(response_data)
 
 
