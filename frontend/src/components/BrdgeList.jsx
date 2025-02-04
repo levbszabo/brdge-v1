@@ -167,7 +167,6 @@ const BrdgeList = ({
                             component={motion.tr}
                             whileHover={{ scale: 1.01 }}
                             transition={{ type: "tween", duration: 0.2 }}
-                            onClick={() => onEdit(brdge)}
                         >
                             <TableCell sx={styles.cell}>
                                 {brdge.name}
@@ -182,7 +181,7 @@ const BrdgeList = ({
                                 >
                                     <Tooltip title="View">
                                         <IconButton
-                                            onClick={() => onView(brdge)}
+                                            onClick={(e) => onView(e, brdge)}
                                             size="small"
                                             sx={styles.actionButton}
                                         >
@@ -191,7 +190,7 @@ const BrdgeList = ({
                                     </Tooltip>
                                     <Tooltip title="Edit">
                                         <IconButton
-                                            onClick={() => onEdit(brdge)}
+                                            onClick={(e) => onEdit(e, brdge)}
                                             size="small"
                                             sx={styles.actionButton}
                                         >
@@ -200,7 +199,7 @@ const BrdgeList = ({
                                     </Tooltip>
                                     <Tooltip title="Share">
                                         <IconButton
-                                            onClick={() => onShare(brdge)}
+                                            onClick={(e) => onShare(e, brdge)}
                                             size="small"
                                             sx={styles.actionButton}
                                         >
@@ -209,7 +208,7 @@ const BrdgeList = ({
                                     </Tooltip>
                                     <Tooltip title="Delete">
                                         <IconButton
-                                            onClick={() => onDelete(brdge)}
+                                            onClick={(e) => onDelete(e, brdge)}
                                             size="small"
                                             sx={{
                                                 ...styles.actionButton,

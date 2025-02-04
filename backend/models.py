@@ -370,7 +370,7 @@ class UsageLogs(db.Model):
     """Tracks agent interaction durations and usage metrics"""
 
     id = db.Column(db.Integer, primary_key=True)
-    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=True)
     owner_id = db.Column(
         db.Integer, db.ForeignKey("user.id"), nullable=False
     )  # The brdge owner

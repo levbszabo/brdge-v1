@@ -343,35 +343,18 @@ function BrdgeListPage() {
         brdge.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleView = (brdge) => {
+    const handleView = (e, brdge) => {
+        if (e) e.stopPropagation();
         navigate(`/viewBrdge/${brdge.id}`);
     };
 
-    const handleEdit = (brdge) => {
+    const handleEdit = (e, brdge) => {
+        if (e) e.stopPropagation();
         navigate(`/edit/${brdge.id}`);
     };
 
-    const handleShareToggle = async () => {
-        try {
-            const response = await api.post(`/brdges/${brdgeToShare.id}/toggle_shareable`);
-            // Update the local state with the new shareable status
-            setBrdgeToShare(prev => ({ ...prev, shareable: response.data.shareable }));
-            // Update the brdges list with the new status
-            setBrdges(brdges.map(b =>
-                b.id === brdgeToShare.id
-                    ? { ...b, shareable: response.data.shareable }
-                    : b
-            ));
-            showSnackbar(
-                `Brdge is now ${response.data.shareable ? 'public' : 'private'}`,
-                'success'
-            );
-        } catch (error) {
-            showSnackbar('Failed to update sharing settings', 'error');
-        }
-    };
-
-    const handleShare = (brdge) => {
+    const handleShare = (e, brdge) => {
+        if (e) e.stopPropagation();
         setBrdgeToShare(brdge);
         setShareDialogOpen(true);
     };
@@ -382,7 +365,8 @@ function BrdgeListPage() {
         setLinkCopied(false);
     };
 
-    const handleDelete = (brdge) => {
+    const handleDelete = (e, brdge) => {
+        if (e) e.stopPropagation();
         setBrdgeToDelete(brdge);
         setDeleteDialogOpen(true);
     };
@@ -402,22 +386,12 @@ function BrdgeListPage() {
     const isOverLimit = () => {
         if (!userStats) return false;
 
-        // Check if either brdges or minutes are over limit
-        const isBrdgesOverLimit = userStats.brdges_limit !== 'Unlimited' &&
+        const isBrdgesOverLimit =
+            userStats.brdges_limit !== 'Unlimited' &&
             parseInt(userStats.brdges_created) >= parseInt(userStats.brdges_limit);
-
         const isMinutesOverLimit = parseInt(userStats.minutes_used) >= parseInt(userStats.minutes_limit);
 
-        // If over limit, show upgrade prompt
-        if (isBrdgesOverLimit || isMinutesOverLimit) {
-            showSnackbar(
-                `You've reached your ${isBrdgesOverLimit ? 'brdges' : 'minutes'} limit. Upgrade your plan for more!`,
-                'warning'
-            );
-            return true;
-        }
-
-        return false;
+        return isBrdgesOverLimit || isMinutesOverLimit;
     };
 
     const canCreateBrdge = () => {
@@ -602,7 +576,8 @@ function BrdgeListPage() {
     const BrdgeItem = ({ brdge }) => {
         const [expanded, setExpanded] = useState(false);
 
-        const handleExpandClick = () => {
+        const handleExpandClick = (e) => {
+            e.stopPropagation();
             setExpanded(!expanded);
         };
 
@@ -653,6 +628,51 @@ function BrdgeListPage() {
         navigator.clipboard.writeText(shareableUrl);
         setLinkCopied(true);
         setTimeout(() => setLinkCopied(false), 2000);
+    };
+
+    const handleShareToggle = async () => {
+        if (!brdgeToShare) return;
+
+        try {
+            const response = await api.post(`/brdges/${brdgeToShare.id}/toggle_shareable`);
+            const newShareableStatus = response.data.shareable;
+
+            // Update states in a single batch
+            setBrdges(prevBrdges => prevBrdges.map(b =>
+                b.id === brdgeToShare.id ? { ...b, shareable: newShareableStatus } : b
+            ));
+
+            setBrdgeToShare(prev => ({
+                ...prev,
+                shareable: newShareableStatus
+            }));
+
+            showSnackbar(
+                `Brdge is now ${newShareableStatus ? 'public' : 'private'}`,
+                'success'
+            );
+        } catch (error) {
+            console.error('Error toggling share status:', error);
+            showSnackbar('Failed to update sharing settings', 'error');
+        }
+    };
+
+    const handleCreateClick = () => {
+        if (isOverLimit()) {
+            // Check which limit is exceeded to customize the warning message
+            const limitType =
+                userStats.brdges_limit !== 'Unlimited' &&
+                    parseInt(userStats.brdges_created) >= parseInt(userStats.brdges_limit)
+                    ? 'brdges'
+                    : 'minutes';
+            showSnackbar(
+                `You've reached your ${limitType} limit. Upgrade your plan for more!`,
+                'warning'
+            );
+            navigate('/profile');
+        } else {
+            navigate('/create');
+        }
     };
 
     // Define table columns
@@ -823,7 +843,7 @@ function BrdgeListPage() {
                         <Button
                             variant="contained"
                             startIcon={<Plus size={20} />}
-                            onClick={() => isOverLimit() ? navigate('/profile') : navigate('/create')}
+                            onClick={handleCreateClick}
                             sx={{
                                 width: { xs: '100%', sm: 'auto' },
                                 bgcolor: 'rgba(34,211,238,0.1)',

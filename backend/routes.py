@@ -297,8 +297,10 @@ def delete_brdge(brdge_id):
                 ).delete()
             Walkthrough.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 4. Delete usage logs
-            UsageLogs.query.filter_by(brdge_id=brdge_id).delete()
+            # 4. Disassociate usage logs from this brdge (set brdge_id to null)
+            UsageLogs.query.filter_by(brdge_id=brdge_id).update(
+                {UsageLogs.brdge_id: None}
+            )
 
             # 5. Delete voices if they exist
             Voice.query.filter_by(brdge_id=brdge_id).delete()
@@ -1373,8 +1375,7 @@ def cancel_subscription(user):
                 user_account.stripe_subscription_id, cancel_at_period_end=True
             )
 
-            # Update user account
-            user_account.account_type = "free"
+            # Only update subscription status, keep account_type unchanged
             user_account.subscription_status = "canceled"
 
             # Save changes
@@ -1385,7 +1386,7 @@ def cancel_subscription(user):
                     {
                         "message": "Subscription canceled successfully",
                         "details": {
-                            "message": "Your subscription has been canceled. While your brdges will remain in your account, they will be inactive until you reactivate your subscription.",
+                            "message": "Your subscription has been canceled but your account will remain active. Our team will contact you about next steps.",
                             "effective_date": (
                                 datetime.fromtimestamp(
                                     subscription.cancel_at

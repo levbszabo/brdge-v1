@@ -929,15 +929,6 @@ function UsageStats({ currentPlan }) {
         return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} brdges and ${minutesUsed}/${minutesLimit} minutes`;
     };
 
-    const isNearLimit = (currentStats) => {
-        if (!currentStats || currentStats.brdges_limit === 'Unlimited') return false;
-
-        const brdgeUsagePercent = (currentStats.brdges_created / parseInt(currentStats.brdges_limit)) * 100;
-        const minuteUsagePercent = (currentStats.minutes_used / currentStats.minutes_limit) * 100;
-
-        return brdgeUsagePercent >= 80 || minuteUsagePercent >= 80;
-    };
-
     return (
         <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
             <Paper elevation={0} sx={styles.card}>
@@ -1005,19 +996,6 @@ function UsageStats({ currentPlan }) {
                         </Box>
                     </Grid>
                 </Grid>
-
-                {isNearLimit(stats) && (
-                    <Alert
-                        severity="warning"
-                        sx={{
-                            mt: 2,
-                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                            color: '#FFA726'
-                        }}
-                    >
-                        You're approaching your plan limits. Consider upgrading to avoid interruption.
-                    </Alert>
-                )}
             </Paper>
         </motion.div>
     );
