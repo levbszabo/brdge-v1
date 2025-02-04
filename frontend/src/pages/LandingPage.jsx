@@ -16,7 +16,8 @@ import {
     useTheme,
     Paper,
     Collapse,
-    Icon
+    Icon,
+    Grid
 } from '@mui/material';
 import {
     ArrowForward,
@@ -139,7 +140,7 @@ const IntroducingBrdgeAI = () => {
 
                     {/* TOP TEXT SECTION */}
                     <Box sx={{
-                        maxWidth: '800px',
+                        maxWidth: '1000px',
                         mx: 'auto',
                         mb: { xs: 6, sm: 8 },
                     }}>
@@ -167,7 +168,9 @@ const IntroducingBrdgeAI = () => {
                                     }
                                 }}
                             >
-                                Transform your static videos, demos, and training sessions into interactive conversations. Brdge AI infuses your authentic content with a voice-powered assistant that answers questions instantly, ensuring your message is always on-brand and available 24/7.
+                                Transform your static videos, demos, and training sessions into interactive conversations.
+
+                                Brdge AI infuses your authentic content with a voice-powered assistant that answers questions instantly, ensuring your message is always on-brand and available 24/7.
                             </Typography>
 
                             <Typography
@@ -302,80 +305,6 @@ const IntroducingBrdgeAI = () => {
                                         24/7 Engagement
                                     </Typography>
                                 </Box>
-                            </Box>
-                        </motion.div>
-                    </Box>
-
-                    {/* VIDEO SECTION */}
-                    <Box sx={{
-                        width: '100%',
-                        mb: { xs: 6, sm: 8 },
-                        maxWidth: '1000px',
-                        mx: 'auto',
-                        position: 'relative',
-                        display: { xs: 'none', sm: 'block' },
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            width: '100%',
-                            height: '100%',
-                            background: 'radial-gradient(circle at center, rgba(0, 180, 219, 0.12), transparent 70%)',
-                            filter: 'blur(40px)',
-                            zIndex: 0
-                        }
-                    }}>
-                        <motion.div>
-                            <Box
-                                sx={{
-                                    position: 'relative',
-                                    width: '100%',
-                                    paddingTop: '56.25%',
-                                    borderRadius: '20px',
-                                    overflow: 'hidden',
-                                    background: 'rgba(0, 41, 122, 0.3)',
-                                    border: '1px solid rgba(0, 180, 219, 0.2)',
-                                    boxShadow: `
-                                        0 8px 32px rgba(0, 0, 0, 0.2),
-                                        0 4px 8px rgba(0, 0, 0, 0.1),
-                                        0 0 0 1px rgba(0, 180, 219, 0.1),
-                                        inset 0 0 32px rgba(0, 180, 219, 0.05)
-                                    `,
-                                    '&::before': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        inset: 0,
-                                        borderRadius: '20px',
-                                        padding: '1px',
-                                        background: 'linear-gradient(180deg, rgba(0, 180, 219, 0.2), rgba(0, 65, 194, 0.1))',
-                                        WebkitMask:
-                                            'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                                        WebkitMaskComposite: 'xor',
-                                        maskComposite: 'exclude',
-                                        zIndex: 1
-                                    }
-                                }}
-                            >
-                                <video
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
-                                    style={{
-                                        position: 'absolute',
-                                        top: '0',
-                                        left: '0',
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover',
-                                        padding: 0,
-                                    }}
-                                >
-                                    <source src={demoVideo} type="video/mp4" />
-                                    Your browser does not support the video tag.
-                                </video>
                             </Box>
                         </motion.div>
                     </Box>
@@ -1440,7 +1369,7 @@ const HowItWorksSection = () => {
 const ImpactSection = () => {
     const [ref, inView] = useInView({
         threshold: 0.2,
-        triggerOnce: true
+        triggerOnce: true,
     });
 
     // State for expanded cards
@@ -1460,19 +1389,19 @@ const ImpactSection = () => {
                 {
                     title: 'Streamline Orientation',
                     description:
-                        'Eliminate repetitive onboarding sessions. Your AI assistant handles FAQs with consistent, on‑brand responses.'
+                        'Eliminate repetitive onboarding sessions. Your AI assistant handles FAQs with consistent, on‑brand responses.',
                 },
                 {
                     title: 'Boost Confidence',
                     description:
-                        'Empower new hires to explore your content interactively, getting clarity right when they need it.'
+                        'Empower new hires to explore your content interactively, getting clarity right when they need it.',
                 },
                 {
                     title: 'Save Time',
                     description:
-                        'Automate basic Q&A so managers can focus on strategic initiatives.'
-                }
-            ]
+                        'Automate basic Q&A so managers can focus on strategic initiatives.',
+                },
+            ],
         },
         {
             id: 'sales',
@@ -1483,19 +1412,19 @@ const ImpactSection = () => {
                 {
                     title: '24/7 Demos',
                     description:
-                        'Prospects can interact with your sales videos on their own time, asking questions and exploring features instantly.'
+                        'Prospects can interact with your sales videos on their own time, asking questions and exploring features instantly.',
                 },
                 {
                     title: 'Build Trust',
                     description:
-                        'Deliver consistent, personalized answers that showcase your expertise and create stronger customer connections.'
+                        'Deliver consistent, personalized answers that showcase your expertise and create stronger customer connections.',
                 },
                 {
                     title: 'Accelerate Conversions',
                     description:
-                        'Instant clarifications shorten the sales cycle and boost conversion rates.'
-                }
-            ]
+                        'Instant clarifications shorten the sales cycle and boost conversion rates.',
+                },
+            ],
         },
         {
             id: 'education',
@@ -1506,20 +1435,20 @@ const ImpactSection = () => {
                 {
                     title: 'Instant Clarity',
                     description:
-                        'Enable students to pause, ask questions, and get real-time insights—making every lesson more engaging.'
+                        'Enable students to pause, ask questions, and get real-time insights—making every lesson more engaging.',
                 },
                 {
                     title: 'Active Learning',
                     description:
-                        'Replace passive watching with interactive Q&A that reinforces understanding and retention.'
+                        'Replace passive watching with interactive Q&A that reinforces understanding and retention.',
                 },
                 {
                     title: 'Scalable Teaching',
                     description:
-                        'Whether for a small class or a massive online course, your AI assistant adapts to every student’s pace.'
-                }
-            ]
-        }
+                        "Whether for a small class or a massive online course, your AI assistant adapts to every student's pace.",
+                },
+            ],
+        },
     ];
 
     return (
@@ -1529,7 +1458,7 @@ const ImpactSection = () => {
                 pb: { xs: 4, sm: 7, md: 10 },
                 px: { xs: 2, sm: 4, md: 6 },
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
             }}
         >
             <Container maxWidth="lg" ref={ref}>
@@ -1543,13 +1472,14 @@ const ImpactSection = () => {
                         variant="h2"
                         align="center"
                         sx={{
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                            fontSize: { xs: '2.25rem', sm: '2.5rem', md: '3rem' },
                             fontWeight: 600,
                             color: 'white',
-                            mb: { xs: 3, sm: 4, md: 5 },
+                            mb: { xs: 4, sm: 4, md: 5 },
                             letterSpacing: '0.02em',
                             textShadow: '0 0 20px rgba(255,255,255,0.3)',
                             textTransform: 'none',
+                            px: { xs: 2, sm: 0 },
                         }}
                     >
                         One Platform, Countless Possibilities
@@ -1561,92 +1491,112 @@ const ImpactSection = () => {
                         align="center"
                         sx={{
                             color: 'rgba(255,255,255,0.8)',
-                            mb: 6,
+                            mb: 3,
                             maxWidth: '800px',
                             mx: 'auto',
                             fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
                             px: { xs: 2, sm: 0 },
                         }}
                     >
-                        Brdge AI empowers your organization by turning your videos into interactive, voice-powered experiences that drive efficiency and engagement across sales, onboarding, and education.
+                        Brdge AI empowers your organization by turning your videos into
+                        interactive, voice-powered experiences that drive efficiency and
+                        engagement across sales, onboarding, and education.
                     </Typography>
 
-                    {/* CARDS */}
-                    <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={{ xs: 2, sm: 3, md: 4 }}
+                    {/* CARDS (using Grid for better horizontal layout) */}
+                    <Grid
+                        container
+                        spacing={{ xs: 4, sm: 3, md: 4 }}
+                        justifyContent="center"
                         sx={{
-                            justifyContent: 'center',
-                            mt: { xs: 4, md: 6 },
-                            px: { xs: 2, sm: 0 },
-                            alignItems: 'stretch'
+                            mt: { xs: 6, md: 8 },
+                            px: { xs: 0, sm: 3 },
                         }}
                     >
                         {industries.map((industry) => (
-                            <Box
-                                key={industry.id}
-                                sx={{
-                                    flex: { xs: '1', sm: '1 1 0' },
-                                    width: { sm: '33.33%' },
-                                    minHeight: '100%'
-                                }}
-                            >
+                            <Grid item key={industry.id} xs={12} sm={6} md={4}>
                                 <Paper
                                     onClick={() => handleCardClick(industry.id)}
                                     sx={{
+                                        width: '100%',
                                         height: '100%',
-                                        p: { xs: 3, md: 4 },
-                                        borderRadius: '16px',
+                                        p: { xs: 4, sm: 3, md: 4 },
+                                        borderRadius: { xs: '24px', sm: '16px' },
                                         backdropFilter: 'blur(12px)',
-                                        backgroundColor: expandedCard === industry.id ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.03)',
+                                        backgroundColor:
+                                            expandedCard === industry.id
+                                                ? 'rgba(255,255,255,0.05)'
+                                                : 'rgba(255,255,255,0.03)',
                                         border: '1px solid',
-                                        borderColor: expandedCard === industry.id ? 'rgba(0,255,204,0.2)' : 'rgba(255,255,255,0.1)',
+                                        borderColor:
+                                            expandedCard === industry.id
+                                                ? 'rgba(0,255,204,0.2)'
+                                                : 'rgba(255,255,255,0.1)',
                                         position: 'relative',
                                         transition: 'all 0.3s ease',
                                         cursor: 'pointer',
                                         display: 'flex',
                                         flexDirection: 'column',
+                                        overflow: 'visible',
                                         '&:hover': {
                                             boxShadow: '0 15px 40px rgba(0,255,204,0.15)',
                                             borderColor: 'rgba(0,255,204,0.3)',
-                                            transform: 'translateY(-5px)'
-                                        }
+                                            transform: 'translateY(-5px)',
+                                        },
                                     }}
                                 >
-                                    {/* CARD HEADER */}
+                                    {/* Card Header */}
                                     <Box
                                         sx={{
                                             display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 2,
-                                            mb: expandedCard === industry.id ? 3 : 0,
-                                            transition: 'margin 0.3s ease'
+                                            alignItems: 'flex-start',
+                                            gap: { xs: 2, sm: 2.5 },
+                                            mb: expandedCard === industry.id ? 4 : 0,
+                                            transition: 'margin 0.3s ease',
+                                            position: 'relative',
+                                            minHeight: { xs: '80px', sm: '60px' },
+                                            pr: { xs: 6, sm: 7 }, // Adjusted right padding to prevent overlap
                                         }}
                                     >
                                         <Box
                                             sx={{
-                                                p: 1.5,
-                                                backgroundColor: expandedCard === industry.id ? 'rgba(0, 255, 204, 0.15)' : 'rgba(0, 255, 204, 0.1)',
+                                                p: { xs: 1.5, sm: 1.25 },
+                                                backgroundColor:
+                                                    expandedCard === industry.id
+                                                        ? 'rgba(0, 255, 204, 0.15)'
+                                                        : 'rgba(0, 255, 204, 0.1)',
                                                 borderRadius: '50%',
                                                 display: 'flex',
                                                 justifyContent: 'center',
                                                 alignItems: 'center',
-                                                transition: 'all 0.3s ease'
+                                                flexShrink: 0,
+                                                width: { xs: '48px', sm: '40px' },
+                                                height: { xs: '48px', sm: '40px' },
                                             }}
                                         >
                                             {React.cloneElement(industry.icon, {
                                                 sx: {
-                                                    fontSize: 32,
-                                                    color: '#00ffcc'
-                                                }
+                                                    fontSize: { xs: 24, sm: 20 },
+                                                    color: '#00ffcc',
+                                                },
                                             })}
                                         </Box>
-                                        <Box sx={{ flexGrow: 1 }}>
+                                        <Box
+                                            sx={{
+                                                flex: 1,
+                                                minWidth: 0,
+                                                pr: { xs: 2, sm: 1 }, // Added padding for text spacing
+                                            }}
+                                        >
                                             <Typography
                                                 variant="h6"
                                                 sx={{
                                                     fontWeight: 600,
                                                     color: '#fff',
+                                                    fontSize: { xs: '1.2rem', sm: '1.1rem' },
+                                                    lineHeight: 1.3,
+                                                    mb: { xs: 1.5, sm: 1 },
+                                                    width: '100%',
                                                 }}
                                             >
                                                 {industry.title}
@@ -1655,7 +1605,9 @@ const ImpactSection = () => {
                                                 variant="body2"
                                                 sx={{
                                                     color: 'rgba(255,255,255,0.8)',
-                                                    mt: 0.5
+                                                    fontSize: { xs: '0.95rem', sm: '0.9rem' },
+                                                    lineHeight: 1.5,
+                                                    width: '100%',
                                                 }}
                                             >
                                                 {industry.subtitle}
@@ -1663,27 +1615,37 @@ const ImpactSection = () => {
                                         </Box>
                                         <Add
                                             sx={{
-                                                fontSize: 24,
+                                                fontSize: { xs: 24, sm: 20 },
                                                 color: '#fff',
-                                                transform: expandedCard === industry.id ? 'rotate(45deg)' : 'none',
-                                                transition: 'transform 0.3s ease'
+                                                transform:
+                                                    expandedCard === industry.id
+                                                        ? 'rotate(45deg)'
+                                                        : 'none',
+                                                transition: 'transform 0.3s ease',
+                                                position: 'absolute',
+                                                right: { xs: 4, sm: 6 },
+                                                top: { xs: 4, sm: 6 },
                                             }}
                                         />
                                     </Box>
 
+                                    {/* Card Content */}
                                     <Collapse in={expandedCard === industry.id}>
                                         <Box
                                             sx={{
-                                                mt: 3,
-                                                pt: 3,
-                                                borderTop: '1px solid rgba(255,255,255,0.1)'
+                                                mt: { xs: 3, sm: 2.5 },
+                                                pt: { xs: 3, sm: 2.5 },
+                                                borderTop: '1px solid rgba(255,255,255,0.1)',
                                             }}
                                         >
                                             {industry.details.map((detail, idx) => (
                                                 <Box
                                                     key={idx}
                                                     sx={{
-                                                        mb: idx !== industry.details.length - 1 ? 3 : 0
+                                                        mb:
+                                                            idx !== industry.details.length - 1
+                                                                ? { xs: 3, sm: 2.5 }
+                                                                : 0,
                                                     }}
                                                 >
                                                     <Typography
@@ -1692,7 +1654,7 @@ const ImpactSection = () => {
                                                             color: '#00ffcc',
                                                             fontWeight: 600,
                                                             mb: 1,
-                                                            fontSize: '0.95rem'
+                                                            fontSize: { xs: '1.05rem', sm: '0.95rem' },
                                                         }}
                                                     >
                                                         {detail.title}
@@ -1701,7 +1663,9 @@ const ImpactSection = () => {
                                                         variant="body2"
                                                         sx={{
                                                             color: 'rgba(255,255,255,0.8)',
-                                                            lineHeight: 1.6
+                                                            lineHeight: 1.6,
+                                                            fontSize: { xs: '0.95rem', sm: '0.9rem' },
+                                                            width: '100%',
                                                         }}
                                                     >
                                                         {detail.description}
@@ -1711,9 +1675,9 @@ const ImpactSection = () => {
                                         </Box>
                                     </Collapse>
                                 </Paper>
-                            </Box>
+                            </Grid>
                         ))}
-                    </Stack>
+                    </Grid>
                 </motion.div>
             </Container>
         </Box>

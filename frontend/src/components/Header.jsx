@@ -120,7 +120,7 @@ function Header() {
             sx={{
                 background: 'transparent',
                 backdropFilter: 'none',
-                pt: { xs: 0.5, sm: 1 },
+                pt: { xs: 0, sm: 1 },
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -129,22 +129,25 @@ function Header() {
             }}
         >
             <Toolbar sx={{
-                minHeight: { xs: '48px', sm: '40px' },
-                px: { xs: 1.5, sm: 2 },
+                minHeight: { xs: '32px', sm: '48px' },
+                px: { xs: 1, sm: 2 },
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                mt: { xs: 0.5, sm: 0 }
             }}>
                 <Box sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    flex: { xs: '1', sm: '0 1 auto' }
+                    flex: { xs: '1', sm: '0 1 auto' },
+                    height: { xs: '32px', sm: 'auto' }
                 }}>
                     <RouterLink to="/" style={{
                         color: 'inherit',
                         textDecoration: 'none',
                         display: 'flex',
                         alignItems: 'center',
+                        height: '100%'
                     }}>
                         <Typography
                             variant="h6"
@@ -152,11 +155,11 @@ function Header() {
                             sx={{
                                 color: 'white',
                                 display: 'block',
-                                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                fontSize: { xs: '0.95rem', sm: '1.25rem' },
                                 fontWeight: 500,
                                 letterSpacing: '0.02em',
                                 lineHeight: 1,
-                                transform: 'translateY(-1px)',
+                                transform: { xs: 'none', sm: 'translateY(-1px)' },
                                 textShadow: '0 0 10px rgba(0,255,204,0.3)',
                                 '&:hover': {
                                     textShadow: '0 0 15px rgba(0,255,204,0.4)',
@@ -172,17 +175,17 @@ function Header() {
                     <Box sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 1.5
+                        gap: { xs: 1, sm: 1.5 }
                     }}>
                         {isAuthenticated && (
                             <IconButton
                                 onClick={handleProfileClick}
                                 sx={{
-                                    width: 36,
-                                    height: 36,
+                                    width: { xs: 28, sm: 36 },
+                                    height: { xs: 28, sm: 36 },
                                     '& .MuiAvatar-root': {
-                                        width: 28,
-                                        height: 28
+                                        width: { xs: 24, sm: 28 },
+                                        height: { xs: 24, sm: 28 }
                                     }
                                 }}
                             >
@@ -191,7 +194,7 @@ function Header() {
                                         bgcolor: theme.palette.primary.main,
                                     }}
                                 >
-                                    <PersonIcon sx={{ fontSize: 24 }} />
+                                    <PersonIcon sx={{ fontSize: { xs: 18, sm: 24 } }} />
                                 </Avatar>
                             </IconButton>
                         )}
@@ -199,12 +202,12 @@ function Header() {
                             aria-label="menu"
                             onClick={() => setDrawerOpen(true)}
                             sx={{
-                                width: 36,
-                                height: 36,
+                                width: 32,
+                                height: 32,
                                 color: 'white'
                             }}
                         >
-                            <MenuIcon sx={{ fontSize: 24 }} />
+                            <MenuIcon sx={{ fontSize: 20 }} />
                         </IconButton>
 
                         <Drawer

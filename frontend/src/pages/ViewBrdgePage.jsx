@@ -13,6 +13,21 @@ function ViewBrdgePage() {
     const theme = useTheme();
 
     useEffect(() => {
+        // Prevent scrolling on the body
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+        document.body.style.touchAction = 'none';
+
+        // Add viewport meta for mobile
+        const viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) {
+            viewport.setAttribute('content',
+                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'
+            );
+        }
+
         const checkAccess = async () => {
             try {
                 // Get the Brdge details
@@ -42,7 +57,20 @@ function ViewBrdgePage() {
         };
 
         checkAccess();
-    }, [id, token]);
+
+        return () => {
+            // Cleanup
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.height = '';
+            document.body.style.touchAction = '';
+
+            if (viewport) {
+                viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
+            }
+        };
+    }, []);
 
     if (loading) {
         return (
@@ -86,10 +114,17 @@ function ViewBrdgePage() {
         <Box sx={{
             display: 'flex',
             flexDirection: 'column',
-            height: '100vh',
-            width: '100vw',
+            height: '100dvh',
+            width: '100%',
+            maxWidth: '100%',
             background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-            position: 'relative',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflow: 'hidden',
+            touchAction: 'none',
             '&::before': {
                 content: '""',
                 position: 'absolute',
@@ -118,7 +153,7 @@ function ViewBrdgePage() {
             }
         }}>
             <Box sx={{
-                height: '64px',
+                height: { xs: '40px', sm: '64px' },
                 flexShrink: 0
             }} />
 
@@ -126,7 +161,8 @@ function ViewBrdgePage() {
                 flex: 1,
                 position: 'relative',
                 overflow: 'hidden',
-                zIndex: 1
+                zIndex: 1,
+                WebkitOverflowScrolling: 'touch'
             }}>
                 <AgentConnector
                     brdgeId={id}
