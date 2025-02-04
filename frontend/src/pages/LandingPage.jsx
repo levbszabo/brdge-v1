@@ -750,6 +750,7 @@ const HeroSection = () => {
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
+                            mx: 'auto', // Add this to ensure horizontal centering
                             '&::before': {
                                 content: '""',
                                 position: 'absolute',
@@ -1372,7 +1373,6 @@ const ImpactSection = () => {
         triggerOnce: true,
     });
 
-    // State for expanded cards
     const [expandedCard, setExpandedCard] = useState(null);
 
     const handleCardClick = (id) => {
@@ -1388,18 +1388,15 @@ const ImpactSection = () => {
             details: [
                 {
                     title: 'Streamline Orientation',
-                    description:
-                        'Eliminate repetitive onboarding sessions. Your AI assistant handles FAQs with consistent, on‑brand responses.',
+                    description: 'Eliminate repetitive onboarding sessions. Your AI assistant handles FAQs with consistent, on‑brand responses.',
                 },
                 {
                     title: 'Boost Confidence',
-                    description:
-                        'Empower new hires to explore your content interactively, getting clarity right when they need it.',
+                    description: 'Empower new hires to explore your content interactively, getting clarity right when they need it.',
                 },
                 {
                     title: 'Save Time',
-                    description:
-                        'Automate basic Q&A so managers can focus on strategic initiatives.',
+                    description: 'Automate basic Q&A so managers can focus on strategic initiatives.',
                 },
             ],
         },
@@ -1411,18 +1408,15 @@ const ImpactSection = () => {
             details: [
                 {
                     title: '24/7 Demos',
-                    description:
-                        'Prospects can interact with your sales videos on their own time, asking questions and exploring features instantly.',
+                    description: 'Prospects can interact with your sales videos on their own time, asking questions and exploring features instantly.',
                 },
                 {
                     title: 'Build Trust',
-                    description:
-                        'Deliver consistent, personalized answers that showcase your expertise and create stronger customer connections.',
+                    description: 'Deliver consistent, personalized answers that showcase your expertise and create stronger customer connections.',
                 },
                 {
                     title: 'Accelerate Conversions',
-                    description:
-                        'Instant clarifications shorten the sales cycle and boost conversion rates.',
+                    description: 'Instant clarifications shorten the sales cycle and boost conversion rates.',
                 },
             ],
         },
@@ -1434,250 +1428,233 @@ const ImpactSection = () => {
             details: [
                 {
                     title: 'Instant Clarity',
-                    description:
-                        'Enable students to pause, ask questions, and get real-time insights—making every lesson more engaging.',
+                    description: 'Enable students to pause, ask questions, and get real-time insights—making every lesson more engaging.',
                 },
                 {
                     title: 'Active Learning',
-                    description:
-                        'Replace passive watching with interactive Q&A that reinforces understanding and retention.',
+                    description: 'Replace passive watching with interactive Q&A that reinforces understanding and retention.',
                 },
                 {
                     title: 'Scalable Teaching',
-                    description:
-                        "Whether for a small class or a massive online course, your AI assistant adapts to every student's pace.",
+                    description: "Whether for a small class or a massive online course, your AI assistant adapts to every student's pace.",
                 },
             ],
         },
     ];
 
     return (
-        <Box
-            sx={{
-                pt: { xs: 4, sm: 6, md: 8 },
-                pb: { xs: 4, sm: 7, md: 10 },
-                px: { xs: 2, sm: 4, md: 6 },
-                position: 'relative',
-                overflow: 'hidden',
-            }}
-        >
+        <Box sx={{
+            pt: { xs: 6, sm: 8 },
+            pb: { xs: 6, sm: 8 },
+            px: { xs: 2, sm: 3 },
+        }}>
             <Container maxWidth="lg" ref={ref}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                 >
-                    {/* HEADLINE */}
-                    <Typography
-                        variant="h2"
-                        align="center"
-                        sx={{
-                            fontSize: { xs: '2.25rem', sm: '2.5rem', md: '3rem' },
-                            fontWeight: 600,
-                            color: 'white',
-                            mb: { xs: 4, sm: 4, md: 5 },
-                            letterSpacing: '0.02em',
-                            textShadow: '0 0 20px rgba(255,255,255,0.3)',
-                            textTransform: 'none',
-                            px: { xs: 2, sm: 0 },
-                        }}
-                    >
-                        One Platform, Countless Possibilities
-                    </Typography>
+                    {/* Section Header */}
+                    <Box sx={{ mb: { xs: 6, sm: 8 } }}>
+                        <Typography
+                            variant="h2"
+                            align="center"
+                            sx={{
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontWeight: 600,
+                                color: 'white',
+                                mb: 3,
+                                letterSpacing: '-0.02em',
+                                textTransform: 'none',
+                            }}
+                        >
+                            One platform, countless possibilities
+                        </Typography>
 
-                    {/* SUB-HEADLINE */}
-                    <Typography
-                        variant="h5"
-                        align="center"
-                        sx={{
-                            color: 'rgba(255,255,255,0.8)',
-                            mb: 3,
-                            maxWidth: '800px',
-                            mx: 'auto',
-                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
-                            px: { xs: 2, sm: 0 },
-                        }}
-                    >
-                        Brdge AI empowers your organization by turning your videos into
-                        interactive, voice-powered experiences that drive efficiency and
-                        engagement across sales, onboarding, and education.
-                    </Typography>
+                        <Typography
+                            variant="h5"
+                            align="center"
+                            sx={{
+                                color: 'rgba(255,255,255,0.8)',
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                lineHeight: 1.6,
+                                textTransform: 'none',
+                            }}
+                        >
+                            Brdge AI empowers your organization by turning your videos into
+                            interactive, voice-powered experiences.
+                        </Typography>
+                    </Box>
 
-                    {/* CARDS (using Grid for better horizontal layout) */}
-                    <Grid
-                        container
-                        spacing={{ xs: 4, sm: 3, md: 4 }}
-                        justifyContent="center"
-                        sx={{
-                            mt: { xs: 6, md: 8 },
-                            px: { xs: 0, sm: 3 },
-                        }}
-                    >
+                    {/* Cards Container */}
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, 1fr)',
+                            md: 'repeat(3, 1fr)'
+                        },
+                        gap: { xs: 3, sm: 4 },
+                        width: '100%',
+                    }}>
                         {industries.map((industry) => (
-                            <Grid item key={industry.id} xs={12} sm={6} md={4}>
-                                <Paper
-                                    onClick={() => handleCardClick(industry.id)}
-                                    sx={{
-                                        width: '100%',
-                                        height: '100%',
-                                        p: { xs: 4, sm: 3, md: 4 },
-                                        borderRadius: { xs: '24px', sm: '16px' },
-                                        backdropFilter: 'blur(12px)',
-                                        backgroundColor:
-                                            expandedCard === industry.id
-                                                ? 'rgba(255,255,255,0.05)'
-                                                : 'rgba(255,255,255,0.03)',
-                                        border: '1px solid',
-                                        borderColor:
-                                            expandedCard === industry.id
-                                                ? 'rgba(0,255,204,0.2)'
-                                                : 'rgba(255,255,255,0.1)',
-                                        position: 'relative',
-                                        transition: 'all 0.3s ease',
-                                        cursor: 'pointer',
+                            <Paper
+                                key={industry.id}
+                                onClick={() => handleCardClick(industry.id)}
+                                elevation={0}
+                                sx={{
+                                    position: 'relative',
+                                    background: expandedCard === industry.id
+                                        ? 'rgba(0,41,122,0.3)'
+                                        : 'rgba(0,41,122,0.2)',
+                                    backdropFilter: 'blur(10px)',
+                                    borderRadius: '16px',
+                                    border: '1px solid',
+                                    borderColor: expandedCard === industry.id
+                                        ? 'rgba(0,255,204,0.2)'
+                                        : 'rgba(255,255,255,0.1)',
+                                    p: { xs: 3, sm: 4 },
+                                    pb: { xs: 5, sm: 4 },
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                        borderColor: 'rgba(0,255,204,0.3)',
+                                        boxShadow: '0 8px 30px rgba(0,255,204,0.15)',
+                                    },
+                                }}
+                            >
+                                {/* Card Header */}
+                                <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: 2.5,
+                                    mb: 2,
+                                }}>
+                                    <Box sx={{
+                                        p: 1.5,
+                                        bgcolor: 'rgba(0,255,204,0.1)',
+                                        borderRadius: '12px',
                                         display: 'flex',
-                                        flexDirection: 'column',
-                                        overflow: 'visible',
-                                        '&:hover': {
-                                            boxShadow: '0 15px 40px rgba(0,255,204,0.15)',
-                                            borderColor: 'rgba(0,255,204,0.3)',
-                                            transform: 'translateY(-5px)',
-                                        },
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}>
+                                        {React.cloneElement(industry.icon, {
+                                            sx: { fontSize: 24, color: '#00ffcc' }
+                                        })}
+                                    </Box>
+
+                                    <Box sx={{ flex: 1 }}>
+                                        <Typography
+                                            variant="h6"
+                                            sx={{
+                                                color: '#fff',
+                                                fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                                fontWeight: 600,
+                                                mb: 1,
+                                            }}
+                                        >
+                                            {industry.title}
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: 'rgba(255,255,255,0.7)',
+                                                fontSize: '0.9rem',
+                                                lineHeight: 1.5,
+                                            }}
+                                        >
+                                            {industry.subtitle}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+
+                                {/* Plus Sign Indicator - Mobile Only */}
+                                <Box
+                                    sx={{
+                                        display: { xs: 'flex', sm: 'none' },
+                                        position: 'absolute',
+                                        bottom: '12px',
+                                        left: '12px',
+                                        alignItems: 'center',
+                                        gap: 1,
                                     }}
                                 >
-                                    {/* Card Header */}
                                     <Box
                                         sx={{
+                                            width: '24px',
+                                            height: '24px',
+                                            borderRadius: '50%',
+                                            bgcolor: 'rgba(0,255,204,0.1)',
                                             display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: { xs: 2, sm: 2.5 },
-                                            mb: expandedCard === industry.id ? 4 : 0,
-                                            transition: 'margin 0.3s ease',
-                                            position: 'relative',
-                                            minHeight: { xs: '80px', sm: '60px' },
-                                            pr: { xs: 6, sm: 7 }, // Adjusted right padding to prevent overlap
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.3s ease',
+                                            transform: expandedCard === industry.id ? 'rotate(45deg)' : 'none',
                                         }}
                                     >
-                                        <Box
-                                            sx={{
-                                                p: { xs: 1.5, sm: 1.25 },
-                                                backgroundColor:
-                                                    expandedCard === industry.id
-                                                        ? 'rgba(0, 255, 204, 0.15)'
-                                                        : 'rgba(0, 255, 204, 0.1)',
-                                                borderRadius: '50%',
-                                                display: 'flex',
-                                                justifyContent: 'center',
-                                                alignItems: 'center',
-                                                flexShrink: 0,
-                                                width: { xs: '48px', sm: '40px' },
-                                                height: { xs: '48px', sm: '40px' },
-                                            }}
-                                        >
-                                            {React.cloneElement(industry.icon, {
-                                                sx: {
-                                                    fontSize: { xs: 24, sm: 20 },
-                                                    color: '#00ffcc',
-                                                },
-                                            })}
-                                        </Box>
-                                        <Box
-                                            sx={{
-                                                flex: 1,
-                                                minWidth: 0,
-                                                pr: { xs: 2, sm: 1 }, // Added padding for text spacing
-                                            }}
-                                        >
-                                            <Typography
-                                                variant="h6"
-                                                sx={{
-                                                    fontWeight: 600,
-                                                    color: '#fff',
-                                                    fontSize: { xs: '1.2rem', sm: '1.1rem' },
-                                                    lineHeight: 1.3,
-                                                    mb: { xs: 1.5, sm: 1 },
-                                                    width: '100%',
-                                                }}
-                                            >
-                                                {industry.title}
-                                            </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: 'rgba(255,255,255,0.8)',
-                                                    fontSize: { xs: '0.95rem', sm: '0.9rem' },
-                                                    lineHeight: 1.5,
-                                                    width: '100%',
-                                                }}
-                                            >
-                                                {industry.subtitle}
-                                            </Typography>
-                                        </Box>
                                         <Add
                                             sx={{
-                                                fontSize: { xs: 24, sm: 20 },
-                                                color: '#fff',
-                                                transform:
-                                                    expandedCard === industry.id
-                                                        ? 'rotate(45deg)'
-                                                        : 'none',
-                                                transition: 'transform 0.3s ease',
-                                                position: 'absolute',
-                                                right: { xs: 4, sm: 6 },
-                                                top: { xs: 4, sm: 6 },
+                                                fontSize: 18,
+                                                color: '#00ffcc',
                                             }}
                                         />
                                     </Box>
+                                    <Typography
+                                        sx={{
+                                            fontSize: '0.75rem',
+                                            color: 'rgba(255,255,255,0.6)',
+                                            fontWeight: 500,
+                                        }}
+                                    >
+                                        {expandedCard === industry.id ? 'Show less' : 'Learn more'}
+                                    </Typography>
+                                </Box>
 
-                                    {/* Card Content */}
-                                    <Collapse in={expandedCard === industry.id}>
-                                        <Box
-                                            sx={{
-                                                mt: { xs: 3, sm: 2.5 },
-                                                pt: { xs: 3, sm: 2.5 },
-                                                borderTop: '1px solid rgba(255,255,255,0.1)',
-                                            }}
-                                        >
-                                            {industry.details.map((detail, idx) => (
-                                                <Box
-                                                    key={idx}
+                                {/* Expandable Content */}
+                                <Collapse in={expandedCard === industry.id}>
+                                    <Box sx={{
+                                        mt: 3,
+                                        pt: 3,
+                                        borderTop: '1px solid rgba(255,255,255,0.1)',
+                                    }}>
+                                        {industry.details.map((detail, idx) => (
+                                            <Box
+                                                key={idx}
+                                                sx={{
+                                                    mb: idx !== industry.details.length - 1 ? 3 : 0
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="subtitle1"
                                                     sx={{
-                                                        mb:
-                                                            idx !== industry.details.length - 1
-                                                                ? { xs: 3, sm: 2.5 }
-                                                                : 0,
+                                                        color: '#00ffcc',
+                                                        fontWeight: 600,
+                                                        fontSize: '0.95rem',
+                                                        mb: 1,
                                                     }}
                                                 >
-                                                    <Typography
-                                                        variant="subtitle1"
-                                                        sx={{
-                                                            color: '#00ffcc',
-                                                            fontWeight: 600,
-                                                            mb: 1,
-                                                            fontSize: { xs: '1.05rem', sm: '0.95rem' },
-                                                        }}
-                                                    >
-                                                        {detail.title}
-                                                    </Typography>
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{
-                                                            color: 'rgba(255,255,255,0.8)',
-                                                            lineHeight: 1.6,
-                                                            fontSize: { xs: '0.95rem', sm: '0.9rem' },
-                                                            width: '100%',
-                                                        }}
-                                                    >
-                                                        {detail.description}
-                                                    </Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    </Collapse>
-                                </Paper>
-                            </Grid>
+                                                    {detail.title}
+                                                </Typography>
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        color: 'rgba(255,255,255,0.7)',
+                                                        fontSize: '0.9rem',
+                                                        lineHeight: 1.6,
+                                                    }}
+                                                >
+                                                    {detail.description}
+                                                </Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </Collapse>
+                            </Paper>
                         ))}
-                    </Grid>
+                    </Box>
                 </motion.div>
             </Container>
         </Box>
