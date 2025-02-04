@@ -883,9 +883,9 @@ function UsageStats({ currentPlan }) {
     const getMinutesLimit = (accountType) => {
         switch (accountType) {
             case 'pro':
-                return 300;
+                return 1000;
             case 'standard':
-                return 120;
+                return 300;
             default:
                 return 30;
         }
@@ -916,6 +916,26 @@ function UsageStats({ currentPlan }) {
 
     const getMinutesUsagePercentage = () => {
         return (stats.minutes_used / stats.minutes_limit) * 100;
+    };
+
+    const getUsageDescription = (currentStats) => {
+        if (!currentStats) return '';
+
+        const brdgesUsed = currentStats.brdges_created;
+        const brdgesLimit = currentStats.brdges_limit;
+        const minutesUsed = Math.round(currentStats.minutes_used);
+        const minutesLimit = currentStats.minutes_limit;
+
+        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} brdges and ${minutesUsed}/${minutesLimit} minutes`;
+    };
+
+    const isNearLimit = (currentStats) => {
+        if (!currentStats || currentStats.brdges_limit === 'Unlimited') return false;
+
+        const brdgeUsagePercent = (currentStats.brdges_created / parseInt(currentStats.brdges_limit)) * 100;
+        const minuteUsagePercent = (currentStats.minutes_used / currentStats.minutes_limit) * 100;
+
+        return brdgeUsagePercent >= 80 || minuteUsagePercent >= 80;
     };
 
     return (
@@ -985,6 +1005,19 @@ function UsageStats({ currentPlan }) {
                         </Box>
                     </Grid>
                 </Grid>
+
+                {isNearLimit(stats) && (
+                    <Alert
+                        severity="warning"
+                        sx={{
+                            mt: 2,
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            color: '#FFA726'
+                        }}
+                    >
+                        You're approaching your plan limits. Consider upgrading to avoid interruption.
+                    </Alert>
+                )}
             </Paper>
         </motion.div>
     );
@@ -1214,9 +1247,8 @@ function UserProfilePage() {
             features: [
                 "1 Bridge",
                 "30 Minutes Monthly Usage",
-                "Basic Customization",
-                "Limited Analytics",
-                "Standard Support"
+                "Email Support",
+                "Basic Customization"
             ],
             isActive: currentPlan === 'free',
             tier: 'free',
@@ -1224,13 +1256,12 @@ function UserProfilePage() {
         },
         {
             title: "Standard",
-            price: "$29/month",
+            price: "$99/month",
             features: [
                 "Up to 10 Bridges",
-                "120 Minutes Monthly Usage",
-                "Basic Customization",
-                "Basic Analytics",
-                "Standard Support"
+                "300 Minutes Monthly Usage",
+                "Email Support",
+                "Basic Customization"
             ],
             isActive: currentPlan === 'standard',
             onClick: currentPlan === 'pro' ? handleManageSubscription : handleStandardUpgrade,
@@ -1238,13 +1269,12 @@ function UserProfilePage() {
         },
         {
             title: "Premium",
-            price: "$59/month",
+            price: "$249/month",
             features: [
                 "Unlimited Bridges",
-                "300 Minutes Monthly Usage",
-                "Full Customization",
-                "Advanced Analytics",
-                "Priority Support"
+                "1000 Minutes Monthly Usage",
+                "Priority Support",
+                "Advanced Customization"
             ],
             isActive: currentPlan === 'pro',
             onClick: handlePremiumUpgrade,
@@ -1256,11 +1286,11 @@ function UserProfilePage() {
     const getSubscriptionDescription = (currentPlan) => {
         switch (currentPlan) {
             case 'standard':
-                return "You're currently on our standard plan. Upgrade to premium for more features!";
+                return "You're on our Standard plan with 300 minutes/month. Upgrade to Premium for unlimited bridges!";
             case 'pro':
-                return "You're currently on our premium plan. Enjoy all the advanced features!";
+                return "You're on our Premium plan with 1000 minutes/month and unlimited bridges!";
             default:
-                return "Upgrade your plan to unlock more features and capabilities.";
+                return "Upgrade your plan to get more minutes and bridges.";
         }
     };
 

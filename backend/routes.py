@@ -92,23 +92,24 @@ endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # Add these constants at the top of the file with other configurations
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
-STRIPE_PRODUCT_PRICE = 5900  # Price in cents ($59.00)
+STRIPE_PRODUCT_PRICE = 24900  # Price in cents ($249.00) - Premium tier price
 STRIPE_PRODUCT_CURRENCY = "usd"
+STRIPE_STANDARD_PRICE = 9900  # Price in cents ($99.00) - Standard tier price
 
 # Set up logger
 logger = logging.getLogger(__name__)
 
 # Add these constants at the top of routes.py with other configurations
 SUBSCRIPTION_TIERS = {
-    "free": {"brdges_limit": 2, "minutes_limit": 30},
+    "free": {"brdges_limit": 1, "minutes_limit": 30},  # Updated from 2 to 1
     "standard": {
-        "brdges_limit": 20,
-        "minutes_limit": 120,
+        "brdges_limit": 10,  # Updated from 20 to 10
+        "minutes_limit": 300,  # Updated from 120 to 300
         "price_id": os.getenv("STRIPE_STANDARD_PRICE_ID"),
     },
     "pro": {  # Premium tier
         "brdges_limit": float("inf"),  # Unlimited
-        "minutes_limit": 300,
+        "minutes_limit": 1000,  # Updated from 300 to 1000
         "price_id": os.getenv("STRIPE_PREMIUM_PRICE_ID"),
     },
     "admin": {  # Admin tier - manually assigned only

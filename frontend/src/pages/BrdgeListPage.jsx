@@ -272,9 +272,9 @@ function BrdgeListPage() {
     const getMinutesLimit = (accountType) => {
         switch (accountType) {
             case 'pro':
-                return 300;
+                return 1000;
             case 'standard':
-                return 120;
+                return 300;
             default:
                 return 30;
         }
@@ -408,7 +408,16 @@ function BrdgeListPage() {
 
         const isMinutesOverLimit = parseInt(userStats.minutes_used) >= parseInt(userStats.minutes_limit);
 
-        return isBrdgesOverLimit || isMinutesOverLimit;
+        // If over limit, show upgrade prompt
+        if (isBrdgesOverLimit || isMinutesOverLimit) {
+            showSnackbar(
+                `You've reached your ${isBrdgesOverLimit ? 'brdges' : 'minutes'} limit. Upgrade your plan for more!`,
+                'warning'
+            );
+            return true;
+        }
+
+        return false;
     };
 
     const canCreateBrdge = () => {
@@ -418,7 +427,7 @@ function BrdgeListPage() {
         // If on pro plan or unlimited limit, always return true
         if (userStats.brdges_limit === 'Unlimited') return true;
 
-        // For standard plan (20 brdges) or free plan (2 brdges)
+        // For standard plan (10 brdges) or free plan (1 brdge)
         const currentLimit = parseInt(userStats.brdges_limit);
         const currentCount = parseInt(userStats.brdges_created);
 
