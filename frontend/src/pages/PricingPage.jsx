@@ -130,19 +130,22 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                         zIndex: 2,
                         background: isPopular
                             ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)'
-                            : 'rgba(255, 255, 255, 0.1)',
+                            : 'rgba(255, 255, 255, 0.05)',
                         color: 'white',
                         py: { xs: 1.25, sm: 1.5 },
                         borderRadius: '50px',
                         fontSize: { xs: '0.9rem', sm: '1rem' },
+                        fontWeight: 500,
+                        letterSpacing: '0.03em',
+                        transition: 'all 0.3s ease-in-out',
                         '&:hover': {
                             background: isPopular
                                 ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)'
-                                : 'rgba(255, 255, 255, 0.2)',
+                                : 'rgba(255, 255, 255, 0.1)',
                             transform: 'scale(1.05)',
                             boxShadow: isPopular
                                 ? '0 6px 20px rgba(79, 156, 249, 0.4)'
-                                : 'none',
+                                : '0 4px 15px rgba(255, 255, 255, 0.1)',
                         },
                     }}
                 >
@@ -300,28 +303,44 @@ function PricingPage() {
                             variant="h5"
                             align="center"
                             sx={{
-                                mb: 8,
+                                mb: 2,
                                 fontFamily: 'Satoshi',
-                                color: 'rgba(255, 255, 255, 0.8)',
+                                color: 'rgba(255, 255, 255, 0.9)',
                                 maxWidth: '800px',
                                 mx: 'auto',
-                                fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
-                                fontWeight: 400,
+                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.4rem' },
+                                fontWeight: 500,
                                 letterSpacing: '0.01em',
                                 lineHeight: 1.6
                             }}
                         >
-                            Select the perfect plan for your sales & demand gen needs.
-                            Extra minutes are billed at $0.12/min.
+                            Select the perfect plan to supercharge your sales and demand generation.
+                        </Typography>
+                        <Typography
+                            align="center"
+                            sx={{
+                                mb: 8,
+                                fontFamily: 'Satoshi',
+                                color: '#4FC3F7',
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                fontSize: { xs: '0.875rem', sm: '0.95rem', md: '1rem' },
+                                fontWeight: 400,
+                                letterSpacing: '0.02em',
+                                textShadow: '0 0 10px rgba(79, 195, 247, 0.3)',
+                                opacity: 0.9
+                            }}
+                        >
+                            Additional minutes are billed at $0.12/minute
                         </Typography>
                     </motion.div>
 
-                    <Grid container spacing={{ xs: 3, sm: 4 }}>
+                    <Grid container spacing={{ xs: 3, sm: 4, md: 5 }} sx={{ position: 'relative', zIndex: 2 }}>
                         {tiers.map((tier, index) => (
                             <Grid item xs={12} sm={6} md={4} key={tier.name}>
                                 <PricingTier
                                     tier={tier}
-                                    isPopular={index === 1} // Highlight the 'Standard' tier
+                                    isPopular={index === 1}
                                     delay={index * 0.2}
                                 />
                             </Grid>

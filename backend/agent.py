@@ -355,6 +355,11 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
         else:
             self.chat_ctx.append(role="system", text=merged_system_text)
 
+    # def interrupt(self, interrupt_all: bool = False):
+    #     """Interrupt the current speech"""
+    #     logger.info("Interrupting current speech")
+    #     return super().interrupt(interrupt_all=interrupt_all)
+
 
 async def entrypoint(ctx: JobContext):
     logger.info("Entrypoint started")
@@ -398,7 +403,7 @@ async def entrypoint(ctx: JobContext):
         if not agent:
             logger.warning("Agent not initialized, cannot process chat message")
             return
-
+        agent.interrupt(interrupt_all=True)
         cleaned_message = " ".join(msg.message.split()).strip()
         if cleaned_message:
             logger.info(f"Received chat message: {cleaned_message}")

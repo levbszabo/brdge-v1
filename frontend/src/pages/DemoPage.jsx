@@ -22,7 +22,7 @@ import {
 import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
 
-// Styled Card with glassy look + subtle gradient
+// Styled Card with a glassy look + subtle gradient
 const StyledCard = styled(Card)(({ theme, disabled }) => ({
     height: '100%',
     minHeight: '420px',
@@ -39,9 +39,17 @@ const StyledCard = styled(Card)(({ theme, disabled }) => ({
     filter: disabled ? 'grayscale(20%)' : 'none',
     '&:hover': {
         transform: disabled ? 'none' : 'translateY(-10px)',
-        boxShadow: disabled ? '0 8px 32px rgba(0, 0, 0, 0.2)' : '0 12px 40px rgba(0, 180, 219, 0.2)',
+        boxShadow: disabled
+            ? '0 8px 32px rgba(0, 0, 0, 0.2)'
+            : '0 12px 40px rgba(0, 180, 219, 0.2)',
         '& .icon-wrapper': {
-            background: disabled ? 'rgba(79, 156, 249, 0.1)' : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+            background: disabled
+                ? 'rgba(79, 156, 249, 0.1)'
+                : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+            transform: 'scale(1.05)',
+        },
+        '& .highlight-text': {
+            color: '#4FC3F7',
         }
     },
 }));
@@ -51,7 +59,7 @@ const IconWrapper = styled(Box)({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: '2rem',
+    padding: '1.75rem',
     backgroundColor: 'rgba(79, 156, 249, 0.1)',
     transition: 'all 0.3s ease-in-out',
     '& .MuiSvgIcon-root': {
@@ -63,11 +71,12 @@ const IconWrapper = styled(Box)({
         boxShadow: '0 0 15px rgba(79, 156, 249, 0.4)',
         '& .MuiSvgIcon-root': {
             color: '#00FFCC',
-        }
-    }
+            transform: 'scale(1.1)',
+        },
+    },
 });
 
-// Add a new Coming Soon Banner component
+// Optional Coming Soon banner (if needed for future demos)
 const ComingSoonBanner = styled(Box)({
     position: 'absolute',
     top: '24px',
@@ -80,50 +89,55 @@ const ComingSoonBanner = styled(Box)({
     fontWeight: 600,
     zIndex: 2,
     boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-    letterSpacing: '0.05em'
+    letterSpacing: '0.05em',
 });
 
-// Demo Data
+// Revised demo data – three demos focused on sales/demand gen and onboarding
 const demos = [
     {
         id: 1,
-        title: '24/7 Sales Assistant',
+        title: '24/7 Virtual SDR',
         description:
-            'Automate lead qualification and FAQs so your team can focus on closing deals.',
-        value: 'Shorten sales cycles and convert more leads effortlessly.',
+            'Your AI sales rep that qualifies leads 24/7. Ask questions and sign up instantly.',
+        benefits: [
+            'Instant lead qualification',
+            'Smart meeting scheduling',
+            '24/7 availability',
+        ],
+        stats: '85% faster lead response time',
         icon: <BusinessCenter />,
         url: 'https://brdge-ai.com/viewBrdge/141',
-        disabled: true
+        disabled: false,
     },
     {
         id: 2,
-        title: 'Onboarding AI Guide',
+        title: 'Interactive Product Demo',
         description:
-            'Transform HR docs into an interactive guide for new employees.',
-        value: 'Reduce repetitive Q&A and improve training engagement.',
-        icon: <GroupAdd />,
-        url: 'https://brdge-ai.com/viewBrdge/144',
-        disabled: true
+            'Engage with our product video and get real-time answers. Watch your sales cycle shorten.',
+        benefits: [
+            'Interactive video experience',
+            'Real-time Q&A',
+            'Personalized demos',
+        ],
+        stats: '2.3x higher engagement rate',
+        icon: <PresentToAll />,
+        url: 'https://brdge-ai.com/viewBrdge/146',
+        disabled: false,
     },
     {
         id: 3,
-        title: 'Team Knowledge Hub',
+        title: 'Onboarding & Talent Experience',
         description:
-            'Centralize company knowledge and empower teams to self-serve answers.',
-        value: 'Eliminate unnecessary meetings and reduce chat overload.',
-        icon: <MenuBook />,
-        url: 'https://brdge-ai.com/viewBrdge/173',
-        disabled: true
-    },
-    {
-        id: 4,
-        title: 'Expert Portfolio & Q&A',
-        description:
-            'Showcase your expertise with instant answers for your audience.',
-        value: 'Scale your personal brand and monetize your skills.',
-        icon: <PresentToAll />,
-        url: 'https://brdge-ai.com/viewBrdge/146',
-        disabled: true
+            'Experience a first-day onboarding guide that doubles as a talent showcase.',
+        benefits: [
+            'Automated onboarding',
+            'Interactive training',
+            'Instant support',
+        ],
+        stats: '60% reduction in onboarding time',
+        icon: <GroupAdd />,
+        url: 'https://brdge-ai.com/viewBrdge/144',
+        disabled: false,
     },
 ];
 
@@ -145,7 +159,8 @@ const DemoPage = () => {
         <Box
             sx={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+                background:
+                    'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
                 position: 'relative',
                 overflow: 'hidden',
                 py: { xs: 8, md: 12 },
@@ -156,7 +171,8 @@ const DemoPage = () => {
                     left: '-10%',
                     width: '500px',
                     height: '500px',
-                    background: 'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
+                    background:
+                        'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
                     borderRadius: '50%',
                     filter: 'blur(60px)',
                     animation: 'float 15s infinite alternate',
@@ -192,10 +208,11 @@ const DemoPage = () => {
                                 transform: 'translateX(-50%)',
                                 width: '120px',
                                 height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                                background:
+                                    'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
                                 borderRadius: '1px',
-                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
-                            }
+                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)',
+                            },
                         }}
                     >
                         Interactive AI Demos
@@ -214,12 +231,12 @@ const DemoPage = () => {
                             px: { xs: 2, sm: 0 },
                         }}
                     >
-                        See how Brdge AI helps teams automate tasks and scale their impact
+                        Discover how Brdge AI automates sales, qualifies leads, and even streamlines onboarding.
                     </Typography>
 
                     <Grid container spacing={4}>
                         {demos.map((demo, index) => (
-                            <Grid item xs={12} sm={6} md={3} key={demo.id}>
+                            <Grid item xs={12} sm={6} md={4} key={demo.id}>
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -228,32 +245,31 @@ const DemoPage = () => {
                                 >
                                     <StyledCard disabled={demo.disabled}>
                                         {demo.disabled && (
-                                            <ComingSoonBanner>
-                                                Coming Soon
-                                            </ComingSoonBanner>
+                                            <ComingSoonBanner>Coming Soon</ComingSoonBanner>
                                         )}
                                         <IconWrapper
                                             className="icon-wrapper"
-                                            sx={{
-                                                opacity: demo.disabled ? 0.7 : 1
-                                            }}
+                                            sx={{ opacity: demo.disabled ? 0.7 : 1 }}
                                         >
                                             {demo.icon}
                                         </IconWrapper>
-                                        <CardContent sx={{
-                                            flexGrow: 1,
-                                            p: 3,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 2,
-                                            opacity: demo.disabled ? 0.7 : 1
-                                        }}>
+                                        <CardContent
+                                            sx={{
+                                                flexGrow: 1,
+                                                p: 3,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 2,
+                                                opacity: demo.disabled ? 0.7 : 1,
+                                            }}
+                                        >
                                             <Typography
                                                 variant="h6"
                                                 sx={{
                                                     fontWeight: 600,
                                                     color: '#4F9CF9',
                                                     fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                                    mb: 1,
                                                 }}
                                             >
                                                 {demo.title}
@@ -263,27 +279,70 @@ const DemoPage = () => {
                                                 sx={{
                                                     color: 'rgba(255, 255, 255, 0.9)',
                                                     lineHeight: 1.6,
+                                                    mb: 2,
                                                 }}
                                             >
                                                 {demo.description}
                                             </Typography>
-                                            <Typography
-                                                variant="body2"
-                                                sx={{
-                                                    color: 'rgba(255, 255, 255, 0.6)',
-                                                    fontStyle: 'italic',
-                                                    mt: 'auto'
-                                                }}
-                                            >
-                                                {demo.value}
-                                            </Typography>
+
+                                            <Box sx={{ mt: 'auto' }}>
+                                                {demo.benefits.map((benefit, idx) => (
+                                                    <Box
+                                                        key={idx}
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            mb: 1,
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            sx={{
+                                                                width: '6px',
+                                                                height: '6px',
+                                                                borderRadius: '50%',
+                                                                backgroundColor: '#4F9CF9',
+                                                                mr: 1.5,
+                                                            }}
+                                                        />
+                                                        <Typography
+                                                            variant="body2"
+                                                            className="highlight-text"
+                                                            sx={{
+                                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                                transition: 'color 0.3s ease',
+                                                            }}
+                                                        >
+                                                            {benefit}
+                                                        </Typography>
+                                                    </Box>
+                                                ))}
+
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{
+                                                        mt: 2,
+                                                        py: 1,
+                                                        px: 2,
+                                                        borderRadius: '4px',
+                                                        backgroundColor: 'rgba(79, 156, 249, 0.1)',
+                                                        color: '#4FC3F7',
+                                                        display: 'inline-block',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 500,
+                                                    }}
+                                                >
+                                                    {demo.stats}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
                                         <CardActions sx={{ p: 3, pt: 0 }}>
                                             <Button
                                                 fullWidth
                                                 variant="contained"
                                                 disabled={demo.disabled}
-                                                onClick={() => handleExploreDemo(demo.url, demo.disabled)}
+                                                onClick={() =>
+                                                    handleExploreDemo(demo.url, demo.disabled)
+                                                }
                                                 sx={{
                                                     background: demo.disabled
                                                         ? 'rgba(79, 156, 249, 0.3)'
@@ -293,15 +352,19 @@ const DemoPage = () => {
                                                     py: 1.5,
                                                     textTransform: 'none',
                                                     fontSize: '1rem',
+                                                    fontWeight: 500,
                                                     cursor: demo.disabled ? 'not-allowed' : 'pointer',
+                                                    transition: 'all 0.3s ease',
                                                     '&:hover': {
                                                         background: demo.disabled
                                                             ? 'rgba(79, 156, 249, 0.3)'
                                                             : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                                                        transform: 'translateY(-2px)',
+                                                        boxShadow: '0 4px 15px rgba(0, 180, 219, 0.3)',
                                                     },
                                                 }}
                                             >
-                                                {demo.disabled ? 'Coming Soon' : 'Explore Demo'}
+                                                {demo.disabled ? 'Coming Soon' : 'Try Demo'}
                                             </Button>
                                         </CardActions>
                                     </StyledCard>
