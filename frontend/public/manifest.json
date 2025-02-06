@@ -1,6 +1,6 @@
 {
-  "short_name": "Bridge",
-  "name": "Bridge App",
+  "short_name": "Brdge AI",
+  "name": "Brdge AI - Interactive AI Video Platform",
   "icons": [
     {
       "src": "new-img.png",
@@ -20,6 +20,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#000B1F",
+  "background_color": "#000B1F"
 }
