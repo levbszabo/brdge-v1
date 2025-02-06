@@ -305,7 +305,7 @@ function BrdgeListPage() {
             setBrdges(response.data.brdges || []);
             setLoading(false);
         } catch (error) {
-            setError('Failed to fetch Brdges');
+            setError('Failed to fetch Bridges');
             setLoading(false);
         }
     };
@@ -345,7 +345,7 @@ function BrdgeListPage() {
 
     const handleView = (e, brdge) => {
         if (e) e.stopPropagation();
-        navigate(`/viewBrdge/${brdge.id}`);
+        navigate(`/viewBridge/${brdge.id}`);
     };
 
     const handleEdit = (e, brdge) => {
@@ -375,11 +375,11 @@ function BrdgeListPage() {
         try {
             await api.delete(`/brdges/${brdgeToDelete.id}`);
             setBrdges(brdges.filter((b) => b.id !== brdgeToDelete.id));
-            showSnackbar('Brdge deleted successfully', 'success');
+            showSnackbar('Bridge deleted successfully', 'success');
             setDeleteDialogOpen(false);
             fetchStats(); // Refresh stats after deletion
         } catch (error) {
-            showSnackbar('Failed to delete Brdge', 'error');
+            showSnackbar('Failed to delete Bridge', 'error');
         }
     };
 
@@ -624,7 +624,7 @@ function BrdgeListPage() {
     };
 
     const handleCopyLink = () => {
-        const shareableUrl = `${window.location.origin}/viewBrdge/${brdgeToShare?.id}`;
+        const shareableUrl = `${window.location.origin}/viewBridge/${brdgeToShare?.id}`;
         navigator.clipboard.writeText(shareableUrl);
         setLinkCopied(true);
         setTimeout(() => setLinkCopied(false), 2000);
@@ -648,7 +648,7 @@ function BrdgeListPage() {
             }));
 
             showSnackbar(
-                `Brdge is now ${newShareableStatus ? 'public' : 'private'}`,
+                `Bridge is now ${newShareableStatus ? 'public' : 'private'}`,
                 'success'
             );
         } catch (error) {
@@ -663,7 +663,7 @@ function BrdgeListPage() {
             const limitType =
                 userStats.brdges_limit !== 'Unlimited' &&
                     parseInt(userStats.brdges_created) >= parseInt(userStats.brdges_limit)
-                    ? 'brdges'
+                    ? 'bridges'
                     : 'minutes';
             showSnackbar(
                 `You've reached your ${limitType} limit. Upgrade your plan for more!`,
@@ -747,7 +747,7 @@ function BrdgeListPage() {
         <Box sx={styles.pageContainer}>
             <Container maxWidth="lg">
                 <Typography variant="h4" sx={styles.header}>
-                    Your Brdges
+                    Your Bridges
                 </Typography>
 
                 <Box
@@ -785,7 +785,7 @@ function BrdgeListPage() {
                             }}
                         />
                         <InputBase
-                            placeholder="Search brdges..."
+                            placeholder="Search bridges..."
                             value={searchTerm}
                             onChange={handleSearch}
                             sx={{
@@ -816,10 +816,10 @@ function BrdgeListPage() {
                         <Grid item xs={12} sm={6}>
                             <Box sx={styles.statsCard}>
                                 <Typography variant="subtitle1" sx={{ color: '#22D3EE', mb: 1, fontWeight: 'bold' }}>
-                                    Brdges
+                                    Bridges
                                 </Typography>
                                 <UsageIndicator
-                                    title="Brdges"
+                                    title="Bridges"
                                     current={userStats.brdges_created}
                                     limit={userStats.brdges_limit}
                                 />
@@ -865,7 +865,7 @@ function BrdgeListPage() {
                                 }
                             }}
                         >
-                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Brdge'}
+                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Bridge'}
                         </Button>
                     </Box>
                 </Box>
@@ -949,7 +949,7 @@ function BrdgeListPage() {
                                 fontWeight: 600,
                                 fontSize: '1.1rem'
                             }}>
-                                Delete Brdge
+                                Delete Bridge
                             </Typography>
                             <Typography variant="caption" sx={{
                                 color: 'rgba(255, 255, 255, 0.7)',
@@ -996,7 +996,7 @@ function BrdgeListPage() {
                                     fontWeight: 500,
                                     mb: 1
                                 }}>
-                                    Are you sure you want to delete this Brdge?
+                                    Are you sure you want to delete this bridge?
                                 </Typography>
                                 <Typography variant="body2" sx={{
                                     color: 'rgba(255, 255, 255, 0.7)',
@@ -1044,7 +1044,7 @@ function BrdgeListPage() {
                                 }
                             }}
                         >
-                            Delete Brdge
+                            Delete Bridge
                         </Button>
                     </DialogActions>
                 </Dialog>
@@ -1071,7 +1071,7 @@ function BrdgeListPage() {
                         alignItems: 'center',
                         justifyContent: 'space-between'
                     }}>
-                        <Typography variant="h6">Share Brdge</Typography>
+                        <Typography variant="h6">Share Bridge</Typography>
                         <Typography
                             variant="body2"
                             sx={{
@@ -1116,8 +1116,8 @@ function BrdgeListPage() {
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
                                         {brdgeToShare?.shareable
-                                            ? 'Anyone with the link can view this Brdge'
-                                            : 'Only you can view this Brdge'}
+                                            ? 'Anyone with the link can view this bridge'
+                                            : 'Only you can view this bridge'}
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -1149,7 +1149,7 @@ function BrdgeListPage() {
                                 }
                             }}>
                                 <InputBase
-                                    value={brdgeToShare ? `${window.location.origin}/viewBrdge/${brdgeToShare.id}` : ''}
+                                    value={brdgeToShare ? `${window.location.origin}/viewBridge/${brdgeToShare.id}` : ''}
                                     readOnly
                                     fullWidth
                                     sx={{

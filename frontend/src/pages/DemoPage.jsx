@@ -106,7 +106,7 @@ const demos = [
         ],
         stats: '85% faster lead response time',
         icon: <BusinessCenter />,
-        url: 'https://brdge-ai.com/viewBrdge/141',
+        url: 'https://brdge-ai.com/viewBridge/141',
         disabled: false,
     },
     {
@@ -121,7 +121,7 @@ const demos = [
         ],
         stats: '2.3x higher engagement rate',
         icon: <PresentToAll />,
-        url: 'https://brdge-ai.com/viewBrdge/146',
+        url: 'https://brdge-ai.com/viewBridge/146',
         disabled: false,
     },
     {
@@ -136,7 +136,7 @@ const demos = [
         ],
         stats: '60% reduction in onboarding time',
         icon: <GroupAdd />,
-        url: 'https://brdge-ai.com/viewBrdge/144',
+        url: 'https://brdge-ai.com/viewBridge/144',
         disabled: false,
     },
 ];

@@ -62,7 +62,7 @@ function Header() {
     // Different menu items based on authentication status
     const menuItems = isAuthenticated
         ? [
-            { text: 'Brdges', link: '/brdges' },
+            { text: 'Home', link: '/home' },
             { text: 'Logout', onClick: handleLogout }
         ]
         : [

@@ -40,9 +40,9 @@ function Layout({ children }) {
   // Define public routes
   const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/'];
 
-  // Check if the current path is a viewBrdge route
+  // Check if the current path is a viewBridge route
   const isViewBrdgePath = (path) => {
-    return path.startsWith('/viewBrdge/') || path.startsWith('/b/');
+    return path.startsWith('/viewBridge/') || path.startsWith('/b/');
   };
 
   useEffect(() => {
@@ -59,7 +59,7 @@ function Layout({ children }) {
 
           // Only redirect if specifically on login/signup pages
           if (['/login', '/signup'].includes(currentPath)) {
-            navigate('/brdges', { replace: true });
+            navigate('/home', { replace: true });
           }
         } catch (error) {
           console.error('Token verification failed:', error);
@@ -67,7 +67,7 @@ function Layout({ children }) {
           setIsAuthenticated(false);
         }
       } else {
-        // Only redirect to login if not on a public route and not on a viewBrdge route
+        // Only redirect to login if not on a public route and not on a viewBridge route
         const needsAuth = !publicRoutes.includes(currentPath) && !isViewBrdgePath(currentPath);
         if (needsAuth) {
           navigate('/login', { replace: true });
@@ -121,13 +121,13 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/demos" element={<DemoPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
-                <Route path="/viewBrdge/:id" element={<ViewBrdgePage />} />
+                <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
                 <Route path="/b/:publicId" element={<ViewBrdgePage />} />
                 <Route
-                  path="/brdges"
+                  path="/home"
                   element={
                     <ProtectedRoute>
-                      <BrdgeListPage />
+                      <BrdgeListPage title="Home" />
                     </ProtectedRoute>
                   }
                 />

@@ -770,7 +770,7 @@ function CreateBrdgePage() {
                     transition={{ duration: 0.5 }}
                 >
                     <h1 className="text-4xl font-semibold text-white mb-12 text-center relative">
-                        Create New Brdge
+                        Create New Bridge
                         <div className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-40 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
                     </h1>
 
@@ -783,16 +783,16 @@ function CreateBrdgePage() {
                             )}
 
                             <form onSubmit={handleSubmit} className="space-y-10">
-                                {/* Brdge Name with improved styling */}
+                                {/* Bridge Name with improved styling */}
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        Brdge Name
+                                        Bridge Name
                                     </label>
                                     <input
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        placeholder="Enter a name for your Brdge"
+                                        placeholder="Enter a name for your Bridge"
                                         required
                                         className="w-full bg-gray-900/40 border border-gray-700/50 rounded-lg 
                                             px-4 py-2.5 text-base text-gray-100
@@ -876,7 +876,7 @@ function CreateBrdgePage() {
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             ) : (
                                                 <>
-                                                    Create Brdge
+                                                    Create Bridge
                                                     <ArrowRight className="w-4 h-4" />
                                                 </>
                                             )}

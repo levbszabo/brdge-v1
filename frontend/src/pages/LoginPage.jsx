@@ -26,7 +26,7 @@ function LoginPage() {
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
-                navigate('/brdges');
+                navigate('/home');
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -44,7 +44,7 @@ function LoginPage() {
                 localStorage.setItem('token', result.data.access_token);
                 setIsAuthenticated(true);
 
-                navigate('/brdges', { replace: true });
+                navigate('/home', { replace: true });
 
                 showSnackbar('Successfully logged in with Google', 'success');
             }

@@ -73,7 +73,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                     letterSpacing: '-0.02em',
                     fontFamily: 'Satoshi',
                 }}>
-                    Create Your First Brdge
+                    Create Your First Bridge
                 </Typography>
 
                 <Typography variant="body1" sx={{
@@ -116,7 +116,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                                 }
                             }}
                         >
-                            Create New Brdge
+                            Create New Bridge
                         </Button>
                     </motion.div>
                 ) : (

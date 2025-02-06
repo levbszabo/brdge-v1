@@ -40,8 +40,8 @@ function SignUpPage() {
                 setIsAuthenticated(true);
                 // Show success message
                 setSuccess('Account created successfully!');
-                // Navigate to brdges page
-                navigate('/brdges', { replace: true });
+                // Navigate to home page
+                navigate('/home', { replace: true });
             } else {
                 console.error('No access token in response:', response);
                 setError('Registration successful but login failed. Please try logging in.');
@@ -68,7 +68,7 @@ function SignUpPage() {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
                 setSuccess('Successfully signed up with Google!');
-                navigate('/brdges', { replace: true });
+                navigate('/home', { replace: true });
             } else {
                 throw new Error('No access token received');
             }
