@@ -6,7 +6,10 @@ import { getAuthToken } from '../utils/auth';
 import { api } from '../api';
 
 function ViewBrdgePage() {
-    const { id } = useParams();
+    const params = useParams();
+    // Handle both URL formats: /viewBridge/:id-:uid and /b/:publicId
+    const id = params.publicId || (params.id ? params.id.split('-')[0] : null);
+    const uidFromUrl = params.id ? params.id.split('-')[1] : null;
     const token = getAuthToken();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -34,24 +37,31 @@ function ViewBrdgePage() {
                 const response = await api.get(`/brdges/${id}`);
                 const brdge = response.data;
 
+                // Verify the UUID prefix matches if we're using the id-uid format
+                if (uidFromUrl && !brdge.public_id.startsWith(uidFromUrl)) {
+                    setError('Invalid Bridge URL');
+                    setLoading(false);
+                    return;
+                }
+
                 // If Brdge is not shareable and user is not the owner, deny access
                 if (!brdge.shareable && token) {
                     const userResponse = await api.get('/user/current');
                     if (userResponse.data.id !== brdge.user_id) {
-                        setError('Brdge Is Not Public: Access Denied');
+                        setError('Bridge Is Not Public: Access Denied');
                         setLoading(false);
                         return;
                     }
                 } else if (!brdge.shareable && !token) {
-                    setError('Brdge Is Not Public: Access Denied');
+                    setError('Bridge Is Not Public: Access Denied');
                     setLoading(false);
                     return;
                 }
 
                 setLoading(false);
             } catch (error) {
-                console.error('Error checking Brdge access:', error);
-                setError('Brdge Is Not Public: Access Denied');
+                console.error('Error checking Bridge access:', error);
+                setError('Bridge Is Not Public: Access Denied');
                 setLoading(false);
             }
         };
@@ -70,7 +80,7 @@ function ViewBrdgePage() {
                 viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
             }
         };
-    }, []);
+    }, [id, uidFromUrl, token]);
 
     if (loading) {
         return (

@@ -6,7 +6,9 @@ import { api } from '../api';
 
 function EditBrdgePage() {
     const theme = useTheme();
-    const { id } = useParams();
+    const params = useParams();
+    // Handle combined ID-UID format from the URL
+    const [id, uidFromUrl] = params.id ? params.id.split('-') : [null, null];
     const navigate = useNavigate();
     const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -14,6 +16,17 @@ function EditBrdgePage() {
         const checkAuthorization = async () => {
             try {
                 const response = await api.get(`/brdge/${id}/check-auth`);
+
+                // If we have a UID from the URL, verify it matches
+                if (uidFromUrl && response.data.brdge.public_id) {
+                    const publicIdPrefix = response.data.brdge.public_id.substring(0, 6);
+                    if (uidFromUrl !== publicIdPrefix) {
+                        console.error('Invalid Bridge URL');
+                        navigate('/');
+                        return;
+                    }
+                }
+
                 setIsAuthorized(true);
             } catch (error) {
                 console.error('Authorization check failed:', error);
@@ -21,8 +34,12 @@ function EditBrdgePage() {
             }
         };
 
-        checkAuthorization();
-    }, [id, navigate]);
+        if (id) {
+            checkAuthorization();
+        } else {
+            navigate('/');
+        }
+    }, [id, uidFromUrl, navigate]);
 
     // Add scroll prevention effect
     useEffect(() => {

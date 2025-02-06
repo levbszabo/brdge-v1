@@ -345,12 +345,12 @@ function BrdgeListPage() {
 
     const handleView = (e, brdge) => {
         if (e) e.stopPropagation();
-        navigate(`/viewBridge/${brdge.id}`);
+        navigate(`/viewBridge/${brdge.id}-${brdge.public_id.substring(0, 6)}`);
     };
 
     const handleEdit = (e, brdge) => {
         if (e) e.stopPropagation();
-        navigate(`/edit/${brdge.id}`);
+        navigate(`/edit/${brdge.id}-${brdge.public_id.substring(0, 6)}`);
     };
 
     const handleShare = (e, brdge) => {
@@ -624,7 +624,7 @@ function BrdgeListPage() {
     };
 
     const handleCopyLink = () => {
-        const shareableUrl = `${window.location.origin}/viewBridge/${brdgeToShare?.id}`;
+        const shareableUrl = `${window.location.origin}/viewBridge/${brdgeToShare?.id}-${brdgeToShare?.public_id.substring(0, 6)}`;
         navigator.clipboard.writeText(shareableUrl);
         setLinkCopied(true);
         setTimeout(() => setLinkCopied(false), 2000);
@@ -1149,7 +1149,7 @@ function BrdgeListPage() {
                                 }
                             }}>
                                 <InputBase
-                                    value={brdgeToShare ? `${window.location.origin}/viewBridge/${brdgeToShare.id}` : ''}
+                                    value={brdgeToShare ? `${window.location.origin}/viewBridge/${brdgeToShare.id}-${brdgeToShare.public_id.substring(0, 6)}` : ''}
                                     readOnly
                                     fullWidth
                                     sx={{
