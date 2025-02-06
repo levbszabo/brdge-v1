@@ -188,7 +188,7 @@ const IntroducingBrdgeAI = () => {
                                     }
                                 }}
                             >
-                                Give viewers the power to get instant answers and self-serve information—while you build stronger connections with your prospects. Every video transforms into an interactive conversation, streamlining your ˆworkflow, driving conversions, and building lasting trust.
+                                Give viewers the power to get instant answers and self-serve information—while you build stronger connections with your prospects. Every video transforms into an interactive conversation, streamlining your workflow, driving conversions, and building lasting trust.
                             </Typography>
 
                             {/* Feature bullets */}
