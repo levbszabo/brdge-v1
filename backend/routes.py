@@ -632,10 +632,23 @@ def create_brdge(user):
         if not name:
             return jsonify({"error": "Name is required"}), 400
 
-        # First create the brdge record
-        brdge = Brdge(name=name, user_id=user.id, public_id=str(uuid.uuid4()))
+        # First create the brdge record with required fields
+        brdge = Brdge(
+            name=name,
+            user_id=user.id,
+            public_id=str(uuid.uuid4()),
+            presentation_filename="",  # Set empty string as default
+            audio_filename="",  # Set empty string as default
+            folder="temp",  # Set default folder
+            shareable=False,  # Set default shareable status
+            agent_personality="friendly ai assistant",  # Set default personality
+        )
         db.session.add(brdge)
         db.session.commit()  # Commit to get valid brdge.id
+
+        # Update folder to use brdge id
+        brdge.folder = str(brdge.id)
+        db.session.commit()
 
         # Handle screen recording
         if "screen_recording" in request.files:
@@ -697,6 +710,10 @@ def create_brdge(user):
                 upload_success = upload_to_s3(temp_pdf_path, s3_key)
                 if not upload_success:
                     raise Exception("Failed to upload PDF to S3")
+
+                # Update brdge with presentation info
+                brdge.presentation_filename = presentation_filename
+                db.session.commit()
 
                 # Create document knowledge record
                 doc_knowledge = DocumentKnowledge(
