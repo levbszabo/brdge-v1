@@ -627,126 +627,270 @@ def upload_image_to_s3(args):
 @login_required
 def create_brdge(user):
     try:
-        # Get form data
         name = request.form.get("name")
-        if not name:
-            return jsonify({"error": "Name is required"}), 400
+        presentation = request.files.get("presentation")
+        recording = request.files.get("screen_recording")
+        recording_metadata = request.form.get("recording_metadata")
 
-        # First create the brdge record with required fields
+        # Validation...
+        missing_fields = []
+        if not name:
+            missing_fields.append("name")
+        if not recording:
+            missing_fields.append("screen_recording")
+
+        if missing_fields:
+            return (
+                jsonify(
+                    {
+                        "error": "Missing required fields",
+                        "missing_fields": missing_fields,
+                    }
+                ),
+                400,
+            )
+
+        # Add file format validation for video
+        if recording:
+            if recording.content_type not in ALLOWED_VIDEO_FORMATS:
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid video format",
+                            "message": "Please upload either an MP4 or WebM video file.",
+                            "allowed_formats": [".mp4", ".webm"],
+                        }
+                    ),
+                    400,
+                )
+
+            # Size validation
+            if recording.content_length > MAX_VIDEO_SIZE:
+                return (
+                    jsonify(
+                        {
+                            "error": "Video file size too large",
+                            "message": "Video file size exceeds 100MB limit. Please upload a smaller file.",
+                            "max_size_mb": MAX_VIDEO_SIZE / (1024 * 1024),
+                        }
+                    ),
+                    400,
+                )
+
+        # PDF validation
+        if presentation:
+            if not presentation.filename.lower().endswith(".pdf"):
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid file format",
+                            "message": "Please upload a PDF file.",
+                            "allowed_formats": [".pdf"],
+                        }
+                    ),
+                    400,
+                )
+
+            if presentation.content_length > MAX_PDF_SIZE:
+                return (
+                    jsonify(
+                        {
+                            "error": "PDF file size too large",
+                            "message": "PDF file size exceeds 20MB limit. Please upload a smaller file.",
+                            "max_size_mb": MAX_PDF_SIZE / (1024 * 1024),
+                        }
+                    ),
+                    400,
+                )
+
+        # Parse recording metadata
+        recording_duration = None
+        if recording_metadata:
+            try:
+                metadata = json.loads(recording_metadata)
+                recording_duration = metadata.get("duration")
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse recording metadata")
+
+        # Step 1: Create Brdge object
         brdge = Brdge(
             name=name,
             user_id=user.id,
-            public_id=str(uuid.uuid4()),
-            presentation_filename="",  # Set empty string as default
-            audio_filename="",  # Set empty string as default
-            folder="temp",  # Set default folder
-            shareable=False,  # Set default shareable status
-            agent_personality="friendly ai assistant",  # Set default personality
+            presentation_filename="" if not presentation else "temp",
+            audio_filename="",
+            folder="temp",
         )
         db.session.add(brdge)
-        db.session.commit()  # Commit to get valid brdge.id
+        db.session.commit()  # {{ edit_start_1 }} COMMIT HERE to ensure brdge.id is valid for any subsequent async tasks
 
-        # Update folder to use brdge id
+        # Now that brdge.id is real, we can update the folder:
         brdge.folder = str(brdge.id)
-        db.session.commit()
 
-        # Handle screen recording
-        if "screen_recording" in request.files:
-            screen_recording = request.files["screen_recording"]
-            if screen_recording.filename:
-                # Get file extension and mime type
-                file_ext = os.path.splitext(screen_recording.filename)[1].lower()
-                mime_type = screen_recording.content_type
+        # Because we re-committed, we must merge the brdge back into the session:
+        brdge = db.session.merge(brdge)
 
-                # Create temp directory if it doesn't exist
-                temp_dir = os.path.join(current_app.config["UPLOAD_FOLDER"], "temp")
-                os.makedirs(temp_dir, exist_ok=True)
+        # (Re-check the second commit approach for documents, etc.)
 
-                # Save original file
-                temp_path = os.path.join(temp_dir, f"{uuid.uuid4()}{file_ext}")
-                screen_recording.save(temp_path)
+        # Handle presentation file if it exists
+        if presentation:
+            original_filename = presentation.filename
+            presentation_filename = secure_filename(
+                f"{uuid.uuid4()}_{original_filename}"
+            )
+            presentation_key = f"{brdge.folder}/{presentation_filename}"
 
-                # Only convert if it's a webm file
-                if file_ext == ".webm" or "webm" in mime_type:
-                    logger.info(f"Converting webm to mp4 for brdge {brdge.id}")
-                    mp4_path, conversion_success = convert_webm_to_mp4(temp_path)
-                    if not conversion_success:
-                        raise Exception("Failed to convert video")
-                    final_video_path = mp4_path
-                    # Clean up webm file
-                    os.remove(temp_path)
-                else:
-                    # Use the original file if it's already mp4
-                    final_video_path = temp_path
+            presentation.seek(0)
+            s3_client.upload_fileobj(
+                presentation,
+                S3_BUCKET,
+                presentation_key,
+                ExtraArgs={"ContentType": "application/pdf"},
+            )
 
-                # Upload to S3
-                s3_key = f"{brdge.id}/{uuid.uuid4()}_{secure_filename(screen_recording.filename)}"
-                upload_success = upload_to_s3(final_video_path, s3_key)
-                if not upload_success:
-                    raise Exception("Failed to upload video to S3")
+            brdge.presentation_filename = presentation_filename
+            db.session.commit()  # Ensure this is saved for async PDF processing
 
-                # Update brdge with video info
-                brdge.video_url = s3_key
-                db.session.commit()
+            # Start async PDF processing
+            start_async_pdf_processing(brdge.id, original_filename, presentation_key)
 
-                # Clean up temp files
-                os.remove(final_video_path)
+        # Handle recording file (required)
+        recording = request.files.get("screen_recording")
+        if not recording:
+            return jsonify({"error": "Recording file is required"}), 400
 
-        # Handle PDF presentation
-        if "presentation" in request.files:
-            presentation = request.files["presentation"]
-            if presentation and presentation.filename:
-                # Save and process PDF
-                presentation_filename = secure_filename(presentation.filename)
-                s3_key = f"{brdge.id}/{uuid.uuid4()}_{presentation_filename}"
+        # We'll store the user's raw file temporarily
+        temp_path_ext = os.path.splitext(recording.filename)[1].lower()
+        is_webm = temp_path_ext == ".webm" or recording.content_type == "video/webm"
 
-                # Save temporarily
-                temp_pdf_path = os.path.join(
-                    current_app.config["UPLOAD_FOLDER"], "temp", presentation_filename
+        temp_input_path = f"/tmp/{str(uuid.uuid4())}{temp_path_ext}"
+        recording.save(temp_input_path)
+
+        try:
+            # Optionally transcribe the raw file
+            transcript_data = transcribe_audio_helper(
+                temp_input_path, f"/tmp/transcript_{brdge.id}.txt"
+            )
+
+            mp4_filename = ""
+            conversion_success = True
+
+            # Only convert if it's webm
+            if is_webm:
+                mp4_path, conversion_success = convert_webm_to_mp4(temp_input_path)
+                if not conversion_success:
+                    raise Exception("Failed to convert WebM to MP4")
+                mp4_filename = os.path.basename(mp4_path)
+            else:
+                # The user is uploading mp4 or we skip conversion
+                mp4_filename = os.path.basename(recording.filename)
+                mp4_path = temp_input_path  # We'll just reuse the raw file path
+
+            # Upload the final (webm->mp4 or original mp4) to S3
+            recording_key = f"{brdge.folder}/recordings/{mp4_filename}"
+            with open(mp4_path, "rb") as vid_file:
+                s3_client.upload_fileobj(
+                    vid_file,
+                    S3_BUCKET,
+                    recording_key,
+                    ExtraArgs={"ContentType": "video/mp4"},
                 )
-                presentation.save(temp_pdf_path)
 
-                # Upload to S3
-                upload_success = upload_to_s3(temp_pdf_path, s3_key)
-                if not upload_success:
-                    raise Exception("Failed to upload PDF to S3")
+            # Create Recording object
+            rec_obj = Recording(
+                brdge_id=brdge.id,
+                filename=mp4_filename,
+                format=(
+                    "mp4" if is_webm else "mp4"
+                ),  # or keep as 'webm' if you want to track that
+                duration=None,  # updated below if you are parsing
+            )
+            db.session.add(rec_obj)
 
-                # Update brdge with presentation info
-                brdge.presentation_filename = presentation_filename
-                db.session.commit()
+            # Create initial BrdgeScript
+            script_obj = BrdgeScript(
+                brdge_id=brdge.id,
+                status="pending",
+                script_metadata={"recording_filename": mp4_filename},
+            )
+            db.session.add(script_obj)
 
-                # Create document knowledge record
-                doc_knowledge = DocumentKnowledge(
-                    brdge_id=brdge.id,
-                    presentation_filename=presentation_filename,
-                    s3_location=s3_key,
-                    created_at=datetime.utcnow(),
-                    status="processing",
-                )
-                db.session.add(doc_knowledge)
-                db.session.commit()
+            # Save transcript details
+            try:
+                # Build transcript text
+                transcript_text = ""
+                words = []
+                segments = []
 
-                # Start async PDF processing
-                start_async_pdf_processing(brdge.id, presentation_filename, s3_key)
+                channels = transcript_data.get("channels", [])
+                if channels and len(channels) > 0:
+                    alternatives = channels[0].get("alternatives", [])
+                    if alternatives and len(alternatives) > 0:
+                        alternative = alternatives[0]
+                        transcript_text = alternative.get("transcript", "")
+                        for word in alternative.get("words", []):
+                            words.append(
+                                {
+                                    "word": word.get(
+                                        "punctuated_word", word.get("word", "")
+                                    ),
+                                    "start": word.get("start", 0),
+                                    "end": word.get("end", 0),
+                                    "confidence": word.get("confidence", 1.0),
+                                }
+                            )
 
-                # Clean up temp file
-                os.remove(temp_pdf_path)
+                        segments.append(
+                            {
+                                "text": transcript_text,
+                                "start": 0,
+                                "end": words[-1].get("end", 0) if words else 0,
+                                "speaker": "Speaker 0",
+                            }
+                        )
 
-        return jsonify(
-            {
-                "message": "Brdge created successfully",
-                "brdge": {
-                    "id": brdge.id,
-                    "name": brdge.name,
-                    "public_id": brdge.public_id,
-                },
-            }
-        )
+                # Assign script content
+                script_obj.content = {
+                    "transcript": transcript_text,
+                    "segments": segments,
+                    "words": words,
+                }
+                script_obj.status = "completed"
+
+            except Exception as e:
+                script_obj.status = "failed"
+                script_obj.script_metadata.update({"error": str(e)})
+
+            # Clean up
+            if is_webm and os.path.exists(mp4_path):
+                os.remove(mp4_path)
+            if os.path.exists(temp_input_path):
+                os.remove(temp_input_path)
+            if os.path.exists(f"/tmp/transcript_{brdge.id}.txt"):
+                os.remove(f"/tmp/transcript_{brdge.id}.txt")
+
+            db.session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "message": "Brdge created successfully",
+                        "brdge": brdge.to_dict(),
+                        "script": script_obj.to_dict(),
+                    }
+                ),
+                201,
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            return (
+                jsonify({"error": "Failed to upload/convert files", "detail": str(e)}),
+                500,
+            )
 
     except Exception as e:
-        logger.error(f"Error creating brdge: {str(e)}")
         db.session.rollback()
-        return jsonify({"error": "Failed to create brdge"}), 500
+        return jsonify({"error": "Error creating brdge", "detail": str(e)}), 500
 
 
 @app.route("/api/brdges/<int:brdge_id>/deploy", methods=["POST"])

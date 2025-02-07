@@ -297,8 +297,11 @@ function CreateBrdgePage() {
             return;
         }
 
-        setRecordingMode('upload'); // Set mode to upload when file is selected
+        // If the user is uploading a .webm, keep that extension/filename
+        // If they've uploaded .mp4, keep that. 
+        setRecordingMode('upload');
         setScreenRecording(file);
+
         const blob = new Blob([file], { type: file.type });
         updateVideoPreview(blob);
     };
@@ -336,7 +339,7 @@ function CreateBrdgePage() {
         e.preventDefault();
         setLoading(true);
         setError('');
-        startLoadingSequence();
+        startLoadingSequence(); // Start the loading sequence
 
         if (file && file.size > MAX_PDF_SIZE) {
             showSnackbar('PDF file size exceeds 20MB limit', 'error');
@@ -366,13 +369,13 @@ function CreateBrdgePage() {
         const formData = new FormData();
         formData.append('name', name);
 
-        // PDF is optional
+        // PDF is optional now
         if (file) {
             formData.append('presentation', file);
         }
 
         if (screenRecording) {
-            console.log('Adding screen recording to form data:', screenRecording);
+            console.log('Adding screen recording to form data:', screenRecording); // Debug log
 
             // Get video duration
             const duration = await new Promise((resolve) => {
@@ -385,25 +388,27 @@ function CreateBrdgePage() {
                 video.src = URL.createObjectURL(screenRecording);
             });
 
-            // Ensure we're sending the actual File object with correct type
-            const contentType = screenRecording.type || 'video/mp4';
-            const fileExtension = screenRecording.name.split('.').pop().toLowerCase();
-            const fileName = `${screenRecording.name}`;
-
-            // Create new File object with explicit type
-            const videoFile = new File([screenRecording], fileName, {
-                type: contentType
-            });
-
-            formData.append('screen_recording', videoFile);
+            // Ensure we're sending the actual File object
+            formData.append('screen_recording', screenRecording, screenRecording.name);
+            formData.append('recording_format', recordingFormat);
             formData.append('recording_metadata', JSON.stringify({
                 format: recordingFormat,
                 duration: duration,
-                file_size: screenRecording.size / (1024 * 1024), // Convert to MB
-                content_type: contentType,
-                file_extension: fileExtension
+                file_size: screenRecording.size / (1024 * 1024) // Convert to MB
             }));
+
+            // Debug logs
+            console.log('Recording format:', recordingFormat);
+            console.log('Recording duration:', duration);
+            console.log('Recording size (MB):', screenRecording.size / (1024 * 1024));
         }
+
+        // Debug log
+        console.log('Sending data:', {
+            name,
+            presentation: file,
+            recording: screenRecording
+        });
 
         try {
             if (id) {
