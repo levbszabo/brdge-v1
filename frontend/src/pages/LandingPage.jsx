@@ -739,7 +739,7 @@ const HeroSection = () => {
                 >
                     <Box
                         component="a"
-                        href="https://brdge-ai.com/viewBridge/303-5ee682"
+                        href="https://brdge-ai.com/viewBridge/340-e34503"
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{

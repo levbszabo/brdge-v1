@@ -121,8 +121,8 @@ const demos = [
         ],
         stats: '2.3x higher engagement rate',
         icon: <PresentToAll />,
-        url: 'https://brdge-ai.com/viewBridge/146',
-        disabled: true,
+        url: 'https://brdge-ai.com/viewBridge/340-e34503',
+        disabled: false,
     },
     {
         id: 3,
