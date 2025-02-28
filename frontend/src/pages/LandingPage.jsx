@@ -515,7 +515,7 @@ const IntroducingBrdgeAI = () => {
                                     transition: 'all 0.3s ease-in-out'
                                 }}
                             >
-                                Try Brdge AI Free – No Credit Card
+                                Try Free – No Credit Card
                             </Button>
 
                             <Button
@@ -581,16 +581,18 @@ const HeroSection = () => {
 
     return (
         <Box sx={{
-            minHeight: '90vh',
+            minHeight: { xs: 'auto', sm: '90vh' },
             width: '100vw',
             position: 'relative',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             background: 'transparent',
             color: 'white',
             overflow: 'hidden',
             marginLeft: 'calc(-50vw + 50%)',
             marginRight: 'calc(-50vw + 50%)',
+            paddingTop: { xs: '60px', sm: '72px' },
+            paddingBottom: { xs: '20px', sm: '60px' },
             '&::before': {
                 content: '""',
                 position: 'absolute',
@@ -611,11 +613,9 @@ const HeroSection = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                mt: { xs: '80px', sm: '72px' },
-                mb: { xs: 4, sm: 6, md: 8 },
-                px: { xs: 2, sm: 3, md: 4 },
                 width: '100%',
                 mx: 'auto',
+                px: { xs: 2, sm: 3, md: 4 },
             }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
@@ -625,7 +625,7 @@ const HeroSection = () => {
                         width: '100%',
                         maxWidth: '1200px',
                         padding: '0 16px',
-                        marginBottom: '24px',
+                        marginBottom: '16px',
                     }}
                 >
                     <Typography
@@ -633,8 +633,8 @@ const HeroSection = () => {
                         align="center"
                         className="heading-large"
                         sx={{
-                            mb: { xs: 3, sm: 4 },
-                            fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem' },
+                            mb: { xs: 2, sm: 4 },
+                            fontSize: { xs: '2.25rem', sm: '3.5rem', md: '4rem' },
                             lineHeight: { xs: 1.2, sm: 1.1 },
                             fontWeight: 800,
                             textTransform: 'none',
@@ -647,10 +647,10 @@ const HeroSection = () => {
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: { xs: '-12px', sm: '-24px' },
+                                bottom: { xs: '-8px', sm: '-24px' },
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: { xs: '100px', sm: '140px' },
+                                width: { xs: '80px', sm: '140px' },
                                 height: '3px',
                                 background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.6), transparent)',
                                 borderRadius: '1px',
@@ -664,10 +664,10 @@ const HeroSection = () => {
                                 display: 'block',
                                 color: '#FFFFFF',
                                 textShadow: '0 2px 20px rgba(0,0,0,0.3)',
-                                fontSize: { xs: '2.75rem', sm: '3.75rem', md: '4.5rem' },
+                                fontSize: { xs: '2.25rem', sm: '3.75rem', md: '4.5rem' },
                                 fontWeight: 500,
                                 letterSpacing: '-0.02em',
-                                mb: { xs: 3, sm: 4 },
+                                mb: { xs: 2, sm: 4 },
                                 textTransform: 'none',
                                 fontFamily: fontFamily,
                                 lineHeight: 1.2
@@ -688,11 +688,11 @@ const HeroSection = () => {
                             component="span"
                             sx={{
                                 display: 'block',
-                                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                                fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2rem' },
                                 fontWeight: 400,
                                 color: 'rgba(255,255,255,0.9)',
                                 letterSpacing: '0.01em',
-                                mt: 3,
+                                mt: { xs: 2, sm: 3 },
                                 fontFamily: fontFamily,
                                 textAlign: 'center'
                             }}
@@ -708,7 +708,8 @@ const HeroSection = () => {
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        mb: { xs: 3, sm: 4 }
+                        mb: { xs: 2, sm: 4 },
+                        mt: { xs: 1, sm: 3 }
                     }}
                 >
                     <Box
@@ -717,8 +718,8 @@ const HeroSection = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
-                            width: { xs: '160px', sm: '180px', md: '200px' },
-                            height: { xs: '160px', sm: '180px', md: '200px' },
+                            width: { xs: '120px', sm: '160px', md: '180px' },
+                            height: { xs: '120px', sm: '160px', md: '180px' },
                             position: 'relative',
                             cursor: 'pointer',
                             display: 'flex',
@@ -894,15 +895,15 @@ const HeroSection = () => {
                     variant="h5"
                     align="center"
                     sx={{
-                        mt: { xs: 2, sm: 3 },
-                        mb: { xs: 2, sm: 3 },
+                        mt: { xs: 1, sm: 3 },
+                        mb: { xs: 1, sm: 3 },
                         maxWidth: '800px',
                         mx: 'auto',
                         opacity: 0.9,
-                        fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.2rem' },
+                        fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.2rem' },
                         fontWeight: 400,
-                        lineHeight: 1.6,
-                        px: { xs: 3, sm: 4 },
+                        lineHeight: 1.5,
+                        px: { xs: 2, sm: 4 },
                         color: 'rgba(255, 255, 255, 0.95)',
                         letterSpacing: '0.01em',
                         textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
@@ -927,8 +928,8 @@ const HeroSection = () => {
                         alignItems: 'flex-start',
                         maxWidth: '800px',
                         mx: 'auto',
-                        mb: { xs: 3, sm: 4, md: 5 },
-                        px: { xs: 3, sm: 4 },
+                        mb: { xs: 2, sm: 4, md: 5 },
+                        px: { xs: 2, sm: 4 },
                     }}
                 >
                     {[
@@ -956,8 +957,8 @@ const HeroSection = () => {
                                 alignItems: 'center',
                                 width: '100%',
                                 maxWidth: '700px',
-                                mb: index < 3 ? 1.75 : 0,
-                                pb: index < 3 ? 1.25 : 0,
+                                mb: index < 3 ? { xs: 1, sm: 1.75 } : 0,
+                                pb: index < 3 ? { xs: 1, sm: 1.25 } : 0,
                                 borderBottom: index < 3 ? '1px solid rgba(0, 180, 219, 0.1)' : 'none',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
@@ -967,9 +968,9 @@ const HeroSection = () => {
                         >
                             <Box
                                 sx={{
-                                    fontSize: { xs: '1rem', sm: '1.35rem', md: '1.5rem' },
+                                    fontSize: { xs: '0.9rem', sm: '1.35rem', md: '1.5rem' },
                                     lineHeight: 1,
-                                    mr: { xs: 2, sm: 2.5 },
+                                    mr: { xs: 1.5, sm: 2.5 },
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -984,7 +985,7 @@ const HeroSection = () => {
                             <Typography
                                 variant="body1"
                                 sx={{
-                                    fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.2rem' },
+                                    fontSize: { xs: '0.85rem', sm: '1.1rem', md: '1.2rem' },
                                     fontWeight: 400,
                                     lineHeight: 1.4,
                                     color: 'rgba(255, 255, 255, 0.95)',
@@ -1007,13 +1008,13 @@ const HeroSection = () => {
 
                 <Box sx={{
                     display: 'flex',
-                    gap: { xs: 3, sm: 4 },
+                    gap: { xs: 2, sm: 4 },
                     justifyContent: 'center',
                     flexDirection: { xs: 'column', sm: 'row' },
                     width: '100%',
                     maxWidth: { xs: '100%', sm: '600px' },
                     mx: 'auto',
-                    mb: { xs: 8, sm: 10, md: 12 },
+                    mb: { xs: 2, sm: 6, md: 8 },
                     px: { xs: 3, sm: 0 }
                 }}>
                     <motion.div
@@ -1030,9 +1031,9 @@ const HeroSection = () => {
                             sx={{
                                 bgcolor: 'rgba(0, 255, 204, 0.9)',
                                 color: '#000000',
-                                px: { xs: 6, sm: 8 },
-                                py: { xs: 1.5, sm: 2 },
-                                fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                px: { xs: 4, sm: 8 },
+                                py: { xs: 1.25, sm: 2 },
+                                fontSize: { xs: '1rem', sm: '1.2rem' },
                                 fontWeight: 600,
                                 borderRadius: '50px',
                                 boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
@@ -1065,9 +1066,9 @@ const HeroSection = () => {
                                 color: 'white',
                                 borderColor: 'rgba(255,255,255,0.5)',
                                 borderWidth: '2px',
-                                px: { xs: 6, sm: 8 },
-                                py: { xs: 1.5, sm: 2 },
-                                fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                px: { xs: 4, sm: 8 },
+                                py: { xs: 1.25, sm: 2 },
+                                fontSize: { xs: '1rem', sm: '1.2rem' },
                                 fontWeight: 600,
                                 borderRadius: '50px',
                                 minWidth: { xs: '100%', sm: '220px' },
@@ -1089,12 +1090,12 @@ const HeroSection = () => {
                 </Box>
 
                 <Box sx={{
-                    display: 'flex',
+                    display: { xs: 'none', sm: 'flex' },
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: 2,
-                    mt: { xs: 4, sm: 6 },
-                    mb: { xs: 4, sm: 6 },
+                    mt: { xs: 2, sm: 4 },
+                    mb: { xs: 2, sm: 4 },
                     color: 'rgba(255,255,255,0.8)',
                     textTransform: 'uppercase',
                 }}>
@@ -1763,7 +1764,7 @@ const FinalCTA = () => {
                             lineHeight: 1.6
                         }}
                     >
-                        Join the Brdge AI revolution and transform every video—be it a sales pitch, onboarding walkthrough, or training session—into an endless, interactive conversation that drives results.
+                        Join the Brdge AI revolution and transform all your videos into powerful, interactive conversations. From sales pitches to onboarding and training, watch your content drive exceptional results 24/7 without your constant presence.
                     </Typography>
 
                     <Box sx={{
