@@ -1,6 +1,6 @@
 // src/pages/LandingPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Container,
@@ -48,6 +48,7 @@ import './LandingPage.css';
 import SchoolIcon from '@mui/icons-material/School';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import Footer from '../components/Footer';
+import videoDemo from '../assets/video-demo-landing.mp4';
 
 const fontFamily = 'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -64,520 +65,503 @@ const IntroducingBrdgeAI = () => {
         triggerOnce: true
     });
 
+    const [isPlaying, setIsPlaying] = useState(false);
+    const videoRef = useRef(null);
+
+    const togglePlayPause = () => {
+        if (videoRef.current) {
+            if (isPlaying) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
     return (
-        <Box
+        <Container
+            maxWidth={false}
+            ref={ref}
+            disableGutters={true}
             sx={{
-                pt: { xs: 4, md: 6 },
-                pb: { xs: 4, sm: 6, md: 8 },
+                pt: { xs: 2, md: 6 },
+                pb: { xs: 2, sm: 6, md: 8 },
+                px: 0,
                 position: 'relative',
-                backgroundColor: 'rgba(0, 65, 194, 0.08)', // Lighter blue background
-                borderRadius: '24px',
-                border: '1px solid rgba(0, 180, 219, 0.12)',
-                boxShadow: `
-                    inset 0 0 100px rgba(0, 180, 219, 0.05),
-                    0 4px 20px rgba(0, 0, 0, 0.1)
-                `,
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'linear-gradient(180deg, rgba(0, 65, 194, 0.03) 0%, rgba(0, 180, 219, 0.03) 100%)',
-                    borderRadius: '24px',
-                    pointerEvents: 'none'
+                background: 'transparent',
+                borderRadius: 0,
+                border: 'none',
+                boxShadow: 'none',
+                my: { xs: 0, sm: 0, md: 4 },
+                zIndex: 1,
+                width: '100%',
+                mx: 'auto',
+                overflow: { xs: 'hidden', md: 'visible' },
+                '@keyframes pulse': {
+                    '0%': { opacity: 0.8, transform: 'scale(1)' },
+                    '50%': { opacity: 1, transform: 'scale(1.1)' },
+                    '100%': { opacity: 0.8, transform: 'scale(1)' }
+                },
+                '@keyframes float': {
+                    '0%': { transform: 'translateY(0px)' },
+                    '50%': { transform: 'translateY(-20px)' },
+                    '100%': { transform: 'translateY(0px)' }
+                },
+                '@keyframes pulseUnderline': {
+                    '0%, 100%': {
+                        opacity: 0.5,
+                        transform: 'translateX(-50%) scaleX(0.95)',
+                        filter: 'brightness(0.8)'
+                    },
+                    '50%': {
+                        opacity: 1,
+                        transform: 'translateX(-50%) scaleX(1)',
+                        filter: 'brightness(1.2)'
+                    }
+                },
+                '@keyframes underlinePulse': {
+                    '0%, 100%': {
+                        opacity: 0.5,
+                        width: '100px',
+                        filter: 'brightness(0.8)'
+                    },
+                    '50%': {
+                        opacity: 1,
+                        width: '140px',
+                        filter: 'brightness(1.2)'
+                    }
                 }
             }}
         >
-            <Container
-                maxWidth="lg"
-                ref={ref}
-                sx={{
-                    position: 'relative',
-                    zIndex: 1
-                }}
+            <motion.div
+                initial={{ opacity: 0, y: 50 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.8 }}
             >
-                <motion.div
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.8 }}
+                {/* HEADLINE - Only visible on mobile */}
+                <Typography
+                    variant="h2"
+                    align="center"
+                    sx={{
+                        fontSize: { xs: '2rem', sm: '2.5rem' },
+                        fontWeight: 800,
+                        color: 'white',
+                        mb: { xs: 2, sm: 4 },
+                        letterSpacing: '-0.02em',
+                        textShadow: '0 0 20px rgba(255,255,255,0.2)',
+                        textTransform: 'none',
+                        display: { xs: 'block', md: 'none' },
+                        lineHeight: 1.2,
+                        padding: { xs: '0 5px', sm: 0 },
+                        '& .highlight': {
+                            background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            position: 'relative',
+                            display: 'inline-block',
+                            textShadow: 'none',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: '-4px',
+                                left: 0,
+                                width: '100%',
+                                height: '3px',
+                                background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
+                                opacity: 0.6,
+                                animation: 'underlinePulse 3s infinite'
+                            }
+                        }
+                    }}
                 >
-                    {/* HEADLINE */}
-                    <Typography
-                        variant="h2"
-                        align="center"
+                    Turn Videos into <span className="highlight">AI Conversations</span>
+                </Typography>
+
+                {/* TWO-COLUMN LAYOUT */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' },
+                        alignItems: { xs: 'center', md: 'flex-start' },
+                        justifyContent: { xs: 'center', md: 'center' },
+                        gap: { xs: 0, md: 6 },
+                        mt: { xs: 0, md: 4 },
+                        width: '100%',
+                        maxWidth: { xs: '100%', md: '1200px' },
+                        mx: 'auto'
+                    }}
+                >
+                    {/* LEFT COLUMN: VIDEO DEMO */}
+                    <Box
                         sx={{
-                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                            fontWeight: 700,
-                            color: 'white',
-                            mb: { xs: 3, sm: 4 },
-                            letterSpacing: '-0.02em',
-                            textShadow: '0 0 20px rgba(255,255,255,0.2)',
-                            textTransform: 'none',
-                            '& .highlight': {
-                                background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                position: 'relative',
-                                display: 'inline-block',
-                                textShadow: 'none',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    bottom: '-4px',
-                                    left: 0,
-                                    width: '100%',
-                                    height: '2px',
-                                    background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
-                                    opacity: 0.4
-                                }
+                            flex: { xs: '1', md: '0 0 48%' },
+                            width: { xs: '100%', sm: '100%' },
+                            maxWidth: { xs: '100%', sm: '100%', md: '48%' },
+                            position: 'relative',
+                            borderRadius: { xs: 0, sm: '16px', md: '20px' },
+                            overflow: 'hidden',
+                            marginLeft: { xs: 0, sm: 'auto', md: 0 },
+                            marginRight: { xs: 0, sm: 'auto', md: 0 },
+                            boxShadow: {
+                                xs: 'none',
+                                sm: '0 8px 24px rgba(0,0,0,0.2)',
+                                md: `
+                                    0 10px 30px rgba(0,0,0,0.3),
+                                    0 0 0 1px rgba(0, 180, 219, 0.3),
+                                    0 0 60px rgba(0, 180, 219, 0.2)
+                                `
+                            },
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                background: 'linear-gradient(to bottom, rgba(0,41,122,0.1), rgba(0,41,122,0))',
+                                zIndex: 2,
+                                pointerEvents: 'none'
                             }
                         }}
                     >
-                        Make Your Content <span className="highlight">Speak</span>
-                    </Typography>
-
-                    {/* TOP TEXT SECTION */}
-                    <Box sx={{
-                        maxWidth: '1000px',
-                        mx: 'auto',
-                        mb: { xs: 6, sm: 8 },
-                    }}>
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={inView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ delay: 0.2, duration: 0.8 }}
+                            transition={{ delay: 0.3, duration: 0.8 }}
+                            style={{ width: '100%' }}
                         >
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    color: 'rgba(255,255,255,0.95)',
-                                    mb: 3,
-                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
-                                    fontWeight: 400,
-                                    lineHeight: 1.6,
-                                    textAlign: 'center',
-                                    '& strong': {
-                                        color: '#00ffcc',
-                                        fontWeight: 600,
-                                    },
-                                    '& em': {
-                                        fontStyle: 'normal',
-                                        color: 'rgba(255,255,255,0.8)',
-                                    }
-                                }}
-                            >
-                                Transform your static videos, demos, and training sessions into interactive conversations.
+                            <Box sx={{ position: 'relative', width: '100%' }}>
+                                <video
+                                    ref={videoRef}
+                                    width="100%"
+                                    height="auto"
+                                    muted
+                                    playsInline
+                                    style={{
+                                        display: 'block',
+                                        borderRadius: 0,
+                                        width: '100%',
+                                        objectFit: 'contain'
+                                    }}
+                                    onClick={togglePlayPause}
+                                    poster={videoDemo.poster || undefined}
+                                >
+                                    <source src={videoDemo} type="video/mp4" />
+                                    Your browser does not support the video tag.
+                                </video>
 
-                                Brdge AI infuses your authentic content with a voice-powered assistant that answers questions instantly, ensuring your message is always on-brand and available 24/7.
-                            </Typography>
-
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    color: 'rgba(255,255,255,0.95)',
-                                    mb: 5,
-                                    fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
-                                    fontWeight: 400,
-                                    lineHeight: 1.6,
-                                    textAlign: 'center',
-                                    '& strong': {
-                                        color: '#00ffcc',
-                                        fontWeight: 600,
-                                    }
-                                }}
-                            >
-                                Give viewers the power to get instant answers and self-serve information—while you build stronger connections with your prospects. Every video transforms into an interactive conversation, streamlining your workflow, driving conversions, and building lasting trust.
-                            </Typography>
-
-                            {/* Feature bullets */}
-                            <Box sx={{
-                                display: { xs: 'none', sm: 'flex' },
-                                flexDirection: 'row',
-                                gap: 3,
-                                justifyContent: 'center',
-                                flexWrap: 'wrap'
-                            }}>
+                                {/* Custom Play/Pause Button */}
                                 <Box
+                                    onClick={togglePlayPause}
                                     sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 1.5,
-                                        color: '#00B4DB',
-                                        padding: '12px 24px',
-                                        background: 'rgba(0, 41, 122, 0.2)',
-                                        borderRadius: '12px',
-                                        border: '1px solid rgba(0, 180, 219, 0.2)',
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        flex: { xs: '1 1 100%', sm: '0 1 auto' },
-                                        maxWidth: { xs: '100%', sm: '280px' },
-                                        position: 'relative',
-                                        overflow: 'hidden',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        zIndex: 3,
+                                        background: isPlaying ? 'transparent' : 'rgba(0,0,0,0.25)',
+                                        transition: 'all 0.3s ease',
                                         '&:hover': {
-                                            background: 'rgba(0, 41, 122, 0.3)',
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: `
-                                                0 4px 20px rgba(0, 180, 219, 0.15),
-                                                0 0 0 1px rgba(0, 180, 219, 0.3),
-                                                inset 0 0 20px rgba(0, 180, 219, 0.05)
-                                            `
-                                        },
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(0, 180, 219, 0.2), transparent)',
-                                            opacity: 0,
-                                            transition: 'opacity 0.3s ease',
-                                        },
-                                        '&:hover::before': {
-                                            opacity: 1
+                                            background: isPlaying ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.35)'
                                         }
                                     }}
                                 >
-                                    <AccessTime sx={{ fontSize: '1.5rem' }} />
-                                    <Typography
-                                        variant="subtitle1"
-                                        sx={{
-                                            fontWeight: 500,
-                                            fontSize: '1rem',
-                                            letterSpacing: '0.02em',
-                                            whiteSpace: 'nowrap'
-                                        }}
-                                    >
-                                        Seamless Setup
-                                    </Typography>
-                                </Box>
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1.5,
-                                        color: '#00B4DB',
-                                        padding: '12px 24px',
-                                        background: 'rgba(0, 41, 122, 0.2)',
-                                        borderRadius: '12px',
-                                        border: '1px solid rgba(0, 180, 219, 0.2)',
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        flex: { xs: '1 1 100%', sm: '0 1 auto' },
-                                        maxWidth: { xs: '100%', sm: '280px' },
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        '&:hover': {
-                                            background: 'rgba(0, 41, 122, 0.3)',
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: `
-                                                0 4px 20px rgba(0, 180, 219, 0.15),
-                                                0 0 0 1px rgba(0, 180, 219, 0.3),
-                                                inset 0 0 20px rgba(0, 180, 219, 0.05)
-                                            `
-                                        },
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            height: '1px',
-                                            background: 'linear-gradient(90deg, transparent, rgba(0, 180, 219, 0.2), transparent)',
-                                            opacity: 0,
-                                            transition: 'opacity 0.3s ease',
-                                        },
-                                        '&:hover::before': {
-                                            opacity: 1
-                                        }
-                                    }}
-                                >
-                                    <AllInclusive sx={{ fontSize: '1.5rem' }} />
-                                    <Typography
-                                        variant="subtitle1"
-                                        sx={{
-                                            fontWeight: 500,
-                                            fontSize: '1rem',
-                                            letterSpacing: '0.02em',
-                                            whiteSpace: 'nowrap'
-                                        }}
-                                    >
-                                        24/7 Engagement
-                                    </Typography>
+                                    {!isPlaying && (
+                                        <Box
+                                            sx={{
+                                                width: { xs: '70px', sm: '80px' },
+                                                height: { xs: '70px', sm: '80px' },
+                                                borderRadius: '50%',
+                                                backgroundColor: 'rgba(0, 255, 204, 0.25)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 0 30px rgba(0, 255, 204, 0.5)',
+                                                border: '2px solid rgba(0, 255, 204, 0.7)',
+                                                transition: 'all 0.3s ease',
+                                                animation: 'pulse 2s infinite ease-in-out',
+                                                '&:hover': {
+                                                    transform: 'scale(1.1)',
+                                                    backgroundColor: 'rgba(0, 255, 204, 0.35)'
+                                                }
+                                            }}
+                                        >
+                                            <Box
+                                                sx={{
+                                                    width: 0,
+                                                    height: 0,
+                                                    borderTop: { xs: '14px solid transparent', sm: '15px solid transparent' },
+                                                    borderBottom: { xs: '14px solid transparent', sm: '15px solid transparent' },
+                                                    borderLeft: { xs: '22px solid rgba(255, 255, 255, 1)', sm: '25px solid rgba(255, 255, 255, 1)' },
+                                                    marginLeft: '5px'
+                                                }}
+                                            />
+                                        </Box>
+                                    )}
                                 </Box>
                             </Box>
                         </motion.div>
                     </Box>
 
-                    {/* THREE FEATURE CARDS */}
-                    <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={{ xs: 2, sm: 3, md: 4 }}
-                        sx={{
-                            justifyContent: 'center',
-                            px: { xs: 2, sm: 0 }
-                        }}
-                    >
-                        {/* CARD #1 */}
-                        <Box
-                            sx={{
-                                p: { xs: 3, sm: 3.5 },
-                                borderRadius: '16px',
-                                bgcolor: 'rgba(0, 41, 122, 0.2)',
-                                backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(0, 180, 219, 0.2)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                boxShadow: `
-                                    0 4px 20px rgba(0,0,0,0.2),
-                                    0 0 0 1px rgba(255,255,255,0.1),
-                                    0 0 40px rgba(0,180,219,0.1)
-                                `,
-                                flex: { xs: '1 1 100%', sm: '1' },
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                minHeight: { xs: '100px', sm: '120px' },
-                                justifyContent: 'center',
-                                maxWidth: { xs: '100%', sm: '300px' },
-                                transition: 'all 0.3s ease-in-out',
-                                '&:hover': {
-                                    transform: 'translateY(-5px)',
-                                    boxShadow: `
-                                        0 8px 30px rgba(0,0,0,0.2),
-                                        0 0 0 1px rgba(0, 180, 219, 0.3),
-                                        0 0 60px rgba(0, 180, 219, 0.1)
-                                    `,
-                                    bgcolor: 'rgba(0, 41, 122, 0.3)'
-                                }
-                            }}
-                        >
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    color: '#FFFFFF',
-                                    mb: 1,
-                                    textShadow: '0 2px 10px rgba(255,255,255,0.2)',
-                                    fontSize: { xs: '1.4rem', sm: '1.5rem', md: '1.75rem' },
-                                    fontWeight: 600
-                                }}
-                            >
-                                Instant Q&A
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ color: 'rgba(255,255,255,0.9)', maxWidth: '160px', fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' } }}
-                            >
-                                Answer viewer questions in real time—no delays, no repeated calls. Your AI assistant responds instantly in your voice.
-                            </Typography>
-                        </Box>
-
-                        {/* CARD #2 */}
-                        <Box
-                            sx={{
-                                p: { xs: 3, sm: 3.5 },
-                                borderRadius: '16px',
-                                bgcolor: 'rgba(0, 41, 122, 0.2)',
-                                backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(0, 180, 219, 0.2)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                boxShadow: `
-                                    0 4px 20px rgba(0,0,0,0.2),
-                                    0 0 0 1px rgba(255,255,255,0.1),
-                                    0 0 40px rgba(0,180,219,0.1)
-                                `,
-                                flex: { xs: '1 1 100%', sm: '1' },
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                minHeight: { xs: '100px', sm: '120px' },
-                                justifyContent: 'center',
-                                maxWidth: { xs: '100%', sm: '300px' },
-                                transition: 'all 0.3s ease-in-out',
-                                '&:hover': {
-                                    transform: 'translateY(-5px)',
-                                    boxShadow: `
-                                        0 8px 30px rgba(0,0,0,0.2),
-                                        0 0 0 1px rgba(0, 180, 219, 0.3),
-                                        0 0 60px rgba(0, 180, 219, 0.1)
-                                    `,
-                                    bgcolor: 'rgba(0, 41, 122, 0.3)'
-                                }
-                            }}
-                        >
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    color: '#FFFFFF',
-                                    mb: 1,
-                                    textShadow: '0 2px 10px rgba(255,255,255,0.2)',
-                                    fontSize: { xs: '1.4rem', sm: '1.5rem', md: '1.75rem' },
-                                    fontWeight: 600
-                                }}
-                            >
-                                Scalable Knowledge
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ color: 'rgba(255,255,255,0.9)', maxWidth: '160px', fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' } }}
-                            >
-                                Upload your video once and let Brdge AI field unlimited inquiries—keeping your content interactive around the clock.
-                            </Typography>
-                        </Box>
-
-                        {/* CARD #3 */}
-                        <Box
-                            sx={{
-                                p: { xs: 3, sm: 3.5 },
-                                borderRadius: '16px',
-                                bgcolor: 'rgba(0, 41, 122, 0.2)',
-                                backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(0, 180, 219, 0.2)',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                boxShadow: `
-                                    0 4px 20px rgba(0,0,0,0.2),
-                                    0 0 0 1px rgba(255,255,255,0.1),
-                                    0 0 40px rgba(0,180,219,0.1)
-                                `,
-                                flex: { xs: '1 1 100%', sm: '1' },
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                minHeight: { xs: '100px', sm: '120px' },
-                                justifyContent: 'center',
-                                maxWidth: { xs: '100%', sm: '300px' },
-                                transition: 'all 0.3s ease-in-out',
-                                '&:hover': {
-                                    transform: 'translateY(-5px)',
-                                    boxShadow: `
-                                        0 8px 30px rgba(0,0,0,0.2),
-                                        0 0 0 1px rgba(0, 180, 219, 0.3),
-                                        0 0 60px rgba(0, 180, 219, 0.1)
-                                    `,
-                                    bgcolor: 'rgba(0, 41, 122, 0.3)'
-                                }
-                            }}
-                        >
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    color: '#FFFFFF',
-                                    mb: 1,
-                                    textShadow: '0 2px 10px rgba(255,255,255,0.2)',
-                                    fontSize: { xs: '1.4rem', sm: '1.5rem', md: '1.75rem' },
-                                    fontWeight: 600
-                                }}
-                            >
-                                Actionable Insights
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{ color: 'rgba(255,255,255,0.9)', maxWidth: '160px', fontSize: { xs: '0.95rem', sm: '0.9rem', md: '1rem' } }}
-                            >
-                                Gain real-time data on viewer questions to refine your sales pitch and training strategy.
-                            </Typography>
-                        </Box>
-                    </Stack>
-
-                    {/* CTA BUTTON */}
+                    {/* RIGHT COLUMN: HEADLINE, COPY, CTA */}
                     <Box
                         sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            mt: { xs: 8, md: 6 },
-                            position: 'relative',
-                            px: { xs: 2, sm: 0 },
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                width: '400px',
-                                height: '400px',
-                                background: `
-                                    radial-gradient(circle at center,
-                                    rgba(0,255,204,0.15) 0%,
-                                    rgba(0,255,204,0.1) 20%,
-                                    rgba(0,180,219,0.05) 40%,
-                                    transparent 70%)
-                                `,
-                                filter: 'blur(40px)',
-                                zIndex: 0,
-                                animation: 'pulse 2s ease-in-out infinite'
-                            }
+                            flex: { xs: '1', md: '0 0 48%' },
+                            maxWidth: { xs: '100%', md: '48%' },
+                            textAlign: { xs: 'center', md: 'left' },
+                            px: { xs: 4, sm: 6, md: 3 },
+                            pt: { xs: 5, md: 2 },
+                            mt: { xs: 3, md: 0 },
+                            mx: 'auto',
+                            width: { xs: '90%', sm: '85%', md: 'auto' }
                         }}
                     >
-                        <Button
-                            component={Link}
-                            to="/signup"
-                            variant="contained"
-                            size="large"
-                            endIcon={<ArrowForward />}
+                        {/* HEADLINE - Only visible on desktop */}
+                        <Typography
+                            variant="h2"
                             sx={{
-                                background: 'linear-gradient(45deg, #FFFFFF, #E0E0E0)',
-                                color: '#000000',
-                                px: { xs: 4, sm: 6 },
-                                py: { xs: 1.5, sm: 2 },
-                                width: { xs: '100%', sm: 'auto' },
-                                fontSize: { xs: '1rem', sm: '1.1rem' },
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                boxShadow: `
-                                    0 4px 20px rgba(255,255,255,0.2),
-                                    0 0 0 1px rgba(255,255,255,0.1),
-                                    0 0 40px rgba(0,180,219,0.2)
-                                `,
-                                zIndex: 1,
-                                '&:hover': {
-                                    background: 'linear-gradient(45deg, #E0E0E0, #FFFFFF)',
-                                    boxShadow: `
-                                        0 6px 25px rgba(255,255,255,0.3),
-                                        0 0 0 1px rgba(255,255,255,0.2),
-                                        0 0 60px rgba(0,180,219,0.3)
-                                    `,
-                                    transform: 'translateY(-2px)'
-                                },
-                                transition: 'all 0.3s ease-in-out'
+                                fontSize: { sm: '2.5rem', md: '3rem' },
+                                fontWeight: 700,
+                                color: 'white',
+                                mb: 3,
+                                letterSpacing: '-0.02em',
+                                textShadow: '0 0 20px rgba(255,255,255,0.2)',
+                                textTransform: 'none',
+                                display: { xs: 'none', md: 'block' },
+                                '& .highlight': {
+                                    background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    position: 'relative',
+                                    display: 'inline-block',
+                                    textShadow: 'none',
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: '-4px',
+                                        left: 0,
+                                        width: '100%',
+                                        height: '2px',
+                                        background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
+                                        opacity: 0.4
+                                    }
+                                }
                             }}
                         >
-                            Get Started
-                        </Button>
-                    </Box>
-                </motion.div>
-            </Container>
+                            Turn Videos into <span className="highlight">AI Conversations</span>
+                        </Typography>
 
-            {/* Keyframe animations */}
-            <style>
-                {`
-                    @keyframes pulse {
-                      0% { opacity: 0.5; }
-                      50% { opacity: 1; }
-                      100% { opacity: 0.5; }
-                    }
-                    @keyframes float {
-                      0% { transform: translateY(0px) }
-                      50% { transform: translateY(-20px) }
-                      100% { transform: translateY(0px) }
-                    }
-                    @keyframes pulseUnderline {
-                      0%, 100% {
-                        opacity: 0.5; transform: translateX(-50%) scaleX(0.95); filter: brightness(0.8);
-                      }
-                      50% {
-                        opacity: 1; transform: translateX(-50%) scaleX(1); filter: brightness(1.2);
-                      }
-                    }
-                `}
-            </style>
-        </Box>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                color: 'rgba(255,255,255,0.95)',
+                                mb: 3,
+                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                fontWeight: 400,
+                                lineHeight: 1.6,
+                                textAlign: { xs: 'center', md: 'left' },
+                                '& strong': {
+                                    color: '#00ffcc',
+                                    fontWeight: 600,
+                                }
+                            }}
+                        >
+                            Transform your static videos, demos, and training sessions into interactive experiences. Viewers can pause, ask questions, and receive instant, voice-driven responses.
+                        </Typography>
+
+                        {/* FEATURE BULLETS */}
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 2.5,
+                            mb: 4,
+                            mt: 4,
+                            textAlign: { xs: 'center', md: 'left' }
+                        }}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                gap: 2
+                            }}>
+                                <Box
+                                    sx={{
+                                        minWidth: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        backgroundColor: 'rgba(0, 255, 204, 0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#00ffcc',
+                                        boxShadow: '0 0 15px rgba(0, 255, 204, 0.2)'
+                                    }}
+                                >
+                                    <VerifiedUser sx={{ fontSize: '20px' }} />
+                                </Box>
+                                <Typography
+                                    sx={{
+                                        fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                        color: 'rgba(255,255,255,0.95)',
+                                        fontWeight: 400
+                                    }}
+                                >
+                                    Your audience asks. AI answers. <strong>Instantly.</strong>
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                gap: 2
+                            }}>
+                                <Box
+                                    sx={{
+                                        minWidth: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        backgroundColor: 'rgba(0, 255, 204, 0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#00ffcc',
+                                        boxShadow: '0 0 15px rgba(0, 255, 204, 0.2)'
+                                    }}
+                                >
+                                    <AllInclusive sx={{ fontSize: '20px' }} />
+                                </Box>
+                                <Typography
+                                    sx={{
+                                        fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                        color: 'rgba(255,255,255,0.95)',
+                                        fontWeight: 400
+                                    }}
+                                >
+                                    Train once. Answer forever. <strong>AI handles the rest.</strong>
+                                </Typography>
+                            </Box>
+
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                gap: 2
+                            }}>
+                                <Box
+                                    sx={{
+                                        minWidth: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        backgroundColor: 'rgba(0, 255, 204, 0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#00ffcc',
+                                        boxShadow: '0 0 15px rgba(0, 255, 204, 0.2)'
+                                    }}
+                                >
+                                    <AutoFixHigh sx={{ fontSize: '20px' }} />
+                                </Box>
+                                <Typography
+                                    sx={{
+                                        fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                        color: 'rgba(255,255,255,0.95)',
+                                        fontWeight: 400
+                                    }}
+                                >
+                                    See what your audience <strong>cares about most.</strong>
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        {/* CTA BUTTONS */}
+                        <Stack
+                            direction={{ xs: 'column', sm: 'row' }}
+                            spacing={{ xs: 3, sm: 2.5 }}
+                            sx={{
+                                mt: { xs: 5, sm: 4 },
+                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                width: '100%'
+                            }}
+                        >
+                            <Button
+                                component={Link}
+                                to="/signup"
+                                variant="contained"
+                                size="large"
+                                endIcon={<ArrowForward />}
+                                sx={{
+                                    background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
+                                    color: '#000000',
+                                    px: { xs: 3, sm: 4 },
+                                    py: { xs: 1.75, sm: 1.75 },
+                                    fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                    fontWeight: 700,
+                                    borderRadius: '50px',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    width: { xs: '100%', sm: 'auto' },
+                                    boxShadow: `
+                                        0 4px 20px rgba(0, 255, 204, 0.3),
+                                        0 0 0 1px rgba(0, 255, 204, 0.1),
+                                        0 0 40px rgba(0, 255, 204, 0.2)
+                                    `,
+                                    zIndex: 1,
+                                    '&:hover': {
+                                        background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
+                                        boxShadow: `
+                                            0 6px 25px rgba(0, 255, 204, 0.4),
+                                            0 0 0 1px rgba(0, 255, 204, 0.2),
+                                            0 0 60px rgba(0, 255, 204, 0.3)
+                                        `,
+                                        transform: 'translateY(-2px)'
+                                    },
+                                    transition: 'all 0.3s ease-in-out'
+                                }}
+                            >
+                                Try Brdge AI Free – No Credit Card
+                            </Button>
+
+                            <Button
+                                component={Link}
+                                to="/demos"
+                                variant="outlined"
+                                size="large"
+                                sx={{
+                                    color: '#00ffcc',
+                                    borderColor: 'rgba(0, 255, 204, 0.4)',
+                                    borderWidth: '2px',
+                                    px: { xs: 3, sm: 4 },
+                                    py: { xs: 1.75, sm: 1.75 },
+                                    fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                    fontWeight: 600,
+                                    borderRadius: '50px',
+                                    letterSpacing: '0.02em',
+                                    textTransform: 'none',
+                                    width: { xs: '100%', sm: 'auto' },
+                                    backdropFilter: 'blur(10px)',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        borderColor: 'rgba(0, 255, 204, 0.6)',
+                                        backgroundColor: 'rgba(0, 255, 204, 0.05)',
+                                        transform: 'translateY(-2px)'
+                                    }
+                                }}
+                            >
+                                Watch Full Demo
+                            </Button>
+                        </Stack>
+                    </Box>
+                </Box>
+            </motion.div>
+        </Container>
     );
 };
 
@@ -667,20 +651,21 @@ const HeroSection = () => {
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
                             mx: 'auto',
-                            maxWidth: { xs: '100%', sm: '85%', md: '80%' },
+                            maxWidth: { xs: '90%', sm: '85%', md: '80%' },
                             color: 'white',
                             position: 'relative',
                             fontFamily: fontFamily,
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: '-24px',
+                                bottom: { xs: '-12px', sm: '-24px' },
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '140px',
-                                height: '2px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.4), transparent)',
-                                borderRadius: '1px'
+                                width: { xs: '100px', sm: '140px' },
+                                height: '3px',
+                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.6), transparent)',
+                                borderRadius: '1px',
+                                animation: 'underlinePulse 2s infinite ease-in-out'
                             }
                         }}
                     >
@@ -689,7 +674,7 @@ const HeroSection = () => {
                             sx={{
                                 display: 'block',
                                 color: '#FFFFFF',
-                                textShadow: '0 0 20px rgba(255,255,255,0.15)',
+                                textShadow: '0 2px 20px rgba(0,0,0,0.3)',
                                 fontSize: { xs: '2.75rem', sm: '3.75rem', md: '4.5rem' },
                                 fontWeight: 500,
                                 letterSpacing: '-0.02em',
@@ -699,8 +684,7 @@ const HeroSection = () => {
                                 lineHeight: 1.2
                             }}
                         >
-                            Speak Once,
-                            <br />
+                            Stop Repeating Yourself
                             <span className="highlight" style={{
                                 background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
                                 WebkitBackgroundClip: 'text',
@@ -709,7 +693,6 @@ const HeroSection = () => {
                                 display: 'inline-block',
                                 textShadow: 'none',
                             }}>
-                                Connect Forever
                             </span>
                         </Box>
                         <Box
@@ -721,9 +704,11 @@ const HeroSection = () => {
                                 color: 'rgba(255,255,255,0.9)',
                                 letterSpacing: '0.01em',
                                 mt: 3,
-                                fontFamily: fontFamily
+                                fontFamily: fontFamily,
+                                textAlign: 'center'
                             }}
                         >
+                            Turn Your Videos into <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>Interactive</strong>, <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>AI-Powered</strong> Conversations
                         </Box>
                     </Typography>
                 </motion.div>
@@ -750,7 +735,7 @@ const HeroSection = () => {
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            mx: 'auto', // Add this to ensure horizontal centering
+                            mx: 'auto',
                             '&::before': {
                                 content: '""',
                                 position: 'absolute',
@@ -763,35 +748,6 @@ const HeroSection = () => {
                                 filter: 'blur(40px)',
                                 animation: 'breathe 4s ease-in-out infinite',
                                 zIndex: 0,
-                            },
-                            '&::after': {
-                                content: '"Click to chat"',
-                                position: 'absolute',
-                                bottom: '-40px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.1), rgba(0, 180, 219, 0.1))',
-                                backdropFilter: 'blur(10px)',
-                                padding: { xs: '8px 16px', sm: '12px 24px' },
-                                borderRadius: '24px',
-                                fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                                color: '#00ffcc',
-                                whiteSpace: 'nowrap',
-                                opacity: 1,
-                                transition: 'all 0.3s ease',
-                                visibility: 'visible',
-                                zIndex: 100,
-                                border: '1px solid rgba(0, 255, 204, 0.2)',
-                                boxShadow: '0 4px 12px rgba(0, 255, 204, 0.1)',
-                                '&:hover': {
-                                    background: 'linear-gradient(135deg, rgba(0, 255, 204, 0.15), rgba(0, 180, 219, 0.15))',
-                                    boxShadow: '0 4px 20px rgba(0, 255, 204, 0.2)',
-                                }
-                            },
-                            '&:hover::after': {
-                                transform: 'translateX(-50%) translateY(-2px)',
-                                boxShadow: '0 6px 24px rgba(0, 255, 204, 0.2)',
-                                border: '1px solid rgba(0, 255, 204, 0.3)',
                             }
                         }}
                         onMouseMove={handleMouseMove}
@@ -950,13 +906,13 @@ const HeroSection = () => {
                     align="center"
                     sx={{
                         mt: { xs: 2, sm: 3 },
-                        mb: { xs: 8, sm: 10, md: 12 },
+                        mb: { xs: 2, sm: 3 },
                         maxWidth: '800px',
                         mx: 'auto',
                         opacity: 0.9,
-                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
+                        fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.2rem' },
                         fontWeight: 400,
-                        lineHeight: 1.85,
+                        lineHeight: 1.6,
                         px: { xs: 3, sm: 4 },
                         color: 'rgba(255, 255, 255, 0.95)',
                         letterSpacing: '0.01em',
@@ -972,8 +928,93 @@ const HeroSection = () => {
                         }
                     }}
                 >
-                    Imagine your sales demos and onboarding videos sparking real-time conversation. With Brdge AI, your video content becomes interactive—viewers can pause, ask questions, and instantly hear your authentic voice.
+                    Brdge AI transforms how you connect with your audience:
                 </Typography>
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        maxWidth: '800px',
+                        mx: 'auto',
+                        mb: { xs: 3, sm: 4, md: 5 },
+                        px: { xs: 3, sm: 4 },
+                    }}
+                >
+                    {[
+                        {
+                            text: "Close deals faster with AI-powered product demos",
+                            icon: "🚀"
+                        },
+                        {
+                            text: "Onboard employees effortlessly with interactive training",
+                            icon: "✨"
+                        },
+                        {
+                            text: "Scale your content while keeping engagement personal",
+                            icon: "📈"
+                        },
+                        {
+                            text: "Your audience asks questions and gets instant answers",
+                            icon: "🎯"
+                        }
+                    ].map((item, index) => (
+                        <Box
+                            key={index}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                width: '100%',
+                                maxWidth: '700px',
+                                mb: index < 3 ? 1.75 : 0,
+                                pb: index < 3 ? 1.25 : 0,
+                                borderBottom: index < 3 ? '1px solid rgba(0, 180, 219, 0.1)' : 'none',
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    transform: 'translateX(8px)'
+                                }
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    fontSize: { xs: '1rem', sm: '1.35rem', md: '1.5rem' },
+                                    lineHeight: 1,
+                                    mr: { xs: 2, sm: 2.5 },
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    filter: 'drop-shadow(0 0 8px rgba(0, 255, 204, 0.4))',
+                                    transition: 'all 0.3s ease',
+                                    animation: 'pulse 3s infinite ease-in-out',
+                                    animationDelay: `${0.2 * index}s`
+                                }}
+                            >
+                                {item.icon}
+                            </Box>
+                            <Typography
+                                variant="body1"
+                                sx={{
+                                    fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.2rem' },
+                                    fontWeight: 400,
+                                    lineHeight: 1.4,
+                                    color: 'rgba(255, 255, 255, 0.95)',
+                                    flex: 1,
+                                    '& strong': {
+                                        fontWeight: 700,
+                                        color: '#00ffcc',
+                                        textShadow: '0 0 10px rgba(0, 255, 204, 0.4)'
+                                    }
+                                }}
+                                dangerouslySetInnerHTML={{
+                                    __html: item.text.includes("instant answers") ?
+                                        item.text.replace("instant answers—in your voice", "instant answers—in your <strong>voice</strong>") :
+                                        item.text
+                                }}
+                            />
+                        </Box>
+                    ))}
+                </Box>
 
                 <Box sx={{
                     display: 'flex',
@@ -998,22 +1039,22 @@ const HeroSection = () => {
                             size="large"
                             fullWidth
                             sx={{
-                                bgcolor: 'white',
-                                color: '#0041C2',
+                                bgcolor: 'rgba(0, 255, 204, 0.9)',
+                                color: '#000000',
                                 px: { xs: 6, sm: 8 },
                                 py: { xs: 1.5, sm: 2 },
                                 fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                 fontWeight: 600,
                                 borderRadius: '50px',
-                                boxShadow: '0 0 20px rgba(255,255,255,0.15)',
+                                boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
                                 minWidth: { xs: '100%', sm: '220px' },
                                 whiteSpace: 'nowrap',
                                 height: 'fit-content',
                                 '&:hover': {
-                                    bgcolor: 'rgba(255,255,255,0.95)',
-                                    boxShadow: '0 0 30px rgba(255,255,255,0.5)'
+                                    bgcolor: 'rgba(0, 255, 204, 1)',
+                                    boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)'
                                 }
                             }}
                         >
@@ -1174,8 +1215,9 @@ const HowItWorksSection = () => {
                                 transform: 'translateX(-50%)',
                                 width: '120px',
                                 height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.4), transparent)',
-                                borderRadius: '1px'
+                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.6), transparent)',
+                                borderRadius: '1px',
+                                animation: 'underlinePulse 2s infinite ease-in-out'
                             }
                         }}
                     >
@@ -1468,7 +1510,7 @@ const ImpactSection = () => {
                                 textTransform: 'none',
                             }}
                         >
-                            One platform, countless possibilities
+                            One Platform, Countless Possibilities
                         </Typography>
 
                         <Typography
@@ -1754,21 +1796,22 @@ const FinalCTA = () => {
                                 variant="contained"
                                 size="large"
                                 sx={{
-                                    width: '100%',
-                                    bgcolor: 'rgba(0,255,204,0.1)',
-                                    color: '#00ffcc',
-                                    px: { xs: 4, sm: 6 },
+                                    bgcolor: 'rgba(0, 255, 204, 0.9)',
+                                    color: '#000000',
+                                    px: { xs: 6, sm: 8 },
                                     py: { xs: 1.5, sm: 2 },
                                     fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                     fontWeight: 600,
                                     borderRadius: '50px',
-                                    border: '1px solid rgba(0,255,204,0.2)',
+                                    boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
+                                    letterSpacing: '0.02em',
                                     textTransform: 'none',
-                                    boxShadow: '0 0 30px rgba(0,255,204,0.1)',
-                                    transition: 'all 0.3s ease',
+                                    minWidth: { xs: '100%', sm: '220px' },
+                                    whiteSpace: 'nowrap',
+                                    height: 'fit-content',
                                     '&:hover': {
-                                        bgcolor: 'rgba(0,255,204,0.15)',
-                                        boxShadow: '0 0 40px rgba(0,255,204,0.2)'
+                                        bgcolor: 'rgba(0, 255, 204, 1)',
+                                        boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)'
                                     }
                                 }}
                             >
@@ -1787,11 +1830,10 @@ const FinalCTA = () => {
                                 variant="outlined"
                                 size="large"
                                 sx={{
-                                    width: '100%',
                                     color: 'white',
-                                    borderColor: 'rgba(255,255,255,0.2)',
-                                    borderWidth: 1,
-                                    px: { xs: 4, sm: 6 },
+                                    borderColor: 'rgba(255,255,255,0.5)',
+                                    borderWidth: '2px',
+                                    px: { xs: 6, sm: 8 },
                                     py: { xs: 1.5, sm: 2 },
                                     fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                     fontWeight: 600,
