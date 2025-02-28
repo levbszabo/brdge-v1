@@ -8,16 +8,8 @@ import {
     Typography,
     Button,
     Stack,
-    Card,
-    CardContent,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    useTheme,
     Paper,
     Collapse,
-    Icon,
-    Grid
 } from '@mui/material';
 import {
     ArrowForward,
@@ -25,12 +17,9 @@ import {
     Link as LinkIcon,
     BusinessCenter,
     Add,
-    AccessTime,
     AllInclusive,
-    HomeRepairService,
     AutoFixHigh,
     VerifiedUser,
-    Explore,
 } from '@mui/icons-material';
 import {
     Upload,
@@ -39,7 +28,7 @@ import {
     Share2,
 } from 'lucide-react';
 import { motion, useAnimation } from 'framer-motion';
-import { ParallaxProvider, Parallax } from 'react-scroll-parallax';
+import { ParallaxProvider } from 'react-scroll-parallax';
 import { useInView } from 'react-intersection-observer';
 import demoVideo from '../assets/brdge-demo2.mp4';
 import logo from '../assets/new-img.png';
