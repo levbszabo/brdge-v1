@@ -90,6 +90,9 @@ class Brdge(db.Model):
     agent_personality = db.Column(
         db.Text, nullable=True, default="friendly ai assistant"
     )
+    voice_id = db.Column(
+        db.String(255), nullable=True
+    )  # Keep as string for Cartesia voice ID
 
     # Define recordings relationship with back_populates instead of backref
     recordings = db.relationship(
@@ -116,6 +119,7 @@ class Brdge(db.Model):
             "shareable": self.shareable,
             "public_id": self.public_id,
             "agent_personality": self.agent_personality,
+            "voice_id": self.voice_id,  # Ensure voice_id is included
         }
 
 

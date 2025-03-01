@@ -11,10 +11,15 @@ function EditBrdgePage() {
     const [id, uidFromUrl] = params.id ? params.id.split('-') : [null, null];
     const navigate = useNavigate();
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const [authToken, setAuthToken] = useState('');
 
     useEffect(() => {
         const checkAuthorization = async () => {
             try {
+                // Get the token from localStorage
+                const token = localStorage.getItem('token');
+                setAuthToken(token || '');
+
                 const response = await api.get(`/brdges/${id}/check-auth`);
 
                 // If we have a UID from the URL, verify it matches
@@ -131,7 +136,7 @@ function EditBrdgePage() {
                 zIndex: 1,
                 WebkitOverflowScrolling: 'touch'
             }}>
-                <AgentConnector brdgeId={id} agentType="edit" />
+                <AgentConnector brdgeId={id} agentType="edit" token={authToken} />
             </Box>
         </Box>
     );

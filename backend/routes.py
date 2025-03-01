@@ -3397,3 +3397,180 @@ def debug_agent_config(brdge_id):
     except Exception as e:
         logger.error(f"Error in debug endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/users/voices", methods=["GET"])
+@cross_origin()
+def get_user_voices():
+    """Get all voices created by the user across all bridges"""
+    try:
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            return jsonify({"error": "Authentication required"}), 401
+
+        # Get all bridges owned by the user
+        user_bridges = Brdge.query.filter_by(user_id=current_user_id).all()
+        bridge_ids = [bridge.id for bridge in user_bridges]
+
+        # Get all voices for these bridges
+        voices = Voice.query.filter(Voice.brdge_id.in_(bridge_ids)).all()
+
+        # Format voices for frontend with additional bridge information
+        voice_list = []
+        for voice in voices:
+            # Get the bridge name for context
+            bridge = Brdge.query.get(voice.brdge_id)
+            voice_list.append(
+                {
+                    "id": voice.cartesia_voice_id,
+                    "name": voice.name,
+                    "created_at": voice.created_at.isoformat(),
+                    "language": voice.language,
+                    "description": voice.description,
+                    "status": voice.status,
+                    "brdge_id": voice.brdge_id,
+                    "brdge_name": bridge.name if bridge else "Unknown Bridge",
+                    "is_from_current_bridge": False,  # This will be set on frontend
+                }
+            )
+
+        # Sort voices by creation date (newest first)
+        voice_list.sort(key=lambda x: x["created_at"], reverse=True)
+
+        logger.info(f"Found {len(voice_list)} voices for user {current_user_id}")
+
+        return (
+            jsonify(
+                {
+                    "has_voices": len(voice_list) > 0,
+                    "voices": voice_list,
+                    "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
+                    "user_id": current_user_id,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching user voices: {e}")
+        logger.exception("Full error details:")
+        return (
+            jsonify(
+                {
+                    "has_voices": False,
+                    "voices": [],
+                    "error": "Failed to fetch voices",
+                    "details": str(e),
+                    "default_voice": "85100d63-eb8a-4225-9750-803920c3c8d3",
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/brdges/<int:brdge_id>/voice/use-from-other", methods=["POST"])
+@cross_origin()
+def use_voice_from_other_bridge(brdge_id):
+    """Use a voice from another bridge with this bridge"""
+    try:
+        # Parse request data
+        data = request.json
+        voice_id = data.get("voice_id")
+        source_brdge_id = data.get("source_brdge_id")
+
+        if not voice_id or not source_brdge_id:
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Verify the voice exists in the source bridge
+        source_voice = Voice.query.filter_by(
+            cartesia_voice_id=voice_id, brdge_id=source_brdge_id
+        ).first()
+
+        if not source_voice:
+            return jsonify({"error": "Voice not found in source bridge"}), 404
+
+        # Get the current bridge
+        target_bridge = Brdge.query.get_or_404(brdge_id)
+
+        # Check authorization - user must own both bridges
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"error": "Authentication required"}), 401
+
+        # Check the source bridge belongs to the user
+        source_bridge = Brdge.query.get_or_404(source_brdge_id)
+        if (
+            source_bridge.user_id != current_user.id
+            or target_bridge.user_id != current_user.id
+        ):
+            return (
+                jsonify({"error": "You don't have permission to use this voice"}),
+                403,
+            )
+
+        # Deactivate any active voices for the target bridge
+        active_voices = Voice.query.filter_by(brdge_id=brdge_id, status="active").all()
+        for voice in active_voices:
+            voice.status = "inactive"
+
+        # Create a shared reference to the voice in the target bridge
+        shared_voice = Voice(
+            brdge_id=brdge_id,
+            cartesia_voice_id=source_voice.cartesia_voice_id,
+            name=f"{source_voice.name} (from {source_bridge.name})",
+            description=f"Voice imported from another project: {source_bridge.name}",
+            language=source_voice.language,
+            created_at=datetime.utcnow(),
+            status="active",
+        )
+
+        db.session.add(shared_voice)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Voice from another bridge activated successfully",
+                    "voice": shared_voice.to_dict(),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error using voice from another bridge: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/update-voice", methods=["POST"])
+@cross_origin()
+def update_brdge_voice(brdge_id):
+    """Update a brdge's voice_id field"""
+    try:
+        # Get the brdge without filtering by user_id since we're not using authentication for now
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Get the voice_id from request data
+        data = request.json
+        voice_id = data.get("voice_id")  # Can be null to reset to default
+
+        # Update the brdge
+        brdge.voice_id = voice_id
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Brdge voice updated successfully",
+                    "brdge_id": brdge_id,
+                    "voice_id": voice_id,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating brdge voice: {e}")
+        return jsonify({"error": str(e)}), 500
