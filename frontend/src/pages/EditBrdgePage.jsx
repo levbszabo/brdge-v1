@@ -15,7 +15,7 @@ function EditBrdgePage() {
     useEffect(() => {
         const checkAuthorization = async () => {
             try {
-                const response = await api.get(`/brdge/${id}/check-auth`);
+                const response = await api.get(`/brdges/${id}/check-auth`);
 
                 // If we have a UID from the URL, verify it matches
                 if (uidFromUrl && response.data.brdge.public_id) {

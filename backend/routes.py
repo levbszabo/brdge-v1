@@ -71,6 +71,8 @@ import asyncio
 from botocore.config import Config  # Add this import at the top
 from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
+from gemini import create_brdge_knowledge
+from sqlalchemy.orm.attributes import flag_modified
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -623,6 +625,77 @@ def upload_image_to_s3(args):
         return False
 
 
+def process_brdge_content(
+    brdge_id, video_path, document_path=None, template_type="general"
+):
+    """Process brdge content using Gemini analysis"""
+    try:
+        # Get the analysis using gemini.py
+        knowledge = create_brdge_knowledge(video_path, document_path)
+
+        # Make sure agent_personality exists in the knowledge structure
+        if "agent_personality" not in knowledge:
+            # Create default agent personality if not present
+            knowledge["agent_personality"] = {
+                "name": "Brdge AI Assistant",
+                "expertise": [
+                    "AI knowledge bases",
+                    "Lead Generation",
+                    "Customer Engagement",
+                ],
+                "knowledge_areas": [
+                    {
+                        "topic": "Product Features",
+                        "confidence_level": "high",
+                        "key_talking_points": [
+                            "Instant answers",
+                            "Easy setup",
+                            "AI transcription",
+                        ],
+                    }
+                ],
+                "persona_background": "A helpful and knowledgeable assistant designed to explain product features and benefits.",
+                "response_templates": {
+                    "greeting": "Hello! How can I help you today?",
+                    "not_sure": "I'm not sure about that, but I'd be happy to help with information about our product.",
+                    "follow_up_questions": ["Do you have any other questions?"],
+                },
+                "communication_style": "friendly",
+                "voice_characteristics": {
+                    "pace": "measured",
+                    "tone": "enthusiastic",
+                    "common_phrases": ["Great question!", "Happy to help!"],
+                    "emphasis_patterns": "Highlights key benefits with positive language.",
+                },
+            }
+
+        # Create or update BrdgeScript with the comprehensive knowledge
+        script_obj = BrdgeScript(
+            brdge_id=brdge_id,
+            status="completed",
+            content=knowledge,  # Store the entire knowledge structure
+            script_metadata={
+                "source": "gemini",
+                "template_type": template_type,
+                "generated_at": datetime.utcnow().isoformat(),
+            },
+        )
+        db.session.add(script_obj)
+        db.session.commit()
+
+        return script_obj
+    except Exception as e:
+        logger.error(f"Error in Gemini processing: {e}")
+        script_obj = BrdgeScript(
+            brdge_id=brdge_id,
+            status="failed",
+            script_metadata={"error": str(e), "source": "gemini"},
+        )
+        db.session.add(script_obj)
+        db.session.commit()
+        return None
+
+
 @app.route("/api/brdges", methods=["POST"])
 @login_required
 def create_brdge(user):
@@ -631,6 +704,9 @@ def create_brdge(user):
         presentation = request.files.get("presentation")
         recording = request.files.get("screen_recording")
         recording_metadata = request.form.get("recording_metadata")
+        template_type = request.form.get(
+            "template_type", "general"
+        )  # Get template type if provided
 
         # Validation...
         missing_fields = []
@@ -721,15 +797,18 @@ def create_brdge(user):
             folder="temp",
         )
         db.session.add(brdge)
-        db.session.commit()  # {{ edit_start_1 }} COMMIT HERE to ensure brdge.id is valid for any subsequent async tasks
+        db.session.commit()  # Commit to ensure brdge.id is valid
 
         # Now that brdge.id is real, we can update the folder:
         brdge.folder = str(brdge.id)
 
         # Because we re-committed, we must merge the brdge back into the session:
         brdge = db.session.merge(brdge)
+        db.session.commit()  # Commit the folder update
 
-        # (Re-check the second commit approach for documents, etc.)
+        # Paths for temporary files
+        pdf_local_path = None
+        video_local_path = None
 
         # Handle presentation file if it exists
         if presentation:
@@ -738,7 +817,14 @@ def create_brdge(user):
                 f"{uuid.uuid4()}_{original_filename}"
             )
             presentation_key = f"{brdge.folder}/{presentation_filename}"
+            pdf_local_path = f"/tmp/brdge_{brdge.id}_{presentation_filename}"
 
+            # Save PDF locally for Gemini processing
+            os.makedirs(os.path.dirname(pdf_local_path), exist_ok=True)
+            presentation.seek(0)
+            presentation.save(pdf_local_path)
+
+            # Upload to S3
             presentation.seek(0)
             s3_client.upload_fileobj(
                 presentation,
@@ -748,10 +834,7 @@ def create_brdge(user):
             )
 
             brdge.presentation_filename = presentation_filename
-            db.session.commit()  # Ensure this is saved for async PDF processing
-
-            # Start async PDF processing
-            start_async_pdf_processing(brdge.id, original_filename, presentation_key)
+            db.session.commit()
 
         # Handle recording file (required)
         recording = request.files.get("screen_recording")
@@ -766,11 +849,6 @@ def create_brdge(user):
         recording.save(temp_input_path)
 
         try:
-            # Optionally transcribe the raw file
-            transcript_data = transcribe_audio_helper(
-                temp_input_path, f"/tmp/transcript_{brdge.id}.txt"
-            )
-
             mp4_filename = ""
             conversion_success = True
 
@@ -780,10 +858,12 @@ def create_brdge(user):
                 if not conversion_success:
                     raise Exception("Failed to convert WebM to MP4")
                 mp4_filename = os.path.basename(mp4_path)
+                video_local_path = mp4_path
             else:
                 # The user is uploading mp4 or we skip conversion
                 mp4_filename = os.path.basename(recording.filename)
                 mp4_path = temp_input_path  # We'll just reuse the raw file path
+                video_local_path = mp4_path
 
             # Upload the final (webm->mp4 or original mp4) to S3
             recording_key = f"{brdge.folder}/recordings/{mp4_filename}"
@@ -799,96 +879,46 @@ def create_brdge(user):
             rec_obj = Recording(
                 brdge_id=brdge.id,
                 filename=mp4_filename,
-                format=(
-                    "mp4" if is_webm else "mp4"
-                ),  # or keep as 'webm' if you want to track that
-                duration=None,  # updated below if you are parsing
+                format="mp4",  # Always mp4 after conversion if needed
+                duration=recording_duration,
             )
             db.session.add(rec_obj)
+            db.session.commit()
 
-            # Create initial BrdgeScript
-            script_obj = BrdgeScript(
-                brdge_id=brdge.id,
-                status="pending",
-                script_metadata={"recording_filename": mp4_filename},
+            # Process content using Gemini
+            script_obj = process_brdge_content(
+                brdge.id, video_local_path, pdf_local_path, template_type
             )
-            db.session.add(script_obj)
 
-            # Save transcript details
-            try:
-                # Build transcript text
-                transcript_text = ""
-                words = []
-                segments = []
-
-                channels = transcript_data.get("channels", [])
-                if channels and len(channels) > 0:
-                    alternatives = channels[0].get("alternatives", [])
-                    if alternatives and len(alternatives) > 0:
-                        alternative = alternatives[0]
-                        transcript_text = alternative.get("transcript", "")
-                        for word in alternative.get("words", []):
-                            words.append(
-                                {
-                                    "word": word.get(
-                                        "punctuated_word", word.get("word", "")
-                                    ),
-                                    "start": word.get("start", 0),
-                                    "end": word.get("end", 0),
-                                    "confidence": word.get("confidence", 1.0),
-                                }
-                            )
-
-                        segments.append(
-                            {
-                                "text": transcript_text,
-                                "start": 0,
-                                "end": words[-1].get("end", 0) if words else 0,
-                                "speaker": "Speaker 0",
-                            }
-                        )
-
-                # Assign script content
-                script_obj.content = {
-                    "transcript": transcript_text,
-                    "segments": segments,
-                    "words": words,
-                }
-                script_obj.status = "completed"
-
-            except Exception as e:
-                script_obj.status = "failed"
-                script_obj.script_metadata.update({"error": str(e)})
-
-            # Clean up
+            # Clean up temporary files
             if is_webm and os.path.exists(mp4_path):
                 os.remove(mp4_path)
             if os.path.exists(temp_input_path):
                 os.remove(temp_input_path)
-            if os.path.exists(f"/tmp/transcript_{brdge.id}.txt"):
-                os.remove(f"/tmp/transcript_{brdge.id}.txt")
-
-            db.session.commit()
+            if pdf_local_path and os.path.exists(pdf_local_path):
+                os.remove(pdf_local_path)
 
             return (
                 jsonify(
                     {
                         "message": "Brdge created successfully",
                         "brdge": brdge.to_dict(),
-                        "script": script_obj.to_dict(),
+                        "script": script_obj.to_dict() if script_obj else None,
                     }
                 ),
                 201,
             )
 
         except Exception as e:
+            logger.error(f"Error processing files: {str(e)}", exc_info=True)
             db.session.rollback()
             return (
-                jsonify({"error": "Failed to upload/convert files", "detail": str(e)}),
+                jsonify({"error": "Failed to process files", "detail": str(e)}),
                 500,
             )
 
     except Exception as e:
+        logger.error(f"Error creating brdge: {str(e)}", exc_info=True)
         db.session.rollback()
         return jsonify({"error": "Error creating brdge", "detail": str(e)}), 500
 
@@ -2947,562 +2977,12 @@ def get_recording_signed_url(brdge_id):
                 ),
             }
         )
-
     except Exception as e:
         logger.error(f"Error generating signed URL for recording: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/brdges/<int:brdge_id>/script", methods=["GET"])
-def get_brdge_script(brdge_id):
-    try:
-        script = (
-            BrdgeScript.query.filter_by(brdge_id=brdge_id)
-            .order_by(BrdgeScript.created_at.desc())
-            .first()
-        )
-
-        if not script:
-            return jsonify({"error": "No script found"}), 404
-
-        return jsonify(script.to_dict())
-
-    except Exception as e:
-        logger.error(f"Error fetching script: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["GET"])
-def get_agent_config(brdge_id):
-    try:
-        # Add debug logging
-        logger.info(f"Fetching agent config for brdge {brdge_id}")
-
-        brdge = Brdge.query.get_or_404(brdge_id)
-
-        # Debug log the brdge object
-        logger.info(f"Brdge data: {brdge.to_dict()}")
-
-        # Create config structure using the actual agent_personality from the brdge
-        config = {
-            "personality": (
-                brdge.agent_personality if hasattr(brdge, "agent_personality") else ""
-            ),
-            "knowledgeBase": [
-                {
-                    "id": "presentation",
-                    "type": "presentation",
-                    "name": brdge.presentation_filename,
-                    "content": "",
-                }
-            ],
-        }
-
-        # Add any additional knowledge base entries
-        knowledge_entries = KnowledgeBase.query.filter_by(brdge_id=brdge_id).all()
-        for entry in knowledge_entries:
-            config["knowledgeBase"].append(
-                {
-                    "id": str(entry.id),
-                    "type": "custom",
-                    "name": entry.name,
-                    "content": entry.content,
-                }
-            )
-
-        logger.info(f"Returning config: {config}")
-        return jsonify(config)
-
-    except Exception as e:
-        logger.error(f"Error fetching agent config: {e}")
-        # Add more detailed error logging
-        logger.error(f"Error details: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["PUT"])
-def update_agent_config(brdge_id):
-    try:
-        brdge = Brdge.query.get_or_404(brdge_id)
-        data = request.json
-
-        # Update personality
-        brdge.agent_personality = data.get("personality", "")
-
-        # Update knowledge base entries
-        KnowledgeBase.query.filter_by(brdge_id=brdge_id).delete()
-
-        for entry in data.get("knowledgeBase", []):
-            if entry["type"] != "presentation":  # Skip presentation entry
-                new_entry = KnowledgeBase(
-                    brdge_id=brdge_id, name=entry["name"], content=entry["content"]
-                )
-                db.session.add(new_entry)
-
-        db.session.commit()
-        return jsonify({"message": "Configuration updated successfully"})
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating agent config: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/voice/activate", methods=["POST"])
-def activate_voice(brdge_id):
-    """Activate a voice for a brdge"""
-    try:
-        data = request.get_json()
-        voice_id = data.get("voice_id")
-
-        if not voice_id:
-            return jsonify({"error": "voice_id is required"}), 400
-
-        # First, set all voices for this brdge to inactive
-        voices = Voice.query.filter_by(brdge_id=brdge_id).all()
-        for voice in voices:
-            voice.status = "inactive"
-
-        # Then activate the selected voice
-        voice = Voice.query.filter_by(
-            brdge_id=brdge_id, cartesia_voice_id=voice_id
-        ).first()
-
-        if not voice:
-            return jsonify({"error": "Voice not found"}), 404
-
-        voice.status = "active"
-        db.session.commit()
-
-        return jsonify(
-            {"message": "Voice activated successfully", "voice": voice.to_dict()}
-        )
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error activating voice: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/voice/deactivate", methods=["POST"])
-def deactivate_voice(brdge_id):
-    """Deactivate a voice for a brdge"""
-    try:
-        data = request.get_json()
-        voice_id = data.get("voice_id")
-
-        if not voice_id:
-            return jsonify({"error": "voice_id is required"}), 400
-
-        voice = Voice.query.filter_by(
-            brdge_id=brdge_id, cartesia_voice_id=voice_id
-        ).first()
-
-        if not voice:
-            return jsonify({"error": "Voice not found"}), 404
-
-        voice.status = "inactive"
-        db.session.commit()
-
-        return jsonify(
-            {"message": "Voice deactivated successfully", "voice": voice.to_dict()}
-        )
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error deactivating voice: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-def start_async_pdf_processing(brdge_id: int, presentation_filename: str, s3_key: str):
-    """
-    Start asynchronous PDF processing in a separate thread
-    """
-
-    def run_async():
-        try:
-            # Create application context
-            with app.app_context():
-                # Create a new scoped session for this thread
-                thread_session = scoped_session(sessionmaker(bind=db.engine))
-
-                # Create event loop for this thread
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-                # Run the processing
-                try:
-                    loop.run_until_complete(
-                        process_pdf_document(brdge_id, presentation_filename, s3_key)
-                    )
-                except Exception as e:
-                    logger.error(f"Error in PDF processing: {str(e)}")
-                    # Update document status to failed
-                    doc_knowledge = (
-                        thread_session.query(DocumentKnowledge)
-                        .filter_by(
-                            brdge_id=brdge_id,
-                            presentation_filename=presentation_filename,
-                        )
-                        .first()
-                    )
-                    if doc_knowledge:
-                        doc_knowledge.status = "failed"
-                        doc_knowledge.error_message = str(e)
-                        thread_session.commit()
-                finally:
-                    loop.close()
-                    thread_session.remove()
-
-        except Exception as e:
-            logger.error(f"Critical error in processing thread: {str(e)}")
-
-    # Create and start the processing thread
-    processing_thread = Thread(target=run_async)
-    processing_thread.daemon = True  # Make thread daemon so it doesn't block shutdown
-    processing_thread.start()
-
-    logger.info(f"Started PDF processing thread for brdge {brdge_id}")
-
-
-@app.route("/api/brdges/<int:brdge_id>/presentation", methods=["POST"])
-def upload_presentation(brdge_id):
-    try:
-        # Get the brdge and verify ownership
-        brdge = Brdge.query.get_or_404(brdge_id)
-
-        # Get the uploaded file
-        if "presentation" not in request.files:
-            return jsonify({"error": "No presentation file in request"}), 422
-
-        presentation = request.files["presentation"]
-        if not presentation.filename:
-            return jsonify({"error": "No selected file"}), 422
-
-        # Check file type
-        if not presentation.filename.lower().endswith(".pdf"):
-            return jsonify({"error": "Only PDF files are allowed"}), 422
-
-        # Validate file size
-        if presentation.content_length > MAX_PDF_SIZE:
-            return (
-                jsonify(
-                    {
-                        "error": "PDF file size too large",
-                        "message": "PDF file size exceeds 20MB limit. Please upload a smaller file.",
-                        "max_size_mb": MAX_PDF_SIZE / (1024 * 1024),
-                    }
-                ),
-                422,
-            )
-
-        # Generate unique filename and update brdge
-        original_filename = presentation.filename
-        presentation_filename = secure_filename(f"{uuid.uuid4()}_{original_filename}")
-
-        # Upload to S3 using the brdge's folder
-        presentation_key = f"{brdge.folder}/{presentation_filename}"
-        presentation.seek(0)
-        s3_client.upload_fileobj(
-            presentation,
-            S3_BUCKET,
-            presentation_key,
-            ExtraArgs={"ContentType": "application/pdf"},
-        )
-
-        # Update brdge
-        brdge.presentation_filename = presentation_filename
-        db.session.commit()
-
-        # Start async processing
-        start_async_pdf_processing(brdge_id, original_filename, presentation_key)
-
-        return (
-            jsonify(
-                {
-                    "message": "Presentation uploaded successfully",
-                    "presentation_filename": presentation_filename,
-                    "folder": brdge.folder,
-                    "processing_status": "started",
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error uploading presentation: {str(e)}")
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-
-# Add a new endpoint to check processing status
-@app.route("/api/brdges/<int:brdge_id>/presentation/status", methods=["GET"])
-def get_presentation_processing_status(brdge_id):
-    try:
-        doc_knowledge = (
-            DocumentKnowledge.query.filter_by(brdge_id=brdge_id)
-            .order_by(DocumentKnowledge.created_at.desc())
-            .first()
-        )
-
-        if not doc_knowledge:
-            return (
-                jsonify(
-                    {"status": "not_found", "message": "No document processing found"}
-                ),
-                404,
-            )
-
-        return jsonify(
-            {
-                "status": doc_knowledge.status,
-                "error_message": (
-                    doc_knowledge.error_message
-                    if doc_knowledge.status == "failed"
-                    else None
-                ),
-                "metadata": (
-                    {
-                        "total_pages": doc_knowledge.total_pages,
-                        "total_words": doc_knowledge.total_words,
-                        "created_at": doc_knowledge.created_at.isoformat(),
-                        "updated_at": (
-                            doc_knowledge.updated_at.isoformat()
-                            if doc_knowledge.updated_at
-                            else None
-                        ),
-                    }
-                    if doc_knowledge.status == "completed"
-                    else None
-                ),
-            }
-        )
-    except Exception as e:
-        logger.error(f"Error checking presentation status: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/pdf/status", methods=["GET"])
-def get_pdf_processing_status(brdge_id):
-    """Get the status of PDF processing for a brdge"""
-    try:
-        doc_knowledge = (
-            DocumentKnowledge.query.filter_by(brdge_id=brdge_id)
-            .order_by(DocumentKnowledge.created_at.desc())
-            .first()
-        )
-
-        if not doc_knowledge:
-            return (
-                jsonify(
-                    {
-                        "status": "not_found",
-                        "message": "No PDF processing found for this brdge",
-                    }
-                ),
-                404,
-            )
-
-        return jsonify(
-            {
-                "status": doc_knowledge.status,
-                "error": (
-                    doc_knowledge.error_message
-                    if doc_knowledge.status == "failed"
-                    else None
-                ),
-                "progress": (
-                    {
-                        "total_pages": doc_knowledge.total_pages,
-                        "total_words": doc_knowledge.total_words,
-                        "created_at": doc_knowledge.created_at.isoformat(),
-                        "updated_at": (
-                            doc_knowledge.updated_at.isoformat()
-                            if doc_knowledge.updated_at
-                            else None
-                        ),
-                    }
-                    if doc_knowledge.status == "completed"
-                    else None
-                ),
-            }
-        )
-
-    except Exception as e:
-        logger.error(f"Error checking PDF status: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-async def process_pdf_document(brdge_id: int, presentation_filename: str, s3_key: str):
-    """
-    Asynchronously process a PDF document and store extracted information using GPT-4V
-    """
-    # Get the thread-local session
-    thread_session = scoped_session(sessionmaker(bind=db.engine))
-
-    try:
-        logger.info(f"Starting PDF processing for brdge {brdge_id}")
-
-        # Create initial document knowledge entry
-        doc_knowledge = DocumentKnowledge(
-            brdge_id=brdge_id,
-            presentation_filename=presentation_filename,
-            s3_location=s3_key,
-            status="processing",
-        )
-        thread_session.add(doc_knowledge)
-        thread_session.commit()
-        logger.info(f"Created document knowledge entry for brdge {brdge_id}")
-
-        # Download PDF from S3
-        temp_pdf_path = f"/tmp/{presentation_filename}"
-        s3_client.download_file(S3_BUCKET, s3_key, temp_pdf_path)
-        logger.info(f"Downloaded PDF from S3 for brdge {brdge_id}")
-
-        # Convert PDF to images using pdf_to_images utility
-        slide_images = pdf_to_images(temp_pdf_path)
-        total_pages = len(slide_images)
-        logger.info(f"Converted {total_pages} pages to images for brdge {brdge_id}")
-
-        # Prepare images for GPT-4V
-        image_data = []
-        for idx, image in enumerate(slide_images, 1):
-            # Convert PIL Image to base64
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG", quality=60)
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            image_data.append(
-                {"slide_number": str(idx), "image": f"data:image/jpeg;base64,{img_str}"}
-            )
-        logger.info(f"Prepared image data for GPT-4V for brdge {brdge_id}")
-
-        # Use OpenAI to analyze content with GPT-4V
-        client = AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        analysis_prompt = """Analyze these presentation slides and extract:
-        1. Main topics and themes
-        2. Key points per slide
-        3. Important entities (people, companies, technical terms, etc.)
-        4. Text content from each slide
-        
-        Return a JSON object with these keys:
-        {
-            "topics": ["topic1", "topic2", ...],
-            "key_points": {"1": ["point1", "point2"], "2": ["point1", "point2"], ...},
-            "entities": {
-                "technical_terms": ["term1", "term2"],
-                "people": ["person1", "person2"],
-                "companies": ["company1", "company2"],
-                "other": ["entity1", "entity2"]
-            },
-            "slide_contents": {"1": "text content", "2": "text content", ...}
-        }
-        """
-
-        # Prepare messages with images
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": analysis_prompt},
-                    *[
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": slide["image"], "detail": "low"},
-                        }
-                        for slide in image_data
-                    ],
-                ],
-            }
-        ]
-
-        logger.info(f"Calling GPT-4V for analysis for brdge {brdge_id}")
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            response_format={"type": "json_object"},
-            temperature=0.2,
-        )
-
-        analysis_result = json.loads(response.choices[0].message.content)
-        logger.info(f"Received analysis from GPT-4V for brdge {brdge_id}")
-
-        # Calculate total words from extracted text
-        total_words = sum(
-            len(text.split())
-            for text in analysis_result.get("slide_contents", {}).values()
-        )
-
-        # Update document knowledge
-        doc_knowledge.total_pages = total_pages
-        doc_knowledge.total_words = total_words
-        doc_knowledge.slide_contents = analysis_result.get("slide_contents", {})
-        doc_knowledge.topics = analysis_result.get("topics", [])
-        doc_knowledge.key_points = analysis_result.get("key_points", {})
-        doc_knowledge.entities = analysis_result.get("entities", {})
-        doc_knowledge.status = "completed"
-        thread_session.commit()
-        logger.info(f"Updated document knowledge with analysis for brdge {brdge_id}")
-
-        # Cleanup
-        os.remove(temp_pdf_path)
-        logger.info(f"Completed PDF processing for brdge {brdge_id}")
-
-    except Exception as e:
-        logger.error(f"Error processing PDF for brdge {brdge_id}: {str(e)}")
-        if "doc_knowledge" in locals():
-            doc_knowledge.status = "failed"
-            doc_knowledge.error_message = str(e)
-            thread_session.commit()
-        raise
-    finally:
-        thread_session.remove()  # Clean up the session
-
-
-@app.route("/api/brdges/<int:brdge_id>/document-knowledge", methods=["GET"])
-def get_document_knowledge(brdge_id):
-    """Get the document knowledge content for a brdge"""
-    try:
-        # Get the latest document knowledge entry
-        doc_knowledge = (
-            DocumentKnowledge.query.filter_by(brdge_id=brdge_id)
-            .order_by(DocumentKnowledge.created_at.desc())
-            .first()
-        )
-
-        if not doc_knowledge or doc_knowledge.status != "completed":
-            return (
-                jsonify(
-                    {
-                        "topics": [],
-                        "key_points": {},
-                        "entities": {
-                            "technical_terms": [],
-                            "people": [],
-                            "companies": [],
-                            "other": [],
-                        },
-                        "slide_contents": {},
-                    }
-                ),
-                200,
-            )
-
-        return (
-            jsonify(
-                {
-                    "topics": doc_knowledge.topics,
-                    "key_points": doc_knowledge.key_points,
-                    "entities": doc_knowledge.entities,
-                    "slide_contents": doc_knowledge.slide_contents,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error fetching document knowledge: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdge/<int:brdge_id>/check-auth", methods=["GET", "OPTIONS"])
+@app.route("/api/brdges/<int:brdge_id>/check-auth", methods=["GET", "OPTIONS"])
 @cross_origin()
 @jwt_required(optional=True)  # Make JWT optional for OPTIONS request
 def check_brdge_auth(brdge_id):
@@ -3535,148 +3015,385 @@ def check_brdge_auth(brdge_id):
         return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route("/api/brdges/<int:brdge_id>/agent-data", methods=["GET"])
-def get_agent_data(brdge_id):
+# Add this new route for getting agent configuration
+@app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["GET"])
+@jwt_required(optional=True)
+@cross_origin()
+def get_agent_config(brdge_id):
+    """Get agent configuration for a brdge"""
     try:
-        logger.info(f"Fetching consolidated agent data for brdge {brdge_id}")
-
-        # Get the brdge
+        # Get the brdge to check permissions
         brdge = Brdge.query.get_or_404(brdge_id)
 
-        # Get agent config (personality and knowledge base)
-        config = {
-            "personality": (
-                brdge.agent_personality if hasattr(brdge, "agent_personality") else ""
-            ),
-            "knowledgeBase": [
+        # Get current user (optional)
+        current_user = get_current_user()
+
+        # Check if user has access (owner or public brdge)
+        if not brdge.shareable and current_user and current_user.id != brdge.user_id:
+            return jsonify({"error": "Unauthorized access"}), 403
+
+        # Get the latest script to extract agent personality
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        # Create simplified agent personality with only the editable fields
+        simplified_agent_personality = {
+            "name": "AI Assistant",
+            "persona_background": "A helpful AI assistant",
+            "communication_style": "friendly",
+        }
+
+        if script and script.content and "agent_personality" in script.content:
+            content = script.content
+            agent_personality = content.get("agent_personality", {})
+
+            # Only include the three editable fields
+            if "name" in agent_personality:
+                simplified_agent_personality["name"] = agent_personality["name"]
+            if "persona_background" in agent_personality:
+                simplified_agent_personality["persona_background"] = agent_personality[
+                    "persona_background"
+                ]
+            if "communication_style" in agent_personality:
+                simplified_agent_personality["communication_style"] = agent_personality[
+                    "communication_style"
+                ]
+
+        # Construct response
+        response = {
+            "personality": brdge.agent_personality or "friendly AI assistant",
+            "agentPersonality": simplified_agent_personality,
+            "knowledgeBase": [],
+        }
+
+        # Add presentation document to knowledge base if it exists
+        if brdge.presentation_filename:
+            response["knowledgeBase"].append(
                 {
                     "id": "presentation",
                     "type": "presentation",
                     "name": brdge.presentation_filename,
                     "content": "",
                 }
-            ],
-        }
-
-        # Add knowledge base entries
-        knowledge_entries = KnowledgeBase.query.filter_by(brdge_id=brdge_id).all()
-        for entry in knowledge_entries:
-            config["knowledgeBase"].append(
-                {
-                    "id": str(entry.id),
-                    "type": "custom",
-                    "name": entry.name,
-                    "content": entry.content,
-                }
             )
 
-        # Get document knowledge
-        doc_knowledge = DocumentKnowledge.query.filter_by(brdge_id=brdge_id).first()
-        document_knowledge_data = {}
-        if doc_knowledge:
-            document_knowledge_data = {
-                "slide_contents": doc_knowledge.slide_contents,
-                "topics": doc_knowledge.topics,
-                "key_points": doc_knowledge.key_points,
-                "entities": doc_knowledge.entities,
-            }
+        return jsonify(response), 200
 
-        # Get active voice
-        active_voice = Voice.query.filter_by(brdge_id=brdge_id, status="active").first()
-        voice_data = active_voice.to_dict() if active_voice else None
+    except Exception as e:
+        logger.error(f"Error fetching agent config: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
-        # Get latest script/transcript
+
+# Add this route for updating agent configuration
+@app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["PUT"])
+@cross_origin()
+def update_agent_config(brdge_id):
+    """Update agent configuration for a brdge"""
+    try:
+        # Get the brdge and verify it exists
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Parse the request data
+        data = request.json
+        logger.info(f"Received agent config update for brdge {brdge_id}: {data}")
+
+        # Update brdge's agent personality field if provided
+        if "personality" in data:
+            brdge.agent_personality = data["personality"]
+            logger.info(f"Updated brdge.agent_personality to: {data['personality']}")
+
+        # Commit brdge changes
+        db.session.commit()
+
+        # Get latest script to update
         script = (
             BrdgeScript.query.filter_by(brdge_id=brdge_id)
-            .order_by(BrdgeScript.created_at.desc())
+            .order_by(BrdgeScript.id.desc())
             .first()
         )
-        script_data = script.to_dict() if script else {}
 
-        # Combine all data
-        consolidated_data = {
-            "personality": config["personality"],
-            "knowledgeBase": config["knowledgeBase"],
-            "documentKnowledge": document_knowledge_data,
-            "activeVoice": voice_data,
-            "transcript": script_data,
-            "brdgeId": brdge_id,
-            "userId": brdge.user_id,
-        }
+        if not script:
+            logger.warning(
+                f"No script found for brdge {brdge_id}, cannot update agent personality"
+            )
+            return (
+                jsonify(
+                    {
+                        "message": "Agent basic info updated, but no script found to update agent personality"
+                    }
+                ),
+                200,
+            )
 
-        logger.info("Successfully compiled consolidated agent data")
-        return jsonify(consolidated_data)
+        # Make a deep copy of the content to avoid reference issues
+        content = script.content.copy() if script.content else {}
 
-    except Exception as e:
-        logger.error(f"Error fetching consolidated agent data: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/update-overage-settings", methods=["POST"])
-@login_required
-def update_overage_settings(user):
-    try:
-        data = request.get_json()
-        allow_overage = data.get("allow_overage")
-
-        if allow_overage is None:
-            return jsonify({"error": "allow_overage parameter is required"}), 400
-
-        # Get user account
-        user_account = UserAccount.query.filter_by(user_id=user.id).first()
-        if not user_account:
-            return jsonify({"error": "User account not found"}), 404
-
-        # Update the setting
-        user_account.allow_overage = allow_overage
-        db.session.commit()
-
-        return jsonify(
-            {
-                "success": True,
-                "message": "Overage settings updated successfully",
-                "allow_overage": user_account.allow_overage,
-            }
-        )
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error updating overage settings: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/contact", methods=["POST"])
-@login_required
-def contact(user):
-    try:
-        data = request.get_json()
-        message = data.get("message")
-
-        if not message:
-            return jsonify({"error": "Message is required"}), 400
-
-        # Get user's email directly from the User object
-        if not user.email:
-            return jsonify({"error": "User email not found"}), 404
-
-        # Log the issue in the database
-        new_issue = UserIssues(user_id=user.id, message=message, status="pending")
-        db.session.add(new_issue)
-        db.session.commit()
-
+        # Log the original content for debugging
         logger.info(
-            f"New support request logged - Issue ID: {new_issue.id}, User: {user.email}"
+            f"Original script content before updates: {json.dumps(content.get('agent_personality', {}), indent=2)}"
         )
 
-        return jsonify(
-            {
-                "success": True,
-                "message": "Your message has been sent successfully",
-                "issue_id": new_issue.id,
-            }
+        # Determine which data to use for updating
+        updated_personality = None
+
+        # First check if script.agent_personality is available - this appears to be the complete structure sent by frontend
+        if (
+            "script" in data
+            and isinstance(data["script"], dict)
+            and "agent_personality" in data["script"]
+            and isinstance(data["script"]["agent_personality"], dict)
+        ):
+            updated_personality = data["script"]["agent_personality"]
+            logger.info(
+                f"Using script.agent_personality for update: {json.dumps(updated_personality, indent=2)}"
+            )
+        # Otherwise use agentPersonality if available
+        elif "agentPersonality" in data and isinstance(data["agentPersonality"], dict):
+            updated_personality = data["agentPersonality"]
+            logger.info(
+                f"Using agentPersonality for update: {json.dumps(updated_personality, indent=2)}"
+            )
+
+        # If we have personality data to update
+        if updated_personality:
+            # Ensure agent_personality exists in content
+            if "agent_personality" not in content:
+                content["agent_personality"] = {}
+
+            # Track changes for verification
+            changes_made = {}
+
+            # Only update the three editable fields, preserving all other fields
+            if "name" in updated_personality:
+                old_value = content["agent_personality"].get("name")
+                content["agent_personality"]["name"] = updated_personality["name"]
+                changes_made["name"] = {
+                    "old": old_value,
+                    "new": updated_personality["name"],
+                }
+
+            if "persona_background" in updated_personality:
+                old_value = content["agent_personality"].get("persona_background")
+                content["agent_personality"]["persona_background"] = (
+                    updated_personality["persona_background"]
+                )
+                changes_made["persona_background"] = {
+                    "old": old_value,
+                    "new": updated_personality["persona_background"],
+                }
+
+            if "communication_style" in updated_personality:
+                old_value = content["agent_personality"].get("communication_style")
+                content["agent_personality"]["communication_style"] = (
+                    updated_personality["communication_style"]
+                )
+                changes_made["communication_style"] = {
+                    "old": old_value,
+                    "new": updated_personality["communication_style"],
+                }
+
+            # Log the changes we're about to make
+            logger.info(f"Changes to be applied: {json.dumps(changes_made, indent=2)}")
+
+            # Ensure required fields exist with defaults if they don't
+            if "expertise" not in content["agent_personality"]:
+                content["agent_personality"]["expertise"] = []
+
+            if "knowledge_areas" not in content["agent_personality"]:
+                content["agent_personality"]["knowledge_areas"] = []
+
+            if "response_templates" not in content["agent_personality"]:
+                content["agent_personality"]["response_templates"] = {
+                    "greeting": "Hello! How can I help you today?",
+                    "not_sure": "I'm not sure about that, but I'd be happy to help with what I know.",
+                    "follow_up_questions": [],
+                }
+
+            try:
+                # Update the script content
+                logger.info(
+                    f"Setting script.content to: {json.dumps(content, indent=2)}"
+                )
+
+                # Make sure content is still a dictionary (not a string)
+                if isinstance(content, str):
+                    content = json.loads(content)
+
+                # IMPORTANT: Create a new dictionary rather than modifying the old one
+                # This ensures SQLAlchemy detects the change
+                new_content = {}
+                for key, value in content.items():
+                    new_content[key] = value
+
+                # Assign the completely new content to the script
+                script.content = new_content
+
+                # THIS IS CRUCIAL: Flag the content field as modified to ensure SQLAlchemy detects the change
+                flag_modified(script, "content")
+
+                # Force update timestamp
+                script.updated_at = datetime.utcnow()
+
+                # Log what we're about to commit
+                logger.info(
+                    f"About to commit updated agent_personality: {json.dumps(script.content.get('agent_personality', {}), indent=2)}"
+                )
+
+                # Commit the changes
+                db.session.commit()
+
+                # Verify changes directly from script object
+                logger.info(
+                    f"Immediate verification - script.content: {json.dumps(script.content.get('agent_personality', {}), indent=2)}"
+                )
+
+                # Create a brand new session and verify changes are in the database
+                from sqlalchemy.orm import sessionmaker, scoped_session
+                from app import db as app_db
+
+                Session = scoped_session(sessionmaker(bind=app_db.engine))
+                verification_session = Session()
+
+                try:
+                    # Get the script directly from the database with a fresh session
+                    verification_script = verification_session.query(BrdgeScript).get(
+                        script.id
+                    )
+
+                    if verification_script:
+                        logger.info(
+                            f"DATABASE VERIFICATION - BrdgeScript id={verification_script.id}, content: {json.dumps(verification_script.content.get('agent_personality', {}), indent=2)}"
+                        )
+
+                        # Verify each field was actually updated
+                        verification_data = verification_script.content.get(
+                            "agent_personality", {}
+                        )
+                        for field, change in changes_made.items():
+                            if field in verification_data:
+                                if verification_data[field] == change["new"]:
+                                    logger.info(
+                                        f"Verified {field} was correctly updated to: {change['new']}"
+                                    )
+                                else:
+                                    logger.warning(
+                                        f"VERIFICATION FAILED for {field}: expected {change['new']} but found {verification_data[field]}"
+                                    )
+                            else:
+                                logger.warning(
+                                    f"VERIFICATION FAILED for {field}: field not found in saved data"
+                                )
+                    else:
+                        logger.warning(
+                            f"Could not verify script with id {script.id} - not found in verification query"
+                        )
+                finally:
+                    verification_session.close()
+
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error during script content update: {str(e)}")
+                raise
+
+        return (
+            jsonify(
+                {
+                    "message": "Agent configuration updated successfully",
+                    "updated_fields": list(data.keys()),
+                    "success": True,
+                }
+            ),
+            200,
         )
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error logging contact request: {e}")
+        logger.error(f"Error updating agent config: {str(e)}")
+        return jsonify({"error": str(e), "success": False}), 500
+
+
+# Add this route for getting script content directly from BrdgeScript
+@app.route("/api/brdges/<int:brdge_id>/script", methods=["GET"])
+@cross_origin()
+def get_brdge_script_content(brdge_id):
+    """Get script content for a brdge from BrdgeScript"""
+    try:
+        # Get the brdge to check permissions
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Get current user (optional)
+        current_user = get_current_user()
+
+        # Check if user has access (owner or public brdge)
+        if not brdge.shareable and current_user and current_user.id != brdge.user_id:
+            return jsonify({"error": "Unauthorized access"}), 403
+
+        # Get the latest script
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if not script:
+            return (
+                jsonify(
+                    {"status": "not_found", "message": "No script found for this brdge"}
+                ),
+                404,
+            )
+
+        # Return the script content with cache control headers
+        response = jsonify(
+            {
+                "status": script.status,
+                "content": script.content,
+                "metadata": script.script_metadata,
+            }
+        )
+
+        # Add cache control headers to prevent stale data
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
+        return response, 200
+
+    except Exception as e:
+        # Log the error
+        current_app.logger.error(f"Error retrieving script: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+# Add this debug endpoint for development purposes
+@app.route("/api/brdges/<int:brdge_id>/agent-config-debug", methods=["PUT"])
+@cross_origin()
+def debug_agent_config(brdge_id):
+    """Debug endpoint to inspect the request body for agent config updates"""
+    try:
+        # Get the request data
+        data = request.json
+
+        # Log the full request
+        logger.info(f"DEBUG - Agent config update request for brdge {brdge_id}:")
+        logger.info(f"Headers: {dict(request.headers)}")
+        logger.info(f"Request Body: {json.dumps(data, indent=2)}")
+
+        # Return the data for inspection
+        return (
+            jsonify(
+                {
+                    "message": "Debug info captured",
+                    "request_data": data,
+                    "content_type": request.content_type,
+                    "method": request.method,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error in debug endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
