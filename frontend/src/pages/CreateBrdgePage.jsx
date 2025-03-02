@@ -38,10 +38,11 @@ function CreateBrdgePage() {
     const [isDragging, setIsDragging] = useState(false);
 
     const loadingPhases = [
-        { message: "Processing video...", duration: 4500 },
-        { message: "Generating transcript...", duration: 4500 },
-        { message: "Processing document...", duration: 4500 },
-        { message: "Creating Brdge...", duration: 4500 }
+        { message: "Processing video... (this may take 1-2 minutes)", duration: 20000 },
+        { message: "Analyzing video content...", duration: 20000 },
+        { message: "Generating transcript...", duration: 15000 },
+        { message: "Processing document...", duration: 15000 },
+        { message: "Creating Brdge...", duration: 10000 }
     ];
 
     useEffect(() => {
@@ -464,6 +465,11 @@ function CreateBrdgePage() {
         const progressPerPhase = 100 / loadingPhases.length;
         const progress = Math.min(baseProgress + progressPerPhase, 100);
 
+        // Calculate the current phase duration for animation timing
+        const currentPhaseDuration = phase < loadingPhases.length
+            ? loadingPhases[phase]?.duration / 1000 || 15
+            : 15;
+
         return (
             <div className="w-full space-y-3">
                 <div className="relative h-1 bg-gray-800/50 rounded-full overflow-hidden">
@@ -472,7 +478,7 @@ function CreateBrdgePage() {
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{
-                            duration: 4.5, // Updated to match new phase duration
+                            duration: currentPhaseDuration, // Dynamic duration based on current phase
                             ease: "linear",
                             type: "tween"
                         }}
@@ -500,16 +506,21 @@ function CreateBrdgePage() {
                     className="flex justify-between items-center"
                 >
                     <motion.span
-                        className="text-[11px] text-cyan-400/90 font-medium tracking-wide"
+                        className="text-xs text-cyan-400/90 font-medium tracking-wide"
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
                         key={message} // Add key to trigger animation on message change
                     >
                         {message}
                     </motion.span>
-                    <span className="text-[11px] text-gray-500">
-                        {Math.round(progress)}%
-                    </span>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[11px] text-gray-500">
+                            {Math.round(progress)}%
+                        </span>
+                        <span className="text-[10px] text-gray-500/70">
+                            Please wait 1-2 minutes
+                        </span>
+                    </div>
                 </motion.div>
             </div>
         );
@@ -886,6 +897,12 @@ function CreateBrdgePage() {
                                         </span>
                                     </motion.button>
 
+                                    {!loading && (
+                                        <p className="text-xs text-center text-gray-400">
+                                            Note: Video processing may take 1-2 minutes to complete
+                                        </p>
+                                    )}
+
                                     {/* Loading Progress */}
                                     {loading && (
                                         <motion.div
@@ -895,6 +912,9 @@ function CreateBrdgePage() {
                                             className="p-4 rounded-lg bg-gray-900/40 backdrop-blur-sm border border-gray-800/50"
                                         >
                                             <LoadingBar phase={loadingPhase} message={loadingMessage} />
+                                            <p className="text-xs text-center text-cyan-400/70 mt-3">
+                                                Video ingestion will take 1-2 minutes to complete
+                                            </p>
                                         </motion.div>
                                     )}
                                 </div>
