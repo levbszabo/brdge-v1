@@ -79,7 +79,7 @@ class ChatAssistant(VoicePipelineAgent):
         self.script = (None,)
         self.current_position = 0
         self.user_id = None
-        self.voice_id = "4c74993b-be03-4436-8ef0-10586550b5f2"
+        self.voice_id = "4c74993b-be03-4436-8ef0-10586550b5f2"  # Default voice ID
         self.current_speech = {
             "started_at": None,
             "message": None,
@@ -87,16 +87,15 @@ class ChatAssistant(VoicePipelineAgent):
         }
         self.system_prompt = None
 
+        # Initialize agent with data from the script endpoint
         self.initialize()
-        # Initialize with default TTS voice
+
+        # Initialize with configured TTS voice
         super().__init__(
             vad=vad,
             stt=deepgram.STT(model="nova-2-conversationalai"),
             llm=openai.LLM(model="gpt-4o"),
-            tts=cartesia.TTS(
-                model="sonic",
-                voice=self.voice_id,
-            ),
+            tts=cartesia.TTS(model="sonic", voice=self.voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=self.system_prompt),
             interrupt_speech_duration=0.1,
             preemptive_synthesis=True,
@@ -105,69 +104,88 @@ class ChatAssistant(VoicePipelineAgent):
         self._setup_event_handlers()
 
     def initialize(self):
-        """Initialize the agent by fetching all necessary data"""
+        """Initialize the agent by fetching script data directly"""
         if not self.brdge_id or not self.api_base_url:
             logger.error("Missing brdge_id or API_BASE_URL")
             return False
 
         try:
-            # Fetch consolidated agent data
+            # Fetch script data directly - this has everything we need
             response = requests.get(
-                f"{self.api_base_url}/brdges/{self.brdge_id}/agent-data"
+                f"{self.api_base_url}/brdges/{self.brdge_id}/script"
             )
             response.raise_for_status()
-            agent_data = response.json()
+            script_data = response.json()
 
-            # Update agent attributes
-            self.personality = agent_data.get("personality", "")
-            self.knowledge_content = self._build_knowledge_content(
-                agent_data.get("knowledgeBase", [])
+            # Extract the full brdge script content
+            self.brdge = script_data.get("brdge", {})
+            self.agent_personality = script_data.get("content", {}).get(
+                "agent_personality", {}
             )
-            self.document_knowledge = agent_data.get("documentKnowledge", "")
-            self.user_id = agent_data.get("userId")
+            self.knowledge_base = script_data.get("content", {}).get(
+                "knowledge_base", {}
+            )
+            self.qa_pairs = script_data.get("content", {}).get("qa_pairs", [])
+            self.timeline = script_data.get("content", {}).get("timeline", [])
 
-            # Update TTS voice if available
-            active_voice = agent_data.get("activeVoice")
-            if active_voice and active_voice.get("cartesia_voice_id"):
-                self.voice_id = active_voice["cartesia_voice_id"]
+            # Log brdge object structure for debugging
+            logger.info(f"Brdge object structure: {json.dumps(self.brdge, indent=2)}")
+
+            # Set voice ID based on brdge settings, fallback to default if null
+            default_voice = "4c74993b-be03-4436-8ef0-10586550b5f2"
+
+            # Try to get voice ID from the brdge object directly
+            self.voice_id = self.brdge.get("voice_id")
+            logger.info(f"Retrieved voice_id from brdge object: {self.voice_id}")
+
+            # If the voice_id is not found on the brdge object, make a direct API call
+            if not self.voice_id:
                 logger.info(
-                    f"Updated TTS voice to {active_voice.get('name')} (ID: {active_voice['cartesia_voice_id']})"
+                    "No voice_id in brdge object, fetching directly from the brdge API"
+                )
+                try:
+                    brdge_response = requests.get(
+                        f"{self.api_base_url}/brdges/{self.brdge_id}"
+                    )
+                    brdge_response.raise_for_status()
+                    brdge_data = brdge_response.json()
+                    self.voice_id = brdge_data.get("voice_id")
+                    logger.info(
+                        f"Retrieved voice_id directly from API: {self.voice_id}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error fetching brdge data directly: {e}")
+
+            # If we still don't have a voice_id, use default
+            if not self.voice_id:
+                logger.info(f"No voice_id found, using default: {default_voice}")
+                self.voice_id = default_voice
+
+            # Update TTS voice if needed
+            if hasattr(self, "tts") and self.tts and self.voice_id:
+                self.tts.update_voice(self.voice_id)
+                logger.info(f"Updated TTS voice to {self.voice_id}")
+
+            # Build system prompt with enriched data
+            self.system_prompt = self._build_enhanced_system_prompt()
+
+            # Log the full system prompt for debugging
+            logger.info(
+                "====================== FULL SYSTEM PROMPT ======================"
+            )
+            logger.info(self.system_prompt)
+            logger.info(
+                "================================================================"
+            )
+
+            # Update the chat context with new system prompt if already initialized
+            if hasattr(self, "chat_ctx") and self.chat_ctx and self.chat_ctx.messages:
+                self.chat_ctx.messages[0] = llm.ChatMessage.create(
+                    role="system", text=self.system_prompt
                 )
 
-            # Process transcript
-            transcript_data = agent_data.get("transcript", {})
-            # if transcript_data:
-            #     self._process_transcript(transcript_data)
-            self.script = (
-                agent_data.get("transcript", {})
-                .get("content", {})
-                .get("transcript", "")
-            )
-
-            # Rebuild system prompt with all data
-            self.system_prompt = (
-                SYSTEM_PROMPT_BASE
-                + f"""
-
-Agent Personality:
-{self.personality}
-
-Knowledge Base:
-{self.knowledge_content}
-
-Document Knowledge:
-{self.document_knowledge}
-
-Transcript:
-{json.dumps(self.script, indent=2) if self.script else "No transcript available"}
-"""
-            )
-            # self._rebuild_system_prompt()
-
             logger.info("Agent initialization completed successfully")
-            logger.info(f"System prompt set to: {self.system_prompt}")
             return True
-
         except Exception as e:
             logger.error(f"Error initializing agent: {e}")
             return False
@@ -199,6 +217,225 @@ Transcript:
                 for seg in segments
                 if seg.get("start", 0) >= current_position
             ]
+
+    def _rebuild_system_prompt(self):
+        """Rebuild the system prompt incorporating all current context"""
+        recent_context = ""
+        if self.transcript_read:
+            recent_segments = self.transcript_read[-3:]
+            recent_context = " ".join(recent_segments)
+
+        merged_system_text = f"""{SYSTEM_PROMPT_BASE}
+Agent Personality:
+{self.personality}
+Knowledge Base:
+{self.knowledge_content}
+Document Knowledge:
+{self.document_knowledge}
+Current Presentation Context:
+You are currently at a point where you've just discussed: {recent_context}
+Full Transcript Coverage:
+Already Covered: {' '.join(self.transcript_read)}
+Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_remaining else "End of presentation"}
+"""
+        if self.chat_ctx.messages:
+            self.chat_ctx.messages[0] = llm.ChatMessage.create(
+                role="system",
+                text=merged_system_text,
+            )
+        else:
+            self.chat_ctx.append(role="system", text=merged_system_text)
+
+    def _build_enhanced_system_prompt(self):
+        """Build an enhanced system prompt using the rich data structure"""
+
+        # Extract key elements from agent personality with defensive checks
+        name = "Brdge AI Assistant"
+        expertise = []
+        persona_background = ""
+        communication_style = "friendly"
+
+        # Safely extract agent personality data
+        if isinstance(self.agent_personality, dict):
+            name = self.agent_personality.get("name", name)
+            expertise = self.agent_personality.get("expertise", expertise)
+            persona_background = self.agent_personality.get(
+                "persona_background", persona_background
+            )
+            communication_style = self.agent_personality.get(
+                "communication_style", communication_style
+            )
+
+        # Extract common phrases for more natural speech
+        common_phrases = []
+        if isinstance(self.agent_personality, dict):
+            voice_chars = self.agent_personality.get("voice_characteristics", {})
+            if isinstance(voice_chars, dict):
+                common_phrases = voice_chars.get("common_phrases", [])
+
+        # Format the QA pairs for easy reference - top 5 most common questions
+        formatted_qa = ""
+        if isinstance(self.qa_pairs, list) and self.qa_pairs:
+            qa_items = []
+            for qa in self.qa_pairs[:5]:
+                if isinstance(qa, dict) and "question" in qa and "answer" in qa:
+                    qa_items.append(f"Q: {qa['question']}\nA: {qa['answer']}")
+            formatted_qa = "\n".join(qa_items)
+
+        # Extract key concepts for deeper understanding
+        formatted_concepts = ""
+        if isinstance(self.knowledge_base, dict):
+            key_concepts = self.knowledge_base.get("key_concepts", [])
+            if isinstance(key_concepts, list):
+                concept_items = []
+                for concept in key_concepts:
+                    if isinstance(concept, dict):
+                        concept_name = concept.get("concept", "")
+                        explanation = concept.get("explanation", "")
+                        if concept_name and explanation:
+                            concept_items.append(f"- {concept_name}: {explanation}")
+                formatted_concepts = "\n".join(concept_items)
+
+        # Format timeline highlights - important moments in the video
+        timeline_highlights = ""
+        if isinstance(self.timeline, list):
+            highlight_items = []
+            for entry in self.timeline[:5]:
+                if isinstance(entry, dict) and entry.get("key_points"):
+                    timestamp = entry.get("timestamp", "")
+                    spoken_text = entry.get("spoken_text", "") or "Visual content"
+                    if timestamp:
+                        highlight_items.append(f"- {timestamp}: {spoken_text}")
+            timeline_highlights = "\n".join(highlight_items)
+
+        # Extract knowledge graph entities if available
+        knowledge_graph = ""
+        if isinstance(self.knowledge_base, dict):
+            knowledge_graph_data = self.knowledge_base.get("knowledge_graph", {})
+            if isinstance(knowledge_graph_data, dict):
+                entities = knowledge_graph_data.get("entities", [])
+                if isinstance(entities, list):
+                    entity_items = []
+                    for entity in entities:
+                        if isinstance(entity, dict):
+                            entity_name = entity.get("name", "")
+                            entity_type = entity.get("type", "")
+                            relationships = entity.get("relationships", [])
+                            relation_texts = []
+
+                            if isinstance(relationships, list):
+                                for rel in relationships:
+                                    if isinstance(rel, dict):
+                                        rel_type = rel.get("relationship_type", "")
+                                        rel_entity = rel.get("related_entity", "")
+                                        if rel_type and rel_entity:
+                                            relation_texts.append(
+                                                f"{rel_type} with {rel_entity}"
+                                            )
+
+                            if entity_name and entity_type:
+                                entity_desc = f"- {entity_name}: {entity_type}"
+                                if relation_texts:
+                                    entity_desc += f" - {', '.join(relation_texts)}"
+                                entity_items.append(entity_desc)
+
+                    knowledge_graph = "\n".join(entity_items)
+
+        # Check for processes/workflows
+        processes = ""
+        if isinstance(self.knowledge_base, dict):
+            workflows = self.knowledge_base.get("processes_workflows", [])
+            if isinstance(workflows, list) and workflows:
+                process_items = []
+                for workflow in workflows:
+                    if isinstance(workflow, dict):
+                        name = workflow.get("name", "")
+                        steps = workflow.get("steps", [])
+                        if name and isinstance(steps, list):
+                            step_texts = []
+                            for step in steps:
+                                if isinstance(step, dict):
+                                    step_num = step.get("step_number", "")
+                                    desc = step.get("description", "")
+                                    if desc:
+                                        step_texts.append(f"  {step_num}. {desc}")
+                            if step_texts:
+                                process_items.append(
+                                    f"- {name}:\n" + "\n".join(step_texts)
+                                )
+                if process_items:
+                    processes = "\n".join(process_items)
+
+        # Build the enhanced prompt with safeguards for missing data
+        prompt = f"""
+# CORE IDENTITY AND ROLE
+
+You are {name}, an expert on the content being presented in this video. You embody the presenter's knowledge, style, and expertise.
+
+## Your Expertise Areas:
+{', '.join(expertise) if isinstance(expertise, list) else "General knowledge"}
+
+## Your Background:
+{persona_background}
+
+## Your Communication Style:
+Your tone is {communication_style}. You speak naturally and conversationally, as if explaining concepts to a friend or colleague.
+
+# INTERACTION GUIDELINES
+
+1. CONVERSATIONAL TONE: Speak naturally using contractions (I'm, we'll, that's) and casual phrases. {f"Include phrases like {', '.join(common_phrases[:3])} when appropriate." if common_phrases and len(common_phrases) > 0 else ""}
+
+2. CONCISE RESPONSES: Prefer shorter answers (1-3 sentences) unless detailed explanation is requested. Get to the point quickly.
+
+3. FIRST-PERSON PERSPECTIVE: You ARE the presenter. Use "I" and "my" when referencing content or opinions in the video.
+
+4. KEEP IT NATURAL: Never mention AI, knowledge bases, or that you're an assistant. You're simply the presenter answering questions.
+
+5. NO DISCLAIMERS: Don't use phrases like "based on the video" or "according to the content." Speak as the authoritative source.
+
+6. AUTHENTIC GAPS: If you don't know something specific from the video, say "I haven't covered that in detail" instead of claiming AI limitations.
+
+# KNOWLEDGE FOUNDATION
+"""
+
+        # Only add sections that have content
+        if formatted_qa:
+            prompt += f"""
+## Common Questions & Answers:
+{formatted_qa}
+"""
+
+        if formatted_concepts:
+            prompt += f"""
+## Key Concepts:
+{formatted_concepts}
+"""
+
+        if timeline_highlights:
+            prompt += f"""
+## Timeline Highlights:
+{timeline_highlights}
+"""
+
+        if knowledge_graph:
+            prompt += f"""
+## Knowledge Graph:
+{knowledge_graph}
+"""
+
+        if processes:
+            prompt += f"""
+## Processes & Workflows:
+{processes}
+"""
+
+        prompt += """
+# FINAL REMINDER
+
+Remember: You are engaging directly with someone who's watching this video. Be helpful, engaging, and authentic. Your goal is to make them feel like they're having a direct conversation with the presenter.
+"""
+
+        return prompt
 
     def _setup_event_handlers(self):
         @self.on("agent_started_speaking")
@@ -403,29 +640,36 @@ async def entrypoint(ctx: JobContext):
         if not agent:
             logger.warning("Agent not initialized, cannot process chat message")
             return
+
+        # Interrupt current speech if any
         agent.interrupt(interrupt_all=True)
+
         cleaned_message = " ".join(msg.message.split()).strip()
-        if cleaned_message:
-            logger.info(f"Received chat message: {cleaned_message}")
+        if not cleaned_message:
+            return
 
-            # Add message to agent's chat context
-            agent.chat_ctx.append(role="user", text=cleaned_message)
+        logger.info(f"Received chat message: {cleaned_message}")
 
-            async def process_message():
-                try:
-                    response = await agent.say(
-                        agent.llm.chat(chat_ctx=agent.chat_ctx),
-                        allow_interruptions=True,
-                    )
-                    logger.info(f"Agent response: {response}")
-                except Exception as e:
-                    logger.error(f"Error processing chat message: {e}")
-                    await agent.say(
-                        "I apologize, but I encountered an error processing your message.",
-                        allow_interruptions=False,
-                    )
+        # Process with LLM
+        async def process_message():
+            try:
+                # Add message to agent's chat context
+                agent.chat_ctx.append(role="user", text=cleaned_message)
 
-            asyncio.create_task(process_message())
+                # Get response from LLM
+                response = await agent.say(
+                    agent.llm.chat(chat_ctx=agent.chat_ctx),
+                    allow_interruptions=True,
+                )
+                logger.info(f"Agent response: {response}")
+            except Exception as e:
+                logger.error(f"Error processing chat message: {e}")
+                await agent.say(
+                    "I apologize for the confusion. Let's try that again.",
+                    allow_interruptions=False,
+                )
+
+        asyncio.create_task(process_message())
 
     # Start the agent pipeline
     agent.start(ctx.room, participant)
