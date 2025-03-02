@@ -136,13 +136,14 @@ const IntroducingBrdgeAI = () => {
                         fontSize: { xs: '2rem', sm: '2.5rem' },
                         fontWeight: 800,
                         color: 'white',
-                        mb: { xs: 2, sm: 4 },
+                        mb: { xs: 4, sm: 4 }, // Increased margin bottom on mobile
+                        mt: { xs: 2, sm: 0 }, // Added margin top on mobile
                         letterSpacing: '-0.02em',
                         textShadow: '0 0 20px rgba(255,255,255,0.2)',
                         textTransform: 'none',
                         display: { xs: 'block', md: 'none' },
-                        lineHeight: 1.2,
-                        padding: { xs: '0 5px', sm: 0 },
+                        lineHeight: 1.3, // Increased line height
+                        padding: { xs: '0 10px', sm: 0 }, // Increased horizontal padding
                         '& .highlight': {
                             background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
                             WebkitBackgroundClip: 'text',
@@ -581,7 +582,7 @@ const HeroSection = () => {
 
     return (
         <Box sx={{
-            minHeight: { xs: 'auto', sm: '90vh' },
+            minHeight: { xs: 'auto', sm: '80vh' }, // Reduced from 90vh to 80vh for desktop
             width: '100vw',
             position: 'relative',
             display: 'flex',
@@ -591,8 +592,8 @@ const HeroSection = () => {
             overflow: 'hidden',
             marginLeft: 'calc(-50vw + 50%)',
             marginRight: 'calc(-50vw + 50%)',
-            paddingTop: { xs: '60px', sm: '72px' },
-            paddingBottom: { xs: '20px', sm: '60px' },
+            paddingTop: { xs: '60px', sm: '60px' },  // Reduced padding for desktop from 80px to 60px
+            paddingBottom: { xs: '40px', sm: '40px' }, // Reduced padding for desktop from 60px to 40px
             '&::before': {
                 content: '""',
                 position: 'absolute',
@@ -615,7 +616,7 @@ const HeroSection = () => {
                 alignItems: 'center',
                 width: '100%',
                 mx: 'auto',
-                px: { xs: 2, sm: 3, md: 4 },
+                px: { xs: 3, sm: 3, md: 4 }, // Increased horizontal padding on mobile
             }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
@@ -625,7 +626,7 @@ const HeroSection = () => {
                         width: '100%',
                         maxWidth: '1200px',
                         padding: '0 16px',
-                        marginBottom: '16px',
+                        marginBottom: '24px', // Increased margin
                     }}
                 >
                     <Typography
@@ -633,25 +634,25 @@ const HeroSection = () => {
                         align="center"
                         className="heading-large"
                         sx={{
-                            mb: { xs: 2, sm: 4 },
-                            fontSize: { xs: '2.25rem', sm: '3.5rem', md: '4rem' },
-                            lineHeight: { xs: 1.2, sm: 1.1 },
+                            mb: { xs: 3, sm: 2 }, // Reduced margin for desktop
+                            fontSize: { xs: '2rem', sm: '3rem', md: '3.5rem' },
+                            lineHeight: { xs: 1.3, sm: 1.1 }, // Increased line height for mobile
                             fontWeight: 800,
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
                             mx: 'auto',
-                            maxWidth: { xs: '90%', sm: '85%', md: '80%' },
+                            maxWidth: { xs: '95%', sm: '90%', md: '85%' },
                             color: 'white',
                             position: 'relative',
                             fontFamily: fontFamily,
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: { xs: '-8px', sm: '-24px' },
+                                bottom: { xs: '-12px', sm: '-16px' }, // Adjusted bottom space
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: { xs: '80px', sm: '140px' },
-                                height: '3px',
+                                width: { xs: '70px', sm: '120px' },
+                                height: '2px',
                                 background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.6), transparent)',
                                 borderRadius: '1px',
                                 animation: 'underlinePulse 2s infinite ease-in-out'
@@ -664,40 +665,49 @@ const HeroSection = () => {
                                 display: 'block',
                                 color: '#FFFFFF',
                                 textShadow: '0 2px 20px rgba(0,0,0,0.3)',
-                                fontSize: { xs: '2.25rem', sm: '3.75rem', md: '4.5rem' },
+                                fontSize: { xs: '2rem', sm: '3.2rem', md: '3.8rem' },
                                 fontWeight: 500,
                                 letterSpacing: '-0.02em',
-                                mb: { xs: 2, sm: 4 },
+                                mb: { xs: 1.5, sm: 0.5 }, // Reduced margin for desktop
                                 textTransform: 'none',
                                 fontFamily: fontFamily,
                                 lineHeight: 1.2
                             }}
                         >
-                            Stop Repeating Yourself
-                            <span className="highlight" style={{
-                                background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                position: 'relative',
-                                display: 'inline-block',
-                                textShadow: 'none',
-                            }}>
-                            </span>
+                            Automate Conversations
                         </Box>
                         <Box
                             component="span"
                             sx={{
                                 display: 'block',
-                                fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2rem' },
+                                color: '#FFFFFF',
+                                textShadow: '0 2px 20px rgba(0,0,0,0.3)',
+                                fontSize: { xs: '2rem', sm: '3.2rem', md: '3.8rem' },
+                                fontWeight: 500,
+                                letterSpacing: '-0.02em',
+                                mb: { xs: 3, sm: 2 }, // Reduced margin for desktop
+                                textTransform: 'none',
+                                fontFamily: fontFamily,
+                                lineHeight: 1.2
+                            }}
+                        >
+                            Amplify Expertise
+                        </Box>
+                        <Box
+                            component="span"
+                            sx={{
+                                display: 'block',
+                                fontSize: { xs: '1.1rem', sm: '1.5rem', md: '1.6rem' }, // Reduced font size for desktop
                                 fontWeight: 400,
                                 color: 'rgba(255,255,255,0.9)',
                                 letterSpacing: '0.01em',
-                                mt: { xs: 2, sm: 3 },
+                                mt: { xs: 2, sm: 1 }, // Reduced margin for desktop
                                 fontFamily: fontFamily,
-                                textAlign: 'center'
+                                textAlign: 'center',
+                                paddingX: { xs: 1, sm: 0 }, // Added horizontal padding on mobile
                             }}
                         >
-                            Turn Your Videos into <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>Interactive</strong>, <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>AI-Powered</strong> Conversations
+                            Turn your videos into <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>Interactive</strong>, <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>AI-Powered</strong> conversations that sell, onboard, and scale effortlessly.
                         </Box>
                     </Typography>
                 </motion.div>
@@ -708,8 +718,8 @@ const HeroSection = () => {
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        mb: { xs: 2, sm: 4 },
-                        mt: { xs: 1, sm: 3 }
+                        mb: { xs: 4, sm: 2 }, // Reduced margin for desktop
+                        mt: { xs: 2, sm: 0 } // Reduced margin for desktop
                     }}
                 >
                     <Box
@@ -718,8 +728,8 @@ const HeroSection = () => {
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
-                            width: { xs: '120px', sm: '160px', md: '180px' },
-                            height: { xs: '120px', sm: '160px', md: '180px' },
+                            width: { xs: '120px', sm: '120px', md: '140px' }, // Reduced size for desktop
+                            height: { xs: '120px', sm: '120px', md: '140px' }, // Reduced size for desktop
                             position: 'relative',
                             cursor: 'pointer',
                             display: 'flex',
@@ -895,12 +905,12 @@ const HeroSection = () => {
                     variant="h5"
                     align="center"
                     sx={{
-                        mt: { xs: 1, sm: 3 },
-                        mb: { xs: 1, sm: 3 },
+                        mt: { xs: 0.5, sm: 2 }, // Reduced margin
+                        mb: { xs: 0.5, sm: 2 }, // Reduced margin
                         maxWidth: '800px',
                         mx: 'auto',
                         opacity: 0.9,
-                        fontSize: { xs: '0.9rem', sm: '1.1rem', md: '1.2rem' },
+                        fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' }, // Reduced font size
                         fontWeight: 400,
                         lineHeight: 1.5,
                         px: { xs: 2, sm: 4 },
@@ -928,25 +938,25 @@ const HeroSection = () => {
                         alignItems: 'flex-start',
                         maxWidth: '800px',
                         mx: 'auto',
-                        mb: { xs: 2, sm: 4, md: 5 },
+                        mb: { xs: 1.5, sm: 3, md: 4 }, // Reduced margin
                         px: { xs: 2, sm: 4 },
                     }}
                 >
                     {[
                         {
-                            text: "Close deals faster with AI-powered product demos",
+                            text: "Close deals faster with interactive, AI-powered product demos",
                             icon: "🚀"
                         },
                         {
-                            text: "Onboard employees effortlessly with interactive training",
+                            text: "Onboard effortlessly with engaging, personalized training",
                             icon: "✨"
                         },
                         {
-                            text: "Scale your content while keeping engagement personal",
+                            text: "Scale your expertise without losing the personal touch",
                             icon: "📈"
                         },
                         {
-                            text: "Your audience asks questions and gets instant answers",
+                            text: "Instant answers, whenever your audience asks",
                             icon: "🎯"
                         }
                     ].map((item, index) => (
@@ -957,8 +967,8 @@ const HeroSection = () => {
                                 alignItems: 'center',
                                 width: '100%',
                                 maxWidth: '700px',
-                                mb: index < 3 ? { xs: 1, sm: 1.75 } : 0,
-                                pb: index < 3 ? { xs: 1, sm: 1.25 } : 0,
+                                mb: index < 3 ? { xs: 0.5, sm: 1.25 } : 0, // Reduced margin
+                                pb: index < 3 ? { xs: 0.5, sm: 1 } : 0, // Reduced padding
                                 borderBottom: index < 3 ? '1px solid rgba(0, 180, 219, 0.1)' : 'none',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
@@ -1008,14 +1018,15 @@ const HeroSection = () => {
 
                 <Box sx={{
                     display: 'flex',
-                    gap: { xs: 2, sm: 4 },
+                    gap: { xs: 2, sm: 3 }, // Reduced gap
                     justifyContent: 'center',
                     flexDirection: { xs: 'column', sm: 'row' },
                     width: '100%',
-                    maxWidth: { xs: '100%', sm: '600px' },
+                    maxWidth: { xs: '100%', sm: '580px' }, // Adjusted width
                     mx: 'auto',
-                    mb: { xs: 2, sm: 6, md: 8 },
-                    px: { xs: 3, sm: 0 }
+                    mb: { xs: 2, sm: 2, md: 3 }, // Reduced margin to make content fit in viewport
+                    px: { xs: 3, sm: 0 },
+                    pt: { xs: 4, sm: 0 } // Added top padding for mobile devices
                 }}>
                     <motion.div
                         whileHover={{ scale: 1.05 }}
@@ -1031,15 +1042,15 @@ const HeroSection = () => {
                             sx={{
                                 bgcolor: 'rgba(0, 255, 204, 0.9)',
                                 color: '#000000',
-                                px: { xs: 4, sm: 8 },
-                                py: { xs: 1.25, sm: 2 },
-                                fontSize: { xs: '1rem', sm: '1.2rem' },
+                                px: { xs: 3, sm: 6 }, // Reduced padding
+                                py: { xs: 1, sm: 1.5 }, // Reduced padding
+                                fontSize: { xs: '0.9rem', sm: '1.1rem' }, // Reduced font size
                                 fontWeight: 600,
                                 borderRadius: '50px',
                                 boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
-                                minWidth: { xs: '100%', sm: '220px' },
+                                minWidth: { xs: '100%', sm: '200px' }, // Adjusted width
                                 whiteSpace: 'nowrap',
                                 height: 'fit-content',
                                 '&:hover': {
@@ -1066,12 +1077,12 @@ const HeroSection = () => {
                                 color: 'white',
                                 borderColor: 'rgba(255,255,255,0.5)',
                                 borderWidth: '2px',
-                                px: { xs: 4, sm: 8 },
-                                py: { xs: 1.25, sm: 2 },
-                                fontSize: { xs: '1rem', sm: '1.2rem' },
+                                px: { xs: 3, sm: 6 }, // Reduced padding
+                                py: { xs: 1, sm: 1.5 }, // Reduced padding
+                                fontSize: { xs: '0.9rem', sm: '1.1rem' }, // Reduced font size
                                 fontWeight: 600,
                                 borderRadius: '50px',
-                                minWidth: { xs: '100%', sm: '220px' },
+                                minWidth: { xs: '100%', sm: '200px' }, // Adjusted width
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
                                 whiteSpace: 'nowrap',
@@ -1093,9 +1104,9 @@ const HeroSection = () => {
                     display: { xs: 'none', sm: 'flex' },
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 2,
-                    mt: { xs: 2, sm: 4 },
-                    mb: { xs: 2, sm: 4 },
+                    gap: 1, // Reduced gap
+                    mt: { xs: 1, sm: 0 }, // Reduced margin
+                    mb: { xs: 1, sm: 0 }, // Reduced margin
                     color: 'rgba(255,255,255,0.8)',
                     textTransform: 'uppercase',
                 }}>
@@ -1110,19 +1121,19 @@ const HeroSection = () => {
                     </Typography>
                     <motion.div
                         animate={{
-                            y: [0, 15, 0],
+                            y: [0, 10, 0], // Reduced animation height
                         }}
                         transition={{
-                            duration: 2,
+                            duration: 1.5, // Made animation faster
                             repeat: Infinity,
                             ease: "easeInOut"
                         }}
                         style={{
-                            paddingBottom: '20px'
+                            paddingBottom: '10px' // Reduced padding
                         }}
                     >
                         <ArrowDownward sx={{
-                            fontSize: 24,
+                            fontSize: 20, // Smaller icon
                             color: '#00ffcc',
                             filter: 'drop-shadow(0 0 8px rgba(0,255,204,0.4))'
                         }} />
@@ -1171,13 +1182,9 @@ const HowItWorksSection = () => {
     return (
         <Box
             sx={{
-                pt: { xs: 8, sm: 10, md: 12 },
-                pb: { xs: 8, sm: 10, md: 12 },
-                px: { xs: 2, sm: 4, md: 6 },
-                position: 'relative',
-                overflow: 'hidden',
-                backgroundColor: 'rgba(255,255,255,0.02)',
-                borderRadius: '24px'
+                pt: { xs: 10, sm: 8 }, // Increased padding top for mobile
+                pb: { xs: 10, sm: 8 }, // Increased padding bottom for mobile
+                px: { xs: 3, sm: 3 }, // Increased horizontal padding for mobile
             }}
         >
             <Container maxWidth="lg" ref={ref}>
@@ -1186,54 +1193,45 @@ const HowItWorksSection = () => {
                     animate={inView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                 >
-                    <Typography
-                        variant="h2"
-                        align="center"
-                        sx={{
-                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
-                            fontWeight: 700,
-                            color: 'white',
-                            mb: 2,
-                            textTransform: 'none',
-                            letterSpacing: '-0.02em',
-                            position: 'relative',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-16px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '120px',
-                                height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.6), transparent)',
-                                borderRadius: '1px',
-                                animation: 'underlinePulse 2s infinite ease-in-out'
-                            }
-                        }}
-                    >
-                        How It Works
-                    </Typography>
+                    {/* Section Header */}
+                    <Box sx={{ mb: { xs: 8, sm: 8 } }}> {/* Increased margin bottom for mobile */}
+                        <Typography
+                            variant="h2"
+                            align="center"
+                            sx={{
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontWeight: 600,
+                                color: 'white',
+                                mb: 3,
+                                letterSpacing: '-0.02em',
+                                textTransform: 'none',
+                            }}
+                        >
+                            One Platform, Countless Possibilities
+                        </Typography>
 
-                    <Typography
-                        variant="h5"
-                        align="center"
-                        sx={{
-                            fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.3rem' },
-                            fontWeight: 400,
-                            color: 'rgba(255,255,255,0.9)',
-                            mb: { xs: 8, sm: 10, md: 12 },
-                            maxWidth: '600px',
-                            mx: 'auto',
-                            lineHeight: 1.6
-                        }}
-                    >
-                        Turn your videos into a 24/7 interactive conversation with these 4 simple steps.
-                    </Typography>
+                        <Typography
+                            variant="h5"
+                            align="center"
+                            sx={{
+                                color: 'rgba(255,255,255,0.8)',
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                lineHeight: 1.6,
+                                textTransform: 'none',
+                                px: { xs: 1, sm: 0 }, // Added horizontal padding for mobile
+                            }}
+                        >
+                            Brdge AI empowers your organization by turning your videos into
+                            interactive, voice-powered experiences.
+                        </Typography>
+                    </Box>
 
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: { xs: 6, sm: 8, md: 10 },
+                        gap: { xs: 8, sm: 8, md: 10 }, // Increased gap for mobile
                         position: 'relative',
                         maxWidth: '800px',
                         mx: 'auto',
@@ -1705,15 +1703,16 @@ const FinalCTA = () => {
     return (
         <Box
             sx={{
-                pt: { xs: 8, sm: 10, md: 12 },
-                pb: { xs: 8, sm: 10, md: 12 },
-                px: { xs: 2, sm: 4, md: 6 },
+                pt: { xs: 12, sm: 10, md: 12 }, // Increased padding top for mobile
+                pb: { xs: 12, sm: 12, md: 16 }, // Increased padding bottom for desktop
+                px: { xs: 3, sm: 4, md: 6 }, // Increased horizontal padding for mobile
                 position: 'relative',
-                overflow: 'hidden',
+                overflow: 'visible', // Changed to visible to prevent content cutoff
                 backgroundColor: 'rgba(255,255,255,0.02)',
                 borderRadius: '24px',
                 maxWidth: '1200px',
-                mx: 'auto'
+                mx: 'auto',
+                mb: { xs: 8, sm: 10, md: 12 }, // Added bottom margin for better spacing
             }}
         >
             <Container maxWidth="lg" ref={ref}>
@@ -1773,7 +1772,10 @@ const FinalCTA = () => {
                         gap: { xs: 2, sm: 4 },
                         justifyContent: 'center',
                         maxWidth: '600px',
-                        mx: 'auto'
+                        mx: 'auto',
+                        mb: { xs: 4, sm: 6, md: 8 }, // Added bottom margin to ensure buttons are visible
+                        position: 'relative',
+                        zIndex: 10
                     }}>
                         <motion.div
                             whileHover={{ scale: 1.05 }}
@@ -1897,7 +1899,7 @@ function LandingPage() {
                 className="gradient-animate"
                 sx={{
                     flexGrow: 1,
-                    overflow: 'hidden',
+                    overflow: 'visible', // Changed from 'hidden' to prevent content cutoff
                     background: 'linear-gradient(180deg, #001B3D 0%, #000C1F 25%, #001F5C 50%, #0041C2 75%, #00B4DB 100%)',
                     backgroundSize: '200% 200%',
                     color: 'white',
@@ -1905,6 +1907,7 @@ function LandingPage() {
                     position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
+                    paddingBottom: { xs: 0, sm: 8, md: 10 }, // Added bottom padding to main container for desktop
                     '&::before': {
                         content: '""',
                         position: 'absolute',
@@ -1941,17 +1944,17 @@ function LandingPage() {
                     sx={{
                         position: 'relative',
                         zIndex: 1,
-                        pt: { xs: 2, sm: 4, md: 6 },
-                        pb: { xs: 6, sm: 8, md: 10 },
+                        pt: { xs: 6, sm: 4, md: 6 }, // Increased top padding on mobile
+                        pb: { xs: 8, sm: 8, md: 10 }, // Increased bottom padding on mobile
                         px: { xs: 2, sm: 4, md: 6 },
                         flex: 1,
                         perspective: '1000px',
                         '& > *': {
-                            mb: { xs: 10, sm: 12, md: 16 },
+                            mb: { xs: 16, sm: 12, md: 16 }, // Increased margin bottom for mobile
                             opacity: 0.98,
                             backdropFilter: 'blur(10px)',
                             borderRadius: '24px',
-                            p: { xs: 3, sm: 4, md: 5 },
+                            p: { xs: 4, sm: 4, md: 5 }, // Increased padding on mobile
                             background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.04) 100%)',
                             boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
                             border: '1px solid rgba(255,255,255,0.05)',
