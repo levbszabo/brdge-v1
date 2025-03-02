@@ -115,18 +115,21 @@ class ChatAssistant(VoicePipelineAgent):
                 f"{self.api_base_url}/brdges/{self.brdge_id}/script"
             )
             response.raise_for_status()
-            script_data = response.json()
+            self.script_data = response.json()
 
             # Extract the full brdge script content
-            self.brdge = script_data.get("brdge", {})
-            self.agent_personality = script_data.get("content", {}).get(
+            self.brdge = self.script_data.get("brdge", {})
+            self.agent_personality = self.script_data.get("content", {}).get(
                 "agent_personality", {}
             )
-            self.knowledge_base = script_data.get("content", {}).get(
+            self.knowledge_base = self.script_data.get("content", {}).get(
                 "knowledge_base", {}
             )
-            self.qa_pairs = script_data.get("content", {}).get("qa_pairs", [])
-            self.timeline = script_data.get("content", {}).get("timeline", [])
+            self.qa_pairs = self.script_data.get("content", {}).get("qa_pairs", [])
+            self.timeline = self.script_data.get("content", {}).get("timeline", [])
+            self.engagement_opportunities = self.script_data.get("content", {}).get(
+                "engagement_opportunities", []
+            )
 
             # Log brdge object structure for debugging
             logger.info(f"Brdge object structure: {json.dumps(self.brdge, indent=2)}")
@@ -247,143 +250,50 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
             self.chat_ctx.append(role="system", text=merged_system_text)
 
     def _build_enhanced_system_prompt(self):
-        """Build an enhanced system prompt using the rich data structure"""
+        """Build an enhanced system prompt that includes the raw JSON data with instructions on how to use it"""
+        try:
+            # Extract basic personality info for the identity section
+            name = "Brdge AI Assistant"
+            expertise = []
+            persona_background = ""
+            communication_style = "friendly"
+            common_phrases = []
 
-        # Extract key elements from agent personality with defensive checks
-        name = "Brdge AI Assistant"
-        expertise = []
-        persona_background = ""
-        communication_style = "friendly"
+            # Safely extract agent personality data if available
+            if isinstance(self.agent_personality, dict):
+                name = self.agent_personality.get("name", name)
+                expertise = self.agent_personality.get("expertise", expertise)
+                persona_background = self.agent_personality.get(
+                    "persona_background", persona_background
+                )
+                communication_style = self.agent_personality.get(
+                    "communication_style", communication_style
+                )
 
-        # Safely extract agent personality data
-        if isinstance(self.agent_personality, dict):
-            name = self.agent_personality.get("name", name)
-            expertise = self.agent_personality.get("expertise", expertise)
-            persona_background = self.agent_personality.get(
-                "persona_background", persona_background
-            )
-            communication_style = self.agent_personality.get(
-                "communication_style", communication_style
-            )
+                # Get voice characteristics for common phrases
+                voice_chars = self.agent_personality.get("voice_characteristics", {})
+                if isinstance(voice_chars, dict):
+                    common_phrases = voice_chars.get("common_phrases", [])
 
-        # Extract common phrases for more natural speech
-        common_phrases = []
-        if isinstance(self.agent_personality, dict):
-            voice_chars = self.agent_personality.get("voice_characteristics", {})
-            if isinstance(voice_chars, dict):
-                common_phrases = voice_chars.get("common_phrases", [])
-
-        # Format the QA pairs for easy reference - top 5 most common questions
-        formatted_qa = ""
-        if isinstance(self.qa_pairs, list) and self.qa_pairs:
-            qa_items = []
-            for qa in self.qa_pairs[:5]:
-                if isinstance(qa, dict) and "question" in qa and "answer" in qa:
-                    qa_items.append(f"Q: {qa['question']}\nA: {qa['answer']}")
-            formatted_qa = "\n".join(qa_items)
-
-        # Extract key concepts for deeper understanding
-        formatted_concepts = ""
-        if isinstance(self.knowledge_base, dict):
-            key_concepts = self.knowledge_base.get("key_concepts", [])
-            if isinstance(key_concepts, list):
-                concept_items = []
-                for concept in key_concepts:
-                    if isinstance(concept, dict):
-                        concept_name = concept.get("concept", "")
-                        explanation = concept.get("explanation", "")
-                        if concept_name and explanation:
-                            concept_items.append(f"- {concept_name}: {explanation}")
-                formatted_concepts = "\n".join(concept_items)
-
-        # Format timeline highlights - important moments in the video
-        timeline_highlights = ""
-        if isinstance(self.timeline, list):
-            highlight_items = []
-            for entry in self.timeline[:5]:
-                if isinstance(entry, dict) and entry.get("key_points"):
-                    timestamp = entry.get("timestamp", "")
-                    spoken_text = entry.get("spoken_text", "") or "Visual content"
-                    if timestamp:
-                        highlight_items.append(f"- {timestamp}: {spoken_text}")
-            timeline_highlights = "\n".join(highlight_items)
-
-        # Extract knowledge graph entities if available
-        knowledge_graph = ""
-        if isinstance(self.knowledge_base, dict):
-            knowledge_graph_data = self.knowledge_base.get("knowledge_graph", {})
-            if isinstance(knowledge_graph_data, dict):
-                entities = knowledge_graph_data.get("entities", [])
-                if isinstance(entities, list):
-                    entity_items = []
-                    for entity in entities:
-                        if isinstance(entity, dict):
-                            entity_name = entity.get("name", "")
-                            entity_type = entity.get("type", "")
-                            relationships = entity.get("relationships", [])
-                            relation_texts = []
-
-                            if isinstance(relationships, list):
-                                for rel in relationships:
-                                    if isinstance(rel, dict):
-                                        rel_type = rel.get("relationship_type", "")
-                                        rel_entity = rel.get("related_entity", "")
-                                        if rel_type and rel_entity:
-                                            relation_texts.append(
-                                                f"{rel_type} with {rel_entity}"
-                                            )
-
-                            if entity_name and entity_type:
-                                entity_desc = f"- {entity_name}: {entity_type}"
-                                if relation_texts:
-                                    entity_desc += f" - {', '.join(relation_texts)}"
-                                entity_items.append(entity_desc)
-
-                    knowledge_graph = "\n".join(entity_items)
-
-        # Check for processes/workflows
-        processes = ""
-        if isinstance(self.knowledge_base, dict):
-            workflows = self.knowledge_base.get("processes_workflows", [])
-            if isinstance(workflows, list) and workflows:
-                process_items = []
-                for workflow in workflows:
-                    if isinstance(workflow, dict):
-                        name = workflow.get("name", "")
-                        steps = workflow.get("steps", [])
-                        if name and isinstance(steps, list):
-                            step_texts = []
-                            for step in steps:
-                                if isinstance(step, dict):
-                                    step_num = step.get("step_number", "")
-                                    desc = step.get("description", "")
-                                    if desc:
-                                        step_texts.append(f"  {step_num}. {desc}")
-                            if step_texts:
-                                process_items.append(
-                                    f"- {name}:\n" + "\n".join(step_texts)
-                                )
-                if process_items:
-                    processes = "\n".join(process_items)
-
-        # Build the enhanced prompt with safeguards for missing data
-        prompt = f"""
+            # Start with core identity and interaction guidelines
+            prompt = f"""
 # CORE IDENTITY AND ROLE
 
 You are {name}, an expert on the content being presented in this video. You embody the presenter's knowledge, style, and expertise.
 
 ## Your Expertise Areas:
-{', '.join(expertise) if isinstance(expertise, list) else "General knowledge"}
+{', '.join(expertise) if isinstance(expertise, list) and expertise else "General knowledge"}
 
 ## Your Background:
 {persona_background}
 
 ## Your Communication Style:
 Your tone is {communication_style}. You speak naturally and conversationally, as if explaining concepts to a friend or colleague.
+{f"You often use phrases like {', '.join(common_phrases[:3])}" if common_phrases and len(common_phrases) > 0 else ""}
 
 # INTERACTION GUIDELINES
 
-1. CONVERSATIONAL TONE: Speak naturally using contractions (I'm, we'll, that's) and casual phrases. {f"Include phrases like {', '.join(common_phrases[:3])} when appropriate." if common_phrases and len(common_phrases) > 0 else ""}
+1. CONVERSATIONAL TONE: Speak naturally using contractions (I'm, we'll, that's) and casual phrases.
 
 2. CONCISE RESPONSES: Prefer shorter answers (1-3 sentences) unless detailed explanation is requested. Get to the point quickly.
 
@@ -395,47 +305,102 @@ Your tone is {communication_style}. You speak naturally and conversationally, as
 
 6. AUTHENTIC GAPS: If you don't know something specific from the video, say "I haven't covered that in detail" instead of claiming AI limitations.
 
-# KNOWLEDGE FOUNDATION
+# COMPLETE VIDEO CONTENT DATA
+
+Below is the complete JSON data containing everything you need to know about the video content. Use this data to answer questions accurately:
+
+## HOW TO USE THIS DATA:
+
+- METADATA: Contains basic information about the video like title, summary, and key topics
+- QA_PAIRS: Pre-answered questions and answers about the content - use these directly when relevant
+- TIMELINE: Chronological breakdown of what happens in the video, with timestamps, spoken text, and visuals
+- KNOWLEDGE_BASE: Additional information and context about topics in the video
+- KNOWLEDGE_GRAPH: Shows relationships between key entities mentioned in the video
+- AGENT_PERSONALITY: Your personality traits, communication style, and expertise areas
+- ENGAGEMENT_OPPORTUNITIES: Key moments where you should provide more detailed information
+
+## RAW JSON CONTENT:
 """
 
-        # Only add sections that have content
-        if formatted_qa:
-            prompt += f"""
-## Common Questions & Answers:
-{formatted_qa}
+            # Include the complete content data as JSON to ensure nothing is lost
+            if (
+                hasattr(self, "script_data")
+                and self.script_data
+                and "content" in self.script_data
+            ):
+                content_data = self.script_data.get("content", {})
+                # Format the JSON to be more readable in the prompt
+                formatted_json = json.dumps(content_data, indent=2)
+                prompt += f"""
+```json
+{formatted_json}
+```
+"""
+            else:
+                # If for some reason we don't have the complete content data, add what we have
+                available_data = {}
+
+                if hasattr(self, "agent_personality") and self.agent_personality:
+                    available_data["agent_personality"] = self.agent_personality
+
+                if hasattr(self, "knowledge_base") and self.knowledge_base:
+                    available_data["knowledge_base"] = self.knowledge_base
+
+                if hasattr(self, "qa_pairs") and self.qa_pairs:
+                    available_data["qa_pairs"] = self.qa_pairs
+
+                if hasattr(self, "timeline") and self.timeline:
+                    available_data["timeline"] = self.timeline
+
+                if (
+                    hasattr(self, "engagement_opportunities")
+                    and self.engagement_opportunities
+                ):
+                    available_data["engagement_opportunities"] = (
+                        self.engagement_opportunities
+                    )
+
+                formatted_json = json.dumps(available_data, indent=2)
+                prompt += f"""
+```json
+{formatted_json}
+```
 """
 
-        if formatted_concepts:
-            prompt += f"""
-## Key Concepts:
-{formatted_concepts}
-"""
+            # Add specific instructions on how to use the data
+            prompt += """
+# HOW TO RESPOND USING THE DATA
 
-        if timeline_highlights:
-            prompt += f"""
-## Timeline Highlights:
-{timeline_highlights}
-"""
+When answering questions:
+1. First check QA_PAIRS for direct matches to the question
+2. If not found, use TIMELINE to locate relevant information by timestamp
+3. Use KNOWLEDGE_BASE for deeper context and explanations
+4. Reference KNOWLEDGE_GRAPH to understand relationships between concepts
+5. Maintain your personality from AGENT_PERSONALITY in all responses
 
-        if knowledge_graph:
-            prompt += f"""
-## Knowledge Graph:
-{knowledge_graph}
-"""
+Important tips:
+- Use METADATA to understand the overall context of the video
+- Cite specific TIMELINE timestamps when relevant to answer questions
+- Never mention that you're looking up information in a JSON structure
+- Respond as if you're the presenter who created the video
+- Always maintain a friendly, conversational tone
 
-        if processes:
-            prompt += f"""
-## Processes & Workflows:
-{processes}
-"""
-
-        prompt += """
 # FINAL REMINDER
 
 Remember: You are engaging directly with someone who's watching this video. Be helpful, engaging, and authentic. Your goal is to make them feel like they're having a direct conversation with the presenter.
 """
 
-        return prompt
+            return prompt
+
+        except Exception as e:
+            logger.error(f"Error building enhanced system prompt: {e}")
+            logger.error(f"Exception details: {str(e)}")
+            # Log the traceback for more detailed debugging
+            import traceback
+
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Provide a basic fallback prompt
+            return SYSTEM_PROMPT_BASE
 
     def _setup_event_handlers(self):
         @self.on("agent_started_speaking")
