@@ -37,7 +37,7 @@ import './LandingPage.css';
 import SchoolIcon from '@mui/icons-material/School';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import Footer from '../components/Footer';
-import videoDemo from '../assets/video-demo-landing.mp4';
+import videoDemo from '../assets/brdge-front-page-2.mp4';
 
 const fontFamily = 'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
@@ -57,16 +57,39 @@ const IntroducingBrdgeAI = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const videoRef = useRef(null);
 
+    // Update togglePlayPause to work with native controls
     const togglePlayPause = () => {
         if (videoRef.current) {
-            if (isPlaying) {
-                videoRef.current.pause();
+            if (videoRef.current.paused) {
+                videoRef.current.play()
+                    .then(() => setIsPlaying(true))
+                    .catch(error => console.error("Error playing video:", error));
             } else {
-                videoRef.current.play();
+                videoRef.current.pause();
+                setIsPlaying(false);
             }
-            setIsPlaying(!isPlaying);
         }
     };
+
+    // Listen for play/pause events from native controls
+    useEffect(() => {
+        const videoElement = videoRef.current;
+
+        const handlePlay = () => setIsPlaying(true);
+        const handlePause = () => setIsPlaying(false);
+
+        if (videoElement) {
+            videoElement.addEventListener('play', handlePlay);
+            videoElement.addEventListener('pause', handlePause);
+        }
+
+        return () => {
+            if (videoElement) {
+                videoElement.removeEventListener('play', handlePlay);
+                videoElement.removeEventListener('pause', handlePause);
+            }
+        };
+    }, []);
 
     return (
         <Container
@@ -74,15 +97,15 @@ const IntroducingBrdgeAI = () => {
             ref={ref}
             disableGutters={true}
             sx={{
-                pt: { xs: 2, md: 6 },
-                pb: { xs: 2, sm: 6, md: 8 },
-                px: 0,
+                pt: { xs: 5, md: 6 },
+                pb: { xs: 5, sm: 6, md: 8 },
+                px: { xs: 0, sm: 3, md: 6 }, // Removed horizontal padding on mobile
                 position: 'relative',
                 background: 'transparent',
                 borderRadius: 0,
                 border: 'none',
                 boxShadow: 'none',
-                my: { xs: 0, sm: 0, md: 4 },
+                my: { xs: 2, sm: 3, md: 4 },
                 zIndex: 1,
                 width: '100%',
                 mx: 'auto',
@@ -128,73 +151,75 @@ const IntroducingBrdgeAI = () => {
                 animate={inView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.8 }}
             >
-                {/* HEADLINE - Only visible on mobile */}
-                <Typography
-                    variant="h2"
-                    align="center"
-                    sx={{
-                        fontSize: { xs: '2rem', sm: '2.5rem' },
-                        fontWeight: 800,
-                        color: 'white',
-                        mb: { xs: 4, sm: 4 }, // Increased margin bottom on mobile
-                        mt: { xs: 2, sm: 0 }, // Added margin top on mobile
-                        letterSpacing: '-0.02em',
-                        textShadow: '0 0 20px rgba(255,255,255,0.2)',
-                        textTransform: 'none',
-                        display: { xs: 'block', md: 'none' },
-                        lineHeight: 1.3, // Increased line height
-                        padding: { xs: '0 10px', sm: 0 }, // Increased horizontal padding
-                        '& .highlight': {
-                            background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            position: 'relative',
-                            display: 'inline-block',
-                            textShadow: 'none',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-4px',
-                                left: 0,
-                                width: '100%',
-                                height: '3px',
-                                background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
-                                opacity: 0.6,
-                                animation: 'underlinePulse 3s infinite'
-                            }
-                        }
-                    }}
-                >
-                    Turn Videos into <span className="highlight">AI Conversations</span>
-                </Typography>
-
-                {/* TWO-COLUMN LAYOUT */}
+                {/* STACKED LAYOUT - TITLE FIRST */}
                 <Box
                     sx={{
                         display: 'flex',
-                        flexDirection: { xs: 'column', md: 'row' },
-                        alignItems: { xs: 'center', md: 'flex-start' },
-                        justifyContent: { xs: 'center', md: 'center' },
-                        gap: { xs: 0, md: 6 },
-                        mt: { xs: 0, md: 4 },
+                        flexDirection: 'column',
+                        alignItems: 'center',
                         width: '100%',
-                        maxWidth: { xs: '100%', md: '1200px' },
-                        mx: 'auto'
+                        maxWidth: '1200px',
+                        mx: 'auto',
+                        gap: { xs: 2, sm: 3, md: 4 } // Reduced gap on mobile
                     }}
                 >
-                    {/* LEFT COLUMN: VIDEO DEMO */}
+                    {/* HEADLINE - Visible on all devices */}
+                    <Typography
+                        variant="h2"
+                        align="center"
+                        sx={{
+                            fontSize: { xs: '2.2rem', sm: '2.5rem', md: '3rem' }, // Increased font size on mobile
+                            fontWeight: 800,
+                            color: 'white',
+                            mb: { xs: 0, sm: 1 }, // Reduced margin for better spacing with gap
+                            letterSpacing: '-0.02em',
+                            textShadow: '0 0 20px rgba(255,255,255,0.2)',
+                            textTransform: 'none',
+                            lineHeight: 1.3,
+                            width: '100%',
+                            padding: { xs: '0 8px', sm: 0 },
+                            '& .highlight': {
+                                background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                position: 'relative',
+                                display: 'inline-block',
+                                textShadow: 'none',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-4px',
+                                    left: 0,
+                                    width: '100%',
+                                    height: '3px',
+                                    background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
+                                    opacity: 0.6,
+                                    animation: 'underlinePulse 3s infinite'
+                                }
+                            }
+                        }}
+                    >
+                        Turn Videos into <span className="highlight">AI Conversations</span>
+                    </Typography>
+
+                    {/* VIDEO SECTION - Larger and more prominent */}
                     <Box
                         sx={{
-                            flex: { xs: '1', md: '0 0 48%' },
-                            width: { xs: '100%', sm: '100%' },
-                            maxWidth: { xs: '100%', sm: '100%', md: '48%' },
+                            width: '100%',
+                            maxWidth: { xs: '100%', sm: '95%', md: '80%' },
                             position: 'relative',
-                            borderRadius: { xs: 0, sm: '16px', md: '20px' },
+                            borderRadius: { xs: 0, sm: '8px' }, // No border radius on mobile
                             overflow: 'hidden',
-                            marginLeft: { xs: 0, sm: 'auto', md: 0 },
-                            marginRight: { xs: 0, sm: 'auto', md: 0 },
+                            mx: 'auto',
+                            mb: 0,
+                            // Mobile optimizations
+                            mt: { xs: 1, sm: 0 },
+                            // Removed all horizontal padding
+                            px: { xs: 0, sm: 0, md: 2 },
+                            // Fixed height wrapper on mobile to prevent layout shifts
+                            minHeight: { xs: '250px', sm: 'auto' },
                             boxShadow: {
-                                xs: 'none',
+                                xs: 'none', // No shadow on mobile for clean edges
                                 sm: '0 8px 24px rgba(0,0,0,0.2)',
                                 md: `
                                     0 10px 30px rgba(0,0,0,0.3),
@@ -221,48 +246,105 @@ const IntroducingBrdgeAI = () => {
                             transition={{ delay: 0.3, duration: 0.8 }}
                             style={{ width: '100%' }}
                         >
-                            <Box sx={{ position: 'relative', width: '100%' }}>
+                            <Box sx={{
+                                position: 'relative',
+                                width: '100%',
+                                // Fixed aspect ratio that works well on mobile
+                                paddingTop: '56.25%', // 16:9 aspect ratio
+                                // Mobile-specific styles
+                                '@media (max-width: 600px)': {
+                                    margin: 0,
+                                    borderRadius: 0
+                                },
+                                '& video': {
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: { xs: 0, sm: '8px' },
+                                    '@media (max-width: 600px)': {
+                                        '&::-webkit-media-controls': {
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'flex-end'
+                                        },
+                                        '&::-webkit-media-controls-enclosure': {
+                                            borderRadius: 0,
+                                            background: 'rgba(0,0,0,0.5)'
+                                        },
+                                        '&::-webkit-media-controls-panel': {
+                                            height: 'auto',
+                                            padding: '8px 0',
+                                            background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)'
+                                        },
+                                        '&::-webkit-media-controls-play-button': {
+                                            transform: 'scale(1.5)',
+                                            margin: '0 12px'
+                                        },
+                                        '&::-webkit-media-controls-timeline': {
+                                            marginInline: '12px'
+                                        }
+                                    }
+                                }
+                            }}>
                                 <video
                                     ref={videoRef}
                                     width="100%"
-                                    height="auto"
-                                    muted
+                                    height="100%"
+                                    controls
                                     playsInline
+                                    // These attributes need proper JSX format with dashes converted to camelCase
+                                    // or added as custom attributes
+                                    x-webkit-airplay="allow"
+                                    data-webkit-playsinline="true"
+                                    controlsList="nodownload noremoteplayback"
+                                    preload="auto" // Changed from metadata to auto for better mobile playback
                                     style={{
                                         display: 'block',
                                         borderRadius: 0,
-                                        width: '100%',
-                                        objectFit: 'contain'
+                                        objectFit: 'contain',
+                                        backgroundColor: 'rgba(0,0,0,0.2)',
+                                        maxHeight: '100%',
+                                        width: '100%'
                                     }}
-                                    onClick={togglePlayPause}
                                     poster={videoDemo.poster || undefined}
+                                    onClick={e => {
+                                        // Prevent click from opening link when trying to use controls
+                                        if (e.target === videoRef.current) {
+                                            window.open('https://brdge-ai.com/viewBridge/349-95c580', '_blank', 'noopener');
+                                        }
+                                    }}
                                 >
                                     <source src={videoDemo} type="video/mp4" />
                                     Your browser does not support the video tag.
                                 </video>
 
-                                {/* Custom Play/Pause Button */}
-                                <Box
-                                    onClick={togglePlayPause}
-                                    sx={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
-                                        zIndex: 3,
-                                        background: isPlaying ? 'transparent' : 'rgba(0,0,0,0.25)',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            background: isPlaying ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.35)'
-                                        }
-                                    }}
-                                >
-                                    {!isPlaying && (
+                                {/* Hide custom play button when controls are enabled */}
+                                {!isPlaying && !videoRef.current?.hasAttribute('controls') && (
+                                    <Box
+                                        component="a"
+                                        href="https://brdge-ai.com/viewBridge/349-95c580"
+                                        target="_blank"
+                                        rel="noopener"
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            zIndex: 3,
+                                            background: 'rgba(0,0,0,0.25)',
+                                            transition: 'all 0.3s ease',
+                                            '&:hover': {
+                                                background: 'rgba(0,0,0,0.35)'
+                                            }
+                                        }}
+                                    >
                                         <Box
                                             sx={{
                                                 width: { xs: '70px', sm: '80px' },
@@ -293,69 +375,32 @@ const IntroducingBrdgeAI = () => {
                                                 }}
                                             />
                                         </Box>
-                                    )}
-                                </Box>
+                                    </Box>
+                                )}
                             </Box>
                         </motion.div>
                     </Box>
 
-                    {/* RIGHT COLUMN: HEADLINE, COPY, CTA */}
+                    {/* TEXT SECTION - Below video with improved spacing */}
                     <Box
                         sx={{
-                            flex: { xs: '1', md: '0 0 48%' },
-                            maxWidth: { xs: '100%', md: '48%' },
-                            textAlign: { xs: 'center', md: 'left' },
-                            px: { xs: 4, sm: 6, md: 3 },
-                            pt: { xs: 5, md: 2 },
-                            mt: { xs: 3, md: 0 },
+                            width: '100%',
+                            maxWidth: { xs: '100%', sm: '90%', md: '80%' },
+                            textAlign: 'center',
                             mx: 'auto',
-                            width: { xs: '90%', sm: '85%', md: 'auto' }
+                            px: { xs: 1, sm: 4 }, // Reduced padding on mobile
+                            mb: { xs: 3, sm: 5 },
+                            mt: { xs: 1, sm: 2 }
                         }}
                     >
-                        {/* HEADLINE - Only visible on desktop */}
-                        <Typography
-                            variant="h2"
-                            sx={{
-                                fontSize: { sm: '2.5rem', md: '3rem' },
-                                fontWeight: 700,
-                                color: 'white',
-                                mb: 3,
-                                letterSpacing: '-0.02em',
-                                textShadow: '0 0 20px rgba(255,255,255,0.2)',
-                                textTransform: 'none',
-                                display: { xs: 'none', md: 'block' },
-                                '& .highlight': {
-                                    background: 'linear-gradient(180deg, #00ffcc 30%, rgba(0,255,204,0.8) 100%)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    position: 'relative',
-                                    display: 'inline-block',
-                                    textShadow: 'none',
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: '-4px',
-                                        left: 0,
-                                        width: '100%',
-                                        height: '2px',
-                                        background: 'linear-gradient(90deg, transparent, #00ffcc, transparent)',
-                                        opacity: 0.4
-                                    }
-                                }
-                            }}
-                        >
-                            Turn Videos into <span className="highlight">AI Conversations</span>
-                        </Typography>
-
                         <Typography
                             variant="h5"
                             sx={{
                                 color: 'rgba(255,255,255,0.95)',
-                                mb: 3,
-                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.25rem' },
+                                mb: { xs: 3, sm: 4 },
+                                fontSize: { xs: '1rem', sm: '1.2rem', md: '1.25rem' }, // Smaller font on mobile
                                 fontWeight: 400,
                                 lineHeight: 1.6,
-                                textAlign: { xs: 'center', md: 'left' },
                                 '& strong': {
                                     color: '#00ffcc',
                                     fontWeight: 600,
@@ -365,19 +410,22 @@ const IntroducingBrdgeAI = () => {
                             Transform your static videos, demos, and training sessions into interactive experiences. Viewers can pause, ask questions, and receive instant, voice-driven responses.
                         </Typography>
 
-                        {/* FEATURE BULLETS */}
+                        {/* FEATURE BULLETS - Centered */}
                         <Box sx={{
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: 2.5,
-                            mb: 4,
-                            mt: 4,
-                            textAlign: { xs: 'center', md: 'left' }
+                            gap: { xs: 2, sm: 2.5 }, // Reduced gap on mobile
+                            mb: { xs: 3, sm: 4 },
+                            mt: { xs: 1, sm: 2 },
+                            alignItems: 'center',
+                            width: '100%',
+                            maxWidth: { xs: '100%', md: '80%' },
+                            mx: 'auto'
                         }}>
                             <Box sx={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                justifyContent: 'center',
                                 gap: 2
                             }}>
                                 <Box
@@ -409,7 +457,7 @@ const IntroducingBrdgeAI = () => {
                             <Box sx={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                justifyContent: 'center',
                                 gap: 2
                             }}>
                                 <Box
@@ -441,7 +489,7 @@ const IntroducingBrdgeAI = () => {
                             <Box sx={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: { xs: 'center', md: 'flex-start' },
+                                justifyContent: 'center',
                                 gap: 2
                             }}>
                                 <Box
@@ -470,85 +518,93 @@ const IntroducingBrdgeAI = () => {
                                 </Typography>
                             </Box>
                         </Box>
+                    </Box>
 
-                        {/* CTA BUTTONS */}
-                        <Stack
-                            direction={{ xs: 'column', sm: 'row' }}
-                            spacing={{ xs: 3, sm: 2.5 }}
+                    {/* CTA BUTTONS - Centered */}
+                    <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={{ xs: 2, sm: 2.5 }} // Reduced spacing on mobile
+                        sx={{
+                            mt: { xs: 0, sm: 2 }, // Reduced top margin on mobile
+                            justifyContent: 'center',
+                            width: '100%',
+                            maxWidth: { xs: '100%', sm: '90%', md: '70%' }, // Wider on mobile
+                            mx: 'auto',
+                            // Mobile-specific styling
+                            '@media (max-width: 600px)': {
+                                px: 2 // Add padding on mobile
+                            }
+                        }}
+                    >
+                        <Button
+                            component={Link}
+                            to="/signup"
+                            variant="contained"
+                            size="large"
+                            endIcon={<ArrowForward />}
                             sx={{
-                                mt: { xs: 5, sm: 4 },
-                                justifyContent: { xs: 'center', md: 'flex-start' },
-                                width: '100%'
-                            }}
-                        >
-                            <Button
-                                component={Link}
-                                to="/signup"
-                                variant="contained"
-                                size="large"
-                                endIcon={<ArrowForward />}
-                                sx={{
-                                    background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
-                                    color: '#000000',
-                                    px: { xs: 3, sm: 4 },
-                                    py: { xs: 1.75, sm: 1.75 },
-                                    fontSize: { xs: '1.05rem', sm: '1.1rem' },
-                                    fontWeight: 700,
-                                    borderRadius: '50px',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    width: { xs: '100%', sm: 'auto' },
-                                    boxShadow: `
+                                background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
+                                color: '#000000',
+                                px: { xs: 3, sm: 4 },
+                                py: { xs: 2, sm: 1.75 }, // Increased padding on mobile for better touch target
+                                fontSize: { xs: '1.1rem', sm: '1.1rem' },
+                                fontWeight: 700,
+                                borderRadius: '50px',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                width: { xs: '100%', sm: 'auto' },
+                                boxShadow: `
                                         0 4px 20px rgba(0, 255, 204, 0.3),
                                         0 0 0 1px rgba(0, 255, 204, 0.1),
                                         0 0 40px rgba(0, 255, 204, 0.2)
                                     `,
-                                    zIndex: 1,
-                                    '&:hover': {
-                                        background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-                                        boxShadow: `
+                                zIndex: 1,
+                                '&:hover': {
+                                    background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
+                                    boxShadow: `
                                             0 6px 25px rgba(0, 255, 204, 0.4),
                                             0 0 0 1px rgba(0, 255, 204, 0.2),
                                             0 0 60px rgba(0, 255, 204, 0.3)
                                         `,
-                                        transform: 'translateY(-2px)'
-                                    },
-                                    transition: 'all 0.3s ease-in-out'
-                                }}
-                            >
-                                Try Free – No Credit Card
-                            </Button>
+                                    transform: 'translateY(-2px)'
+                                },
+                                transition: 'all 0.3s ease-in-out'
+                            }}
+                        >
+                            Try Free – No Credit Card
+                        </Button>
 
-                            <Button
-                                component={Link}
-                                to="/demos"
-                                variant="outlined"
-                                size="large"
-                                sx={{
-                                    color: '#00ffcc',
-                                    borderColor: 'rgba(0, 255, 204, 0.4)',
-                                    borderWidth: '2px',
-                                    px: { xs: 3, sm: 4 },
-                                    py: { xs: 1.75, sm: 1.75 },
-                                    fontSize: { xs: '1.05rem', sm: '1.1rem' },
-                                    fontWeight: 600,
-                                    borderRadius: '50px',
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'none',
-                                    width: { xs: '100%', sm: 'auto' },
-                                    backdropFilter: 'blur(10px)',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                        borderColor: 'rgba(0, 255, 204, 0.6)',
-                                        backgroundColor: 'rgba(0, 255, 204, 0.05)',
-                                        transform: 'translateY(-2px)'
-                                    }
-                                }}
-                            >
-                                Watch Full Demo
-                            </Button>
-                        </Stack>
-                    </Box>
+                        <Button
+                            variant="outlined"
+                            size="large"
+                            sx={{
+                                color: '#00ffcc',
+                                borderColor: 'rgba(0, 255, 204, 0.4)',
+                                borderWidth: '2px',
+                                px: { xs: 3, sm: 4 },
+                                py: { xs: 2, sm: 1.75 }, // Increased padding on mobile for better touch target
+                                fontSize: { xs: '1.1rem', sm: '1.1rem' },
+                                fontWeight: 600,
+                                borderRadius: '50px',
+                                letterSpacing: '0.02em',
+                                textTransform: 'none',
+                                width: { xs: '100%', sm: 'auto' },
+                                backdropFilter: 'blur(10px)',
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    borderColor: 'rgba(0, 255, 204, 0.6)',
+                                    backgroundColor: 'rgba(0, 255, 204, 0.05)',
+                                    transform: 'translateY(-2px)'
+                                }
+                            }}
+                            component="a"
+                            href="https://brdge-ai.com/viewBridge/349-95c580"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            Watch Full Demo
+                        </Button>
+                    </Stack>
                 </Box>
             </motion.div>
         </Container>
@@ -724,7 +780,7 @@ const HeroSection = () => {
                 >
                     <Box
                         component="a"
-                        href="https://brdge-ai.com/viewBridge/340-e34503"
+                        href="https://brdge-ai.com/viewBridge/349-95c580"
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
@@ -1068,34 +1124,34 @@ const HeroSection = () => {
                         style={{ width: '100%' }}
                     >
                         <Button
-                            component={Link}
-                            to="/demos"
                             variant="outlined"
                             size="large"
-                            fullWidth
                             sx={{
-                                color: 'white',
-                                borderColor: 'rgba(255,255,255,0.5)',
+                                color: '#00ffcc',
+                                borderColor: 'rgba(0, 255, 204, 0.4)',
                                 borderWidth: '2px',
-                                px: { xs: 3, sm: 6 }, // Reduced padding
-                                py: { xs: 1, sm: 1.5 }, // Reduced padding
-                                fontSize: { xs: '0.9rem', sm: '1.1rem' }, // Reduced font size
+                                px: { xs: 3, sm: 4 },
+                                py: { xs: 1.75, sm: 1.75 },
+                                fontSize: { xs: '1.05rem', sm: '1.1rem' },
                                 fontWeight: 600,
                                 borderRadius: '50px',
-                                minWidth: { xs: '100%', sm: '200px' }, // Adjusted width
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
-                                whiteSpace: 'nowrap',
-                                height: 'fit-content',
+                                width: { xs: '100%', sm: 'auto' },
                                 backdropFilter: 'blur(10px)',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
-                                    borderColor: 'rgba(255,255,255,0.4)',
-                                    backgroundColor: 'rgba(255,255,255,0.05)'
+                                    borderColor: 'rgba(0, 255, 204, 0.6)',
+                                    backgroundColor: 'rgba(0, 255, 204, 0.05)',
+                                    transform: 'translateY(-2px)'
                                 }
                             }}
+                            component="a"
+                            href="https://brdge-ai.com/viewBridge/349-95c580"
+                            target="_blank"
+                            rel="noopener"
                         >
-                            See It In Action
+                            Watch Full Demo
                         </Button>
                     </motion.div>
                 </Box>

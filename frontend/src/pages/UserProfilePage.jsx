@@ -26,6 +26,7 @@ import {
     IconButton
 } from '@mui/material';
 import { api } from '../api';
+import { Link } from 'react-router-dom';
 import PersonIcon from '@mui/icons-material/Person';
 import CheckIcon from '@mui/icons-material/Check';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -1385,7 +1386,8 @@ function UserProfilePage() {
                                 </Typography>
 
                                 <Button
-                                    onClick={() => setOpenContactDialog(true)}
+                                    component={Link}
+                                    to="/contact"
                                     sx={{
                                         color: 'rgba(255, 255, 255, 0.5)',
                                         fontSize: '0.85rem',

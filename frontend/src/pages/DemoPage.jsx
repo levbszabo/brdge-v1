@@ -18,6 +18,7 @@ import {
     MenuBook,
     PresentToAll,
     BusinessCenter,
+    School,
 } from '@mui/icons-material';
 import { useInView } from 'react-intersection-observer';
 import { useNavigate } from 'react-router-dom';
@@ -96,48 +97,48 @@ const ComingSoonBanner = styled(Box)({
 const demos = [
     {
         id: 1,
-        title: '24/7 Virtual SDR',
+        title: 'Interactive Property Tour',
         description:
-            'Your AI sales rep that qualifies leads 24/7. Ask questions and sign up instantly.',
+            'Experience a virtual property walkthrough where the AI answers all your questions about the listing, persuading you like a top real estate agent would.',
         benefits: [
-            'Instant lead qualification',
-            'Smart meeting scheduling',
-            '24/7 availability',
+            'Get instant property details',
+            'Ask questions about neighborhood',
+            'Evaluate potential investment value'
         ],
-        stats: '85% faster lead response time',
+        stats: 'Users report making more confident property decisions',
         icon: <BusinessCenter />,
-        url: 'https://brdge-ai.com/viewBridge/303-5ee682',
+        url: 'https://brdge-ai.com/viewBridge/350-6e0eed',
         disabled: false,
     },
     {
         id: 2,
-        title: 'Interactive Product Demo',
+        title: 'Brdge AI Demo & Setup Guide',
         description:
-            'Engage with our product video and get real-time answers. Watch your sales cycle shorten.',
+            'See Brdge AI in action and learn how to create your own interactive videos. Ask questions about features, pricing, or technical setup.',
         benefits: [
-            'Interactive video experience',
-            'Real-time Q&A',
-            'Personalized demos',
+            'Learn how to build your own Bridge',
+            'Understand AI configuration options',
+            'See real engagement analytics'
         ],
-        stats: '2.3x higher engagement rate',
+        stats: 'Most users create their own Bridge after trying this demo',
         icon: <PresentToAll />,
-        url: 'https://brdge-ai.com/viewBridge/340-e34503',
+        url: 'https://brdge-ai.com/viewBridge/349-95c580',
         disabled: false,
     },
     {
         id: 3,
-        title: 'Onboarding & Talent Experience',
+        title: 'Interactive Finance Lecture',
         description:
-            'Experience a first-day onboarding guide that doubles as a talent showcase.',
+            'Engage with a compound interest lecture featuring practice problems. Ask the AI for clarifications and get instant feedback on your quiz answers.',
         benefits: [
-            'Automated onboarding',
-            'Interactive training',
-            'Instant support',
+            'Get personalized explanations',
+            'Receive instant problem-solving help',
+            'Test your understanding with feedback'
         ],
-        stats: '60% reduction in onboarding time',
-        icon: <GroupAdd />,
-        url: 'https://brdge-ai.com/viewBridge/144',
-        disabled: true,
+        stats: 'Significantly improves concept retention and engagement',
+        icon: <School />,
+        url: 'https://brdge-ai.com/viewBridge/344-96eac2',
+        disabled: false,
     },
 ];
 
@@ -215,7 +216,7 @@ const DemoPage = () => {
                             },
                         }}
                     >
-                        Interactive AI Demos
+                        Experience AI Conversations
                     </Typography>
 
                     <Typography
@@ -229,9 +230,10 @@ const DemoPage = () => {
                             mx: 'auto',
                             fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
                             px: { xs: 2, sm: 0 },
+                            lineHeight: 1.6,
                         }}
                     >
-                        Discover how Brdge AI automates sales, qualifies leads, and even streamlines onboarding.
+                        Try these interactive demos to see how Brdge AI transforms ordinary videos into engaging conversations. Ask questions, get instant answers, and imagine what you could create with your own content.
                     </Typography>
 
                     <Grid container spacing={4}>
@@ -256,10 +258,10 @@ const DemoPage = () => {
                                         <CardContent
                                             sx={{
                                                 flexGrow: 1,
-                                                p: 3,
+                                                p: { xs: 2, sm: 3 },
                                                 display: 'flex',
                                                 flexDirection: 'column',
-                                                gap: 2,
+                                                gap: { xs: 1.5, sm: 2 },
                                                 opacity: demo.disabled ? 0.7 : 1,
                                             }}
                                         >
@@ -269,7 +271,7 @@ const DemoPage = () => {
                                                     fontWeight: 600,
                                                     color: '#4F9CF9',
                                                     fontSize: { xs: '1.1rem', sm: '1.2rem' },
-                                                    mb: 1,
+                                                    mb: { xs: 0.5, sm: 1 },
                                                 }}
                                             >
                                                 {demo.title}
@@ -279,7 +281,8 @@ const DemoPage = () => {
                                                 sx={{
                                                     color: 'rgba(255, 255, 255, 0.9)',
                                                     lineHeight: 1.6,
-                                                    mb: 2,
+                                                    mb: { xs: 1.5, sm: 2 },
+                                                    fontSize: { xs: '0.9rem', sm: '0.95rem' },
                                                 }}
                                             >
                                                 {demo.description}
@@ -302,6 +305,7 @@ const DemoPage = () => {
                                                                 borderRadius: '50%',
                                                                 backgroundColor: '#4F9CF9',
                                                                 mr: 1.5,
+                                                                minWidth: '6px',
                                                             }}
                                                         />
                                                         <Typography
@@ -310,6 +314,7 @@ const DemoPage = () => {
                                                             sx={{
                                                                 color: 'rgba(255, 255, 255, 0.8)',
                                                                 transition: 'color 0.3s ease',
+                                                                fontSize: { xs: '0.85rem', sm: '0.9rem' },
                                                             }}
                                                         >
                                                             {benefit}
@@ -327,15 +332,17 @@ const DemoPage = () => {
                                                         backgroundColor: 'rgba(79, 156, 249, 0.1)',
                                                         color: '#4FC3F7',
                                                         display: 'inline-block',
-                                                        fontSize: '0.85rem',
+                                                        fontSize: { xs: '0.8rem', sm: '0.85rem' },
                                                         fontWeight: 500,
+                                                        width: '100%',
+                                                        textAlign: 'center',
                                                     }}
                                                 >
                                                     {demo.stats}
                                                 </Typography>
                                             </Box>
                                         </CardContent>
-                                        <CardActions sx={{ p: 3, pt: 0 }}>
+                                        <CardActions sx={{ p: { xs: 2, sm: 3 }, pt: 0 }}>
                                             <Button
                                                 fullWidth
                                                 variant="contained"
@@ -349,9 +356,9 @@ const DemoPage = () => {
                                                         : 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
                                                     color: 'white',
                                                     borderRadius: '50px',
-                                                    py: 1.5,
+                                                    py: { xs: 1.2, sm: 1.5 },
                                                     textTransform: 'none',
-                                                    fontSize: '1rem',
+                                                    fontSize: { xs: '0.9rem', sm: '1rem' },
                                                     fontWeight: 500,
                                                     cursor: demo.disabled ? 'not-allowed' : 'pointer',
                                                     transition: 'all 0.3s ease',
@@ -364,7 +371,7 @@ const DemoPage = () => {
                                                     },
                                                 }}
                                             >
-                                                {demo.disabled ? 'Coming Soon' : 'Try Demo'}
+                                                {demo.disabled ? 'Coming Soon' : 'Try Live Demo'}
                                             </Button>
                                         </CardActions>
                                     </StyledCard>
