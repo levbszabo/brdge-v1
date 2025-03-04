@@ -250,11 +250,12 @@ const IntroducingBrdgeAI = () => {
                                 position: 'relative',
                                 width: '100%',
                                 // Fixed aspect ratio that works well on mobile
-                                paddingTop: '56.25%', // 16:9 aspect ratio
+                                paddingTop: { xs: '62.5%', sm: '56.25%' }, // Taller aspect ratio on mobile
                                 // Mobile-specific styles
                                 '@media (max-width: 600px)': {
                                     margin: 0,
-                                    borderRadius: 0
+                                    borderRadius: 0,
+                                    height: 'auto'
                                 },
                                 '& video': {
                                     position: 'absolute',
@@ -304,17 +305,11 @@ const IntroducingBrdgeAI = () => {
                                         display: 'block',
                                         borderRadius: 0,
                                         objectFit: 'contain',
-                                        backgroundColor: 'rgba(0,0,0,0.2)',
+                                        backgroundColor: 'transparent',
                                         maxHeight: '100%',
                                         width: '100%'
                                     }}
                                     poster={videoDemo.poster || undefined}
-                                    onClick={e => {
-                                        // Prevent click from opening link when trying to use controls
-                                        if (e.target === videoRef.current) {
-                                            window.open('https://brdge-ai.com/viewBridge/349-95c580', '_blank', 'noopener');
-                                        }
-                                    }}
                                 >
                                     <source src={videoDemo} type="video/mp4" />
                                     Your browser does not support the video tag.
@@ -791,7 +786,10 @@ const HeroSection = () => {
                             display: 'flex',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            mx: 'auto',
+                            margin: '0 auto', // Ensure proper centering
+                            transform: 'translateX(0)', // Fix for potential transform issues
+                            left: { xs: '0', sm: 'auto' }, // Explicit positioning for mobile
+                            right: { xs: '0', sm: 'auto' },
                             '&::before': {
                                 content: '""',
                                 position: 'absolute',
