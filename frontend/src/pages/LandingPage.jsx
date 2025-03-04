@@ -1907,7 +1907,7 @@ function LandingPage() {
                     position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
-                    paddingBottom: { xs: 0, sm: 8, md: 10 }, // Added bottom padding to main container for desktop
+                    paddingBottom: { xs: 0, sm: 0, md: 0 }, // Removed bottom padding
                     '&::before': {
                         content: '""',
                         position: 'absolute',
@@ -1966,6 +1966,9 @@ function LandingPage() {
                             '&:hover': {
                                 transform: 'translateY(-4px) translateZ(0) scale(1.01)',
                                 boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                            },
+                            '&:last-child': {
+                                mb: 0, // Remove margin from last child to avoid extra space before footer
                             }
                         }
                     }}
@@ -1981,7 +1984,16 @@ function LandingPage() {
                         <FinalCTA />
                     </motion.div>
                 </Container>
-                <Footer />
+
+                {/* Footer positioned at the bottom with no space underneath */}
+                <Box
+                    sx={{
+                        marginTop: 'auto',
+                        width: '100%',
+                    }}
+                >
+                    <Footer />
+                </Box>
             </Box>
         </ParallaxProvider>
     );

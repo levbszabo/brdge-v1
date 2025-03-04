@@ -68,6 +68,7 @@ function Header() {
         : [
             { text: 'Demos', link: '/demos' },
             { text: 'Pricing', link: '/pricing' },
+            { text: 'Contact', link: '/contact' },
             { text: 'Login', link: '/login' },
             { text: 'Sign Up', link: '/signup' }
         ];

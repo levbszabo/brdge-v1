@@ -11,15 +11,19 @@ const Footer = () => {
                 width: '100%',
                 py: { xs: 2, sm: 2.5 },
                 px: { xs: 2, sm: 3 },
-                mt: 'auto',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'rgba(0, 0, 0, 0.3)',
                 backdropFilter: 'blur(10px)',
                 borderTop: '1px solid rgba(255, 255, 255, 0.05)',
                 display: 'flex',
                 flexDirection: { xs: 'column', sm: 'row' },
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: { xs: 1, sm: 0 }
+                gap: { xs: 1, sm: 0 },
+                position: 'relative',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 10
             }}
         >
             <Stack

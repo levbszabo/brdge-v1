@@ -1,10 +1,11 @@
 import React from 'react';
-import { Container, Typography, Grid, Box, Button, useTheme, useMediaQuery } from '@mui/material';
+import { Container, Typography, Grid, Box, Button, useTheme, useMediaQuery, Card, CardContent, Divider } from '@mui/material';
 import { motion } from 'framer-motion';
 import { ParallaxProvider } from 'react-scroll-parallax';
 import { useInView } from 'react-intersection-observer';
 import { Check, Star } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
+import Link from '@mui/material/Link';
 
 const PricingTier = ({ tier, isPopular, delay }) => {
     const [ref, inView] = useInView({
@@ -121,7 +122,7 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     ))}
                 </Box>
                 <Button
-                    component={Link}
+                    component={RouterLink}
                     to="/signup"
                     variant="outlined"
                     sx={{
@@ -346,6 +347,36 @@ function PricingPage() {
                             </Grid>
                         ))}
                     </Grid>
+
+                    {/* Enterprise/Custom solutions text */}
+                    <Box sx={{ textAlign: 'center', mt: 6, mb: 4 }}>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                fontWeight: 400,
+                            }}
+                        >
+                            For Enterprise or Custom solutions please{' '}
+                            <Link
+                                component={RouterLink}
+                                to="/contact"
+                                sx={{
+                                    color: '#00ffcc',
+                                    textDecoration: 'none',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        color: '#22d3ee',
+                                        textDecoration: 'underline'
+                                    }
+                                }}
+                            >
+                                Contact Us
+                            </Link>
+                        </Typography>
+                    </Box>
                 </Container>
 
                 <style>

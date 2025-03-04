@@ -26,6 +26,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
 import RoomPage from './pages/RoomPage';
+import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
 
 // Create an AuthContext
@@ -38,7 +39,7 @@ function Layout({ children }) {
   const location = useLocation();
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/'];
+  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact'];
 
   // Check if the current path is a viewBridge route
   const isViewBrdgePath = (path) => {
@@ -123,6 +124,7 @@ function App() {
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
                 <Route path="/b/:publicId" element={<ViewBrdgePage />} />
+                <Route path="/contact" element={<ContactPage />} />
                 <Route
                   path="/home"
                   element={
