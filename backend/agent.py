@@ -93,12 +93,11 @@ class ChatAssistant(VoicePipelineAgent):
         # Initialize with configured TTS voice
         super().__init__(
             vad=vad,
-            stt=deepgram.STT(model="nova-2-conversationalai"),
+            stt=deepgram.STT(model="nova-3-general"),
             llm=openai.LLM(model="gpt-4o"),
-            tts=cartesia.TTS(model="sonic", voice=self.voice_id),
+            tts=cartesia.TTS(model="sonic-2", voice=self.voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=self.system_prompt),
-            interrupt_speech_duration=0.1,
-            preemptive_synthesis=True,
+            interrupt_speech_duration=0.2,
         )
         logger.info(f"Agent initialized with API base URL: {self.api_base_url}")
         self._setup_event_handlers()
