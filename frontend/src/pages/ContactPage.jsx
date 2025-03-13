@@ -145,7 +145,7 @@ const ContactPage = () => {
                                 letterSpacing: '-0.02em'
                             }}
                         >
-                            Let's Connect
+                            Transform Your Teaching
                         </Typography>
 
                         <Typography
@@ -160,8 +160,9 @@ const ContactPage = () => {
                                 lineHeight: 1.6
                             }}
                         >
-                            Whether you're ready to transform your video content with AI or need a custom solution,
-                            our team is here to support your journey.
+                            Ready to scale your educational impact without sacrificing personalization?
+                            Connect with us to turn your expertise into interactive learning experiences
+                            that engage students 24/7.
                         </Typography>
                     </motion.div>
                 </Container>
@@ -218,8 +219,9 @@ const ContactPage = () => {
                                                 lineHeight: 1.6
                                             }}
                                         >
-                                            Have questions about our platform or interested in a personalized demo?
-                                            Reach out directly or schedule a call with our team.
+                                            Questions about creating your AI teaching assistant? Want to see how
+                                            your educational content can become interactive? Reach out directly
+                                            or schedule a demo tailored to your course needs.
                                         </Typography>
                                     </Box>
 
@@ -328,7 +330,7 @@ const ContactPage = () => {
                                             }}
                                             startIcon={<Calendar size={20} />}
                                         >
-                                            Schedule a Demo
+                                            Schedule an Educational Demo
                                         </Button>
                                     </Box>
                                 </Paper>
@@ -398,7 +400,7 @@ const ContactPage = () => {
                                     color: 'white'
                                 }}
                             >
-                                Custom AI Solutions for Your Business
+                                Custom AI Teaching Solutions
                             </Typography>
 
                             <Typography
@@ -413,26 +415,27 @@ const ContactPage = () => {
                                     lineHeight: 1.6
                                 }}
                             >
-                                Not ready to adopt the full platform? Let us craft a done-for-you solution
-                                that meets your specific needs and scales with your business.
+                                Let us create a personalized AI teaching assistant that embodies your knowledge
+                                and teaching style. We'll handle everything from course content transformation
+                                to AI assistant training and deployment.
                             </Typography>
 
                             <Grid container spacing={4}>
                                 {[
                                     {
                                         icon: <MessageSquare size={24} />,
-                                        title: "Custom AI Assistants",
-                                        description: "We'll build tailored AI assistants that answer your customers' specific questions about your products or services."
+                                        title: "AI Teaching Assistants",
+                                        description: "We'll build AI assistants that answer your students' specific questions about your course content in your teaching voice and style."
                                     },
                                     {
                                         icon: <Users size={24} />,
-                                        title: "Done-For-You Onboarding",
-                                        description: "We'll create interactive video experiences that handle your team's onboarding process with voice-driven AI responses."
+                                        title: "Interactive Learning Experiences",
+                                        description: "Transform your lectures and course materials into dynamic conversations that improve student engagement and comprehension."
                                     },
                                     {
                                         icon: <ThumbsUp size={24} />,
-                                        title: "White-Glove Integration",
-                                        description: "Our experts will handle the entire process from video creation to AI assistant training and deployment."
+                                        title: "Educational Content Integration",
+                                        description: "Our experts will convert your existing educational content into AI-powered interactive experiences that scale your teaching impact."
                                     }
                                 ].map((item, index) => (
                                     <Grid item xs={12} md={4} key={index}>
@@ -543,7 +546,7 @@ const ContactPage = () => {
                                     }}
                                     endIcon={<ChevronRight size={20} />}
                                 >
-                                    Discuss Your Custom Solution
+                                    Discuss Your Course Transformation
                                 </Button>
                             </Box>
                         </motion.div>
@@ -578,20 +581,20 @@ const ContactPage = () => {
                         <Grid container spacing={4}>
                             {[
                                 {
-                                    question: "How quickly can you set up a custom solution?",
-                                    answer: "We can typically have a custom AI assistant ready for you within 1-2 weeks, depending on the complexity of your requirements."
+                                    question: "How quickly can you transform my course content?",
+                                    answer: "We can typically transform your educational content into an interactive AI experience within 1-2 weeks, depending on the complexity and volume of your material."
                                 },
                                 {
-                                    question: "What type of videos work best with Brdge AI?",
-                                    answer: "Product demos, training videos, educational content, and sales presentations all work exceptionally well. If your content explains a process or answers questions, it's perfect for Brdge AI."
+                                    question: "What types of educational content work best?",
+                                    answer: "Lectures, tutorials, lesson plans, course modules, and training materials all work exceptionally well. If your content teaches concepts or processes, it's perfect for Brdge AI."
                                 },
                                 {
-                                    question: "Do you offer enterprise plans?",
-                                    answer: "Yes, we offer enterprise solutions with custom integrations, dedicated support, and organization-wide deployment options. Contact us to discuss your specific requirements."
+                                    question: "Do you offer solutions for educational institutions?",
+                                    answer: "Yes, we offer institutional solutions for universities, schools, and training organizations with custom integrations, LMS compatibility, and department-wide deployment options."
                                 },
                                 {
-                                    question: "What makes Brdge AI different?",
-                                    answer: "Our platform uniquely combines voice cloning, conversational AI, and interactive video to create truly engaging experiences. We focus on making your content interactive without requiring you to be present."
+                                    question: "What makes Brdge AI different from other educational tools?",
+                                    answer: "We uniquely combine your teaching voice, expertise, and educational content to create AI assistants that truly represent you. Students receive personalized guidance that scales your teaching impact without requiring your constant presence."
                                 }
                             ].map((item, index) => (
                                 <Grid item xs={12} md={6} key={index}>

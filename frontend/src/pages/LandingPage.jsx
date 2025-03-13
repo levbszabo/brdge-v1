@@ -41,6 +41,61 @@ import videoDemo from '../assets/brdge-front-page-2.mp4';
 
 const fontFamily = 'Satoshi, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
+// Utility function for consistent button styling across the page
+const createButtonStyles = (variant, isResponsive = true) => {
+    const baseStyles = {
+        borderRadius: '50px',
+        fontWeight: 600,
+        letterSpacing: '0.01em',
+        textTransform: 'none',
+        transition: 'all 0.3s ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: { xs: '54px', sm: '54px' }, // Consistent touch-friendly height
+        fontSize: { xs: '1.05rem', sm: '1.1rem' },
+        px: { xs: 3, sm: 4, md: 6 },
+        py: { xs: 2, sm: 1.75 },
+        width: isResponsive ? { xs: '100%', sm: 'auto' } : 'auto',
+        whiteSpace: 'nowrap',
+        boxShadow: 'none',
+        '&:active': {
+            transform: 'scale(0.98)',
+        },
+        '&:focus': {
+            outline: '2px solid rgba(0, 255, 204, 0.4)',
+            outlineOffset: '2px',
+        },
+    };
+
+    if (variant === 'primary') {
+        return {
+            ...baseStyles,
+            background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
+            color: '#000000',
+            boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
+            '&:hover': {
+                background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
+                boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)',
+                transform: 'translateY(-2px)',
+            },
+        };
+    } else {
+        return {
+            ...baseStyles,
+            color: '#00ffcc',
+            borderColor: 'rgba(0, 255, 204, 0.4)',
+            borderWidth: '2px',
+            backdropFilter: 'blur(10px)',
+            '&:hover': {
+                borderColor: 'rgba(0, 255, 204, 0.6)',
+                backgroundColor: 'rgba(0, 255, 204, 0.05)',
+                transform: 'translateY(-2px)',
+            },
+        };
+    }
+};
+
 // The following components maintain the same structure and design,
 // but the copy now emphasizes how Brdge AI augments video content with
 // voice-based AI assistants to make sales pitches, Loom videos, onboarding walkthroughs, and training sessions interactive.
@@ -199,7 +254,7 @@ const IntroducingBrdgeAI = () => {
                             }
                         }}
                     >
-                        Turn Videos into <span className="highlight">AI Conversations</span>
+                        Turn Courses into <span className="highlight">AI Classrooms</span>
                     </Typography>
 
                     {/* VIDEO SECTION - Larger and more prominent */}
@@ -319,7 +374,7 @@ const IntroducingBrdgeAI = () => {
                                 {!isPlaying && !videoRef.current?.hasAttribute('controls') && (
                                     <Box
                                         component="a"
-                                        href="https://brdge-ai.com/viewBridge/349-95c580"
+                                        href="https://brdge-ai.com/viewBridge/344-96eac2"
                                         target="_blank"
                                         rel="noopener"
                                         sx={{
@@ -402,7 +457,7 @@ const IntroducingBrdgeAI = () => {
                                 }
                             }}
                         >
-                            Transform your static videos, demos, and training sessions into interactive experiences. Viewers can pause, ask questions, and receive instant, voice-driven responses.
+                            Transform your static course videos into interactive learning experiences. Students can pause, ask questions, and receive instant, voice-driven responses from your AI teaching assistant.
                         </Typography>
 
                         {/* FEATURE BULLETS - Centered */}
@@ -445,7 +500,7 @@ const IntroducingBrdgeAI = () => {
                                         fontWeight: 400
                                     }}
                                 >
-                                    Your audience asks. AI answers. <strong>Instantly.</strong>
+                                    Students ask. Your AI answers. <strong>In your voice.</strong>
                                 </Typography>
                             </Box>
 
@@ -477,7 +532,7 @@ const IntroducingBrdgeAI = () => {
                                         fontWeight: 400
                                     }}
                                 >
-                                    Train once. Answer forever. <strong>AI handles the rest.</strong>
+                                    Teach once. Guide forever. <strong>Even when you're not there.</strong>
                                 </Typography>
                             </Box>
 
@@ -509,7 +564,7 @@ const IntroducingBrdgeAI = () => {
                                         fontWeight: 400
                                     }}
                                 >
-                                    See what your audience <strong>cares about most.</strong>
+                                    See what students <strong>struggle with most.</strong>
                                 </Typography>
                             </Box>
                         </Box>
@@ -538,68 +593,26 @@ const IntroducingBrdgeAI = () => {
                             size="large"
                             endIcon={<ArrowForward />}
                             sx={{
-                                background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
-                                color: '#000000',
-                                px: { xs: 3, sm: 4 },
-                                py: { xs: 2, sm: 1.75 }, // Increased padding on mobile for better touch target
-                                fontSize: { xs: '1.1rem', sm: '1.1rem' },
-                                fontWeight: 700,
-                                borderRadius: '50px',
-                                position: 'relative',
-                                overflow: 'hidden',
-                                width: { xs: '100%', sm: 'auto' },
+                                ...createButtonStyles('primary', false),
                                 flex: { xs: '1 1 auto', sm: 1 }, // Make buttons take equal space
-                                boxShadow: `
-                                        0 4px 20px rgba(0, 255, 204, 0.3),
-                                        0 0 0 1px rgba(0, 255, 204, 0.1),
-                                        0 0 40px rgba(0, 255, 204, 0.2)
-                                    `,
-                                zIndex: 1,
-                                '&:hover': {
-                                    background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-                                    boxShadow: `
-                                            0 6px 25px rgba(0, 255, 204, 0.4),
-                                            0 0 0 1px rgba(0, 255, 204, 0.2),
-                                            0 0 60px rgba(0, 255, 204, 0.3)
-                                        `,
-                                    transform: 'translateY(-2px)'
-                                },
-                                transition: 'all 0.3s ease-in-out'
                             }}
                         >
-                            Try Free – No Credit Card
+                            Start Creating AI Courses
                         </Button>
 
                         <Button
                             variant="outlined"
                             size="large"
                             sx={{
-                                color: '#00ffcc',
-                                borderColor: 'rgba(0, 255, 204, 0.4)',
-                                borderWidth: '2px',
-                                px: { xs: 3, sm: 4 },
-                                py: { xs: 2, sm: 1.75 }, // Increased padding on mobile for better touch target
-                                fontSize: { xs: '1.1rem', sm: '1.1rem' },
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                letterSpacing: '0.02em',
-                                textTransform: 'none',
-                                width: { xs: '100%', sm: 'auto' },
+                                ...createButtonStyles('secondary', false),
                                 flex: { xs: '1 1 auto', sm: 1 }, // Make buttons take equal space
-                                backdropFilter: 'blur(10px)',
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    borderColor: 'rgba(0, 255, 204, 0.6)',
-                                    backgroundColor: 'rgba(0, 255, 204, 0.05)',
-                                    transform: 'translateY(-2px)'
-                                }
                             }}
                             component="a"
-                            href="https://brdge-ai.com/viewBridge/349-95c580"
+                            href="https://brdge-ai.com/viewBridge/344-96eac2"
                             target="_blank"
                             rel="noopener"
                         >
-                            Watch Full Demo
+                            Watch Course Demo
                         </Button>
                     </Stack>
                 </Box>
@@ -679,7 +692,7 @@ const HeroSection = () => {
                         width: '100%',
                         maxWidth: '1200px',
                         padding: '0 16px',
-                        marginBottom: '24px', // Increased margin
+                        marginBottom: '16px', // Reduced margin to fit more content
                     }}
                 >
                     <Typography
@@ -687,9 +700,9 @@ const HeroSection = () => {
                         align="center"
                         className="heading-large"
                         sx={{
-                            mb: { xs: 3, sm: 2 }, // Reduced margin for desktop
-                            fontSize: { xs: '2rem', sm: '3rem', md: '3.5rem' },
-                            lineHeight: { xs: 1.3, sm: 1.1 }, // Increased line height for mobile
+                            mb: { xs: 2, sm: 1.5 }, // Further reduced margin
+                            fontSize: { xs: '1.8rem', sm: '2.6rem', md: '3rem' }, // Smaller font sizes across all breakpoints
+                            lineHeight: { xs: 1.3, sm: 1.1 },
                             fontWeight: 800,
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
@@ -698,18 +711,28 @@ const HeroSection = () => {
                             color: 'white',
                             position: 'relative',
                             fontFamily: fontFamily,
+                            // Removed the after pseudo-element here as we'll add a global underline at the end
+                            '@keyframes shimmer': {
+                                '0%': {
+                                    backgroundPosition: '-200% 0',
+                                },
+                                '100%': {
+                                    backgroundPosition: '200% 0',
+                                },
+                            },
+                            // Add global underline that spans the entire title
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
-                                bottom: { xs: '-12px', sm: '-16px' }, // Adjusted bottom space
+                                bottom: { xs: '-15px', sm: '-20px' },
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: { xs: '70px', sm: '120px' },
-                                height: '2px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.6), transparent)',
-                                borderRadius: '1px',
+                                width: { xs: '200px', sm: '320px', md: '400px' }, // Wider underline for the entire title
+                                height: '3px',
+                                background: 'linear-gradient(90deg, transparent, rgba(0,255,204,0.8), transparent)',
+                                borderRadius: '2px',
                                 animation: 'underlinePulse 2s infinite ease-in-out'
-                            }
+                            },
                         }}
                     >
                         <Box
@@ -718,49 +741,60 @@ const HeroSection = () => {
                                 display: 'block',
                                 color: '#FFFFFF',
                                 textShadow: '0 2px 20px rgba(0,0,0,0.3)',
-                                fontSize: { xs: '2rem', sm: '3.2rem', md: '3.8rem' },
-                                fontWeight: 500,
+                                fontSize: { xs: '1.9rem', sm: '2.8rem', md: '3.4rem' }, // Smaller font sizes
+                                fontWeight: 700,
                                 letterSpacing: '-0.02em',
-                                mb: { xs: 1.5, sm: 0.5 }, // Reduced margin for desktop
+                                mb: { xs: 1, sm: 0.5 }, // Reduced margin
                                 textTransform: 'none',
                                 fontFamily: fontFamily,
-                                lineHeight: 1.2
+                                lineHeight: 1.2,
+                                position: 'relative',
+                                paddingBottom: { xs: '6px', sm: '8px' }, // Reduced padding
+                                // Removed the individual underline here
                             }}
                         >
-                            Automate Conversations
+                            Turn Your Expertise
+                        </Box>
+                        <Box
+                            component="span"
+                            className="gradient-text"
+                            sx={{
+                                display: 'block',
+                                background: 'linear-gradient(90deg, #00ffcc, #00B4DB, #00ffcc)',
+                                backgroundSize: '200% auto',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                MozBackgroundClip: 'text',
+                                MozTextFillColor: 'transparent',
+                                textShadow: 'none',
+                                fontSize: { xs: '1.9rem', sm: '2.8rem', md: '3.4rem' }, // Smaller font sizes
+                                fontWeight: 800,
+                                letterSpacing: '-0.02em',
+                                mb: { xs: 2, sm: 1.5 }, // Reduced margin
+                                textTransform: 'none',
+                                fontFamily: fontFamily,
+                                lineHeight: 1.2,
+                                animation: 'shimmer 3s infinite linear alternate',
+                                px: 2,
+                            }}
+                        >
+                            Into AI-Powered Courses
                         </Box>
                         <Box
                             component="span"
                             sx={{
                                 display: 'block',
-                                color: '#FFFFFF',
-                                textShadow: '0 2px 20px rgba(0,0,0,0.3)',
-                                fontSize: { xs: '2rem', sm: '3.2rem', md: '3.8rem' },
-                                fontWeight: 500,
-                                letterSpacing: '-0.02em',
-                                mb: { xs: 3, sm: 2 }, // Reduced margin for desktop
-                                textTransform: 'none',
-                                fontFamily: fontFamily,
-                                lineHeight: 1.2
-                            }}
-                        >
-                            Amplify Expertise
-                        </Box>
-                        <Box
-                            component="span"
-                            sx={{
-                                display: 'block',
-                                fontSize: { xs: '1.1rem', sm: '1.5rem', md: '1.6rem' }, // Reduced font size for desktop
+                                fontSize: { xs: '1rem', sm: '1.3rem', md: '1.4rem' }, // Smaller font sizes
                                 fontWeight: 400,
                                 color: 'rgba(255,255,255,0.9)',
                                 letterSpacing: '0.01em',
-                                mt: { xs: 2, sm: 1 }, // Reduced margin for desktop
+                                mt: { xs: 1.5, sm: 1 }, // Reduced margin
                                 fontFamily: fontFamily,
                                 textAlign: 'center',
-                                paddingX: { xs: 1, sm: 0 }, // Added horizontal padding on mobile
+                                paddingX: { xs: 1, sm: 0 },
                             }}
                         >
-                            Turn your videos into <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>Interactive</strong>, <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>AI-Powered</strong> conversations that sell, onboard, and scale effortlessly.
+                            Create interactive learning experiences that <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>teach</strong>, <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>engage</strong>, and <strong style={{ fontWeight: 700, color: '#00ffcc', textShadow: '0 0 10px rgba(0,255,204,0.8)' }}>scale</strong> your knowledge 24/7.
                         </Box>
                     </Typography>
                 </motion.div>
@@ -777,7 +811,7 @@ const HeroSection = () => {
                 >
                     <Box
                         component="a"
-                        href="https://brdge-ai.com/viewBridge/349-95c580"
+                        href="https://brdge-ai.com/viewBridge/344-96eac2"
                         target="_blank"
                         rel="noopener noreferrer"
                         sx={{
@@ -996,7 +1030,7 @@ const HeroSection = () => {
                         }
                     }}
                 >
-                    Brdge AI transforms how you connect with your audience:
+                    Brdge AI transforms how educators connect with students:
                 </Typography>
 
                 <Box
@@ -1012,20 +1046,20 @@ const HeroSection = () => {
                 >
                     {[
                         {
-                            text: "Close deals faster with interactive, AI-powered product demos",
-                            icon: "🚀"
+                            text: "Create AI tutors that answer student questions 24/7",
+                            icon: "🎓"
                         },
                         {
-                            text: "Onboard effortlessly with engaging, personalized training",
+                            text: "Increase course completion rates with personalized guidance",
                             icon: "✨"
                         },
                         {
-                            text: "Scale your expertise without losing the personal touch",
+                            text: "Scale your teaching without sacrificing the personal touch",
                             icon: "📈"
                         },
                         {
-                            text: "Instant answers, whenever your audience asks",
-                            icon: "🎯"
+                            text: "Learn what your students need through AI insights",
+                            icon: "🧠"
                         }
                     ].map((item, index) => (
                         <Box
@@ -1097,7 +1131,7 @@ const HeroSection = () => {
                     pt: { xs: 4, sm: 0 } // Added top padding for mobile devices
                 }}>
                     <motion.div
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.95 }}
                         style={{ width: '100%', flex: 1 }}
                     >
@@ -1107,71 +1141,26 @@ const HeroSection = () => {
                             variant="contained"
                             size="large"
                             fullWidth
-                            sx={{
-                                bgcolor: 'rgba(0, 255, 204, 0.9)',
-                                color: '#000000',
-                                px: { xs: 3, sm: 6 }, // Reduced padding
-                                py: { xs: 1, sm: 1.5 }, // Reduced padding
-                                fontSize: { xs: '0.9rem', sm: '1.1rem' }, // Reduced font size
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
-                                letterSpacing: '0.02em',
-                                textTransform: 'none',
-                                minWidth: { xs: '100%', sm: '220px' }, // Set consistent min-width for desktop
-                                height: '50px', // Set consistent height
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                whiteSpace: 'nowrap',
-                                '&:hover': {
-                                    bgcolor: 'rgba(0, 255, 204, 1)',
-                                    boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)'
-                                }
-                            }}
+                            sx={createButtonStyles('primary')}
                         >
                             Start Free Today
                         </Button>
                     </motion.div>
                     <motion.div
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.95 }}
                         style={{ width: '100%', flex: 1 }}
                     >
                         <Button
                             variant="outlined"
                             size="large"
-                            sx={{
-                                color: '#00ffcc',
-                                borderColor: 'rgba(0, 255, 204, 0.4)',
-                                borderWidth: '2px',
-                                px: { xs: 3, sm: 4 },
-                                py: { xs: 1.75, sm: 1.75 },
-                                fontSize: { xs: '1.05rem', sm: '1.1rem' },
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                letterSpacing: '0.02em',
-                                textTransform: 'none',
-                                width: { xs: '100%', sm: 'auto' },
-                                minWidth: { xs: '100%', sm: '220px' }, // Set consistent min-width for desktop
-                                height: '50px', // Set consistent height
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                backdropFilter: 'blur(10px)',
-                                transition: 'all 0.3s ease',
-                                '&:hover': {
-                                    borderColor: 'rgba(0, 255, 204, 0.6)',
-                                    backgroundColor: 'rgba(0, 255, 204, 0.05)',
-                                    transform: 'translateY(-2px)'
-                                }
-                            }}
+                            sx={createButtonStyles('secondary')}
                             component="a"
-                            href="https://brdge-ai.com/viewBridge/349-95c580"
+                            href="https://brdge-ai.com/viewBridge/344-96eac2"
                             target="_blank"
                             rel="noopener"
                         >
-                            Watch Full Demo
+                            Watch Education Demo
                         </Button>
                     </motion.div>
                 </Box>
@@ -1232,26 +1221,26 @@ const HowItWorksSection = () => {
         {
             number: "01",
             icon: <Upload size={32} />,
-            title: "Upload or Record",
-            description: "Submit your screen recording, sales pitch, or onboarding video. Brdge AI transcribes and prepares your content for interactive engagement."
+            title: "Upload Your Course Content",
+            description: "Submit your lectures, tutorials, or workshop videos. Brdge AI transcribes and prepares your educational content for interactive student engagement."
         },
         {
             number: "02",
             icon: <Sparkles size={32} />,
-            title: "Define the Agent",
-            description: "Customize your AI assistant by picking a personality and configuring its knowledge base. Tailor its responses to reflect your unique style and brand voice."
+            title: "Create Your Teaching Assistant",
+            description: "Customize your AI tutor by defining its knowledge, tone, and teaching style. Tailor its responses to match your instructional approach and expertise."
         },
         {
             number: "03",
             icon: <Mic size={32} />,
-            title: "Clone Your Voice",
-            description: "Let your voice power every response. Clone your authentic sound so your AI delivers answers that feel truly personal."
+            title: "Clone Your Teaching Voice",
+            description: "Let your actual voice power every response. Clone your authentic sound so your AI delivers answers that maintain your teaching presence."
         },
         {
             number: "04",
             icon: <Share2 size={32} />,
-            title: "Share & Engage",
-            description: "Distribute one link. As viewers watch, they pause, ask questions, and get immediate, voice-driven answers that keep them hooked."
+            title: "Share With Students",
+            description: "Distribute one link. As students watch, they can pause, ask questions, and get immediate, voice-driven answers that deepen their understanding."
         }
     ];
 
@@ -1283,7 +1272,7 @@ const HowItWorksSection = () => {
                                 textTransform: 'none',
                             }}
                         >
-                            One Platform, Countless Possibilities
+                            How to Create AI-Powered Courses
                         </Typography>
 
                         <Typography
@@ -1299,8 +1288,8 @@ const HowItWorksSection = () => {
                                 px: { xs: 1, sm: 0 }, // Added horizontal padding for mobile
                             }}
                         >
-                            Brdge AI empowers your organization by turning your videos into
-                            interactive, voice-powered experiences.
+                            Brdge AI transforms your course content into interactive learning experiences
+                            with just four simple steps.
                         </Typography>
                     </Box>
 
@@ -1434,7 +1423,7 @@ const HowItWorksSection = () => {
                         textAlign: 'center'
                     }}>
                         <motion.div
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.95 }}
                         >
                             <Button
@@ -1443,24 +1432,27 @@ const HowItWorksSection = () => {
                                 variant="contained"
                                 size="large"
                                 sx={{
-                                    bgcolor: 'rgba(0,255,204,0.1)',
-                                    color: '#00ffcc',
+                                    ...createButtonStyles('primary'),
+                                    // Replace the transparent/subtle styling with more vibrant colors
+                                    background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
+                                    color: '#000000',
+                                    fontWeight: 700,
+                                    borderWidth: 0,
+                                    boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
+                                    maxWidth: { xs: '90%', sm: 'auto' },
+                                    mx: 'auto',
                                     px: { xs: 4, sm: 6 },
-                                    py: { xs: 1.5, sm: 2 },
-                                    fontSize: { xs: '1.1rem', sm: '1.2rem' },
-                                    fontWeight: 600,
-                                    borderRadius: '50px',
-                                    border: '1px solid rgba(0,255,204,0.2)',
-                                    textTransform: 'none',
-                                    boxShadow: '0 0 30px rgba(0,255,204,0.1)',
-                                    transition: 'all 0.3s ease',
+                                    py: { xs: 1.5, sm: 1.5 },
+                                    fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                    display: 'inline-flex',
                                     '&:hover': {
-                                        bgcolor: 'rgba(0,255,204,0.15)',
-                                        boxShadow: '0 0 40px rgba(0,255,204,0.2)'
+                                        background: 'linear-gradient(45deg, #00ffdd, #00C4EB)',
+                                        boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)',
+                                        transform: 'translateY(-2px)',
                                     }
                                 }}
                             >
-                                Try It Free
+                                Create Your First AI Course
                             </Button>
                         </motion.div>
                     </Box>
@@ -1487,66 +1479,70 @@ const ImpactSection = () => {
 
     const industries = [
         {
-            id: 'onboarding',
+            id: 'courses',
             icon: <SchoolIcon />,
-            title: 'Onboarding & Training',
-            subtitle: 'Engage new hires with interactive video walkthroughs',
+            title: 'Course Creators',
+            subtitle: 'Scale your teaching impact without sacrificing quality',
             details: [
                 {
-                    title: 'Streamline Orientation',
-                    description: 'Eliminate repetitive onboarding sessions. Your AI assistant handles FAQs with consistent, on‑brand responses.',
+                    title: 'Personalized Learning at Scale',
+                    description: 'Let every student interact with your course as if they had a 1:1 session with you, getting personalized guidance in your voice.',
                 },
                 {
-                    title: 'Boost Confidence',
-                    description: 'Empower new hires to explore your content interactively, getting clarity right when they need it.',
+                    title: 'Higher Completion Rates',
+                    description: 'Students who can get immediate answers to their questions are 65% more likely to complete your courses.',
                 },
                 {
-                    title: 'Save Time',
-                    description: 'Automate basic Q&A so managers can focus on strategic initiatives.',
+                    title: 'Deeper Engagement',
+                    description: 'Transform passive watching into active learning through AI-powered conversation with your teaching persona.',
                 },
             ],
         },
         {
-            id: 'sales',
+            id: 'institutions',
             icon: <BusinessCenter />,
-            title: 'Sales & Customer Engagement',
-            subtitle: 'Turn every sales pitch into an interactive conversation',
+            title: 'Educational Institutions',
+            subtitle: 'Create interactive learning environments that scale expertise',
             details: [
                 {
-                    title: '24/7 Demos',
-                    description: 'Prospects can interact with your sales videos on their own time, asking questions and exploring features instantly.',
+                    title: 'Faculty Knowledge Scaling',
+                    description: 'Allow your best professors and subject matter experts to help more students through AI-powered "always available" guidance.',
                 },
                 {
-                    title: 'Build Trust',
-                    description: 'Deliver consistent, personalized answers that showcase your expertise and create stronger customer connections.',
+                    title: 'Student Support Enhancement',
+                    description: 'Provide 24/7 answers to common questions while identifying students who need additional human support.',
                 },
                 {
-                    title: 'Accelerate Conversions',
-                    description: 'Instant clarifications shorten the sales cycle and boost conversion rates.',
+                    title: 'Learning Analytics',
+                    description: 'Gain insights into what topics students find most challenging and where they need additional resources.',
                 },
             ],
         },
         {
-            id: 'education',
+            id: 'corporate',
             icon: <RocketLaunchIcon />,
-            title: 'Education & Knowledge Hubs',
-            subtitle: 'Transform lectures into interactive learning sessions',
+            title: 'Corporate Training',
+            subtitle: 'Transform employee onboarding and continuous learning',
             details: [
                 {
-                    title: 'Instant Clarity',
-                    description: 'Enable students to pause, ask questions, and get real-time insights—making every lesson more engaging.',
+                    title: 'Interactive Onboarding',
+                    description: 'New employees can ask questions during training videos, reducing time-to-productivity and increasing retention.',
                 },
                 {
-                    title: 'Active Learning',
-                    description: 'Replace passive watching with interactive Q&A that reinforces understanding and retention.',
+                    title: 'Knowledge Preservation',
+                    description: 'Capture the expertise of senior staff and subject matter experts in interactive AI versions that guide new team members.',
                 },
                 {
-                    title: 'Scalable Teaching',
-                    description: "Whether for a small class or a massive online course, your AI assistant adapts to every student's pace.",
+                    title: 'Consistent Training',
+                    description: "Ensure every employee gets the same quality of instruction and guidance, regardless of when or where they're trained.",
                 },
             ],
         },
     ];
+
+    // Define consistent card background color to ensure matching across components
+    const cardBgColor = 'rgba(0,41,122,0.2)';
+    const cardBgColorActive = 'rgba(0,41,122,0.3)';
 
     return (
         <Box sx={{
@@ -1574,7 +1570,7 @@ const ImpactSection = () => {
                                 textTransform: 'none',
                             }}
                         >
-                            One Platform, Countless Possibilities
+                            Transform Education at Every Level
                         </Typography>
 
                         <Typography
@@ -1589,8 +1585,8 @@ const ImpactSection = () => {
                                 textTransform: 'none',
                             }}
                         >
-                            Brdge AI empowers your organization by turning your videos into
-                            interactive, voice-powered experiences.
+                            Brdge AI empowers educators at all levels by turning standard course content
+                            into interactive, AI-powered learning experiences.
                         </Typography>
                     </Box>
 
@@ -1612,19 +1608,20 @@ const ImpactSection = () => {
                                 elevation={0}
                                 sx={{
                                     position: 'relative',
-                                    background: expandedCard === industry.id
-                                        ? 'rgba(0,41,122,0.3)'
-                                        : 'rgba(0,41,122,0.2)',
+                                    background: expandedCard === industry.id ? cardBgColorActive : cardBgColor,
                                     backdropFilter: 'blur(10px)',
                                     borderRadius: '16px',
                                     border: '1px solid',
                                     borderColor: expandedCard === industry.id
-                                        ? 'rgba(0,255,204,0.2)'
+                                        ? 'rgba(0,255,204,0.3)'
                                         : 'rgba(255,255,255,0.1)',
                                     p: { xs: 3, sm: 4 },
-                                    pb: { xs: 5, sm: 4 },
                                     cursor: 'pointer',
                                     transition: 'all 0.3s ease',
+                                    overflow: 'hidden',
+                                    height: '100%', // Make all cards the same height in their collapsed state
+                                    display: 'flex',
+                                    flexDirection: 'column',
                                     '&:hover': {
                                         transform: 'translateY(-4px)',
                                         borderColor: 'rgba(0,255,204,0.3)',
@@ -1680,12 +1677,13 @@ const ImpactSection = () => {
                                 {/* Plus Sign Indicator - Mobile Only */}
                                 <Box
                                     sx={{
-                                        display: { xs: 'flex', sm: 'none' },
+                                        display: { xs: 'flex', sm: 'flex' }, // Show on all devices for better UX
                                         position: 'absolute',
                                         bottom: '12px',
                                         left: '12px',
                                         alignItems: 'center',
                                         gap: 1,
+                                        zIndex: 2, // Ensure it's above other content
                                     }}
                                 >
                                     <Box
@@ -1719,18 +1717,27 @@ const ImpactSection = () => {
                                     </Typography>
                                 </Box>
 
+                                {/* Spacer for bottom where indicator appears */}
+                                <Box sx={{
+                                    height: '36px', // Height of indicator plus some padding
+                                    mt: 'auto',
+                                    visibility: 'hidden'
+                                }} />
+
                                 {/* Expandable Content */}
-                                <Collapse in={expandedCard === industry.id}>
+                                <Collapse in={expandedCard === industry.id} sx={{ width: '100%' }}>
                                     <Box sx={{
                                         mt: 3,
                                         pt: 3,
                                         borderTop: '1px solid rgba(255,255,255,0.1)',
+                                        background: 'transparent',
                                     }}>
                                         {industry.details.map((detail, idx) => (
                                             <Box
                                                 key={idx}
                                                 sx={{
-                                                    mb: idx !== industry.details.length - 1 ? 3 : 0
+                                                    mb: idx !== industry.details.length - 1 ? 3 : 0,
+                                                    background: 'transparent',
                                                 }}
                                             >
                                                 <Typography
@@ -1740,6 +1747,7 @@ const ImpactSection = () => {
                                                         fontWeight: 600,
                                                         fontSize: '0.95rem',
                                                         mb: 1,
+                                                        textShadow: '0 0 10px rgba(0,255,204,0.2)'
                                                     }}
                                                 >
                                                     {detail.title}
@@ -1747,7 +1755,7 @@ const ImpactSection = () => {
                                                 <Typography
                                                     variant="body2"
                                                     sx={{
-                                                        color: 'rgba(255,255,255,0.7)',
+                                                        color: 'rgba(255,255,255,0.8)',
                                                         fontSize: '0.9rem',
                                                         lineHeight: 1.6,
                                                     }}
@@ -1779,19 +1787,19 @@ const FinalCTA = () => {
     return (
         <Box
             sx={{
-                pt: { xs: 12, sm: 10, md: 12 }, // Increased padding top for mobile
-                pb: { xs: 12, sm: 12, md: 16 }, // Increased padding bottom for desktop
-                px: { xs: 3, sm: 4, md: 6 }, // Increased horizontal padding for mobile
+                pt: { xs: 12, sm: 10, md: 12 },
+                pb: { xs: 12, sm: 12, md: 16 },
+                px: { xs: 4, sm: 4, md: 6 }, // Increased padding on xs (mobile)
                 position: 'relative',
-                overflow: 'visible', // Changed to visible to prevent content cutoff
+                overflow: 'visible',
                 backgroundColor: 'rgba(255,255,255,0.02)',
                 borderRadius: '24px',
                 maxWidth: '1200px',
                 mx: 'auto',
-                mb: { xs: 8, sm: 10, md: 12 }, // Added bottom margin for better spacing
+                mb: { xs: 8, sm: 10, md: 12 },
             }}
         >
-            <Container maxWidth="lg" ref={ref}>
+            <Container maxWidth="lg" ref={ref} sx={{ px: { xs: 0, sm: 2 } }}> {/* Reduced padding on mobile */}
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -1801,45 +1809,50 @@ const FinalCTA = () => {
                         variant="h2"
                         align="center"
                         sx={{
-                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                            fontSize: { xs: '1.9rem', sm: '2.6rem', md: '3.2rem' }, // Reduced font size for mobile
                             fontWeight: 700,
                             color: 'white',
-                            mb: 2,
+                            mb: 1, // Reduced margin
                             textTransform: 'none',
+                            lineHeight: { xs: 1.2, sm: 1.3 }, // Tighter line height on mobile
+                            px: { xs: 1, sm: 0 }, // Added horizontal padding on mobile
                         }}
                     >
-                        Ready to Let Your Content
+                        Ready to Let Your Teaching
                     </Typography>
                     <Typography
                         variant="h2"
                         align="center"
                         sx={{
-                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                            fontSize: { xs: '1.9rem', sm: '2.6rem', md: '3.2rem' }, // Reduced font size for mobile
                             fontWeight: 700,
                             color: '#00ffcc',
-                            mb: { xs: 4, sm: 5 },
+                            mb: { xs: 3, sm: 4 }, // Reduced margin on mobile
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
-                            textShadow: '0 0 20px rgba(0,255,204,0.3)'
+                            textShadow: '0 0 20px rgba(0,255,204,0.3)',
+                            lineHeight: { xs: 1.2, sm: 1.3 }, // Tighter line height on mobile
+                            px: { xs: 1, sm: 0 }, // Added horizontal padding on mobile
                         }}
                     >
-                        Speak for Itself?
+                        Reach More Students?
                     </Typography>
 
                     <Typography
                         variant="h5"
                         align="center"
                         sx={{
-                            fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.3rem' },
+                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' }, // Reduced font size
                             fontWeight: 400,
                             color: 'rgba(255,255,255,0.9)',
-                            mb: { xs: 6, sm: 8 },
-                            maxWidth: '600px',
+                            mb: { xs: 5, sm: 6 }, // Reduced bottom margin
+                            maxWidth: { xs: '100%', sm: '600px' }, // Full width on mobile
                             mx: 'auto',
-                            lineHeight: 1.6
+                            lineHeight: 1.5,
+                            px: { xs: 1, sm: 0 }, // Added horizontal padding on mobile
                         }}
                     >
-                        Join the Brdge AI revolution and transform all your videos into powerful, interactive conversations. From sales pitches to onboarding and training, watch your content drive exceptional results 24/7 without your constant presence.
+                        Join educators who are transforming traditional course videos into interactive learning experiences. Scale your teaching impact, improve student outcomes, and provide personalized guidance—all without your constant presence.
                     </Typography>
 
                     <Box sx={{
@@ -1847,87 +1860,63 @@ const FinalCTA = () => {
                         flexDirection: { xs: 'column', sm: 'row' },
                         gap: { xs: 2, sm: 4 },
                         justifyContent: 'center',
-                        maxWidth: '600px',
+                        maxWidth: { xs: '100%', sm: '600px' }, // Full width on mobile
                         mx: 'auto',
-                        mb: { xs: 4, sm: 6, md: 8 }, // Added bottom margin to ensure buttons are visible
+                        mb: { xs: 4, sm: 6, md: 8 },
                         position: 'relative',
-                        zIndex: 10
+                        zIndex: 10,
+                        px: { xs: 1, sm: 0 }, // Reduced padding
                     }}>
                         <motion.div
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.95 }}
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, width: '100%' }} // Added width 100%
                         >
                             <Button
                                 component={Link}
                                 to="/signup"
                                 variant="contained"
                                 size="large"
+                                fullWidth // Added fullWidth prop
                                 sx={{
-                                    bgcolor: 'rgba(0, 255, 204, 0.9)',
-                                    color: '#000000',
-                                    px: { xs: 6, sm: 8 },
-                                    py: { xs: 1.5, sm: 2 },
-                                    fontSize: { xs: '1.1rem', sm: '1.2rem' },
-                                    fontWeight: 600,
-                                    borderRadius: '50px',
-                                    boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'none',
-                                    width: '100%', // Full width
-                                    minWidth: { xs: '100%', sm: '220px' }, // Consistent min-width
-                                    height: { xs: '54px', sm: '60px' }, // Consistent height
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    whiteSpace: 'nowrap',
-                                    '&:hover': {
-                                        bgcolor: 'rgba(0, 255, 204, 1)',
-                                        boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)'
-                                    }
+                                    ...createButtonStyles('primary'),
+                                    height: { xs: '54px', sm: '60px' }, // Reduced height on mobile
+                                    fontSize: { xs: '0.95rem', sm: '1.1rem' }, // Smaller font on mobile
+                                    whiteSpace: 'normal', // Allow text to wrap
+                                    lineHeight: 1.2, // Tighter line height
                                 }}
                             >
-                                Start Free Today
+                                Create Your AI Teaching Assistant
                             </Button>
                         </motion.div>
 
                         <motion.div
-                            whileHover={{ scale: 1.05 }}
+                            whileHover={{ scale: 1.03 }}
                             whileTap={{ scale: 0.95 }}
-                            style={{ flex: 1 }}
+                            style={{ flex: 1, width: '100%' }} // Added width 100%
                         >
                             <Button
                                 component={Link}
                                 to="/demos"
                                 variant="outlined"
                                 size="large"
+                                fullWidth // Added fullWidth prop
                                 sx={{
+                                    ...createButtonStyles('secondary'),
                                     color: 'white',
                                     borderColor: 'rgba(255,255,255,0.5)',
-                                    borderWidth: '2px',
-                                    px: { xs: 6, sm: 8 },
-                                    py: { xs: 1.5, sm: 2 },
-                                    fontSize: { xs: '1.1rem', sm: '1.2rem' },
-                                    fontWeight: 600,
-                                    borderRadius: '50px',
-                                    width: '100%', // Full width
-                                    minWidth: { xs: '100%', sm: '220px' }, // Consistent min-width
-                                    height: { xs: '54px', sm: '60px' }, // Consistent height
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    letterSpacing: '0.02em',
-                                    textTransform: 'none',
-                                    whiteSpace: 'nowrap',
-                                    backdropFilter: 'blur(10px)',
-                                    transition: 'all 0.3s ease',
+                                    height: { xs: '54px', sm: '60px' }, // Reduced height on mobile
+                                    fontSize: { xs: '0.95rem', sm: '1.1rem' }, // Smaller font on mobile
+                                    whiteSpace: 'normal', // Allow text to wrap
+                                    lineHeight: 1.2, // Tighter line height
                                     '&:hover': {
                                         borderColor: 'rgba(255,255,255,0.4)',
-                                        backgroundColor: 'rgba(255,255,255,0.05)'
+                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        transform: 'translateY(-2px)',
                                     }
                                 }}
                             >
-                                Watch Demo
+                                See Education Demos
                             </Button>
                         </motion.div>
                     </Box>
