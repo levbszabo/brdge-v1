@@ -548,6 +548,7 @@ const IntroducingBrdgeAI = () => {
                                 position: 'relative',
                                 overflow: 'hidden',
                                 width: { xs: '100%', sm: 'auto' },
+                                flex: { xs: '1 1 auto', sm: 1 }, // Make buttons take equal space
                                 boxShadow: `
                                         0 4px 20px rgba(0, 255, 204, 0.3),
                                         0 0 0 1px rgba(0, 255, 204, 0.1),
@@ -584,6 +585,7 @@ const IntroducingBrdgeAI = () => {
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
                                 width: { xs: '100%', sm: 'auto' },
+                                flex: { xs: '1 1 auto', sm: 1 }, // Make buttons take equal space
                                 backdropFilter: 'blur(10px)',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
@@ -959,18 +961,30 @@ const HeroSection = () => {
                     variant="h5"
                     align="center"
                     sx={{
-                        mt: { xs: 0.5, sm: 2 }, // Reduced margin
-                        mb: { xs: 0.5, sm: 2 }, // Reduced margin
+                        mt: { xs: 1.5, sm: 2 }, // Increased top margin on mobile
+                        mb: { xs: 2, sm: 2.5 }, // Increased bottom margin
                         maxWidth: '800px',
                         mx: 'auto',
-                        opacity: 0.9,
-                        fontSize: { xs: '0.85rem', sm: '1rem', md: '1.1rem' }, // Reduced font size
-                        fontWeight: 400,
+                        opacity: 1, // Increased from 0.9 for better visibility
+                        fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.35rem' }, // Increased font size across all breakpoints
+                        fontWeight: 500, // Increased from 400 for better emphasis
                         lineHeight: 1.5,
                         px: { xs: 2, sm: 4 },
                         color: 'rgba(255, 255, 255, 0.95)',
                         letterSpacing: '0.01em',
                         textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+                        position: 'relative',
+                        '&::after': { // Added an underline to make it stand out as a section heading
+                            content: '""',
+                            position: 'absolute',
+                            bottom: '-10px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: { xs: '100px', sm: '120px' },
+                            height: '2px',
+                            background: 'rgba(0, 255, 204, 0.4)',
+                            borderRadius: '1px',
+                        },
                         '& strong': {
                             fontWeight: 600,
                             color: '#fff',
@@ -1085,7 +1099,7 @@ const HeroSection = () => {
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        style={{ width: '100%' }}
+                        style={{ width: '100%', flex: 1 }}
                     >
                         <Button
                             component={Link}
@@ -1104,9 +1118,12 @@ const HeroSection = () => {
                                 boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
-                                minWidth: { xs: '100%', sm: '200px' }, // Adjusted width
+                                minWidth: { xs: '100%', sm: '220px' }, // Set consistent min-width for desktop
+                                height: '50px', // Set consistent height
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 whiteSpace: 'nowrap',
-                                height: 'fit-content',
                                 '&:hover': {
                                     bgcolor: 'rgba(0, 255, 204, 1)',
                                     boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)'
@@ -1119,7 +1136,7 @@ const HeroSection = () => {
                     <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        style={{ width: '100%' }}
+                        style={{ width: '100%', flex: 1 }}
                     >
                         <Button
                             variant="outlined"
@@ -1136,6 +1153,11 @@ const HeroSection = () => {
                                 letterSpacing: '0.02em',
                                 textTransform: 'none',
                                 width: { xs: '100%', sm: 'auto' },
+                                minWidth: { xs: '100%', sm: '220px' }, // Set consistent min-width for desktop
+                                height: '50px', // Set consistent height
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
                                 backdropFilter: 'blur(10px)',
                                 transition: 'all 0.3s ease',
                                 '&:hover': {
@@ -1852,9 +1874,13 @@ const FinalCTA = () => {
                                     boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
                                     letterSpacing: '0.02em',
                                     textTransform: 'none',
-                                    minWidth: { xs: '100%', sm: '220px' },
+                                    width: '100%', // Full width
+                                    minWidth: { xs: '100%', sm: '220px' }, // Consistent min-width
+                                    height: { xs: '54px', sm: '60px' }, // Consistent height
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     whiteSpace: 'nowrap',
-                                    height: 'fit-content',
                                     '&:hover': {
                                         bgcolor: 'rgba(0, 255, 204, 1)',
                                         boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)'
@@ -1884,11 +1910,15 @@ const FinalCTA = () => {
                                     fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                     fontWeight: 600,
                                     borderRadius: '50px',
-                                    minWidth: { xs: '100%', sm: '220px' },
+                                    width: '100%', // Full width
+                                    minWidth: { xs: '100%', sm: '220px' }, // Consistent min-width
+                                    height: { xs: '54px', sm: '60px' }, // Consistent height
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
                                     letterSpacing: '0.02em',
                                     textTransform: 'none',
                                     whiteSpace: 'nowrap',
-                                    height: 'fit-content',
                                     backdropFilter: 'blur(10px)',
                                     transition: 'all 0.3s ease',
                                     '&:hover': {
