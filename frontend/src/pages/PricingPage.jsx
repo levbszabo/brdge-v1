@@ -29,21 +29,23 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                 sx={{
                     position: 'relative',
                     backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                    backdropFilter: 'blur(10px)',
+                    backdropFilter: 'blur(12px)',
                     borderRadius: '24px',
                     overflow: 'hidden',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    p: { xs: 3, sm: 3.5, md: 4 },
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    p: { xs: 2.5, sm: 3, md: 3.5 },
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'transform 0.3s ease-in-out, z-index 0s',
+                    transition: 'transform 0.3s ease-in-out, z-index 0s, box-shadow 0.3s ease',
                     zIndex: 1,
                     '&:hover': {
                         transform: 'translateY(-10px)',
                         zIndex: 3,
+                        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
                     },
                     ...(isPopular && {
+                        boxShadow: '0 8px 25px rgba(79, 156, 249, 0.2)',
                         '&::before': {
                             content: '""',
                             position: 'absolute',
@@ -62,45 +64,72 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     <Box
                         sx={{
                             position: 'absolute',
-                            top: 20,
-                            right: 20,
-                            color: '#4F9CF9',
+                            top: 14,
+                            right: 14,
+                            backgroundColor: 'rgba(79, 156, 249, 0.15)',
+                            borderRadius: '12px',
+                            px: 1.5,
+                            py: 0.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5
                         }}
                     >
-                        <Star />
+                        <Star sx={{ color: '#4F9CF9', fontSize: '0.9rem' }} />
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: '#4FC3F7',
+                                fontWeight: 600,
+                                letterSpacing: '0.02em',
+                                fontSize: '0.75rem'
+                            }}
+                        >
+                            MOST POPULAR
+                        </Typography>
                     </Box>
                 )}
                 <Typography
                     variant="h3"
                     component="h2"
                     sx={{
-                        mb: 2,
+                        mb: 0.5,
                         color: isPopular ? '#4F9CF9' : 'white',
                         fontWeight: 'bold',
-                        fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' }
+                        fontSize: { xs: '1.6rem', sm: '1.75rem', md: '2.2rem' }
                     }}
                 >
                     {tier.name}
                 </Typography>
                 <Typography
                     variant="body1"
-                    sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.7)' }}
+                    sx={{
+                        mb: 2,
+                        color: isPopular ? 'rgba(79, 195, 247, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+                        fontWeight: 500,
+                        fontSize: { xs: '0.9rem', sm: '0.95rem' }
+                    }}
                 >
                     {tier.description}
                 </Typography>
                 <Typography
                     variant="h4"
                     sx={{
-                        mb: 4,
+                        mb: 3,
                         color: 'white',
-                        fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }
+                        fontSize: { xs: '1.6rem', sm: '1.8rem', md: '2rem' },
+                        fontWeight: 700
                     }}
                 >
                     ${tier.price}
                     <Typography
                         component="span"
                         variant="body1"
-                        sx={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: { xs: '0.9rem', sm: '1rem' } }}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                            ml: 0.5
+                        }}
                     >
                         /month
                     </Typography>
@@ -109,12 +138,30 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     {tier.features.map((feature, index) => (
                         <Box
                             key={index}
-                            sx={{ display: 'flex', alignItems: 'center', mb: 2 }}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                mb: 2,
+                                ...(index < 2 && {
+                                    pb: 1.5,
+                                    borderBottom: index === 0 ? '1px dashed rgba(255, 255, 255, 0.1)' : 'none'
+                                })
+                            }}
                         >
-                            <Check sx={{ mr: 1, color: '#4F9CF9' }} />
+                            <Check sx={{
+                                mr: 1.5,
+                                color: isPopular ? '#00ffcc' : '#4F9CF9',
+                                mt: 0.2,
+                                fontSize: '1.1rem'
+                            }} />
                             <Typography
                                 variant="body2"
-                                sx={{ color: 'rgba(255, 255, 255, 0.8)' }}
+                                sx={{
+                                    color: index < 2 ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.8)',
+                                    fontWeight: index < 2 ? 500 : 400,
+                                    lineHeight: 1.3,
+                                    fontSize: { xs: '0.85rem', sm: '0.9rem' }
+                                }}
                             >
                                 {feature}
                             </Typography>
@@ -126,19 +173,20 @@ const PricingTier = ({ tier, isPopular, delay }) => {
                     to="/signup"
                     variant="outlined"
                     sx={{
-                        mt: 4,
+                        mt: 3,
                         position: 'relative',
                         zIndex: 2,
                         background: isPopular
                             ? 'linear-gradient(45deg, #4F9CF9, #00B4DB)'
                             : 'rgba(255, 255, 255, 0.05)',
-                        color: 'white',
-                        py: { xs: 1.25, sm: 1.5 },
+                        color: isPopular ? 'white' : 'rgba(255, 255, 255, 0.9)',
+                        py: { xs: 1.25, sm: 1.4 },
                         borderRadius: '50px',
-                        fontSize: { xs: '0.9rem', sm: '1rem' },
-                        fontWeight: 500,
+                        fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                        fontWeight: 600,
                         letterSpacing: '0.03em',
                         transition: 'all 0.3s ease-in-out',
+                        border: isPopular ? 'none' : '1px solid rgba(255, 255, 255, 0.2)',
                         '&:hover': {
                             background: isPopular
                                 ? 'linear-gradient(45deg, #00B4DB, #4F9CF9)'
@@ -165,15 +213,15 @@ function PricingPage() {
         triggerOnce: true
     });
 
-    // Updated pricing tiers
+    // Updated pricing tiers for educational focus
     const tiers = [
         {
             name: 'Free',
             price: '0',
-            description: 'Just getting started',
+            description: 'Perfect for individual educators',
             features: [
-                '1 Bridge',
-                '30 Minutes Monthly Usage',
+                '1 AI Teaching Assistant',
+                '30 Minutes of AI interactions per month',
                 'Email Support',
                 'Basic Customization',
             ],
@@ -181,23 +229,26 @@ function PricingPage() {
         {
             name: 'Standard',
             price: '99',
-            description: 'Ideal for small teams',
+            description: 'Ideal for course creators',
             features: [
-                'Up to 10 Bridges',
-                '300 Minutes Monthly Usage',
-                'Email Support',
-                'Basic Customization',
+                'Up to 10 AI Teaching Assistants',
+                '300 Minutes of AI interactions per month',
+                'Priority Email Support',
+                'Advanced Customization',
+                'Basic Student Analytics',
             ],
         },
         {
             name: 'Premium',
             price: '249',
-            description: 'Best for larger teams',
+            description: 'Best for institutions',
             features: [
-                'Unlimited Bridges',
-                '1000 Minutes Monthly Usage',
+                'Unlimited AI Teaching Assistants',
+                '1000 Minutes of AI interactions per month',
                 'Priority Support',
-                'Advanced Customization',
+                'Complete Customization',
+                'Comprehensive Student Analytics',
+                'LMS Integration',
             ],
         },
     ];
@@ -210,7 +261,7 @@ function PricingPage() {
                     background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
                     position: 'relative',
                     overflow: 'hidden',
-                    py: { xs: 8, md: 12 },
+                    py: { xs: 4, md: 6 },
                     '&::before': {
                         content: '""',
                         position: 'absolute',
@@ -273,32 +324,36 @@ function PricingPage() {
                             component="h1"
                             align="center"
                             sx={{
-                                mb: { xs: 4, md: 6 },
+                                mb: { xs: 2.5, md: 3 },
                                 fontFamily: 'Satoshi',
-                                fontWeight: 600,
-                                fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
+                                fontWeight: 700,
+                                fontSize: { xs: '1.8rem', sm: '2.2rem', md: '3.0rem' },
                                 color: 'white',
                                 textTransform: 'none',
                                 letterSpacing: '-0.02em',
-                                lineHeight: 1.1,
+                                lineHeight: 1.3,
+                                paddingBottom: '0.2em',
+                                background: 'linear-gradient(90deg, #FFFFFF 30%, #4FC3F7 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
                                 position: 'relative',
                                 textShadow: '0 0 40px rgba(34, 211, 238, 0.25)',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
-                                    bottom: '-16px',
+                                    bottom: 0,
                                     left: '50%',
                                     transform: 'translateX(-50%)',
                                     width: '120px',
-                                    height: '1px',
+                                    height: '2px',
                                     background:
-                                        'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                                        'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.5), transparent)',
                                     borderRadius: '1px',
-                                    boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)'
+                                    boxShadow: '0 0 10px rgba(34, 211, 238, 0.3)'
                                 }
                             }}
                         >
-                            Choose Your Plan
+                            Pricing for Educators
                         </Typography>
                         <Typography
                             variant="h5"
@@ -306,37 +361,51 @@ function PricingPage() {
                             sx={{
                                 mb: 2,
                                 fontFamily: 'Satoshi',
-                                color: 'rgba(255, 255, 255, 0.9)',
+                                color: 'rgba(255, 255, 255, 0.95)',
                                 maxWidth: '800px',
                                 mx: 'auto',
-                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.4rem' },
+                                fontSize: { xs: '1.1rem', sm: '1.2rem', md: '1.3rem' },
                                 fontWeight: 500,
                                 letterSpacing: '0.01em',
-                                lineHeight: 1.6
+                                lineHeight: 1.5
                             }}
                         >
-                            Select the perfect plan to supercharge your sales and demand generation.
+                            Choose the perfect plan to transform your teaching and enhance student engagement.
                         </Typography>
-                        <Typography
-                            align="center"
+
+                        <Box
                             sx={{
-                                mb: 8,
-                                fontFamily: 'Satoshi',
-                                color: '#4FC3F7',
-                                maxWidth: '800px',
+                                p: { xs: 1.5, sm: 2 },
+                                mb: 3,
+                                maxWidth: '850px',
                                 mx: 'auto',
-                                fontSize: { xs: '0.875rem', sm: '0.95rem', md: '1rem' },
-                                fontWeight: 400,
-                                letterSpacing: '0.02em',
-                                textShadow: '0 0 10px rgba(79, 195, 247, 0.3)',
-                                opacity: 0.9
+                                backgroundColor: 'rgba(79, 195, 247, 0.08)',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(79, 195, 247, 0.2)',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
                             }}
                         >
-                            Additional minutes are billed at $0.12/minute
-                        </Typography>
+                            <Typography
+                                align="center"
+                                sx={{
+                                    fontFamily: 'Satoshi',
+                                    color: '#4FC3F7',
+                                    maxWidth: '800px',
+                                    mx: 'auto',
+                                    fontSize: { xs: '0.9rem', sm: '0.95rem', md: '1rem' },
+                                    fontWeight: 500,
+                                    letterSpacing: '0.02em',
+                                    textShadow: '0 0 8px rgba(79, 195, 247, 0.2)',
+                                    lineHeight: 1.5
+                                }}
+                            >
+                                <strong>How it works:</strong> Each plan includes a fixed number of AI Teaching Assistants.
+                                AI interaction minutes are allocated monthly and additional minutes are billed at $0.12/minute.
+                            </Typography>
+                        </Box>
                     </motion.div>
 
-                    <Grid container spacing={{ xs: 3, sm: 4, md: 5 }} sx={{ position: 'relative', zIndex: 2 }}>
+                    <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} sx={{ position: 'relative', zIndex: 2 }}>
                         {tiers.map((tier, index) => (
                             <Grid item xs={12} sm={6} md={4} key={tier.name}>
                                 <PricingTier
@@ -349,23 +418,33 @@ function PricingPage() {
                     </Grid>
 
                     {/* Enterprise/Custom solutions text */}
-                    <Box sx={{ textAlign: 'center', mt: 6, mb: 4 }}>
+                    <Box
+                        sx={{
+                            textAlign: 'center',
+                            mt: 6,
+                            mb: 4,
+                            p: 3,
+                            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                            backdropFilter: 'blur(8px)',
+                        }}
+                    >
                         <Typography
-                            variant="h6"
+                            variant="h5"
                             sx={{
-                                color: 'rgba(255, 255, 255, 0.8)',
-                                fontSize: { xs: '1rem', sm: '1.1rem' },
-                                fontWeight: 400,
+                                color: 'white',
+                                fontSize: { xs: '1.2rem', sm: '1.35rem' },
+                                fontWeight: 600,
+                                mb: 2
                             }}
                         >
-                            For Enterprise or Custom solutions please{' '}
+                            For Educational Institutions or Custom Solutions please{' '}
                             <Link
                                 component={RouterLink}
                                 to="/contact"
                                 sx={{
                                     color: '#00ffcc',
                                     textDecoration: 'none',
-                                    fontWeight: 500,
+                                    fontWeight: 600,
                                     transition: 'all 0.2s ease',
                                     '&:hover': {
                                         color: '#22d3ee',
@@ -376,6 +455,49 @@ function PricingPage() {
                                 Contact Us
                             </Link>
                         </Typography>
+
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.85)',
+                                maxWidth: '850px',
+                                mx: 'auto',
+                                px: 2,
+                                mb: 2,
+                                lineHeight: 1.6,
+                                fontSize: { xs: '0.95rem', sm: '1rem' }
+                            }}
+                        >
+                            We offer a range of service-based solutions including <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Implementation Services</span> for LMS integration,{' '}
+                            <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Content Development</span> to transform your materials into interactive experiences,{' '}
+                            and <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Managed Solutions</span> with dedicated support for educational institutions.
+                        </Typography>
+
+                        <Button
+                            component={RouterLink}
+                            to="/contact"
+                            variant="outlined"
+                            sx={{
+                                mt: 1.5,
+                                background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
+                                color: '#001E3C',
+                                py: { xs: 1.25, sm: 1.4 },
+                                px: 4,
+                                borderRadius: '50px',
+                                fontSize: { xs: '0.9rem', sm: '1rem' },
+                                fontWeight: 600,
+                                letterSpacing: '0.03em',
+                                transition: 'all 0.3s ease-in-out',
+                                border: 'none',
+                                '&:hover': {
+                                    background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
+                                    transform: 'scale(1.05)',
+                                    boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)',
+                                },
+                            }}
+                        >
+                            Learn About Our Services
+                        </Button>
                     </Box>
                 </Container>
 

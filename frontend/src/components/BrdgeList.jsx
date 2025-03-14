@@ -12,7 +12,7 @@ import {
     Tooltip,
     Typography
 } from '@mui/material';
-import { Eye, Pencil, Share2, Trash2, Globe, Lock } from 'lucide-react';
+import { Eye, Pencil, Share2, Trash2, Globe, Lock, BookOpen, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Unified theme colors (matching BrdgeListPage)
@@ -169,7 +169,10 @@ const BrdgeList = ({
                             transition={{ type: "tween", duration: 0.2 }}
                         >
                             <TableCell sx={styles.cell}>
-                                {brdge.name}
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <BookOpen size={16} style={{ color: '#22D3EE' }} />
+                                    {brdge.name}
+                                </Box>
                             </TableCell>
                             <TableCell sx={styles.cell}>
                                 <StatusChip shareable={brdge.shareable} />
@@ -197,7 +200,7 @@ const BrdgeList = ({
                                             <Pencil size={18} />
                                         </IconButton>
                                     </Tooltip>
-                                    <Tooltip title="Share">
+                                    <Tooltip title="Share with Students">
                                         <IconButton
                                             onClick={(e) => onShare(e, brdge)}
                                             size="small"

@@ -32,7 +32,7 @@ import {
     TableRow,
     TableCell,
 } from '@mui/material';
-import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2 } from 'lucide-react';
+import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap } from 'lucide-react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { motion } from 'framer-motion';
 import { api } from '../api';
@@ -305,7 +305,7 @@ function BrdgeListPage() {
             setBrdges(response.data.brdges || []);
             setLoading(false);
         } catch (error) {
-            setError('Failed to fetch Bridges');
+            setError('Failed to fetch AI Teaching Assistants');
             setLoading(false);
         }
     };
@@ -375,11 +375,11 @@ function BrdgeListPage() {
         try {
             await api.delete(`/brdges/${brdgeToDelete.id}`);
             setBrdges(brdges.filter((b) => b.id !== brdgeToDelete.id));
-            showSnackbar('Bridge deleted successfully', 'success');
+            showSnackbar('AI Teaching Assistant deleted successfully', 'success');
             setDeleteDialogOpen(false);
             fetchStats(); // Refresh stats after deletion
         } catch (error) {
-            showSnackbar('Failed to delete Bridge', 'error');
+            showSnackbar('Failed to delete AI Teaching Assistant', 'error');
         }
     };
 
@@ -453,7 +453,7 @@ function BrdgeListPage() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <User size={18} className="text-cyan-400" />
                             <Box>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Users</Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Students</Typography>
                                 <Typography variant="h6" sx={{ color: 'white' }}>{totalUsers}</Typography>
                             </Box>
                         </Box>
@@ -471,7 +471,7 @@ function BrdgeListPage() {
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <LineChart size={18} className="text-cyan-400" />
                             <Box>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Avg. Interactions/User</Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Avg. Interactions/Student</Typography>
                                 <Typography variant="h6" sx={{ color: 'white' }}>{averageInteractionsPerUser}</Typography>
                             </Box>
                         </Box>
@@ -505,7 +505,7 @@ function BrdgeListPage() {
                                 <Box sx={{ flexGrow: 1 }}>
                                     <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
                                         <User size={18} className="text-cyan-400" />
-                                        {userData.isAnonymous ? 'Anonymous User' : `User ${userId}`}
+                                        {userData.isAnonymous ? 'Anonymous Student' : `Student ${userId}`}
                                         {userData.isAnonymous && (
                                             <Chip
                                                 label="Anonymous"
@@ -648,7 +648,7 @@ function BrdgeListPage() {
             }));
 
             showSnackbar(
-                `Bridge is now ${newShareableStatus ? 'public' : 'private'}`,
+                `AI Teaching Assistant is now ${newShareableStatus ? 'public' : 'private'}`,
                 'success'
             );
         } catch (error) {
@@ -663,8 +663,8 @@ function BrdgeListPage() {
             const limitType =
                 userStats.brdges_limit !== 'Unlimited' &&
                     parseInt(userStats.brdges_created) >= parseInt(userStats.brdges_limit)
-                    ? 'bridges'
-                    : 'minutes';
+                    ? 'AI Teaching Assistants'
+                    : 'AI interaction minutes';
             showSnackbar(
                 `You've reached your ${limitType} limit. Upgrade your plan for more!`,
                 'warning'
@@ -747,7 +747,7 @@ function BrdgeListPage() {
         <Box sx={styles.pageContainer}>
             <Container maxWidth="lg">
                 <Typography variant="h4" sx={styles.header}>
-                    Your Bridges
+                    Your AI Teaching Assistants
                 </Typography>
 
                 <Box
@@ -785,7 +785,7 @@ function BrdgeListPage() {
                             }}
                         />
                         <InputBase
-                            placeholder="Search bridges..."
+                            placeholder="Search teaching assistants..."
                             value={searchTerm}
                             onChange={handleSearch}
                             sx={{
@@ -816,10 +816,10 @@ function BrdgeListPage() {
                         <Grid item xs={12} sm={6}>
                             <Box sx={styles.statsCard}>
                                 <Typography variant="subtitle1" sx={{ color: '#22D3EE', mb: 1, fontWeight: 'bold' }}>
-                                    Bridges
+                                    AI Teaching Assistants
                                 </Typography>
                                 <UsageIndicator
-                                    title="Bridges"
+                                    title="AI Teaching Assistants"
                                     current={userStats.brdges_created}
                                     limit={userStats.brdges_limit}
                                 />
@@ -828,10 +828,10 @@ function BrdgeListPage() {
                         <Grid item xs={12} sm={6}>
                             <Box sx={styles.statsCard}>
                                 <Typography variant="subtitle1" sx={{ color: '#22D3EE', mb: 1, fontWeight: 'bold' }}>
-                                    Minutes
+                                    AI Interaction Minutes
                                 </Typography>
                                 <UsageIndicator
-                                    title="Minutes"
+                                    title="AI Interaction Minutes"
                                     current={userStats.minutes_used}
                                     limit={userStats.minutes_limit}
                                 />
@@ -865,7 +865,7 @@ function BrdgeListPage() {
                                 }
                             }}
                         >
-                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Bridge'}
+                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Teaching Assistant'}
                         </Button>
                     </Box>
                 </Box>
@@ -949,7 +949,7 @@ function BrdgeListPage() {
                                 fontWeight: 600,
                                 fontSize: '1.1rem'
                             }}>
-                                Delete Bridge
+                                Delete Teaching Assistant
                             </Typography>
                             <Typography variant="caption" sx={{
                                 color: 'rgba(255, 255, 255, 0.7)',
@@ -996,13 +996,13 @@ function BrdgeListPage() {
                                     fontWeight: 500,
                                     mb: 1
                                 }}>
-                                    Are you sure you want to delete this bridge?
+                                    Are you sure you want to delete this AI Teaching Assistant?
                                 </Typography>
                                 <Typography variant="body2" sx={{
                                     color: 'rgba(255, 255, 255, 0.7)',
                                     fontSize: '0.875rem'
                                 }}>
-                                    This action cannot be undone. All associated data, including conversations and analytics, will be permanently removed.
+                                    This action cannot be undone. All associated data, including student conversations and analytics, will be permanently removed.
                                 </Typography>
                             </Box>
                         </Box>
@@ -1044,7 +1044,7 @@ function BrdgeListPage() {
                                 }
                             }}
                         >
-                            Delete Bridge
+                            Delete Teaching Assistant
                         </Button>
                     </DialogActions>
                 </Dialog>
@@ -1071,7 +1071,7 @@ function BrdgeListPage() {
                         alignItems: 'center',
                         justifyContent: 'space-between'
                     }}>
-                        <Typography variant="h6">Share Bridge</Typography>
+                        <Typography variant="h6">Share Teaching Assistant</Typography>
                         <Typography
                             variant="body2"
                             sx={{
@@ -1116,8 +1116,8 @@ function BrdgeListPage() {
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
                                         {brdgeToShare?.shareable
-                                            ? 'Anyone with the link can view this bridge'
-                                            : 'Only you can view this bridge'}
+                                            ? 'Students with the link can interact with this teaching assistant'
+                                            : 'Only you can view this teaching assistant'}
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -1187,7 +1187,7 @@ function BrdgeListPage() {
                             color: linkCopied ? '#22D3EE' : 'rgba(255, 255, 255, 0.5)',
                             transition: 'all 0.2s ease'
                         }}>
-                            {linkCopied ? 'Link copied!' : 'Click the copy button to copy the link'}
+                            {linkCopied ? 'Link copied!' : 'Click the copy button to copy the link for students'}
                         </Typography>
                         <Button
                             onClick={handleCloseShare}

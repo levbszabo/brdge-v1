@@ -1443,7 +1443,7 @@ const HowItWorksSection = () => {
                                     mx: 'auto',
                                     px: { xs: 4, sm: 6 },
                                     py: { xs: 1.5, sm: 1.5 },
-                                    fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                                    fontSize: { xs: '.90rem', sm: '1.0rem' },
                                     display: 'inline-flex',
                                     '&:hover': {
                                         background: 'linear-gradient(45deg, #00ffdd, #00C4EB)',
@@ -1877,13 +1877,16 @@ const FinalCTA = () => {
                                 to="/signup"
                                 variant="contained"
                                 size="large"
-                                fullWidth // Added fullWidth prop
+                                fullWidth
                                 sx={{
                                     ...createButtonStyles('primary'),
-                                    height: { xs: '54px', sm: '60px' }, // Reduced height on mobile
-                                    fontSize: { xs: '0.95rem', sm: '1.1rem' }, // Smaller font on mobile
-                                    whiteSpace: 'normal', // Allow text to wrap
-                                    lineHeight: 1.2, // Tighter line height
+                                    height: { xs: 'auto', sm: '60px' }, // Changed to auto height on mobile
+                                    minHeight: { xs: '64px', sm: '60px' }, // Added minimum height
+                                    fontSize: { xs: '0.85rem', sm: '1.1rem' }, // Further reduced font size on mobile
+                                    whiteSpace: 'normal',
+                                    lineHeight: 1.2,
+                                    py: { xs: 2, sm: 1.75 }, // Added vertical padding on mobile
+                                    px: { xs: 2, sm: 4 }, // Adjusted horizontal padding
                                 }}
                             >
                                 Create Your AI Teaching Assistant
@@ -1900,15 +1903,18 @@ const FinalCTA = () => {
                                 to="/demos"
                                 variant="outlined"
                                 size="large"
-                                fullWidth // Added fullWidth prop
+                                fullWidth
                                 sx={{
                                     ...createButtonStyles('secondary'),
                                     color: 'white',
                                     borderColor: 'rgba(255,255,255,0.5)',
-                                    height: { xs: '54px', sm: '60px' }, // Reduced height on mobile
-                                    fontSize: { xs: '0.95rem', sm: '1.1rem' }, // Smaller font on mobile
-                                    whiteSpace: 'normal', // Allow text to wrap
-                                    lineHeight: 1.2, // Tighter line height
+                                    height: { xs: 'auto', sm: '60px' }, // Changed to auto height on mobile
+                                    minHeight: { xs: '64px', sm: '60px' }, // Added minimum height
+                                    fontSize: { xs: '0.85rem', sm: '1.1rem' }, // Further reduced font size on mobile
+                                    whiteSpace: 'normal',
+                                    lineHeight: 1.2,
+                                    py: { xs: 2, sm: 1.75 }, // Added vertical padding on mobile
+                                    px: { xs: 2, sm: 4 }, // Adjusted horizontal padding
                                     '&:hover': {
                                         borderColor: 'rgba(255,255,255,0.4)',
                                         backgroundColor: 'rgba(255,255,255,0.05)',

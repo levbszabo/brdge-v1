@@ -3,6 +3,7 @@ import { Box, Typography, Button } from '@mui/material';
 import { motion } from 'framer-motion';
 import AddIcon from '@mui/icons-material/Add';
 import PresentationIcon from '@mui/icons-material/Slideshow';
+import SchoolIcon from '@mui/icons-material/School';
 import { Link as RouterLink } from 'react-router-dom';
 
 const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
@@ -54,7 +55,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                         boxShadow: '0 12px 24px rgba(34, 211, 238, 0.2)',
                         border: '1px solid rgba(34, 211, 238, 0.3)',
                     }}>
-                        <PresentationIcon sx={{
+                        <SchoolIcon sx={{
                             fontSize: { xs: 36, sm: 42 },
                             color: 'white',
                             filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.5))'
@@ -73,7 +74,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                     letterSpacing: '-0.02em',
                     fontFamily: 'Satoshi',
                 }}>
-                    Create Your First Bridge
+                    Create Your First AI Teaching Assistant
                 </Typography>
 
                 <Typography variant="body1" sx={{
@@ -85,7 +86,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                     color: 'rgba(255,255,255,0.7)',
                     fontFamily: 'Satoshi',
                 }}>
-                    Turn your content into an interactive AI experience with your own voice assistant.
+                    Transform your course content into an interactive learning experience with personalized AI teaching assistants for your students.
                 </Typography>
 
                 {canCreate ? (
@@ -116,7 +117,7 @@ const EmptyBrdgeState = ({ onCreateClick, canCreate }) => {
                                 }
                             }}
                         >
-                            Create New Bridge
+                            Create New Teaching Assistant
                         </Button>
                     </motion.div>
                 ) : (

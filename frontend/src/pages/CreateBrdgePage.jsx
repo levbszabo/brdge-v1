@@ -42,7 +42,7 @@ function CreateBrdgePage() {
         { message: "Analyzing video content...", duration: 20000 },
         { message: "Generating transcript...", duration: 15000 },
         { message: "Processing document...", duration: 15000 },
-        { message: "Creating Brdge...", duration: 10000 }
+        { message: "Creating AI Teaching Assistant...", duration: 10000 }
     ];
 
     useEffect(() => {
@@ -81,7 +81,7 @@ function CreateBrdgePage() {
             setName(response.data.name);
         } catch (error) {
             console.error('Error fetching brdge data:', error);
-            setError('Failed to fetch brdge data. Please try again.');
+            setError('Failed to fetch AI Teaching Assistant data. Please try again.');
         }
     };
 
@@ -360,7 +360,7 @@ function CreateBrdgePage() {
 
         // Require screen recording
         if (!screenRecording) {
-            setError('Please record or upload a video presentation');
+            setError('Please record or upload a video presentation for the AI Teaching Assistant');
             setLoading(false);
             setLoadingPhase(0);
             setLoadingMessage('');
@@ -414,11 +414,11 @@ function CreateBrdgePage() {
         try {
             if (id) {
                 await api.put(`/brdges/${id}`, formData);
-                showSnackbar('Brdge updated successfully', 'success');
+                showSnackbar('AI Teaching Assistant updated successfully', 'success');
                 navigate(`/edit/${id}`);
             } else {
                 const response = await api.post('/brdges', formData);
-                showSnackbar('Brdge created successfully', 'success');
+                showSnackbar('AI Teaching Assistant created successfully', 'success');
                 navigate(`/edit/${response.data.brdge.id}`);
             }
         } catch (error) {
@@ -784,7 +784,7 @@ function CreateBrdgePage() {
                     transition={{ duration: 0.5 }}
                 >
                     <h1 className="text-4xl font-semibold text-white mb-12 text-center relative">
-                        Create New Bridge
+                        Create New AI Teaching Assistant
                         <div className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-40 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
                     </h1>
 
@@ -800,13 +800,13 @@ function CreateBrdgePage() {
                                 {/* Bridge Name with improved styling */}
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        Bridge Name
+                                        AI Teaching Assistant Name
                                     </label>
                                     <input
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        placeholder="Enter a name for your Bridge"
+                                        placeholder="Enter a name for your AI Teaching Assistant"
                                         required
                                         className="w-full bg-gray-900/40 border border-gray-700/50 rounded-lg 
                                             px-4 py-2.5 text-base text-gray-100
@@ -842,8 +842,8 @@ function CreateBrdgePage() {
                                         </div>
                                         <div className="text-gray-400/70 text-xs italic">
                                             {isMobile
-                                                ? "Adding a PDF enhances your Brdge's understanding and improves its ability to assist your audience"
-                                                : "Adding a PDF enhances your Brdge's understanding and improves its ability to assist your audience"
+                                                ? "Adding a PDF enhances your AI Teaching Assistant's understanding and improves its ability to assist your audience"
+                                                : "Adding a PDF enhances your AI Teaching Assistant's understanding and improves its ability to assist your audience"
                                             }
                                         </div>
                                     </div>
@@ -890,7 +890,7 @@ function CreateBrdgePage() {
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             ) : (
                                                 <>
-                                                    Create Bridge
+                                                    Create AI Teaching Assistant
                                                     <ArrowRight className="w-4 h-4" />
                                                 </>
                                             )}

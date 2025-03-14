@@ -41,6 +41,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import CloseIcon from '@mui/icons-material/Close';
 import { motion } from 'framer-motion';
+import { Link as RouterLink } from 'react-router-dom';
 
 const typography = {
     heading: {
@@ -634,7 +635,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                         fontSize: '0.75rem',
                                         mt: 0.5,
                                     }}>
-                                        $0.12/min above plan limit
+                                        $0.12/min for additional AI interaction minutes
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -734,7 +735,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 },
                                 {
                                     title: 'Preserved Content',
-                                    description: 'Your brdges will be preserved but will become inactive',
+                                    description: 'Your AI Teaching Assistants will be preserved but will become inactive',
                                     icon: <SaveIcon />
                                 },
                                 {
@@ -744,7 +745,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 },
                                 {
                                     title: 'Free Tier Access',
-                                    description: 'Free tier limits will apply after cancellation',
+                                    description: 'Free tier limits will apply after cancellation (1 AI Teaching Assistant, 30 minutes/month)',
                                     icon: <LockOpenIcon />
                                 }
                             ].map((item, index) => (
@@ -927,7 +928,7 @@ function UsageStats({ currentPlan }) {
         const minutesUsed = Math.round(currentStats.minutes_used);
         const minutesLimit = currentStats.minutes_limit;
 
-        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} brdges and ${minutesUsed}/${minutesLimit} minutes`;
+        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} AI Teaching Assistants and ${minutesUsed}/${minutesLimit} minutes`;
     };
 
     return (
@@ -951,7 +952,7 @@ function UsageStats({ currentPlan }) {
                         <Box sx={{ mb: 3 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    Bridges Used
+                                    AI Teaching Assistants Used
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: 'white' }}>
                                     {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
@@ -976,7 +977,7 @@ function UsageStats({ currentPlan }) {
                         <Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    Minutes Used
+                                    AI Interaction Minutes Used
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: 'white' }}>
                                     {stats.minutes_used} / {stats.minutes_limit}
@@ -1224,8 +1225,8 @@ function UserProfilePage() {
             title: "Free",
             price: "$0/month",
             features: [
-                "1 Bridge",
-                "30 Minutes Monthly Usage",
+                "1 AI Teaching Assistant",
+                "30 AI Interaction Minutes Monthly",
                 "Email Support",
                 "Basic Customization"
             ],
@@ -1237,10 +1238,11 @@ function UserProfilePage() {
             title: "Standard",
             price: "$99/month",
             features: [
-                "Up to 10 Bridges",
-                "300 Minutes Monthly Usage",
-                "Email Support",
-                "Basic Customization"
+                "Up to 10 AI Teaching Assistants",
+                "300 AI Interaction Minutes Monthly",
+                "Priority Email Support",
+                "Advanced Customization",
+                "Basic Student Analytics"
             ],
             isActive: currentPlan === 'standard',
             onClick: currentPlan === 'pro' ? handleManageSubscription : handleStandardUpgrade,
@@ -1250,10 +1252,12 @@ function UserProfilePage() {
             title: "Premium",
             price: "$249/month",
             features: [
-                "Unlimited Bridges",
-                "1000 Minutes Monthly Usage",
+                "Unlimited AI Teaching Assistants",
+                "1000 AI Interaction Minutes Monthly",
                 "Priority Support",
-                "Advanced Customization"
+                "Complete Customization",
+                "Comprehensive Student Analytics",
+                "LMS Integration"
             ],
             isActive: currentPlan === 'pro',
             onClick: handlePremiumUpgrade,
@@ -1265,11 +1269,11 @@ function UserProfilePage() {
     const getSubscriptionDescription = (currentPlan) => {
         switch (currentPlan) {
             case 'standard':
-                return "You're on our Standard plan with 300 minutes/month. Upgrade to Premium for unlimited bridges!";
+                return "You're on our Standard plan with 300 AI interaction minutes/month. Upgrade to Premium for unlimited teaching assistants!";
             case 'pro':
-                return "You're on our Premium plan with 1000 minutes/month and unlimited bridges!";
+                return "You're on our Premium plan with 1000 AI interaction minutes/month and unlimited teaching assistants!";
             default:
-                return "Upgrade your plan to get more minutes and bridges.";
+                return "Upgrade your plan to create more AI teaching assistants and get more interaction minutes.";
         }
     };
 
@@ -1382,11 +1386,11 @@ function UserProfilePage() {
                                     {userProfile?.email}
                                 </Typography>
                                 <Typography sx={{ ...typography.caption, mb: 3 }}>
-                                    Member since {formatDate(userProfile?.account?.created_at)}
+                                    Educator since {formatDate(userProfile?.account?.created_at)}
                                 </Typography>
 
                                 <Button
-                                    component={Link}
+                                    component={RouterLink}
                                     to="/contact"
                                     sx={{
                                         color: 'rgba(255, 255, 255, 0.5)',
@@ -1474,7 +1478,7 @@ function UserProfilePage() {
                                             mb: 1,
                                             letterSpacing: '-0.02em'
                                         }}>
-                                            Choose Your Plan
+                                            Your Teaching Plan
                                         </Typography>
                                         <Typography sx={{
                                             fontSize: '1.1rem',
@@ -1674,7 +1678,26 @@ function UserProfilePage() {
                                         }
                                     }}
                                 >
-                                    Standard and Premium plans are billed at <span>$0.12 per minute</span> for usage above the included monthly minutes.
+                                    Standard and Premium plans are billed at <span>$0.12 per minute</span> for AI interaction usage above the included monthly minutes.
+                                </Typography>
+
+                                <Typography
+                                    sx={{
+                                        mt: 2,
+                                        textAlign: 'center',
+                                        color: 'rgba(255, 255, 255, 0.6)',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    For educational institutions or custom solutions, please <RouterLink
+                                        to="/contact"
+                                        style={{
+                                            color: '#22D3EE',
+                                            textDecoration: 'none'
+                                        }}
+                                    >
+                                        contact us
+                                    </RouterLink> to discuss tailored plans.
                                 </Typography>
                             </Box>
                         </Paper>

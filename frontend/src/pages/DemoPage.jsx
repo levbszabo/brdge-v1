@@ -252,7 +252,7 @@ const DemoPage = () => {
                             mb: { xs: 2, md: 3 },
                             fontFamily: 'Satoshi',
                             fontWeight: '600',
-                            fontSize: { xs: '2rem', sm: '2.75rem', md: '3.5rem' },
+                            fontSize: { xs: '1.8rem', sm: '2.4rem', md: '3rem' },
                             color: 'white',
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
@@ -274,24 +274,24 @@ const DemoPage = () => {
                             },
                         }}
                     >
-                        Interactive Education Demos
+                        See Your Course Come Alive with AI
                     </Typography>
 
                     <Typography
                         variant="h5"
                         align="center"
                         sx={{
-                            mb: { xs: 5, md: 7 },
+                            mb: { xs: 4, md: 6 },
                             fontFamily: 'Satoshi',
                             color: 'rgba(255, 255, 255, 0.8)',
                             maxWidth: '800px',
                             mx: 'auto',
-                            fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+                            fontSize: { xs: '0.95rem', sm: '1rem', md: '1.15rem' },
                             px: { xs: 2, sm: 0 },
-                            lineHeight: 1.6,
+                            lineHeight: 1.5,
                         }}
                     >
-                        Experience how Brdge AI transforms static educational content into dynamic learning conversations. Try our interactive demo and see how AI-powered teaching assistants can enhance student engagement and understanding.
+                        Give your students instant, personalized guidance in your voice, available 24/7. Transform your teaching expertise into an AI assistant that answers questions, boosts completion rates by 65%, and saves you 15+ hours weekly on repetitive explanations.
                     </Typography>
 
                     {/* Side by side layout */}
@@ -708,8 +708,8 @@ const DemoPage = () => {
 
             {/* Keyframes for animations */}
             <style>{`
-                @keyframes float {
-                    0% { transform: translateY(0px); }
+        @keyframes float {
+          0% { transform: translateY(0px); }
                     50% { transform: translateY(20px); }
                     100% { transform: translateY(0px); }
                 }
@@ -717,8 +717,8 @@ const DemoPage = () => {
                     0% { opacity: 0.4; transform: scale(1); }
                     50% { opacity: 0.7; transform: scale(1.05); }
                     100% { opacity: 0.4; transform: scale(1); }
-                }
-            `}</style>
+        }
+      `}</style>
         </Box>
     );
 };
