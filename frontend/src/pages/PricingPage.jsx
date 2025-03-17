@@ -220,7 +220,7 @@ function PricingPage() {
             price: '0',
             description: 'Perfect for individual educators',
             features: [
-                '1 Course with up to 3 Modules',
+                '1 Course with 1 Module',
                 '30 Minutes of Student Engagement per month',
                 'Email Support',
                 'Basic Customization',
@@ -231,7 +231,7 @@ function PricingPage() {
             price: '99',
             description: 'Ideal for course creators',
             features: [
-                'Up to 10 Courses or Modules',
+                '1 Course with up to 10 Modules',
                 '300 Minutes of Student Engagement per month',
                 'Priority Email Support',
                 'Advanced Customization',
@@ -353,7 +353,7 @@ function PricingPage() {
                                 }
                             }}
                         >
-                            Pricing for Educators
+                            Pricing for Course Creators
                         </Typography>
                         <Typography
                             variant="h5"
@@ -370,7 +370,7 @@ function PricingPage() {
                                 lineHeight: 1.5
                             }}
                         >
-                            Choose the perfect plan to transform your teaching and enhance student engagement.
+                            Choose the perfect plan to create interactive courses and enhance student engagement.
                         </Typography>
 
                         <Box
@@ -469,7 +469,7 @@ function PricingPage() {
                             }}
                         >
                             We offer a range of service-based solutions including <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Implementation Services</span> for LMS integration,{' '}
-                            <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Content Development</span> to transform your materials into interactive experiences,{' '}
+                            <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Course Development</span> to transform your materials into interactive experiences,{' '}
                             and <span style={{ color: '#4F9CF9', fontWeight: 600 }}>Managed Solutions</span> with dedicated support for educational institutions.
                         </Typography>
 

@@ -635,7 +635,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                         fontSize: '0.75rem',
                                         mt: 0.5,
                                     }}>
-                                        $0.12/min for additional AI interaction minutes
+                                        $0.12/min for additional student engagement minutes
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -735,7 +735,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 },
                                 {
                                     title: 'Preserved Content',
-                                    description: 'Your AI Teaching Assistants will be preserved but will become inactive',
+                                    description: 'Your course modules will be preserved but will become inactive',
                                     icon: <SaveIcon />
                                 },
                                 {
@@ -745,7 +745,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 },
                                 {
                                     title: 'Free Tier Access',
-                                    description: 'Free tier limits will apply after cancellation (1 AI Teaching Assistant, 30 minutes/month)',
+                                    description: 'Free tier limits will apply after cancellation (1 Course with 1 Module, 30 minutes/month)',
                                     icon: <LockOpenIcon />
                                 }
                             ].map((item, index) => (
@@ -928,7 +928,7 @@ function UsageStats({ currentPlan }) {
         const minutesUsed = Math.round(currentStats.minutes_used);
         const minutesLimit = currentStats.minutes_limit;
 
-        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} AI Teaching Assistants and ${minutesUsed}/${minutesLimit} minutes`;
+        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} Courses/Modules and ${minutesUsed}/${minutesLimit} engagement minutes`;
     };
 
     return (
@@ -952,7 +952,7 @@ function UsageStats({ currentPlan }) {
                         <Box sx={{ mb: 3 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    AI Teaching Assistants Used
+                                    Course Modules
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: 'white' }}>
                                     {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
@@ -977,7 +977,7 @@ function UsageStats({ currentPlan }) {
                         <Box>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                 <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    AI Interaction Minutes Used
+                                    AI Interaction Minutes
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: 'white' }}>
                                     {stats.minutes_used} / {stats.minutes_limit}
@@ -1225,8 +1225,8 @@ function UserProfilePage() {
             title: "Free",
             price: "$0/month",
             features: [
-                "1 AI Teaching Assistant",
-                "30 AI Interaction Minutes Monthly",
+                "1 Course with 1 Module",
+                "30 Student Engagement Minutes Monthly",
                 "Email Support",
                 "Basic Customization"
             ],
@@ -1238,8 +1238,8 @@ function UserProfilePage() {
             title: "Standard",
             price: "$99/month",
             features: [
-                "Up to 10 AI Teaching Assistants",
-                "300 AI Interaction Minutes Monthly",
+                "1 Course with up to 10 Modules",
+                "300 Student Engagement Minutes Monthly",
                 "Priority Email Support",
                 "Advanced Customization",
                 "Basic Student Analytics"
@@ -1252,8 +1252,8 @@ function UserProfilePage() {
             title: "Premium",
             price: "$249/month",
             features: [
-                "Unlimited AI Teaching Assistants",
-                "1000 AI Interaction Minutes Monthly",
+                "Unlimited Courses and Modules",
+                "1000 Student Engagement Minutes Monthly",
                 "Priority Support",
                 "Complete Customization",
                 "Comprehensive Student Analytics",
@@ -1269,11 +1269,11 @@ function UserProfilePage() {
     const getSubscriptionDescription = (currentPlan) => {
         switch (currentPlan) {
             case 'standard':
-                return "You're on our Standard plan with 300 AI interaction minutes/month. Upgrade to Premium for unlimited teaching assistants!";
+                return "You're on our Standard plan with 300 student engagement minutes/month. Upgrade to Premium for unlimited courses and modules!";
             case 'pro':
-                return "You're on our Premium plan with 1000 AI interaction minutes/month and unlimited teaching assistants!";
+                return "You're on our Premium plan with 1000 student engagement minutes/month and unlimited courses and modules!";
             default:
-                return "Upgrade your plan to create more AI teaching assistants and get more interaction minutes.";
+                return "Upgrade your plan to create more courses and get more student engagement minutes.";
         }
     };
 
@@ -1642,6 +1642,22 @@ function UserProfilePage() {
                                                                                 (tier.title === 'Premium' && currentPlan !== 'pro') ? 'Upgrade' :
                                                                                     'Select Plan'}
                                                             </Button>
+
+                                                            {/* Show upgrade benefits */}
+                                                            {!tier.isActive && shouldShowUpgradeButton(currentPlan, tier.tier) && (
+                                                                <Typography
+                                                                    sx={{
+                                                                        fontSize: '0.8rem',
+                                                                        color: 'rgba(255, 255, 255, 0.5)',
+                                                                        mt: 1.5,
+                                                                        textAlign: 'center',
+                                                                        fontStyle: 'italic'
+                                                                    }}
+                                                                >
+                                                                    {tier.tier === 'standard' ? '+1 course with up to 10 modules, +270 minutes' : '+unlimited courses/modules, +700 minutes'}
+                                                                </Typography>
+                                                            )}
+
                                                             {paymentError && (
                                                                 <Typography
                                                                     color="error"
