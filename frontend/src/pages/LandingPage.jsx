@@ -1046,7 +1046,7 @@ const HeroSection = () => {
                 >
                     {[
                         {
-                            text: "Create AI tutors that answer student questions 24/7",
+                            text: "Create AI tutors that answer student questions in your voice",
                             icon: "🎓"
                         },
                         {

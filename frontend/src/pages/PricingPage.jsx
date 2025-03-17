@@ -220,8 +220,8 @@ function PricingPage() {
             price: '0',
             description: 'Perfect for individual educators',
             features: [
-                '1 AI Teaching Assistant',
-                '30 Minutes of AI interactions per month',
+                '1 Course with up to 3 Modules',
+                '30 Minutes of Student Engagement per month',
                 'Email Support',
                 'Basic Customization',
             ],
@@ -231,8 +231,8 @@ function PricingPage() {
             price: '99',
             description: 'Ideal for course creators',
             features: [
-                'Up to 10 AI Teaching Assistants',
-                '300 Minutes of AI interactions per month',
+                'Up to 10 Courses or Modules',
+                '300 Minutes of Student Engagement per month',
                 'Priority Email Support',
                 'Advanced Customization',
                 'Basic Student Analytics',
@@ -243,8 +243,8 @@ function PricingPage() {
             price: '249',
             description: 'Best for institutions',
             features: [
-                'Unlimited AI Teaching Assistants',
-                '1000 Minutes of AI interactions per month',
+                'Unlimited Courses and Modules',
+                '1000 Minutes of Student Engagement per month',
                 'Priority Support',
                 'Complete Customization',
                 'Comprehensive Student Analytics',
@@ -399,8 +399,8 @@ function PricingPage() {
                                     lineHeight: 1.5
                                 }}
                             >
-                                <strong>How it works:</strong> Each plan includes a fixed number of AI Teaching Assistants.
-                                AI interaction minutes are allocated monthly and additional minutes are billed at $0.12/minute.
+                                <strong>How it works:</strong> Each plan includes a fixed number of courses and interactive modules.
+                                Student engagement minutes are allocated monthly and additional minutes are billed at $0.12/minute.
                             </Typography>
                         </Box>
                     </motion.div>

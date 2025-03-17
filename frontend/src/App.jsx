@@ -12,6 +12,7 @@ import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
 import DemoPage from './pages/DemoPage';
+import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
@@ -39,7 +40,7 @@ function Layout({ children }) {
   const location = useLocation();
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact'];
+  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services'];
 
   // Check if the current path is a viewBridge route
   const isViewBrdgePath = (path) => {
@@ -125,6 +126,7 @@ function App() {
                 <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
                 <Route path="/b/:publicId" element={<ViewBrdgePage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                <Route path="/services" element={<ServicesPage />} />
                 <Route
                   path="/home"
                   element={
