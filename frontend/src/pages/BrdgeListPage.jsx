@@ -41,6 +41,7 @@ import { useSnackbar } from '../utils/snackbar';
 import BrdgeList from '../components/BrdgeList';
 import EmptyBrdgeState from '../components/EmptyBrdgeState';
 import UsageIndicator from '../components/UsageIndicator';
+import CourseList from '../components/CourseList';
 
 // Unified theme colors
 const theme = {
@@ -229,12 +230,17 @@ const styles = {
 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
+    const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleteCourseDialogOpen, setDeleteCourseDialogOpen] = useState(false);
     const [shareDialogOpen, setShareDialogOpen] = useState(false);
+    const [shareCourseDialogOpen, setShareCourseDialogOpen] = useState(false);
     const [brdgeToDelete, setBrdgeToDelete] = useState(null);
+    const [courseToDelete, setCourseToDelete] = useState(null);
     const [brdgeToShare, setBrdgeToShare] = useState(null);
+    const [courseToShare, setCourseToShare] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [orderBy, setOrderBy] = useState('updated_at');
     const [orderDirection, setOrderDirection] = useState('desc');
@@ -249,12 +255,15 @@ function BrdgeListPage() {
     const [loadingConversations, setLoadingConversations] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
     const [order, setOrder] = useState('desc');
+    const [selectedModules, setSelectedModules] = useState([]);
+    const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
 
     useEffect(() => {
         fetchBrdges();
+        fetchCourses();
         fetchStats();
     }, []);
 
@@ -294,6 +303,21 @@ function BrdgeListPage() {
         }
     };
 
+    const fetchCourses = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+            const response = await api.get('/courses');
+            setCourses(response.data.courses || []);
+        } catch (error) {
+            console.error('Error fetching courses:', error);
+            showSnackbar('Failed to fetch courses', 'error');
+        }
+    };
+
     const fetchBrdges = async () => {
         try {
             const token = getAuthToken();
@@ -305,7 +329,7 @@ function BrdgeListPage() {
             setBrdges(response.data.brdges || []);
             setLoading(false);
         } catch (error) {
-            setError('Failed to fetch AI Teaching Assistants');
+            setError('Failed to fetch AI Modules');
             setLoading(false);
         }
     };
@@ -375,11 +399,11 @@ function BrdgeListPage() {
         try {
             await api.delete(`/brdges/${brdgeToDelete.id}`);
             setBrdges(brdges.filter((b) => b.id !== brdgeToDelete.id));
-            showSnackbar('AI Teaching Assistant deleted successfully', 'success');
+            showSnackbar('AI Module deleted successfully', 'success');
             setDeleteDialogOpen(false);
             fetchStats(); // Refresh stats after deletion
         } catch (error) {
-            showSnackbar('Failed to delete AI Teaching Assistant', 'error');
+            showSnackbar('Failed to delete AI Module', 'error');
         }
     };
 
@@ -648,7 +672,7 @@ function BrdgeListPage() {
             }));
 
             showSnackbar(
-                `AI Teaching Assistant is now ${newShareableStatus ? 'public' : 'private'}`,
+                `AI Module is now ${newShareableStatus ? 'public' : 'private'}`,
                 'success'
             );
         } catch (error) {
@@ -663,7 +687,7 @@ function BrdgeListPage() {
             const limitType =
                 userStats.brdges_limit !== 'Unlimited' &&
                     parseInt(userStats.brdges_created) >= parseInt(userStats.brdges_limit)
-                    ? 'AI Teaching Assistants'
+                    ? 'AI Modules'
                     : 'AI interaction minutes';
             showSnackbar(
                 `You've reached your ${limitType} limit. Upgrade your plan for more!`,
@@ -672,6 +696,150 @@ function BrdgeListPage() {
             navigate('/profile');
         } else {
             navigate('/create');
+        }
+    };
+
+    const handleCreateCourse = async (courseData) => {
+        try {
+            const response = await api.post('/courses', courseData);
+            setCourses([...courses, response.data.course]);
+            showSnackbar('Course created successfully', 'success');
+        } catch (error) {
+            console.error('Error creating course:', error);
+            showSnackbar('Failed to create course', 'error');
+        }
+    };
+
+    const handleEditCourse = (course) => {
+        navigate(`/edit-course/${course.id}-${course.public_id.substring(0, 6)}`);
+    };
+
+    const handleViewCourse = (course) => {
+        navigate(`/c/${course.public_id}`);
+    };
+
+    const handleShareCourse = (course) => {
+        setCourseToShare(course);
+        setShareCourseDialogOpen(true);
+    };
+
+    const handleDeleteCourse = (course) => {
+        setCourseToDelete(course);
+        setDeleteCourseDialogOpen(true);
+    };
+
+    const confirmDeleteCourse = async () => {
+        try {
+            await api.delete(`/courses/${courseToDelete.id}`);
+            setCourses(courses.filter(c => c.id !== courseToDelete.id));
+            showSnackbar('Course deleted successfully', 'success');
+            setDeleteCourseDialogOpen(false);
+        } catch (error) {
+            console.error('Error deleting course:', error);
+            showSnackbar('Failed to delete course', 'error');
+        }
+    };
+
+    const handleAddModuleToCourse = async (courseId, brdgeId) => {
+        try {
+            const response = await api.post(`/courses/${courseId}/modules`, { brdge_id: brdgeId });
+
+            // Update the courses state to include the new module
+            setCourses(prevCourses => {
+                return prevCourses.map(course => {
+                    if (course.id === courseId) {
+                        // Get the brdge details from the brdges array
+                        const brdge = brdges.find(b => b.id === brdgeId);
+
+                        if (brdge) {
+                            // Create the module object to add to the course
+                            const newModule = {
+                                id: response.data.course_module.id,
+                                brdge_id: brdge.id,
+                                name: brdge.name,
+                                position: response.data.course_module.position,
+                                shareable: brdge.shareable,
+                                public_id: brdge.public_id
+                            };
+
+                            // Add the new module to the course
+                            return {
+                                ...course,
+                                modules: [...(course.modules || []), newModule]
+                            };
+                        }
+                    }
+                    return course;
+                });
+            });
+
+            showSnackbar('Module added to course successfully', 'success');
+        } catch (error) {
+            console.error('Error adding module to course:', error);
+            showSnackbar('Failed to add module to course', 'error');
+        }
+    };
+
+    const handleRemoveModuleFromCourse = async (courseId, moduleId) => {
+        try {
+            await api.delete(`/courses/${courseId}/modules/${moduleId}`);
+
+            // Update the courses state to remove the module
+            setCourses(prevCourses => {
+                return prevCourses.map(course => {
+                    if (course.id === courseId) {
+                        return {
+                            ...course,
+                            modules: (course.modules || []).filter(module => module.id !== moduleId)
+                        };
+                    }
+                    return course;
+                });
+            });
+
+            showSnackbar('Module removed from course successfully', 'success');
+        } catch (error) {
+            console.error('Error removing module from course:', error);
+            showSnackbar('Failed to remove module from course', 'error');
+        }
+    };
+
+    const handleReorderModules = async (courseId, moduleOrder) => {
+        try {
+            await api.put(`/courses/${courseId}/modules/reorder`, { modules: moduleOrder });
+
+            // Update the courses state with the new order
+            setCourses(prevCourses => {
+                return prevCourses.map(course => {
+                    if (course.id === courseId) {
+                        // Create a new modules array with updated positions
+                        const updatedModules = [...course.modules];
+                        moduleOrder.forEach(item => {
+                            const index = updatedModules.findIndex(m => m.id === item.id);
+                            if (index !== -1) {
+                                updatedModules[index] = {
+                                    ...updatedModules[index],
+                                    position: item.position
+                                };
+                            }
+                        });
+
+                        // Sort the modules by position
+                        updatedModules.sort((a, b) => a.position - b.position);
+
+                        return {
+                            ...course,
+                            modules: updatedModules
+                        };
+                    }
+                    return course;
+                });
+            });
+
+            showSnackbar('Modules reordered successfully', 'success');
+        } catch (error) {
+            console.error('Error reordering modules:', error);
+            showSnackbar('Failed to reorder modules', 'error');
         }
     };
 
@@ -735,6 +903,111 @@ function BrdgeListPage() {
         navigate(`/edit/${brdge.id}`);
     };
 
+    // Add function to handle module selection
+    const handleModuleSelect = (moduleId) => {
+        setSelectedModules(prev => {
+            // If already selected, remove it
+            if (prev.includes(moduleId)) {
+                return prev.filter(id => id !== moduleId);
+            }
+            // Otherwise add it
+            return [...prev, moduleId];
+        });
+    };
+
+    // Add function to handle batch deletion
+    const handleBatchDelete = () => {
+        if (selectedModules.length > 0) {
+            setBatchDeleteDialogOpen(true);
+        }
+    };
+
+    // Add function to confirm and execute batch deletion
+    const confirmBatchDelete = async () => {
+        try {
+            // Send delete requests for all selected modules
+            await Promise.all(
+                selectedModules.map(moduleId =>
+                    api.delete(`/brdges/${moduleId}`)
+                )
+            );
+
+            // Update the brdges state by filtering out deleted modules
+            setBrdges(brdges.filter(b => !selectedModules.includes(b.id)));
+
+            // Clear selection and close dialog
+            setSelectedModules([]);
+            setBatchDeleteDialogOpen(false);
+
+            // Show success message
+            showSnackbar(`${selectedModules.length} modules deleted successfully`, 'success');
+
+            // Refresh stats after deletion
+            fetchStats();
+        } catch (error) {
+            showSnackbar('Failed to delete some modules', 'error');
+        }
+    };
+
+    // Add function to select all visible modules
+    const handleSelectAll = () => {
+        if (selectedModules.length === filteredBrdges.length) {
+            // If all are selected, deselect all
+            setSelectedModules([]);
+        } else {
+            // Otherwise select all visible modules
+            setSelectedModules(filteredBrdges.map(b => b.id));
+        }
+    };
+
+    // Add function to clear selection
+    const clearSelection = () => {
+        setSelectedModules([]);
+    };
+
+    const handleCloseCourseShare = () => {
+        setShareCourseDialogOpen(false);
+        setCourseToShare(null);
+    };
+
+    const handleCourseShareToggle = async () => {
+        if (!courseToShare) return;
+
+        try {
+            await api.post(`/courses/${courseToShare.id}/toggle_shareable`);
+
+            // Update local state
+            setCourses(courses.map(course =>
+                course.id === courseToShare.id
+                    ? { ...course, shareable: !course.shareable }
+                    : course
+            ));
+
+            // Also update the courseToShare state
+            setCourseToShare({
+                ...courseToShare,
+                shareable: !courseToShare.shareable
+            });
+
+            showSnackbar(
+                courseToShare.shareable
+                    ? 'Course is now private'
+                    : 'Course is now public and can be shared',
+                'success'
+            );
+        } catch (error) {
+            console.error('Error toggling course shareable status:', error);
+            showSnackbar('Failed to update sharing settings', 'error');
+        }
+    };
+
+    const handleCopyCourseLink = () => {
+        const shareableLink = `${window.location.origin}/c/${courseToShare.public_id}`;
+        navigator.clipboard.writeText(shareableLink);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 3000);
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -747,7 +1020,7 @@ function BrdgeListPage() {
         <Box sx={styles.pageContainer}>
             <Container maxWidth="lg">
                 <Typography variant="h4" sx={styles.header}>
-                    Your AI Teaching Assistants
+                    Brdge AI Course Builder
                 </Typography>
 
                 <Box
@@ -785,7 +1058,7 @@ function BrdgeListPage() {
                             }}
                         />
                         <InputBase
-                            placeholder="Search teaching assistants..."
+                            placeholder="Search courses and modules..."
                             value={searchTerm}
                             onChange={handleSearch}
                             sx={{
@@ -816,10 +1089,10 @@ function BrdgeListPage() {
                         <Grid item xs={12} sm={6}>
                             <Box sx={styles.statsCard}>
                                 <Typography variant="subtitle1" sx={{ color: '#22D3EE', mb: 1, fontWeight: 'bold' }}>
-                                    AI Teaching Assistants
+                                    AI Modules
                                 </Typography>
                                 <UsageIndicator
-                                    title="AI Teaching Assistants"
+                                    title="AI Modules"
                                     current={userStats.brdges_created}
                                     limit={userStats.brdges_limit}
                                 />
@@ -839,13 +1112,14 @@ function BrdgeListPage() {
                         </Grid>
                     </Grid>
 
-                    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                         <Button
                             variant="contained"
                             startIcon={<Plus size={20} />}
                             onClick={handleCreateClick}
                             sx={{
                                 width: { xs: '100%', sm: 'auto' },
+                                flex: { xs: '1 1 100%', sm: '1 1 auto' },
                                 bgcolor: 'rgba(34,211,238,0.1)',
                                 color: '#22D3EE',
                                 borderRadius: '50px',
@@ -865,12 +1139,101 @@ function BrdgeListPage() {
                                 }
                             }}
                         >
-                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Teaching Assistant'}
+                            {isOverLimit() ? 'Upgrade Plan' : 'Create New Module'}
                         </Button>
                     </Box>
                 </Box>
 
+                {/* Course List Section */}
+                <Box sx={{ mb: 6 }}>
+                    <CourseList
+                        courses={courses}
+                        modules={brdges}
+                        onViewCourse={handleViewCourse}
+                        onEditCourse={handleEditCourse}
+                        onShareCourse={handleShareCourse}
+                        onDeleteCourse={handleDeleteCourse}
+                        onViewModule={(brdgeId) => {
+                            const brdge = brdges.find(b => b.id === brdgeId);
+                            if (brdge) {
+                                handleView(null, brdge);
+                            }
+                        }}
+                        onEditModule={(brdgeId) => {
+                            const brdge = brdges.find(b => b.id === brdgeId);
+                            if (brdge) {
+                                handleEdit(null, brdge);
+                            }
+                        }}
+                        onAddModuleToCourse={handleAddModuleToCourse}
+                        onRemoveModuleFromCourse={handleRemoveModuleFromCourse}
+                        onCreateCourse={handleCreateCourse}
+                        onReorderModules={handleReorderModules}
+                    />
+                </Box>
+
+                {/* Module List Section with batch actions */}
                 <Box>
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mb: 3
+                    }}>
+                        <Typography variant="h5" sx={{
+                            color: theme.colors.text.primary,
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}>
+                            <GraduationCap size={24} style={{ marginRight: '12px', color: '#22D3EE' }} />
+                            Your AI Modules
+                        </Typography>
+
+                        {/* Batch actions - only visible when modules are selected */}
+                        {selectedModules.length > 0 && (
+                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                <Typography variant="body2" sx={{ color: theme.colors.text.secondary }}>
+                                    {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''} selected
+                                </Typography>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={clearSelection}
+                                    sx={{
+                                        color: theme.colors.text.secondary,
+                                        borderColor: theme.colors.border,
+                                        '&:hover': {
+                                            borderColor: theme.colors.primary,
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                                        }
+                                    }}
+                                >
+                                    Clear
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    startIcon={<Trash2 size={16} />}
+                                    onClick={handleBatchDelete}
+                                    sx={{
+                                        backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                        color: '#FF4B4B',
+                                        borderRadius: '8px',
+                                        border: '1px solid rgba(255, 75, 75, 0.2)',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                            border: '1px solid rgba(255, 75, 75, 0.3)',
+                                            boxShadow: '0 0 20px rgba(255, 75, 75, 0.2)'
+                                        }
+                                    }}
+                                >
+                                    Delete Selected
+                                </Button>
+                            </Box>
+                        )}
+                    </Box>
+
                     {filteredBrdges.length === 0 ? (
                         <EmptyBrdgeState
                             onCreateClick={() => navigate('/create')}
@@ -888,11 +1251,16 @@ function BrdgeListPage() {
                                 orderDirection={orderDirection}
                                 onSort={handleSort}
                                 stats={userStats}
+                                // Add new props for multi-select
+                                selectedModules={selectedModules}
+                                onModuleSelect={handleModuleSelect}
+                                onSelectAll={handleSelectAll}
                             />
                         </Box>
                     )}
                 </Box>
 
+                {/* Delete Module Dialog */}
                 <Dialog
                     open={deleteDialogOpen}
                     onClose={() => setDeleteDialogOpen(false)}
@@ -949,7 +1317,7 @@ function BrdgeListPage() {
                                 fontWeight: 600,
                                 fontSize: '1.1rem'
                             }}>
-                                Delete Teaching Assistant
+                                Delete Module
                             </Typography>
                             <Typography variant="caption" sx={{
                                 color: 'rgba(255, 255, 255, 0.7)',
@@ -996,7 +1364,7 @@ function BrdgeListPage() {
                                     fontWeight: 500,
                                     mb: 1
                                 }}>
-                                    Are you sure you want to delete this AI Teaching Assistant?
+                                    Are you sure you want to delete this AI Module?
                                 </Typography>
                                 <Typography variant="body2" sx={{
                                     color: 'rgba(255, 255, 255, 0.7)',
@@ -1044,11 +1412,169 @@ function BrdgeListPage() {
                                 }
                             }}
                         >
-                            Delete Teaching Assistant
+                            Delete Module
                         </Button>
                     </DialogActions>
                 </Dialog>
 
+                {/* Delete Course Dialog */}
+                <Dialog
+                    open={deleteCourseDialogOpen}
+                    onClose={() => setDeleteCourseDialogOpen(false)}
+                    sx={{
+                        '& .MuiDialog-paper': {
+                            backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                            backdropFilter: 'blur(16px)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '16px',
+                            color: 'white',
+                            minWidth: '400px',
+                            boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+                            overflow: 'hidden'
+                        },
+                        '& .MuiBackdrop-root': {
+                            backdropFilter: 'blur(8px)'
+                        }
+                    }}
+                >
+                    <DialogTitle sx={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '20px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: -1,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '60%',
+                            height: '1px',
+                            background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
+                            boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
+                        }
+                    }}>
+                        <Box sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 0 10px rgba(255, 75, 75, 0.2)'
+                        }}>
+                            <Trash2 size={18} color="#FF4B4B" />
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" sx={{
+                                color: '#FF4B4B',
+                                fontWeight: 600,
+                                fontSize: '1.1rem'
+                            }}>
+                                Delete Course
+                            </Typography>
+                            <Typography variant="caption" sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                display: 'block',
+                                mt: 0.5
+                            }}>
+                                {courseToDelete?.name}
+                            </Typography>
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent sx={{
+                        padding: '24px',
+                        backgroundColor: 'rgba(255, 75, 75, 0.02)'
+                    }}>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 2,
+                            p: 2,
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255, 75, 75, 0.05)',
+                            border: '1px solid rgba(255, 75, 75, 0.1)'
+                        }}>
+                            <Box sx={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                mt: 0.5
+                            }}>
+                                <Typography sx={{
+                                    color: '#FF4B4B',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600
+                                }}>!</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body1" sx={{
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    fontWeight: 500,
+                                    mb: 1
+                                }}>
+                                    Are you sure you want to delete this course?
+                                </Typography>
+                                <Typography variant="body2" sx={{
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    This action cannot be undone. The course will be permanently removed, but the modules in it will remain available.
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{
+                        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '16px 24px',
+                        gap: 2,
+                        backgroundColor: 'rgba(17, 25, 40, 0.98)'
+                    }}>
+                        <Button
+                            onClick={() => setDeleteCourseDialogOpen(false)}
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                px: 3,
+                                borderRadius: '8px',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    color: 'white',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmDeleteCourse}
+                            sx={{
+                                backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                color: '#FF4B4B',
+                                borderRadius: '8px',
+                                px: 3,
+                                border: '1px solid rgba(255, 75, 75, 0.2)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                    border: '1px solid rgba(255, 75, 75, 0.3)',
+                                    boxShadow: '0 0 20px rgba(255, 75, 75, 0.2)'
+                                }
+                            }}
+                        >
+                            Delete Course
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Share Dialog */}
                 <Dialog
                     open={shareDialogOpen}
                     onClose={handleCloseShare}
@@ -1071,7 +1597,7 @@ function BrdgeListPage() {
                         alignItems: 'center',
                         justifyContent: 'space-between'
                     }}>
-                        <Typography variant="h6">Share Teaching Assistant</Typography>
+                        <Typography variant="h6">Share Module</Typography>
                         <Typography
                             variant="body2"
                             sx={{
@@ -1116,8 +1642,8 @@ function BrdgeListPage() {
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
                                         {brdgeToShare?.shareable
-                                            ? 'Students with the link can interact with this teaching assistant'
-                                            : 'Only you can view this teaching assistant'}
+                                            ? 'Students with the link can interact with this module'
+                                            : 'Only you can view this module'}
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -1214,6 +1740,319 @@ function BrdgeListPage() {
                         Link copied to clipboard
                     </Alert>
                 </Snackbar>
+
+                {/* Batch Delete Dialog */}
+                <Dialog
+                    open={batchDeleteDialogOpen}
+                    onClose={() => setBatchDeleteDialogOpen(false)}
+                    sx={{
+                        '& .MuiDialog-paper': {
+                            backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                            backdropFilter: 'blur(16px)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '16px',
+                            color: 'white',
+                            minWidth: '400px',
+                            boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+                            overflow: 'hidden'
+                        },
+                        '& .MuiBackdrop-root': {
+                            backdropFilter: 'blur(8px)'
+                        }
+                    }}
+                >
+                    <DialogTitle sx={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '20px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: -1,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '60%',
+                            height: '1px',
+                            background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
+                            boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
+                        }
+                    }}>
+                        <Box sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 0 10px rgba(255, 75, 75, 0.2)'
+                        }}>
+                            <Trash2 size={18} color="#FF4B4B" />
+                        </Box>
+                        <Box>
+                            <Typography variant="h6" sx={{
+                                color: '#FF4B4B',
+                                fontWeight: 600,
+                                fontSize: '1.1rem'
+                            }}>
+                                Delete Multiple Modules
+                            </Typography>
+                            <Typography variant="caption" sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                display: 'block',
+                                mt: 0.5
+                            }}>
+                                {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''} selected
+                            </Typography>
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent sx={{
+                        padding: '24px',
+                        backgroundColor: 'rgba(255, 75, 75, 0.02)'
+                    }}>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 2,
+                            p: 2,
+                            borderRadius: '12px',
+                            backgroundColor: 'rgba(255, 75, 75, 0.05)',
+                            border: '1px solid rgba(255, 75, 75, 0.1)'
+                        }}>
+                            <Box sx={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: '50%',
+                                backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                mt: 0.5
+                            }}>
+                                <Typography sx={{
+                                    color: '#FF4B4B',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600
+                                }}>!</Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body1" sx={{
+                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    fontWeight: 500,
+                                    mb: 1
+                                }}>
+                                    Are you sure you want to delete these modules?
+                                </Typography>
+                                <Typography variant="body2" sx={{
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    This action cannot be undone. All associated data, including student conversations and analytics, will be permanently removed.
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{
+                        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '16px 24px',
+                        gap: 2,
+                        backgroundColor: 'rgba(17, 25, 40, 0.98)'
+                    }}>
+                        <Button
+                            onClick={() => setBatchDeleteDialogOpen(false)}
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                px: 3,
+                                borderRadius: '8px',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    color: 'white',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                }
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmBatchDelete}
+                            sx={{
+                                backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                color: '#FF4B4B',
+                                borderRadius: '8px',
+                                px: 3,
+                                border: '1px solid rgba(255, 75, 75, 0.2)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                    border: '1px solid rgba(255, 75, 75, 0.3)',
+                                    boxShadow: '0 0 20px rgba(255, 75, 75, 0.2)'
+                                }
+                            }}
+                        >
+                            Delete {selectedModules.length} Module{selectedModules.length !== 1 ? 's' : ''}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Course Share Dialog */}
+                <Dialog
+                    open={shareCourseDialogOpen}
+                    onClose={handleCloseCourseShare}
+                    sx={{
+                        '& .MuiDialog-paper': {
+                            backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                            backdropFilter: 'blur(16px)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '16px',
+                            color: 'white',
+                            minWidth: '400px',
+                            boxShadow: '0 0 40px rgba(0,0,0,0.5)'
+                        }
+                    }}
+                >
+                    <DialogTitle sx={{
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '20px 24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                    }}>
+                        <Typography variant="h6">Share Course</Typography>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                px: 2,
+                                py: 0.75,
+                                borderRadius: '8px',
+                                border: '1px solid rgba(255, 255, 255, 0.1)'
+                            }}
+                        >
+                            {courseToShare?.name}
+                        </Typography>
+                    </DialogTitle>
+                    <DialogContent sx={{ padding: '24px' }}>
+                        <Box sx={{ mt: 1 }}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                p: 2,
+                                borderRadius: '12px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                mb: 3
+                            }}>
+                                <Box>
+                                    <Typography variant="subtitle2" sx={{
+                                        color: courseToShare?.shareable ? '#22D3EE' : 'white',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}>
+                                        {courseToShare?.shareable ? (
+                                            <Globe size={18} style={{
+                                                filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.4))'
+                                            }} />
+                                        ) : (
+                                            <Lock size={18} />
+                                        )}
+                                        {courseToShare?.shareable ? 'Public access' : 'Private access'}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
+                                        {courseToShare?.shareable
+                                            ? 'Students with the link can view this course'
+                                            : 'Only you can view this course'}
+                                    </Typography>
+                                </Box>
+                                <Switch
+                                    checked={courseToShare?.shareable || false}
+                                    onChange={handleCourseShareToggle}
+                                    sx={{
+                                        '& .MuiSwitch-switchBase.Mui-checked': {
+                                            color: '#22D3EE',
+                                        },
+                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                            backgroundColor: 'rgba(34, 211, 238, 0.3)',
+                                        }
+                                    }}
+                                />
+                            </Box>
+
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                p: 2,
+                                borderRadius: '12px',
+                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                                }
+                            }}>
+                                <InputBase
+                                    value={courseToShare ? `${window.location.origin}/c/${courseToShare.public_id}` : ''}
+                                    readOnly
+                                    fullWidth
+                                    sx={{
+                                        color: 'white',
+                                        fontSize: '0.875rem',
+                                        '& input': {
+                                            padding: '0'
+                                        }
+                                    }}
+                                />
+                                <IconButton
+                                    onClick={handleCopyCourseLink}
+                                    size="small"
+                                    sx={{
+                                        color: linkCopied ? '#22D3EE' : 'rgba(255, 255, 255, 0.7)',
+                                        backgroundColor: linkCopied ? 'rgba(34, 211, 238, 0.1)' : 'transparent',
+                                        borderRadius: '8px',
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            backgroundColor: linkCopied ? 'rgba(34, 211, 238, 0.15)' : 'rgba(255, 255, 255, 0.1)',
+                                        }
+                                    }}
+                                >
+                                    {linkCopied ? <Check size={18} /> : <Copy size={18} />}
+                                </IconButton>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{
+                        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                        padding: '16px 24px',
+                        justifyContent: 'space-between'
+                    }}>
+                        <Typography variant="caption" sx={{
+                            color: linkCopied ? '#22D3EE' : 'rgba(255, 255, 255, 0.5)',
+                            transition: 'all 0.2s ease'
+                        }}>
+                            {linkCopied ? 'Link copied!' : 'Click the copy button to copy the link for students'}
+                        </Typography>
+                        <Button
+                            onClick={handleCloseCourseShare}
+                            sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                '&:hover': {
+                                    color: 'white',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                                }
+                            }}
+                        >
+                            Close
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </Container>
         </Box>
     );

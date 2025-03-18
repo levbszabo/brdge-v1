@@ -42,7 +42,7 @@ function CreateBrdgePage() {
         { message: "Analyzing video content...", duration: 20000 },
         { message: "Generating transcript...", duration: 15000 },
         { message: "Processing document...", duration: 15000 },
-        { message: "Creating AI Teaching Assistant...", duration: 10000 }
+        { message: "Creating AI Module...", duration: 10000 }
     ];
 
     useEffect(() => {
@@ -81,7 +81,7 @@ function CreateBrdgePage() {
             setName(response.data.name);
         } catch (error) {
             console.error('Error fetching brdge data:', error);
-            setError('Failed to fetch AI Teaching Assistant data. Please try again.');
+            setError('Failed to fetch AI Module data. Please try again.');
         }
     };
 
@@ -360,7 +360,7 @@ function CreateBrdgePage() {
 
         // Require screen recording
         if (!screenRecording) {
-            setError('Please record or upload a video presentation for the AI Teaching Assistant');
+            setError('Please record or upload a video presentation for the AI Module');
             setLoading(false);
             setLoadingPhase(0);
             setLoadingMessage('');
@@ -414,11 +414,11 @@ function CreateBrdgePage() {
         try {
             if (id) {
                 await api.put(`/brdges/${id}`, formData);
-                showSnackbar('AI Teaching Assistant updated successfully', 'success');
+                showSnackbar('AI Module updated successfully', 'success');
                 navigate(`/edit/${id}`);
             } else {
                 const response = await api.post('/brdges', formData);
-                showSnackbar('AI Teaching Assistant created successfully', 'success');
+                showSnackbar('AI Module created successfully', 'success');
                 navigate(`/edit/${response.data.brdge.id}`);
             }
         } catch (error) {
@@ -784,7 +784,7 @@ function CreateBrdgePage() {
                     transition={{ duration: 0.5 }}
                 >
                     <h1 className="text-4xl font-semibold text-white mb-12 text-center relative">
-                        Create New AI Teaching Assistant
+                        Create New AI Module
                         <div className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-40 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
                     </h1>
 
@@ -800,13 +800,13 @@ function CreateBrdgePage() {
                                 {/* Bridge Name with improved styling */}
                                 <div className="space-y-2">
                                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        AI Teaching Assistant Name
+                                        AI Module Name
                                     </label>
                                     <input
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        placeholder="Enter a name for your AI Teaching Assistant"
+                                        placeholder="Enter a name for your AI Module"
                                         required
                                         className="w-full bg-gray-900/40 border border-gray-700/50 rounded-lg 
                                             px-4 py-2.5 text-base text-gray-100
@@ -825,8 +825,8 @@ function CreateBrdgePage() {
                                         </div>
                                         <div className="text-gray-400/70 text-xs italic">
                                             {isMobile
-                                                ? "We'll transcribe your content and create an AI voice assistant that can engage with your audience"
-                                                : "We'll transcribe your presentation and create an AI voice assistant that can guide viewers through your slides"
+                                                ? "We'll transcribe your content and create an AI voice module that can engage with your audience"
+                                                : "We'll transcribe your presentation and create an AI voice module that can guide viewers through your slides"
                                             }
                                         </div>
                                     </div>
@@ -842,8 +842,8 @@ function CreateBrdgePage() {
                                         </div>
                                         <div className="text-gray-400/70 text-xs italic">
                                             {isMobile
-                                                ? "Adding a PDF enhances your AI Teaching Assistant's understanding and improves its ability to assist your audience"
-                                                : "Adding a PDF enhances your AI Teaching Assistant's understanding and improves its ability to assist your audience"
+                                                ? "Adding a PDF enhances your AI Module's understanding and improves its ability to assist your audience"
+                                                : "Adding a PDF enhances your AI Module's understanding and improves its ability to assist your audience"
                                             }
                                         </div>
                                     </div>
@@ -890,7 +890,7 @@ function CreateBrdgePage() {
                                                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                             ) : (
                                                 <>
-                                                    Create AI Teaching Assistant
+                                                    Create AI Module
                                                     <ArrowRight className="w-4 h-4" />
                                                 </>
                                             )}

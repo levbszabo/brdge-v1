@@ -10,7 +10,8 @@ import {
     Box,
     TableSortLabel,
     Tooltip,
-    Typography
+    Typography,
+    Checkbox
 } from '@mui/material';
 import { Eye, Pencil, Share2, Trash2, Globe, Lock, BookOpen, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -95,6 +96,23 @@ const styles = {
     }
 };
 
+// Add styles for checkbox and selection
+const selectionStyles = {
+    checkboxCell: {
+        width: '48px',
+        padding: '0 0 0 16px'
+    },
+    checkbox: {
+        color: 'rgba(255, 255, 255, 0.5)',
+        '&.Mui-checked': {
+            color: '#22D3EE'
+        }
+    },
+    selectedRow: {
+        backgroundColor: 'rgba(34, 211, 238, 0.05) !important'
+    }
+};
+
 const BrdgeList = ({
     brdges,
     onView,
@@ -103,9 +121,27 @@ const BrdgeList = ({
     onDelete,
     orderBy,
     orderDirection,
-    onSort
+    onSort,
+    selectedModules = [],
+    onModuleSelect,
+    onSelectAll
 }) => {
+    // Add select all checkbox logic
+    const handleSelectAllClick = (event) => {
+        if (onSelectAll) {
+            onSelectAll(event.target.checked);
+        }
+    };
+
+    // Determine if all items are selected
+    const isAllSelected = brdges.length > 0 && selectedModules.length === brdges.length;
+
     const columns = [
+        {
+            id: 'select',
+            label: '',
+            sortable: false
+        },
         { id: 'name', label: 'Name', sortable: true },
         { id: 'status', label: 'Status', sortable: true },
         { id: 'actions', label: 'Actions', sortable: false }
@@ -138,7 +174,18 @@ const BrdgeList = ({
             <Table>
                 <TableHead>
                     <TableRow>
-                        {columns.map((column) => (
+                        {/* Add select all checkbox column */}
+                        <TableCell sx={{ ...styles.headerCell, ...selectionStyles.checkboxCell }}>
+                            <Checkbox
+                                indeterminate={selectedModules.length > 0 && selectedModules.length < brdges.length}
+                                checked={isAllSelected}
+                                onChange={handleSelectAllClick}
+                                sx={selectionStyles.checkbox}
+                            />
+                        </TableCell>
+
+                        {/* Existing columns */}
+                        {columns.slice(1).map((column) => (
                             <TableCell
                                 key={column.id}
                                 sx={styles.headerCell}
@@ -160,74 +207,92 @@ const BrdgeList = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {brdges.map((brdge) => (
-                        <TableRow
-                            key={brdge.id}
-                            sx={styles.row}
-                            component={motion.tr}
-                            whileHover={{ scale: 1.01 }}
-                            transition={{ type: "tween", duration: 0.2 }}
-                        >
-                            <TableCell sx={styles.cell}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <BookOpen size={16} style={{ color: '#22D3EE' }} />
-                                    {brdge.name}
-                                </Box>
-                            </TableCell>
-                            <TableCell sx={styles.cell}>
-                                <StatusChip shareable={brdge.shareable} />
-                            </TableCell>
-                            <TableCell sx={styles.cell}>
-                                <Box
-                                    sx={{ display: 'flex', gap: 1 }}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <Tooltip title="View">
-                                        <IconButton
-                                            onClick={(e) => onView(e, brdge)}
-                                            size="small"
-                                            sx={styles.actionButton}
-                                        >
-                                            <Eye size={18} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Edit">
-                                        <IconButton
-                                            onClick={(e) => onEdit(e, brdge)}
-                                            size="small"
-                                            sx={styles.actionButton}
-                                        >
-                                            <Pencil size={18} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Share with Students">
-                                        <IconButton
-                                            onClick={(e) => onShare(e, brdge)}
-                                            size="small"
-                                            sx={styles.actionButton}
-                                        >
-                                            <Share2 size={18} />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title="Delete">
-                                        <IconButton
-                                            onClick={(e) => onDelete(e, brdge)}
-                                            size="small"
-                                            sx={{
-                                                ...styles.actionButton,
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(255, 59, 48, 0.1)',
-                                                    color: '#ff3b30',
-                                                }
-                                            }}
-                                        >
-                                            <Trash2 size={18} />
-                                        </IconButton>
-                                    </Tooltip>
-                                </Box>
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                    {brdges.map((brdge) => {
+                        const isSelected = selectedModules.includes(brdge.id);
+
+                        return (
+                            <TableRow
+                                key={brdge.id}
+                                sx={{
+                                    ...styles.row,
+                                    ...(isSelected ? selectionStyles.selectedRow : {})
+                                }}
+                                component={motion.tr}
+                                whileHover={{ scale: 1.01 }}
+                                transition={{ type: "tween", duration: 0.2 }}
+                            >
+                                {/* Add checkbox for row selection */}
+                                <TableCell sx={{ ...styles.cell, ...selectionStyles.checkboxCell }}>
+                                    <Checkbox
+                                        checked={isSelected}
+                                        onChange={() => onModuleSelect(brdge.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        sx={selectionStyles.checkbox}
+                                    />
+                                </TableCell>
+
+                                {/* Existing cells */}
+                                <TableCell sx={styles.cell}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <BookOpen size={16} style={{ color: '#22D3EE' }} />
+                                        {brdge.name}
+                                    </Box>
+                                </TableCell>
+                                <TableCell sx={styles.cell}>
+                                    <StatusChip shareable={brdge.shareable} />
+                                </TableCell>
+                                <TableCell sx={styles.cell}>
+                                    <Box
+                                        sx={{ display: 'flex', gap: 1 }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Tooltip title="View">
+                                            <IconButton
+                                                onClick={(e) => onView(e, brdge)}
+                                                size="small"
+                                                sx={styles.actionButton}
+                                            >
+                                                <Eye size={18} />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Edit">
+                                            <IconButton
+                                                onClick={(e) => onEdit(e, brdge)}
+                                                size="small"
+                                                sx={styles.actionButton}
+                                            >
+                                                <Pencil size={18} />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Share with Students">
+                                            <IconButton
+                                                onClick={(e) => onShare(e, brdge)}
+                                                size="small"
+                                                sx={styles.actionButton}
+                                            >
+                                                <Share2 size={18} />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete">
+                                            <IconButton
+                                                onClick={(e) => onDelete(e, brdge)}
+                                                size="small"
+                                                sx={{
+                                                    ...styles.actionButton,
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(255, 59, 48, 0.1)',
+                                                        color: '#ff3b30',
+                                                    }
+                                                }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
                 </TableBody>
             </Table>
         </TableContainer>

@@ -22,17 +22,15 @@ from models import (
     Brdge,
     User,
     UserAccount,
-    Walkthrough,
-    WalkthroughMessage,
-    Scripts,
     Voice,
-    ViewerConversation,
     UsageLogs,
     BrdgeScript,
     KnowledgeBase,
     DocumentKnowledge,
     Recording,
     UserIssues,
+    Course,
+    CourseModule,
 )
 from utils import (
     clone_voice_helper,
@@ -289,15 +287,12 @@ def delete_brdge(brdge_id):
             # 1. Delete associated scripts first
             BrdgeScript.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 2. Delete recordings
-            Recording.query.filter_by(brdge_id=brdge_id).delete()
+            # 2. Delete any course modules that reference this brdge
+            CourseModule.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 3. Delete walkthroughs and their messages
-            for walkthrough in brdge.walkthroughs:
-                WalkthroughMessage.query.filter_by(
-                    walkthrough_id=walkthrough.id
-                ).delete()
-            Walkthrough.query.filter_by(brdge_id=brdge_id).delete()
+            # 3. Delete recordings
+            Recording.query.filter_by(brdge_id=brdge_id).delete()
+            db.session.flush()  # Ensure recordings are deleted before brdge
 
             # 4. Disassociate usage logs from this brdge (set brdge_id to null)
             UsageLogs.query.filter_by(brdge_id=brdge_id).update(
@@ -3574,3 +3569,285 @@ def update_brdge_voice(brdge_id):
         db.session.rollback()
         logger.error(f"Error updating brdge voice: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# Course Management Routes
+@app.route("/api/courses", methods=["GET"])
+@jwt_required()
+def get_courses():
+    """Get all courses for the logged-in user"""
+    user_id = get_jwt_identity()
+    courses = Course.query.filter_by(user_id=user_id).all()
+
+    # For each course, get its modules with associated brdges
+    result = []
+    for course in courses:
+        course_dict = course.to_dict()
+        # Sort modules by position
+        course_modules = (
+            CourseModule.query.filter_by(course_id=course.id)
+            .order_by(CourseModule.position)
+            .all()
+        )
+        modules = []
+
+        for cm in course_modules:
+            brdge = Brdge.query.get(cm.brdge_id)
+            if brdge:
+                module_data = {
+                    "id": cm.id,
+                    "brdge_id": brdge.id,
+                    "name": brdge.name,
+                    "position": cm.position,
+                    "shareable": brdge.shareable,
+                    "public_id": brdge.public_id,
+                }
+                modules.append(module_data)
+
+        course_dict["modules"] = modules
+        result.append(course_dict)
+
+    return jsonify({"courses": result})
+
+
+@app.route("/api/courses", methods=["POST"])
+@login_required
+def create_course(user):
+    """Create a new course"""
+    data = request.json
+
+    if not data or not data.get("name"):
+        return jsonify({"error": "Course name is required"}), 400
+
+    course = Course(
+        name=data.get("name"), description=data.get("description", ""), user_id=user.id
+    )
+
+    db.session.add(course)
+    db.session.commit()
+
+    return jsonify({"course": course.to_dict()}), 201
+
+
+@app.route("/api/courses/<int:course_id>", methods=["GET"])
+@login_required
+def get_course(user, course_id):
+    """Get a specific course by ID"""
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    # Load modules directly through the relationship in Course model
+    # This will utilize the to_dict method in CourseModule which includes brdge data
+    course_dict = course.to_dict()
+
+    # Sort modules by position (if not already sorted by the to_dict method)
+    course_dict["modules"] = sorted(course_dict["modules"], key=lambda x: x["position"])
+
+    # Log for debugging
+    print(f"Course data fetched. Module count: {len(course_dict['modules'])}")
+
+    return jsonify({"course": course_dict})
+
+
+@app.route("/api/courses/<int:course_id>", methods=["PUT"])
+@login_required
+def update_course(user, course_id):
+    """Update a course"""
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    data = request.json
+
+    if data.get("name"):
+        course.name = data.get("name")
+
+    if "description" in data:
+        course.description = data.get("description")
+
+    if "shareable" in data:
+        course.shareable = data.get("shareable")
+
+    course.updated_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify({"course": course.to_dict()})
+
+
+@app.route("/api/courses/<int:course_id>", methods=["DELETE"])
+@login_required
+def delete_course(user, course_id):
+    """Delete a course"""
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    # Note: This will automatically delete all CourseModule entries due to cascade
+    db.session.delete(course)
+    db.session.commit()
+
+    return jsonify({"message": "Course deleted successfully"})
+
+
+@app.route("/api/courses/<int:course_id>/modules", methods=["POST"])
+@login_required
+def add_module_to_course(user, course_id):
+    """Add a module (brdge) to a course"""
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    data = request.json
+
+    if not data or not data.get("brdge_id"):
+        return jsonify({"error": "Module ID is required"}), 400
+
+    brdge_id = data.get("brdge_id")
+    brdge = Brdge.query.get(brdge_id)
+
+    if not brdge:
+        return jsonify({"error": "Module not found"}), 404
+
+    if brdge.user_id != user.id:
+        return jsonify({"error": "Unauthorized access to module"}), 403
+
+    # Check if module is already in course
+    existing_module = CourseModule.query.filter_by(
+        course_id=course_id, brdge_id=brdge_id
+    ).first()
+
+    if existing_module:
+        return jsonify({"error": "Module already in course"}), 400
+
+    # Get the highest position to add the new module at the end
+    highest_position = (
+        db.session.query(func.max(CourseModule.position))
+        .filter(CourseModule.course_id == course_id)
+        .scalar()
+        or 0
+    )
+
+    # Create course module with the next position
+    course_module = CourseModule(
+        course_id=course_id, brdge_id=brdge_id, position=highest_position + 1
+    )
+
+    db.session.add(course_module)
+    db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "message": "Module added to course",
+                "course_module": course_module.to_dict(),
+            }
+        ),
+        201,
+    )
+
+
+@app.route("/api/courses/<int:course_id>/modules/<int:module_id>", methods=["DELETE"])
+@login_required
+def remove_module_from_course(user, course_id, module_id):
+    """Remove a module from a course"""
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    course_module = CourseModule.query.get(module_id)
+
+    if not course_module or course_module.course_id != course_id:
+        return jsonify({"error": "Module not found in course"}), 404
+
+    # Get the position of the module to be removed
+    position_to_remove = course_module.position
+
+    # Delete the module
+    db.session.delete(course_module)
+
+    # Update positions of remaining modules
+    modules_to_update = CourseModule.query.filter(
+        CourseModule.course_id == course_id, CourseModule.position > position_to_remove
+    ).all()
+
+    for module in modules_to_update:
+        module.position -= 1
+
+    db.session.commit()
+
+    return jsonify({"message": "Module removed from course"})
+
+
+@app.route("/api/courses/<int:course_id>/modules/reorder", methods=["PUT"])
+@login_required
+def reorder_course_modules(user, course_id):
+    """Reorder modules within a course"""
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    data = request.json
+
+    if not data or not data.get("modules"):
+        return jsonify({"error": "Module order data is required"}), 400
+
+    # Expected format: {modules: [{id: 1, position: 3}, {id: 2, position: 1}, ...]}
+    module_order = data.get("modules")
+
+    for item in module_order:
+        module_id = item.get("id")
+        new_position = item.get("position")
+
+        if module_id and new_position is not None:
+            course_module = CourseModule.query.get(module_id)
+            if course_module and course_module.course_id == course_id:
+                course_module.position = new_position
+
+    db.session.commit()
+
+    return jsonify({"message": "Course modules reordered successfully"})
+
+
+@app.route("/api/courses/<int:course_id>/toggle_shareable", methods=["POST"])
+@jwt_required()
+def toggle_course_shareable(course_id):
+    """Toggle whether a course is shareable"""
+    user_id = get_jwt_identity()
+    course = Course.query.get(course_id)
+
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if course.user_id != user_id:
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    # Toggle shareable status
+    course.shareable = not course.shareable
+    db.session.commit()
+
+    return jsonify({"shareable": course.shareable})

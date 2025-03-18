@@ -145,122 +145,6 @@ class Recording(db.Model):
         }
 
 
-class Walkthrough(db.Model):
-    """Stores walkthrough data for a brdge presentation"""
-
-    id = db.Column(db.Integer, primary_key=True)
-    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed_at = db.Column(db.DateTime)
-    status = db.Column(
-        db.String(50), default="in_progress"
-    )  # in_progress, completed, error
-    total_slides = db.Column(db.Integer, nullable=False)
-
-    # Relationship to slide messages
-    messages = db.relationship(
-        "WalkthroughMessage", backref="walkthrough", lazy="dynamic"
-    )
-
-    # Relationship to brdge
-    brdge = db.relationship("Brdge", backref="walkthroughs")
-
-    def to_dict(self):
-        """Convert walkthrough to dictionary format"""
-        return {
-            "id": self.id,
-            "brdge_id": self.brdge_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "completed_at": (
-                self.completed_at.isoformat() if self.completed_at else None
-            ),
-            "status": self.status,
-            "total_slides": self.total_slides,
-            "slides": {
-                str(msg.slide_number): msg.to_dict()
-                for msg in self.messages.order_by(WalkthroughMessage.timestamp).all()
-            },
-        }
-
-    @staticmethod
-    def from_json(brdge_id: int, json_data: dict):
-        """Create a walkthrough from JSON data"""
-        walkthrough = Walkthrough(
-            brdge_id=brdge_id,
-            total_slides=json_data.get("metadata", {}).get("total_slides", 0),
-            created_at=datetime.fromisoformat(json_data.get("timestamp")),
-            status=json_data.get("metadata", {}).get("status", "in_progress"),
-        )
-
-        if json_data.get("metadata", {}).get("completed_at"):
-            walkthrough.completed_at = datetime.fromisoformat(
-                json_data["metadata"]["completed_at"]
-            )
-
-        return walkthrough
-
-
-class WalkthroughMessage(db.Model):
-    """Stores individual messages within a walkthrough"""
-
-    id = db.Column(db.Integer, primary_key=True)
-    walkthrough_id = db.Column(
-        db.Integer, db.ForeignKey("walkthrough.id"), nullable=False
-    )
-    slide_number = db.Column(db.Integer, nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # user, assistant, system
-    content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        """Convert message to dictionary format"""
-        return {
-            "role": self.role,
-            "content": self.content,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-        }
-
-    @staticmethod
-    def from_dict(walkthrough_id: int, slide_number: int, message_data: dict):
-        """Create a message from dictionary data"""
-        return WalkthroughMessage(
-            walkthrough_id=walkthrough_id,
-            slide_number=slide_number,
-            role=message_data.get("role"),
-            content=message_data.get("content"),
-            timestamp=(
-                datetime.fromisoformat(message_data.get("timestamp"))
-                if message_data.get("timestamp")
-                else datetime.utcnow()
-            ),
-        )
-
-
-class Scripts(db.Model):
-    """Stores generated scripts for a brdge"""
-
-    id = db.Column(db.Integer, primary_key=True)
-    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
-    walkthrough_id = db.Column(
-        db.Integer, db.ForeignKey("walkthrough.id"), nullable=False
-    )
-    scripts = db.Column(db.JSON, nullable=False)  # Store the slide scripts as JSON
-    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Relationships
-    brdge = db.relationship("Brdge", backref="scripts")
-    walkthrough = db.relationship("Walkthrough", backref="generated_scripts")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "brdge_id": self.brdge_id,
-            "walkthrough_id": self.walkthrough_id,
-            "scripts": self.scripts,
-            "generated_at": self.generated_at.isoformat(),
-        }
-
-
 class Voice(db.Model):
     """Stores voice clone data for a brdge"""
 
@@ -339,35 +223,6 @@ class Voice(db.Model):
                 status=response_data.get("api_status", "active"),
                 created_at=datetime.utcnow(),
             )
-
-
-class ViewerConversation(db.Model):
-    """Stores conversations between users and the view agent"""
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    anonymous_id = db.Column(db.String(255))
-    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'user' or 'agent'
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    slide_number = db.Column(db.Integer)
-
-    # Relationships
-    user = db.relationship("User", backref="viewer_conversations")
-    brdge = db.relationship("Brdge", backref="viewer_conversations")
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "anonymous_id": self.anonymous_id,
-            "brdge_id": self.brdge_id,
-            "message": self.message,
-            "role": self.role,
-            "timestamp": self.timestamp.isoformat(),
-            "slide_number": self.slide_number,
-        }
 
 
 class UsageLogs(db.Model):
@@ -522,4 +377,71 @@ class UserIssues(db.Model):
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
+        }
+
+
+class Course(db.Model):
+    """Represents a course that contains multiple modules (brdges)"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    public_id = db.Column(db.String(36), unique=True, nullable=True)
+    shareable = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    user = db.relationship("User", backref=db.backref("courses", lazy="dynamic"))
+    modules = db.relationship(
+        "CourseModule", back_populates="course", cascade="all, delete-orphan"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.public_id:
+            self.public_id = str(uuid.uuid4())
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "user_id": self.user_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "public_id": self.public_id,
+            "shareable": self.shareable,
+            "modules": [module.to_dict() for module in self.modules],
+        }
+
+
+class CourseModule(db.Model):
+    """Join table for courses and modules (brdges) with ordering"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    position = db.Column(
+        db.Integer, nullable=False
+    )  # For ordering modules within a course
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    course = db.relationship("Course", back_populates="modules")
+    brdge = db.relationship(
+        "Brdge", backref=db.backref("course_modules", lazy="dynamic")
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "course_id": self.course_id,
+            "brdge_id": self.brdge_id,
+            "brdge": self.brdge.to_dict(),
+            "position": self.position,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

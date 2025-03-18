@@ -11,6 +11,8 @@ import BrdgeListPage from './pages/BrdgeListPage';
 import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
+import ViewCoursePage from './pages/ViewCoursePage';
+import EditCoursePage from './pages/EditCoursePage';
 import DemoPage from './pages/DemoPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -42,9 +44,13 @@ function Layout({ children }) {
   // Define public routes
   const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services'];
 
-  // Check if the current path is a viewBridge route
+  // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
     return path.startsWith('/viewBridge/') || path.startsWith('/b/');
+  };
+
+  const isViewCoursePath = (path) => {
+    return path.startsWith('/c/');
   };
 
   useEffect(() => {
@@ -69,8 +75,10 @@ function Layout({ children }) {
           setIsAuthenticated(false);
         }
       } else {
-        // Only redirect to login if not on a public route and not on a viewBridge route
-        const needsAuth = !publicRoutes.includes(currentPath) && !isViewBrdgePath(currentPath);
+        // Only redirect to login if not on a public route and not on a viewBridge or viewCourse route
+        const needsAuth = !publicRoutes.includes(currentPath) &&
+          !isViewBrdgePath(currentPath) &&
+          !isViewCoursePath(currentPath);
         if (needsAuth) {
           navigate('/login', { replace: true });
         }
@@ -125,6 +133,7 @@ function App() {
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
                 <Route path="/b/:publicId" element={<ViewBrdgePage />} />
+                <Route path="/c/:publicId" element={<ViewCoursePage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route
@@ -148,6 +157,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <EditBrdgePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/edit-course/:id"
+                  element={
+                    <ProtectedRoute>
+                      <EditCoursePage />
                     </ProtectedRoute>
                   }
                 />
