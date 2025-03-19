@@ -1,5 +1,5 @@
 // src/pages/BrdgeListPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Container,
@@ -43,6 +43,9 @@ import BrdgeList from '../components/BrdgeList';
 import EmptyBrdgeState from '../components/EmptyBrdgeState';
 import UsageIndicator from '../components/UsageIndicator';
 import CourseList from '../components/CourseList';
+// At the top with other imports, add these react-dnd imports
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Unified theme colors
 const theme = {
@@ -434,6 +437,176 @@ const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate }) => {
     );
 };
 
+// Add this component after the InfoSidebar component
+const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, handleRemoveModuleFromCourse, moveModule }) => {
+    const ref = React.useRef(null);
+
+    // Set up drag source
+    const [{ isDragging }, drag] = useDrag({
+        type: 'MODULE',
+        item: { index, id: module.id, courseId },
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+    });
+
+    // Set up drop target
+    const [, drop] = useDrop({
+        accept: 'MODULE',
+        hover: (item, monitor) => {
+            if (!ref.current) {
+                return;
+            }
+
+            const dragIndex = item.index;
+            const hoverIndex = index;
+
+            // Don't replace items with themselves
+            if (dragIndex === hoverIndex) {
+                return;
+            }
+
+            // Only perform the move when we're hovering over a different course module
+            if (item.courseId !== courseId) {
+                return;
+            }
+
+            // Determine rectangle on screen
+            const hoverBoundingRect = ref.current.getBoundingClientRect();
+
+            // Get vertical middle
+            const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+
+            // Determine mouse position
+            const clientOffset = monitor.getClientOffset();
+
+            // Get pixels to the top
+            const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+            // Only perform the move when the mouse has crossed half of the items height
+            // When dragging downwards, only move when the cursor is below 50%
+            // When dragging upwards, only move when the cursor is above 50%
+
+            // Dragging downwards
+            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+                return;
+            }
+
+            // Dragging upwards
+            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+                return;
+            }
+
+            // Time to actually perform the action
+            moveModule(dragIndex, hoverIndex, item.courseId);
+
+            // Note: we're mutating the monitor item here!
+            // Generally it's better to avoid mutations,
+            // but it's good here for the sake of performance
+            // to avoid expensive index searches.
+            item.index = hoverIndex;
+        },
+    });
+
+    // Initialize drag and drop
+    drag(drop(ref));
+
+    return (
+        <Box
+            ref={ref}
+            sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 1,
+                py: 1,
+                px: 1,
+                borderRadius: '4px',
+                backgroundColor: isDragging ? 'rgba(34, 211, 238, 0.1)' : 'transparent',
+                opacity: isDragging ? 0.5 : 1,
+                border: isDragging ? '1px dashed rgba(34, 211, 238, 0.3)' : '1px solid transparent',
+                cursor: 'move',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.03)' }
+            }}
+        >
+            <Typography
+                variant="body2"
+                sx={{
+                    color: 'rgba(255, 255, 255, 0.8)',
+                    display: 'flex',
+                    alignItems: 'center'
+                }}
+            >
+                {index + 1}. {module.name}
+                {module.shareable ? (
+                    <Tooltip title="Public Module">
+                        <Box sx={{ display: 'inline-flex', ml: 1 }}>
+                            <Globe size={14} color="#22D3EE" />
+                        </Box>
+                    </Tooltip>
+                ) : (
+                    <Tooltip title="Private Module">
+                        <Box sx={{ display: 'inline-flex', ml: 1 }}>
+                            <Lock size={14} color="rgba(255, 255, 255, 0.5)" />
+                        </Box>
+                    </Tooltip>
+                )}
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 1 }}>
+                <Tooltip title="View Module">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleView(null, { id: module.brdge_id, public_id: module.public_id });
+                        }}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            padding: '4px',
+                            '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                        }}
+                    >
+                        <BookOpen size={16} />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title="Edit Module">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(null, { id: module.brdge_id, public_id: module.public_id });
+                        }}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            padding: '4px',
+                            '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                        }}
+                    >
+                        <Edit size={16} />
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title="Remove from Course">
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveModuleFromCourse(courseId, module.id);
+                        }}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            padding: '4px',
+                            '&:hover': { color: '#FF4B4B', backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                        }}
+                    >
+                        <Trash2 size={16} />
+                    </IconButton>
+                </Tooltip>
+            </Box>
+        </Box>
+    );
+};
+
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
     const [courses, setCourses] = useState([]);
@@ -464,7 +637,7 @@ function BrdgeListPage() {
     const [selectedModules, setSelectedModules] = useState([]);
     const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('content');
-    const [marketplaceExpanded, setMarketplaceExpanded] = useState(false);
+    const [marketplaceExpanded, setMarketplaceExpanded] = useState(true);
     const [moduleSelectionDialogOpen, setModuleSelectionDialogOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [moduleSearchTerm, setModuleSearchTerm] = useState('');
@@ -473,6 +646,9 @@ function BrdgeListPage() {
     const [courseDialogOpen, setCourseDialogOpen] = useState(false);
     const [newCourseData, setNewCourseData] = useState({ name: '', description: '' });
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    // Add these state variables near other state declarations
+    const [editingCourseId, setEditingCourseId] = useState(null);
+    const [editedCourseName, setEditedCourseName] = useState('');
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -917,22 +1093,25 @@ function BrdgeListPage() {
 
     const handleCreateCourse = async () => {
         try {
-            // Ensure there's at least a name
-            if (!newCourseData.name.trim()) {
-                showSnackbar('Course name is required', 'error');
-                return;
-            }
-
-            const response = await api.post('/courses', newCourseData);
+            // Create a new course with default values
+            const response = await api.post('/courses', {
+                name: "New Course",
+                description: "Click edit to customize this course"
+            });
 
             // Add the new course to the courses state
             setCourses([...courses, response.data.course]);
 
-            // Close the dialog and reset form
-            setCourseDialogOpen(false);
-            setNewCourseData({ name: '', description: '' });
+            // Show success message
+            showSnackbar('Course created successfully. Click "Edit" to customize it.', 'success');
 
-            showSnackbar('Course created successfully', 'success');
+            // Optional: Scroll to the new course
+            setTimeout(() => {
+                const newCourseElement = document.getElementById(`course-${response.data.course.id}`);
+                if (newCourseElement) {
+                    newCourseElement.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 300);
         } catch (error) {
             console.error('Error creating course:', error);
             showSnackbar('Failed to create course', 'error');
@@ -959,10 +1138,18 @@ function BrdgeListPage() {
 
     const confirmDeleteCourse = async () => {
         try {
+            if (!courseToDelete) return;
+
             await api.delete(`/courses/${courseToDelete.id}`);
+
+            // Update local state to remove the course
             setCourses(courses.filter(c => c.id !== courseToDelete.id));
-            showSnackbar('Course deleted successfully', 'success');
+
+            // Close dialog and reset state
             setDeleteCourseDialogOpen(false);
+            setCourseToDelete(null);
+
+            showSnackbar('Course deleted successfully. Your modules remain available.', 'success');
         } catch (error) {
             console.error('Error deleting course:', error);
             showSnackbar('Failed to delete course', 'error');
@@ -1299,6 +1486,92 @@ function BrdgeListPage() {
             brdge.name.toLowerCase().includes(moduleSearchTerm.toLowerCase());
     });
 
+    // Inside the BrdgeListPage function component, add this new function for moving modules
+    const moveModule = (dragIndex, hoverIndex, courseId) => {
+        // Find the course
+        const course = courses.find(c => c.id === courseId);
+        if (!course || !course.modules) return;
+
+        // Create a copy of the modules array
+        const updatedModules = [...course.modules];
+
+        // Remove the dragged item
+        const draggedItem = updatedModules[dragIndex];
+
+        // Remove and insert at new index
+        updatedModules.splice(dragIndex, 1);
+        updatedModules.splice(hoverIndex, 0, draggedItem);
+
+        // Update positions for all items
+        const moduleOrder = updatedModules.map((module, index) => ({
+            id: module.id,
+            position: index + 1
+        }));
+
+        // Update the state and call the API
+        setCourses(prevCourses => {
+            return prevCourses.map(c => {
+                if (c.id === courseId) {
+                    // Return a new course object with updated modules array
+                    return {
+                        ...c,
+                        modules: updatedModules.map((module, index) => ({
+                            ...module,
+                            position: index + 1
+                        }))
+                    };
+                }
+                return c;
+            });
+        });
+
+        // Call the API to update the backend
+        handleReorderModules(courseId, moduleOrder);
+    };
+
+    // Add these functions after other similar handler functions
+    const handleStartEditingCourse = (e, course) => {
+        e.stopPropagation();
+        setEditingCourseId(course.id);
+        setEditedCourseName(course.name);
+    };
+
+    const handleCourseNameChange = (e) => {
+        setEditedCourseName(e.target.value);
+    };
+
+    const handleSaveCourseName = async (courseId) => {
+        if (!editedCourseName.trim()) {
+            showSnackbar('Course name cannot be empty', 'error');
+            return;
+        }
+
+        try {
+            await api.put(`/courses/${courseId}`, { name: editedCourseName });
+
+            // Update local state
+            setCourses(prevCourses => prevCourses.map(course =>
+                course.id === courseId
+                    ? { ...course, name: editedCourseName }
+                    : course
+            ));
+
+            // Exit edit mode
+            setEditingCourseId(null);
+            setEditedCourseName('');
+
+            showSnackbar('Course name updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating course name:', error);
+            showSnackbar('Failed to update course name', 'error');
+        }
+    };
+
+    const handleCancelEditingCourse = () => {
+        setEditingCourseId(null);
+        setEditedCourseName('');
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -1308,681 +1581,678 @@ function BrdgeListPage() {
     }
 
     return (
-        <Box sx={{
-            ...styles.pageContainer,
-            display: 'flex',
-            minHeight: '100vh',
-        }}>
+        <DndProvider backend={HTML5Backend}>
             <Box sx={{
-                flex: 1,
-                transition: 'margin 0.3s ease',
-                mr: sidebarOpen ? '320px' : 0, // Add margin when sidebar is open
+                ...styles.pageContainer,
+                display: 'flex',
+                minHeight: '100vh',
             }}>
-                <Container maxWidth="lg" sx={{
-                    py: 4,
-                    px: 3,
+                <Box sx={{
+                    flex: 1,
+                    transition: 'margin 0.3s ease',
+                    mr: sidebarOpen ? '320px' : 0, // Add margin when sidebar is open
                 }}>
-                    <Typography variant="h4" sx={styles.header}>
-                        Learning Hub
-                    </Typography>
-
-                    {/* Platform Introduction & Analytics Section */}
-                    <Box sx={{ mb: 4, pb: 3, borderBottom: '1px solid rgba(255, 255, 255, 0.1)', position: 'relative' }}>
-
-                        {/* Usage Stats - Smaller, clearer cards with tooltips */}
-                        <Typography variant="subtitle1" sx={{
-                            mb: 2,
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1
-                        }}>
+                    <Container maxWidth="lg" sx={{
+                        py: 4,
+                        px: 3,
+                    }}>
+                        <Typography variant="h4" sx={styles.header}>
+                            Learning Hub
                         </Typography>
 
-                        <Grid container spacing={2} sx={{ mb: 2 }}>
-                            {/* Course Stats Card */}
-                            <Grid item xs={12} sm={4}>
-                                <Tooltip title="Total number of courses you've created. Courses help you organize modules into structured learning paths.">
-                                    <Box sx={{
-                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                        border: '1px solid rgba(34, 211, 238, 0.15)',
-                                        p: 1.5,
-                                        borderRadius: '10px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                        height: '100%',
-                                        cursor: 'help'
-                                    }}>
-                                        <Box sx={{
-                                            height: 38,
-                                            width: 38,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                            borderRadius: '50%',
-                                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
-                                        }}>
-                                            <BookOpen size={20} color="#22D3EE" />
-                                        </Box>
+                        {/* Platform Introduction & Analytics Section */}
+                        <Box sx={{ mb: 4, pb: 3, borderBottom: '1px solid rgba(255, 255, 255, 0.1)', position: 'relative' }}>
 
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography variant="body2" sx={{
-                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                fontSize: '0.75rem'
-                                            }}>
-                                                Courses Created
-                                            </Typography>
-                                            <Typography variant="h6" sx={{
-                                                color: 'white',
-                                                fontWeight: 'bold',
-                                                mt: 0.5,
-                                                display: 'flex',
-                                                alignItems: 'baseline',
-                                                gap: 0.5
-                                            }}>
-                                                {courses.length}
-                                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                                    total
-                                                </Typography>
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Tooltip>
-                            </Grid>
-
-                            {/* AI Modules Stats Card */}
-                            <Grid item xs={12} sm={4}>
-                                <Tooltip title="Number of AI Modules you've created out of your plan limit. Modules are interactive learning components powered by AI.">
-                                    <Box sx={{
-                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                        border: '1px solid rgba(34, 211, 238, 0.15)',
-                                        p: 1.5,
-                                        borderRadius: '10px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                        height: '100%',
-                                        cursor: 'help'
-                                    }}>
-                                        <Box sx={{
-                                            height: 38,
-                                            width: 38,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                            borderRadius: '50%',
-                                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
-                                        }}>
-                                            <GraduationCap size={20} color="#22D3EE" />
-                                        </Box>
-
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography variant="body2" sx={{
-                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                fontSize: '0.75rem'
-                                            }}>
-                                                AI Modules
-                                            </Typography>
-                                            <Typography variant="h6" sx={{
-                                                color: 'white',
-                                                fontWeight: 'bold',
-                                                mt: 0.5,
-                                                display: 'flex',
-                                                alignItems: 'baseline',
-                                                gap: 0.5
-                                            }}>
-                                                {userStats.brdges_created}
-                                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                                    {userStats.brdges_limit === 'Unlimited' ?
-                                                        '/ ∞' :
-                                                        `/ ${userStats.brdges_limit}`}
-                                                </Typography>
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Tooltip>
-                            </Grid>
-
-                            {/* AI Minutes Stats Card */}
-                            <Grid item xs={12} sm={4}>
-                                <Tooltip title="AI interaction minutes used out of your plan allocation. These minutes are consumed when users interact with your modules.">
-                                    <Box sx={{
-                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                        border: '1px solid rgba(34, 211, 238, 0.15)',
-                                        p: 1.5,
-                                        borderRadius: '10px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 2,
-                                        height: '100%',
-                                        cursor: 'help'
-                                    }}>
-                                        <Box sx={{
-                                            height: 38,
-                                            width: 38,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                            borderRadius: '50%',
-                                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
-                                        }}>
-                                            <MessageSquare size={20} color="#22D3EE" />
-                                        </Box>
-
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography variant="body2" sx={{
-                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                fontSize: '0.75rem'
-                                            }}>
-                                                AI Minutes
-                                            </Typography>
-                                            <Typography variant="h6" sx={{
-                                                color: 'white',
-                                                fontWeight: 'bold',
-                                                mt: 0.5,
-                                                display: 'flex',
-                                                alignItems: 'baseline',
-                                                gap: 0.5
-                                            }}>
-                                                {userStats.minutes_used}
-                                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                                    / {userStats.minutes_limit}
-                                                </Typography>
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Tooltip>
-                            </Grid>
-                        </Grid>
-
-                        {/* Upgrade prompt if near limits */}
-                        {(userStats.brdges_created > 0.7 * userStats.brdges_limit ||
-                            userStats.minutes_used > 0.7 * userStats.minutes_limit) &&
-                            userStats.brdges_limit !== 'Unlimited' && (
-                                <Box sx={{
-                                    mt: 1,
-                                    p: 1.5,
-                                    borderRadius: '8px',
-                                    backgroundColor: 'rgba(34, 211, 238, 0.08)',
-                                    border: '1px dashed rgba(34, 211, 238, 0.2)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between'
-                                }}>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                        You're approaching your plan limits. Upgrade to unlock more AI capabilities.
-                                    </Typography>
-                                    <Button
-                                        size="small"
-                                        variant="outlined"
-                                        onClick={() => navigate('/profile')}
-                                        sx={{
-                                            color: '#22D3EE',
-                                            borderColor: 'rgba(34, 211, 238, 0.3)',
-                                            '&:hover': {
-                                                borderColor: 'rgba(34, 211, 238, 0.6)',
-                                                backgroundColor: 'rgba(34, 211, 238, 0.05)'
-                                            }
-                                        }}
-                                    >
-                                        Upgrade
-                                    </Button>
-                                </Box>
-                            )}
-
-                        {/* Enhanced Search Bar with glow */}
-                        <Box sx={{ position: 'relative', mt: 3, mb: 3 }}>
-                            <Search
-                                size={20}
-                                style={{
-                                    position: 'absolute',
-                                    left: 12,
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    color: 'rgba(34, 211, 238, 0.7)'
-                                }}
-                            />
-                            <InputBase
-                                placeholder="Search your modules and courses..."
-                                value={searchTerm}
-                                onChange={handleSearch}
-                                sx={{
-                                    width: '100%',
-                                    pl: 5,
-                                    pr: 2,
-                                    py: 1.2,
-                                    borderRadius: '50px',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                                    color: 'white',
-                                    backdropFilter: 'blur(10px)',
-                                    border: '1px solid rgba(34, 211, 238, 0.2)',
-                                    transition: 'all 0.3s ease',
-                                    boxShadow: '0 0 5px rgba(34, 211, 238, 0.1)',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                                        borderColor: 'rgba(34, 211, 238, 0.3)',
-                                        boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)'
-                                    },
-                                    '&:focus-within': {
-                                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                                        border: '1px solid rgba(34, 211, 238, 0.5)',
-                                        boxShadow: '0 0 15px rgba(34, 211, 238, 0.25)'
-                                    }
-                                }}
-                            />
-                        </Box>
-
-                        {/* CTA Block - Create Buttons */}
-                        <Box sx={styles.ctaBlock}>
-                            <Tooltip title="Create a new AI Module to share interactive content with your students">
-                                <Button
-                                    variant="contained"
-                                    startIcon={<Plus size={20} />}
-                                    onClick={handleCreateClick}
-                                    sx={{
-                                        ...styles.actionButton,
-                                        backgroundColor: 'rgba(34, 211, 238, 0.15)',
-                                        boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
-                                        '&:hover': {
-                                            backgroundColor: 'rgba(34, 211, 238, 0.25)',
-                                            boxShadow: '0 0 25px rgba(34, 211, 238, 0.4)',
-                                            transform: 'translateY(-2px)'
-                                        }
-                                    }}
-                                    fullWidth
-                                >
-                                    {isOverLimit() ? 'Upgrade Plan' : 'Create New Module'}
-                                </Button>
-                            </Tooltip>
-                            <Tooltip title="Create a new Course to organize your modules into a structured learning path">
-                                <Button
-                                    variant="contained"
-                                    startIcon={<BookOpen size={20} />}
-                                    onClick={() => setCourseDialogOpen(true)}
-                                    sx={{
-                                        ...styles.actionButton,
-                                        backgroundColor: 'rgba(34, 211, 238, 0.15)',
-                                        boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
-                                        '&:hover': {
-                                            backgroundColor: 'rgba(34, 211, 238, 0.25)',
-                                            boxShadow: '0 0 25px rgba(34, 211, 238, 0.4)',
-                                            transform: 'translateY(-2px)'
-                                        }
-                                    }}
-                                    fullWidth
-                                >
-                                    Create New Course
-                                </Button>
-                            </Tooltip>
-                        </Box>
-
-                        {/* Visual divider with glow effect */}
-                        <Box sx={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '50%',
-                            height: '2px',
-                            background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.7), transparent)',
-                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
-                        }} />
-                    </Box>
-
-                    {/* Main Content Area */}
-                    <Box>
-                        {/* Your Courses Section with enhanced visual separation */}
-                        <Box sx={styles.sectionContainer}>
-                            <Typography variant="h5" sx={styles.sectionHeader}>
-                                <BookOpen size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
-                                Your Courses
+                            {/* Usage Stats - Smaller, clearer cards with tooltips */}
+                            <Typography variant="subtitle1" sx={{
+                                mb: 2,
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
+                            }}>
                             </Typography>
 
-                            {courses.length === 0 ? (
-                                <Box sx={{
-                                    p: 4,
-                                    textAlign: 'center',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                    borderRadius: '12px',
-                                    border: '1px dashed rgba(255, 255, 255, 0.2)'
-                                }}>
-                                    <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
-                                        You haven't created any courses yet.
-                                    </Typography>
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                {/* Course Stats Card */}
+                                <Grid item xs={12} sm={4}>
+                                    <Tooltip title="Total number of courses you've created. Courses help you organize modules into structured learning paths.">
+                                        <Box sx={{
+                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                                            p: 1.5,
+                                            borderRadius: '10px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                            height: '100%',
+                                            cursor: 'help'
+                                        }}>
+                                            <Box sx={{
+                                                height: 38,
+                                                width: 38,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                borderRadius: '50%',
+                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
+                                            }}>
+                                                <BookOpen size={20} color="#22D3EE" />
+                                            </Box>
+
+                                            <Box sx={{ flex: 1 }}>
+                                                <Typography variant="body2" sx={{
+                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    fontSize: '0.75rem'
+                                                }}>
+                                                    Courses Created
+                                                </Typography>
+                                                <Typography variant="h6" sx={{
+                                                    color: 'white',
+                                                    fontWeight: 'bold',
+                                                    mt: 0.5,
+                                                    display: 'flex',
+                                                    alignItems: 'baseline',
+                                                    gap: 0.5
+                                                }}>
+                                                    {courses.length}
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                        total
+                                                    </Typography>
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </Tooltip>
+                                </Grid>
+
+                                {/* AI Modules Stats Card */}
+                                <Grid item xs={12} sm={4}>
+                                    <Tooltip title="Number of AI Modules you've created out of your plan limit. Modules are interactive learning components powered by AI.">
+                                        <Box sx={{
+                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                                            p: 1.5,
+                                            borderRadius: '10px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                            height: '100%',
+                                            cursor: 'help'
+                                        }}>
+                                            <Box sx={{
+                                                height: 38,
+                                                width: 38,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                borderRadius: '50%',
+                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
+                                            }}>
+                                                <GraduationCap size={20} color="#22D3EE" />
+                                            </Box>
+
+                                            <Box sx={{ flex: 1 }}>
+                                                <Typography variant="body2" sx={{
+                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    fontSize: '0.75rem'
+                                                }}>
+                                                    AI Modules
+                                                </Typography>
+                                                <Typography variant="h6" sx={{
+                                                    color: 'white',
+                                                    fontWeight: 'bold',
+                                                    mt: 0.5,
+                                                    display: 'flex',
+                                                    alignItems: 'baseline',
+                                                    gap: 0.5
+                                                }}>
+                                                    {userStats.brdges_created}
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                        {userStats.brdges_limit === 'Unlimited' ?
+                                                            '/ ∞' :
+                                                            `/ ${userStats.brdges_limit}`}
+                                                    </Typography>
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </Tooltip>
+                                </Grid>
+
+                                {/* AI Minutes Stats Card */}
+                                <Grid item xs={12} sm={4}>
+                                    <Tooltip title="AI interaction minutes used out of your plan allocation. These minutes are consumed when users interact with your modules.">
+                                        <Box sx={{
+                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                                            p: 1.5,
+                                            borderRadius: '10px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                            height: '100%',
+                                            cursor: 'help'
+                                        }}>
+                                            <Box sx={{
+                                                height: 38,
+                                                width: 38,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                borderRadius: '50%',
+                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
+                                            }}>
+                                                <MessageSquare size={20} color="#22D3EE" />
+                                            </Box>
+
+                                            <Box sx={{ flex: 1 }}>
+                                                <Typography variant="body2" sx={{
+                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    fontSize: '0.75rem'
+                                                }}>
+                                                    AI Minutes
+                                                </Typography>
+                                                <Typography variant="h6" sx={{
+                                                    color: 'white',
+                                                    fontWeight: 'bold',
+                                                    mt: 0.5,
+                                                    display: 'flex',
+                                                    alignItems: 'baseline',
+                                                    gap: 0.5
+                                                }}>
+                                                    {userStats.minutes_used}
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                        / {userStats.minutes_limit}
+                                                    </Typography>
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </Tooltip>
+                                </Grid>
+                            </Grid>
+
+                            {/* Upgrade prompt if near limits */}
+                            {(userStats.brdges_created > 0.7 * userStats.brdges_limit ||
+                                userStats.minutes_used > 0.7 * userStats.minutes_limit) &&
+                                userStats.brdges_limit !== 'Unlimited' && (
+                                    <Box sx={{
+                                        mt: 1,
+                                        p: 1.5,
+                                        borderRadius: '8px',
+                                        backgroundColor: 'rgba(34, 211, 238, 0.08)',
+                                        border: '1px dashed rgba(34, 211, 238, 0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
+                                    }}>
+                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                            You're approaching your plan limits. Upgrade to unlock more AI capabilities.
+                                        </Typography>
+                                        <Button
+                                            size="small"
+                                            variant="outlined"
+                                            onClick={() => navigate('/profile')}
+                                            sx={{
+                                                color: '#22D3EE',
+                                                borderColor: 'rgba(34, 211, 238, 0.3)',
+                                                '&:hover': {
+                                                    borderColor: 'rgba(34, 211, 238, 0.6)',
+                                                    backgroundColor: 'rgba(34, 211, 238, 0.05)'
+                                                }
+                                            }}
+                                        >
+                                            Upgrade
+                                        </Button>
+                                    </Box>
+                                )}
+
+                            {/* Enhanced Search Bar with glow */}
+                            <Box sx={{ position: 'relative', mt: 3, mb: 3 }}>
+                                <Search
+                                    size={20}
+                                    style={{
+                                        position: 'absolute',
+                                        left: 12,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        color: 'rgba(34, 211, 238, 0.7)'
+                                    }}
+                                />
+                                <InputBase
+                                    placeholder="Search your modules and courses..."
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                    sx={{
+                                        width: '100%',
+                                        pl: 5,
+                                        pr: 2,
+                                        py: 1.2,
+                                        borderRadius: '50px',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                        color: 'white',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(34, 211, 238, 0.2)',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 0 5px rgba(34, 211, 238, 0.1)',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                                            borderColor: 'rgba(34, 211, 238, 0.3)',
+                                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)'
+                                        },
+                                        '&:focus-within': {
+                                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                            border: '1px solid rgba(34, 211, 238, 0.5)',
+                                            boxShadow: '0 0 15px rgba(34, 211, 238, 0.25)'
+                                        }
+                                    }}
+                                />
+                            </Box>
+
+                            {/* CTA Block - Create Buttons */}
+                            <Box sx={styles.ctaBlock}>
+                                <Tooltip title="Create a new AI Module to share interactive content with your students">
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<Plus size={20} />}
+                                        onClick={handleCreateClick}
+                                        sx={{
+                                            ...styles.actionButton,
+                                            backgroundColor: 'rgba(34, 211, 238, 0.15)',
+                                            boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(34, 211, 238, 0.25)',
+                                                boxShadow: '0 0 25px rgba(34, 211, 238, 0.4)',
+                                                transform: 'translateY(-2px)'
+                                            }
+                                        }}
+                                        fullWidth
+                                    >
+                                        {isOverLimit() ? 'Upgrade Plan' : 'Create New Module'}
+                                    </Button>
+                                </Tooltip>
+                                <Tooltip title="Create a new Course to organize your modules into a structured learning path">
                                     <Button
                                         variant="contained"
                                         startIcon={<BookOpen size={20} />}
-                                        onClick={() => navigate('/create-course')}
-                                        sx={styles.actionButton}
+                                        onClick={handleCreateCourse}  // Changed from setCourseDialogOpen(true) to direct function call
+                                        sx={{
+                                            ...styles.actionButton,
+                                            backgroundColor: 'rgba(34, 211, 238, 0.15)',
+                                            boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(34, 211, 238, 0.25)',
+                                                boxShadow: '0 0 25px rgba(34, 211, 238, 0.4)',
+                                                transform: 'translateY(-2px)'
+                                            }
+                                        }}
+                                        fullWidth
                                     >
-                                        Create Your First Course
+                                        Create New Course
                                     </Button>
-                                </Box>
-                            ) : (
-                                <Box>
-                                    {courses.map(course => (
-                                        <Box key={course.id}
-                                            sx={{
-                                                ...styles.courseCard,
-                                                borderColor: dropTargetCourseId === course.id ? '#22D3EE' : 'rgba(255, 255, 255, 0.1)',
-                                                boxShadow: dropTargetCourseId === course.id ? '0 0 20px rgba(34, 211, 238, 0.3)' : undefined,
-                                            }}
-                                            onDragOver={(e) => handleDragOver(e, course.id)}
-                                            onDrop={(e) => handleDrop(e, course.id)}
-                                            onDragLeave={() => setDropTargetCourseId(null)}
+                                </Tooltip>
+                            </Box>
+
+                            {/* Visual divider with glow effect */}
+                            <Box sx={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '50%',
+                                height: '2px',
+                                background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.7), transparent)',
+                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
+                            }} />
+                        </Box>
+
+                        {/* Main Content Area */}
+                        <Box>
+                            {/* Your Courses Section with enhanced visual separation */}
+                            <Box sx={styles.sectionContainer}>
+                                <Typography variant="h5" sx={styles.sectionHeader}>
+                                    <BookOpen size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
+                                    Your Courses
+                                </Typography>
+
+                                {courses.length === 0 ? (
+                                    <Box sx={{
+                                        p: 4,
+                                        textAlign: 'center',
+                                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                        borderRadius: '12px',
+                                        border: '1px dashed rgba(255, 255, 255, 0.2)'
+                                    }}>
+                                        <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+                                            You haven't created any courses yet.
+                                        </Typography>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<BookOpen size={20} />}
+                                            onClick={() => navigate('/create-course')}
+                                            sx={styles.actionButton}
                                         >
-                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                                <Box>
-                                                    <Typography variant="h6" sx={{ color: 'white', display: 'flex', alignItems: 'center' }}>
-                                                        {course.name}
-                                                    </Typography>
-                                                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
-                                                        {course.modules?.length || 0} modules | Last updated: {
-                                                            course.updated_at ? new Date(course.updated_at).toLocaleDateString() : 'N/A'
-                                                        }
-                                                    </Typography>
-                                                </Box>
-                                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                                    <Tooltip title="View Course">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleViewCourse(course);
-                                                            }}
-                                                            sx={{
-                                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                                '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
-                                                            }}
-                                                        >
-                                                            <BookOpen size={18} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Edit Course">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleEditCourse(course);
-                                                            }}
-                                                            sx={{
-                                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                                '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
-                                                            }}
-                                                        >
-                                                            <Edit size={18} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Share Course">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleShareCourse(course);
-                                                            }}
-                                                            sx={{
-                                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                                '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
-                                                            }}
-                                                        >
-                                                            <Share size={18} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                    <Tooltip title="Delete Course">
-                                                        <IconButton
-                                                            size="small"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleDeleteCourse(course);
-                                                            }}
-                                                            sx={{
-                                                                color: 'rgba(255, 255, 255, 0.7)',
-                                                                '&:hover': { color: '#FF4B4B', backgroundColor: 'rgba(255, 75, 75, 0.1)' }
-                                                            }}
-                                                        >
-                                                            <Trash2 size={18} />
-                                                        </IconButton>
-                                                    </Tooltip>
-                                                </Box>
-                                            </Box>
-
-                                            {/* Module Management Section */}
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                mb: 2,
-                                                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                                                pb: 2
-                                            }}>
-                                                <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.8)', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <GraduationCap size={16} style={{ color: '#22D3EE' }} />
-                                                    Modules in this Course
-                                                </Typography>
-                                                <Button
-                                                    variant="outlined"
-                                                    size="small"
-                                                    startIcon={<Plus size={14} />}
-                                                    onClick={() => handleOpenModuleSelection(course)}
-                                                    sx={{
-                                                        color: '#22D3EE',
-                                                        borderColor: 'rgba(34, 211, 238, 0.3)',
-                                                        '&:hover': {
-                                                            backgroundColor: 'rgba(34, 211, 238, 0.08)',
-                                                            borderColor: 'rgba(34, 211, 238, 0.5)',
-                                                        }
-                                                    }}
-                                                >
-                                                    Add Module
-                                                </Button>
-                                            </Box>
-
-                                            {/* Modules Used in Course */}
-                                            {course.modules && course.modules.length > 0 ? (
-                                                <Box sx={{ pl: 1 }}>
-                                                    {course.modules.map((module, index) => (
-                                                        <Box
-                                                            key={module.id}
-                                                            sx={{
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                alignItems: 'center',
-                                                                mb: 1,
-                                                                py: 1,
-                                                                px: 1,
-                                                                borderRadius: '4px',
-                                                                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.03)' }
-                                                            }}
-                                                        >
+                                            Create Your First Course
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <Box>
+                                        {courses.map(course => (
+                                            <Box
+                                                key={course.id}
+                                                id={`course-${course.id}`}  // Add this ID attribute
+                                                sx={{
+                                                    ...styles.courseCard,
+                                                    borderColor: dropTargetCourseId === course.id ? '#22D3EE' : 'rgba(255, 255, 255, 0.1)',
+                                                    boxShadow: dropTargetCourseId === course.id ? '0 0 20px rgba(34, 211, 238, 0.3)' : undefined,
+                                                }}
+                                                onDragOver={(e) => handleDragOver(e, course.id)}
+                                                onDrop={(e) => handleDrop(e, course.id)}
+                                                onDragLeave={() => setDropTargetCourseId(null)}
+                                            >
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                    <Box>
+                                                        {editingCourseId === course.id ? (
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                                                <TextField
+                                                                    value={editedCourseName}
+                                                                    onChange={handleCourseNameChange}
+                                                                    autoFocus
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    sx={{
+                                                                        '& .MuiOutlinedInput-root': {
+                                                                            color: 'white',
+                                                                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                                                            '& fieldset': {
+                                                                                borderColor: 'rgba(34, 211, 238, 0.3)',
+                                                                            },
+                                                                            '&:hover fieldset': {
+                                                                                borderColor: 'rgba(34, 211, 238, 0.5)',
+                                                                            },
+                                                                            '&.Mui-focused fieldset': {
+                                                                                borderColor: '#22D3EE',
+                                                                            },
+                                                                        },
+                                                                    }}
+                                                                    InputProps={{
+                                                                        endAdornment: (
+                                                                            <InputAdornment position="end">
+                                                                                <IconButton
+                                                                                    size="small"
+                                                                                    onClick={() => handleSaveCourseName(course.id)}
+                                                                                    sx={{ color: '#22D3EE' }}
+                                                                                >
+                                                                                    <Check size={16} />
+                                                                                </IconButton>
+                                                                                <IconButton
+                                                                                    size="small"
+                                                                                    onClick={handleCancelEditingCourse}
+                                                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                                                >
+                                                                                    <Trash2 size={16} />
+                                                                                </IconButton>
+                                                                            </InputAdornment>
+                                                                        ),
+                                                                    }}
+                                                                    onKeyPress={(e) => {
+                                                                        if (e.key === 'Enter') {
+                                                                            handleSaveCourseName(course.id);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </Box>
+                                                        ) : (
                                                             <Typography
-                                                                variant="body2"
+                                                                variant="h6"
                                                                 sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.8)',
+                                                                    color: 'white',
                                                                     display: 'flex',
-                                                                    alignItems: 'center'
+                                                                    alignItems: 'center',
+                                                                    cursor: 'pointer',
+                                                                    '&:hover': {
+                                                                        textDecoration: 'underline',
+                                                                        textDecorationColor: 'rgba(34, 211, 238, 0.5)',
+                                                                    }
+                                                                }}
+                                                                onClick={(e) => handleStartEditingCourse(e, course)}
+                                                            >
+                                                                {course.name}
+                                                            </Typography>
+                                                        )}
+                                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
+                                                            {course.modules?.length || 0} modules | Last updated: {
+                                                                course.updated_at ? new Date(course.updated_at).toLocaleDateString() : 'N/A'
+                                                            }
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                                        <Tooltip title="View Course">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleViewCourse(course);
+                                                                }}
+                                                                sx={{
+                                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                                    '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
                                                                 }}
                                                             >
-                                                                {index + 1}. {module.name}
-                                                                {module.shareable ? (
-                                                                    <Tooltip title="Public Module">
-                                                                        <Box sx={{ display: 'inline-flex', ml: 1 }}>
-                                                                            <Globe size={14} color="#22D3EE" />
-                                                                        </Box>
-                                                                    </Tooltip>
-                                                                ) : (
-                                                                    <Tooltip title="Private Module">
-                                                                        <Box sx={{ display: 'inline-flex', ml: 1 }}>
-                                                                            <Lock size={14} color="rgba(255, 255, 255, 0.5)" />
-                                                                        </Box>
-                                                                    </Tooltip>
-                                                                )}
-                                                            </Typography>
-
-                                                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                                                <Tooltip title="View Module">
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => handleView(null, { id: module.brdge_id, public_id: module.public_id })}
-                                                                        sx={{
-                                                                            color: 'rgba(255, 255, 255, 0.6)',
-                                                                            padding: '4px',
-                                                                            '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
-                                                                        }}
-                                                                    >
-                                                                        <BookOpen size={16} />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                <Tooltip title="Edit Module">
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => handleEdit(null, { id: module.brdge_id, public_id: module.public_id })}
-                                                                        sx={{
-                                                                            color: 'rgba(255, 255, 255, 0.6)',
-                                                                            padding: '4px',
-                                                                            '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
-                                                                        }}
-                                                                    >
-                                                                        <Edit size={16} />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                                <Tooltip title="Remove from Course">
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => handleRemoveModuleFromCourse(course.id, module.id)}
-                                                                        sx={{
-                                                                            color: 'rgba(255, 255, 255, 0.6)',
-                                                                            padding: '4px',
-                                                                            '&:hover': { color: '#FF4B4B', backgroundColor: 'rgba(255, 75, 75, 0.1)' }
-                                                                        }}
-                                                                    >
-                                                                        <Trash2 size={16} />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                            </Box>
-                                                        </Box>
-                                                    ))}
+                                                                <BookOpen size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Edit Course">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleEditCourse(course);
+                                                                }}
+                                                                sx={{
+                                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                                    '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                                                                }}
+                                                            >
+                                                                <Edit size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Share Course">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleShareCourse(course);
+                                                                }}
+                                                                sx={{
+                                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                                    '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                                                                }}
+                                                            >
+                                                                <Share size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Delete Course">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteCourse(course);
+                                                                }}
+                                                                sx={{
+                                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                                    '&:hover': { color: '#FF4B4B', backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                                                                }}
+                                                            >
+                                                                <Trash2 size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Box>
                                                 </Box>
-                                            ) : (
+
+                                                {/* Module Management Section */}
                                                 <Box sx={{
-                                                    p: 3,
-                                                    textAlign: 'center',
-                                                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                                    borderRadius: '8px',
-                                                    border: '1px dashed rgba(255, 255, 255, 0.1)'
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    mb: 2,
+                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                                                    pb: 2
                                                 }}>
-                                                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1 }}>
-                                                        No modules in this course yet
+                                                    <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.8)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <GraduationCap size={16} style={{ color: '#22D3EE' }} />
+                                                        Modules in this Course
                                                     </Typography>
-                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.4)', display: 'block' }}>
-                                                        Click "Add Module" or drag modules here
-                                                    </Typography>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        startIcon={<Plus size={14} />}
+                                                        onClick={() => handleOpenModuleSelection(course)}
+                                                        sx={{
+                                                            color: '#22D3EE',
+                                                            borderColor: 'rgba(34, 211, 238, 0.3)',
+                                                            '&:hover': {
+                                                                backgroundColor: 'rgba(34, 211, 238, 0.08)',
+                                                                borderColor: 'rgba(34, 211, 238, 0.5)',
+                                                            }
+                                                        }}
+                                                    >
+                                                        Add Module
+                                                    </Button>
                                                 </Box>
-                                            )}
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
 
-                        {/* Your AI Modules Section with enhanced visual separation */}
-                        <Box sx={styles.sectionContainer}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h5" sx={styles.sectionHeader}>
-                                    <GraduationCap size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
-                                    Your AI Modules
-                                </Typography>
-
-                                <Button
-                                    variant="contained"
-                                    startIcon={<Plus size={20} />}
-                                    onClick={handleCreateClick}
-                                    sx={{
-                                        ...styles.actionButton,
-                                        height: '36px',
-                                        px: 2
-                                    }}
-                                >
-                                    New Module
-                                </Button>
+                                                {/* Modules Used in Course */}
+                                                {course.modules && course.modules.length > 0 ? (
+                                                    <Box sx={{ pl: 1 }}>
+                                                        {course.modules.map((module, index) => (
+                                                            <DraggableModuleItem
+                                                                key={module.id}
+                                                                module={module}
+                                                                index={index}
+                                                                courseId={course.id}
+                                                                handleEdit={handleEdit}
+                                                                handleView={handleView}
+                                                                handleRemoveModuleFromCourse={handleRemoveModuleFromCourse}
+                                                                moveModule={moveModule}
+                                                            />
+                                                        ))}
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{
+                                                        p: 3,
+                                                        textAlign: 'center',
+                                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                                        borderRadius: '8px',
+                                                        border: '1px dashed rgba(255, 255, 255, 0.1)'
+                                                    }}>
+                                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1 }}>
+                                                            No modules in this course yet
+                                                        </Typography>
+                                                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.4)', display: 'block' }}>
+                                                            Click "Add Module" or drag modules here
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                )}
                             </Box>
 
-                            {/* Add this block to render the actual modules */}
-                            {filteredBrdges.length === 0 ? (
-                                <EmptyBrdgeState
-                                    onCreateClick={() => navigate('/create')}
-                                    canCreate={canCreateBrdge()}
-                                />
-                            ) : (
-                                <Box sx={styles.listContainer}>
-                                    <BrdgeList
-                                        brdges={filteredBrdges}
-                                        onView={handleView}
-                                        onEdit={handleEdit}
-                                        onShare={handleShare}
-                                        onDelete={handleDelete}
-                                        orderBy={orderBy}
-                                        orderDirection={orderDirection}
-                                        onSort={handleSort}
-                                        stats={userStats}
-                                        selectedModules={selectedModules}
-                                        onModuleSelect={handleModuleSelect}
-                                        onSelectAll={handleSelectAll}
-                                        courses={courses}
-                                        draggable={true}
-                                        onDragStart={handleModuleDragStart}
-                                        onDragEnd={handleModuleDragEnd}
+                            {/* Your AI Modules Section with enhanced visual separation */}
+                            <Box sx={styles.sectionContainer}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                    <Typography variant="h5" sx={styles.sectionHeader}>
+                                        <GraduationCap size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
+                                        Your AI Modules
+                                    </Typography>
+
+                                    <Button
+                                        variant="contained"
+                                        startIcon={<Plus size={20} />}
+                                        onClick={handleCreateClick}
+                                        sx={{
+                                            ...styles.actionButton,
+                                            height: '36px',
+                                            px: 2
+                                        }}
+                                    >
+                                        New Module
+                                    </Button>
+                                </Box>
+
+                                {/* Add this block to render the actual modules */}
+                                {filteredBrdges.length === 0 ? (
+                                    <EmptyBrdgeState
+                                        onCreateClick={() => navigate('/create')}
+                                        canCreate={canCreateBrdge()}
                                     />
-                                </Box>
-                            )}
-                        </Box>
-
-                        {/* Enhanced Marketplace Section - Collapsible with better visual treatment */}
-                        <Box sx={styles.marketplaceSection}>
-                            <Box sx={{
-                                ...styles.marketplaceHeader,
-                                p: 2,
-                                px: 3,
-                                borderBottom: '1px solid rgba(34, 211, 238, 0.2)'
-                            }}>
-                                <Typography variant="h5" sx={{
-                                    ...styles.sectionHeader,
-                                    '&::before': {
-                                        display: 'none' // Remove the side indicator for marketplace
-                                    }
-                                }}>
-                                    <BookOpen size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
-                                    AI Course Marketplace
-                                </Typography>
-                                <Button
-                                    variant="text"
-                                    onClick={() => setMarketplaceExpanded(!marketplaceExpanded)}
-                                    endIcon={marketplaceExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                    sx={{
-                                        color: '#22D3EE',
-                                        textTransform: 'none',
-                                        backgroundColor: 'rgba(34, 211, 238, 0.05)',
-                                        borderRadius: '20px',
-                                        border: '1px solid rgba(34, 211, 238, 0.2)',
-                                        px: 2,
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)',
-                                            border: '1px solid rgba(34, 211, 238, 0.3)',
-                                        }
-                                    }}
-                                >
-                                    {marketplaceExpanded ? 'Hide Marketplace' : 'Browse AI-Powered Courses & Templates'}
-                                </Button>
+                                ) : (
+                                    <Box sx={styles.listContainer}>
+                                        <BrdgeList
+                                            brdges={filteredBrdges}
+                                            onView={handleView}
+                                            onEdit={handleEdit}
+                                            onShare={handleShare}
+                                            onDelete={handleDelete}
+                                            orderBy={orderBy}
+                                            orderDirection={orderDirection}
+                                            onSort={handleSort}
+                                            stats={userStats}
+                                            selectedModules={selectedModules}
+                                            onModuleSelect={handleModuleSelect}
+                                            onSelectAll={handleSelectAll}
+                                            courses={courses}
+                                            draggable={true}
+                                            onDragStart={handleModuleDragStart}
+                                            onDragEnd={handleModuleDragEnd}
+                                        />
+                                    </Box>
+                                )}
                             </Box>
 
-                            {/* Collapsible Marketplace Content */}
-                            <Collapse in={marketplaceExpanded}>
+                            {/* Enhanced Marketplace Section - Collapsible with better visual treatment */}
+                            <Box sx={styles.marketplaceSection}>
+                                <Box sx={{
+                                    ...styles.marketplaceHeader,
+                                    p: 2,
+                                    px: 3,
+                                    borderBottom: '1px solid rgba(34, 211, 238, 0.2)'
+                                }}>
+                                    <Typography variant="h5" sx={{
+                                        ...styles.sectionHeader,
+                                        '&::before': {
+                                            display: 'none' // Remove the side indicator for marketplace
+                                        }
+                                    }}>
+                                        <BookOpen size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
+                                        AI Course Marketplace
+                                    </Typography>
+                                    <Button
+                                        variant="text"
+                                        sx={{
+                                            color: '#22D3EE',
+                                            textTransform: 'none',
+                                            backgroundColor: 'rgba(34, 211, 238, 0.05)',
+                                            borderRadius: '20px',
+                                            border: '1px solid rgba(34, 211, 238, 0.2)',
+                                            px: 2,
+                                            transition: 'all 0.3s ease',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)',
+                                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                            }
+                                        }}
+                                        onClick={() => navigate('/marketplace')}
+                                    >
+                                        Browse More Templates
+                                    </Button>
+                                </Box>
+
+                                {/* Replace the Collapse component with a regular Box */}
                                 <Box sx={{ px: 3, pt: 3 }}>
                                     <Typography variant="subtitle1" sx={{
                                         color: theme.colors.text.glow,
@@ -1992,7 +2262,7 @@ function BrdgeListPage() {
                                         Popular Courses & Templates
                                     </Typography>
 
-                                    {/* Enhanced Marketplace Grid with card visuals */}
+                                    {/* The rest of the marketplace content stays the same */}
                                     <Box sx={{
                                         ...styles.marketplaceGrid,
                                         gap: 3,
@@ -2084,408 +2354,579 @@ function BrdgeListPage() {
                                         )}
                                     </Box>
                                 </Box>
-                            </Collapse>
+                            </Box>
                         </Box>
-                    </Box>
 
-                    {/* Add Batch Delete Confirmation Dialog */}
-                    <Dialog
-                        open={batchDeleteDialogOpen}
-                        onClose={() => setBatchDeleteDialogOpen(false)}
-                        sx={{
-                            '& .MuiDialog-paper': {
-                                backgroundColor: 'rgba(17, 25, 40, 0.95)',
-                                backdropFilter: 'blur(16px)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '16px',
-                                color: 'white',
-                                minWidth: '400px',
-                                boxShadow: '0 0 40px rgba(0,0,0,0.5)',
-                                overflow: 'hidden'
-                            },
-                            '& .MuiBackdrop-root': {
-                                backdropFilter: 'blur(8px)'
-                            }
-                        }}
-                    >
-                        <DialogTitle sx={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                            padding: '20px 24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 2,
-                            position: 'relative',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: -1,
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '60%',
-                                height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
-                                boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
-                            }
-                        }}>
-                            <Box sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: '50%',
-                                backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                        {/* Add Batch Delete Confirmation Dialog */}
+                        <Dialog
+                            open={batchDeleteDialogOpen}
+                            onClose={() => setBatchDeleteDialogOpen(false)}
+                            sx={{
+                                '& .MuiDialog-paper': {
+                                    backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                                    backdropFilter: 'blur(16px)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    borderRadius: '16px',
+                                    color: 'white',
+                                    minWidth: '400px',
+                                    boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+                                    overflow: 'hidden'
+                                },
+                                '& .MuiBackdrop-root': {
+                                    backdropFilter: 'blur(8px)'
+                                }
+                            }}
+                        >
+                            <DialogTitle sx={{
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                padding: '20px 24px',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 0 15px rgba(255, 75, 75, 0.2)'
-                            }}>
-                                <Trash2 size={20} color="#FF4B4B" />
-                            </Box>
-                            <Box>
-                                <Typography variant="h6" sx={{
-                                    color: '#FF4B4B',
-                                    fontWeight: 600,
-                                    fontSize: '1.1rem'
-                                }}>
-                                    Delete Multiple Modules
-                                </Typography>
-                                <Typography variant="caption" sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    display: 'block',
-                                    mt: 0.5
-                                }}>
-                                    {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''} selected
-                                </Typography>
-                            </Box>
-                        </DialogTitle>
-                        <DialogContent sx={{
-                            padding: '24px',
-                            backgroundColor: 'rgba(255, 75, 75, 0.02)'
-                        }}>
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
                                 gap: 2,
-                                p: 3,
-                                borderRadius: '12px',
-                                backgroundColor: 'rgba(255, 75, 75, 0.05)',
-                                border: '1px solid rgba(255, 75, 75, 0.1)'
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: -1,
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '60%',
+                                    height: '1px',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
+                                    boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
+                                }
                             }}>
                                 <Box sx={{
-                                    width: 28,
-                                    height: 28,
+                                    width: 40,
+                                    height: 40,
                                     borderRadius: '50%',
-                                    backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                    backgroundColor: 'rgba(255, 75, 75, 0.1)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    flexShrink: 0,
-                                    mt: 0.5
+                                    boxShadow: '0 0 15px rgba(255, 75, 75, 0.2)'
                                 }}>
-                                    <Typography sx={{
-                                        color: '#FF4B4B',
-                                        fontSize: '1rem',
-                                        fontWeight: 600
-                                    }}>!</Typography>
+                                    <Trash2 size={20} color="#FF4B4B" />
                                 </Box>
                                 <Box>
-                                    <Typography variant="body1" sx={{
-                                        color: 'rgba(255, 255, 255, 0.9)',
-                                        fontWeight: 500,
-                                        mb: 1
-                                    }}>
-                                        Are you sure you want to delete these modules?
-                                    </Typography>
-                                    <Typography variant="body2" sx={{
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                        fontSize: '0.875rem',
-                                        lineHeight: 1.6,
-                                        mb: 1
-                                    }}>
-                                        This action cannot be undone. All selected modules will be permanently removed, including:
-                                    </Typography>
-                                    <Box component="ul" sx={{
-                                        pl: 2,
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                        fontSize: '0.875rem',
-                                        '& li': { mb: 0.5 }
-                                    }}>
-                                        <li>All module content and structure</li>
-                                        <li>Student interactions and analytics</li>
-                                        <li>References in any courses using these modules</li>
-                                    </Box>
-                                    <Typography variant="body2" sx={{
+                                    <Typography variant="h6" sx={{
                                         color: '#FF4B4B',
-                                        fontWeight: 500,
-                                        mt: 2
+                                        fontWeight: 600,
+                                        fontSize: '1.1rem'
                                     }}>
-                                        Modules used in courses will be removed from those courses.
+                                        Delete Multiple Modules
+                                    </Typography>
+                                    <Typography variant="caption" sx={{
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        display: 'block',
+                                        mt: 0.5
+                                    }}>
+                                        {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''} selected
                                     </Typography>
                                 </Box>
-                            </Box>
-                        </DialogContent>
-                        <DialogActions sx={{
-                            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                            padding: '16px 24px',
-                            gap: 2,
-                            justifyContent: 'space-between',
-                            backgroundColor: 'rgba(17, 25, 40, 0.98)'
-                        }}>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                Selected: {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''}
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 2 }}>
+                            </DialogTitle>
+                            <DialogContent sx={{
+                                padding: '24px',
+                                backgroundColor: 'rgba(255, 75, 75, 0.02)'
+                            }}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: 2,
+                                    p: 3,
+                                    borderRadius: '12px',
+                                    backgroundColor: 'rgba(255, 75, 75, 0.05)',
+                                    border: '1px solid rgba(255, 75, 75, 0.1)'
+                                }}>
+                                    <Box sx={{
+                                        width: 28,
+                                        height: 28,
+                                        borderRadius: '50%',
+                                        backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                        mt: 0.5
+                                    }}>
+                                        <Typography sx={{
+                                            color: '#FF4B4B',
+                                            fontSize: '1rem',
+                                            fontWeight: 600
+                                        }}>!</Typography>
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="body1" sx={{
+                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            fontWeight: 500,
+                                            mb: 1
+                                        }}>
+                                            Are you sure you want to delete these modules?
+                                        </Typography>
+                                        <Typography variant="body2" sx={{
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            fontSize: '0.875rem',
+                                            lineHeight: 1.6,
+                                            mb: 1
+                                        }}>
+                                            This action cannot be undone. All selected modules will be permanently removed, including:
+                                        </Typography>
+                                        <Box component="ul" sx={{
+                                            pl: 2,
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            fontSize: '0.875rem',
+                                            '& li': { mb: 0.5 }
+                                        }}>
+                                            <li>All module content and structure</li>
+                                            <li>Student interactions and analytics</li>
+                                            <li>References in any courses using these modules</li>
+                                        </Box>
+                                        <Typography variant="body2" sx={{
+                                            color: '#FF4B4B',
+                                            fontWeight: 500,
+                                            mt: 2
+                                        }}>
+                                            Modules used in courses will be removed from those courses.
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            </DialogContent>
+                            <DialogActions sx={{
+                                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                                padding: '16px 24px',
+                                gap: 2,
+                                justifyContent: 'space-between',
+                                backgroundColor: 'rgba(17, 25, 40, 0.98)'
+                            }}>
+                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                    Selected: {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 2 }}>
+                                    <Button
+                                        onClick={() => setBatchDeleteDialogOpen(false)}
+                                        sx={{
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            px: 3,
+                                            borderRadius: '8px',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                color: 'white',
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                            }
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={confirmBatchDelete}
+                                        sx={{
+                                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                            color: '#FF4B4B',
+                                            borderRadius: '8px',
+                                            px: 3,
+                                            fontWeight: 600,
+                                            border: '1px solid rgba(255, 75, 75, 0.3)',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 75, 75, 0.25)',
+                                                borderColor: 'rgba(255, 75, 75, 0.5)',
+                                                boxShadow: '0 0 20px rgba(255, 75, 75, 0.3)'
+                                            }
+                                        }}
+                                    >
+                                        Delete {selectedModules.length} Module{selectedModules.length !== 1 ? 's' : ''}
+                                    </Button>
+                                </Box>
+                            </DialogActions>
+                        </Dialog>
+
+                        {/* Module Selection Dialog */}
+                        <Dialog
+                            open={moduleSelectionDialogOpen}
+                            onClose={() => setModuleSelectionDialogOpen(false)}
+                            maxWidth="md"
+                            fullWidth
+                            sx={{
+                                '& .MuiDialog-paper': {
+                                    backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                                    backdropFilter: 'blur(16px)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    borderRadius: '16px',
+                                    color: 'white',
+                                    boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+                                }
+                            }}
+                        >
+                            <DialogTitle sx={{
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                padding: '20px 24px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <GraduationCap size={24} color="#22D3EE" />
+                                    <Typography variant="h6">
+                                        Add Modules to Course
+                                    </Typography>
+                                </Box>
+                                <Typography variant="body2" sx={{
+                                    color: 'rgba(255, 255, 255, 0.6)',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                    p: 1,
+                                    px: 2,
+                                    borderRadius: '4px'
+                                }}>
+                                    {selectedCourse?.name}
+                                </Typography>
+                            </DialogTitle>
+                            <DialogContent sx={{ padding: '24px' }}>
+                                {/* Search Bar */}
+                                <Box sx={{ position: 'relative', mb: 3 }}>
+                                    <Search
+                                        size={18}
+                                        style={{
+                                            position: 'absolute',
+                                            left: 10,
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            color: 'rgba(255,255,255,0.5)'
+                                        }}
+                                    />
+                                    <InputBase
+                                        placeholder="Search modules to add..."
+                                        value={moduleSearchTerm}
+                                        onChange={(e) => setModuleSearchTerm(e.target.value)}
+                                        sx={{
+                                            width: '100%',
+                                            pl: 4,
+                                            pr: 2,
+                                            py: 1,
+                                            borderRadius: '4px',
+                                            backgroundColor: 'rgba(255,255,255,0.05)',
+                                            color: 'white',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255,255,255,0.07)',
+                                                border: '1px solid rgba(255,255,255,0.15)'
+                                            },
+                                            '&:focus-within': {
+                                                backgroundColor: 'rgba(255,255,255,0.08)',
+                                                border: '1px solid rgba(34,211,238,0.3)',
+                                            }
+                                        }}
+                                    />
+                                </Box>
+
+                                {/* Modules List */}
+                                <Box sx={{
+                                    maxHeight: '400px',
+                                    overflowY: 'auto',
+                                    pr: 1,
+                                    '&::-webkit-scrollbar': {
+                                        width: '8px',
+                                    },
+                                    '&::-webkit-scrollbar-track': {
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        borderRadius: '4px',
+                                    },
+                                    '&::-webkit-scrollbar-thumb': {
+                                        background: 'rgba(255, 255, 255, 0.15)',
+                                        borderRadius: '4px',
+                                        '&:hover': {
+                                            background: 'rgba(255, 255, 255, 0.25)',
+                                        }
+                                    }
+                                }}>
+                                    {filteredModulesForSelection.length > 0 ? (
+                                        filteredModulesForSelection.map((module) => (
+                                            <Box
+                                                key={module.id}
+                                                sx={{
+                                                    p: 2,
+                                                    mb: 1,
+                                                    borderRadius: '8px',
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    transition: 'all 0.2s',
+                                                    cursor: 'pointer',
+                                                    '&:hover': {
+                                                        backgroundColor: 'rgba(255, 255, 255, 0.05)'
+                                                    }
+                                                }}
+                                                onClick={() => {
+                                                    handleAddModuleToCourse(selectedCourse.id, module.id);
+                                                    setModuleSelectionDialogOpen(false);
+                                                }}
+                                            >
+                                                <Box>
+                                                    <Typography variant="subtitle2" sx={{
+                                                        color: 'white',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1
+                                                    }}>
+                                                        {module.name}
+                                                        {module.shareable ? (
+                                                            <Globe size={14} color="#22D3EE" />
+                                                        ) : (
+                                                            <Lock size={14} color="rgba(255, 255, 255, 0.5)" />
+                                                        )}
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                        Created: {new Date(module.created_at).toLocaleDateString()}
+                                                    </Typography>
+                                                </Box>
+                                                <IconButton
+                                                    size="small"
+                                                    sx={{
+                                                        backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                        color: '#22D3EE',
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(34, 211, 238, 0.2)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Plus size={18} />
+                                                </IconButton>
+                                            </Box>
+                                        ))
+                                    ) : (
+                                        <Box sx={{
+                                            p: 4,
+                                            textAlign: 'center',
+                                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                            borderRadius: '8px',
+                                            border: '1px dashed rgba(255, 255, 255, 0.2)'
+                                        }}>
+                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                                {moduleSearchTerm ?
+                                                    'No matching modules found.' :
+                                                    'No available modules to add.'
+                                                }
+                                            </Typography>
+                                            {moduleSearchTerm && (
+                                                <Button
+                                                    variant="text"
+                                                    sx={{
+                                                        color: '#22D3EE',
+                                                        mt: 1,
+                                                        '&:hover': {
+                                                            backgroundColor: 'rgba(34, 211, 238, 0.08)'
+                                                        }
+                                                    }}
+                                                    onClick={() => setModuleSearchTerm('')}
+                                                >
+                                                    Clear Search
+                                                </Button>
+                                            )}
+                                        </Box>
+                                    )}
+                                </Box>
+                            </DialogContent>
+                            <DialogActions sx={{
+                                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                                padding: '16px 24px',
+                            }}>
                                 <Button
-                                    onClick={() => setBatchDeleteDialogOpen(false)}
+                                    onClick={() => setModuleSelectionDialogOpen(false)}
                                     sx={{
                                         color: 'rgba(255, 255, 255, 0.7)',
-                                        px: 3,
-                                        borderRadius: '8px',
-                                        transition: 'all 0.2s ease',
                                         '&:hover': {
-                                            color: 'white',
-                                            backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                            backgroundColor: 'rgba(255, 255, 255, 0.05)'
                                         }
                                     }}
                                 >
-                                    Cancel
+                                    Close
                                 </Button>
-                                <Button
-                                    onClick={confirmBatchDelete}
-                                    sx={{
-                                        backgroundColor: 'rgba(255, 75, 75, 0.15)',
-                                        color: '#FF4B4B',
-                                        borderRadius: '8px',
-                                        px: 3,
-                                        fontWeight: 600,
-                                        border: '1px solid rgba(255, 75, 75, 0.3)',
-                                        transition: 'all 0.2s ease',
-                                        '&:hover': {
-                                            backgroundColor: 'rgba(255, 75, 75, 0.25)',
-                                            borderColor: 'rgba(255, 75, 75, 0.5)',
-                                            boxShadow: '0 0 20px rgba(255, 75, 75, 0.3)'
-                                        }
-                                    }}
-                                >
-                                    Delete {selectedModules.length} Module{selectedModules.length !== 1 ? 's' : ''}
-                                </Button>
-                            </Box>
-                        </DialogActions>
-                    </Dialog>
+                            </DialogActions>
+                        </Dialog>
+                    </Container>
+                </Box>
 
-                    {/* Module Selection Dialog */}
-                    <Dialog
-                        open={moduleSelectionDialogOpen}
-                        onClose={() => setModuleSelectionDialogOpen(false)}
-                        maxWidth="md"
-                        fullWidth
+                <InfoSidebar
+                    isOpen={sidebarOpen}
+                    onToggle={() => setSidebarOpen(!sidebarOpen)}
+                    userStats={userStats}
+                    courses={courses}
+                    navigate={navigate}
+                />
+            </Box>
+
+            {/* Course Deletion Confirmation Dialog */}
+            <Dialog
+                open={deleteCourseDialogOpen}
+                onClose={() => setDeleteCourseDialogOpen(false)}
+                sx={{
+                    '& .MuiDialog-paper': {
+                        backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                        backdropFilter: 'blur(16px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '16px',
+                        color: 'white',
+                        minWidth: '400px',
+                        boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+                        overflow: 'hidden'
+                    },
+                    '& .MuiBackdrop-root': {
+                        backdropFilter: 'blur(8px)'
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '20px 24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    position: 'relative',
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: -1,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '60%',
+                        height: '1px',
+                        background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
+                        boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
+                    }
+                }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 15px rgba(255, 75, 75, 0.2)'
+                    }}>
+                        <Trash2 size={20} color="#FF4B4B" />
+                    </Box>
+                    <Box>
+                        <Typography variant="h6" sx={{
+                            color: '#FF4B4B',
+                            fontWeight: 600,
+                            fontSize: '1.1rem'
+                        }}>
+                            Delete Course
+                        </Typography>
+                        <Typography variant="caption" sx={{
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            display: 'block',
+                            mt: 0.5
+                        }}>
+                            "{courseToDelete?.name}"
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent sx={{
+                    padding: '24px',
+                    backgroundColor: 'rgba(255, 75, 75, 0.02)'
+                }}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 2,
+                        p: 3,
+                        borderRadius: '12px',
+                        backgroundColor: 'rgba(255, 75, 75, 0.05)',
+                        border: '1px solid rgba(255, 75, 75, 0.1)'
+                    }}>
+                        <Box sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            mt: 0.5
+                        }}>
+                            <Typography sx={{
+                                color: '#FF4B4B',
+                                fontSize: '1rem',
+                                fontWeight: 600
+                            }}>!</Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="body1" sx={{
+                                color: 'rgba(255, 255, 255, 0.9)',
+                                fontWeight: 500,
+                                mb: 1
+                            }}>
+                                Are you sure you want to delete this course?
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                fontSize: '0.875rem',
+                                lineHeight: 1.6,
+                                mb: 1
+                            }}>
+                                This will remove the course and its structure, but all your modules will remain available in your library.
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                fontSize: '0.875rem',
+                                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                p: 1.5,
+                                borderRadius: '6px',
+                                mt: 2
+                            }}>
+                                <strong>Modules affected:</strong> {courseToDelete?.modules?.length || 0} module(s) will be removed from this course but will remain in your library.
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{
+                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '16px 24px',
+                    gap: 2,
+                    justifyContent: 'space-between',
+                    backgroundColor: 'rgba(17, 25, 40, 0.98)'
+                }}>
+                    <Button
+                        onClick={() => setDeleteCourseDialogOpen(false)}
                         sx={{
-                            '& .MuiDialog-paper': {
-                                backgroundColor: 'rgba(17, 25, 40, 0.95)',
-                                backdropFilter: 'blur(16px)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                borderRadius: '16px',
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            px: 3,
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
                                 color: 'white',
-                                boxShadow: '0 0 40px rgba(0,0,0,0.5)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)'
                             }
                         }}
                     >
-                        <DialogTitle sx={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                            padding: '20px 24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between'
-                        }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                <GraduationCap size={24} color="#22D3EE" />
-                                <Typography variant="h6">
-                                    Add Modules to Course
-                                </Typography>
-                            </Box>
-                            <Typography variant="body2" sx={{
-                                color: 'rgba(255, 255, 255, 0.6)',
-                                backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                p: 1,
-                                px: 2,
-                                borderRadius: '4px'
-                            }}>
-                                {selectedCourse?.name}
-                            </Typography>
-                        </DialogTitle>
-                        <DialogContent sx={{ padding: '24px' }}>
-                            {/* Search Bar */}
-                            <Box sx={{ position: 'relative', mb: 3 }}>
-                                <Search
-                                    size={18}
-                                    style={{
-                                        position: 'absolute',
-                                        left: 10,
-                                        top: '50%',
-                                        transform: 'translateY(-50%)',
-                                        color: 'rgba(255,255,255,0.5)'
-                                    }}
-                                />
-                                <InputBase
-                                    placeholder="Search modules to add..."
-                                    value={moduleSearchTerm}
-                                    onChange={(e) => setModuleSearchTerm(e.target.value)}
-                                    sx={{
-                                        width: '100%',
-                                        pl: 4,
-                                        pr: 2,
-                                        py: 1,
-                                        borderRadius: '4px',
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
-                                        color: 'white',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        '&:hover': {
-                                            backgroundColor: 'rgba(255,255,255,0.07)',
-                                            border: '1px solid rgba(255,255,255,0.15)'
-                                        },
-                                        '&:focus-within': {
-                                            backgroundColor: 'rgba(255,255,255,0.08)',
-                                            border: '1px solid rgba(34,211,238,0.3)',
-                                        }
-                                    }}
-                                />
-                            </Box>
-
-                            {/* Modules List */}
-                            <Box sx={{
-                                maxHeight: '400px',
-                                overflowY: 'auto',
-                                pr: 1,
-                                '&::-webkit-scrollbar': {
-                                    width: '8px',
-                                },
-                                '&::-webkit-scrollbar-track': {
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: '4px',
-                                },
-                                '&::-webkit-scrollbar-thumb': {
-                                    background: 'rgba(255, 255, 255, 0.15)',
-                                    borderRadius: '4px',
-                                    '&:hover': {
-                                        background: 'rgba(255, 255, 255, 0.25)',
-                                    }
-                                }
-                            }}>
-                                {filteredModulesForSelection.length > 0 ? (
-                                    filteredModulesForSelection.map((module) => (
-                                        <Box
-                                            key={module.id}
-                                            sx={{
-                                                p: 2,
-                                                mb: 1,
-                                                borderRadius: '8px',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                                                border: '1px solid rgba(255, 255, 255, 0.08)',
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                transition: 'all 0.2s',
-                                                cursor: 'pointer',
-                                                '&:hover': {
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)'
-                                                }
-                                            }}
-                                            onClick={() => {
-                                                handleAddModuleToCourse(selectedCourse.id, module.id);
-                                                setModuleSelectionDialogOpen(false);
-                                            }}
-                                        >
-                                            <Box>
-                                                <Typography variant="subtitle2" sx={{
-                                                    color: 'white',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 1
-                                                }}>
-                                                    {module.name}
-                                                    {module.shareable ? (
-                                                        <Globe size={14} color="#22D3EE" />
-                                                    ) : (
-                                                        <Lock size={14} color="rgba(255, 255, 255, 0.5)" />
-                                                    )}
-                                                </Typography>
-                                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                                                    Created: {new Date(module.created_at).toLocaleDateString()}
-                                                </Typography>
-                                            </Box>
-                                            <IconButton
-                                                size="small"
-                                                sx={{
-                                                    backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                                    color: '#22D3EE',
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(34, 211, 238, 0.2)'
-                                                    }
-                                                }}
-                                            >
-                                                <Plus size={18} />
-                                            </IconButton>
-                                        </Box>
-                                    ))
-                                ) : (
-                                    <Box sx={{
-                                        p: 4,
-                                        textAlign: 'center',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                                        borderRadius: '8px',
-                                        border: '1px dashed rgba(255, 255, 255, 0.2)'
-                                    }}>
-                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                            {moduleSearchTerm ?
-                                                'No matching modules found.' :
-                                                'No available modules to add.'
-                                            }
-                                        </Typography>
-                                        {moduleSearchTerm && (
-                                            <Button
-                                                variant="text"
-                                                sx={{
-                                                    color: '#22D3EE',
-                                                    mt: 1,
-                                                    '&:hover': {
-                                                        backgroundColor: 'rgba(34, 211, 238, 0.08)'
-                                                    }
-                                                }}
-                                                onClick={() => setModuleSearchTerm('')}
-                                            >
-                                                Clear Search
-                                            </Button>
-                                        )}
-                                    </Box>
-                                )}
-                            </Box>
-                        </DialogContent>
-                        <DialogActions sx={{
-                            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                            padding: '16px 24px',
-                        }}>
-                            <Button
-                                onClick={() => setModuleSelectionDialogOpen(false)}
-                                sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 255, 255, 0.05)'
-                                    }
-                                }}
-                            >
-                                Close
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                </Container>
-            </Box>
-
-            <InfoSidebar
-                isOpen={sidebarOpen}
-                onToggle={() => setSidebarOpen(!sidebarOpen)}
-                userStats={userStats}
-                courses={courses}
-                navigate={navigate}
-            />
-        </Box>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmDeleteCourse}
+                        sx={{
+                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                            color: '#FF4B4B',
+                            borderRadius: '8px',
+                            px: 3,
+                            fontWeight: 600,
+                            border: '1px solid rgba(255, 75, 75, 0.3)',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                backgroundColor: 'rgba(255, 75, 75, 0.25)',
+                                borderColor: 'rgba(255, 75, 75, 0.5)',
+                                boxShadow: '0 0 20px rgba(255, 75, 75, 0.3)'
+                            }
+                        }}
+                    >
+                        Delete Course
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </DndProvider>
     );
 }
 
