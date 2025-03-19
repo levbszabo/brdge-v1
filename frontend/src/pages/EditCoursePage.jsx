@@ -142,14 +142,21 @@ function EditCoursePage() {
             const response = await api.get('/brdges');
             console.log("Available brdges:", response.data);
 
-            // Filter out brdges already in the course
-            const existingBrdgeIds = course.modules.map(module => module.brdge_id);
-            console.log("Existing brdge IDs:", existingBrdgeIds);
+            // Check if response.data is an array or has a brdges property
+            const brdges = Array.isArray(response.data) ? response.data : response.data.brdges || [];
 
-            const filteredBrdges = response.data.filter(brdge => !existingBrdgeIds.includes(brdge.id));
-            setAvailableBrdges(filteredBrdges);
+            // Only filter if course and course.modules exist
+            if (course && course.modules) {
+                const existingBrdgeIds = course.modules.map(module => module.brdge_id);
+                console.log("Existing brdge IDs:", existingBrdgeIds);
+                const filteredBrdges = brdges.filter(brdge => !existingBrdgeIds.includes(brdge.id));
+                setAvailableBrdges(filteredBrdges);
+            } else {
+                // If no course/modules, show all brdges
+                setAvailableBrdges(brdges);
+            }
 
-            console.log("Filtered available brdges:", filteredBrdges);
+            console.log("Filtered available brdges:", availableBrdges);
         } catch (error) {
             console.error('Error fetching available brdges:', error);
         }
@@ -222,7 +229,7 @@ function EditCoursePage() {
 
             // Refresh course data
             const response = await api.get(`/courses/${id}`);
-            setCourse(response.data);
+            setCourse(response.data.course);
 
             handleCloseAddModuleDialog();
         } catch (error) {
@@ -510,28 +517,29 @@ function EditCoursePage() {
                     sx={{
                         '& .MuiTabs-indicator': {
                             backgroundColor: '#00E5FF',
-                            height: 3,
-                            borderRadius: '3px',
-                            boxShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
+                            height: 2,
+                            borderRadius: '2px',
+                            boxShadow: '0 0 8px rgba(0, 229, 255, 0.4)',
                         },
                         '& .MuiTab-root': {
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            minHeight: '72px',
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            minHeight: '56px',
                             transition: 'all 0.3s ease',
+                            fontSize: '0.9rem',
+                            letterSpacing: '0.03em',
                             '&.Mui-selected': {
                                 color: '#00E5FF',
                                 '& .MuiSvgIcon-root': {
-                                    transform: 'scale(1.1)',
-                                    filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
+                                    filter: 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.5))',
                                 }
                             },
                             '&:hover': {
                                 bgcolor: 'rgba(0, 229, 255, 0.05)',
-                                color: '#00E5FF',
+                                color: 'rgba(255, 255, 255, 0.9)',
                             },
                             '& .MuiSvgIcon-root': {
                                 transition: 'all 0.3s ease',
-                                fontSize: '1.5rem',
+                                fontSize: '1.2rem',
                                 mb: 0.5,
                             }
                         },
@@ -580,7 +588,7 @@ function EditCoursePage() {
                                     placeholder="Enter Course Title"
                                     InputProps={{
                                         sx: {
-                                            fontSize: '2rem',
+                                            fontSize: '1.75rem',
                                             fontWeight: '600',
                                             color: '#E0F7FA',
                                             '&::before': { display: 'none' },
@@ -603,11 +611,12 @@ function EditCoursePage() {
                                             border: '1px solid rgba(0, 229, 255, 0.2)',
                                             borderRadius: '8px',
                                             px: 2,
-                                            py: 1,
-                                            fontSize: '0.9rem',
+                                            py: 0.75,
+                                            fontSize: '0.85rem',
                                             fontWeight: 500,
                                             color: '#00E5FF',
                                             textTransform: 'none',
+                                            height: '36px',
                                             '&:hover': {
                                                 background: 'rgba(0, 229, 255, 0.2)',
                                                 borderColor: '#00E5FF',
@@ -629,19 +638,20 @@ function EditCoursePage() {
                                 variant="standard"
                                 sx={{
                                     '& .MuiInputBase-input': {
-                                        color: 'rgba(224, 247, 250, 0.9)',
-                                        fontSize: '1rem',
-                                        lineHeight: '1.6',
+                                        color: 'rgba(224, 247, 250, 0.8)',
+                                        fontSize: '0.95rem',
+                                        lineHeight: '1.5',
+                                        letterSpacing: '0.01em',
                                     },
                                     '& .MuiInputBase-input::placeholder': {
                                         color: 'rgba(224, 247, 250, 0.3)',
                                         opacity: 1
                                     },
                                     '& .MuiInput-underline:before': {
-                                        borderBottomColor: 'rgba(0, 229, 255, 0.2)'
+                                        borderBottomColor: 'rgba(0, 229, 255, 0.15)'
                                     },
                                     '& .MuiInput-underline:hover:before': {
-                                        borderBottomColor: 'rgba(0, 229, 255, 0.4)'
+                                        borderBottomColor: 'rgba(0, 229, 255, 0.3)'
                                     }
                                 }}
                             />
@@ -651,33 +661,26 @@ function EditCoursePage() {
                         <Box sx={{ mb: 4 }}>
                             <Box sx={{
                                 display: 'flex',
-                                justifyContent: 'space-between',
+                                justifyContent: 'flex-end',
                                 alignItems: 'center',
-                                mb: 4
+                                mb: 2
                             }}>
-                                <Typography variant="h5" sx={{
-                                    fontSize: '2rem',
-                                    fontWeight: '600',
-                                    color: '#fff',
-                                    letterSpacing: '-0.02em'
-                                }}>
-                                    Course Modules
-                                </Typography>
                                 <Button
                                     startIcon={<AddIcon />}
                                     onClick={handleOpenAddModuleDialog}
                                     sx={{
                                         background: 'linear-gradient(135deg, #00E5FF 0%, #0097A7 100%)',
-                                        borderRadius: '12px',
-                                        px: 3,
-                                        py: 1.5,
-                                        fontSize: '0.95rem',
+                                        borderRadius: '10px',
+                                        px: 2.5,
+                                        py: 1,
+                                        fontSize: '0.9rem',
                                         fontWeight: 500,
                                         color: '#fff',
                                         textTransform: 'none',
                                         '&:hover': {
                                             background: 'linear-gradient(135deg, #00E5FF 20%, #0097A7 120%)',
                                             transform: 'translateY(-2px)',
+                                            boxShadow: '0 4px 12px rgba(0, 151, 167, 0.3)',
                                         },
                                         transition: 'all 0.3s ease'
                                     }}
@@ -703,299 +706,373 @@ function EditCoursePage() {
                                     }
                                 }
                             }}>
-                                <Swiper
-                                    modules={[EffectCoverflow, Navigation, Pagination]}
-                                    effect="coverflow"
-                                    grabCursor={true}
-                                    centeredSlides={true}
-                                    slidesPerView={'auto'}
-                                    coverflowEffect={{
-                                        rotate: 0,
-                                        stretch: 0,
-                                        depth: 200,
-                                        modifier: 2.5,
-                                        slideShadows: false
-                                    }}
-                                    navigation
-                                    pagination={{ clickable: true }}
-                                    initialSlide={0}
-                                    slideToClickedSlide={true}
-                                >
-                                    {course.modules.map((module, index) => (
-                                        <SwiperSlide key={module.id} style={{ width: 400 }}>
-                                            <Card sx={{
-                                                height: '100%',
-                                                bgcolor: 'rgba(20, 20, 35, 0.7)',
-                                                backdropFilter: 'blur(10px)',
-                                                borderRadius: '20px',
-                                                overflow: 'hidden',
-                                                position: 'relative',
-                                                transition: 'all 0.3s ease-in-out',
-                                                border: '1px solid rgba(0, 229, 255, 0.1)',
-                                                '&:hover': {
-                                                    transform: 'translateY(-8px)',
-                                                    boxShadow: `
-                                                        0 0 20px rgba(0, 229, 255, 0.2),
-                                                        0 0 40px rgba(0, 229, 255, 0.1),
-                                                        0 0 60px rgba(0, 229, 255, 0.05)
-                                                    `,
-                                                    '& .module-image': {
-                                                        transform: 'scale(1.05)',
+                                {course && course.modules ? (
+                                    <Swiper
+                                        modules={[EffectCoverflow, Navigation, Pagination]}
+                                        effect="coverflow"
+                                        grabCursor={true}
+                                        centeredSlides={true}
+                                        slidesPerView={'auto'}
+                                        coverflowEffect={{
+                                            rotate: 0,
+                                            stretch: 0,
+                                            depth: 200,
+                                            modifier: 2.5,
+                                            slideShadows: false
+                                        }}
+                                        navigation
+                                        pagination={{ clickable: true }}
+                                        initialSlide={0}
+                                        slideToClickedSlide={true}
+                                    >
+                                        {course.modules.map((module, index) => (
+                                            <SwiperSlide key={module.id} style={{ width: 400 }}>
+                                                <Card sx={{
+                                                    height: '100%',
+                                                    bgcolor: 'rgba(20, 20, 35, 0.7)',
+                                                    backdropFilter: 'blur(10px)',
+                                                    borderRadius: '20px',
+                                                    overflow: 'hidden',
+                                                    position: 'relative',
+                                                    transition: 'all 0.3s ease-in-out',
+                                                    border: '1px solid rgba(0, 229, 255, 0.1)',
+                                                    '&:hover': {
+                                                        transform: 'translateY(-8px)',
+                                                        boxShadow: `
+                                                            0 0 20px rgba(0, 229, 255, 0.2),
+                                                            0 0 40px rgba(0, 229, 255, 0.1),
+                                                            0 0 60px rgba(0, 229, 255, 0.05)
+                                                        `,
+                                                        '& .module-image': {
+                                                            transform: 'scale(1.05)',
+                                                        },
+                                                        '& .module-overlay': {
+                                                            opacity: 1,
+                                                        }
                                                     },
-                                                    '& .module-overlay': {
-                                                        opacity: 1,
-                                                    }
-                                                },
-                                            }}>
-                                                <Box sx={{ position: 'relative', height: '250px' }}>
-                                                    {/* Module Label */}
-                                                    <Box
-                                                        sx={{
-                                                            position: 'absolute',
-                                                            top: 12,
-                                                            left: 12,
-                                                            zIndex: 2,
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 1,
-                                                            bgcolor: 'rgba(0, 229, 255, 0.15)',
-                                                            backdropFilter: 'blur(8px)',
-                                                            borderRadius: '12px',
-                                                            padding: '8px 16px',
-                                                            border: '1px solid rgba(0, 229, 255, 0.3)',
-                                                            transition: 'all 0.3s ease',
-                                                            '&:hover': {
-                                                                bgcolor: 'rgba(0, 229, 255, 0.25)',
-                                                                transform: 'scale(1.05)',
-                                                            }
-                                                        }}
-                                                    >
-                                                        <AutoStoriesIcon sx={{
-                                                            fontSize: '1.1rem',
-                                                            color: '#00E5FF',
-                                                            filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))'
-                                                        }} />
-                                                        <Typography variant="caption" sx={{
-                                                            color: '#00E5FF',
-                                                            fontWeight: 'medium',
-                                                            letterSpacing: '0.02em',
-                                                            textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
-                                                        }}>
-                                                            {`Module ${index + 1}`}
-                                                        </Typography>
-                                                    </Box>
-
-                                                    {/* Replace CardMedia with styled background */}
-                                                    <Box
-                                                        sx={{
-                                                            position: 'relative',
-                                                            height: '100%',
-                                                            background: `linear-gradient(135deg, 
-                                                                rgba(0, 21, 36, 0.95) 0%,
-                                                                rgba(0, 151, 167, 0.9) 100%)`,
-                                                            '&::before': {
-                                                                content: '""',
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                left: 0,
-                                                                right: 0,
-                                                                bottom: 0,
-                                                                background: `radial-gradient(circle at 50% 50%,
-                                                                    rgba(0, 229, 255, 0.15) 0%,
-                                                                    rgba(0, 229, 255, 0.05) 25%,
-                                                                    transparent 50%)`,
-                                                                opacity: 0.5,
-                                                                transition: 'all 0.3s ease',
-                                                            },
-                                                            '&::after': {
-                                                                content: '""',
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                left: 0,
-                                                                right: 0,
-                                                                bottom: 0,
-                                                                background: 'url("/path/to/noise-texture.png")', // Optional: add subtle noise texture
-                                                                opacity: 0.05,
-                                                                mixBlendMode: 'overlay',
-                                                            }
-                                                        }}
-                                                    >
-                                                        {/* Animated Play Button */}
+                                                }}>
+                                                    <Box sx={{ position: 'relative', height: '250px' }}>
+                                                        {/* Module Label */}
                                                         <Box
                                                             sx={{
                                                                 position: 'absolute',
-                                                                top: '50%',
-                                                                left: '50%',
-                                                                transform: 'translate(-50%, -50%)',
+                                                                top: 12,
+                                                                left: 12,
                                                                 zIndex: 2,
                                                                 display: 'flex',
-                                                                flexDirection: 'column',
                                                                 alignItems: 'center',
-                                                                gap: 2,
+                                                                gap: 1,
+                                                                bgcolor: 'rgba(0, 229, 255, 0.15)',
+                                                                backdropFilter: 'blur(8px)',
+                                                                borderRadius: '10px',
+                                                                padding: '6px 12px',
+                                                                border: '1px solid rgba(0, 229, 255, 0.3)',
+                                                                transition: 'all 0.3s ease',
+                                                                '&:hover': {
+                                                                    bgcolor: 'rgba(0, 229, 255, 0.25)',
+                                                                    transform: 'scale(1.05)',
+                                                                }
                                                             }}
                                                         >
-                                                            <IconButton
-                                                                onClick={() => handleViewModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
-                                                                sx={{
-                                                                    width: 80,
-                                                                    height: 80,
-                                                                    bgcolor: 'rgba(0, 229, 255, 0.1)',
-                                                                    backdropFilter: 'blur(8px)',
-                                                                    border: '2px solid rgba(0, 229, 255, 0.3)',
-                                                                    transition: 'all 0.3s ease',
-                                                                    '&:hover': {
-                                                                        bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                                        transform: 'scale(1.1)',
-                                                                        border: '2px solid rgba(0, 229, 255, 0.5)',
-                                                                        '& .play-icon': {
-                                                                            transform: 'scale(1.1)',
-                                                                        }
-                                                                    },
-                                                                    '&::before': {
-                                                                        content: '""',
-                                                                        position: 'absolute',
-                                                                        top: -4,
-                                                                        left: -4,
-                                                                        right: -4,
-                                                                        bottom: -4,
-                                                                        border: '2px solid rgba(0, 229, 255, 0.2)',
-                                                                        borderRadius: '50%',
-                                                                        animation: 'pulseRing 2s infinite',
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <PlayArrowIcon
-                                                                    className="play-icon"
-                                                                    sx={{
-                                                                        fontSize: 40,
-                                                                        color: '#00E5FF',
-                                                                        filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
-                                                                        transition: 'all 0.3s ease',
-                                                                    }}
-                                                                />
-                                                            </IconButton>
-                                                            <Typography
-                                                                variant="caption"
-                                                                sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.8)',
-                                                                    textShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
-                                                                    letterSpacing: '0.05em',
-                                                                    fontWeight: 500,
-                                                                }}
-                                                            >
-                                                                Click to View
+                                                            <AutoStoriesIcon sx={{
+                                                                fontSize: '0.9rem',
+                                                                color: '#00E5FF',
+                                                                filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))'
+                                                            }} />
+                                                            <Typography variant="caption" sx={{
+                                                                color: '#00E5FF',
+                                                                fontWeight: 'medium',
+                                                                fontSize: '0.75rem',
+                                                                letterSpacing: '0.03em',
+                                                                textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
+                                                            }}>
+                                                                {`Module ${index + 1}`}
                                                             </Typography>
                                                         </Box>
 
-                                                        {/* Decorative Elements */}
-                                                        <Box
+                                                        {/* Delete Button - Subtle but accessible */}
+                                                        <IconButton
+                                                            onClick={() => handleDeleteModuleClick(module.id)}
                                                             sx={{
                                                                 position: 'absolute',
-                                                                bottom: 20,
-                                                                left: 20,
-                                                                right: 20,
-                                                                display: 'flex',
-                                                                justifyContent: 'space-between',
-                                                                opacity: 0.5,
+                                                                top: 12,
+                                                                right: 12,
+                                                                zIndex: 3,
+                                                                width: 32,
+                                                                height: 32,
+                                                                bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                                                backdropFilter: 'blur(8px)',
+                                                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                                opacity: 0.6,
+                                                                transition: 'all 0.2s ease',
+                                                                '&:hover': {
+                                                                    bgcolor: 'rgba(255, 75, 75, 0.2)',
+                                                                    borderColor: 'rgba(255, 75, 75, 0.3)',
+                                                                    opacity: 1,
+                                                                    transform: 'scale(1.05)',
+                                                                },
                                                             }}
                                                         >
-                                                            {[...Array(3)].map((_, i) => (
-                                                                <Box
-                                                                    key={i}
+                                                            <DeleteIcon sx={{
+                                                                fontSize: '0.9rem',
+                                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                                transition: 'all 0.2s ease',
+                                                                '&:hover': {
+                                                                    color: '#FF4B4B',
+                                                                }
+                                                            }} />
+                                                        </IconButton>
+
+                                                        {/* Replace CardMedia with styled background */}
+                                                        <Box
+                                                            sx={{
+                                                                position: 'relative',
+                                                                height: '100%',
+                                                                background: `linear-gradient(135deg, 
+                                                                    rgba(0, 21, 36, 0.95) 0%,
+                                                                    rgba(0, 151, 167, 0.9) 100%)`,
+                                                                '&::before': {
+                                                                    content: '""',
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    right: 0,
+                                                                    bottom: 0,
+                                                                    background: `radial-gradient(circle at 50% 50%,
+                                                                        rgba(0, 229, 255, 0.15) 0%,
+                                                                        rgba(0, 229, 255, 0.05) 25%,
+                                                                        transparent 50%)`,
+                                                                    opacity: 0.5,
+                                                                    transition: 'all 0.3s ease',
+                                                                },
+                                                                '&::after': {
+                                                                    content: '""',
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    right: 0,
+                                                                    bottom: 0,
+                                                                    background: 'url("/path/to/noise-texture.png")', // Optional: add subtle noise texture
+                                                                    opacity: 0.05,
+                                                                    mixBlendMode: 'overlay',
+                                                                }
+                                                            }}
+                                                        >
+                                                            {/* Animated Play Button */}
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: '50%',
+                                                                    left: '50%',
+                                                                    transform: 'translate(-50%, -50%)',
+                                                                    zIndex: 2,
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    alignItems: 'center',
+                                                                    gap: 2,
+                                                                }}
+                                                            >
+                                                                <IconButton
+                                                                    onClick={() => handleViewModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
                                                                     sx={{
-                                                                        width: 40,
-                                                                        height: 2,
-                                                                        bgcolor: '#00E5FF',
-                                                                        borderRadius: '2px',
-                                                                        opacity: 0.6 - (i * 0.2),
+                                                                        width: 80,
+                                                                        height: 80,
+                                                                        bgcolor: 'rgba(0, 229, 255, 0.1)',
+                                                                        backdropFilter: 'blur(8px)',
+                                                                        border: '2px solid rgba(0, 229, 255, 0.3)',
+                                                                        transition: 'all 0.3s ease',
+                                                                        '&:hover': {
+                                                                            bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                                            transform: 'scale(1.1)',
+                                                                            border: '2px solid rgba(0, 229, 255, 0.5)',
+                                                                            '& .play-icon': {
+                                                                                transform: 'scale(1.1)',
+                                                                            }
+                                                                        },
+                                                                        '&::before': {
+                                                                            content: '""',
+                                                                            position: 'absolute',
+                                                                            top: -4,
+                                                                            left: -4,
+                                                                            right: -4,
+                                                                            bottom: -4,
+                                                                            border: '2px solid rgba(0, 229, 255, 0.2)',
+                                                                            borderRadius: '50%',
+                                                                            animation: 'pulseRing 2s infinite',
+                                                                        }
                                                                     }}
-                                                                />
-                                                            ))}
+                                                                >
+                                                                    <PlayArrowIcon
+                                                                        className="play-icon"
+                                                                        sx={{
+                                                                            fontSize: 40,
+                                                                            color: '#00E5FF',
+                                                                            filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
+                                                                            transition: 'all 0.3s ease',
+                                                                        }}
+                                                                    />
+                                                                </IconButton>
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    sx={{
+                                                                        color: 'rgba(255, 255, 255, 0.8)',
+                                                                        textShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
+                                                                        letterSpacing: '0.05em',
+                                                                        fontWeight: 500,
+                                                                    }}
+                                                                >
+                                                                    Click to View
+                                                                </Typography>
+                                                            </Box>
+
+                                                            {/* Decorative Elements */}
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    bottom: 20,
+                                                                    left: 20,
+                                                                    right: 20,
+                                                                    display: 'flex',
+                                                                    justifyContent: 'space-between',
+                                                                    opacity: 0.5,
+                                                                }}
+                                                            >
+                                                                {[...Array(3)].map((_, i) => (
+                                                                    <Box
+                                                                        key={i}
+                                                                        sx={{
+                                                                            width: 40,
+                                                                            height: 2,
+                                                                            bgcolor: '#00E5FF',
+                                                                            borderRadius: '2px',
+                                                                            opacity: 0.6 - (i * 0.2),
+                                                                        }}
+                                                                    />
+                                                                ))}
+                                                            </Box>
                                                         </Box>
                                                     </Box>
-                                                </Box>
 
-                                                <CardContent sx={{
-                                                    p: 3,
-                                                    height: 'calc(100% - 250px)',
-                                                    display: 'flex',
-                                                    flexDirection: 'column'
-                                                }}>
-                                                    <TextField
-                                                        value={module.brdge?.name || ''}
-                                                        onChange={(e) => handleModuleNameChange(module.id, e.target.value)}
-                                                        variant="standard"
-                                                        fullWidth
-                                                        InputProps={{
-                                                            sx: {
-                                                                fontSize: '1.25rem',
-                                                                fontWeight: 'bold',
-                                                                color: '#E0F7FA',
-                                                                '&::before': { display: 'none' },
-                                                                '&::after': { display: 'none' },
-                                                            }
-                                                        }}
-                                                    />
+                                                    <CardContent sx={{
+                                                        p: 3,
+                                                        height: 'calc(100% - 250px)',
+                                                        display: 'flex',
+                                                        flexDirection: 'column'
+                                                    }}>
+                                                        <TextField
+                                                            value={module.brdge?.name || ''}
+                                                            onChange={(e) => handleModuleNameChange(module.id, e.target.value)}
+                                                            variant="standard"
+                                                            fullWidth
+                                                            placeholder="Module Title"
+                                                            InputProps={{
+                                                                sx: {
+                                                                    fontSize: '1.1rem',
+                                                                    fontWeight: '600',
+                                                                    color: '#E0F7FA',
+                                                                    '&::before': { display: 'none' },
+                                                                    '&::after': { display: 'none' },
+                                                                    '&::placeholder': {
+                                                                        color: 'rgba(224, 247, 250, 0.3)',
+                                                                        opacity: 1
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
 
-                                                    <TextField
-                                                        value={module.brdge?.description || ''}
-                                                        onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
-                                                        multiline
-                                                        rows={3}
-                                                        fullWidth
-                                                        variant="standard"
-                                                        placeholder="Add a description..."
-                                                        sx={{
-                                                            mt: 2,
-                                                            flex: 1,
-                                                            '& .MuiInputBase-input': {
-                                                                color: 'rgba(224, 247, 250, 0.7)',
-                                                                fontSize: '0.95rem',
-                                                                lineHeight: '1.5',
-                                                            },
-                                                            '& .MuiInputBase-input::placeholder': {
-                                                                color: 'rgba(224, 247, 250, 0.3)',
-                                                                opacity: 1
-                                                            },
-                                                            '& .MuiInput-underline:before': {
-                                                                borderBottomColor: 'rgba(255, 255, 255, 0.1)'
-                                                            },
-                                                            '& .MuiInput-underline:hover:before': {
-                                                                borderBottomColor: 'rgba(255, 255, 255, 0.2)'
-                                                            }
-                                                        }}
-                                                    />
+                                                        <TextField
+                                                            value={module.brdge?.description || ''}
+                                                            onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
+                                                            multiline
+                                                            rows={2}
+                                                            fullWidth
+                                                            variant="standard"
+                                                            placeholder="Add a description..."
+                                                            sx={{
+                                                                mt: 1.5,
+                                                                flex: 1,
+                                                                '& .MuiInputBase-input': {
+                                                                    color: 'rgba(224, 247, 250, 0.7)',
+                                                                    fontSize: '0.85rem',
+                                                                    lineHeight: '1.5',
+                                                                },
+                                                                '& .MuiInputBase-input::placeholder': {
+                                                                    color: 'rgba(224, 247, 250, 0.3)',
+                                                                    opacity: 1
+                                                                },
+                                                                '& .MuiInput-underline:before': {
+                                                                    borderBottomColor: 'rgba(255, 255, 255, 0.1)'
+                                                                },
+                                                                '& .MuiInput-underline:hover:before': {
+                                                                    borderBottomColor: 'rgba(255, 255, 255, 0.2)'
+                                                                }
+                                                            }}
+                                                        />
 
-                                                    <Button
-                                                        variant="contained"
-                                                        startIcon={<EditIcon />}
-                                                        onClick={() => handleEditModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
-                                                        fullWidth
-                                                        sx={{
-                                                            mt: 2,
-                                                            backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                                                            boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
-                                                            fontFamily: 'Satoshi, sans-serif',
-                                                            fontWeight: 'medium',
-                                                            letterSpacing: '0.01em',
-                                                            height: '44px',
-                                                            borderRadius: '12px',
-                                                            '&:hover': {
-                                                                boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)',
-                                                                transform: 'translateY(-2px)'
-                                                            },
-                                                            '&.Mui-disabled': {
-                                                                background: 'rgba(0, 151, 167, 0.3)'
-                                                            }
-                                                        }}
-                                                    >
-                                                        Edit Module
-                                                    </Button>
-                                                </CardContent>
-                                            </Card>
-                                        </SwiperSlide>
-                                    ))}
-                                </Swiper>
+                                                        <Button
+                                                            variant="contained"
+                                                            startIcon={<EditIcon sx={{ fontSize: '1rem' }} />}
+                                                            onClick={() => handleEditModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
+                                                            fullWidth
+                                                            sx={{
+                                                                mt: 2,
+                                                                backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
+                                                                boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
+                                                                fontWeight: 'medium',
+                                                                letterSpacing: '0.01em',
+                                                                height: '40px',
+                                                                fontSize: '0.85rem',
+                                                                borderRadius: '10px',
+                                                                '&:hover': {
+                                                                    boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)',
+                                                                    transform: 'translateY(-2px)'
+                                                                },
+                                                                '&.Mui-disabled': {
+                                                                    background: 'rgba(0, 151, 167, 0.3)'
+                                                                }
+                                                            }}
+                                                        >
+                                                            Edit Module
+                                                        </Button>
+                                                    </CardContent>
+                                                </Card>
+                                            </SwiperSlide>
+                                        ))}
+                                    </Swiper>
+                                ) : (
+                                    <Box sx={{
+                                        p: 4,
+                                        textAlign: 'center',
+                                        bgcolor: 'rgba(0, 229, 255, 0.03)',
+                                        borderRadius: '16px',
+                                        border: '1px solid rgba(0, 229, 255, 0.1)',
+                                    }}>
+                                        <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+                                            No modules added to this course yet.
+                                        </Typography>
+                                        <Button
+                                            startIcon={<AddIcon />}
+                                            onClick={handleOpenAddModuleDialog}
+                                            sx={{
+                                                background: 'linear-gradient(135deg, #00E5FF 0%, #0097A7 100%)',
+                                                borderRadius: '12px',
+                                                px: 3,
+                                                py: 1.5,
+                                                fontSize: '0.95rem',
+                                                fontWeight: 500,
+                                                color: '#fff',
+                                                textTransform: 'none',
+                                                '&:hover': {
+                                                    background: 'linear-gradient(135deg, #00E5FF 20%, #0097A7 120%)',
+                                                    transform: 'translateY(-2px)',
+                                                },
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        >
+                                            Add Your First Module
+                                        </Button>
+                                    </Box>
+                                )}
                             </Box>
                         </Box>
                     </>
@@ -1239,9 +1316,9 @@ function EditCoursePage() {
                 onClose={handleCloseAddModuleDialog}
                 PaperProps={{
                     sx: {
-                        bgcolor: 'rgba(20, 20, 35, 0.85)',
+                        bgcolor: 'rgba(20, 20, 35, 0.95)',
                         backdropFilter: 'blur(10px)',
-                        color: 'text.primary',
+                        color: '#fff',
                         borderRadius: 3,
                         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
                         border: '1px solid rgba(0, 229, 255, 0.2)'
@@ -1251,8 +1328,8 @@ function EditCoursePage() {
                 fullWidth
             >
                 <DialogTitle sx={{
-                    bgcolor: 'rgba(0, 188, 212, 0.5)',
-                    color: 'primary.contrastText',
+                    bgcolor: 'rgba(0, 188, 212, 0.15)',
+                    color: '#fff',
                     borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
                     backdropFilter: 'blur(5px)',
                     fontFamily: 'Satoshi, sans-serif',
@@ -1262,7 +1339,10 @@ function EditCoursePage() {
                     Add Module to Course
                 </DialogTitle>
                 <DialogContent sx={{ p: 3, mt: 1 }}>
-                    <Typography variant="body1" gutterBottom sx={{ fontFamily: 'Satoshi, sans-serif' }}>
+                    <Typography variant="body1" gutterBottom sx={{
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        mb: 2
+                    }}>
                         Select a Brdge to add as a module to this course:
                     </Typography>
 
@@ -1284,30 +1364,19 @@ function EditCoursePage() {
                                     selected={selectedBrdgeId === brdge.id}
                                     onClick={() => setSelectedBrdgeId(brdge.id)}
                                     sx={{
-                                        fontFamily: 'Satoshi, sans-serif',
+                                        color: 'rgba(255, 255, 255, 0.9)',
                                         '&.Mui-selected': {
-                                            bgcolor: 'rgba(0, 229, 255, 0.3)',
-                                            color: 'primary.contrastText',
+                                            bgcolor: 'rgba(0, 229, 255, 0.15)',
                                             '&:hover': {
-                                                bgcolor: 'rgba(0, 229, 255, 0.4)',
+                                                bgcolor: 'rgba(0, 229, 255, 0.2)',
                                             }
                                         },
                                         '&:hover': {
                                             bgcolor: 'rgba(255, 255, 255, 0.05)',
-                                        },
-                                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                                        '&:last-child': {
-                                            borderBottom: 'none'
                                         }
                                     }}
                                 >
-                                    <ListItemText
-                                        primary={brdge.name}
-                                        primaryTypographyProps={{
-                                            color: selectedBrdgeId === brdge.id ? 'primary.contrastText' : 'text.primary',
-                                            fontFamily: 'Satoshi, sans-serif'
-                                        }}
-                                    />
+                                    <ListItemText primary={brdge.name} />
                                 </ListItem>
                             ))}
                         </List>
@@ -1318,40 +1387,41 @@ function EditCoursePage() {
                             bgcolor: 'rgba(0, 0, 0, 0.2)',
                             borderRadius: 1,
                             border: '1px solid rgba(0, 229, 255, 0.2)',
-                            textAlign: 'center',
-                            backdropFilter: 'blur(5px)'
+                            textAlign: 'center'
                         }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'Satoshi, sans-serif' }}>
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                                 You don't have any available Brdges to add. Create a new Brdge first.
                             </Typography>
                         </Box>
                     )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={handleCloseAddModuleDialog} variant="outlined" sx={{
-                        fontFamily: 'Satoshi, sans-serif',
-                        borderColor: '#00BCD4',
-                        color: '#80DEEA',
-                        '&:hover': {
-                            borderColor: '#00E5FF',
-                            backgroundColor: 'rgba(0, 229, 255, 0.08)'
-                        }
-                    }}>
+                    <Button
+                        onClick={handleCloseAddModuleDialog}
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            '&:hover': {
+                                color: '#fff',
+                                bgcolor: 'rgba(255, 255, 255, 0.05)'
+                            }
+                        }}
+                    >
                         Cancel
                     </Button>
                     <Button
                         onClick={handleAddModule}
-                        variant="contained"
                         disabled={!selectedBrdgeId}
                         sx={{
-                            fontFamily: 'Satoshi, sans-serif',
-                            backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                            boxShadow: '0 4px 10px rgba(0, 229, 255, 0.3)',
+                            bgcolor: 'rgba(0, 229, 255, 0.1)',
+                            color: '#00E5FF',
+                            border: '1px solid rgba(0, 229, 255, 0.2)',
                             '&:hover': {
-                                boxShadow: '0 6px 15px rgba(0, 229, 255, 0.4)'
+                                bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                borderColor: '#00E5FF'
                             },
                             '&.Mui-disabled': {
-                                background: 'rgba(0, 151, 167, 0.3)'
+                                color: 'rgba(255, 255, 255, 0.3)',
+                                borderColor: 'rgba(255, 255, 255, 0.1)'
                             }
                         }}
                     >
