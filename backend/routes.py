@@ -71,6 +71,10 @@ from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
 from gemini import create_brdge_knowledge
 from sqlalchemy.orm.attributes import flag_modified
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Set botocore to only log errors
 logging.getLogger("botocore").setLevel(logging.ERROR)
@@ -130,6 +134,12 @@ app.config["MAX_CONTENT_LENGTH"] = (
 
 # Add this constant with the other file configurations
 ALLOWED_VIDEO_FORMATS = ["video/mp4", "video/webm"]
+
+# Get AWS credentials from environment variables
+AWS_ACCOUNT_ID = os.environ.get("AWS_ACCOUNT_ID")
+AWS_SECRET_KEY = os.environ.get("AWS_SECRET_KEY")
+AWS_REGION = os.environ.get("AWS_REGION")
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")  # This matches your .env file
 
 
 # Add this error handler
@@ -3851,3 +3861,207 @@ def toggle_course_shareable(course_id):
     db.session.commit()
 
     return jsonify({"shareable": course.shareable})
+
+
+@app.route("/api/courses/<int:course_id>/modules/<int:module_id>", methods=["PUT"])
+@login_required
+def update_course_module(user, course_id, module_id):
+    """Update a module in a course"""
+    course = Course.query.get_or_404(course_id)
+
+    # Ensure the user owns the course
+    if course.user_id != user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # Get the module
+    module = CourseModule.query.filter_by(
+        id=module_id, course_id=course_id
+    ).first_or_404()
+
+    # Update the module with data from the request
+    data = request.get_json()
+
+    # Update description if provided
+    if "description" in data:
+        module.description = data["description"]
+
+    # Handle other fields if needed...
+
+    db.session.commit()
+
+    return jsonify({"success": True, "module": module.to_dict()})
+
+
+@app.route("/api/courses/<int:course_id>/upload-thumbnail", methods=["POST"])
+@login_required
+def upload_course_thumbnail(user, course_id):
+    """Upload a thumbnail image for a course"""
+    try:
+        course = Course.query.get_or_404(course_id)
+
+        # Ensure the user owns the course
+        if course.user_id != user.id:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        if "file" not in request.files:
+            return jsonify({"error": "No file part"}), 400
+
+        file = request.files["file"]
+
+        if file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
+
+        # Get file extension
+        _, ext = os.path.splitext(file.filename)
+
+        # Create a secure filename
+        filename = f"course_thumbnail{ext}"
+
+        # S3 key
+        s3_key = f"courses/{course_id}/{filename}"
+
+        # Upload to S3
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCOUNT_ID,
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION,
+        )
+
+        s3_client.upload_fileobj(
+            file,
+            S3_BUCKET_NAME,
+            s3_key,
+            ExtraArgs={
+                "ContentType": file.content_type
+                # Removed ACL parameter
+            },
+        )
+
+        # Generate proxy URL instead of direct S3 URL
+        thumbnail_url = f"/api/thumbnails/{s3_key}"
+
+        # Update course with thumbnail URL
+        course.thumbnail_url = thumbnail_url
+        db.session.commit()
+
+        return jsonify({"success": True, "thumbnail_url": thumbnail_url})
+
+    except Exception as e:
+        print(f"Error in upload_course_thumbnail: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route(
+    "/api/courses/<int:course_id>/modules/<int:module_id>/upload-thumbnail",
+    methods=["POST"],
+)
+@login_required
+def upload_module_thumbnail(user, course_id, module_id):
+    """Upload a thumbnail image for a module in a course"""
+    try:
+        course = Course.query.get_or_404(course_id)
+
+        # Ensure the user owns the course
+        if course.user_id != user.id:
+            return jsonify({"error": "Unauthorized"}), 403
+
+        # Get the module
+        module = CourseModule.query.filter_by(
+            id=module_id, course_id=course_id
+        ).first_or_404()
+
+        if "file" not in request.files:
+            return jsonify({"error": "No file part"}), 400
+
+        file = request.files["file"]
+
+        if file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
+
+        # Get file extension
+        _, ext = os.path.splitext(file.filename)
+
+        # Create a secure filename based on the brdge_id
+        brdge_id = request.form.get("brdge_id")
+        if not brdge_id:
+            brdge_id = module.brdge_id
+
+        filename = f"{brdge_id}_thumbnail{ext}"
+
+        # S3 key
+        s3_key = f"courses/{course_id}/{filename}"
+
+        # Upload to S3
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCOUNT_ID,
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION,
+        )
+
+        s3_client.upload_fileobj(
+            file,
+            S3_BUCKET_NAME,
+            s3_key,
+            ExtraArgs={
+                "ContentType": file.content_type
+                # Removed ACL parameter
+            },
+        )
+
+        # Generate proxy URL instead of direct S3 URL
+        thumbnail_url = f"/api/thumbnails/{s3_key}"
+
+        # Update module with thumbnail URL
+        module.thumbnail_url = thumbnail_url
+        db.session.commit()
+
+        return jsonify({"success": True, "thumbnail_url": thumbnail_url})
+
+    except Exception as e:
+        print(f"Error in upload_module_thumbnail: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/thumbnails/<path:s3_key>", methods=["GET"])
+def get_thumbnail(s3_key):
+    """Proxy S3 thumbnails through backend to avoid CORS issues"""
+    try:
+        # Configure S3 client
+        s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=AWS_ACCOUNT_ID,
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION,
+        )
+
+        # Create a file-like object to hold the image
+        file_obj = io.BytesIO()
+
+        # Download the file from S3 to the file-like object
+        s3_client.download_fileobj(S3_BUCKET_NAME, s3_key, file_obj)
+        file_obj.seek(0)
+
+        # Detect content type based on file extension
+        content_type = "image/jpeg"  # Default
+        if s3_key.lower().endswith(".png"):
+            content_type = "image/png"
+        elif s3_key.lower().endswith(".gif"):
+            content_type = "image/gif"
+        elif s3_key.lower().endswith(".webp"):
+            content_type = "image/webp"
+
+        # Return the image with appropriate headers
+        return Response(
+            file_obj.getvalue(),
+            mimetype=content_type,
+            headers={
+                "Cache-Control": "max-age=86400",  # Cache for 24 hours
+                "Content-Type": content_type,
+            },
+        )
+
+    except Exception as e:
+        logger.error(f"Error serving thumbnail: {str(e)}")
+        return jsonify({"error": "Thumbnail not found"}), 404

@@ -104,24 +104,54 @@ function ViewCoursePage() {
                 // Log what we got for debugging
                 console.log('Parsed course data:', courseData);
 
-                // If course is not shareable and user is not the owner, deny access
-                if (!courseData.shareable && token) {
-                    const userResponse = await api.get('/user/current');
-                    if (userResponse.data.id !== courseData.user_id) {
+                // If course is shareable, allow access for everyone
+                if (courseData.shareable) {
+                    // Public course - allow access regardless of login status
+                    console.log('Public course - allowing access for everyone');
+                } else {
+                    // Private course - check if user is logged in and is the owner
+                    if (!token) {
+                        // No token, can't access private course
                         setError('Course Is Not Public: Access Denied');
                         setLoading(false);
                         return;
                     }
-                } else if (!courseData.shareable && !token) {
-                    setError('Course Is Not Public: Access Denied');
-                    setLoading(false);
-                    return;
+
+                    // Have token, check if user is owner
+                    try {
+                        const userResponse = await api.get('/user/current');
+                        if (userResponse.data.id !== courseData.user_id) {
+                            setError('Course Is Not Public: Access Denied');
+                            setLoading(false);
+                            return;
+                        }
+                    } catch (userError) {
+                        console.error('Error checking user permission:', userError);
+                        setError('Authentication Error: Unable to verify access');
+                        setLoading(false);
+                        return;
+                    }
                 }
 
                 // Sort modules by position if present
                 if (courseData.modules) {
                     courseData.modules.sort((a, b) => (a.position || 0) - (b.position || 0));
                 }
+
+                // Add this to your fetchCourse function where you process the API response
+                console.log('COMPLETE API RESPONSE STRUCTURE:', JSON.stringify(response.data, null, 2));
+                if (courseData && courseData.modules && courseData.modules.length > 0) {
+                    console.log('FIRST MODULE COMPLETE STRUCTURE:', JSON.stringify(courseData.modules[0], null, 2));
+                }
+
+                // Add this to your fetchCourse function after setCourse(courseData)
+                console.log("COURSE DATA SET:", {
+                    has_thumbnail: !!courseData.thumbnail_url,
+                    thumbnail_url: courseData.thumbnail_url,
+                    modules_count: courseData.modules?.length,
+                    first_module_has_thumbnail: courseData.modules?.[0]?.thumbnail_url ? true : false,
+                    first_module_thumbnail: courseData.modules?.[0]?.thumbnail_url
+                });
 
                 setCourse(courseData);
                 setLoading(false);
@@ -143,12 +173,94 @@ function ViewCoursePage() {
     useEffect(() => {
         if (course && course.modules) {
             console.log('Course modules:', course.modules);
-            // Log the first module in detail to see its structure
+            // Enhanced debug logging for description fields
             if (course.modules.length > 0) {
-                console.log('First module structure:', JSON.stringify(course.modules[0], null, 2));
+                const firstModule = course.modules[0];
+                console.log('Module description:', firstModule.description);
+                console.log('Module has brdge?', !!firstModule.brdge);
+                if (firstModule.brdge) {
+                    console.log('Brdge description:', firstModule.brdge.description);
+                }
             }
         }
     }, [course]);
+
+    useEffect(() => {
+        if (course && course.modules) {
+            console.log('Course modules:', course.modules);
+            // Enhanced debug logging for thumbnails
+            if (course.modules.length > 0) {
+                course.modules.forEach(module => {
+                    console.log(`Module ${module.id} thumbnail_url:`, module.thumbnail_url);
+                    if (module.thumbnail_url) {
+                        console.log(`Module ${module.id} normalized thumbnail:`, normalizeThumbnailUrl(module.thumbnail_url));
+                    }
+                });
+            }
+        }
+    }, [course]);
+
+    useEffect(() => {
+        if (course && course.modules && course.modules.length > 0) {
+            console.log('Course has thumbnails?', !!course.thumbnail_url);
+            console.log('All modules:', course.modules);
+
+            // Deep inspection of first module to see structure
+            const firstModule = course.modules[0];
+            console.log('First module detailed inspection:', {
+                id: firstModule.id,
+                direct_thumbnail: firstModule.thumbnail_url,
+                brdge_id: firstModule.brdge_id,
+                has_brdge_obj: !!firstModule.brdge,
+                brdge_thumbnail: firstModule.brdge?.thumbnail_url,
+                full_module: firstModule
+            });
+        }
+    }, [course]);
+
+    useEffect(() => {
+        // Force a direct approach to loading thumbnails
+        if (course && course.modules && course.modules.length > 0) {
+            console.log('DEBUGGING MODULE STRUCTURE:');
+            course.modules.forEach((module, index) => {
+                console.log(`Module ${index}`, {
+                    id: module.id,
+                    name: module.name || module.brdge?.name,
+                    has_thumbnail: !!module.thumbnail_url,
+                    thumbnail_url: module.thumbnail_url,
+                    has_brdge: !!module.brdge
+                });
+
+                // Force a direct update to the course data
+                if (!module.thumbnail_url && module.brdge?.thumbnail_url) {
+                    // The module itself doesn't have thumbnail_url but its brdge does
+                    console.log(`Module ${index} has thumbnail in brdge but not directly`);
+                }
+            });
+
+            // DIRECT APPROACH: Force copy the thumbnails from the brdge to the module
+            setCourse(prevCourse => {
+                if (!prevCourse || !prevCourse.modules) return prevCourse;
+
+                const updatedModules = prevCourse.modules.map(module => {
+                    // If module has no thumbnail but its brdge does, copy it up
+                    if (!module.thumbnail_url && module.brdge?.thumbnail_url) {
+                        console.log(`Copying thumbnail from brdge to module ${module.id}`);
+                        return {
+                            ...module,
+                            thumbnail_url: module.brdge.thumbnail_url
+                        };
+                    }
+                    return module;
+                });
+
+                return {
+                    ...prevCourse,
+                    modules: updatedModules
+                };
+            });
+        }
+    }, [course?.id]);
 
     const handleStartModule = (moduleId, publicId) => {
         // If we have both ID and publicId, use the viewBridge route
@@ -171,6 +283,85 @@ function ViewCoursePage() {
 
     const handleBackToDashboard = () => {
         navigate('/');
+    };
+
+    // Add this helper function at the top of your component (after state declarations)
+    const normalizeThumbnailUrl = (url) => {
+        if (!url) return null;
+
+        // If it's already an absolute URL, return it as is
+        if (url.startsWith('http')) return url;
+
+        // If it's a relative URL, prepend the API base URL
+        if (url.startsWith('/api')) {
+            // Use the same base URL as your API calls
+            return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${url}`;
+        }
+
+        return url;
+    };
+
+    // Replace the existing getModuleThumbnail function with this server-side approach
+    const getModuleThumbnail = (module) => {
+        // Match the exact format in your database without the file extension
+        if (module && module.brdge_id && course && course.id) {
+            // This format matches what's in your database screenshot
+            const moduleThumbPath = `/api/thumbnails/courses/${course.id}/${module.brdge_id}_thumbnail`;
+            console.log(`Generated thumbnail URL for module ${module.id}:`, moduleThumbPath);
+            return moduleThumbPath;
+        }
+
+        // If the module already has a thumbnail_url, use that directly
+        if (module && module.thumbnail_url) {
+            return module.thumbnail_url;
+        }
+
+        return null;
+    };
+
+    // Add this direct debugging useEffect to track the exact rendering process
+    useEffect(() => {
+        if (course?.modules?.length > 0) {
+            // Dump the first module entirely to see what's there
+            console.log('DETAILED MODULE STRUCTURE:', JSON.stringify(course.modules[0], null, 2));
+
+            // Log just the thumbnail URLs for debugging
+            const thumbnailUrls = course.modules
+                .map(m => ({ id: m.id, thumb: m.thumbnail_url }))
+                .filter(m => m.thumb);
+            console.log('Modules with thumbnails:', thumbnailUrls);
+        }
+    }, [course]);
+
+    // Replace the getModuleDescription function with this simplified version
+    const getModuleDescription = (module) => {
+        // Direct description from module itself
+        if (module.description && module.description.trim() !== '') {
+            return module.description;
+        }
+
+        // Fallback to brdge description if it exists
+        if (module.brdge?.description && module.brdge.description.trim() !== '') {
+            return module.brdge.description;
+        }
+
+        // Final fallback
+        return "Explore this interactive module to enhance your understanding and skills in this subject area.";
+    };
+
+    // Add this helper function to safely access nested properties
+    const getNestedProperty = (obj, path) => {
+        if (!obj || !path) return undefined;
+        return path.split('.').reduce((acc, part) =>
+            acc && typeof acc === 'object' ? acc[part] : undefined,
+            obj);
+    };
+
+    // Add this helper function for more robust module name display
+    const getModuleName = (module) => {
+        return module.name ||
+            module.brdge?.name ||
+            `Module ${module.position || 'Unknown'}`;
     };
 
     if (loading) {
@@ -401,119 +592,161 @@ function ViewCoursePage() {
                             mb: 4,
                             position: 'relative',
                             overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: { xs: 'column', md: 'row' },
+                            gap: 3,
                         }}>
-                            {/* Decorative elements */}
-                            <Box sx={{
-                                position: 'absolute',
-                                top: -30,
-                                right: -30,
-                                width: 150,
-                                height: 150,
-                                borderRadius: '50%',
-                                background: 'radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)',
-                                opacity: 0.5,
-                                zIndex: 0
-                            }} />
-
-                            <motion.div variants={itemVariants}>
-                                <Typography variant="h3" component="h1" sx={{
-                                    color: '#FFFFFF',
-                                    fontWeight: 600,
-                                    mb: 2,
-                                    fontSize: { xs: '1.8rem', md: '2.5rem' },
-                                    textShadow: '0 0 15px rgba(0, 229, 255, 0.3)',
-                                    position: 'relative',
-                                    zIndex: 1
-                                }}>
-                                    {course.name}
-                                </Typography>
-                            </motion.div>
-
-                            <motion.div variants={itemVariants}>
-                                <Typography variant="body1" sx={{
-                                    color: 'rgba(255, 255, 255, 0.8)',
-                                    mb: 3,
-                                    maxWidth: '800px',
-                                    lineHeight: 1.6,
-                                    fontSize: '1.05rem',
-                                    position: 'relative',
-                                    zIndex: 1
-                                }}>
-                                    {course.description || "Explore this interactive AI-powered learning course. Navigate through modules at your own pace and engage with immersive content."}
-                                </Typography>
-                            </motion.div>
-
-                            <motion.div variants={itemVariants}>
+                            {/* Course Thumbnail */}
+                            {course.thumbnail_url && (
                                 <Box sx={{
-                                    display: 'flex',
-                                    flexWrap: 'wrap',
-                                    gap: 2,
-                                    alignItems: 'center',
+                                    width: { xs: '100%', md: '280px' },
                                     position: 'relative',
-                                    zIndex: 1
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    flexShrink: 0,
+                                    // Create perfect 16:9 aspect ratio using padding trick
+                                    '&::before': {
+                                        content: '""',
+                                        display: 'block',
+                                        paddingTop: '56.25%', // 9:16 aspect ratio (9/16 = 0.5625)
+                                    }
                                 }}>
-                                    <Chip
-                                        icon={<AutoStoriesIcon sx={{ color: '#00E5FF !important' }} />}
-                                        label={`${course.modules?.length || 0} Modules`}
+                                    <Box
+                                        component="img"
+                                        src={normalizeThumbnailUrl(course.thumbnail_url)}
                                         sx={{
-                                            bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                            color: '#00E5FF',
-                                            border: '1px solid rgba(0, 229, 255, 0.2)',
-                                            '& .MuiChip-icon': {
-                                                color: '#00E5FF'
-                                            }
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                            objectPosition: 'center',
                                         }}
+                                        alt={`Thumbnail for ${course.name}`}
                                     />
+                                </Box>
+                            )}
 
-                                    <Chip
-                                        icon={<TimerIcon sx={{ color: '#00E5FF !important' }} />}
-                                        label="Self-paced learning"
-                                        sx={{
-                                            bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                            color: '#00E5FF',
-                                            border: '1px solid rgba(0, 229, 255, 0.2)',
-                                            '& .MuiChip-icon': {
-                                                color: '#00E5FF'
-                                            }
-                                        }}
-                                    />
+                            {/* Course Details - adjusted width based on thumbnail presence */}
+                            <Box sx={{
+                                flex: 1,
+                                position: 'relative',
+                                zIndex: 1
+                            }}>
+                                {/* Decorative elements */}
+                                <Box sx={{
+                                    position: 'absolute',
+                                    top: -30,
+                                    right: -30,
+                                    width: 150,
+                                    height: 150,
+                                    borderRadius: '50%',
+                                    background: 'radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)',
+                                    opacity: 0.5,
+                                    zIndex: 0
+                                }} />
 
-                                    <Chip
-                                        icon={<VerifiedIcon sx={{ color: '#00E5FF !important' }} />}
-                                        label="AI-powered"
-                                        sx={{
-                                            bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                            color: '#00E5FF',
-                                            border: '1px solid rgba(0, 229, 255, 0.2)',
-                                            '& .MuiChip-icon': {
-                                                color: '#00E5FF'
-                                            }
-                                        }}
-                                    />
+                                <motion.div variants={itemVariants}>
+                                    <Typography variant="h3" component="h1" sx={{
+                                        color: '#FFFFFF',
+                                        fontWeight: 600,
+                                        mb: 2,
+                                        fontSize: { xs: '1.8rem', md: '2.5rem' },
+                                        textShadow: '0 0 15px rgba(0, 229, 255, 0.3)',
+                                        position: 'relative',
+                                        zIndex: 1
+                                    }}>
+                                        {course.name}
+                                    </Typography>
+                                </motion.div>
 
+                                <motion.div variants={itemVariants}>
+                                    <Typography variant="body1" sx={{
+                                        color: 'rgba(255, 255, 255, 0.8)',
+                                        mb: 3,
+                                        maxWidth: '800px',
+                                        lineHeight: 1.6,
+                                        fontSize: '1.05rem',
+                                        position: 'relative',
+                                        zIndex: 1
+                                    }}>
+                                        {course.description || "Explore this interactive AI-powered learning course. Navigate through modules at your own pace and engage with immersive content."}
+                                    </Typography>
+                                </motion.div>
+
+                                <motion.div variants={itemVariants}>
                                     <Box sx={{
                                         display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 2,
                                         alignItems: 'center',
-                                        gap: 1,
-                                        ml: { xs: 0, md: 'auto' },
-                                        mt: { xs: 1, md: 0 }
+                                        position: 'relative',
+                                        zIndex: 1
                                     }}>
-                                        <Avatar
+                                        <Chip
+                                            icon={<AutoStoriesIcon sx={{ color: '#00E5FF !important' }} />}
+                                            label={`${course.modules?.length || 0} Modules`}
                                             sx={{
-                                                width: 30,
-                                                height: 30,
-                                                bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                border: '1px solid rgba(0, 229, 255, 0.3)'
+                                                bgcolor: 'rgba(0, 229, 255, 0.08)',
+                                                color: '#00E5FF',
+                                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                '& .MuiChip-icon': {
+                                                    color: '#00E5FF'
+                                                }
                                             }}
-                                        >
-                                            <PersonIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
-                                        </Avatar>
-                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                            Created by {course.author || "Brdge AI Instructor"}
-                                        </Typography>
+                                        />
+
+                                        <Chip
+                                            icon={<TimerIcon sx={{ color: '#00E5FF !important' }} />}
+                                            label="Self-paced learning"
+                                            sx={{
+                                                bgcolor: 'rgba(0, 229, 255, 0.08)',
+                                                color: '#00E5FF',
+                                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                '& .MuiChip-icon': {
+                                                    color: '#00E5FF'
+                                                }
+                                            }}
+                                        />
+
+                                        <Chip
+                                            icon={<VerifiedIcon sx={{ color: '#00E5FF !important' }} />}
+                                            label="AI-powered"
+                                            sx={{
+                                                bgcolor: 'rgba(0, 229, 255, 0.08)',
+                                                color: '#00E5FF',
+                                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                '& .MuiChip-icon': {
+                                                    color: '#00E5FF'
+                                                }
+                                            }}
+                                        />
+
+                                        <Box sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1,
+                                            ml: { xs: 0, md: 'auto' },
+                                            mt: { xs: 1, md: 0 }
+                                        }}>
+                                            <Avatar
+                                                sx={{
+                                                    width: 30,
+                                                    height: 30,
+                                                    bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                    border: '1px solid rgba(0, 229, 255, 0.3)'
+                                                }}
+                                            >
+                                                <PersonIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
+                                            </Avatar>
+                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                Created by {course.author || "Brdge AI Instructor"}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                </Box>
-                            </motion.div>
+                                </motion.div>
+                            </Box>
                         </Box>
                     </Box>
 
@@ -685,48 +918,69 @@ function ViewCoursePage() {
                                                         )}
                                                     </IconButton>
 
-                                                    {/* Module background */}
+                                                    {/* Module background with thumbnail overlay handling */}
                                                     <Box
                                                         sx={{
                                                             position: 'relative',
                                                             height: '100%',
-                                                            background: `linear-gradient(135deg, 
-                                                                rgba(0, 21, 36, 0.95) 0%,
-                                                                rgba(0, 151, 167, 0.9) 100%)`,
-                                                            '&::before': {
-                                                                content: '""',
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                left: 0,
-                                                                right: 0,
-                                                                bottom: 0,
-                                                                background: `radial-gradient(circle at 50% 50%,
-                                                                    rgba(0, 229, 255, 0.15) 0%,
-                                                                    rgba(0, 229, 255, 0.05) 25%,
-                                                                    transparent 50%)`,
-                                                                opacity: 0.5,
-                                                                transition: 'all 0.3s ease',
-                                                            },
-                                                            '&::after': {
-                                                                content: '""',
-                                                                position: 'absolute',
-                                                                top: 0,
-                                                                left: 0,
-                                                                right: 0,
-                                                                bottom: 0,
-                                                                opacity: 0.05,
-                                                                mixBlendMode: 'overlay',
-                                                            }
+                                                            background: module.thumbnail_url
+                                                                ? 'none'
+                                                                : `linear-gradient(135deg, rgba(0, 21, 36, 0.95) 0%, rgba(0, 151, 167, 0.9) 100%)`,
                                                         }}
                                                     >
-                                                        {/* Play Button */}
+                                                        {/* Display thumbnail directly if available */}
+                                                        {module.thumbnail_url && (
+                                                            <>
+                                                                <Box
+                                                                    component="img"
+                                                                    src={normalizeThumbnailUrl(getModuleThumbnail(module))}
+                                                                    sx={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'cover',
+                                                                        objectPosition: 'center',
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        zIndex: 0,
+                                                                    }}
+                                                                    alt={`Thumbnail for ${getModuleName(module)}`}
+                                                                    onLoad={() => console.log(`Successfully loaded thumbnail for module ${module.id}:`, getModuleThumbnail(module))}
+                                                                    onError={(e) => {
+                                                                        // Log the exact URL that failed to load
+                                                                        console.error(`Thumbnail failed to load:`, e.target.src, `for module ${module.id} with brdge_id ${module.brdge_id}`);
+
+                                                                        // Set a fallback gradient background
+                                                                        e.target.style.display = 'none';
+                                                                        if (e.target.parentElement) {
+                                                                            e.target.parentElement.style.background = 'linear-gradient(135deg, rgba(0, 21, 36, 0.95) 0%, rgba(0, 151, 167, 0.9) 100%)';
+                                                                        }
+                                                                    }}
+                                                                />
+
+                                                                {/* Simple overlay for better text contrast */}
+                                                                <Box
+                                                                    sx={{
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+                                                                        zIndex: 1,
+                                                                    }}
+                                                                />
+                                                            </>
+                                                        )}
+
+                                                        {/* Play button and other content with higher z-index */}
                                                         <Box
                                                             sx={{
                                                                 position: 'absolute',
                                                                 top: '50%',
                                                                 left: '50%',
                                                                 transform: 'translate(-50%, -50%)',
-                                                                zIndex: 2,
+                                                                zIndex: 10, // Much higher zIndex to ensure visibility
                                                                 display: 'flex',
                                                                 flexDirection: 'column',
                                                                 alignItems: 'center',
@@ -786,7 +1040,7 @@ function ViewCoursePage() {
                                                             </Typography>
                                                         </Box>
 
-                                                        {/* Decorative Elements */}
+                                                        {/* Decorative elements - ensure they're above the image */}
                                                         <Box
                                                             sx={{
                                                                 position: 'absolute',
@@ -796,6 +1050,7 @@ function ViewCoursePage() {
                                                                 display: 'flex',
                                                                 justifyContent: 'space-between',
                                                                 opacity: 0.5,
+                                                                zIndex: 2,
                                                             }}
                                                         >
                                                             {[...Array(3)].map((_, i) => (
@@ -825,7 +1080,7 @@ function ViewCoursePage() {
                                                         fontWeight: 600,
                                                         fontSize: '1.25rem'
                                                     }}>
-                                                        {module.brdge?.name || module.name || (module.brdge && module.brdge.name) || "Untitled Module"}
+                                                        {getModuleName(module)}
                                                     </Typography>
 
                                                     <Typography variant="body2" sx={{
@@ -838,7 +1093,7 @@ function ViewCoursePage() {
                                                         WebkitLineClamp: 3,
                                                         WebkitBoxOrient: 'vertical',
                                                     }}>
-                                                        {module.brdge?.description || module.description || "Explore this interactive module to enhance your understanding and skills in this subject area."}
+                                                        {getModuleDescription(module)}
                                                     </Typography>
 
                                                     <Button

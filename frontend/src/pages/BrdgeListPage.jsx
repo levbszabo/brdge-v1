@@ -32,6 +32,7 @@ import {
     TableRow,
     TableCell,
     Collapse,
+    FormControlLabel,
 } from '@mui/material';
 import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft } from 'lucide-react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -46,6 +47,7 @@ import CourseList from '../components/CourseList';
 // At the top with other imports, add these react-dnd imports
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 
 // Unified theme colors
 const theme = {
@@ -645,10 +647,12 @@ function BrdgeListPage() {
     const [dropTargetCourseId, setDropTargetCourseId] = useState(null);
     const [courseDialogOpen, setCourseDialogOpen] = useState(false);
     const [newCourseData, setNewCourseData] = useState({ name: '', description: '' });
-    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true); // Change from false to true
     // Add these state variables near other state declarations
     const [editingCourseId, setEditingCourseId] = useState(null);
     const [editedCourseName, setEditedCourseName] = useState('');
+    const [savingCourse, setSavingCourse] = useState(false);
+    const [courseLinkCopied, setCourseLinkCopied] = useState(false);
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -1050,6 +1054,9 @@ function BrdgeListPage() {
         if (!brdgeToShare) return;
 
         try {
+            // Show loading indicator
+            setSavingCourse(true);
+
             const response = await api.post(`/brdges/${brdgeToShare.id}/toggle_shareable`);
             const newShareableStatus = response.data.shareable;
 
@@ -1064,12 +1071,21 @@ function BrdgeListPage() {
             }));
 
             showSnackbar(
-                `AI Module is now ${newShareableStatus ? 'public' : 'private'}`,
+                `Module is now ${newShareableStatus ? 'public' : 'private'}`,
                 'success'
             );
+
+            // If now shareable and wasn't before, automatically show "copied" to encourage sharing
+            if (newShareableStatus && !brdgeToShare.shareable) {
+                setTimeout(() => {
+                    handleCopyLink();
+                }, 300);
+            }
         } catch (error) {
             console.error('Error toggling share status:', error);
             showSnackbar('Failed to update sharing settings', 'error');
+        } finally {
+            setSavingCourse(false);
         }
     };
 
@@ -1383,45 +1399,56 @@ function BrdgeListPage() {
 
     const handleCloseCourseShare = () => {
         setShareCourseDialogOpen(false);
-        setCourseToShare(null);
+        setCourseLinkCopied(false);
+    };
+
+    const handleCopyCourseLink = () => {
+        if (!courseToShare) return;
+
+        const shareableUrl = `${window.location.origin}/c/${courseToShare.public_id}`;
+        navigator.clipboard.writeText(shareableUrl);
+        setCourseLinkCopied(true);
+        setTimeout(() => setCourseLinkCopied(false), 2000);
+        showSnackbar('Course link copied to clipboard!', 'success');
     };
 
     const handleCourseShareToggle = async () => {
         if (!courseToShare) return;
 
         try {
-            await api.post(`/courses/${courseToShare.id}/toggle_shareable`);
+            // Show loading indicator
+            setSavingCourse(true);
 
-            // Update local state
-            setCourses(courses.map(course =>
-                course.id === courseToShare.id
-                    ? { ...course, shareable: !course.shareable }
-                    : course
+            const response = await api.post(`/courses/${courseToShare.id}/toggle_shareable`);
+            const newShareableStatus = response.data.shareable;
+
+            // Update states in a single batch
+            setCourses(prevCourses => prevCourses.map(c =>
+                c.id === courseToShare.id ? { ...c, shareable: newShareableStatus } : c
             ));
 
-            // Also update the courseToShare state
-            setCourseToShare({
-                ...courseToShare,
-                shareable: !courseToShare.shareable
-            });
+            setCourseToShare(prev => ({
+                ...prev,
+                shareable: newShareableStatus
+            }));
 
             showSnackbar(
-                courseToShare.shareable
-                    ? 'Course is now private'
-                    : 'Course is now public and can be shared',
+                `Course is now ${newShareableStatus ? 'public' : 'private'}`,
                 'success'
             );
-        } catch (error) {
-            console.error('Error toggling course shareable status:', error);
-            showSnackbar('Failed to update sharing settings', 'error');
-        }
-    };
 
-    const handleCopyCourseLink = () => {
-        const shareableLink = `${window.location.origin}/c/${courseToShare.public_id}`;
-        navigator.clipboard.writeText(shareableLink);
-        setLinkCopied(true);
-        setTimeout(() => setLinkCopied(false), 3000);
+            // If now shareable and wasn't before, automatically show "copied" to encourage sharing
+            if (newShareableStatus && !courseToShare.shareable) {
+                setTimeout(() => {
+                    handleCopyCourseLink();
+                }, 300);
+            }
+        } catch (error) {
+            console.error('Error toggling course share status:', error);
+            showSnackbar('Failed to update course sharing settings', 'error');
+        } finally {
+            setSavingCourse(false);
+        }
     };
 
     // Add this function to handle opening the module selection dialog
@@ -1570,6 +1597,21 @@ function BrdgeListPage() {
     const handleCancelEditingCourse = () => {
         setEditingCourseId(null);
         setEditedCourseName('');
+    };
+
+    // Add the normalizeThumbnailUrl helper function inside the BrdgeListPage component
+    const normalizeThumbnailUrl = (url) => {
+        if (!url) return null;
+
+        // If it's already an absolute URL, return it as is
+        if (url.startsWith('http')) return url;
+
+        // If it's a relative URL, prepend the API base URL
+        if (url.startsWith('/api')) {
+            return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${url}`;
+        }
+
+        return url;
     };
 
     if (loading) {
@@ -2059,7 +2101,7 @@ function BrdgeListPage() {
                                                                 <Edit size={18} />
                                                             </IconButton>
                                                         </Tooltip>
-                                                        <Tooltip title="Share Course">
+                                                        <Tooltip title={course.shareable ? "Course is public - Click to manage sharing" : "Course is private - Click to make shareable"}>
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={(e) => {
@@ -2067,11 +2109,14 @@ function BrdgeListPage() {
                                                                     handleShareCourse(course);
                                                                 }}
                                                                 sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                                    color: course.shareable ? '#22D3EE' : 'rgba(255, 255, 255, 0.7)',
                                                                     '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
                                                                 }}
                                                             >
-                                                                <Share size={18} />
+                                                                {course.shareable ?
+                                                                    <Globe size={18} style={{ filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} /> :
+                                                                    <Lock size={18} />
+                                                                }
                                                             </IconButton>
                                                         </Tooltip>
                                                         <Tooltip title="Delete Course">
@@ -2184,11 +2229,88 @@ function BrdgeListPage() {
                                 </Box>
 
                                 {/* Add this block to render the actual modules */}
-                                {filteredBrdges.length === 0 ? (
-                                    <EmptyBrdgeState
-                                        onCreateClick={() => navigate('/create')}
-                                        canCreate={canCreateBrdge()}
-                                    />
+                                {brdges.length === 0 ? (
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        py: 10,
+                                        px: 4,
+                                        textAlign: 'center',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                        borderRadius: '16px',
+                                        border: '1px solid rgba(34, 211, 238, 0.1)',
+                                        backdropFilter: 'blur(10px)'
+                                    }}>
+                                        <Box sx={{
+                                            width: 80,
+                                            height: 80,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: '50%',
+                                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                            boxShadow: '0 0 20px rgba(34, 211, 238, 0.2)',
+                                            mb: 3
+                                        }}>
+                                            <GraduationCap size={40} style={{ color: '#22D3EE' }} />
+                                        </Box>
+
+                                        <Typography variant="h4" sx={{
+                                            color: '#FFFFFF',
+                                            fontWeight: 600,
+                                            mb: 2,
+                                            textShadow: '0 0 10px rgba(34, 211, 238, 0.3)'
+                                        }}>
+                                            Create Your First AI Module
+                                        </Typography>
+
+                                        <Typography variant="body1" sx={{
+                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            mb: 4,
+                                            maxWidth: 600
+                                        }}>
+                                            Transform your course content into an interactive learning experience with personalized AI teaching assistants for your students.
+                                        </Typography>
+
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<Plus size={20} />}
+                                            onClick={handleCreateClick}
+                                            disabled={!canCreateBrdge()}
+                                            sx={{
+                                                backgroundColor: 'rgba(34, 211, 238, 0.2)',
+                                                backdropFilter: 'blur(10px)',
+                                                color: '#FFFFFF',
+                                                borderRadius: '12px',
+                                                px: 4,
+                                                py: 1.5,
+                                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                                boxShadow: '0 0 20px rgba(34, 211, 238, 0.15)',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(34, 211, 238, 0.3)',
+                                                    boxShadow: '0 0 30px rgba(34, 211, 238, 0.3)',
+                                                    transform: 'translateY(-2px)'
+                                                },
+                                                '&.Mui-disabled': {
+                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    color: 'rgba(255, 255, 255, 0.3)'
+                                                }
+                                            }}
+                                        >
+                                            Create New Module
+                                        </Button>
+
+                                        {!canCreateBrdge() && (
+                                            <Typography variant="caption" sx={{
+                                                color: 'rgba(255, 255, 255, 0.5)',
+                                                mt: this.theme === 'dark' ? 2 : 1
+                                            }}>
+                                                You've reached your modules limit. Upgrade your plan for more!
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 ) : (
                                     <Box sx={styles.listContainer}>
                                         <BrdgeList
@@ -2286,33 +2408,82 @@ function BrdgeListPage() {
                                                 }}
                                                 onClick={() => handleViewCourse(course)}
                                             >
-                                                <Box sx={{
-                                                    height: '120px',
-                                                    backgroundImage: 'linear-gradient(135deg, rgba(0, 41, 132, 0.4) 0%, rgba(34, 211, 238, 0.1) 100%)',
-                                                    borderBottom: '1px solid rgba(34, 211, 238, 0.15)',
-                                                    mb: 0,
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    position: 'relative',
-                                                    overflow: 'hidden',
-                                                    '&::after': {
-                                                        content: '""',
+                                                {/* Thumbnail container with 16:9 aspect ratio */}
+                                                <Box
+                                                    sx={{
+                                                        position: 'relative',
+                                                        width: '100%',
+                                                        paddingTop: '56.25%', // 16:9 aspect ratio
+                                                        borderBottom: '1px solid rgba(34, 211, 238, 0.15)',
+                                                        backgroundColor: course.thumbnail_url
+                                                            ? 'transparent'
+                                                            : 'linear-gradient(135deg, rgba(0, 41, 132, 0.4) 0%, rgba(34, 211, 238, 0.1) 100%)',
+                                                        overflow: 'hidden',
+                                                    }}
+                                                >
+                                                    {course.thumbnail_url ? (
+                                                        <>
+                                                            <Box
+                                                                component="img"
+                                                                src={normalizeThumbnailUrl(course.thumbnail_url)}
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    objectFit: 'cover',
+                                                                    objectPosition: 'center', // Center the content to avoid unintentional cropping
+                                                                }}
+                                                                alt={`Thumbnail for ${course.name}`}
+                                                            />
+                                                            {/* Overlay for better text visibility */}
+                                                            <Box
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%)',
+                                                                }}
+                                                            />
+                                                        </>
+                                                    ) : (
+                                                        <Box sx={{
+                                                            position: 'absolute',
+                                                            top: 0,
+                                                            left: 0,
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                        }}>
+                                                            <BookOpen size={36} color="#22D3EE" style={{
+                                                                filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.8))'
+                                                            }} />
+                                                        </Box>
+                                                    )}
+
+                                                    {/* Optional: Add a badge or label over the thumbnail */}
+                                                    <Box sx={{
                                                         position: 'absolute',
-                                                        width: '150%',
-                                                        height: '150%',
-                                                        background: 'radial-gradient(circle, rgba(34, 211, 238, 0.3) 0%, transparent 70%)',
-                                                        top: '50%',
-                                                        left: '50%',
-                                                        transform: 'translate(-50%, -50%)',
-                                                        opacity: 0.5,
-                                                        pointerEvents: 'none'
-                                                    }
-                                                }}>
-                                                    <BookOpen size={36} color="#22D3EE" style={{
-                                                        filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.8))'
-                                                    }} />
+                                                        top: 10,
+                                                        left: 10,
+                                                        backgroundColor: 'rgba(0,0,0,0.6)',
+                                                        color: '#22D3EE',
+                                                        borderRadius: '4px',
+                                                        padding: '2px 8px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 'medium',
+                                                        zIndex: 2,
+                                                        border: '1px solid rgba(34, 211, 238, 0.3)',
+                                                    }}>
+                                                        {course.modules?.length || 0} modules
+                                                    </Box>
                                                 </Box>
+
                                                 <Box sx={{ p: 2 }}>
                                                     <Typography variant="h6" sx={{
                                                         color: 'white',
@@ -2322,7 +2493,11 @@ function BrdgeListPage() {
                                                         {course.name}
                                                     </Typography>
                                                     <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
-                                                        {course.modules?.length || 0} modules
+                                                        {course.description ? (
+                                                            course.description.length > 60
+                                                                ? `${course.description.substring(0, 60)}...`
+                                                                : course.description
+                                                        ) : "Explore this interactive course"}
                                                     </Typography>
                                                     <Typography variant="caption" sx={{
                                                         mt: 'auto',
@@ -2748,8 +2923,8 @@ function BrdgeListPage() {
                 </Box>
 
                 <InfoSidebar
-                    isOpen={sidebarOpen}
-                    onToggle={() => setSidebarOpen(!sidebarOpen)}
+                    isOpen={sidebarOpen} // Use the state variable instead of hardcoding to true
+                    onToggle={() => setSidebarOpen(!sidebarOpen)} // Restore toggle functionality
                     userStats={userStats}
                     courses={courses}
                     navigate={navigate}
@@ -2923,6 +3098,352 @@ function BrdgeListPage() {
                         }}
                     >
                         Delete Course
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Share Module Dialog */}
+            <Dialog
+                open={shareDialogOpen}
+                onClose={handleCloseShare}
+                PaperProps={{
+                    sx: {
+                        bgcolor: 'rgba(20, 20, 35, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#fff',
+                        borderRadius: 3,
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                        border: '1px solid rgba(0, 229, 255, 0.2)',
+                        minWidth: { xs: '90%', sm: 400 },
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    bgcolor: 'rgba(0, 188, 212, 0.15)',
+                    color: '#fff',
+                    borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
+                    backdropFilter: 'blur(5px)',
+                    fontFamily: 'Satoshi, sans-serif',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.02em',
+                    fontSize: '1.5rem'
+                }}>
+                    Share Module
+                </DialogTitle>
+                <DialogContent sx={{ p: 3, mt: 1 }}>
+                    <Typography
+                        variant="body1"
+                        gutterBottom
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: '1rem',
+                            lineHeight: 1.6,
+                            mb: 3
+                        }}
+                    >
+                        {brdgeToShare?.shareable ?
+                            "This module is currently public. Anyone with the link can view it." :
+                            "This module is currently private. Only you can access it."}
+                    </Typography>
+
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={brdgeToShare?.shareable || false}
+                                onChange={handleShareToggle}
+                                color="primary"
+                                sx={{
+                                    '& .MuiSwitch-switchBase.Mui-checked': {
+                                        color: '#00E5FF',
+                                    },
+                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                        backgroundColor: '#00BCD4',
+                                    },
+                                }}
+                            />
+                        }
+                        label={
+                            <Typography sx={{
+                                color: '#fff',
+                                fontSize: '1rem',
+                                fontWeight: 500
+                            }}>
+                                Public Module
+                            </Typography>
+                        }
+                        sx={{
+                            my: 1.5,
+                            display: 'block',
+                            '& .MuiFormControlLabel-label': {
+                                color: '#fff'
+                            }
+                        }}
+                    />
+
+                    {brdgeToShare?.shareable && (
+                        <Box sx={{ mt: 3 }}>
+                            <Typography
+                                variant="body2"
+                                gutterBottom
+                                sx={{
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    mb: 1
+                                }}
+                            >
+                                Share this link:
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                value={`${window.location.origin}/viewBridge/${brdgeToShare?.id}-${brdgeToShare?.public_id.substring(0, 6)}`}
+                                InputProps={{
+                                    readOnly: true,
+                                    sx: {
+                                        color: '#fff',
+                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                        '& .MuiInputBase-input': {
+                                            color: '#fff',
+                                        }
+                                    },
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                onClick={handleCopyLink}
+                                                edge="end"
+                                                sx={{ color: linkCopied ? '#4CAF50' : '#00E5FF' }}
+                                            >
+                                                {linkCopied ? <Check size={18} /> : <Copy size={18} />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    )
+                                }}
+                                variant="outlined"
+                                size="small"
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': { borderColor: '#00BCD4' },
+                                        '&:hover fieldset': { borderColor: '#00E5FF' },
+                                    }
+                                }}
+                            />
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: 'block',
+                                    mt: 1,
+                                    color: linkCopied ? '#4CAF50' : 'rgba(255, 255, 255, 0.5)',
+                                    transition: 'color 0.3s ease'
+                                }}
+                            >
+                                {linkCopied ? '✓ Link copied to clipboard!' : 'Click the copy icon to copy the link'}
+                            </Typography>
+                        </Box>
+                    )}
+
+                    <Box sx={{
+                        mt: 3,
+                        p: 2,
+                        bgcolor: 'rgba(0, 229, 255, 0.05)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(0, 229, 255, 0.1)'
+                    }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                            <strong>Module:</strong> {brdgeToShare?.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', display: 'block', mt: 1 }}>
+                            When shared, others can view this module's content and interact with it.
+                        </Typography>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={handleCloseShare}
+                        variant="outlined"
+                        sx={{
+                            color: '#00E5FF',
+                            borderColor: '#00BCD4',
+                            '&:hover': {
+                                borderColor: '#00E5FF',
+                                backgroundColor: 'rgba(0, 229, 255, 0.08)'
+                            }
+                        }}
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Course Share Dialog - Add this after the Share Module Dialog */}
+            <Dialog
+                open={shareCourseDialogOpen}
+                onClose={handleCloseCourseShare}
+                PaperProps={{
+                    sx: {
+                        bgcolor: 'rgba(20, 20, 35, 0.95)',
+                        backdropFilter: 'blur(10px)',
+                        color: '#fff',
+                        borderRadius: 3,
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                        border: '1px solid rgba(0, 229, 255, 0.2)',
+                        minWidth: { xs: '90%', sm: 400 },
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    bgcolor: 'rgba(0, 188, 212, 0.15)',
+                    color: '#fff',
+                    borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
+                    backdropFilter: 'blur(5px)',
+                    fontFamily: 'Satoshi, sans-serif',
+                    fontWeight: 'bold',
+                    letterSpacing: '0.02em',
+                    fontSize: '1.5rem'
+                }}>
+                    Share Course
+                </DialogTitle>
+                <DialogContent sx={{ p: 3, mt: 1 }}>
+                    <Typography
+                        variant="body1"
+                        gutterBottom
+                        sx={{
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            fontSize: '1rem',
+                            lineHeight: 1.6,
+                            mb: 3
+                        }}
+                    >
+                        {courseToShare?.shareable ?
+                            "This course is currently public. Anyone with the link can view it." :
+                            "This course is currently private. Only you can access it."}
+                    </Typography>
+
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={courseToShare?.shareable || false}
+                                onChange={handleCourseShareToggle}
+                                color="primary"
+                                sx={{
+                                    '& .MuiSwitch-switchBase.Mui-checked': {
+                                        color: '#00E5FF',
+                                    },
+                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                        backgroundColor: '#00BCD4',
+                                    },
+                                }}
+                            />
+                        }
+                        label={
+                            <Typography sx={{
+                                color: '#fff',
+                                fontSize: '1rem',
+                                fontWeight: 500
+                            }}>
+                                Public Course
+                            </Typography>
+                        }
+                        sx={{
+                            my: 1.5,
+                            display: 'block',
+                            '& .MuiFormControlLabel-label': {
+                                color: '#fff'
+                            }
+                        }}
+                    />
+
+                    {courseToShare?.shareable && (
+                        <Box sx={{ mt: 3 }}>
+                            <Typography
+                                variant="body2"
+                                gutterBottom
+                                sx={{
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    mb: 1
+                                }}
+                            >
+                                Share this link:
+                            </Typography>
+                            <TextField
+                                fullWidth
+                                value={`${window.location.origin}/c/${courseToShare?.public_id}`}
+                                InputProps={{
+                                    readOnly: true,
+                                    sx: {
+                                        color: '#fff',
+                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                        '& .MuiInputBase-input': {
+                                            color: '#fff',
+                                        }
+                                    },
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                onClick={handleCopyCourseLink}
+                                                edge="end"
+                                                sx={{ color: courseLinkCopied ? '#4CAF50' : '#00E5FF' }}
+                                            >
+                                                {courseLinkCopied ? <Check size={18} /> : <Copy size={18} />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    )
+                                }}
+                                variant="outlined"
+                                size="small"
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': { borderColor: '#00BCD4' },
+                                        '&:hover fieldset': { borderColor: '#00E5FF' },
+                                    }
+                                }}
+                            />
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: 'block',
+                                    mt: 1,
+                                    color: courseLinkCopied ? '#4CAF50' : 'rgba(255, 255, 255, 0.5)',
+                                    transition: 'color 0.3s ease'
+                                }}
+                            >
+                                {courseLinkCopied ? '✓ Link copied to clipboard!' : 'Click the copy icon to copy the link'}
+                            </Typography>
+                        </Box>
+                    )}
+
+                    <Box sx={{
+                        mt: 3,
+                        p: 2,
+                        bgcolor: 'rgba(0, 229, 255, 0.05)',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(0, 229, 255, 0.1)'
+                    }}>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                            <strong>Course:</strong> {courseToShare?.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', display: 'block', mt: 1 }}>
+                            When shared, others can view this course's modules and content.
+                        </Typography>
+                        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <AutoStoriesIcon sx={{ color: '#00E5FF', fontSize: 16 }} />
+                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                {courseToShare?.modules?.length || 0} module(s) in this course
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={handleCloseCourseShare}
+                        variant="outlined"
+                        sx={{
+                            color: '#00E5FF',
+                            borderColor: '#00BCD4',
+                            '&:hover': {
+                                borderColor: '#00E5FF',
+                                backgroundColor: 'rgba(0, 229, 255, 0.08)'
+                            }
+                        }}
+                    >
+                        Close
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, CircularProgress, Button, TextField,
     IconButton, InputAdornment, Tooltip, Fade, Zoom,
@@ -50,6 +50,10 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
+import debounce from 'lodash/debounce';
+import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
+import ImageIcon from '@mui/icons-material/Image';
+import { styled } from '@mui/material/styles';
 
 // Animation variants
 const containerVariants = {
@@ -71,6 +75,35 @@ const itemVariants = {
         opacity: 1,
         transition: { duration: 0.3 }
     }
+};
+
+// Create styled components for the file input
+const VisuallyHiddenInput = styled('input')({
+    clip: 'rect(0 0 0 0)',
+    clipPath: 'inset(50%)',
+    height: 1,
+    overflow: 'hidden',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    whiteSpace: 'nowrap',
+    width: 1,
+});
+
+// Add this helper function to normalize thumbnail URLs
+const normalizeThumbnailUrl = (url) => {
+    if (!url) return null;
+
+    // If it's already an absolute URL, return it as is
+    if (url.startsWith('http')) return url;
+
+    // If it's a relative URL, prepend the API base URL
+    if (url.startsWith('/api')) {
+        // Use the same base URL as your API calls
+        return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${url}`;
+    }
+
+    return url;
 };
 
 function EditCoursePage() {
@@ -103,6 +136,53 @@ function EditCoursePage() {
     // Add new state for active tab
     const [activeTab, setActiveTab] = useState(0);
 
+    // Add this state to track pending changes
+    const [pendingDescriptions, setPendingDescriptions] = useState({});
+    const [isSavingDescriptions, setIsSavingDescriptions] = useState({});
+
+    // Add these states after your existing state declarations
+    const [courseThumbPreview, setCourseThumbPreview] = useState(null);
+    const [uploadingCourseThumb, setUploadingCourseThumb] = useState(false);
+    const [moduleThumbPreviews, setModuleThumbPreviews] = useState({});
+    const [uploadingModuleThumb, setUploadingModuleThumb] = useState({});
+
+    // Create a debounced save function
+    const debouncedSaveDescription = useCallback(
+        debounce(async (moduleId, description) => {
+            try {
+                setIsSavingDescriptions(prev => ({ ...prev, [moduleId]: true }));
+
+                await api.put(`/courses/${id}/modules/${moduleId}`, {
+                    description: description
+                });
+
+                // Update course state once the save is complete
+                setCourse(prevCourse => ({
+                    ...prevCourse,
+                    modules: prevCourse.modules.map(mod =>
+                        mod.id === moduleId ? { ...mod, description } : mod
+                    )
+                }));
+
+                // Clear pending status
+                setPendingDescriptions(prev => {
+                    const newPending = { ...prev };
+                    delete newPending[moduleId];
+                    return newPending;
+                });
+            } catch (error) {
+                console.error('Error saving module description:', error);
+            } finally {
+                setIsSavingDescriptions(prev => {
+                    const newSaving = { ...prev };
+                    delete newSaving[moduleId];
+                    return newSaving;
+                });
+            }
+        }, 800),
+        [id, setCourse]
+    );
+
     useEffect(() => {
         const checkAuthorization = async () => {
             try {
@@ -125,29 +205,21 @@ function EditCoursePage() {
                 }
 
                 console.log("Course data loaded:", courseData);
-                if (courseData.modules) {
-                    console.log("Modules found:", courseData.modules.length);
-                    // Log detailed module data
-                    courseData.modules.forEach((module, index) => {
-                        console.log(`Module ${index + 1}:`, module);
-                        console.log(`  - Module ID:`, module.id);
-                        console.log(`  - Brdge ID:`, module.brdge_id);
-                        console.log(`  - Position:`, module.position);
-                        if (module.brdge) {
-                            console.log(`  - Brdge name:`, module.brdge.name);
-                            console.log(`  - Brdge public_id:`, module.brdge.public_id);
-                        } else {
-                            console.warn(`  - No brdge data found for module:`, module.id);
-                        }
-                    });
-                } else {
-                    console.warn("No modules found in course data");
-                }
+                // Add this log to check if thumbnail URL exists
+                console.log("Course thumbnail URL:", courseData.thumbnail_url);
 
                 setCourse(courseData);
                 setCourseTitle(courseData.name);
                 setCourseDescription(courseData.description || '');
                 setIsShareable(courseData.shareable);
+
+                // Set thumbnail preview if it exists in course data - normalize URL here
+                if (courseData.thumbnail_url) {
+                    const normalizedUrl = normalizeThumbnailUrl(courseData.thumbnail_url);
+                    console.log("Setting course thumbnail to:", normalizedUrl);
+                    setCourseThumbPreview(normalizedUrl);
+                }
+
                 setLoading(false);
             } catch (error) {
                 console.error('Authorization check failed:', error);
@@ -158,6 +230,32 @@ function EditCoursePage() {
 
         checkAuthorization();
     }, [id, uidFromUrl, navigate]);
+
+    // Update the useEffect that loads module thumbnails
+    useEffect(() => {
+        if (course) {
+            // Load course thumbnail if it exists and not already set
+            if (course.thumbnail_url && !courseThumbPreview) {
+                const normalizedUrl = normalizeThumbnailUrl(course.thumbnail_url);
+                console.log("Setting course thumbnail from useEffect:", normalizedUrl);
+                setCourseThumbPreview(normalizedUrl);
+            }
+
+            // Initialize module thumbnail previews
+            if (course.modules) {
+                const initialPreviews = {};
+                course.modules.forEach(module => {
+                    if (module.thumbnail_url) {
+                        console.log(`Module ${module.id} original thumbnail:`, module.thumbnail_url);
+                        const normalizedUrl = normalizeThumbnailUrl(module.thumbnail_url);
+                        console.log(`Module ${module.id} normalized URL:`, normalizedUrl);
+                        initialPreviews[module.id] = normalizedUrl;
+                    }
+                });
+                setModuleThumbPreviews(initialPreviews);
+            }
+        }
+    }, [course, courseThumbPreview]);
 
     const fetchAvailableBrdges = async () => {
         try {
@@ -306,24 +404,23 @@ function EditCoursePage() {
         }
     };
 
-    const handleModuleDescriptionChange = async (moduleId, newDescription) => {
-        try {
-            setSavingCourse(true);
-            await api.put(`/courses/${id}/modules/${moduleId}`, {
-                description: newDescription
-            });
-            // Update local state
-            setCourse(prevCourse => ({
-                ...prevCourse,
-                modules: prevCourse.modules.map(mod =>
-                    mod.id === moduleId ? { ...mod, brdge: { ...mod.brdge, description: newDescription } } : mod
-                )
-            }));
-        } catch (error) {
-            console.error('Error updating module description:', error);
-        } finally {
-            setSavingCourse(false);
-        }
+    const handleModuleDescriptionChange = (moduleId, newDescription) => {
+        // Immediately update UI for responsive feel
+        setPendingDescriptions(prev => ({
+            ...prev,
+            [moduleId]: newDescription
+        }));
+
+        // Update local state for display purposes
+        setCourse(prevCourse => ({
+            ...prevCourse,
+            modules: prevCourse.modules.map(mod =>
+                mod.id === moduleId ? { ...mod, description: newDescription } : mod
+            )
+        }));
+
+        // Trigger the debounced save
+        debouncedSaveDescription(moduleId, newDescription);
     };
 
     // Navigate to view or edit Bridge
@@ -335,6 +432,101 @@ function EditCoursePage() {
     const handleEditModule = (moduleId, publicIdPrefix) => {
         if (!moduleId || !publicIdPrefix) return;
         navigate(`/editBridge/${moduleId}-${publicIdPrefix}`);
+    };
+
+    // Handler for course thumbnail upload
+    const handleCourseThumbUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Create preview
+        const previewUrl = URL.createObjectURL(file);
+        setCourseThumbPreview(previewUrl);
+
+        // Upload file to S3
+        setUploadingCourseThumb(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await api.post(`/courses/${id}/upload-thumbnail`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            // Update course state with new thumbnail URL
+            setCourse(prevCourse => ({
+                ...prevCourse,
+                thumbnail_url: response.data.thumbnail_url
+            }));
+
+            console.log('Thumbnail uploaded successfully:', response.data.thumbnail_url);
+        } catch (error) {
+            console.error('Error uploading course thumbnail:', error);
+        } finally {
+            setUploadingCourseThumb(false);
+        }
+    };
+
+    // Handler for module thumbnail upload
+    const handleModuleThumbUpload = async (event, moduleId, brdgeId) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Create preview
+        const previewUrl = URL.createObjectURL(file);
+        setModuleThumbPreviews(prev => ({
+            ...prev,
+            [moduleId]: previewUrl
+        }));
+
+        // Set uploading state for this module
+        setUploadingModuleThumb(prev => ({
+            ...prev,
+            [moduleId]: true
+        }));
+
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('type', 'module_thumbnail');
+            formData.append('brdge_id', brdgeId);
+
+            const response = await api.post(`/courses/${id}/modules/${moduleId}/upload-thumbnail`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            // Update module thumbnail in state
+            setCourse(prevCourse => ({
+                ...prevCourse,
+                modules: prevCourse.modules.map(mod =>
+                    mod.id === moduleId
+                        ? { ...mod, thumbnail_url: response.data.thumbnail_url }
+                        : mod
+                )
+            }));
+
+            // Update preview with the actual URL
+            setModuleThumbPreviews(prev => ({
+                ...prev,
+                [moduleId]: response.data.thumbnail_url
+            }));
+
+            console.log('Module thumbnail uploaded successfully:', response.data.thumbnail_url);
+            console.log('Normalized URL:', normalizeThumbnailUrl(response.data.thumbnail_url));
+        } catch (error) {
+            console.error('Error uploading module thumbnail:', error);
+        } finally {
+            setUploadingModuleThumb(prev => {
+                const newState = { ...prev };
+                delete newState[moduleId];
+                return newState;
+            });
+        }
     };
 
     if (loading) {
@@ -619,89 +811,214 @@ function EditCoursePage() {
                             <Box sx={{
                                 mb: 3,
                                 display: 'flex',
-                                flexDirection: 'column',
-                                gap: 1.5,
+                                flexDirection: { xs: 'column', md: 'row' },
+                                gap: 3,
                                 bgcolor: 'rgba(0, 229, 255, 0.03)',
                                 backdropFilter: 'blur(20px)',
                                 borderRadius: '16px',
                                 p: 3,
                                 border: '1px solid rgba(0, 229, 255, 0.1)',
                             }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                    <TextField
-                                        value={courseTitle}
-                                        onChange={(e) => setCourseTitle(e.target.value)}
-                                        variant="standard"
-                                        placeholder="Enter Course Title"
-                                        InputProps={{
-                                            sx: {
-                                                fontSize: '1.75rem',
-                                                fontWeight: '600',
-                                                color: '#E0F7FA',
-                                                '&::before': { display: 'none' },
-                                                '&::after': { display: 'none' },
-                                                '& input::placeholder': {
-                                                    color: 'rgba(224, 247, 250, 0.3)',
-                                                    opacity: 1
-                                                }
+                                {/* Thumbnail upload section */}
+                                <Box sx={{
+                                    width: { xs: '100%', md: '280px' },
+                                    position: 'relative',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                    border: '1px dashed rgba(0, 229, 255, 0.3)',
+                                    // 16:9 aspect ratio container
+                                    '&::before': {
+                                        content: '""',
+                                        display: 'block',
+                                        paddingTop: '56.25%', // 16:9 aspect ratio
+                                        width: '100%',
+                                    }
+                                }}>
+                                    {courseThumbPreview ? (
+                                        <Box sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                            '&:hover .overlay': {
+                                                opacity: 1
                                             }
-                                        }}
-                                        sx={{ flex: 1 }}
-                                    />
-                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        }}>
+                                            <Box
+                                                component="img"
+                                                src={normalizeThumbnailUrl(courseThumbPreview)}
+                                                sx={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    objectPosition: 'center',
+                                                }}
+                                                alt="Course thumbnail"
+                                            />
+                                            <Box
+                                                className="overlay"
+                                                sx={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    bgcolor: 'rgba(0, 0, 0, 0.5)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    opacity: 0,
+                                                    transition: 'opacity 0.3s ease'
+                                                }}
+                                            >
+                                                <Button
+                                                    component="label"
+                                                    variant="contained"
+                                                    startIcon={<AddPhotoAlternateIcon />}
+                                                    sx={{
+                                                        bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                        '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.3)' }
+                                                    }}
+                                                >
+                                                    Change
+                                                    <VisuallyHiddenInput type="file" accept="image/*" onChange={handleCourseThumbUpload} />
+                                                </Button>
+                                            </Box>
+                                        </Box>
+                                    ) : (
                                         <Button
-                                            variant="contained"
-                                            onClick={handleSaveCourse}
+                                            component="label"
+                                            variant="outlined"
+                                            startIcon={<AddPhotoAlternateIcon />}
                                             sx={{
-                                                background: 'rgba(0, 229, 255, 0.1)',
-                                                backdropFilter: 'blur(10px)',
-                                                border: '1px solid rgba(0, 229, 255, 0.2)',
-                                                borderRadius: '8px',
-                                                px: 2,
-                                                py: 0.75,
-                                                fontSize: '0.85rem',
-                                                fontWeight: 500,
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                width: '100%',
+                                                height: '100%',
                                                 color: '#00E5FF',
-                                                textTransform: 'none',
-                                                height: '36px',
+                                                borderColor: 'rgba(0, 229, 255, 0.3)',
                                                 '&:hover': {
-                                                    background: 'rgba(0, 229, 255, 0.2)',
                                                     borderColor: '#00E5FF',
-                                                }
+                                                    bgcolor: 'rgba(0, 229, 255, 0.05)'
+                                                },
+                                                flexDirection: 'column',
+                                                gap: 1,
+                                                padding: 2,
                                             }}
                                         >
-                                            Save
+                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                                Add Course Thumbnail
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                Recommended: 16:9 ratio
+                                            </Typography>
+                                            <VisuallyHiddenInput type="file" accept="image/*" onChange={handleCourseThumbUpload} />
                                         </Button>
-                                    </Box>
+                                    )}
+                                    {uploadingCourseThumb && (
+                                        <Box sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            bgcolor: 'rgba(0, 0, 0, 0.7)',
+                                            zIndex: 5
+                                        }}>
+                                            <CircularProgress size={40} sx={{ color: '#00E5FF' }} />
+                                        </Box>
+                                    )}
                                 </Box>
 
-                                <TextField
-                                    multiline
-                                    rows={2}
-                                    value={courseDescription}
-                                    onChange={(e) => setCourseDescription(e.target.value)}
-                                    placeholder="Add a compelling course description..."
-                                    fullWidth
-                                    variant="standard"
-                                    sx={{
-                                        '& .MuiInputBase-input': {
-                                            color: 'rgba(224, 247, 250, 0.8)',
-                                            fontSize: '0.95rem',
-                                            lineHeight: '1.5',
-                                            letterSpacing: '0.01em',
-                                        },
-                                        '& .MuiInputBase-input::placeholder': {
-                                            color: 'rgba(224, 247, 250, 0.3)',
-                                            opacity: 1
-                                        },
-                                        '& .MuiInput-underline:before': {
-                                            borderBottomColor: 'rgba(0, 229, 255, 0.15)'
-                                        },
-                                        '& .MuiInput-underline:hover:before': {
-                                            borderBottomColor: 'rgba(0, 229, 255, 0.3)'
-                                        }
-                                    }}
-                                />
+                                {/* Course details */}
+                                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <TextField
+                                            value={courseTitle}
+                                            onChange={(e) => setCourseTitle(e.target.value)}
+                                            variant="standard"
+                                            placeholder="Enter Course Title"
+                                            InputProps={{
+                                                sx: {
+                                                    fontSize: '1.75rem',
+                                                    fontWeight: '600',
+                                                    color: '#E0F7FA',
+                                                    '&::before': { display: 'none' },
+                                                    '&::after': { display: 'none' },
+                                                    '& input::placeholder': {
+                                                        color: 'rgba(224, 247, 250, 0.3)',
+                                                        opacity: 1
+                                                    }
+                                                }
+                                            }}
+                                            sx={{ flex: 1 }}
+                                        />
+                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                            <Button
+                                                variant="contained"
+                                                onClick={handleSaveCourse}
+                                                sx={{
+                                                    background: 'rgba(0, 229, 255, 0.1)',
+                                                    backdropFilter: 'blur(10px)',
+                                                    border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                    borderRadius: '8px',
+                                                    px: 2,
+                                                    py: 0.75,
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 500,
+                                                    color: '#00E5FF',
+                                                    textTransform: 'none',
+                                                    height: '36px',
+                                                    '&:hover': {
+                                                        background: 'rgba(0, 229, 255, 0.2)',
+                                                        borderColor: '#00E5FF',
+                                                    }
+                                                }}
+                                            >
+                                                Save
+                                            </Button>
+                                        </Box>
+                                    </Box>
+
+                                    <TextField
+                                        multiline
+                                        rows={3}
+                                        value={courseDescription}
+                                        onChange={(e) => setCourseDescription(e.target.value)}
+                                        placeholder="Add a compelling course description..."
+                                        fullWidth
+                                        variant="standard"
+                                        sx={{
+                                            '& .MuiInputBase-input': {
+                                                color: 'rgba(224, 247, 250, 0.8)',
+                                                fontSize: '0.95rem',
+                                                lineHeight: '1.5',
+                                                letterSpacing: '0.01em',
+                                            },
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: 'rgba(224, 247, 250, 0.3)',
+                                                opacity: 1
+                                            },
+                                            '& .MuiInput-underline:before': {
+                                                borderBottomColor: 'rgba(0, 229, 255, 0.15)'
+                                            },
+                                            '& .MuiInput-underline:hover:before': {
+                                                borderBottomColor: 'rgba(0, 229, 255, 0.3)'
+                                            }
+                                        }}
+                                    />
+                                </Box>
                             </Box>
 
                             {/* Modules Section */}
@@ -786,10 +1103,10 @@ function EditCoursePage() {
                                                         '&:hover': {
                                                             transform: 'translateY(-8px)',
                                                             boxShadow: `
-                                                                0 0 20px rgba(0, 229, 255, 0.2),
-                                                                0 0 40px rgba(0, 229, 255, 0.1),
-                                                                0 0 60px rgba(0, 229, 255, 0.05)
-                                                            `,
+                                                            0 0 20px rgba(0, 229, 255, 0.2),
+                                                            0 0 40px rgba(0, 229, 255, 0.1),
+                                                            0 0 60px rgba(0, 229, 255, 0.05)
+                                                        `,
                                                             '& .module-image': {
                                                                 transform: 'scale(1.05)',
                                                             },
@@ -870,15 +1187,55 @@ function EditCoursePage() {
                                                                 }} />
                                                             </IconButton>
 
-                                                            {/* Replace CardMedia with styled background */}
+                                                            {/* Thumbnail upload button */}
+                                                            <IconButton
+                                                                component="label"
+                                                                sx={{
+                                                                    position: 'absolute',
+                                                                    top: 12,
+                                                                    right: 56, // Position it next to the delete button
+                                                                    zIndex: 3,
+                                                                    width: 32,
+                                                                    height: 32,
+                                                                    bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                                                    backdropFilter: 'blur(8px)',
+                                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                                    opacity: 0.6,
+                                                                    transition: 'all 0.2s ease',
+                                                                    '&:hover': {
+                                                                        bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                                        borderColor: 'rgba(0, 229, 255, 0.3)',
+                                                                        opacity: 1,
+                                                                        transform: 'scale(1.05)',
+                                                                    },
+                                                                }}
+                                                            >
+                                                                <ImageIcon sx={{
+                                                                    fontSize: '0.9rem',
+                                                                    color: 'rgba(255, 255, 255, 0.8)',
+                                                                    transition: 'all 0.2s ease',
+                                                                    '&:hover': {
+                                                                        color: '#00E5FF',
+                                                                    }
+                                                                }} />
+                                                                <VisuallyHiddenInput
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => handleModuleThumbUpload(e, module.id, module.brdge_id)}
+                                                                />
+                                                            </IconButton>
+
+                                                            {/* Replace the module background Box with this */}
                                                             <Box
                                                                 sx={{
                                                                     position: 'relative',
                                                                     height: '100%',
-                                                                    background: `linear-gradient(135deg, 
-                                                                            rgba(0, 21, 36, 0.95) 0%,
-                                                                            rgba(0, 151, 167, 0.9) 100%)`,
-                                                                    '&::before': {
+                                                                    background: moduleThumbPreviews[module.id] || module.thumbnail_url
+                                                                        ? 'none'  // No background when we have a thumbnail
+                                                                        : `linear-gradient(135deg, 
+                                                                    rgba(0, 21, 36, 0.95) 0%,
+                                                                    rgba(0, 151, 167, 0.9) 100%)`,
+                                                                    '&::before': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
                                                                         content: '""',
                                                                         position: 'absolute',
                                                                         top: 0,
@@ -886,25 +1243,76 @@ function EditCoursePage() {
                                                                         right: 0,
                                                                         bottom: 0,
                                                                         background: `radial-gradient(circle at 50% 50%,
-                                                                            rgba(0, 229, 255, 0.15) 0%,
-                                                                            rgba(0, 229, 255, 0.05) 25%,
-                                                                            transparent 50%)`,
+                                                                        rgba(0, 229, 255, 0.15) 0%,
+                                                                        rgba(0, 229, 255, 0.05) 25%,
+                                                                        transparent 50%)`,
                                                                         opacity: 0.5,
                                                                         transition: 'all 0.3s ease',
-                                                                    },
-                                                                    '&::after': {
+                                                                    } : {},
+                                                                    '&::after': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
                                                                         content: '""',
                                                                         position: 'absolute',
                                                                         top: 0,
                                                                         left: 0,
                                                                         right: 0,
                                                                         bottom: 0,
-                                                                        background: 'url("/path/to/noise-texture.png")', // Optional: add subtle noise texture
                                                                         opacity: 0.05,
                                                                         mixBlendMode: 'overlay',
-                                                                    }
+                                                                    } : {}
                                                                 }}
                                                             >
+                                                                {/* Show thumbnail if available */}
+                                                                {(moduleThumbPreviews[module.id] || module.thumbnail_url) && (
+                                                                    <Box
+                                                                        component="img"
+                                                                        src={moduleThumbPreviews[module.id] || normalizeThumbnailUrl(module.thumbnail_url)}
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            objectFit: 'cover',
+                                                                            objectPosition: 'center',
+                                                                            position: 'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            zIndex: 0,
+                                                                        }}
+                                                                        alt={`Thumbnail for ${module.brdge?.name || "module"}`}
+                                                                    />
+                                                                )}
+
+                                                                {/* Add overlay for better text readability */}
+                                                                {moduleThumbPreviews[module.id] && (
+                                                                    <Box
+                                                                        sx={{
+                                                                            position: 'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+                                                                            zIndex: 1,
+                                                                        }}
+                                                                    />
+                                                                )}
+
+                                                                {/* Show loading indicator when uploading */}
+                                                                {uploadingModuleThumb[module.id] && (
+                                                                    <Box sx={{
+                                                                        position: 'absolute',
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        right: 0,
+                                                                        bottom: 0,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        bgcolor: 'rgba(0, 0, 0, 0.7)',
+                                                                        zIndex: 5
+                                                                    }}>
+                                                                        <CircularProgress size={40} sx={{ color: '#00E5FF' }} />
+                                                                    </Box>
+                                                                )}
+
                                                                 {/* Animated Play Button */}
                                                                 <Box
                                                                     sx={{
@@ -982,6 +1390,7 @@ function EditCoursePage() {
                                                                         display: 'flex',
                                                                         justifyContent: 'space-between',
                                                                         opacity: 0.5,
+                                                                        zIndex: 2,
                                                                     }}
                                                                 >
                                                                     {[...Array(3)].map((_, i) => (
@@ -1027,34 +1436,69 @@ function EditCoursePage() {
                                                                 }}
                                                             />
 
-                                                            <TextField
-                                                                value={module.brdge?.description || ''}
-                                                                onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
-                                                                multiline
-                                                                rows={2}
-                                                                fullWidth
-                                                                variant="standard"
-                                                                placeholder="Add a description..."
-                                                                sx={{
-                                                                    mt: 1.5,
-                                                                    flex: 1,
-                                                                    '& .MuiInputBase-input': {
-                                                                        color: 'rgba(224, 247, 250, 0.7)',
-                                                                        fontSize: '0.85rem',
-                                                                        lineHeight: '1.5',
-                                                                    },
-                                                                    '& .MuiInputBase-input::placeholder': {
-                                                                        color: 'rgba(224, 247, 250, 0.3)',
-                                                                        opacity: 1
-                                                                    },
-                                                                    '& .MuiInput-underline:before': {
-                                                                        borderBottomColor: 'rgba(255, 255, 255, 0.1)'
-                                                                    },
-                                                                    '& .MuiInput-underline:hover:before': {
-                                                                        borderBottomColor: 'rgba(255, 255, 255, 0.2)'
+                                                            <Box sx={{ position: 'relative', width: '100%' }}>
+                                                                <TextField
+                                                                    value={
+                                                                        // Show the pending description if available, otherwise show saved description
+                                                                        pendingDescriptions[module.id] !== undefined
+                                                                            ? pendingDescriptions[module.id]
+                                                                            : (module.description || module.brdge?.description || '')
                                                                     }
-                                                                }}
-                                                            />
+                                                                    onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
+                                                                    multiline
+                                                                    rows={2}
+                                                                    fullWidth
+                                                                    variant="standard"
+                                                                    placeholder="Add a description..."
+                                                                    sx={{
+                                                                        mt: 1.5,
+                                                                        flex: 1,
+                                                                        '& .MuiInputBase-input': {
+                                                                            color: 'rgba(224, 247, 250, 0.7)',
+                                                                            fontSize: '0.85rem',
+                                                                            lineHeight: '1.5',
+                                                                        },
+                                                                        '& .MuiInputBase-input::placeholder': {
+                                                                            color: 'rgba(224, 247, 250, 0.3)',
+                                                                            opacity: 1
+                                                                        },
+                                                                        '& .MuiInput-underline:before': {
+                                                                            borderBottomColor: 'rgba(255, 255, 255, 0.1)'
+                                                                        },
+                                                                        '& .MuiInput-underline:hover:before': {
+                                                                            borderBottomColor: 'rgba(255, 255, 255, 0.2)'
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                {/* Show saving indicator */}
+                                                                {isSavingDescriptions[module.id] && (
+                                                                    <Box
+                                                                        sx={{
+                                                                            position: 'absolute',
+                                                                            right: 2,
+                                                                            bottom: 2,
+                                                                            fontSize: '0.7rem',
+                                                                            color: 'rgba(0, 229, 255, 0.7)'
+                                                                        }}
+                                                                    >
+                                                                        Saving...
+                                                                    </Box>
+                                                                )}
+                                                                {/* Show pending indicator */}
+                                                                {pendingDescriptions[module.id] !== undefined && !isSavingDescriptions[module.id] && (
+                                                                    <Box
+                                                                        sx={{
+                                                                            position: 'absolute',
+                                                                            right: 2,
+                                                                            bottom: 2,
+                                                                            fontSize: '0.7rem',
+                                                                            color: 'rgba(255, 193, 7, 0.7)'
+                                                                        }}
+                                                                    >
+                                                                        Pending...
+                                                                    </Box>
+                                                                )}
+                                                            </Box>
 
                                                             <Button
                                                                 variant="contained"

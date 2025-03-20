@@ -393,6 +393,7 @@ class Course(db.Model):
     )
     public_id = db.Column(db.String(36), unique=True, nullable=True)
     shareable = db.Column(db.Boolean, default=False)
+    thumbnail_url = db.Column(db.String(512), nullable=True)
 
     # Relationships
     user = db.relationship("User", backref=db.backref("courses", lazy="dynamic"))
@@ -405,8 +406,12 @@ class Course(db.Model):
         if not self.public_id:
             self.public_id = str(uuid.uuid4())
 
+    def get_enrollment_count(self):
+        """Get the number of active enrollments for this course"""
+        return self.enrollments.filter_by(status="active").count()
+
     def to_dict(self):
-        return {
+        result = {
             "id": self.id,
             "name": self.name,
             "description": self.description,
@@ -415,8 +420,11 @@ class Course(db.Model):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "public_id": self.public_id,
             "shareable": self.shareable,
+            "thumbnail_url": self.thumbnail_url,
             "modules": [module.to_dict() for module in self.modules],
+            "enrollment_count": self.get_enrollment_count(),
         }
+        return result
 
 
 class CourseModule(db.Model):
@@ -429,6 +437,10 @@ class CourseModule(db.Model):
         db.Integer, nullable=False
     )  # For ordering modules within a course
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    description = db.Column(
+        db.Text, nullable=True
+    )  # Custom description for this module in the course
+    thumbnail_url = db.Column(db.String(512), nullable=True)
 
     # Relationships
     course = db.relationship("Course", back_populates="modules")
@@ -444,4 +456,40 @@ class CourseModule(db.Model):
             "brdge": self.brdge.to_dict(),
             "position": self.position,
             "created_at": self.created_at.isoformat() if self.created_at else None,
+            "description": self.description,
+            "thumbnail_url": self.thumbnail_url,
+        }
+
+
+class Enrollment(db.Model):
+    """Tracks user enrollments in courses"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("course.id"), nullable=False)
+    enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default="active")  # active, completed, dropped
+    last_accessed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    progress = db.Column(db.Float, default=0.0)  # 0-100% course completion
+
+    # Define relationships
+    user = db.relationship("User", backref=db.backref("enrollments", lazy="dynamic"))
+    course = db.relationship(
+        "Course", backref=db.backref("enrollments", lazy="dynamic")
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "course_id": self.course_id,
+            "enrolled_at": self.enrolled_at.isoformat() if self.enrolled_at else None,
+            "status": self.status,
+            "last_accessed_at": (
+                self.last_accessed_at.isoformat() if self.last_accessed_at else None
+            ),
+            "progress": self.progress,
+            "user": (
+                {"id": self.user.id, "email": self.user.email} if self.user else None
+            ),
         }
