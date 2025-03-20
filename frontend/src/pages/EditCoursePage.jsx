@@ -5,7 +5,9 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Card, CardContent, CardMedia, FormControlLabel, Switch,
     Divider, List, ListItem, ListItemText, Alert, Collapse, Chip,
-    Paper, Avatar, Badge, Skeleton, useTheme, useMediaQuery, Tabs, Tab
+    Paper, Avatar, Badge, Skeleton, useTheme, useMediaQuery, Tabs, Tab,
+    Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -54,6 +56,11 @@ import debounce from 'lodash/debounce';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
 import ImageIcon from '@mui/icons-material/Image';
 import { styled } from '@mui/material/styles';
+import { useSnackbar } from '../utils/snackbar';
+import InfoIcon from '@mui/icons-material/Info';
+import PublicIcon from '@mui/icons-material/Public';
+import PersonIcon from '@mui/icons-material/Person';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 
 // Animation variants
 const containerVariants = {
@@ -106,9 +113,22 @@ const normalizeThumbnailUrl = (url) => {
     return url;
 };
 
+// Add this before your return statement in EditCoursePage
+const glowingBorderKeyframes = {
+    '@keyframes glowingBorder': {
+        '0%': {
+            opacity: 0.5,
+        },
+        '100%': {
+            opacity: 1,
+        },
+    },
+};
+
 function EditCoursePage() {
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const { showSnackbar } = useSnackbar();
 
     const params = useParams();
     // Handle combined ID-UID format from the URL
@@ -145,6 +165,10 @@ function EditCoursePage() {
     const [uploadingCourseThumb, setUploadingCourseThumb] = useState(false);
     const [moduleThumbPreviews, setModuleThumbPreviews] = useState({});
     const [uploadingModuleThumb, setUploadingModuleThumb] = useState({});
+
+    // Add state for enrollments
+    const [enrollments, setEnrollments] = useState([]);
+    const [loadingEnrollments, setLoadingEnrollments] = useState(false);
 
     // Create a debounced save function
     const debouncedSaveDescription = useCallback(
@@ -528,6 +552,75 @@ function EditCoursePage() {
             });
         }
     };
+
+    // Add a function to fetch enrollments
+    const fetchEnrollments = async () => {
+        if (!id) return;
+
+        setLoadingEnrollments(true);
+        try {
+            const response = await api.get(`/courses/${id}/enrollments`);
+            setEnrollments(response.data.enrollments || []);
+        } catch (error) {
+            console.error("Error fetching enrollments:", error);
+            // Optional: Show an error message to the user
+        } finally {
+            setLoadingEnrollments(false);
+        }
+    };
+
+    // Add this to useEffect to fetch enrollments when the page loads
+    useEffect(() => {
+        // ... existing fetch logic ...
+
+        // Also fetch enrollments
+        fetchEnrollments();
+    }, [id]);
+
+    // Add this function to your EditCoursePage component
+    const handleAccessLevelChange = async (moduleId, accessLevel) => {
+        try {
+            setSavingCourse(true);
+            const response = await api.put(`/courses/${id}/modules/${moduleId}/permissions`, {
+                access_level: accessLevel
+            });
+
+            // Update with value from response for consistency
+            const updatedAccessLevel = response.data.permission.access_level;
+
+            // Update course state with new access level
+            setCourse(prevCourse => ({
+                ...prevCourse,
+                modules: prevCourse.modules.map(mod =>
+                    mod.id === moduleId ? { ...mod, access_level: updatedAccessLevel } : mod
+                )
+            }));
+
+            showSnackbar(`Module access set to ${updatedAccessLevel}`, 'success');
+        } catch (error) {
+            console.error('Error changing access level:', error);
+            showSnackbar('Failed to update access level', 'error');
+        } finally {
+            setSavingCourse(false);
+        }
+    };
+
+    // Add your glowing border animation effect here
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = `
+            @keyframes glowingBorder {
+                0% { opacity: 0.5; }
+                100% { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     if (loading) {
         return (
@@ -1436,6 +1529,148 @@ function EditCoursePage() {
                                                                 }}
                                                             />
 
+                                                            {/* Improved Access Level Control with Tooltips */}
+                                                            <Box sx={{
+                                                                mt: 2,
+                                                                mb: 2,
+                                                                position: 'relative',
+                                                                p: 2,
+                                                                borderRadius: '12px',
+                                                                backgroundColor: 'rgba(0, 0, 0, 0.15)',
+                                                                border: '1px solid rgba(34, 211, 238, 0.1)',
+                                                                transition: 'box-shadow 0.3s ease',
+                                                                '&:hover': {
+                                                                    boxShadow: '0 0 10px rgba(34, 211, 238, 0.1)',
+                                                                }
+                                                            }}>
+                                                                <Box sx={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: 1,
+                                                                    mb: 1.5
+                                                                }}>
+                                                                    <LockIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
+                                                                    <Typography variant="subtitle2" sx={{
+                                                                        color: 'rgba(255, 255, 255, 0.9)',
+                                                                        fontWeight: '500'
+                                                                    }}>
+                                                                        Content Access Control
+                                                                    </Typography>
+                                                                    <Tooltip
+                                                                        title={
+                                                                            <Box sx={{ p: 1 }}>
+                                                                                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>Access Level Settings:</Typography>
+                                                                                <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Public</b>: Anyone can access, even without enrollment</Typography>
+                                                                                <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Enrolled</b>: Only enrolled users can access</Typography>
+                                                                                <Typography variant="body2">• <b>Premium</b>: Requires premium enrollment access</Typography>
+                                                                            </Box>
+                                                                        }
+                                                                        arrow
+                                                                        placement="top"
+                                                                    >
+                                                                        <IconButton
+                                                                            size="small"
+                                                                            sx={{
+                                                                                ml: 0.5,
+                                                                                width: 18,
+                                                                                height: 18,
+                                                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                                                '&:hover': {
+                                                                                    backgroundColor: 'rgba(34, 211, 238, 0.2)'
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <InfoIcon sx={{ fontSize: 14, color: '#00E5FF' }} />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                </Box>
+
+                                                                <Box sx={{
+                                                                    display: 'flex',
+                                                                    gap: 1.5,
+                                                                    justifyContent: 'space-between'
+                                                                }}>
+                                                                    {[
+                                                                        { level: 'public', icon: <PublicIcon sx={{ fontSize: 18 }} />, color: '#4CAF50', label: 'Public' },
+                                                                        { level: 'enrolled', icon: <PersonIcon sx={{ fontSize: 18 }} />, color: '#2196F3', label: 'Enrolled' },
+                                                                        { level: 'premium', icon: <WorkspacePremiumIcon sx={{ fontSize: 18 }} />, color: '#9C27B0', label: 'Premium' }
+                                                                    ].map(({ level, icon, color, label }) => (
+                                                                        <motion.div
+                                                                            key={level}
+                                                                            whileHover={{ scale: 1.05 }}
+                                                                            whileTap={{ scale: 0.95 }}
+                                                                            style={{ flex: 1 }}
+                                                                        >
+                                                                            <Button
+                                                                                variant={(module.access_level || 'enrolled') === level ? "contained" : "outlined"}
+                                                                                onClick={() => handleAccessLevelChange(module.id, level)}
+                                                                                startIcon={icon}
+                                                                                fullWidth
+                                                                                sx={{
+                                                                                    textTransform: 'none',
+                                                                                    backgroundColor: (module.access_level || 'enrolled') === level ?
+                                                                                        `${color}22` : 'transparent',
+                                                                                    color: (module.access_level || 'enrolled') === level ?
+                                                                                        color : 'rgba(255, 255, 255, 0.6)',
+                                                                                    borderColor: color,
+                                                                                    borderWidth: (module.access_level || 'enrolled') === level ? '2px' : '1px',
+                                                                                    padding: '8px 10px',
+                                                                                    borderRadius: '10px',
+                                                                                    fontSize: '0.8rem',
+                                                                                    fontWeight: (module.access_level || 'enrolled') === level ? '600' : '400',
+                                                                                    // Add these enhanced properties for the selected state
+                                                                                    boxShadow: (module.access_level || 'enrolled') === level ?
+                                                                                        `0 0 15px ${color}66, 0 0 5px ${color}33 inset` : 'none',
+                                                                                    transform: (module.access_level || 'enrolled') === level ? 'scale(1.05)' : 'scale(1)',
+                                                                                    zIndex: (module.access_level || 'enrolled') === level ? 2 : 1,
+                                                                                    position: 'relative',
+                                                                                    '&::after': (module.access_level || 'enrolled') === level ? {
+                                                                                        content: '""',
+                                                                                        position: 'absolute',
+                                                                                        top: -1,
+                                                                                        left: -1,
+                                                                                        right: -1,
+                                                                                        bottom: -1,
+                                                                                        borderRadius: '12px',
+                                                                                        background: `linear-gradient(45deg, ${color}00, ${color}55, ${color}00)`,
+                                                                                        animation: 'glowingBorder 1.5s ease-in-out infinite alternate',
+                                                                                        zIndex: -1,
+                                                                                    } : {},
+                                                                                    '&:hover': {
+                                                                                        backgroundColor: (module.access_level || 'enrolled') === level ?
+                                                                                            `${color}33` : `${color}15`,
+                                                                                        borderColor: color,
+                                                                                        boxShadow: (module.access_level || 'enrolled') === level ?
+                                                                                            `0 0 20px ${color}99, 0 0 10px ${color}33 inset` : `0 0 5px ${color}33`,
+                                                                                    },
+                                                                                    '&.Mui-disabled': {
+                                                                                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                                                        color: 'rgba(255, 255, 255, 0.3)',
+                                                                                    },
+                                                                                    transition: 'all 0.2s ease',
+                                                                                }}
+                                                                            >
+                                                                                {label}
+                                                                            </Button>
+                                                                        </motion.div>
+                                                                    ))}
+                                                                </Box>
+
+                                                                <Typography variant="caption" sx={{
+                                                                    display: 'block',
+                                                                    mt: 1.5,
+                                                                    textAlign: 'center',
+                                                                    color: 'rgba(255, 255, 255, 0.5)',
+                                                                    fontStyle: 'italic'
+                                                                }}>
+                                                                    {(module.access_level || 'enrolled') === 'public' ?
+                                                                        'This module is accessible to everyone' :
+                                                                        (module.access_level || 'enrolled') === 'enrolled' ?
+                                                                            'Students must enroll in the course to access' :
+                                                                            'Students need premium access to view this content'}
+                                                                </Typography>
+                                                            </Box>
+
                                                             <Box sx={{ position: 'relative', width: '100%' }}>
                                                                 <TextField
                                                                     value={
@@ -1634,20 +1869,64 @@ function EditCoursePage() {
                             border: '1px solid rgba(0, 229, 255, 0.1)',
                         }}>
                             <Typography variant="h6" sx={{ color: '#fff', mb: 3 }}>
-                                Course Enrollment
+                                Student Enrollments ({enrollments.length})
                             </Typography>
 
-                            <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <Typography variant="h4" sx={{ color: '#00E5FF', fontWeight: 600 }}>
-                                    0
+                            {loadingEnrollments ? (
+                                <CircularProgress />
+                            ) : enrollments.length === 0 ? (
+                                <Typography variant="body1" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+                                    No students enrolled yet.
                                 </Typography>
-                                <Typography sx={{ color: 'rgba(255, 255, 255, 0.6)', mt: 1 }}>
-                                    Total Enrolled Students
-                                </Typography>
-                                <Typography sx={{ color: 'rgba(255, 255, 255, 0.4)', mt: 2 }}>
-                                    Enrollment analytics coming soon
-                                </Typography>
-                            </Box>
+                            ) : (
+                                <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Student Email</TableCell>
+                                                <TableCell>Enrollment Date</TableCell>
+                                                <TableCell>Last Access</TableCell>
+                                                <TableCell>Progress</TableCell>
+                                                <TableCell>Status</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {enrollments.map((enrollment) => (
+                                                <TableRow key={enrollment.id}>
+                                                    <TableCell>{enrollment.user?.email || 'Unknown'}</TableCell>
+                                                    <TableCell>
+                                                        <Tooltip title={new Date(enrollment.enrolled_at).toLocaleString()}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
+                                                                {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                                            </Box>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {enrollment.last_accessed_at
+                                                            ? new Date(enrollment.last_accessed_at).toLocaleDateString()
+                                                            : 'Never'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {enrollment.progress ? `${Math.round(enrollment.progress)}%` : '0%'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Typography
+                                                            variant="body2"
+                                                            sx={{
+                                                                color: enrollment.status === 'active' ? 'success.main' : 'text.secondary',
+                                                                fontWeight: enrollment.status === 'active' ? 'bold' : 'normal'
+                                                            }}
+                                                        >
+                                                            {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                                                        </Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            )}
                         </Box>
                     )}
                 </Box>

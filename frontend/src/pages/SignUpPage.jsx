@@ -40,8 +40,17 @@ function SignUpPage() {
                 setIsAuthenticated(true);
                 // Show success message
                 setSuccess('Account created successfully!');
-                // Navigate to home page
-                navigate('/home', { replace: true });
+
+                // Check if there's a redirect URL in sessionStorage
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                if (redirectUrl) {
+                    // Clear the stored URL to prevent redirect loops
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    navigate(redirectUrl, { replace: true });
+                } else {
+                    // Navigate to home page
+                    navigate('/home', { replace: true });
+                }
             } else {
                 console.error('No access token in response:', response);
                 setError('Registration successful but login failed. Please try logging in.');
@@ -68,7 +77,16 @@ function SignUpPage() {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
                 setSuccess('Successfully signed up with Google!');
-                navigate('/home', { replace: true });
+
+                // Check if there's a redirect URL in sessionStorage
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                if (redirectUrl) {
+                    // Clear the stored URL to prevent redirect loops
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    navigate(redirectUrl, { replace: true });
+                } else {
+                    navigate('/home', { replace: true });
+                }
             } else {
                 throw new Error('No access token received');
             }

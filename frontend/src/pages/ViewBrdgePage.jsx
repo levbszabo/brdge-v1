@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, CircularProgress, useTheme } from '@mui/material';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { Box, Typography, CircularProgress, useTheme, Button } from '@mui/material';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
 import { getAuthToken } from '../utils/auth';
 import { api } from '../api';
+import { AuthContext } from '../App';
 
 function ViewBrdgePage() {
     const params = useParams();
@@ -14,6 +15,14 @@ function ViewBrdgePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const theme = useTheme();
+    const { isAuthenticated } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // New states for course info
+    const [courseInfo, setCourseInfo] = useState(null);
+    const [isEnrolled, setIsEnrolled] = useState(false);
+    const [enrollButtonLoading, setEnrollButtonLoading] = useState(false);
 
     useEffect(() => {
         // Prevent scrolling on the body
@@ -44,15 +53,61 @@ function ViewBrdgePage() {
                     return;
                 }
 
-                // If Brdge is not shareable and user is not the owner, deny access
-                if (!brdge.shareable && token) {
-                    const userResponse = await api.get('/user/current');
-                    if (userResponse.data.id !== brdge.user_id) {
-                        setError('Bridge Is Not Public: Access Denied');
-                        setLoading(false);
-                        return;
+                // IMPORTANT FIX: Default to giving access for now
+                let hasAccess = false;
+
+                // If they're the owner, always allow access
+                if (token) {
+                    try {
+                        const userResponse = await api.get('/user/current');
+                        if (userResponse.data.id === brdge.user_id) {
+                            console.log("User is the owner - granting access");
+                            hasAccess = true;
+                        }
+                    } catch (err) {
+                        console.error('Error checking user identity:', err);
                     }
-                } else if (!brdge.shareable && !token) {
+                }
+
+                // If the bridge is shareable, allow access
+                if (brdge.shareable) {
+                    console.log("Bridge is shareable - granting access");
+                    hasAccess = true;
+                }
+
+                // Check if this brdge is part of a course
+                if (!hasAccess && brdge.course_modules && brdge.course_modules.length > 0) {
+                    // Find the first course this brdge belongs to
+                    const courseModule = brdge.course_modules[0];
+                    console.log("Course module found:", courseModule);
+
+                    try {
+                        // Use the public endpoint instead
+                        const courseResponse = await api.get(`/courses/${courseModule.course_id}/public`);
+                        const courseData = courseResponse.data;
+                        setCourseInfo(courseData);
+
+                        // Check enrollment regardless of permission level first
+                        if (token) {
+                            try {
+                                const enrollmentResponse = await api.get(`/courses/${courseModule.course_id}/enrollment-status`);
+                                const isUserEnrolled = enrollmentResponse.data.enrolled;
+                                setIsEnrolled(isUserEnrolled);
+
+                                // TEMPORARY FIX: If user is enrolled, grant access by default
+                                if (isUserEnrolled) {
+                                    hasAccess = true;
+                                }
+                            } catch (error) {
+                                console.error('Error checking enrollment status:', error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching course info:', error);
+                    }
+                }
+
+                if (!hasAccess) {
                     setError('Bridge Is Not Public: Access Denied');
                     setLoading(false);
                     return;
@@ -81,6 +136,27 @@ function ViewBrdgePage() {
             }
         };
     }, [id, uidFromUrl, token]);
+
+    const handleEnrollClick = async () => {
+        if (!isAuthenticated) {
+            // Store the current URL in session storage to redirect back after login
+            sessionStorage.setItem('redirectAfterLogin', location.pathname);
+            navigate('/signup');
+            return;
+        }
+
+        if (!courseInfo) return;
+
+        setEnrollButtonLoading(true);
+        try {
+            await api.post(`/courses/${courseInfo.id}/enroll`);
+            setIsEnrolled(true);
+        } catch (error) {
+            console.error('Error enrolling in course:', error);
+        } finally {
+            setEnrollButtonLoading(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -164,8 +240,11 @@ function ViewBrdgePage() {
         }}>
             <Box sx={{
                 height: { xs: '40px', sm: '64px' },
-                flexShrink: 0
-            }} />
+                flexShrink: 0,
+                zIndex: 10
+            }}>
+                {/* Empty header for spacing only */}
+            </Box>
 
             <Box sx={{
                 flex: 1,

@@ -65,8 +65,14 @@ function Layout({ children }) {
           });
           setIsAuthenticated(true);
 
-          // Only redirect if specifically on login/signup pages
-          if (['/login', '/signup'].includes(currentPath)) {
+          // Check if there's a redirect path stored after login
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath && ['/login', '/signup'].includes(currentPath)) {
+            sessionStorage.removeItem('redirectAfterLogin');
+            navigate(redirectPath, { replace: true });
+          }
+          // Only redirect if specifically on login/signup pages and no redirect path
+          else if (['/login', '/signup'].includes(currentPath)) {
             navigate('/home', { replace: true });
           }
         } catch (error) {

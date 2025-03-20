@@ -31,6 +31,8 @@ from models import (
     UserIssues,
     Course,
     CourseModule,
+    Enrollment,
+    ModulePermissions,
 )
 from utils import (
     clone_voice_helper,
@@ -229,8 +231,48 @@ def get_brdge(brdge_id):
     current_user = get_current_user()
     brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
 
-    # Check if the user owns the brdge or if the brdge is shareable
-    if (current_user and current_user.id == brdge.user_id) or brdge.shareable:
+    # Check if:
+    # 1. The user owns the bridge OR
+    # 2. The bridge is shareable OR
+    # 3. The bridge is part of a course and the user is enrolled
+    is_owner = current_user and current_user.id == brdge.user_id
+    is_public = brdge.shareable
+    has_course_access = False
+
+    # Check for course module access if not owner and not public
+    if not is_owner and not is_public and current_user:
+        # Get all course modules where this bridge is included
+        course_modules = CourseModule.query.filter_by(brdge_id=brdge_id).all()
+
+        for module in course_modules:
+            # Get permissions for this module
+            permission = ModulePermissions.query.filter_by(
+                course_module_id=module.id
+            ).first()
+            access_level = permission.access_level if permission else "enrolled"
+
+            # If access is public, grant access regardless of enrollment
+            if access_level == "public":
+                has_course_access = True
+                break
+
+            # Check enrollment for levels requiring it
+            enrollment = Enrollment.query.filter_by(
+                user_id=current_user.id, course_id=module.course_id, status="active"
+            ).first()
+
+            if enrollment:
+                # For 'enrolled' level, just being enrolled is enough
+                if access_level == "enrolled":
+                    has_course_access = True
+                    break
+                # For 'premium' level, check premium access
+                elif access_level == "premium" and enrollment.has_premium_access:
+                    has_course_access = True
+                    break
+
+    # Grant access if any of the conditions are met
+    if is_owner or is_public or has_course_access:
         # Count the number of slide images in the S3 folder
         s3_folder = brdge.folder
         response = s3_client.list_objects_v2(
@@ -247,6 +289,23 @@ def get_brdge(brdge_id):
         brdge_data = brdge.to_dict()
         brdge_data["num_slides"] = num_slides
         brdge_data["transcripts"] = transcripts
+
+        # Add course modules with permissions
+        course_modules_data = []
+        for module in CourseModule.query.filter_by(brdge_id=brdge_id).all():
+            module_dict = module.to_dict()
+            # Add permissions
+            permission = ModulePermissions.query.filter_by(
+                course_module_id=module.id
+            ).first()
+            if permission:
+                module_dict["permissions"] = permission.to_dict()
+            else:
+                module_dict["permissions"] = {"access_level": "enrolled"}  # Default
+
+            course_modules_data.append(module_dict)
+
+        brdge_data["course_modules"] = course_modules_data
 
         return jsonify(brdge_data), 200
     else:
@@ -3642,26 +3701,34 @@ def create_course(user):
 @app.route("/api/courses/<int:course_id>", methods=["GET"])
 @login_required
 def get_course(user, course_id):
-    """Get a specific course by ID"""
-    course = Course.query.get(course_id)
+    try:
+        course = Course.query.get(course_id)
+        if not course or course.user_id != user.id:
+            return jsonify({"error": "Course not found or not authorized"}), 404
 
-    if not course:
-        return jsonify({"error": "Course not found"}), 404
+        # Eager load permissions for each module
+        modules_with_permissions = []
+        for module in course.modules:
+            module_data = module.to_dict()
 
-    if course.user_id != user.id:
-        return jsonify({"error": "Unauthorized access"}), 403
+            # Get permission directly
+            permission = ModulePermissions.query.filter_by(
+                course_module_id=module.id
+            ).first()
+            if permission:
+                module_data["access_level"] = permission.access_level
+            else:
+                module_data["access_level"] = "enrolled"  # Default
 
-    # Load modules directly through the relationship in Course model
-    # This will utilize the to_dict method in CourseModule which includes brdge data
-    course_dict = course.to_dict()
+            modules_with_permissions.append(module_data)
 
-    # Sort modules by position (if not already sorted by the to_dict method)
-    course_dict["modules"] = sorted(course_dict["modules"], key=lambda x: x["position"])
+        course_data = course.to_dict()
+        course_data["modules"] = modules_with_permissions
 
-    # Log for debugging
-    print(f"Course data fetched. Module count: {len(course_dict['modules'])}")
-
-    return jsonify({"course": course_dict})
+        return jsonify({"course": course_data, "status": "success"})
+    except Exception as e:
+        app.logger.error(f"Error fetching course: {str(e)}")
+        return jsonify({"error": "Failed to fetch course", "status": "error"}), 500
 
 
 @app.route("/api/courses/<int:course_id>", methods=["PUT"])
@@ -4065,3 +4132,289 @@ def get_thumbnail(s3_key):
     except Exception as e:
         logger.error(f"Error serving thumbnail: {str(e)}")
         return jsonify({"error": "Thumbnail not found"}), 404
+
+
+@app.route("/api/courses/<int:course_id>/enroll", methods=["POST"])
+@login_required
+def enroll_in_course(user, course_id):
+    """Enroll a user in a course"""
+    try:
+        # Check if the course exists
+        course = Course.query.get(course_id)
+        if not course:
+            return jsonify({"error": "Course not found"}), 404
+
+        # Check if the course is shareable
+        if not course.shareable and course.user_id != user.id:
+            return jsonify({"error": "Course is not public"}), 403
+
+        # Check if the user is already enrolled
+        existing_enrollment = Enrollment.query.filter_by(
+            user_id=user.id, course_id=course_id
+        ).first()
+
+        if existing_enrollment:
+            # If already enrolled but status is dropped, reactive it
+            if existing_enrollment.status != "active":
+                existing_enrollment.status = "active"
+                existing_enrollment.last_accessed_at = datetime.utcnow()
+                db.session.commit()
+            return jsonify({"message": "Already enrolled in this course"}), 200
+
+        # Create a new enrollment
+        enrollment = Enrollment(user_id=user.id, course_id=course_id, status="active")
+        db.session.add(enrollment)
+        db.session.commit()
+
+        return jsonify({"message": "Successfully enrolled in course"}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error enrolling in course: {str(e)}")
+        return jsonify({"error": "Error enrolling in course"}), 500
+
+
+@app.route("/api/courses/<int:course_id>/enrollment-status", methods=["GET"])
+@jwt_required()
+def get_enrollment_status(course_id):
+    """Check if the current user is enrolled in a course"""
+    try:
+        # Get current user ID
+        user_id = get_jwt_identity()
+
+        # Check if the user is enrolled
+        enrollment = Enrollment.query.filter_by(
+            user_id=user_id, course_id=course_id, status="active"
+        ).first()
+
+        return (
+            jsonify(
+                {
+                    "enrolled": enrollment is not None,
+                    "enrollment": enrollment.to_dict() if enrollment else None,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking enrollment status: {str(e)}")
+        return jsonify({"error": "Error checking enrollment status"}), 500
+
+
+@app.route("/api/courses/<int:course_id>/enrollments", methods=["GET"])
+@login_required
+def get_course_enrollments(user, course_id):
+    """Get all enrollments for a course (course owner only)"""
+    try:
+        # Check if the course exists
+        course = Course.query.get(course_id)
+        if not course:
+            return jsonify({"error": "Course not found"}), 404
+
+        # Check if the user is the course owner
+        if course.user_id != user.id:
+            return jsonify({"error": "Unauthorized access"}), 403
+
+        # Get all active enrollments
+        enrollments = Enrollment.query.filter_by(
+            course_id=course_id, status="active"
+        ).all()
+
+        return (
+            jsonify(
+                {
+                    "enrollments": [enrollment.to_dict() for enrollment in enrollments],
+                    "total": len(enrollments),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching course enrollments: {str(e)}")
+        return jsonify({"error": "Error fetching course enrollments"}), 500
+
+
+@app.route("/api/courses/public/<string:public_id>", methods=["GET"])
+@jwt_required(optional=True)
+def get_public_course_by_id(public_id):
+    """Get course by public ID for public sharing"""
+    try:
+        # Find the course by public_id
+        course = Course.query.filter_by(public_id=public_id).first()
+
+        if not course:
+            return jsonify({"error": "Course not found"}), 404
+
+        # If course is not shareable, check if user is owner
+        if not course.shareable:
+            # Get current user if logged in
+            current_user_id = get_jwt_identity()
+
+            # If no user is logged in or user is not the owner
+            if not current_user_id or course.user_id != int(current_user_id):
+                return jsonify({"error": "Course is not public"}), 403
+
+        # Get course data
+        course_data = course.to_dict()
+
+        # Check if user is enrolled if logged in
+        if get_jwt_identity():
+            try:
+                enrollment = Enrollment.query.filter_by(
+                    user_id=get_jwt_identity(), course_id=course.id, status="active"
+                ).first()
+
+                course_data["user_enrolled"] = enrollment is not None
+            except Exception as e:
+                logger.error(f"Error checking enrollment: {str(e)}")
+                course_data["user_enrolled"] = False
+        else:
+            course_data["user_enrolled"] = False
+
+        return jsonify(course_data), 200
+
+    except Exception as e:
+        logger.error(f"Error getting public course: {str(e)}")
+        return jsonify({"error": "Error fetching course"}), 500
+
+
+@app.route("/api/courses/<int:course_id>/unenroll", methods=["POST"])
+@login_required
+def unenroll_from_course(user, course_id):
+    """Unenroll a user from a course"""
+    try:
+        # Check if the user is enrolled
+        enrollment = Enrollment.query.filter_by(
+            user_id=user.id, course_id=course_id, status="active"
+        ).first()
+
+        if not enrollment:
+            return jsonify({"error": "You are not enrolled in this course"}), 404
+
+        # Update enrollment status to dropped
+        enrollment.status = "dropped"
+        db.session.commit()
+
+        return jsonify({"message": "Successfully unenrolled from course"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error unenrolling from course: {str(e)}")
+        return jsonify({"error": "Error unenrolling from course"}), 500
+
+
+@app.route("/api/courses/marketplace", methods=["GET"])
+@jwt_required(optional=True)
+def get_marketplace_courses():
+    try:
+        # Query all courses that are marked as marketplace=True and shareable=True
+        marketplace_courses = Course.query.filter_by(
+            marketplace=True, shareable=True
+        ).all()
+
+        # Serialize the courses
+        courses_data = []
+        for course in marketplace_courses:
+            course_dict = course.to_dict()
+            # Add creator information
+            creator = User.query.get(course.user_id)
+            if creator:
+                course_dict["created_by"] = creator.email.split("@")[
+                    0
+                ]  # Use first part of email as display name
+            else:
+                course_dict["created_by"] = "Brdge AI Team"
+            courses_data.append(course_dict)
+
+        return jsonify({"courses": courses_data, "status": "success"})
+    except Exception as e:
+        app.logger.error(f"Error fetching marketplace courses: {str(e)}")
+        return (
+            jsonify(
+                {"error": "Failed to fetch marketplace courses", "status": "error"}
+            ),
+            500,
+        )
+
+
+@app.route(
+    "/api/courses/<int:course_id>/modules/<int:module_id>/permissions",
+    methods=["PUT", "OPTIONS"],
+)
+@cross_origin()
+@login_required
+def update_module_permissions(user, course_id, module_id):
+    # For OPTIONS request (CORS preflight)
+    if request.method == "OPTIONS":
+        return {"Allow": "PUT, OPTIONS"}, 200
+
+    try:
+        # Get course and verify ownership
+        course = Course.query.get(course_id)
+        if not course or course.user_id != user.id:
+            return jsonify({"error": "Course not found or not authorized"}), 404
+
+        # Get module and verify it belongs to course
+        module = CourseModule.query.filter_by(id=module_id, course_id=course_id).first()
+        if not module:
+            return jsonify({"error": "Module not found in this course"}), 404
+
+        # Get data from request
+        data = request.get_json()
+        access_level = data.get("access_level")
+
+        # Validate access level
+        if access_level not in ["public", "enrolled", "premium"]:
+            return jsonify({"error": "Invalid access level"}), 400
+
+        # Get or create permission
+        permission = ModulePermissions.query.filter_by(
+            course_module_id=module_id
+        ).first()
+        if not permission:
+            permission = ModulePermissions(course_module_id=module_id)
+            db.session.add(permission)
+
+        # Update permission
+        permission.access_level = access_level
+        db.session.commit()
+
+        return jsonify({"status": "success", "permission": permission.to_dict()})
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating module permissions: {str(e)}")
+        return jsonify({"error": "Failed to update module permissions"}), 500
+
+
+@app.route("/api/courses/<int:course_id>/public", methods=["GET"])
+@jwt_required(optional=True)
+def get_public_course_details(course_id):
+    """Get course details for enrolled users or public courses"""
+    try:
+        course = Course.query.get_or_404(course_id)
+        current_user_id = get_jwt_identity()
+
+        # Always allow access if course is public/shareable
+        if course.shareable:
+            course_data = course.to_dict()
+            return jsonify(course_data)
+
+        # Check if user is enrolled
+        if current_user_id:
+            enrollment = Enrollment.query.filter_by(
+                user_id=current_user_id, course_id=course_id, status="active"
+            ).first()
+
+            if enrollment:
+                course_data = course.to_dict()
+                return jsonify(course_data)
+
+        # If not shareable and not enrolled, return 403
+        return jsonify({"error": "You don't have access to this course"}), 403
+
+    except Exception as e:
+        app.logger.error(f"Error getting public course: {str(e)}")
+        return jsonify({"error": "Failed to get course details"}), 500

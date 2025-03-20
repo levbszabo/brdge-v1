@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Box, Typography, CircularProgress, Button, Container, Divider,
     Card, CardContent, Avatar, Chip, IconButton, useTheme, useMediaQuery,
-    Tooltip, Paper, Grid
+    Tooltip, Paper, Grid, Alert, Dialog, DialogTitle, DialogContent,
+    DialogActions, DialogContentText
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCards, EffectCoverflow, Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -23,19 +24,33 @@ import PersonIcon from '@mui/icons-material/Person';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import { getAuthToken } from '../utils/auth';
 import { api } from '../api';
+import { AuthContext } from '../App';
+import { useSnackbar } from '../utils/snackbar';
 
 function ViewCoursePage() {
     const theme = useTheme();
     const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
     const { publicId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const token = getAuthToken();
+    const { isAuthenticated } = useContext(AuthContext);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [course, setCourse] = useState(null);
+    const [courseData, setCourseData] = useState(null);
     const [activeModule, setActiveModule] = useState(0);
     const [bookmarkedModules, setBookmarkedModules] = useState([]);
     const [loadingProgress, setLoadingProgress] = useState(0);
+    const { showSnackbar } = useSnackbar();
+
+    // Course data states
+    const [isEnrolled, setIsEnrolled] = useState(false);
+    const [enrollButtonLoading, setEnrollButtonLoading] = useState(false);
+    const [unenrollButtonLoading, setUnenrollButtonLoading] = useState(false);
+
+    // Dialog states
+    const [unenrollDialogOpen, setUnenrollDialogOpen] = useState(false);
+    const [moduleAccessDialogOpen, setModuleAccessDialogOpen] = useState(false);
 
     // Animation variants
     const containerVariants = {
@@ -74,108 +89,47 @@ function ViewCoursePage() {
     }, []);
 
     useEffect(() => {
-        const fetchCourse = async () => {
+        const fetchCourseData = async () => {
             try {
-                console.log('Fetching course with ID:', publicId);
+                setLoading(true);
+                console.log(`Fetching course with public ID: ${publicId}`);
 
-                const response = await api.get(`/courses`, {
-                    params: { public_id: publicId }
-                });
+                // Make sure we're using the correct API endpoint
+                const response = await api.get(`/courses/public/${publicId}`);
+                console.log('Course data received:', response.data);
 
-                console.log('Course API raw response:', response);
-                console.log('Course data structure:', JSON.stringify(response.data, null, 2));
-
-                // Fix: properly access course data from response
-                // Handle both array responses and single object responses
-                let courseData;
-                if (Array.isArray(response.data.courses)) {
-                    // If we get an array of courses, find the one with matching public_id
-                    courseData = response.data.courses.find(c => c.public_id === publicId);
-                } else if (response.data.course) {
-                    courseData = response.data.course;
-                } else {
-                    courseData = response.data;
+                // Sort the modules by position
+                if (response.data.modules) {
+                    response.data.modules.sort((a, b) => a.position - b.position);
                 }
 
-                if (!courseData) {
-                    throw new Error('Course not found in response data');
+                setCourseData(response.data);
+
+                // Check if user is already enrolled (from API response)
+                if (response.data.user_enrolled) {
+                    setIsEnrolled(true);
                 }
 
-                // Log what we got for debugging
-                console.log('Parsed course data:', courseData);
-
-                // If course is shareable, allow access for everyone
-                if (courseData.shareable) {
-                    // Public course - allow access regardless of login status
-                    console.log('Public course - allowing access for everyone');
-                } else {
-                    // Private course - check if user is logged in and is the owner
-                    if (!token) {
-                        // No token, can't access private course
-                        setError('Course Is Not Public: Access Denied');
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Have token, check if user is owner
-                    try {
-                        const userResponse = await api.get('/user/current');
-                        if (userResponse.data.id !== courseData.user_id) {
-                            setError('Course Is Not Public: Access Denied');
-                            setLoading(false);
-                            return;
-                        }
-                    } catch (userError) {
-                        console.error('Error checking user permission:', userError);
-                        setError('Authentication Error: Unable to verify access');
-                        setLoading(false);
-                        return;
-                    }
-                }
-
-                // Sort modules by position if present
-                if (courseData.modules) {
-                    courseData.modules.sort((a, b) => (a.position || 0) - (b.position || 0));
-                }
-
-                // Add this to your fetchCourse function where you process the API response
-                console.log('COMPLETE API RESPONSE STRUCTURE:', JSON.stringify(response.data, null, 2));
-                if (courseData && courseData.modules && courseData.modules.length > 0) {
-                    console.log('FIRST MODULE COMPLETE STRUCTURE:', JSON.stringify(courseData.modules[0], null, 2));
-                }
-
-                // Add this to your fetchCourse function after setCourse(courseData)
-                console.log("COURSE DATA SET:", {
-                    has_thumbnail: !!courseData.thumbnail_url,
-                    thumbnail_url: courseData.thumbnail_url,
-                    modules_count: courseData.modules?.length,
-                    first_module_has_thumbnail: courseData.modules?.[0]?.thumbnail_url ? true : false,
-                    first_module_thumbnail: courseData.modules?.[0]?.thumbnail_url
-                });
-
-                setCourse(courseData);
                 setLoading(false);
             } catch (error) {
-                console.error('Error fetching course:', error.response || error.message || error);
-                setError('Course Not Found or Access Denied');
+                console.error('Error fetching course data:', error);
+                const errorMsg = error.response?.data?.error || 'Course not found or not accessible';
+                setError(errorMsg);
                 setLoading(false);
             }
         };
 
         if (publicId) {
-            fetchCourse();
-        } else {
-            setError('Invalid Course ID');
-            setLoading(false);
+            fetchCourseData();
         }
     }, [publicId, token]);
 
     useEffect(() => {
-        if (course && course.modules) {
-            console.log('Course modules:', course.modules);
+        if (courseData && courseData.modules) {
+            console.log('Course modules:', courseData.modules);
             // Enhanced debug logging for description fields
-            if (course.modules.length > 0) {
-                const firstModule = course.modules[0];
+            if (courseData.modules.length > 0) {
+                const firstModule = courseData.modules[0];
                 console.log('Module description:', firstModule.description);
                 console.log('Module has brdge?', !!firstModule.brdge);
                 if (firstModule.brdge) {
@@ -183,14 +137,14 @@ function ViewCoursePage() {
                 }
             }
         }
-    }, [course]);
+    }, [courseData]);
 
     useEffect(() => {
-        if (course && course.modules) {
-            console.log('Course modules:', course.modules);
+        if (courseData && courseData.modules) {
+            console.log('Course modules:', courseData.modules);
             // Enhanced debug logging for thumbnails
-            if (course.modules.length > 0) {
-                course.modules.forEach(module => {
+            if (courseData.modules.length > 0) {
+                courseData.modules.forEach(module => {
                     console.log(`Module ${module.id} thumbnail_url:`, module.thumbnail_url);
                     if (module.thumbnail_url) {
                         console.log(`Module ${module.id} normalized thumbnail:`, normalizeThumbnailUrl(module.thumbnail_url));
@@ -198,15 +152,15 @@ function ViewCoursePage() {
                 });
             }
         }
-    }, [course]);
+    }, [courseData]);
 
     useEffect(() => {
-        if (course && course.modules && course.modules.length > 0) {
-            console.log('Course has thumbnails?', !!course.thumbnail_url);
-            console.log('All modules:', course.modules);
+        if (courseData && courseData.modules && courseData.modules.length > 0) {
+            console.log('Course has thumbnails?', !!courseData.thumbnail_url);
+            console.log('All modules:', courseData.modules);
 
             // Deep inspection of first module to see structure
-            const firstModule = course.modules[0];
+            const firstModule = courseData.modules[0];
             console.log('First module detailed inspection:', {
                 id: firstModule.id,
                 direct_thumbnail: firstModule.thumbnail_url,
@@ -216,13 +170,13 @@ function ViewCoursePage() {
                 full_module: firstModule
             });
         }
-    }, [course]);
+    }, [courseData]);
 
     useEffect(() => {
         // Force a direct approach to loading thumbnails
-        if (course && course.modules && course.modules.length > 0) {
+        if (courseData && courseData.modules && courseData.modules.length > 0) {
             console.log('DEBUGGING MODULE STRUCTURE:');
-            course.modules.forEach((module, index) => {
+            courseData.modules.forEach((module, index) => {
                 console.log(`Module ${index}`, {
                     id: module.id,
                     name: module.name || module.brdge?.name,
@@ -239,7 +193,7 @@ function ViewCoursePage() {
             });
 
             // DIRECT APPROACH: Force copy the thumbnails from the brdge to the module
-            setCourse(prevCourse => {
+            setCourseData(prevCourse => {
                 if (!prevCourse || !prevCourse.modules) return prevCourse;
 
                 const updatedModules = prevCourse.modules.map(module => {
@@ -260,16 +214,19 @@ function ViewCoursePage() {
                 };
             });
         }
-    }, [course?.id]);
+    }, [courseData?.id]);
 
     const handleStartModule = (moduleId, publicId) => {
-        // If we have both ID and publicId, use the viewBridge route
-        if (moduleId && publicId) {
-            navigate(`/viewBridge/${moduleId}-${typeof publicId === 'string' ? publicId.substring(0, 6) : publicId}`);
+        if (!isEnrolled) {
+            setModuleAccessDialogOpen(true);
+            return;
         }
-        // Backward compatibility for the /b/ route if that's all we have
-        else if (publicId) {
-            navigate(`/b/${publicId}`);
+
+        // Always use the viewBridge route
+        if (moduleId) {
+            const shortPublicId = typeof publicId === 'string' ?
+                publicId.substring(0, 6) : publicId;
+            navigate(`/viewBridge/${moduleId}-${shortPublicId}`);
         }
     };
 
@@ -301,37 +258,35 @@ function ViewCoursePage() {
         return url;
     };
 
-    // Replace the existing getModuleThumbnail function with this server-side approach
+    // Replace the existing getModuleThumbnail function with this improved version
     const getModuleThumbnail = (module) => {
-        // Match the exact format in your database without the file extension
-        if (module && module.brdge_id && course && course.id) {
-            // This format matches what's in your database screenshot
-            const moduleThumbPath = `/api/thumbnails/courses/${course.id}/${module.brdge_id}_thumbnail`;
-            console.log(`Generated thumbnail URL for module ${module.id}:`, moduleThumbPath);
-            return moduleThumbPath;
-        }
-
-        // If the module already has a thumbnail_url, use that directly
+        // First check if the module has a direct thumbnail URL
         if (module && module.thumbnail_url) {
-            return module.thumbnail_url;
+            return normalizeThumbnailUrl(module.thumbnail_url);
         }
 
+        // If not, check the brdge object for thumbnail
+        if (module && module.brdge && module.brdge.thumbnail_url) {
+            return normalizeThumbnailUrl(module.brdge.thumbnail_url);
+        }
+
+        // Fallback to null if no thumbnail is available
         return null;
     };
 
     // Add this direct debugging useEffect to track the exact rendering process
     useEffect(() => {
-        if (course?.modules?.length > 0) {
+        if (courseData?.modules?.length > 0) {
             // Dump the first module entirely to see what's there
-            console.log('DETAILED MODULE STRUCTURE:', JSON.stringify(course.modules[0], null, 2));
+            console.log('DETAILED MODULE STRUCTURE:', JSON.stringify(courseData.modules[0], null, 2));
 
             // Log just the thumbnail URLs for debugging
-            const thumbnailUrls = course.modules
+            const thumbnailUrls = courseData.modules
                 .map(m => ({ id: m.id, thumb: m.thumbnail_url }))
                 .filter(m => m.thumb);
             console.log('Modules with thumbnails:', thumbnailUrls);
         }
-    }, [course]);
+    }, [courseData]);
 
     // Replace the getModuleDescription function with this simplified version
     const getModuleDescription = (module) => {
@@ -362,6 +317,63 @@ function ViewCoursePage() {
         return module.name ||
             module.brdge?.name ||
             `Module ${module.position || 'Unknown'}`;
+    };
+
+    const handleEnrollClick = async () => {
+        if (!isAuthenticated) {
+            // Store the current URL in session storage to redirect back after login
+            sessionStorage.setItem('redirectAfterLogin', location.pathname);
+            navigate('/signup');
+            return;
+        }
+
+        if (!courseData) return;
+
+        setEnrollButtonLoading(true);
+        try {
+            // Make sure we're using the correct API endpoint
+            await api.post(`/courses/${courseData.id}/enroll`);
+            setIsEnrolled(true);
+            showSnackbar('Successfully enrolled in the course!', 'success');
+        } catch (error) {
+            console.error('Error enrolling in course:', error);
+            showSnackbar('Failed to enroll. Please try again.', 'error');
+        } finally {
+            setEnrollButtonLoading(false);
+        }
+    };
+
+    const handleUnenrollClick = () => {
+        setUnenrollDialogOpen(true);
+    };
+
+    const confirmUnenroll = async () => {
+        setUnenrollButtonLoading(true);
+        try {
+            await api.post(`/courses/${courseData.id}/unenroll`);
+            setIsEnrolled(false);
+            showSnackbar('Successfully unenrolled from the course', 'success');
+        } catch (error) {
+            console.error('Error unenrolling from course:', error);
+            showSnackbar('Failed to unenroll. Please try again.', 'error');
+        } finally {
+            setUnenrollButtonLoading(false);
+            setUnenrollDialogOpen(false);
+        }
+    };
+
+    const handleModuleClick = (modulePublicId, moduleId) => {
+        if (!isEnrolled) {
+            setModuleAccessDialogOpen(true);
+            return;
+        }
+
+        // Always use the viewBridge route with the correct format
+        if (moduleId) {
+            const shortPublicId = typeof modulePublicId === 'string' ?
+                modulePublicId.substring(0, 6) : modulePublicId;
+            navigate(`/viewBridge/${moduleId}-${shortPublicId}`);
+        }
     };
 
     if (loading) {
@@ -597,7 +609,7 @@ function ViewCoursePage() {
                             gap: 3,
                         }}>
                             {/* Course Thumbnail */}
-                            {course.thumbnail_url && (
+                            {courseData.thumbnail_url && (
                                 <Box sx={{
                                     width: { xs: '100%', md: '280px' },
                                     position: 'relative',
@@ -613,7 +625,7 @@ function ViewCoursePage() {
                                 }}>
                                     <Box
                                         component="img"
-                                        src={normalizeThumbnailUrl(course.thumbnail_url)}
+                                        src={normalizeThumbnailUrl(courseData.thumbnail_url)}
                                         sx={{
                                             position: 'absolute',
                                             top: 0,
@@ -623,7 +635,7 @@ function ViewCoursePage() {
                                             objectFit: 'cover',
                                             objectPosition: 'center',
                                         }}
-                                        alt={`Thumbnail for ${course.name}`}
+                                        alt={`Thumbnail for ${courseData.name}`}
                                     />
                                 </Box>
                             )}
@@ -657,7 +669,7 @@ function ViewCoursePage() {
                                         position: 'relative',
                                         zIndex: 1
                                     }}>
-                                        {course.name}
+                                        {courseData.name}
                                     </Typography>
                                 </motion.div>
 
@@ -671,7 +683,7 @@ function ViewCoursePage() {
                                         position: 'relative',
                                         zIndex: 1
                                     }}>
-                                        {course.description || "Explore this interactive AI-powered learning course. Navigate through modules at your own pace and engage with immersive content."}
+                                        {courseData.description || "Explore this interactive AI-powered learning course. Navigate through modules at your own pace and engage with immersive content."}
                                     </Typography>
                                 </motion.div>
 
@@ -686,7 +698,7 @@ function ViewCoursePage() {
                                     }}>
                                         <Chip
                                             icon={<AutoStoriesIcon sx={{ color: '#00E5FF !important' }} />}
-                                            label={`${course.modules?.length || 0} Modules`}
+                                            label={`${courseData.modules?.length || 0} Modules`}
                                             sx={{
                                                 bgcolor: 'rgba(0, 229, 255, 0.08)',
                                                 color: '#00E5FF',
@@ -741,7 +753,7 @@ function ViewCoursePage() {
                                                 <PersonIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
                                             </Avatar>
                                             <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                Created by {course.author || "Brdge AI Instructor"}
+                                                Created by {courseData.author || "Brdge AI Instructor"}
                                             </Typography>
                                         </Box>
                                     </Box>
@@ -766,7 +778,7 @@ function ViewCoursePage() {
                         </Typography>
                     </motion.div>
 
-                    {course.modules && course.modules.length > 0 ? (
+                    {courseData.modules && courseData.modules.length > 0 ? (
                         <motion.div variants={itemVariants}>
                             <Box sx={{
                                 '& .swiper': {
@@ -819,7 +831,7 @@ function ViewCoursePage() {
                                     slideToClickedSlide={true}
                                     onSlideChange={(swiper) => setActiveModule(swiper.activeIndex)}
                                 >
-                                    {course.modules.map((module, index) => (
+                                    {courseData.modules.map((module, index) => (
                                         <SwiperSlide key={module.id} style={{ width: isSmallScreen ? 300 : 400 }}>
                                             <Card sx={{
                                                 height: '100%',
@@ -988,7 +1000,7 @@ function ViewCoursePage() {
                                                             }}
                                                         >
                                                             <IconButton
-                                                                onClick={() => handleStartModule(module.brdge_id || module.id, module.brdge?.public_id || module.public_id)}
+                                                                onClick={() => handleModuleClick(module.brdge.public_id, module.brdge_id)}
                                                                 sx={{
                                                                     width: 80,
                                                                     height: 80,
@@ -1099,7 +1111,7 @@ function ViewCoursePage() {
                                                     <Button
                                                         variant="contained"
                                                         startIcon={<PlayArrowIcon />}
-                                                        onClick={() => handleStartModule(module.brdge_id || module.id, module.brdge?.public_id || module.public_id)}
+                                                        onClick={() => handleModuleClick(module.brdge.public_id, module.brdge_id)}
                                                         fullWidth
                                                         sx={{
                                                             mt: 3,
@@ -1153,7 +1165,7 @@ function ViewCoursePage() {
                     )}
 
                     {/* Progress Indicator */}
-                    {course.modules && course.modules.length > 0 && (
+                    {courseData.modules && courseData.modules.length > 0 && (
                         <motion.div
                             variants={itemVariants}
                             initial={{ opacity: 0, y: 20 }}
@@ -1188,7 +1200,7 @@ function ViewCoursePage() {
                                     flexWrap: 'wrap',
                                     justifyContent: 'center'
                                 }}>
-                                    {course.modules.map((_, index) => (
+                                    {courseData.modules.map((_, index) => (
                                         <Box
                                             key={index}
                                             sx={{
@@ -1217,7 +1229,7 @@ function ViewCoursePage() {
                                     textAlign: { xs: 'center', md: 'right' },
                                     minWidth: '140px'
                                 }}>
-                                    Module {activeModule + 1} of {course.modules.length}
+                                    Module {activeModule + 1} of {courseData.modules.length}
                                 </Typography>
                             </Box>
                         </motion.div>
@@ -1292,11 +1304,22 @@ function ViewCoursePage() {
                                             size="large"
                                             startIcon={<PlayArrowIcon />}
                                             onClick={() => {
-                                                if (course.modules && course.modules.length > 0) {
-                                                    handleStartModule(course.modules[activeModule]?.brdge_id || course.modules[activeModule]?.id, course.modules[activeModule]?.brdge?.public_id || course.modules[activeModule]?.public_id);
+                                                if (!isEnrolled) {
+                                                    setModuleAccessDialogOpen(true);
+                                                    return;
+                                                }
+
+                                                if (courseData.modules && courseData.modules.length > 0) {
+                                                    const activeModuleData = courseData.modules[activeModule];
+                                                    if (activeModuleData && activeModuleData.brdge_id) {
+                                                        const publicId = activeModuleData.brdge?.public_id || activeModuleData.public_id;
+                                                        const shortPublicId = typeof publicId === 'string' ?
+                                                            publicId.substring(0, 6) : publicId;
+                                                        navigate(`/viewBridge/${activeModuleData.brdge_id}-${shortPublicId}`);
+                                                    }
                                                 }
                                             }}
-                                            disabled={!course.modules || course.modules.length === 0}
+                                            disabled={!courseData.modules || courseData.modules.length === 0}
                                             sx={{
                                                 background: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
                                                 boxShadow: '0 4px 15px rgba(0, 229, 255, 0.3)',
@@ -1318,19 +1341,153 @@ function ViewCoursePage() {
                             </Grid>
                         </Paper>
                     </motion.div>
+
+                    {/* Enrollment Button */}
+                    <Box sx={{
+                        mt: 5,
+                        p: 3,
+                        borderRadius: '16px',
+                        bgcolor: 'rgba(0, 229, 255, 0.03)',
+                        border: '1px solid rgba(0, 229, 255, 0.1)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        flexDirection: 'column',
+                        gap: 2
+                    }}>
+                        {!isEnrolled ? (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                size="large"
+                                disabled={enrollButtonLoading}
+                                onClick={handleEnrollClick}
+                                sx={{
+                                    fontWeight: 'bold',
+                                    px: 4,
+                                    py: 1.5,
+                                    borderRadius: '8px'
+                                }}
+                            >
+                                {enrollButtonLoading ? <CircularProgress size={24} color="inherit" /> : 'Enroll Now'}
+                            </Button>
+                        ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        backgroundColor: theme.palette.success.light,
+                                        color: theme.palette.success.contrastText,
+                                        padding: '10px 24px',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        mb: 1
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                                        ✓ Enrolled
+                                    </Typography>
+                                </Paper>
+
+                                <Button
+                                    variant="outlined"
+                                    color="error"
+                                    size="medium"
+                                    disabled={unenrollButtonLoading}
+                                    onClick={handleUnenrollClick}
+                                    sx={{
+                                        borderRadius: '8px',
+                                        borderColor: 'rgba(244, 67, 54, 0.5)',
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                                            borderColor: '#f44336'
+                                        }
+                                    }}
+                                >
+                                    {unenrollButtonLoading ? <CircularProgress size={20} color="inherit" /> : 'Unenroll from Course'}
+                                </Button>
+                            </Box>
+                        )}
+                    </Box>
                 </Container>
             </Box>
 
-            {/* CSS for pulse animation */}
-            <style jsx global>{`
-                @keyframes pulseRing {
-                    0% { transform: scale(0.9); opacity: 0.7; }
-                    50% { transform: scale(1.1); opacity: 0.3; }
-                    100% { transform: scale(0.9); opacity: 0.7; }
-                }
-            `}</style>
+            {/* Add this unenroll confirmation dialog at the end of your component before the closing tag */}
+            <Dialog
+                open={unenrollDialogOpen}
+                onClose={() => setUnenrollDialogOpen(false)}
+            >
+                <DialogTitle sx={{
+                    bgcolor: 'rgba(0, 10, 30, 0.9)',
+                    color: 'white'
+                }}>
+                    Confirm Unenrollment
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', color: 'white' }}>
+                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                        Are you sure you want to unenroll from this course? You can always re-enroll later.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', p: 2 }}>
+                    <Button
+                        onClick={() => setUnenrollDialogOpen(false)}
+                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmUnenroll}
+                        variant="contained"
+                        color="error"
+                        disabled={unenrollButtonLoading}
+                    >
+                        {unenrollButtonLoading ? <CircularProgress size={20} color="inherit" /> : 'Unenroll'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Module Access Dialog - shown when user tries to access a module without enrolling */}
+            <Dialog
+                open={moduleAccessDialogOpen}
+                onClose={() => setModuleAccessDialogOpen(false)}
+            >
+                <DialogTitle sx={{
+                    bgcolor: 'rgba(0, 10, 30, 0.9)',
+                    color: 'white'
+                }}>
+                    Enrollment Required
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', color: 'white' }}>
+                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                        You need to enroll in this course before accessing its modules. Enrollment gives you full access to all course materials.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', p: 2 }}>
+                    <Button
+                        onClick={() => setModuleAccessDialogOpen(false)}
+                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setModuleAccessDialogOpen(false);
+                            handleEnrollClick();
+                        }}
+                        variant="contained"
+                        sx={{
+                            background: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
+                            boxShadow: '0 4px 15px rgba(0, 229, 255, 0.3)',
+                        }}
+                    >
+                        Enroll Now
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </motion.div>
     );
 }
 
-export default ViewCoursePage; 
+export default ViewCoursePage;

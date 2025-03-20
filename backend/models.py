@@ -393,6 +393,9 @@ class Course(db.Model):
     )
     public_id = db.Column(db.String(36), unique=True, nullable=True)
     shareable = db.Column(db.Boolean, default=False)
+    marketplace = db.Column(
+        db.Boolean, default=False
+    )  # Indicates if the course should be shown in the marketplace
     thumbnail_url = db.Column(db.String(512), nullable=True)
 
     # Relationships
@@ -420,6 +423,7 @@ class Course(db.Model):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "public_id": self.public_id,
             "shareable": self.shareable,
+            "marketplace": self.marketplace,
             "thumbnail_url": self.thumbnail_url,
             "modules": [module.to_dict() for module in self.modules],
             "enrollment_count": self.get_enrollment_count(),
@@ -449,7 +453,7 @@ class CourseModule(db.Model):
     )
 
     def to_dict(self):
-        return {
+        result = {
             "id": self.id,
             "course_id": self.course_id,
             "brdge_id": self.brdge_id,
@@ -459,6 +463,14 @@ class CourseModule(db.Model):
             "description": self.description,
             "thumbnail_url": self.thumbnail_url,
         }
+
+        # Add access_level from permissions if available
+        if hasattr(self, "permissions") and self.permissions:
+            result["access_level"] = self.permissions.access_level
+        else:
+            result["access_level"] = "enrolled"  # Default
+
+        return result
 
 
 class Enrollment(db.Model):
@@ -492,4 +504,34 @@ class Enrollment(db.Model):
             "user": (
                 {"id": self.user.id, "email": self.user.email} if self.user else None
             ),
+        }
+
+
+class ModulePermissions(db.Model):
+    """Controls access levels for modules within courses"""
+
+    id = db.Column(db.Integer, primary_key=True)
+    course_module_id = db.Column(
+        db.Integer, db.ForeignKey("course_module.id"), nullable=False
+    )
+    access_level = db.Column(
+        db.String(20), default="enrolled", nullable=False
+    )  # public, enrolled, premium
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationship to CourseModule
+    course_module = db.relationship(
+        "CourseModule", backref=db.backref("permissions", uselist=False)
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "course_module_id": self.course_module_id,
+            "access_level": self.access_level,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -26,7 +26,16 @@ function LoginPage() {
             if (response.data.access_token) {
                 setAuthToken(response.data.access_token);
                 setIsAuthenticated(true);
-                navigate('/home');
+
+                // Check if there's a redirect URL in sessionStorage
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                if (redirectUrl) {
+                    // Clear the stored URL to prevent redirect loops
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    navigate(redirectUrl);
+                } else {
+                    navigate('/home');
+                }
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -44,7 +53,15 @@ function LoginPage() {
                 localStorage.setItem('token', result.data.access_token);
                 setIsAuthenticated(true);
 
-                navigate('/home', { replace: true });
+                // Check if there's a redirect URL in sessionStorage
+                const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+                if (redirectUrl) {
+                    // Clear the stored URL to prevent redirect loops
+                    sessionStorage.removeItem('redirectAfterLogin');
+                    navigate(redirectUrl, { replace: true });
+                } else {
+                    navigate('/home', { replace: true });
+                }
 
                 showSnackbar('Successfully logged in with Google', 'success');
             }

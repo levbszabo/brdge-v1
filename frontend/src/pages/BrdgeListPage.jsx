@@ -612,6 +612,7 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
 function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
     const [courses, setCourses] = useState([]);
+    const [marketplaceCourses, setMarketplaceCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -660,6 +661,7 @@ function BrdgeListPage() {
     useEffect(() => {
         fetchBrdges();
         fetchCourses();
+        fetchMarketplaceCourses();
         fetchStats();
     }, []);
 
@@ -727,6 +729,17 @@ function BrdgeListPage() {
         } catch (error) {
             setError('Failed to fetch AI Modules');
             setLoading(false);
+        }
+    };
+
+    const fetchMarketplaceCourses = async () => {
+        try {
+            const token = getAuthToken();
+            const response = await api.get('/courses/marketplace');
+            setMarketplaceCourses(response.data.courses || []);
+        } catch (error) {
+            console.error('Error fetching marketplace courses:', error);
+            showSnackbar('Failed to fetch marketplace courses', 'error');
         }
     };
 
@@ -2389,7 +2402,7 @@ function BrdgeListPage() {
                                         ...styles.marketplaceGrid,
                                         gap: 3,
                                     }}>
-                                        {courses.filter(course => course.shareable).map((course) => (
+                                        {marketplaceCourses.map((course) => (
                                             <Box
                                                 key={course.id}
                                                 sx={{
@@ -2513,7 +2526,7 @@ function BrdgeListPage() {
                                         ))}
 
                                         {/* If no public courses available */}
-                                        {courses.filter(course => course.shareable).length === 0 && (
+                                        {marketplaceCourses.length === 0 && (
                                             <Box sx={{
                                                 gridColumn: '1 / -1',
                                                 p: 4,
@@ -2523,7 +2536,7 @@ function BrdgeListPage() {
                                                 border: '1px dashed rgba(34, 211, 238, 0.2)'
                                             }}>
                                                 <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
-                                                    No public courses available in the marketplace yet.
+                                                    No marketplace courses available yet.
                                                 </Typography>
                                             </Box>
                                         )}

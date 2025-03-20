@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Box, Typography, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
 import { api } from '../api';
 
@@ -10,8 +10,14 @@ function EditBrdgePage() {
     // Handle combined ID-UID format from the URL
     const [id, uidFromUrl] = params.id ? params.id.split('-') : [null, null];
     const navigate = useNavigate();
+    const location = useLocation();
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [authToken, setAuthToken] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [courseInfo, setCourseInfo] = useState(null);
+    const [isEnrolled, setIsEnrolled] = useState(false);
+    const [premiumAccessDialogOpen, setPremiumAccessDialogOpen] = useState(false);
 
     useEffect(() => {
         const checkAuthorization = async () => {
@@ -46,7 +52,6 @@ function EditBrdgePage() {
         }
     }, [id, uidFromUrl, navigate]);
 
-    // Add scroll prevention effect
     useEffect(() => {
         // Prevent scrolling on the body
         document.body.style.overflow = 'hidden';
@@ -63,6 +68,112 @@ function EditBrdgePage() {
             );
         }
 
+        const checkAccess = async () => {
+            try {
+                // Get the Brdge details
+                const response = await api.get(`/brdges/${id}`);
+                const brdge = response.data;
+
+                // Verify the UUID prefix matches if we're using the id-uid format
+                if (uidFromUrl && !brdge.public_id.startsWith(uidFromUrl)) {
+                    setError('Invalid Bridge URL');
+                    setLoading(false);
+                    return;
+                }
+
+                let hasAccess = false;
+                let courseModule = null;
+                let courseData = null;
+
+                // Check if this brdge is part of a course
+                if (brdge.course_modules && brdge.course_modules.length > 0) {
+                    // Find the first course this brdge belongs to
+                    courseModule = brdge.course_modules[0];
+
+                    try {
+                        const courseResponse = await api.get(`/courses/${courseModule.course_id}`);
+                        courseData = courseResponse.data;
+                        setCourseInfo(courseData);
+
+                        // Get module permissions
+                        const modulePermission = courseModule.permissions || { access_level: 'enrolled' }; // Default to enrolled
+
+                        // Check access based on permission level
+                        if (modulePermission.access_level === 'public') {
+                            // Public modules are accessible to everyone
+                            hasAccess = true;
+                        } else if (authToken) {
+                            try {
+                                // Check if user is enrolled
+                                const enrollmentResponse = await api.get(`/courses/${courseModule.course_id}/enrollment-status`);
+                                const isUserEnrolled = enrollmentResponse.data.enrolled;
+                                setIsEnrolled(isUserEnrolled);
+
+                                // For enrolled level, just need to be enrolled
+                                if (modulePermission.access_level === 'enrolled' && isUserEnrolled) {
+                                    hasAccess = true;
+                                }
+                                // For premium level, need to be enrolled AND have premium access
+                                else if (modulePermission.access_level === 'premium' &&
+                                    isUserEnrolled &&
+                                    enrollmentResponse.data.has_premium_access) {
+                                    hasAccess = true;
+                                }
+                            } catch (error) {
+                                console.error('Error checking enrollment status:', error);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching course info:', error);
+                    }
+                } else {
+                    // Standalone brdge (not part of a course)
+                    // If Brdge is shareable, allow access
+                    if (brdge.shareable) {
+                        hasAccess = true;
+                    }
+                    // If user is the owner, allow access
+                    else if (authToken) {
+                        try {
+                            const userResponse = await api.get('/user/current');
+                            if (userResponse.data.id === brdge.user_id) {
+                                hasAccess = true;
+                            }
+                        } catch (err) {
+                            console.error('Error checking user identity:', err);
+                        }
+                    }
+                }
+
+                // If access was denied, set error message based on module permission
+                if (!hasAccess) {
+                    if (!courseModule) {
+                        setError('This module is private. Only the creator can access it.');
+                    } else {
+                        const permission = courseModule.permissions || { access_level: 'enrolled' };
+
+                        if (permission.access_level === 'enrolled') {
+                            setError('Enrollment Required: You need to enroll in this course to access this module.');
+                        } else if (permission.access_level === 'premium') {
+                            setError('Premium Access Required: This module requires premium course access.');
+                        } else {
+                            setError('Access Denied: You do not have permission to view this module.');
+                        }
+                    }
+                    setLoading(false);
+                    return;
+                }
+
+                setLoading(false);
+            } catch (error) {
+                console.error('Error checking Bridge access:', error);
+                setError('Bridge Is Not Public: Access Denied');
+                setLoading(false);
+            }
+        };
+
+        checkAccess();
+
         return () => {
             // Cleanup
             document.body.style.overflow = '';
@@ -75,12 +186,26 @@ function EditBrdgePage() {
                 viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
             }
         };
-    }, []);
+    }, [id, uidFromUrl, authToken]);
 
     // Only render the main content if authorized
     if (!isAuthorized) {
         return null; // Or a loading spinner
     }
+
+    const handleUpgradeToPremium = async () => {
+        if (!authToken) {
+            sessionStorage.setItem('redirectAfterLogin', location.pathname);
+            navigate('/signup');
+            return;
+        }
+
+        if (!courseInfo) return;
+
+        // Navigate to premium upgrade page or show payment dialog
+        // This implementation will depend on your payment/subscription system
+        navigate(`/courses/${courseInfo.id}/upgrade-to-premium`);
+    };
 
     return (
         <Box sx={{
@@ -138,6 +263,46 @@ function EditBrdgePage() {
             }}>
                 <AgentConnector brdgeId={id} agentType="edit" token={authToken} />
             </Box>
+
+            {/* Premium Access Dialog */}
+            <Dialog
+                open={premiumAccessDialogOpen}
+                onClose={() => setPremiumAccessDialogOpen(false)}
+            >
+                <DialogTitle sx={{
+                    bgcolor: 'rgba(0, 10, 30, 0.9)',
+                    color: 'white'
+                }}>
+                    Premium Access Required
+                </DialogTitle>
+                <DialogContent sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', color: 'white' }}>
+                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                        This module requires premium access. Please upgrade your enrollment to access premium content.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', p: 2 }}>
+                    <Button
+                        onClick={() => setPremiumAccessDialogOpen(false)}
+                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setPremiumAccessDialogOpen(false);
+                            // Call a function to upgrade to premium
+                            handleUpgradeToPremium();
+                        }}
+                        variant="contained"
+                        sx={{
+                            background: 'linear-gradient(45deg, #9C27B0 30%, #BA68C8 90%)',
+                            boxShadow: '0 4px 15px rgba(156, 39, 176, 0.3)',
+                        }}
+                    >
+                        Upgrade to Premium
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
