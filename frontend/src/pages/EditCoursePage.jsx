@@ -7,7 +7,7 @@ import {
     Divider, List, ListItem, ListItemText, Alert, Collapse, Chip,
     Paper, Avatar, Badge, Skeleton, useTheme, useMediaQuery, Tabs, Tab,
     Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow
+    TableHead, TableRow, LinearProgress
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -229,8 +229,12 @@ function EditCoursePage() {
                 }
 
                 console.log("Course data loaded:", courseData);
-                // Add this log to check if thumbnail URL exists
-                console.log("Course thumbnail URL:", courseData.thumbnail_url);
+
+                // Sort modules by position before setting state
+                if (courseData.modules && courseData.modules.length > 0) {
+                    courseData.modules.sort((a, b) => a.position - b.position);
+                    console.log("Sorted modules by position:", courseData.modules.map(m => m.position));
+                }
 
                 setCourse(courseData);
                 setCourseTitle(courseData.name);
@@ -369,15 +373,29 @@ function EditCoursePage() {
         if (!selectedBrdgeId) return;
 
         try {
-            await api.post(`/courses/${id}/modules`, { brdge_id: selectedBrdgeId });
+            // Calculate the next position based on existing modules
+            const nextPosition = course && course.modules ? course.modules.length + 1 : 1;
+
+            await api.post(`/courses/${id}/modules`, {
+                brdge_id: selectedBrdgeId,
+                position: nextPosition // Explicitly set the position
+            });
 
             // Refresh course data
             const response = await api.get(`/courses/${id}`);
-            setCourse(response.data.course);
 
+            // Sort the modules by position
+            const courseData = response.data.course;
+            if (courseData.modules) {
+                courseData.modules.sort((a, b) => a.position - b.position);
+            }
+
+            setCourse(courseData);
+            showSnackbar('Module added successfully', 'success');
             handleCloseAddModuleDialog();
         } catch (error) {
             console.error('Error adding module:', error);
+            showSnackbar('Failed to add module', 'error');
         }
     };
 
@@ -621,6 +639,76 @@ function EditCoursePage() {
             document.head.removeChild(style);
         };
     }, []);
+
+    // Add this function to the EditCoursePage component
+    const handleTogglePremiumAccess = async (enrollmentId) => {
+        try {
+            setSavingCourse(true);
+            const response = await api.post(`/courses/${id}/enrollments/${enrollmentId}/toggle-premium`);
+
+            // Update the enrollment in our local state
+            setEnrollments(prevEnrollments =>
+                prevEnrollments.map(enrollment =>
+                    enrollment.id === enrollmentId
+                        ? { ...enrollment, has_premium_access: response.data.enrollment.has_premium_access }
+                        : enrollment
+                )
+            );
+
+            showSnackbar(`Premium access ${response.data.enrollment.has_premium_access ? 'granted' : 'revoked'}`, 'success');
+        } catch (error) {
+            console.error('Error toggling premium access:', error);
+            showSnackbar('Failed to update premium access', 'error');
+        } finally {
+            setSavingCourse(false);
+        }
+    };
+
+    // Add or update the moveModule function (which gets called after drag & drop operations)
+    const moveModule = async (dragIndex, hoverIndex) => {
+        // Create a new array of modules
+        const updatedModules = [...course.modules];
+
+        // Remove the dragged module from its position
+        const draggedModule = updatedModules[dragIndex];
+        updatedModules.splice(dragIndex, 1);
+
+        // Insert it at the new position
+        updatedModules.splice(hoverIndex, 0, draggedModule);
+
+        // Update the position values for all modules
+        const reorderedModules = updatedModules.map((module, index) => ({
+            ...module,
+            position: index + 1  // Position is 1-based in most DB schemas
+        }));
+
+        // Update the course state immediately for a responsive UI
+        setCourse(prevCourse => ({
+            ...prevCourse,
+            modules: reorderedModules
+        }));
+
+        // Send the updated positions to the backend
+        try {
+            setSavingCourse(true);
+            const positions = reorderedModules.map(module => ({
+                id: module.id,
+                position: module.position
+            }));
+
+            await api.put(`/courses/${id}/modules/reorder`, { positions });
+            showSnackbar('Module order updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating module order:', error);
+            showSnackbar('Failed to update module order', 'error');
+
+            // If the update fails, fetch the latest data from the server
+            const response = await api.get(`/courses/${id}`);
+            setCourse(response.data.course);
+        } finally {
+            setSavingCourse(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -1182,588 +1270,610 @@ function EditCoursePage() {
                                             initialSlide={0}
                                             slideToClickedSlide={true}
                                         >
-                                            {course.modules.map((module, index) => (
-                                                <SwiperSlide key={module.id} style={{ width: 400 }}>
-                                                    <Card sx={{
-                                                        height: '100%',
-                                                        bgcolor: 'rgba(20, 20, 35, 0.7)',
-                                                        backdropFilter: 'blur(10px)',
-                                                        borderRadius: '20px',
-                                                        overflow: 'hidden',
-                                                        position: 'relative',
-                                                        transition: 'all 0.3s ease-in-out',
-                                                        border: '1px solid rgba(0, 229, 255, 0.1)',
-                                                        '&:hover': {
-                                                            transform: 'translateY(-8px)',
-                                                            boxShadow: `
-                                                            0 0 20px rgba(0, 229, 255, 0.2),
-                                                            0 0 40px rgba(0, 229, 255, 0.1),
-                                                            0 0 60px rgba(0, 229, 255, 0.05)
-                                                        `,
-                                                            '& .module-image': {
-                                                                transform: 'scale(1.05)',
-                                                            },
-                                                            '& .module-overlay': {
-                                                                opacity: 1,
-                                                            }
-                                                        },
-                                                    }}>
-                                                        <Box sx={{ position: 'relative', height: '250px' }}>
-                                                            {/* Module Label */}
-                                                            <Box
-                                                                sx={{
-                                                                    position: 'absolute',
-                                                                    top: 12,
-                                                                    left: 12,
-                                                                    zIndex: 2,
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 1,
-                                                                    bgcolor: 'rgba(0, 229, 255, 0.15)',
-                                                                    backdropFilter: 'blur(8px)',
-                                                                    borderRadius: '10px',
-                                                                    padding: '6px 12px',
-                                                                    border: '1px solid rgba(0, 229, 255, 0.3)',
-                                                                    transition: 'all 0.3s ease',
-                                                                    '&:hover': {
-                                                                        bgcolor: 'rgba(0, 229, 255, 0.25)',
-                                                                        transform: 'scale(1.05)',
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <AutoStoriesIcon sx={{
-                                                                    fontSize: '0.9rem',
-                                                                    color: '#00E5FF',
-                                                                    filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))'
-                                                                }} />
-                                                                <Typography variant="caption" sx={{
-                                                                    color: '#00E5FF',
-                                                                    fontWeight: 'medium',
-                                                                    fontSize: '0.75rem',
-                                                                    letterSpacing: '0.03em',
-                                                                    textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
-                                                                }}>
-                                                                    {`Module ${index + 1}`}
-                                                                </Typography>
-                                                            </Box>
-
-                                                            {/* Delete Button - Subtle but accessible */}
-                                                            <IconButton
-                                                                onClick={() => handleDeleteModuleClick(module.id)}
-                                                                sx={{
-                                                                    position: 'absolute',
-                                                                    top: 12,
-                                                                    right: 12,
-                                                                    zIndex: 3,
-                                                                    width: 32,
-                                                                    height: 32,
-                                                                    bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                                                    backdropFilter: 'blur(8px)',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                                    opacity: 0.6,
-                                                                    transition: 'all 0.2s ease',
-                                                                    '&:hover': {
-                                                                        bgcolor: 'rgba(255, 75, 75, 0.2)',
-                                                                        borderColor: 'rgba(255, 75, 75, 0.3)',
-                                                                        opacity: 1,
-                                                                        transform: 'scale(1.05)',
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <DeleteIcon sx={{
-                                                                    fontSize: '0.9rem',
-                                                                    color: 'rgba(255, 255, 255, 0.8)',
-                                                                    transition: 'all 0.2s ease',
-                                                                    '&:hover': {
-                                                                        color: '#FF4B4B',
-                                                                    }
-                                                                }} />
-                                                            </IconButton>
-
-                                                            {/* Thumbnail upload button */}
-                                                            <IconButton
-                                                                component="label"
-                                                                sx={{
-                                                                    position: 'absolute',
-                                                                    top: 12,
-                                                                    right: 56, // Position it next to the delete button
-                                                                    zIndex: 3,
-                                                                    width: 32,
-                                                                    height: 32,
-                                                                    bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                                                    backdropFilter: 'blur(8px)',
-                                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                                    opacity: 0.6,
-                                                                    transition: 'all 0.2s ease',
-                                                                    '&:hover': {
-                                                                        bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                                        borderColor: 'rgba(0, 229, 255, 0.3)',
-                                                                        opacity: 1,
-                                                                        transform: 'scale(1.05)',
-                                                                    },
-                                                                }}
-                                                            >
-                                                                <ImageIcon sx={{
-                                                                    fontSize: '0.9rem',
-                                                                    color: 'rgba(255, 255, 255, 0.8)',
-                                                                    transition: 'all 0.2s ease',
-                                                                    '&:hover': {
-                                                                        color: '#00E5FF',
-                                                                    }
-                                                                }} />
-                                                                <VisuallyHiddenInput
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    onChange={(e) => handleModuleThumbUpload(e, module.id, module.brdge_id)}
-                                                                />
-                                                            </IconButton>
-
-                                                            {/* Replace the module background Box with this */}
-                                                            <Box
-                                                                sx={{
-                                                                    position: 'relative',
-                                                                    height: '100%',
-                                                                    background: moduleThumbPreviews[module.id] || module.thumbnail_url
-                                                                        ? 'none'  // No background when we have a thumbnail
-                                                                        : `linear-gradient(135deg, 
-                                                                    rgba(0, 21, 36, 0.95) 0%,
-                                                                    rgba(0, 151, 167, 0.9) 100%)`,
-                                                                    '&::before': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
-                                                                        content: '""',
-                                                                        position: 'absolute',
-                                                                        top: 0,
-                                                                        left: 0,
-                                                                        right: 0,
-                                                                        bottom: 0,
-                                                                        background: `radial-gradient(circle at 50% 50%,
-                                                                        rgba(0, 229, 255, 0.15) 0%,
-                                                                        rgba(0, 229, 255, 0.05) 25%,
-                                                                        transparent 50%)`,
-                                                                        opacity: 0.5,
-                                                                        transition: 'all 0.3s ease',
-                                                                    } : {},
-                                                                    '&::after': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
-                                                                        content: '""',
-                                                                        position: 'absolute',
-                                                                        top: 0,
-                                                                        left: 0,
-                                                                        right: 0,
-                                                                        bottom: 0,
-                                                                        opacity: 0.05,
-                                                                        mixBlendMode: 'overlay',
-                                                                    } : {}
-                                                                }}
-                                                            >
-                                                                {/* Show thumbnail if available */}
-                                                                {(moduleThumbPreviews[module.id] || module.thumbnail_url) && (
-                                                                    <Box
-                                                                        component="img"
-                                                                        src={moduleThumbPreviews[module.id] || normalizeThumbnailUrl(module.thumbnail_url)}
-                                                                        sx={{
-                                                                            width: '100%',
-                                                                            height: '100%',
-                                                                            objectFit: 'cover',
-                                                                            objectPosition: 'center',
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            zIndex: 0,
-                                                                        }}
-                                                                        alt={`Thumbnail for ${module.brdge?.name || "module"}`}
-                                                                    />
-                                                                )}
-
-                                                                {/* Add overlay for better text readability */}
-                                                                {moduleThumbPreviews[module.id] && (
-                                                                    <Box
-                                                                        sx={{
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            width: '100%',
-                                                                            height: '100%',
-                                                                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
-                                                                            zIndex: 1,
-                                                                        }}
-                                                                    />
-                                                                )}
-
-                                                                {/* Show loading indicator when uploading */}
-                                                                {uploadingModuleThumb[module.id] && (
-                                                                    <Box sx={{
-                                                                        position: 'absolute',
-                                                                        top: 0,
-                                                                        left: 0,
-                                                                        right: 0,
-                                                                        bottom: 0,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center',
-                                                                        bgcolor: 'rgba(0, 0, 0, 0.7)',
-                                                                        zIndex: 5
-                                                                    }}>
-                                                                        <CircularProgress size={40} sx={{ color: '#00E5FF' }} />
-                                                                    </Box>
-                                                                )}
-
-                                                                {/* Animated Play Button */}
-                                                                <Box
-                                                                    sx={{
-                                                                        position: 'absolute',
-                                                                        top: '50%',
-                                                                        left: '50%',
-                                                                        transform: 'translate(-50%, -50%)',
-                                                                        zIndex: 2,
-                                                                        display: 'flex',
-                                                                        flexDirection: 'column',
-                                                                        alignItems: 'center',
-                                                                        gap: 2,
-                                                                    }}
-                                                                >
-                                                                    <IconButton
-                                                                        onClick={() => handleViewModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
-                                                                        sx={{
-                                                                            width: 80,
-                                                                            height: 80,
-                                                                            bgcolor: 'rgba(0, 229, 255, 0.1)',
-                                                                            backdropFilter: 'blur(8px)',
-                                                                            border: '2px solid rgba(0, 229, 255, 0.3)',
-                                                                            transition: 'all 0.3s ease',
-                                                                            '&:hover': {
-                                                                                bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                                                transform: 'scale(1.1)',
-                                                                                border: '2px solid rgba(0, 229, 255, 0.5)',
-                                                                                '& .play-icon': {
-                                                                                    transform: 'scale(1.1)',
-                                                                                }
-                                                                            },
-                                                                            '&::before': {
-                                                                                content: '""',
-                                                                                position: 'absolute',
-                                                                                top: -4,
-                                                                                left: -4,
-                                                                                right: -4,
-                                                                                bottom: -4,
-                                                                                border: '2px solid rgba(0, 229, 255, 0.2)',
-                                                                                borderRadius: '50%',
-                                                                                animation: 'pulseRing 2s infinite',
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <PlayArrowIcon
-                                                                            className="play-icon"
-                                                                            sx={{
-                                                                                fontSize: 40,
-                                                                                color: '#00E5FF',
-                                                                                filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
-                                                                                transition: 'all 0.3s ease',
-                                                                            }}
-                                                                        />
-                                                                    </IconButton>
-                                                                    <Typography
-                                                                        variant="caption"
-                                                                        sx={{
-                                                                            color: 'rgba(255, 255, 255, 0.8)',
-                                                                            textShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
-                                                                            letterSpacing: '0.05em',
-                                                                            fontWeight: 500,
-                                                                        }}
-                                                                    >
-                                                                        Click to View
-                                                                    </Typography>
-                                                                </Box>
-
-                                                                {/* Decorative Elements */}
-                                                                <Box
-                                                                    sx={{
-                                                                        position: 'absolute',
-                                                                        bottom: 20,
-                                                                        left: 20,
-                                                                        right: 20,
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-between',
-                                                                        opacity: 0.5,
-                                                                        zIndex: 2,
-                                                                    }}
-                                                                >
-                                                                    {[...Array(3)].map((_, i) => (
-                                                                        <Box
-                                                                            key={i}
-                                                                            sx={{
-                                                                                width: 40,
-                                                                                height: 2,
-                                                                                bgcolor: '#00E5FF',
-                                                                                borderRadius: '2px',
-                                                                                opacity: 0.6 - (i * 0.2),
-                                                                            }}
-                                                                        />
-                                                                    ))}
-                                                                </Box>
-                                                            </Box>
-                                                        </Box>
-
-                                                        <CardContent sx={{
-                                                            p: 3,
-                                                            height: 'calc(100% - 250px)',
-                                                            display: 'flex',
-                                                            flexDirection: 'column'
-                                                        }}>
-                                                            <TextField
-                                                                value={module.brdge?.name || ''}
-                                                                onChange={(e) => handleModuleNameChange(module.id, e.target.value)}
-                                                                variant="standard"
-                                                                fullWidth
-                                                                placeholder="Module Title"
-                                                                InputProps={{
-                                                                    sx: {
-                                                                        fontSize: '1.1rem',
-                                                                        fontWeight: '600',
-                                                                        color: '#E0F7FA',
-                                                                        '&::before': { display: 'none' },
-                                                                        '&::after': { display: 'none' },
-                                                                        '&::placeholder': {
-                                                                            color: 'rgba(224, 247, 250, 0.3)',
-                                                                            opacity: 1
-                                                                        }
-                                                                    }
-                                                                }}
-                                                            />
-
-                                                            {/* Improved Access Level Control with Tooltips */}
-                                                            <Box sx={{
-                                                                mt: 2,
-                                                                mb: 2,
-                                                                position: 'relative',
-                                                                p: 2,
-                                                                borderRadius: '12px',
-                                                                backgroundColor: 'rgba(0, 0, 0, 0.15)',
-                                                                border: '1px solid rgba(34, 211, 238, 0.1)',
-                                                                transition: 'box-shadow 0.3s ease',
-                                                                '&:hover': {
-                                                                    boxShadow: '0 0 10px rgba(34, 211, 238, 0.1)',
+                                            {/* Ensure modules are displayed in position order */}
+                                            {course.modules
+                                                .sort((a, b) => a.position - b.position) // Sort by position again to be safe
+                                                .map((module, index) => (
+                                                    <SwiperSlide key={module.id} style={{ width: 400 }}>
+                                                        <Card sx={{
+                                                            height: '100%',
+                                                            bgcolor: 'rgba(20, 20, 35, 0.7)',
+                                                            backdropFilter: 'blur(10px)',
+                                                            borderRadius: '20px',
+                                                            overflow: 'hidden',
+                                                            position: 'relative',
+                                                            transition: 'all 0.3s ease-in-out',
+                                                            border: '1px solid rgba(0, 229, 255, 0.1)',
+                                                            '&:hover': {
+                                                                transform: 'translateY(-8px)',
+                                                                boxShadow: `
+                                                                0 0 20px rgba(0, 229, 255, 0.2),
+                                                                0 0 40px rgba(0, 229, 255, 0.1),
+                                                                0 0 60px rgba(0, 229, 255, 0.05)
+                                                            `,
+                                                                '& .module-image': {
+                                                                    transform: 'scale(1.05)',
+                                                                },
+                                                                '& .module-overlay': {
+                                                                    opacity: 1,
                                                                 }
-                                                            }}>
-                                                                <Box sx={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    gap: 1,
-                                                                    mb: 1.5
-                                                                }}>
-                                                                    <LockIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
-                                                                    <Typography variant="subtitle2" sx={{
-                                                                        color: 'rgba(255, 255, 255, 0.9)',
-                                                                        fontWeight: '500'
-                                                                    }}>
-                                                                        Content Access Control
-                                                                    </Typography>
-                                                                    <Tooltip
-                                                                        title={
-                                                                            <Box sx={{ p: 1 }}>
-                                                                                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>Access Level Settings:</Typography>
-                                                                                <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Public</b>: Anyone can access, even without enrollment</Typography>
-                                                                                <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Enrolled</b>: Only enrolled users can access</Typography>
-                                                                                <Typography variant="body2">• <b>Premium</b>: Requires premium enrollment access</Typography>
-                                                                            </Box>
+                                                            },
+                                                        }}>
+                                                            <Box sx={{ position: 'relative', height: '250px' }}>
+                                                                {/* Module Label */}
+                                                                <Box
+                                                                    sx={{
+                                                                        position: 'absolute',
+                                                                        top: 12,
+                                                                        left: 12,
+                                                                        zIndex: 2,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1,
+                                                                        bgcolor: 'rgba(0, 229, 255, 0.15)',
+                                                                        backdropFilter: 'blur(8px)',
+                                                                        borderRadius: '10px',
+                                                                        padding: '6px 12px',
+                                                                        border: '1px solid rgba(0, 229, 255, 0.3)',
+                                                                        transition: 'all 0.3s ease',
+                                                                        '&:hover': {
+                                                                            bgcolor: 'rgba(0, 229, 255, 0.25)',
+                                                                            transform: 'scale(1.05)',
                                                                         }
-                                                                        arrow
-                                                                        placement="top"
+                                                                    }}
+                                                                >
+                                                                    <AutoStoriesIcon sx={{
+                                                                        fontSize: '0.9rem',
+                                                                        color: '#00E5FF',
+                                                                        filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))'
+                                                                    }} />
+                                                                    <Typography variant="caption" sx={{
+                                                                        color: '#00E5FF',
+                                                                        fontWeight: 'medium',
+                                                                        fontSize: '0.75rem',
+                                                                        letterSpacing: '0.03em',
+                                                                        textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
+                                                                    }}>
+                                                                        {`Module ${module.position}`}
+                                                                    </Typography>
+                                                                </Box>
+
+                                                                {/* Delete Button - Subtle but accessible */}
+                                                                <IconButton
+                                                                    onClick={() => handleDeleteModuleClick(module.id)}
+                                                                    sx={{
+                                                                        position: 'absolute',
+                                                                        top: 12,
+                                                                        right: 12,
+                                                                        zIndex: 3,
+                                                                        width: 32,
+                                                                        height: 32,
+                                                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                                                        backdropFilter: 'blur(8px)',
+                                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                                        opacity: 0.6,
+                                                                        transition: 'all 0.2s ease',
+                                                                        '&:hover': {
+                                                                            bgcolor: 'rgba(255, 75, 75, 0.2)',
+                                                                            borderColor: 'rgba(255, 75, 75, 0.3)',
+                                                                            opacity: 1,
+                                                                            transform: 'scale(1.05)',
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <DeleteIcon sx={{
+                                                                        fontSize: '0.9rem',
+                                                                        color: 'rgba(255, 255, 255, 0.8)',
+                                                                        transition: 'all 0.2s ease',
+                                                                        '&:hover': {
+                                                                            color: '#FF4B4B',
+                                                                        }
+                                                                    }} />
+                                                                </IconButton>
+
+                                                                {/* Thumbnail upload button */}
+                                                                <IconButton
+                                                                    component="label"
+                                                                    sx={{
+                                                                        position: 'absolute',
+                                                                        top: 12,
+                                                                        right: 56, // Position it next to the delete button
+                                                                        zIndex: 3,
+                                                                        width: 32,
+                                                                        height: 32,
+                                                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                                                        backdropFilter: 'blur(8px)',
+                                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                                        opacity: 0.6,
+                                                                        transition: 'all 0.2s ease',
+                                                                        '&:hover': {
+                                                                            bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                                            borderColor: 'rgba(0, 229, 255, 0.3)',
+                                                                            opacity: 1,
+                                                                            transform: 'scale(1.05)',
+                                                                        },
+                                                                    }}
+                                                                >
+                                                                    <ImageIcon sx={{
+                                                                        fontSize: '0.9rem',
+                                                                        color: 'rgba(255, 255, 255, 0.8)',
+                                                                        transition: 'all 0.2s ease',
+                                                                        '&:hover': {
+                                                                            color: '#00E5FF',
+                                                                        }
+                                                                    }} />
+                                                                    <VisuallyHiddenInput
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        onChange={(e) => handleModuleThumbUpload(e, module.id, module.brdge_id)}
+                                                                    />
+                                                                </IconButton>
+
+                                                                {/* Replace the module background Box with this */}
+                                                                <Box
+                                                                    sx={{
+                                                                        position: 'relative',
+                                                                        height: '100%',
+                                                                        background: moduleThumbPreviews[module.id] || module.thumbnail_url
+                                                                            ? 'none'  // No background when we have a thumbnail
+                                                                            : `linear-gradient(135deg, 
+                                                                        rgba(0, 21, 36, 0.95) 0%,
+                                                                        rgba(0, 151, 167, 0.9) 100%)`,
+                                                                        '&::before': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
+                                                                            content: '""',
+                                                                            position: 'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            right: 0,
+                                                                            bottom: 0,
+                                                                            background: `radial-gradient(circle at 50% 50%,
+                                                                            rgba(0, 229, 255, 0.15) 0%,
+                                                                            rgba(0, 229, 255, 0.05) 25%,
+                                                                            transparent 50%)`,
+                                                                            opacity: 0.5,
+                                                                            transition: 'all 0.3s ease',
+                                                                        } : {},
+                                                                        '&::after': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
+                                                                            content: '""',
+                                                                            position: 'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            right: 0,
+                                                                            bottom: 0,
+                                                                            opacity: 0.05,
+                                                                            mixBlendMode: 'overlay',
+                                                                        } : {}
+                                                                    }}
+                                                                >
+                                                                    {/* Show thumbnail if available */}
+                                                                    {(moduleThumbPreviews[module.id] || module.thumbnail_url) && (
+                                                                        <Box
+                                                                            component="img"
+                                                                            src={moduleThumbPreviews[module.id] || normalizeThumbnailUrl(module.thumbnail_url)}
+                                                                            sx={{
+                                                                                width: '100%',
+                                                                                height: '100%',
+                                                                                objectFit: 'cover',
+                                                                                objectPosition: 'center',
+                                                                                position: 'absolute',
+                                                                                top: 0,
+                                                                                left: 0,
+                                                                                zIndex: 0,
+                                                                            }}
+                                                                            alt={`Thumbnail for ${module.brdge?.name || "module"}`}
+                                                                        />
+                                                                    )}
+
+                                                                    {/* Add overlay for better text readability */}
+                                                                    {moduleThumbPreviews[module.id] && (
+                                                                        <Box
+                                                                            sx={{
+                                                                                position: 'absolute',
+                                                                                top: 0,
+                                                                                left: 0,
+                                                                                width: '100%',
+                                                                                height: '100%',
+                                                                                background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
+                                                                                zIndex: 1,
+                                                                            }}
+                                                                        />
+                                                                    )}
+
+                                                                    {/* Show loading indicator when uploading */}
+                                                                    {uploadingModuleThumb[module.id] && (
+                                                                        <Box sx={{
+                                                                            position: 'absolute',
+                                                                            top: 0,
+                                                                            left: 0,
+                                                                            right: 0,
+                                                                            bottom: 0,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            bgcolor: 'rgba(0, 0, 0, 0.7)',
+                                                                            zIndex: 5
+                                                                        }}>
+                                                                            <CircularProgress size={40} sx={{ color: '#00E5FF' }} />
+                                                                        </Box>
+                                                                    )}
+
+                                                                    {/* Animated Play Button */}
+                                                                    <Box
+                                                                        sx={{
+                                                                            position: 'absolute',
+                                                                            top: '50%',
+                                                                            left: '50%',
+                                                                            transform: 'translate(-50%, -50%)',
+                                                                            zIndex: 2,
+                                                                            display: 'flex',
+                                                                            flexDirection: 'column',
+                                                                            alignItems: 'center',
+                                                                            gap: 2,
+                                                                        }}
                                                                     >
                                                                         <IconButton
-                                                                            size="small"
+                                                                            onClick={() => handleViewModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
                                                                             sx={{
-                                                                                ml: 0.5,
-                                                                                width: 18,
-                                                                                height: 18,
-                                                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                                                width: 80,
+                                                                                height: 80,
+                                                                                bgcolor: 'rgba(0, 229, 255, 0.1)',
+                                                                                backdropFilter: 'blur(8px)',
+                                                                                border: '2px solid rgba(0, 229, 255, 0.3)',
+                                                                                transition: 'all 0.3s ease',
                                                                                 '&:hover': {
-                                                                                    backgroundColor: 'rgba(34, 211, 238, 0.2)'
+                                                                                    bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                                                    transform: 'scale(1.1)',
+                                                                                    border: '2px solid rgba(0, 229, 255, 0.5)',
+                                                                                    '& .play-icon': {
+                                                                                        transform: 'scale(1.1)',
+                                                                                    }
+                                                                                },
+                                                                                '&::before': {
+                                                                                    content: '""',
+                                                                                    position: 'absolute',
+                                                                                    top: -4,
+                                                                                    left: -4,
+                                                                                    right: -4,
+                                                                                    bottom: -4,
+                                                                                    border: '2px solid rgba(0, 229, 255, 0.2)',
+                                                                                    borderRadius: '50%',
+                                                                                    animation: 'pulseRing 2s infinite',
                                                                                 }
                                                                             }}
                                                                         >
-                                                                            <InfoIcon sx={{ fontSize: 14, color: '#00E5FF' }} />
-                                                                        </IconButton>
-                                                                    </Tooltip>
-                                                                </Box>
-
-                                                                <Box sx={{
-                                                                    display: 'flex',
-                                                                    gap: 1.5,
-                                                                    justifyContent: 'space-between'
-                                                                }}>
-                                                                    {[
-                                                                        { level: 'public', icon: <PublicIcon sx={{ fontSize: 18 }} />, color: '#4CAF50', label: 'Public' },
-                                                                        { level: 'enrolled', icon: <PersonIcon sx={{ fontSize: 18 }} />, color: '#2196F3', label: 'Enrolled' },
-                                                                        { level: 'premium', icon: <WorkspacePremiumIcon sx={{ fontSize: 18 }} />, color: '#9C27B0', label: 'Premium' }
-                                                                    ].map(({ level, icon, color, label }) => (
-                                                                        <motion.div
-                                                                            key={level}
-                                                                            whileHover={{ scale: 1.05 }}
-                                                                            whileTap={{ scale: 0.95 }}
-                                                                            style={{ flex: 1 }}
-                                                                        >
-                                                                            <Button
-                                                                                variant={(module.access_level || 'enrolled') === level ? "contained" : "outlined"}
-                                                                                onClick={() => handleAccessLevelChange(module.id, level)}
-                                                                                startIcon={icon}
-                                                                                fullWidth
+                                                                            <PlayArrowIcon
+                                                                                className="play-icon"
                                                                                 sx={{
-                                                                                    textTransform: 'none',
-                                                                                    backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                        `${color}22` : 'transparent',
-                                                                                    color: (module.access_level || 'enrolled') === level ?
-                                                                                        color : 'rgba(255, 255, 255, 0.6)',
-                                                                                    borderColor: color,
-                                                                                    borderWidth: (module.access_level || 'enrolled') === level ? '2px' : '1px',
-                                                                                    padding: '8px 10px',
-                                                                                    borderRadius: '10px',
-                                                                                    fontSize: '0.8rem',
-                                                                                    fontWeight: (module.access_level || 'enrolled') === level ? '600' : '400',
-                                                                                    // Add these enhanced properties for the selected state
-                                                                                    boxShadow: (module.access_level || 'enrolled') === level ?
-                                                                                        `0 0 15px ${color}66, 0 0 5px ${color}33 inset` : 'none',
-                                                                                    transform: (module.access_level || 'enrolled') === level ? 'scale(1.05)' : 'scale(1)',
-                                                                                    zIndex: (module.access_level || 'enrolled') === level ? 2 : 1,
-                                                                                    position: 'relative',
-                                                                                    '&::after': (module.access_level || 'enrolled') === level ? {
-                                                                                        content: '""',
-                                                                                        position: 'absolute',
-                                                                                        top: -1,
-                                                                                        left: -1,
-                                                                                        right: -1,
-                                                                                        bottom: -1,
-                                                                                        borderRadius: '12px',
-                                                                                        background: `linear-gradient(45deg, ${color}00, ${color}55, ${color}00)`,
-                                                                                        animation: 'glowingBorder 1.5s ease-in-out infinite alternate',
-                                                                                        zIndex: -1,
-                                                                                    } : {},
-                                                                                    '&:hover': {
-                                                                                        backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                            `${color}33` : `${color}15`,
-                                                                                        borderColor: color,
-                                                                                        boxShadow: (module.access_level || 'enrolled') === level ?
-                                                                                            `0 0 20px ${color}99, 0 0 10px ${color}33 inset` : `0 0 5px ${color}33`,
-                                                                                    },
-                                                                                    '&.Mui-disabled': {
-                                                                                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                                                                                        color: 'rgba(255, 255, 255, 0.3)',
-                                                                                    },
-                                                                                    transition: 'all 0.2s ease',
+                                                                                    fontSize: 40,
+                                                                                    color: '#00E5FF',
+                                                                                    filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
+                                                                                    transition: 'all 0.3s ease',
                                                                                 }}
-                                                                            >
-                                                                                {label}
-                                                                            </Button>
-                                                                        </motion.div>
-                                                                    ))}
-                                                                </Box>
+                                                                            />
+                                                                        </IconButton>
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            sx={{
+                                                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                                                textShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
+                                                                                letterSpacing: '0.05em',
+                                                                                fontWeight: 500,
+                                                                            }}
+                                                                        >
+                                                                            Click to View
+                                                                        </Typography>
+                                                                    </Box>
 
-                                                                <Typography variant="caption" sx={{
-                                                                    display: 'block',
-                                                                    mt: 1.5,
-                                                                    textAlign: 'center',
-                                                                    color: 'rgba(255, 255, 255, 0.5)',
-                                                                    fontStyle: 'italic'
-                                                                }}>
-                                                                    {(module.access_level || 'enrolled') === 'public' ?
-                                                                        'This module is accessible to everyone' :
-                                                                        (module.access_level || 'enrolled') === 'enrolled' ?
-                                                                            'Students must enroll in the course to access' :
-                                                                            'Students need premium access to view this content'}
-                                                                </Typography>
+                                                                    {/* Decorative Elements */}
+                                                                    <Box
+                                                                        sx={{
+                                                                            position: 'absolute',
+                                                                            bottom: 20,
+                                                                            left: 20,
+                                                                            right: 20,
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            opacity: 0.5,
+                                                                            zIndex: 2,
+                                                                        }}
+                                                                    >
+                                                                        {[...Array(3)].map((_, i) => (
+                                                                            <Box
+                                                                                key={i}
+                                                                                sx={{
+                                                                                    width: 40,
+                                                                                    height: 2,
+                                                                                    bgcolor: '#00E5FF',
+                                                                                    borderRadius: '2px',
+                                                                                    opacity: 0.6 - (i * 0.2),
+                                                                                }}
+                                                                            />
+                                                                        ))}
+                                                                    </Box>
+                                                                </Box>
                                                             </Box>
 
-                                                            <Box sx={{ position: 'relative', width: '100%' }}>
+                                                            <CardContent sx={{
+                                                                p: 3,
+                                                                height: 'calc(100% - 250px)',
+                                                                display: 'flex',
+                                                                flexDirection: 'column'
+                                                            }}>
                                                                 <TextField
-                                                                    value={
-                                                                        // Show the pending description if available, otherwise show saved description
-                                                                        pendingDescriptions[module.id] !== undefined
-                                                                            ? pendingDescriptions[module.id]
-                                                                            : (module.description || module.brdge?.description || '')
-                                                                    }
-                                                                    onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
-                                                                    multiline
-                                                                    rows={2}
-                                                                    fullWidth
+                                                                    value={module.brdge?.name || ''}
+                                                                    onChange={(e) => handleModuleNameChange(module.id, e.target.value)}
                                                                     variant="standard"
-                                                                    placeholder="Add a description..."
-                                                                    sx={{
-                                                                        mt: 1.5,
-                                                                        flex: 1,
-                                                                        '& .MuiInputBase-input': {
-                                                                            color: 'rgba(224, 247, 250, 0.7)',
-                                                                            fontSize: '0.85rem',
-                                                                            lineHeight: '1.5',
-                                                                        },
-                                                                        '& .MuiInputBase-input::placeholder': {
-                                                                            color: 'rgba(224, 247, 250, 0.3)',
-                                                                            opacity: 1
-                                                                        },
-                                                                        '& .MuiInput-underline:before': {
-                                                                            borderBottomColor: 'rgba(255, 255, 255, 0.1)'
-                                                                        },
-                                                                        '& .MuiInput-underline:hover:before': {
-                                                                            borderBottomColor: 'rgba(255, 255, 255, 0.2)'
+                                                                    fullWidth
+                                                                    placeholder="Module Title"
+                                                                    InputProps={{
+                                                                        sx: {
+                                                                            fontSize: '1.1rem',
+                                                                            fontWeight: '600',
+                                                                            color: '#E0F7FA',
+                                                                            '&::before': { display: 'none' },
+                                                                            '&::after': { display: 'none' },
+                                                                            '&::placeholder': {
+                                                                                color: 'rgba(224, 247, 250, 0.3)',
+                                                                                opacity: 1
+                                                                            }
                                                                         }
                                                                     }}
                                                                 />
-                                                                {/* Show saving indicator */}
-                                                                {isSavingDescriptions[module.id] && (
-                                                                    <Box
-                                                                        sx={{
-                                                                            position: 'absolute',
-                                                                            right: 2,
-                                                                            bottom: 2,
-                                                                            fontSize: '0.7rem',
-                                                                            color: 'rgba(0, 229, 255, 0.7)'
-                                                                        }}
-                                                                    >
-                                                                        Saving...
-                                                                    </Box>
-                                                                )}
-                                                                {/* Show pending indicator */}
-                                                                {pendingDescriptions[module.id] !== undefined && !isSavingDescriptions[module.id] && (
-                                                                    <Box
-                                                                        sx={{
-                                                                            position: 'absolute',
-                                                                            right: 2,
-                                                                            bottom: 2,
-                                                                            fontSize: '0.7rem',
-                                                                            color: 'rgba(255, 193, 7, 0.7)'
-                                                                        }}
-                                                                    >
-                                                                        Pending...
-                                                                    </Box>
-                                                                )}
-                                                            </Box>
 
-                                                            <Button
-                                                                variant="contained"
-                                                                startIcon={<EditIcon sx={{ fontSize: '1rem' }} />}
-                                                                onClick={() => handleEditModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
-                                                                fullWidth
-                                                                sx={{
+                                                                {/* Improved Access Level Control with Tooltips */}
+                                                                <Box sx={{
                                                                     mt: 2,
-                                                                    backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                                                                    boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
-                                                                    fontWeight: 'medium',
-                                                                    letterSpacing: '0.01em',
-                                                                    height: '40px',
-                                                                    fontSize: '0.85rem',
-                                                                    borderRadius: '10px',
+                                                                    mb: 2,
+                                                                    position: 'relative',
+                                                                    p: 2,
+                                                                    borderRadius: '12px',
+                                                                    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+                                                                    border: '1px solid rgba(34, 211, 238, 0.1)',
+                                                                    transition: 'box-shadow 0.3s ease',
                                                                     '&:hover': {
-                                                                        boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)',
-                                                                        transform: 'translateY(-2px)'
-                                                                    },
-                                                                    '&.Mui-disabled': {
-                                                                        background: 'rgba(0, 151, 167, 0.3)'
+                                                                        boxShadow: '0 0 10px rgba(34, 211, 238, 0.1)',
                                                                     }
-                                                                }}
-                                                            >
-                                                                Edit Module
-                                                            </Button>
-                                                        </CardContent>
-                                                    </Card>
-                                                </SwiperSlide>
-                                            ))}
+                                                                }}>
+                                                                    <Box sx={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1,
+                                                                        mb: 1.5
+                                                                    }}>
+                                                                        <LockIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
+                                                                        <Typography variant="subtitle2" sx={{
+                                                                            color: 'rgba(255, 255, 255, 0.9)',
+                                                                            fontWeight: '500'
+                                                                        }}>
+                                                                            Content Access Control
+                                                                        </Typography>
+                                                                        <Tooltip
+                                                                            title={
+                                                                                <Box sx={{ p: 1 }}>
+                                                                                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>Access Level Settings:</Typography>
+                                                                                    <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Public</b>: Anyone can access, even without enrollment</Typography>
+                                                                                    <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Enrolled</b>: Only enrolled users can access</Typography>
+                                                                                    <Typography variant="body2">• <b>Premium</b>: Requires premium enrollment access</Typography>
+                                                                                </Box>
+                                                                            }
+                                                                            arrow
+                                                                            placement="top"
+                                                                        >
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                sx={{
+                                                                                    ml: 0.5,
+                                                                                    width: 18,
+                                                                                    height: 18,
+                                                                                    backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                                                    '&:hover': {
+                                                                                        backgroundColor: 'rgba(34, 211, 238, 0.2)'
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <InfoIcon sx={{ fontSize: 14, color: '#00E5FF' }} />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
+
+                                                                    <Box sx={{
+                                                                        display: 'flex',
+                                                                        gap: 1.5,
+                                                                        justifyContent: 'space-between'
+                                                                    }}>
+                                                                        {[
+                                                                            {
+                                                                                level: 'public',
+                                                                                icon: <PublicIcon sx={{ fontSize: 18 }} />,
+                                                                                color: '#4CAF50',
+                                                                                label: 'Public',
+                                                                                description: 'Anyone can access, even without enrollment'
+                                                                            },
+                                                                            {
+                                                                                level: 'enrolled',
+                                                                                icon: <PersonIcon sx={{ fontSize: 18 }} />,
+                                                                                color: '#2196F3',
+                                                                                label: 'Enrolled',
+                                                                                description: 'Only enrolled users can access'
+                                                                            },
+                                                                            {
+                                                                                level: 'premium',
+                                                                                icon: <WorkspacePremiumIcon sx={{ fontSize: 18 }} />,
+                                                                                color: '#9C27B0',
+                                                                                label: 'Premium',
+                                                                                description: 'Requires premium enrollment access'
+                                                                            }
+                                                                        ].map(({ level, icon, color, label, description }) => (
+                                                                            <motion.div
+                                                                                key={level}
+                                                                                whileHover={{ scale: 1.05 }}
+                                                                                whileTap={{ scale: 0.95 }}
+                                                                                style={{ flex: 1 }}
+                                                                            >
+                                                                                <Tooltip title={description} arrow placement="top">
+                                                                                    <Button
+                                                                                        variant={(module.access_level || 'enrolled') === level ? "contained" : "outlined"}
+                                                                                        onClick={() => handleAccessLevelChange(module.id, level)}
+                                                                                        startIcon={icon}
+                                                                                        fullWidth
+                                                                                        sx={{
+                                                                                            textTransform: 'none',
+                                                                                            backgroundColor: (module.access_level || 'enrolled') === level ?
+                                                                                                `${color}22` : 'transparent',
+                                                                                            color: (module.access_level || 'enrolled') === level ?
+                                                                                                color : 'rgba(255, 255, 255, 0.6)',
+                                                                                            borderColor: color,
+                                                                                            borderWidth: (module.access_level || 'enrolled') === level ? '2px' : '1px',
+                                                                                            padding: '8px 10px',
+                                                                                            borderRadius: '10px',
+                                                                                            fontSize: '0.8rem',
+                                                                                            fontWeight: (module.access_level || 'enrolled') === level ? '600' : '400',
+                                                                                            boxShadow: (module.access_level || 'enrolled') === level ?
+                                                                                                `0 0 15px ${color}66, 0 0 5px ${color}33 inset` : 'none',
+                                                                                            transform: (module.access_level || 'enrolled') === level ? 'scale(1.05)' : 'scale(1)',
+                                                                                            zIndex: (module.access_level || 'enrolled') === level ? 2 : 1,
+                                                                                            position: 'relative',
+                                                                                            '&::after': (module.access_level || 'enrolled') === level ? {
+                                                                                                content: '""',
+                                                                                                position: 'absolute',
+                                                                                                top: -1,
+                                                                                                left: -1,
+                                                                                                right: -1,
+                                                                                                bottom: -1,
+                                                                                                borderRadius: '12px',
+                                                                                                background: `linear-gradient(45deg, ${color}00, ${color}55, ${color}00)`,
+                                                                                                animation: 'glowingBorder 1.5s ease-in-out infinite alternate',
+                                                                                                zIndex: -1,
+                                                                                            } : {},
+                                                                                            '&:hover': {
+                                                                                                backgroundColor: (module.access_level || 'enrolled') === level ?
+                                                                                                    `${color}33` : `${color}15`,
+                                                                                                borderColor: color,
+                                                                                                boxShadow: (module.access_level || 'enrolled') === level ?
+                                                                                                    `0 0 20px ${color}99, 0 0 10px ${color}33 inset` : `0 0 5px ${color}33`,
+                                                                                            },
+                                                                                            '&.Mui-disabled': {
+                                                                                                borderColor: 'rgba(255, 255, 255, 0.1)',
+                                                                                                color: 'rgba(255, 255, 255, 0.3)',
+                                                                                            },
+                                                                                            transition: 'all 0.2s ease',
+                                                                                        }}
+                                                                                    >
+                                                                                        {label}
+                                                                                    </Button>
+                                                                                </Tooltip>
+                                                                            </motion.div>
+                                                                        ))}
+                                                                    </Box>
+
+                                                                    <Typography variant="caption" sx={{
+                                                                        display: 'block',
+                                                                        mt: 1.5,
+                                                                        textAlign: 'center',
+                                                                        color: 'rgba(255, 255, 255, 0.5)',
+                                                                        fontStyle: 'italic'
+                                                                    }}>
+                                                                        {(module.access_level || 'enrolled') === 'public' ?
+                                                                            'This module is accessible to everyone' :
+                                                                            (module.access_level || 'enrolled') === 'enrolled' ?
+                                                                                'Students must enroll in the course to access' :
+                                                                                'Students need premium access to view this content'}
+                                                                    </Typography>
+                                                                </Box>
+
+                                                                <Box sx={{ position: 'relative', width: '100%' }}>
+                                                                    <TextField
+                                                                        value={
+                                                                            // Show the pending description if available, otherwise show saved description
+                                                                            pendingDescriptions[module.id] !== undefined
+                                                                                ? pendingDescriptions[module.id]
+                                                                                : (module.description || module.brdge?.description || '')
+                                                                        }
+                                                                        onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
+                                                                        multiline
+                                                                        rows={2}
+                                                                        fullWidth
+                                                                        variant="standard"
+                                                                        placeholder="Add a description..."
+                                                                        sx={{
+                                                                            mt: 1.5,
+                                                                            flex: 1,
+                                                                            '& .MuiInputBase-input': {
+                                                                                color: 'rgba(224, 247, 250, 0.7)',
+                                                                                fontSize: '0.85rem',
+                                                                                lineHeight: '1.5',
+                                                                            },
+                                                                            '& .MuiInputBase-input::placeholder': {
+                                                                                color: 'rgba(224, 247, 250, 0.3)',
+                                                                                opacity: 1
+                                                                            },
+                                                                            '& .MuiInput-underline:before': {
+                                                                                borderBottomColor: 'rgba(255, 255, 255, 0.1)'
+                                                                            },
+                                                                            '& .MuiInput-underline:hover:before': {
+                                                                                borderBottomColor: 'rgba(255, 255, 255, 0.2)'
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    {/* Show saving indicator */}
+                                                                    {isSavingDescriptions[module.id] && (
+                                                                        <Box
+                                                                            sx={{
+                                                                                position: 'absolute',
+                                                                                right: 2,
+                                                                                bottom: 2,
+                                                                                fontSize: '0.7rem',
+                                                                                color: 'rgba(0, 229, 255, 0.7)'
+                                                                            }}
+                                                                        >
+                                                                            Saving...
+                                                                        </Box>
+                                                                    )}
+                                                                    {/* Show pending indicator */}
+                                                                    {pendingDescriptions[module.id] !== undefined && !isSavingDescriptions[module.id] && (
+                                                                        <Box
+                                                                            sx={{
+                                                                                position: 'absolute',
+                                                                                right: 2,
+                                                                                bottom: 2,
+                                                                                fontSize: '0.7rem',
+                                                                                color: 'rgba(255, 193, 7, 0.7)'
+                                                                            }}
+                                                                        >
+                                                                            Pending...
+                                                                        </Box>
+                                                                    )}
+                                                                </Box>
+
+                                                                <Button
+                                                                    variant="contained"
+                                                                    startIcon={<EditIcon sx={{ fontSize: '1rem' }} />}
+                                                                    onClick={() => handleEditModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
+                                                                    fullWidth
+                                                                    sx={{
+                                                                        mt: 2,
+                                                                        backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
+                                                                        boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
+                                                                        fontWeight: 'medium',
+                                                                        letterSpacing: '0.01em',
+                                                                        height: '40px',
+                                                                        fontSize: '0.85rem',
+                                                                        borderRadius: '10px',
+                                                                        '&:hover': {
+                                                                            boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)',
+                                                                            transform: 'translateY(-2px)'
+                                                                        },
+                                                                        '&.Mui-disabled': {
+                                                                            background: 'rgba(0, 151, 167, 0.3)'
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    Edit Module
+                                                                </Button>
+                                                            </CardContent>
+                                                        </Card>
+                                                    </SwiperSlide>
+                                                ))}
                                         </Swiper>
                                     ) : (
                                         <Box sx={{
@@ -1872,6 +1982,24 @@ function EditCoursePage() {
                                 Student Enrollments ({enrollments.length})
                             </Typography>
 
+                            {/* Premium Access Info Box */}
+                            <Paper sx={{
+                                p: 2,
+                                mb: 3,
+                                bgcolor: 'rgba(0, 229, 255, 0.05)',
+                                border: '1px dashed rgba(0, 229, 255, 0.2)',
+                                borderRadius: '12px'
+                            }}>
+                                <Typography variant="subtitle2" sx={{ color: '#00E5FF', display: 'flex', alignItems: 'center', mb: 1 }}>
+                                    <WorkspacePremiumIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                                    Premium Access Management
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                    Toggle premium access for enrolled students to allow them to view modules marked as "Premium" in your course.
+                                    This works with the module access controls in the Content tab.
+                                </Typography>
+                            </Paper>
+
                             {loadingEnrollments ? (
                                 <CircularProgress />
                             ) : enrollments.length === 0 ? (
@@ -1879,53 +2007,166 @@ function EditCoursePage() {
                                     No students enrolled yet.
                                 </Typography>
                             ) : (
-                                <TableContainer component={Paper} sx={{ mt: 2 }}>
+                                <TableContainer component={Paper} sx={{
+                                    mt: 2,
+                                    borderRadius: '12px',
+                                    '& .MuiTable-root': {
+                                        borderCollapse: 'separate',
+                                        borderSpacing: '0 4px',
+                                    },
+                                    '& .MuiTableCell-root': {
+                                        borderBottom: 'none',
+                                        color: 'rgba(255, 255, 255, 0.9)', // Add explicit text color for all cells
+                                    },
+                                    bgcolor: 'rgba(0, 0, 0, 0.25)',
+                                }}>
                                     <Table>
                                         <TableHead>
-                                            <TableRow>
+                                            <TableRow sx={{
+                                                '& th': {
+                                                    bgcolor: 'rgba(0, 229, 255, 0.08)',
+                                                    color: 'rgba(255, 255, 255, 0.9)',
+                                                    fontWeight: 'bold',
+                                                }
+                                            }}>
                                                 <TableCell>Student Email</TableCell>
                                                 <TableCell>Enrollment Date</TableCell>
                                                 <TableCell>Last Access</TableCell>
                                                 <TableCell>Progress</TableCell>
                                                 <TableCell>Status</TableCell>
+                                                <TableCell align="center">
+                                                    <Tooltip title="Premium Access" arrow>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <WorkspacePremiumIcon sx={{ color: '#9C27B0' }} />
+                                                        </Box>
+                                                    </Tooltip>
+                                                </TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {enrollments.map((enrollment) => (
-                                                <TableRow key={enrollment.id}>
-                                                    <TableCell>{enrollment.user?.email || 'Unknown'}</TableCell>
+                                                <TableRow key={enrollment.id} sx={{
+                                                    bgcolor: 'rgba(0, 0, 0, 0.4)',
+                                                    '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.05)' },
+                                                    transition: 'background-color 0.2s',
+                                                    borderRadius: '8px',
+                                                    '& td:first-of-type': { borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px' },
+                                                    '& td:last-of-type': { borderTopRightRadius: '8px', borderBottomRightRadius: '8px' },
+                                                }}>
+                                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                                                        {enrollment.user?.email || 'Unknown'}
+                                                    </TableCell>
                                                     <TableCell>
                                                         <Tooltip title={new Date(enrollment.enrolled_at).toLocaleString()}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', color: 'rgba(255, 255, 255, 0.9)' }}>
+                                                                <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: 'rgba(255, 255, 255, 0.7)' }} />
                                                                 {new Date(enrollment.enrolled_at).toLocaleDateString()}
                                                             </Box>
                                                         </Tooltip>
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
                                                         {enrollment.last_accessed_at
                                                             ? new Date(enrollment.last_accessed_at).toLocaleDateString()
                                                             : 'Never'}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {enrollment.progress ? `${Math.round(enrollment.progress)}%` : '0%'}
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <Box sx={{ width: '60%', mr: 1 }}>
+                                                                <LinearProgress
+                                                                    variant="determinate"
+                                                                    value={enrollment.progress || 0}
+                                                                    sx={{
+                                                                        height: 8,
+                                                                        borderRadius: 4,
+                                                                        bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                                                        '& .MuiLinearProgress-bar': {
+                                                                            bgcolor: '#00E5FF',
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </Box>
+                                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                                                                {Math.round(enrollment.progress || 0)}%
+                                                            </Typography>
+                                                        </Box>
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Typography
-                                                            variant="body2"
+                                                        <Chip
+                                                            label={enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                                                            size="small"
                                                             sx={{
-                                                                color: enrollment.status === 'active' ? 'success.main' : 'text.secondary',
-                                                                fontWeight: enrollment.status === 'active' ? 'bold' : 'normal'
+                                                                bgcolor: enrollment.status === 'active'
+                                                                    ? 'rgba(76, 175, 80, 0.15)'
+                                                                    : 'rgba(255, 255, 255, 0.05)',
+                                                                color: enrollment.status === 'active'
+                                                                    ? '#4CAF50'
+                                                                    : 'rgba(255, 255, 255, 0.6)',
+                                                                borderRadius: '4px',
+                                                                fontWeight: 500,
+                                                                fontSize: '0.75rem',
                                                             }}
-                                                        >
-                                                            {enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
-                                                        </Typography>
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <Tooltip title={enrollment.has_premium_access ? "Revoke Premium Access" : "Grant Premium Access"}>
+                                                            <IconButton
+                                                                onClick={() => handleTogglePremiumAccess(enrollment.id)}
+                                                                size="small"
+                                                                sx={{
+                                                                    color: enrollment.has_premium_access ? '#9C27B0' : 'rgba(255, 255, 255, 0.3)',
+                                                                    bgcolor: enrollment.has_premium_access ? 'rgba(156, 39, 176, 0.15)' : 'transparent',
+                                                                    border: enrollment.has_premium_access ? '1px solid rgba(156, 39, 176, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
+                                                                    transition: 'all 0.2s',
+                                                                    '&:hover': {
+                                                                        bgcolor: enrollment.has_premium_access ? 'rgba(156, 39, 176, 0.25)' : 'rgba(156, 39, 176, 0.05)',
+                                                                        border: enrollment.has_premium_access ? '1px solid rgba(156, 39, 176, 0.5)' : '1px solid rgba(156, 39, 176, 0.1)',
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <WorkspacePremiumIcon sx={{
+                                                                    fontSize: '1.2rem',
+                                                                    filter: enrollment.has_premium_access ? 'drop-shadow(0 0 3px rgba(156, 39, 176, 0.6))' : 'none'
+                                                                }} />
+                                                            </IconButton>
+                                                        </Tooltip>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
+                            )}
+
+                            {/* Premium Module Count Information */}
+                            {enrollments.length > 0 && (
+                                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Paper sx={{
+                                        p: 2,
+                                        bgcolor: 'rgba(156, 39, 176, 0.05)',
+                                        border: '1px solid rgba(156, 39, 176, 0.2)',
+                                        borderRadius: '8px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 2
+                                    }}>
+                                        <Box>
+                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                Premium Students:
+                                            </Typography>
+                                            <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>
+                                                {enrollments.filter(e => e.has_premium_access).length} / {enrollments.length}
+                                            </Typography>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                                Premium Modules:
+                                            </Typography>
+                                            <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>
+                                                {course?.modules?.filter(m => m.access_level === 'premium').length || 0} / {course?.modules?.length || 0}
+                                            </Typography>
+                                        </Box>
+                                    </Paper>
+                                </Box>
                             )}
                         </Box>
                     )}

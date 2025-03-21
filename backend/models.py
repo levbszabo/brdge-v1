@@ -472,6 +472,52 @@ class CourseModule(db.Model):
 
         return result
 
+    def get_access_level(self):
+        """Get the access level with default fallback"""
+        permission = ModulePermissions.query.filter_by(course_module_id=self.id).first()
+        return permission.access_level if permission else "enrolled"
+
+    def can_access(self, user=None):
+        """Check if a user can access this module
+
+        Args:
+            user: The user to check access for, or None for unauthenticated user
+
+        Returns:
+            bool: True if the user can access this module
+        """
+        access_level = self.get_access_level()
+
+        # Public modules are accessible to everyone
+        if access_level == "public":
+            return True
+
+        # Other access levels require authentication
+        if not user:
+            return False
+
+        # Module creators always have access
+        if self.brdge.user_id == user.id:
+            return True
+
+        # Check enrollment for other access levels
+        enrollment = Enrollment.query.filter_by(
+            user_id=user.id, course_id=self.course_id, status="active"
+        ).first()
+
+        if not enrollment:
+            return False
+
+        # Enrolled level just requires enrollment
+        if access_level == "enrolled":
+            return True
+
+        # Premium level requires premium access
+        if access_level == "premium":
+            return getattr(enrollment, "has_premium_access", False)
+
+        return False
+
 
 class Enrollment(db.Model):
     """Tracks user enrollments in courses"""
@@ -483,6 +529,9 @@ class Enrollment(db.Model):
     status = db.Column(db.String(20), default="active")  # active, completed, dropped
     last_accessed_at = db.Column(db.DateTime, default=datetime.utcnow)
     progress = db.Column(db.Float, default=0.0)  # 0-100% course completion
+    has_premium_access = db.Column(
+        db.Boolean, default=False
+    )  # New field for premium access
 
     # Define relationships
     user = db.relationship("User", backref=db.backref("enrollments", lazy="dynamic"))
@@ -501,6 +550,7 @@ class Enrollment(db.Model):
                 self.last_accessed_at.isoformat() if self.last_accessed_at else None
             ),
             "progress": self.progress,
+            "has_premium_access": self.has_premium_access,
             "user": (
                 {"id": self.user.id, "email": self.user.email} if self.user else None
             ),

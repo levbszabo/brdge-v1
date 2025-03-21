@@ -234,45 +234,22 @@ def get_brdge(brdge_id):
     # Check if:
     # 1. The user owns the bridge OR
     # 2. The bridge is shareable OR
-    # 3. The bridge is part of a course and the user is enrolled
+    # 3. The bridge is in a module the user can access
     is_owner = current_user and current_user.id == brdge.user_id
     is_public = brdge.shareable
-    has_course_access = False
+    has_module_access = False
 
-    # Check for course module access if not owner and not public
-    if not is_owner and not is_public and current_user:
-        # Get all course modules where this bridge is included
-        course_modules = CourseModule.query.filter_by(brdge_id=brdge_id).all()
+    # Get all modules containing this bridge
+    course_modules = CourseModule.query.filter_by(brdge_id=brdge_id).all()
 
-        for module in course_modules:
-            # Get permissions for this module
-            permission = ModulePermissions.query.filter_by(
-                course_module_id=module.id
-            ).first()
-            access_level = permission.access_level if permission else "enrolled"
-
-            # If access is public, grant access regardless of enrollment
-            if access_level == "public":
-                has_course_access = True
-                break
-
-            # Check enrollment for levels requiring it
-            enrollment = Enrollment.query.filter_by(
-                user_id=current_user.id, course_id=module.course_id, status="active"
-            ).first()
-
-            if enrollment:
-                # For 'enrolled' level, just being enrolled is enough
-                if access_level == "enrolled":
-                    has_course_access = True
-                    break
-                # For 'premium' level, check premium access
-                elif access_level == "premium" and enrollment.has_premium_access:
-                    has_course_access = True
-                    break
+    # Check if any module grants access
+    for module in course_modules:
+        if module.can_access(current_user):
+            has_module_access = True
+            break
 
     # Grant access if any of the conditions are met
-    if is_owner or is_public or has_course_access:
+    if is_owner or is_public or has_module_access:
         # Count the number of slide images in the S3 folder
         s3_folder = brdge.folder
         response = s3_client.list_objects_v2(
@@ -4177,29 +4154,23 @@ def enroll_in_course(user, course_id):
 @app.route("/api/courses/<int:course_id>/enrollment-status", methods=["GET"])
 @jwt_required()
 def get_enrollment_status(course_id):
-    """Check if the current user is enrolled in a course"""
-    try:
-        # Get current user ID
-        user_id = get_jwt_identity()
+    current_user = get_current_user()
+    enrollment = Enrollment.query.filter_by(
+        user_id=current_user.id, course_id=course_id, status="active"
+    ).first()
 
-        # Check if the user is enrolled
-        enrollment = Enrollment.query.filter_by(
-            user_id=user_id, course_id=course_id, status="active"
-        ).first()
-
-        return (
-            jsonify(
-                {
-                    "enrolled": enrollment is not None,
-                    "enrollment": enrollment.to_dict() if enrollment else None,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error checking enrollment status: {str(e)}")
-        return jsonify({"error": "Error checking enrollment status"}), 500
+    return (
+        jsonify(
+            {
+                "enrolled": enrollment is not None,
+                "has_premium_access": (
+                    enrollment.has_premium_access if enrollment else False
+                ),
+                "status": enrollment.status if enrollment else None,
+            }
+        ),
+        200,
+    )
 
 
 @app.route("/api/courses/<int:course_id>/enrollments", methods=["GET"])
@@ -4418,3 +4389,37 @@ def get_public_course_details(course_id):
     except Exception as e:
         app.logger.error(f"Error getting public course: {str(e)}")
         return jsonify({"error": "Failed to get course details"}), 500
+
+
+@app.route(
+    "/api/courses/<int:course_id>/enrollments/<int:enrollment_id>/toggle-premium",
+    methods=["POST"],
+)
+@jwt_required()
+def toggle_premium_access(course_id, enrollment_id):
+    current_user = get_current_user()
+    course = Course.query.get_or_404(course_id)
+
+    # Verify the current user is the course owner
+    if current_user.id != course.user_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    enrollment = Enrollment.query.get_or_404(enrollment_id)
+
+    # Verify the enrollment belongs to the specified course
+    if enrollment.course_id != course_id:
+        return jsonify({"error": "Enrollment does not belong to this course"}), 400
+
+    # Toggle premium access
+    enrollment.has_premium_access = not enrollment.has_premium_access
+    db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "enrollment": enrollment.to_dict(),
+                "message": f"Premium access {'granted' if enrollment.has_premium_access else 'revoked'}",
+            }
+        ),
+        200,
+    )

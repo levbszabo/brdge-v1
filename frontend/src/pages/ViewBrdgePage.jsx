@@ -53,70 +53,38 @@ function ViewBrdgePage() {
                     return;
                 }
 
-                // IMPORTANT FIX: Default to giving access for now
-                let hasAccess = false;
+                // The actual GET request response already enforces all permission rules
+                // If we got a successful response, access is granted by the backend
+                setLoading(false);
 
-                // If they're the owner, always allow access
-                if (token) {
+                // Still check for course info to display enrollment options if needed
+                if (brdge.course_modules && brdge.course_modules.length > 0) {
+                    const courseModule = brdge.course_modules[0];
                     try {
-                        const userResponse = await api.get('/user/current');
-                        if (userResponse.data.id === brdge.user_id) {
-                            console.log("User is the owner - granting access");
-                            hasAccess = true;
+                        const courseResponse = await api.get(`/courses/${courseModule.course_id}/public`);
+                        setCourseInfo(courseResponse.data);
+
+                        if (token) {
+                            const enrollmentResponse = await api.get(`/courses/${courseModule.course_id}/enrollment-status`);
+                            setIsEnrolled(enrollmentResponse.data.enrolled);
                         }
                     } catch (err) {
-                        console.error('Error checking user identity:', err);
+                        console.error('Error fetching course info:', err);
                     }
                 }
-
-                // If the bridge is shareable, allow access
-                if (brdge.shareable) {
-                    console.log("Bridge is shareable - granting access");
-                    hasAccess = true;
-                }
-
-                // Check if this brdge is part of a course
-                if (!hasAccess && brdge.course_modules && brdge.course_modules.length > 0) {
-                    // Find the first course this brdge belongs to
-                    const courseModule = brdge.course_modules[0];
-                    console.log("Course module found:", courseModule);
-
-                    try {
-                        // Use the public endpoint instead
-                        const courseResponse = await api.get(`/courses/${courseModule.course_id}/public`);
-                        const courseData = courseResponse.data;
-                        setCourseInfo(courseData);
-
-                        // Check enrollment regardless of permission level first
-                        if (token) {
-                            try {
-                                const enrollmentResponse = await api.get(`/courses/${courseModule.course_id}/enrollment-status`);
-                                const isUserEnrolled = enrollmentResponse.data.enrolled;
-                                setIsEnrolled(isUserEnrolled);
-
-                                // TEMPORARY FIX: If user is enrolled, grant access by default
-                                if (isUserEnrolled) {
-                                    hasAccess = true;
-                                }
-                            } catch (error) {
-                                console.error('Error checking enrollment status:', error);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error fetching course info:', error);
-                    }
-                }
-
-                if (!hasAccess) {
-                    setError('Bridge Is Not Public: Access Denied');
-                    setLoading(false);
-                    return;
-                }
-
-                setLoading(false);
             } catch (error) {
                 console.error('Error checking Bridge access:', error);
-                setError('Bridge Is Not Public: Access Denied');
+
+                // More descriptive error messages based on status code
+                if (error.response?.status === 401) {
+                    if (!isAuthenticated) {
+                        setError('This content requires you to sign in or enroll in the course');
+                    } else {
+                        setError('You don\'t have access to this content. It may require course enrollment or premium access.');
+                    }
+                } else {
+                    setError('Unable to access this content. It may have been removed or is unavailable.');
+                }
                 setLoading(false);
             }
         };
@@ -135,7 +103,7 @@ function ViewBrdgePage() {
                 viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
             }
         };
-    }, [id, uidFromUrl, token]);
+    }, [id, uidFromUrl, token, isAuthenticated]);
 
     const handleEnrollClick = async () => {
         if (!isAuthenticated) {
@@ -186,12 +154,71 @@ function ViewBrdgePage() {
                     background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
                     color: 'white',
                     textAlign: 'center',
-                    px: 3
+                    px: 3,
+                    gap: 3
                 }}
             >
                 <Typography variant="h5" gutterBottom>
                     {error}
                 </Typography>
+
+                {courseInfo && !isAuthenticated && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="body1">
+                            This module is part of the course: <strong>{courseInfo.name}</strong>
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => {
+                                // Store the current URL to redirect back after login
+                                sessionStorage.setItem('redirectAfterLogin', location.pathname);
+                                navigate('/signup');
+                            }}
+                            sx={{
+                                mt: 1,
+                                backgroundColor: '#00E5FF',
+                                '&:hover': { backgroundColor: '#00BCD4' }
+                            }}
+                        >
+                            Sign in to Access
+                        </Button>
+                    </Box>
+                )}
+
+                {courseInfo && isAuthenticated && !isEnrolled && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <Typography variant="body1">
+                            Enroll in <strong>{courseInfo.name}</strong> to access this content
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleEnrollClick}
+                            disabled={enrollButtonLoading}
+                            sx={{
+                                mt: 1,
+                                backgroundColor: '#00E5FF',
+                                '&:hover': { backgroundColor: '#00BCD4' }
+                            }}
+                        >
+                            {enrollButtonLoading ? <CircularProgress size={24} color="inherit" /> : 'Enroll Now'}
+                        </Button>
+                    </Box>
+                )}
+
+                <Button
+                    variant="outlined"
+                    onClick={() => navigate('/')}
+                    sx={{
+                        mt: 2,
+                        color: 'white',
+                        borderColor: 'rgba(255,255,255,0.3)',
+                        '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' }
+                    }}
+                >
+                    Return to Dashboard
+                </Button>
             </Box>
         );
     }
