@@ -144,6 +144,8 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
     timeline_prompt = """
     Analyze this video to create a pedagogically-aware timeline.
     
+    IMPORTANT: The timeline MUST start from the beginning of the video (00:00:00) and cover the ENTIRE duration.
+    
     Divide the content into logical sections based on topic transitions, slide changes, or teaching approach shifts.
     
     For each section, identify:
@@ -153,13 +155,16 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
     4. Spoken content (transcribe key portions)
     5. Key points covered
     
-    The sections must be a full partition of the video, and must not overlap.
-
+    Requirements:
+    - Ensure segments are of relatively consistent duration (ideally 2-5 minutes) unless there's a strong pedagogical reason for longer segments
+    - Verify that all timestamps are in chronological order with each end_time occurring after its corresponding start_time
+    - The sections must be a full partition of the video, must not overlap, and must not have any gaps in coverage
+    
     Return ONLY a JSON object with this structure:
     {
       "video_timeline": {
-  "metadata": {
-    "title": "str",
+        "metadata": {
+          "title": "str",
           "total_duration": "HH:MM:SS",
           "instructor": "str",
           "subject_domain": "str"
@@ -179,7 +184,7 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
                 "start_time": "HH:MM:SS",
                 "end_time": "HH:MM:SS",
                 "transcript": "str",
-      "visual_content": {
+                "visual_content": {
                   "type": "str",
                   "description": "str",
                   "text_visible": ["str"]
@@ -192,9 +197,62 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
         ]
       }
     }
-
+    
+    Here's an example of a high-quality timeline extraction:
+    
+    {
+      "video_timeline": {
+        "metadata": {
+          "title": "Introduction to Machine Learning",
+          "total_duration": "00:45:12",
+          "instructor": "Dr. Jane Smith",
+          "subject_domain": "Computer Science"
+        },
+        "pedagogical_structure": [
+          {
+            "id": "section-1",
+            "type": "learning_section",
+            "title": "What is Machine Learning?",
+            "start_time": "00:00:00",
+            "end_time": "00:10:23",
+            "teaching_approach": "Conceptual Introduction, Historical Context",
+            "segments": [
+              {
+                "id": "segment-1.1",
+                "title": "Definition and Basic Concepts",
+                "start_time": "00:00:00",
+                "end_time": "00:03:45",
+                "transcript": "Welcome to this course on machine learning. Today we'll start by understanding what machine learning actually is. At its core, machine learning is a subset of artificial intelligence that focuses on developing systems that can learn from data.",
+                "visual_content": {
+                  "type": "Slide",
+                  "description": "Title slide with course name and instructor information, followed by bullet points defining machine learning",
+                  "text_visible": ["Introduction to Machine Learning", "Dr. Jane Smith", "Machine Learning: Systems that learn from data without explicit programming"]
+                },
+                "key_points": ["Machine learning is a subset of AI", "ML systems learn from data without explicit programming", "Key difference from traditional programming"]
+              },
+              {
+                "id": "segment-1.2",
+                "title": "Historical Development",
+                "start_time": "00:03:46",
+                "end_time": "00:07:15",
+                "transcript": "The concept of machine learning has been around since the 1950s, with early work by pioneers like Arthur Samuel who developed a checkers-playing program that improved through self-play.",
+                "visual_content": {
+                  "type": "Slides",
+                  "description": "Timeline showing key developments in machine learning history with photos of pioneers",
+                  "text_visible": ["1950s - First Learning Machines", "1980s - Neural Network Revival", "2010s - Deep Learning Revolution"]
+                },
+                "key_points": ["ML dates back to 1950s", "Arthur Samuel's self-improving checkers program", "Key milestones in ML development"]
+              }
+            ],
+            "summary": "This section introduces the fundamental concept of machine learning, providing definitions and historical context to establish the foundation for the course."
+          }
+        ]
+      }
+    }
+    
     Be precise with timestamps and section boundaries.
     Ensure each section has a clear pedagogical purpose.
+    Split long sections (>10 minutes) into smaller segments unless there's a clear reason not to.
     """
 
     try:
@@ -218,6 +276,9 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
             results.get("video_timeline", {}).get("pedagogical_structure", [])
         )
 
+        # Validate timeline data
+        validate_timeline_data(results)
+
         print(
             f"✅ Video timeline extraction: {section_count} sections identified ({total_duration:.2f}s)"
         )
@@ -237,6 +298,42 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
                 "pedagogical_structure": [],
             }
         }
+
+
+def validate_timeline_data(results):
+    """Validate timeline data for common issues"""
+    try:
+        structure = results.get("video_timeline", {}).get("pedagogical_structure", [])
+
+        # Check if timeline starts at 00:00:00
+        if structure and "start_time" in structure[0]:
+            first_start = structure[0]["start_time"]
+            if first_start != "00:00:00":
+                logger.warning(
+                    f"Timeline doesn't start at 00:00:00 (starts at {first_start})"
+                )
+
+        # Check for chronological order issues
+        for section in structure:
+            start = section.get("start_time", "")
+            end = section.get("end_time", "")
+
+            if start and end and start >= end:
+                logger.error(
+                    f"Section {section.get('id')} has start_time ({start}) >= end_time ({end})"
+                )
+
+            for segment in section.get("segments", []):
+                seg_start = segment.get("start_time", "")
+                seg_end = segment.get("end_time", "")
+
+                if seg_start and seg_end and seg_start >= seg_end:
+                    logger.error(
+                        f"Segment {segment.get('id')} has start_time ({seg_start}) >= end_time ({seg_end})"
+                    )
+
+    except Exception as e:
+        logger.error(f"Timeline validation error: {e}")
 
 
 def extract_document_timeline(document_file, model) -> Dict[str, Any]:
@@ -1309,7 +1406,7 @@ def create_brdge_knowledge(
 
         # PASS 3: Extract teaching persona
         pass3_start = time.time()
-        log_message = f"�� EXTRACTION PASS 3: Extracting teaching persona and communication style..."
+        log_message = f"🔍 EXTRACTION PASS 3: Extracting teaching persona and communication style..."
         print(log_message)
         log_collector.add_log(log_message, status="info")
 
