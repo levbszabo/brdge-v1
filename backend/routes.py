@@ -130,7 +130,7 @@ SUBSCRIPTION_TIERS = {
 
 # Add these constants near the top with other configurations
 MAX_PDF_SIZE = 20 * 1024 * 1024  # 20MB
-MAX_VIDEO_SIZE = 100 * 1024 * 1024  # 100MB
+MAX_VIDEO_SIZE = 500 * 1024 * 1024  # 500MB
 
 # Add this configuration right after creating the app
 app.config["MAX_CONTENT_LENGTH"] = (
@@ -151,7 +151,7 @@ S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")  # This matches your .env file
 @app.errorhandler(RequestEntityTooLarge)
 def handle_large_request(e):
     return (
-        jsonify({"error": "File too large. Video limit is 100MB, PDF limit is 20MB."}),
+        jsonify({"error": "File too large. Video limit is 500MB, PDF limit is 20MB."}),
         413,
     )
 
@@ -794,7 +794,7 @@ def create_brdge(user):
                     jsonify(
                         {
                             "error": "Video file size too large",
-                            "message": "Video file size exceeds 100MB limit. Please upload a smaller file.",
+                            "message": "Video file size exceeds 500MB limit. Please upload a smaller file.",
                             "max_size_mb": MAX_VIDEO_SIZE / (1024 * 1024),
                         }
                     ),

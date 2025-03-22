@@ -8,7 +8,7 @@ import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, Clock, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;  // 100MB in bytes
+const MAX_VIDEO_SIZE = 500 * 1024 * 1024;  // 500MB in bytes
 
 function CreateBrdgePage() {
     const [name, setName] = useState('');
@@ -125,7 +125,7 @@ function CreateBrdgePage() {
     const validateVideoFile = (file) => {
         // Only accept MP4 files
         const validTypes = ['video/mp4'];
-        const maxSize = MAX_VIDEO_SIZE; // 100MB in bytes
+        const maxSize = MAX_VIDEO_SIZE; // 500MB in bytes
 
         if (!validTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.mp4')) {
             return {
@@ -137,7 +137,7 @@ function CreateBrdgePage() {
         if (file.size > maxSize) {
             return {
                 isValid: false,
-                error: `File is too large. Maximum size is 100MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
+                error: `File is too large. Maximum size is 500MB. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB.`
             };
         }
 
@@ -196,7 +196,7 @@ function CreateBrdgePage() {
         }
 
         if (videoFile && videoFile.size > MAX_VIDEO_SIZE) {
-            showSnackbar('Video file size exceeds 100MB limit', 'error');
+            showSnackbar('Video file size exceeds 500MB limit', 'error');
             setLoading(false);
             return;
         }
@@ -461,7 +461,7 @@ function CreateBrdgePage() {
                                                             Supported format: MP4 only
                                                         </p>
                                                         <p className="text-[11px] text-gray-500">
-                                                            Maximum file size: 100MB
+                                                            Maximum file size: 500MB
                                                         </p>
                                                     </div>
                                                     <input
