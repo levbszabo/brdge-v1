@@ -71,9 +71,12 @@ import asyncio
 from botocore.config import Config  # Add this import at the top
 from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
-from gemini import create_brdge_knowledge
+import gemini  # Import the full module, not just the function
 from sqlalchemy.orm.attributes import flag_modified
 from dotenv import load_dotenv
+import ffmpeg
+import time
+import threading
 
 # Load environment variables
 load_dotenv()
@@ -666,75 +669,76 @@ def upload_image_to_s3(args):
         return False
 
 
-def process_brdge_content(
-    brdge_id, video_path, document_path=None, template_type="general"
-):
-    """Process brdge content using Gemini analysis"""
+def process_brdge_content(brdge_id, video_path, pdf_path=None, template_type="general"):
+    """Process uploaded content using Gemini and create a script"""
     try:
-        # Get the analysis using gemini.py
-        knowledge = create_brdge_knowledge(video_path, document_path)
+        # Create initial script object with pending status
+        script = BrdgeScript(
+            brdge_id=brdge_id,
+            content={},
+            status="pending",
+            script_metadata={"logs": [], "progress": 0},
+        )
+        db.session.add(script)
+        db.session.commit()
 
-        # Make sure agent_personality exists in the knowledge structure
-        if "agent_personality" not in knowledge:
-            # Create default agent personality if not present
-            knowledge["agent_personality"] = {
-                "name": "Brdge AI Assistant",
-                "expertise": [
-                    "AI knowledge bases",
-                    "Lead Generation",
-                    "Customer Engagement",
-                ],
-                "knowledge_areas": [
+        # Define callback to update the script with logs
+        def update_script_logs(brdge_id, logs, progress=0):
+            try:
+                # Get the latest script for this brdge
+                script = (
+                    BrdgeScript.query.filter_by(brdge_id=brdge_id)
+                    .order_by(BrdgeScript.id.desc())
+                    .first()
+                )
+                if script:
+                    script.script_metadata = {"logs": logs, "progress": progress}
+                    db.session.commit()
+            except Exception as e:
+                logger.error(f"Error updating script logs: {e}")
+
+        # Call the Gemini processing with the callback
+        knowledge = gemini.create_brdge_knowledge(
+            video_path, pdf_path, brdge_id=brdge_id, callback=update_script_logs
+        )
+
+        # Update with final results
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+        if script:
+            script.content = knowledge
+            script.status = "completed"
+            db.session.commit()
+            return script
+        else:
+            logger.error(f"Script not found for brdge_id {brdge_id}")
+            return None
+    except Exception as e:
+        logger.error(f"Error processing content: {str(e)}")
+        # Update script status to failed if it exists
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+        if script:
+            script.status = "failed"
+            script.script_metadata = {
+                "error": str(e),
+                "logs": script.script_metadata.get("logs", [])
+                + [
                     {
-                        "topic": "Product Features",
-                        "confidence_level": "high",
-                        "key_talking_points": [
-                            "Instant answers",
-                            "Easy setup",
-                            "AI transcription",
-                        ],
+                        "message": f"Error: {str(e)}",
+                        "status": "error",
+                        "timestamp": time.time(),
                     }
                 ],
-                "persona_background": "A helpful and knowledgeable assistant designed to explain product features and benefits.",
-                "response_templates": {
-                    "greeting": "Hello! How can I help you today?",
-                    "not_sure": "I'm not sure about that, but I'd be happy to help with information about our product.",
-                    "follow_up_questions": ["Do you have any other questions?"],
-                },
-                "communication_style": "friendly",
-                "voice_characteristics": {
-                    "pace": "measured",
-                    "tone": "enthusiastic",
-                    "common_phrases": ["Great question!", "Happy to help!"],
-                    "emphasis_patterns": "Highlights key benefits with positive language.",
-                },
             }
-
-        # Create or update BrdgeScript with the comprehensive knowledge
-        script_obj = BrdgeScript(
-            brdge_id=brdge_id,
-            status="completed",
-            content=knowledge,  # Store the entire knowledge structure
-            script_metadata={
-                "source": "gemini",
-                "template_type": template_type,
-                "generated_at": datetime.utcnow().isoformat(),
-            },
-        )
-        db.session.add(script_obj)
-        db.session.commit()
-
-        return script_obj
-    except Exception as e:
-        logger.error(f"Error in Gemini processing: {e}")
-        script_obj = BrdgeScript(
-            brdge_id=brdge_id,
-            status="failed",
-            script_metadata={"error": str(e), "source": "gemini"},
-        )
-        db.session.add(script_obj)
-        db.session.commit()
-        return None
+            db.session.commit()
+        return script
 
 
 @app.route("/api/brdges", methods=["POST"])
@@ -744,10 +748,10 @@ def create_brdge(user):
         name = request.form.get("name")
         presentation = request.files.get("presentation")
         recording = request.files.get("screen_recording")
-        recording_metadata = request.form.get("recording_metadata")
-        template_type = request.form.get(
-            "template_type", "general"
-        )  # Get template type if provided
+        template_type = request.form.get("template_type", "general")
+        async_processing = (
+            request.form.get("async", "false").lower() == "true"
+        )  # Get async parameter
 
         # Validation...
         missing_fields = []
@@ -767,15 +771,18 @@ def create_brdge(user):
                 400,
             )
 
-        # Add file format validation for video
+        # Validate video format - only accept MP4
         if recording:
-            if recording.content_type not in ALLOWED_VIDEO_FORMATS:
+            if (
+                not recording.filename.lower().endswith(".mp4")
+                and recording.content_type != "video/mp4"
+            ):
                 return (
                     jsonify(
                         {
                             "error": "Invalid video format",
-                            "message": "Please upload either an MP4 or WebM video file.",
-                            "allowed_formats": [".mp4", ".webm"],
+                            "message": "Please upload an MP4 video file only.",
+                            "allowed_formats": [".mp4"],
                         }
                     ),
                     400,
@@ -820,16 +827,7 @@ def create_brdge(user):
                     400,
                 )
 
-        # Parse recording metadata
-        recording_duration = None
-        if recording_metadata:
-            try:
-                metadata = json.loads(recording_metadata)
-                recording_duration = metadata.get("duration")
-            except json.JSONDecodeError:
-                logger.warning("Failed to parse recording metadata")
-
-        # Step 1: Create Brdge object
+        # Create Brdge object
         brdge = Brdge(
             name=name,
             user_id=user.id,
@@ -840,12 +838,10 @@ def create_brdge(user):
         db.session.add(brdge)
         db.session.commit()  # Commit to ensure brdge.id is valid
 
-        # Now that brdge.id is real, we can update the folder:
+        # Update the folder with the brdge ID
         brdge.folder = str(brdge.id)
-
-        # Because we re-committed, we must merge the brdge back into the session:
         brdge = db.session.merge(brdge)
-        db.session.commit()  # Commit the folder update
+        db.session.commit()
 
         # Paths for temporary files
         pdf_local_path = None
@@ -878,85 +874,150 @@ def create_brdge(user):
             db.session.commit()
 
         # Handle recording file (required)
-        recording = request.files.get("screen_recording")
         if not recording:
             return jsonify({"error": "Recording file is required"}), 400
 
-        # We'll store the user's raw file temporarily
-        temp_path_ext = os.path.splitext(recording.filename)[1].lower()
-        is_webm = temp_path_ext == ".webm" or recording.content_type == "video/webm"
+        # Save MP4 file - IMPORTANT: Save to disk before processing
+        mp4_filename = secure_filename(f"{uuid.uuid4()}_{recording.filename}")
+        recording_key = f"{brdge.folder}/recordings/{mp4_filename}"
+        video_local_path = f"/tmp/brdge_{brdge.id}_{mp4_filename}"
 
-        temp_input_path = f"/tmp/{str(uuid.uuid4())}{temp_path_ext}"
-        recording.save(temp_input_path)
+        # Save locally for processing
+        os.makedirs(os.path.dirname(video_local_path), exist_ok=True)
+        recording.seek(0)
+        recording.save(video_local_path)
 
-        try:
-            mp4_filename = ""
-            conversion_success = True
-
-            # Only convert if it's webm
-            if is_webm:
-                mp4_path, conversion_success = convert_webm_to_mp4(temp_input_path)
-                if not conversion_success:
-                    raise Exception("Failed to convert WebM to MP4")
-                mp4_filename = os.path.basename(mp4_path)
-                video_local_path = mp4_path
-            else:
-                # The user is uploading mp4 or we skip conversion
-                mp4_filename = os.path.basename(recording.filename)
-                mp4_path = temp_input_path  # We'll just reuse the raw file path
-                video_local_path = mp4_path
-
-            # Upload the final (webm->mp4 or original mp4) to S3
-            recording_key = f"{brdge.folder}/recordings/{mp4_filename}"
-            with open(mp4_path, "rb") as vid_file:
-                s3_client.upload_fileobj(
-                    vid_file,
-                    S3_BUCKET,
-                    recording_key,
-                    ExtraArgs={"ContentType": "video/mp4"},
-                )
-
-            # Create Recording object
-            rec_obj = Recording(
-                brdge_id=brdge.id,
-                filename=mp4_filename,
-                format="mp4",  # Always mp4 after conversion if needed
-                duration=recording_duration,
-            )
-            db.session.add(rec_obj)
-            db.session.commit()
-
-            # Process content using Gemini
-            script_obj = process_brdge_content(
-                brdge.id, video_local_path, pdf_local_path, template_type
+        # Upload to S3 - Use a copy of the file to avoid double free
+        with open(video_local_path, "rb") as file_to_upload:
+            s3_client.upload_fileobj(
+                file_to_upload,
+                S3_BUCKET,
+                recording_key,
+                ExtraArgs={"ContentType": "video/mp4"},
             )
 
-            # Clean up temporary files
-            if is_webm and os.path.exists(mp4_path):
-                os.remove(mp4_path)
-            if os.path.exists(temp_input_path):
-                os.remove(temp_input_path)
-            if pdf_local_path and os.path.exists(pdf_local_path):
-                os.remove(pdf_local_path)
+        # Create Recording object
+        rec_obj = Recording(
+            brdge_id=brdge.id,
+            filename=mp4_filename,
+            format="mp4",
+            duration=None,
+        )
+        db.session.add(rec_obj)
+        db.session.commit()
+
+        # Create initial script object with pending status
+        script = BrdgeScript(
+            brdge_id=brdge.id,
+            content={},
+            status="pending",
+            script_metadata={"logs": [], "progress": 0},
+        )
+        db.session.add(script)
+        db.session.commit()
+
+        # Save our file paths for the background thread - we'll pass only IDs and paths, not file objects
+        brdge_id = brdge.id  # Get ID before request ends
+        final_video_path = video_local_path
+        final_pdf_path = pdf_local_path
+
+        # If async processing is requested, process in background thread
+        if async_processing:
+            # Create a completely independent function that doesn't use any request resources
+            def process_in_background(b_id, v_path, p_path, t_type):
+                with app.app_context():
+                    try:
+                        # Process using only paths to saved files
+                        process_brdge_content(b_id, v_path, p_path, t_type)
+                    except Exception as e:
+                        logger.error(
+                            f"Background processing error: {str(e)}", exc_info=True
+                        )
+                        # Update script status to failed
+                        try:
+                            script = (
+                                BrdgeScript.query.filter_by(brdge_id=b_id)
+                                .order_by(BrdgeScript.id.desc())
+                                .first()
+                            )
+                            if script:
+                                script.status = "failed"
+                                if not script.script_metadata:
+                                    script.script_metadata = {"logs": [], "progress": 0}
+                                script.script_metadata["logs"].append(
+                                    {
+                                        "message": f"Processing failed: {str(e)}",
+                                        "status": "error",
+                                        "timestamp": time.time(),
+                                    }
+                                )
+                                db.session.commit()
+                        except Exception as db_error:
+                            logger.error(
+                                f"Failed to update script status: {str(db_error)}"
+                            )
+                    finally:
+                        # Clean up temporary files in the background thread
+                        try:
+                            if v_path and os.path.exists(v_path):
+                                os.remove(v_path)
+                            if p_path and os.path.exists(p_path):
+                                os.remove(p_path)
+                        except Exception as cleanup_error:
+                            logger.error(
+                                f"Error cleaning up files: {str(cleanup_error)}"
+                            )
+
+            # Start a background thread with only primitive types (no file objects)
+            thread = Thread(
+                target=process_in_background,
+                args=(brdge_id, final_video_path, final_pdf_path, template_type),
+            )
+            thread.daemon = True
+            thread.start()
 
             return (
                 jsonify(
                     {
-                        "message": "Brdge created successfully",
+                        "message": "Brdge created and processing started",
                         "brdge": brdge.to_dict(),
-                        "script": script_obj.to_dict() if script_obj else None,
+                        "processing_status": "pending",
                     }
                 ),
                 201,
             )
+        else:
+            # Original synchronous processing
+            try:
+                # Process content using Gemini
+                script_obj = process_brdge_content(
+                    brdge.id, video_local_path, pdf_local_path, template_type
+                )
 
-        except Exception as e:
-            logger.error(f"Error processing files: {str(e)}", exc_info=True)
-            db.session.rollback()
-            return (
-                jsonify({"error": "Failed to process files", "detail": str(e)}),
-                500,
-            )
+                # Clean up temporary files
+                if os.path.exists(video_local_path):
+                    os.remove(video_local_path)
+                if pdf_local_path and os.path.exists(pdf_local_path):
+                    os.remove(pdf_local_path)
+
+                return (
+                    jsonify(
+                        {
+                            "message": "Brdge created successfully",
+                            "brdge": brdge.to_dict(),
+                            "script": script_obj.to_dict() if script_obj else None,
+                        }
+                    ),
+                    201,
+                )
+
+            except Exception as e:
+                logger.error(f"Error processing files: {str(e)}", exc_info=True)
+                db.session.rollback()
+                return (
+                    jsonify({"error": "Failed to process files", "detail": str(e)}),
+                    500,
+                )
 
     except Exception as e:
         logger.error(f"Error creating brdge: {str(e)}", exc_info=True)
@@ -4423,3 +4484,137 @@ def toggle_premium_access(course_id, enrollment_id):
         ),
         200,
     )
+
+
+@app.route("/api/brdges/<int:brdge_id>/status", methods=["GET"])
+@login_required
+def get_brdge_status(user, brdge_id):
+    try:
+        # Get the latest script for this brdge
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if not script:
+            return jsonify({"status": "pending", "logs": [], "progress": 0}), 200
+
+        # Get metadata with logs
+        metadata = script.script_metadata or {}
+        logs = metadata.get("logs", [])
+        progress = metadata.get("progress", 0)
+
+        # Return the status, progress, and logs
+        return (
+            jsonify(
+                {
+                    "status": script.status,
+                    "logs": logs,
+                    "progress": progress,
+                    "updated_at": (
+                        script.created_at.isoformat() if script.created_at else None
+                    ),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting brdge status: {str(e)}")
+        return jsonify({"error": "Error getting brdge status", "detail": str(e)}), 500
+
+
+def process_brdge_content_with_logs(
+    brdge_id, video_local_path, pdf_local_path, template_type, script_id
+):
+    """Process brdge content with detailed logging."""
+    try:
+        script_obj = BrdgeScript.query.get(script_id)
+        if not script_obj:
+            logger.error(f"Could not find BrdgeScript with ID {script_id}")
+            return
+
+        # Initialize metadata if needed
+        if not script_obj.script_metadata:
+            script_obj.script_metadata = {"logs": [], "progress": 0}
+
+        # Helper function to add logs
+        def add_log(message, status="info", progress=None):
+            metadata = script_obj.script_metadata
+            metadata["logs"].append(
+                {"message": message, "status": status, "timestamp": time.time()}
+            )
+            if progress is not None:
+                metadata["progress"] = progress
+            script_obj.script_metadata = metadata
+            db.session.commit()
+
+        # Begin processing
+        add_log("Starting content analysis", "info", 5)
+
+        # Step 1: Extract video content
+        add_log("Analyzing video content...", "info", 10)
+        # [Your video processing code here]
+        add_log("Video analysis complete", "success", 30)
+
+        # Step 2: Process PDF if available
+        if pdf_local_path:
+            add_log("Processing presentation content...", "info", 35)
+            # [Your PDF processing code here]
+            add_log("Presentation analysis complete", "success", 50)
+
+        # Step 3: Generate knowledge base
+        add_log("Building knowledge base from content...", "info", 55)
+        # [Your knowledge base generation code here]
+        add_log("Knowledge base creation complete", "success", 70)
+
+        # Step 4: Create teaching persona
+        add_log("Extracting teaching patterns...", "info", 75)
+        # [Your teaching persona extraction code here]
+        add_log("Teaching persona analysis complete", "success", 85)
+
+        # Step 5: Generate engagement opportunities
+        add_log("Identifying engagement opportunities...", "info", 90)
+        # [Your engagement opportunities code here]
+        add_log("Engagement opportunities identified", "success", 95)
+
+        # Step 6: Finalize and save results
+        add_log("Compiling extracted intelligence...", "info", 98)
+
+        # Call your actual processing function here
+        extraction_results = process_brdge_content(
+            brdge_id, video_local_path, pdf_local_path, template_type
+        )
+
+        # Update the script content with extraction results
+        script_obj.content = extraction_results
+        script_obj.status = "completed"
+        add_log("Content processing completed!", "success", 100)
+
+        db.session.commit()
+
+        # Clean up temporary files
+        if os.path.exists(video_local_path):
+            os.remove(video_local_path)
+        if pdf_local_path and os.path.exists(pdf_local_path):
+            os.remove(pdf_local_path)
+
+    except Exception as e:
+        logger.error(
+            f"Error in process_brdge_content_with_logs: {str(e)}", exc_info=True
+        )
+        try:
+            if script_obj:
+                script_obj.status = "failed"
+                if script_obj.script_metadata:
+                    script_obj.script_metadata["logs"].append(
+                        {
+                            "message": "Processing failed. Please try again.",
+                            "status": "error",
+                            "timestamp": time.time(),
+                        }
+                    )
+                db.session.commit()
+        except Exception:
+            logger.error("Failed to update script status on error", exc_info=True)

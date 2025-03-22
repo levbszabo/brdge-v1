@@ -14,11 +14,45 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# Add this class near the top of the file
+class LogCollector:
+    def __init__(self, brdge_id=None, callback=None):
+        self.brdge_id = brdge_id
+        self.callback = callback
+        self.logs = []
+        self.last_update = time.time()
+        self.progress = 0
+
+    def add_log(self, message, status="info"):
+        # Create a log entry
+        log_entry = {"message": message, "status": status, "timestamp": time.time()}
+        self.logs.append(log_entry)
+
+        # If callback provided and enough time passed, update the database
+        if self.callback and time.time() - self.last_update > 2:
+            self.update_database()
+
+    def update_progress(self, progress):
+        self.progress = progress
+        if self.callback:
+            self.update_database()
+
+    def update_database(self):
+        if self.callback:
+            self.callback(self.brdge_id, self.logs, self.progress)
+            self.last_update = time.time()
+
+
 # Helper function to format timing information consistently
-def print_timing(stage_name, duration_seconds, include_emoji=True):
-    """Print timing information with consistent formatting"""
+def print_timing(stage_name, duration_seconds, include_emoji=True, log_collector=None):
+    """Print timing information with consistent formatting and optionally log it"""
     emoji = "⏱️ " if include_emoji else ""
-    print(f"{emoji}TIMING: {stage_name} - {duration_seconds:.2f} seconds")
+    message = f"{emoji}TIMING: {stage_name} - {duration_seconds:.2f} seconds"
+    print(message)
+
+    # If log collector is provided, add the log
+    if log_collector:
+        log_collector.add_log(message, status="info")
 
 
 # Configure Gemini
@@ -52,7 +86,9 @@ def get_model(model_name="gemini-2.0-flash"):
 #################################################
 
 
-def extract_initial_timelines(video_file, document_file, model) -> Dict[str, Any]:
+def extract_initial_timelines(
+    video_file, document_file, model, log_collector=None
+) -> Dict[str, Any]:
     """
     PASS 1: Extract parallel timelines from video and document
 
@@ -108,8 +144,7 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
     timeline_prompt = """
     Analyze this video to create a pedagogically-aware timeline.
     
-    Divide the content into logical sections (typically 30 seconds to 2 minutes each) 
-    based on topic transitions, slide changes, or teaching approach shifts.
+    Divide the content into logical sections based on topic transitions, slide changes, or teaching approach shifts.
     
     For each section, identify:
     1. Start and end timestamps (HH:MM:SS format)
@@ -118,11 +153,13 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
     4. Spoken content (transcribe key portions)
     5. Key points covered
     
+    The sections must be a full partition of the video, and must not overlap.
+
     Return ONLY a JSON object with this structure:
     {
       "video_timeline": {
-        "metadata": {
-          "title": "str",
+  "metadata": {
+    "title": "str",
           "total_duration": "HH:MM:SS",
           "instructor": "str",
           "subject_domain": "str"
@@ -142,7 +179,7 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
                 "start_time": "HH:MM:SS",
                 "end_time": "HH:MM:SS",
                 "transcript": "str",
-                "visual_content": {
+      "visual_content": {
                   "type": "str",
                   "description": "str",
                   "text_visible": ["str"]
@@ -293,7 +330,7 @@ def extract_document_timeline(document_file, model) -> Dict[str, Any]:
 
 
 def extract_knowledge_base(
-    video_file, document_file, timeline_data, model
+    video_file, document_file, timeline_data, model, log_collector=None
 ) -> Dict[str, Any]:
     """
     PASS 2: Extract knowledge base using timeline data as context
@@ -378,11 +415,11 @@ def extract_knowledge_base(
         ],
         "processes": [
           {{
-            "name": "str",
-            "steps": [
+        "name": "str",
+        "steps": [
               {{
                 "step_number": 1,
-                "description": "str",
+            "description": "str",
                 "source_location": {{"type": "str", "section_id": "str"}}
               }}
             ],
@@ -445,7 +482,7 @@ def extract_knowledge_base(
 
 
 def extract_teaching_persona(
-    video_file, timeline_data, knowledge_data, model
+    video_file, timeline_data, knowledge_data, model, log_collector=None
 ) -> Dict[str, Any]:
     """
     PASS 3: Extract teaching persona using timeline and knowledge data
@@ -546,7 +583,7 @@ def extract_teaching_persona(
           ],
           "humor_style": {{
             "frequency": "str",
-            "type": "str",
+        "type": "str",
             "context": "str"
           }}
         }},
@@ -598,7 +635,7 @@ def extract_teaching_persona(
             "pacing": "str"
           }},
           "response_templates": {{
-            "greeting": "str",
+      "greeting": "str",
             "concept_explanation": "str",
             "addressing_misconceptions": "str",
             "knowledge_check": "str"
@@ -736,7 +773,7 @@ def extract_teaching_persona(
 
 
 def extract_document_knowledge(
-    document_file, timeline_data, knowledge_data, model
+    document_file, timeline_data, knowledge_data, model, log_collector=None
 ) -> Dict[str, Any]:
     """
     PASS 4: Extract document-specific knowledge (optional)
@@ -870,7 +907,13 @@ def extract_document_knowledge(
 
 
 def extract_engagement_opportunities(
-    video_file, timeline_data, knowledge_data, persona_data, doc_data, model
+    video_file,
+    timeline_data,
+    knowledge_data,
+    persona_data,
+    doc_data,
+    model,
+    log_collector=None,
 ) -> Dict[str, Any]:
     """
     PASS 5: Extract engagement opportunities using all previous data
@@ -947,7 +990,7 @@ def extract_engagement_opportunities(
           "rationale": "str",
           "quiz_items": [
             {{
-              "question": "str",
+      "question": "str",
               "question_type": "multiple_choice/short_answer/discussion",
               "options": ["option A", "option B", "option C", "option D"],
               "correct_option": "option A",
@@ -1055,7 +1098,13 @@ def extract_engagement_opportunities(
 
 
 def integrate_knowledge(
-    timeline_data, knowledge_data, persona_data, document_data, engagement_data, model
+    timeline_data,
+    knowledge_data,
+    persona_data,
+    document_data,
+    engagement_data,
+    model,
+    log_collector=None,
 ) -> Dict[str, Any]:
     """
     FINAL PASS: Minimally combine all extracted components preserving their raw structure
@@ -1121,24 +1170,38 @@ def integrate_knowledge(
 #################################################
 
 
-def create_brdge_knowledge(video_path, document_path=None):
+def create_brdge_knowledge(
+    video_path, document_path=None, brdge_id=None, callback=None
+):
     """
     Create a comprehensive knowledge base through multi-pass extraction
 
     Args:
         video_path: Path to the video file
         document_path: Optional path to a document file
+        brdge_id: ID of the Brdge being processed
+        callback: Function to call with log updates
 
     Returns:
         Unified JSON knowledge base for Brdge
     """
     overall_start_time = time.time()
-    print(
-        f"\n🚀 Starting multi-pass knowledge extraction: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    )
-    print(f"📹 Video: {os.path.basename(video_path)}")
+
+    # Create log collector
+    log_collector = LogCollector(brdge_id, callback)
+
+    log_message = f"\n🚀 Starting multi-pass knowledge extraction: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    print(log_message)
+    log_collector.add_log(log_message, status="info")
+
+    log_message = f"📹 Video: {os.path.basename(video_path)}"
+    print(log_message)
+    log_collector.add_log(log_message, status="info")
+
     if document_path:
-        print(f"📄 Document: {os.path.basename(document_path)}")
+        log_message = f"📄 Document: {os.path.basename(document_path)}"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
 
     try:
         # Configure Gemini
@@ -1146,89 +1209,147 @@ def create_brdge_knowledge(video_path, document_path=None):
         configure_genai()
         model = get_model()
         config_duration = time.time() - config_start
-        print_timing("API and Model Configuration", config_duration)
+        print_timing(
+            "API and Model Configuration", config_duration, log_collector=log_collector
+        )
+        log_collector.update_progress(5)  # 5% progress
 
         # Upload files to Gemini
         upload_start = time.time()
-        print(f"📤 Uploading video to Gemini API...")
+        log_message = f"📤 Uploading video to Gemini API..."
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         video_file = genai.upload_file(path=video_path)
         video_upload_duration = time.time() - upload_start
-        print_timing("Video Upload", video_upload_duration)
+        print_timing("Video Upload", video_upload_duration, log_collector=log_collector)
+        log_collector.update_progress(10)  # 10% progress
 
         document_file = None
         doc_upload_duration = 0
         if document_path and os.path.exists(document_path):
             doc_upload_start = time.time()
-            print(f"📤 Uploading document to Gemini API...")
+            log_message = f"📤 Uploading document to Gemini API..."
+            print(log_message)
+            log_collector.add_log(log_message, status="info")
+
             document_file = genai.upload_file(path=document_path)
             doc_upload_duration = time.time() - doc_upload_start
-            print_timing("Document Upload", doc_upload_duration)
+            print_timing(
+                "Document Upload", doc_upload_duration, log_collector=log_collector
+            )
+            log_collector.update_progress(15)  # 15% progress
 
         # Wait for processing to complete
         processing_start = time.time()
         while video_file.state.name == "PROCESSING":
-            print("⏳ Processing video file...")
+            log_message = "⏳ Processing video file..."
+            print(log_message)
+            log_collector.add_log(log_message, status="info")
             time.sleep(2)
             video_file = genai.get_file(name=video_file.name)
 
         if document_file and document_file.state.name == "PROCESSING":
-            print("⏳ Processing document file...")
+            log_message = "⏳ Processing document file..."
+            print(log_message)
+            log_collector.add_log(log_message, status="info")
             time.sleep(2)
             document_file = genai.get_file(name=document_file.name)
 
         processing_duration = time.time() - processing_start
-        print_timing("File Processing Wait Time", processing_duration)
-        print(f"✅ File uploads complete and ready for processing")
+        print_timing(
+            "File Processing Wait Time",
+            processing_duration,
+            log_collector=log_collector,
+        )
+
+        log_message = f"✅ File uploads complete and ready for processing"
+        print(log_message)
+        log_collector.add_log(log_message, status="success")
+        log_collector.update_progress(20)  # 20% progress
 
         # PASS 1: Extract initial timelines
         pass1_start = time.time()
-        timelines = extract_initial_timelines(video_file, document_file, model)
+        log_message = f"🔍 EXTRACTION PASS 1: Extracting parallel content timelines..."
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        # Call the extraction function with log_collector
+        timelines = extract_initial_timelines(
+            video_file, document_file, model, log_collector
+        )
         pass1_duration = time.time() - pass1_start
         print_timing(
             "PASS 1: Timeline Extraction - Total Pass Time",
             pass1_duration,
             include_emoji=False,
+            log_collector=log_collector,
         )
+        log_collector.update_progress(35)  # 35% progress
 
         # PASS 2: Extract knowledge base
         pass2_start = time.time()
+        log_message = (
+            f"🔍 EXTRACTION PASS 2: Extracting knowledge base and concept network..."
+        )
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         knowledge_data = extract_knowledge_base(
-            video_file, document_file, timelines, model
+            video_file, document_file, timelines, model, log_collector
         )
         pass2_duration = time.time() - pass2_start
         print_timing(
             "PASS 2: Knowledge Base Extraction - Total Pass Time",
             pass2_duration,
             include_emoji=False,
+            log_collector=log_collector,
         )
+        log_collector.update_progress(50)  # 50% progress
 
         # PASS 3: Extract teaching persona
         pass3_start = time.time()
+        log_message = f"�� EXTRACTION PASS 3: Extracting teaching persona and communication style..."
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         persona_data = extract_teaching_persona(
-            video_file, timelines, knowledge_data, model
+            video_file, timelines, knowledge_data, model, log_collector
         )
         pass3_duration = time.time() - pass3_start
         print_timing(
             "PASS 3: Teaching Persona Extraction - Total Pass Time",
             pass3_duration,
             include_emoji=False,
+            log_collector=log_collector,
         )
+        log_collector.update_progress(65)  # 65% progress
 
         # PASS 4: Extract document knowledge (if document provided)
         pass4_start = time.time()
+        log_message = f"🔍 EXTRACTION PASS 4: Extracting document-specific knowledge..."
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         document_data = extract_document_knowledge(
-            document_file, timelines, knowledge_data, model
+            document_file, timelines, knowledge_data, model, log_collector
         )
         pass4_duration = time.time() - pass4_start
-        if document_file:  # Only print if we actually did the extraction
+        if document_file:
             print_timing(
                 "PASS 4: Document Knowledge Extraction - Total Pass Time",
                 pass4_duration,
                 include_emoji=False,
+                log_collector=log_collector,
             )
+        log_collector.update_progress(80)  # 80% progress
 
         # PASS 5: Extract engagement opportunities
         pass5_start = time.time()
+        log_message = f"🔍 EXTRACTION PASS 5: Extracting engagement opportunities and quiz points..."
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         engagement_data = extract_engagement_opportunities(
             video_file,
             timelines,
@@ -1236,16 +1357,23 @@ def create_brdge_knowledge(video_path, document_path=None):
             persona_data,
             document_data,
             model,
+            log_collector,
         )
         pass5_duration = time.time() - pass5_start
         print_timing(
             "PASS 5: Engagement Opportunities Extraction - Total Pass Time",
             pass5_duration,
             include_emoji=False,
+            log_collector=log_collector,
         )
+        log_collector.update_progress(90)  # 90% progress
 
         # FINAL PASS: Integrate all components
         final_pass_start = time.time()
+        log_message = f"🔄 FINAL PASS: Combining extraction components..."
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         unified_data = integrate_knowledge(
             timelines,
             knowledge_data,
@@ -1253,46 +1381,87 @@ def create_brdge_knowledge(video_path, document_path=None):
             document_data,
             engagement_data,
             model,
+            log_collector,
         )
         final_pass_duration = time.time() - final_pass_start
         print_timing(
             "FINAL PASS: Knowledge Integration - Total Pass Time",
             final_pass_duration,
             include_emoji=False,
+            log_collector=log_collector,
         )
+        log_collector.update_progress(95)  # 95% progress
 
         # Report completion
         overall_duration = time.time() - overall_start_time
-        print(f"\n✨ Multi-pass extraction completed in {overall_duration:.2f} seconds")
-        print(f"📊 Output statistics:")
-        print(f"   - Timeline sections: {len(unified_data.get('timeline', []))}")
-        print(
-            f"   - Core concepts: {len(unified_data.get('knowledge_base', {}).get('core_concepts', []))}"
+        log_message = (
+            f"\n✨ Multi-pass extraction completed in {overall_duration:.2f} seconds"
         )
-        print(
-            f"   - Engagement opportunities: {len(unified_data.get('engagement_opportunities', []))}"
-        )
+        print(log_message)
+        log_collector.add_log(log_message, status="success")
 
         # Print timing summary
-        print("\n⏱️ TIMING SUMMARY:")
-        print(f"   - Configuration & Setup: {config_duration:.2f}s")
-        print(f"   - File Uploads: {video_upload_duration + doc_upload_duration:.2f}s")
-        print(f"   - File Processing: {processing_duration:.2f}s")
-        print(f"   - PASS 1 (Timeline): {pass1_duration:.2f}s")
-        print(f"   - PASS 2 (Knowledge): {pass2_duration:.2f}s")
-        print(f"   - PASS 3 (Persona): {pass3_duration:.2f}s")
+        log_message = "\n⏱️ TIMING SUMMARY:"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - Configuration & Setup: {config_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = (
+            f"   - File Uploads: {video_upload_duration + doc_upload_duration:.2f}s"
+        )
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - File Processing: {processing_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - PASS 1 (Timeline): {pass1_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - PASS 2 (Knowledge): {pass2_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - PASS 3 (Persona): {pass3_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
         if document_file:
-            print(f"   - PASS 4 (Document): {pass4_duration:.2f}s")
-        print(f"   - PASS 5 (Engagement): {pass5_duration:.2f}s")
-        print(f"   - FINAL PASS (Integration): {final_pass_duration:.2f}s")
-        print(f"   - TOTAL EXTRACTION TIME: {overall_duration:.2f}s")
+            log_message = f"   - PASS 4 (Document): {pass4_duration:.2f}s"
+            print(log_message)
+            log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - PASS 5 (Engagement): {pass5_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - FINAL PASS (Integration): {final_pass_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_message = f"   - TOTAL EXTRACTION TIME: {overall_duration:.2f}s"
+        print(log_message)
+        log_collector.add_log(log_message, status="info")
+
+        log_collector.update_progress(100)  # 100% progress - completed
 
         return unified_data
 
     except Exception as e:
         overall_duration = time.time() - overall_start_time
         logger.error(f"Error in knowledge extraction pipeline: {e}")
-        print(f"\n❌ Extraction failed after {overall_duration:.2f} seconds: {str(e)}")
+
+        log_message = (
+            f"\n❌ Extraction failed after {overall_duration:.2f} seconds: {str(e)}"
+        )
+        print(log_message)
+        log_collector.add_log(log_message, status="error")
+
         # Return minimal structure with error information
         return {
             "error": str(e),
