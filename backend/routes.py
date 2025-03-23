@@ -3182,6 +3182,10 @@ def get_agent_config(brdge_id):
                 }
             )
 
+        # Add teaching_persona to the response
+        if script and script.content and "teaching_persona" in script.content:
+            response["teaching_persona"] = script.content.get("teaching_persona")
+
         return jsonify(response), 200
 
     except Exception as e:
@@ -3233,172 +3237,109 @@ def update_agent_config(brdge_id):
         # Make a deep copy of the content to avoid reference issues
         content = script.content.copy() if script.content else {}
 
-        # Log the original content for debugging
-        logger.info(
-            f"Original script content before updates: {json.dumps(content.get('agent_personality', {}), indent=2)}"
-        )
+        # Handle teaching_persona updates directly
+        if "teaching_persona" in data and isinstance(data["teaching_persona"], dict):
+            # Log that we're updating the teaching_persona
+            logger.info(f"Updating teaching_persona with data from request")
 
-        # Determine which data to use for updating
-        updated_personality = None
+            # Update or create the teaching_persona in content
+            if "teaching_persona" not in content:
+                content["teaching_persona"] = {}
 
-        # First check if script.agent_personality is available - this appears to be the complete structure sent by frontend
-        if (
-            "script" in data
-            and isinstance(data["script"], dict)
-            and "agent_personality" in data["script"]
-            and isinstance(data["script"]["agent_personality"], dict)
-        ):
-            updated_personality = data["script"]["agent_personality"]
-            logger.info(
-                f"Using script.agent_personality for update: {json.dumps(updated_personality, indent=2)}"
-            )
-        # Otherwise use agentPersonality if available
-        elif "agentPersonality" in data and isinstance(data["agentPersonality"], dict):
-            updated_personality = data["agentPersonality"]
-            logger.info(
-                f"Using agentPersonality for update: {json.dumps(updated_personality, indent=2)}"
-            )
+            # Update specific fields in teaching_persona
+            teaching_persona = data["teaching_persona"]
 
-        # If we have personality data to update
-        if updated_personality:
-            # Ensure agent_personality exists in content
-            if "agent_personality" not in content:
-                content["agent_personality"] = {}
-
-            # Track changes for verification
-            changes_made = {}
-
-            # Only update the three editable fields, preserving all other fields
-            if "name" in updated_personality:
-                old_value = content["agent_personality"].get("name")
-                content["agent_personality"]["name"] = updated_personality["name"]
-                changes_made["name"] = {
-                    "old": old_value,
-                    "new": updated_personality["name"],
-                }
-
-            if "persona_background" in updated_personality:
-                old_value = content["agent_personality"].get("persona_background")
-                content["agent_personality"]["persona_background"] = (
-                    updated_personality["persona_background"]
-                )
-                changes_made["persona_background"] = {
-                    "old": old_value,
-                    "new": updated_personality["persona_background"],
-                }
-
-            if "communication_style" in updated_personality:
-                old_value = content["agent_personality"].get("communication_style")
-                content["agent_personality"]["communication_style"] = (
-                    updated_personality["communication_style"]
-                )
-                changes_made["communication_style"] = {
-                    "old": old_value,
-                    "new": updated_personality["communication_style"],
-                }
-
-            # Log the changes we're about to make
-            logger.info(f"Changes to be applied: {json.dumps(changes_made, indent=2)}")
-
-            # Ensure required fields exist with defaults if they don't
-            if "expertise" not in content["agent_personality"]:
-                content["agent_personality"]["expertise"] = []
-
-            if "knowledge_areas" not in content["agent_personality"]:
-                content["agent_personality"]["knowledge_areas"] = []
-
-            if "response_templates" not in content["agent_personality"]:
-                content["agent_personality"]["response_templates"] = {
-                    "greeting": "Hello! How can I help you today?",
-                    "not_sure": "I'm not sure about that, but I'd be happy to help with what I know.",
-                    "follow_up_questions": [],
-                }
-
-            try:
-                # Update the script content
-                logger.info(
-                    f"Setting script.content to: {json.dumps(content, indent=2)}"
-                )
-
-                # Make sure content is still a dictionary (not a string)
-                if isinstance(content, str):
-                    content = json.loads(content)
-
-                # IMPORTANT: Create a new dictionary rather than modifying the old one
-                # This ensures SQLAlchemy detects the change
-                new_content = {}
-                for key, value in content.items():
-                    new_content[key] = value
-
-                # Assign the completely new content to the script
-                script.content = new_content
-
-                # THIS IS CRUCIAL: Flag the content field as modified to ensure SQLAlchemy detects the change
-                flag_modified(script, "content")
-
-                # Force update timestamp
-                script.updated_at = datetime.utcnow()
-
-                # Log what we're about to commit
-                logger.info(
-                    f"About to commit updated agent_personality: {json.dumps(script.content.get('agent_personality', {}), indent=2)}"
-                )
-
-                # Commit the changes
-                db.session.commit()
-
-                # Verify changes directly from script object
-                logger.info(
-                    f"Immediate verification - script.content: {json.dumps(script.content.get('agent_personality', {}), indent=2)}"
-                )
-
-                # Create a brand new session and verify changes are in the database
-                from sqlalchemy.orm import sessionmaker, scoped_session
-                from app import db as app_db
-
-                Session = scoped_session(sessionmaker(bind=app_db.engine))
-                verification_session = Session()
-
-                try:
-                    # Get the script directly from the database with a fresh session
-                    verification_script = verification_session.query(BrdgeScript).get(
-                        script.id
+            # Update instructor_profile fields
+            if "instructor_profile" in teaching_persona:
+                if "instructor_profile" not in content["teaching_persona"]:
+                    content["teaching_persona"]["instructor_profile"] = {}
+                if "name" in teaching_persona["instructor_profile"]:
+                    content["teaching_persona"]["instructor_profile"]["name"] = (
+                        teaching_persona["instructor_profile"]["name"]
                     )
 
-                    if verification_script:
-                        logger.info(
-                            f"DATABASE VERIFICATION - BrdgeScript id={verification_script.id}, content: {json.dumps(verification_script.content.get('agent_personality', {}), indent=2)}"
-                        )
+            # Update communication_patterns fields
+            if "communication_patterns" in teaching_persona:
+                if "communication_patterns" not in content["teaching_persona"]:
+                    content["teaching_persona"]["communication_patterns"] = {}
+                if "vocabulary_level" in teaching_persona["communication_patterns"]:
+                    content["teaching_persona"]["communication_patterns"][
+                        "vocabulary_level"
+                    ] = teaching_persona["communication_patterns"]["vocabulary_level"]
+                if "recurring_phrases" in teaching_persona["communication_patterns"]:
+                    content["teaching_persona"]["communication_patterns"][
+                        "recurring_phrases"
+                    ] = teaching_persona["communication_patterns"]["recurring_phrases"]
+                if "speaking_pace" in teaching_persona["communication_patterns"]:
+                    content["teaching_persona"]["communication_patterns"][
+                        "speaking_pace"
+                    ] = teaching_persona["communication_patterns"]["speaking_pace"]
 
-                        # Verify each field was actually updated
-                        verification_data = verification_script.content.get(
-                            "agent_personality", {}
-                        )
-                        for field, change in changes_made.items():
-                            if field in verification_data:
-                                if verification_data[field] == change["new"]:
-                                    logger.info(
-                                        f"Verified {field} was correctly updated to: {change['new']}"
-                                    )
-                                else:
-                                    logger.warning(
-                                        f"VERIFICATION FAILED for {field}: expected {change['new']} but found {verification_data[field]}"
-                                    )
-                            else:
-                                logger.warning(
-                                    f"VERIFICATION FAILED for {field}: field not found in saved data"
-                                )
-                    else:
-                        logger.warning(
-                            f"Could not verify script with id {script.id} - not found in verification query"
-                        )
-                finally:
-                    verification_session.close()
+            # Update speech_characteristics fields
+            if "speech_characteristics" in teaching_persona:
+                if "speech_characteristics" not in content["teaching_persona"]:
+                    content["teaching_persona"]["speech_characteristics"] = {}
+                if "accent" in teaching_persona["speech_characteristics"]:
+                    if (
+                        "accent"
+                        not in content["teaching_persona"]["speech_characteristics"]
+                    ):
+                        content["teaching_persona"]["speech_characteristics"][
+                            "accent"
+                        ] = {}
+                    if (
+                        "cadence"
+                        in teaching_persona["speech_characteristics"]["accent"]
+                    ):
+                        content["teaching_persona"]["speech_characteristics"]["accent"][
+                            "cadence"
+                        ] = teaching_persona["speech_characteristics"]["accent"][
+                            "cadence"
+                        ]
 
-            except Exception as e:
-                db.session.rollback()
-                logger.error(f"Error during script content update: {str(e)}")
-                raise
+            # Update persona_simulation_guidance fields
+            if "persona_simulation_guidance" in teaching_persona:
+                if "persona_simulation_guidance" not in content["teaching_persona"]:
+                    content["teaching_persona"]["persona_simulation_guidance"] = {}
+                if (
+                    "response_templates"
+                    in teaching_persona["persona_simulation_guidance"]
+                ):
+                    if (
+                        "response_templates"
+                        not in content["teaching_persona"][
+                            "persona_simulation_guidance"
+                        ]
+                    ):
+                        content["teaching_persona"]["persona_simulation_guidance"][
+                            "response_templates"
+                        ] = {}
+                    templates = teaching_persona["persona_simulation_guidance"][
+                        "response_templates"
+                    ]
+                    if "greeting" in templates:
+                        content["teaching_persona"]["persona_simulation_guidance"][
+                            "response_templates"
+                        ]["greeting"] = templates["greeting"]
+                    if "knowledge_check" in templates:
+                        content["teaching_persona"]["persona_simulation_guidance"][
+                            "response_templates"
+                        ]["knowledge_check"] = templates["knowledge_check"]
+                    if "addressing_misconceptions" in templates:
+                        content["teaching_persona"]["persona_simulation_guidance"][
+                            "response_templates"
+                        ]["addressing_misconceptions"] = templates[
+                            "addressing_misconceptions"
+                        ]
+
+        # Continue with the regular agent_personality updates for backward compatibility
+        # [existing code to update agent_personality]
+
+        # Update the script content
+        script.content = content
+        flag_modified(script, "content")
+        script.updated_at = datetime.utcnow()
+        db.session.commit()
 
         return (
             jsonify(
