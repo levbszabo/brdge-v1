@@ -3343,8 +3343,27 @@ def update_agent_config(brdge_id):
                             "addressing_misconceptions"
                         ]
 
-        # Continue with the regular agent_personality updates for backward compatibility
-        # [existing code to update agent_personality]
+        # ADD THIS NEW BLOCK: Handle engagement_opportunities updates
+        if "engagement_opportunities" in data and isinstance(
+            data["engagement_opportunities"], list
+        ):
+            # Log the update
+            logger.info(f"Updating engagement_opportunities with data from request")
+            logger.info(
+                f"Received {len(data['engagement_opportunities'])} engagement opportunities"
+            )
+
+            # Get current count (for logging)
+            current_count = 0
+            if "engagement_opportunities" in content:
+                current_count = len(content["engagement_opportunities"])
+
+            # Replace the entire engagement_opportunities array
+            content["engagement_opportunities"] = data["engagement_opportunities"]
+
+            logger.info(
+                f"Updated engagement_opportunities: Previous count: {current_count}, New count: {len(content['engagement_opportunities'])}"
+            )
 
         # Update the script content
         script.content = content
