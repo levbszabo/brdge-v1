@@ -3186,6 +3186,17 @@ def get_agent_config(brdge_id):
         if script and script.content and "teaching_persona" in script.content:
             response["teaching_persona"] = script.content.get("teaching_persona")
 
+        # Add engagement_opportunities to the response - make sure it's properly captured
+        if script and script.content and "engagement_opportunities" in script.content:
+            opportunities = script.content.get("engagement_opportunities")
+            logger.info(f"Found {len(opportunities)} engagement opportunities")
+            response["engagement_opportunities"] = opportunities
+        else:
+            logger.info("No engagement opportunities found in script content")
+            # Check if they might be at a different path in the content
+            if script and script.content:
+                logger.info(f"Content keys: {script.content.keys()}")
+
         return jsonify(response), 200
 
     except Exception as e:
