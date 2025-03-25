@@ -3119,7 +3119,6 @@ def check_brdge_auth(brdge_id):
 
 # Add this new route for getting agent configuration
 @app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["GET"])
-@jwt_required(optional=True)
 @cross_origin()
 def get_agent_config(brdge_id):
     """Get agent configuration for a brdge"""
@@ -3127,19 +3126,15 @@ def get_agent_config(brdge_id):
         # Get the brdge to check permissions
         brdge = Brdge.query.get_or_404(brdge_id)
 
-        # Get current user (optional)
-        current_user = get_current_user()
-
-        # Check if user has access (owner or public brdge)
-        if not brdge.shareable and current_user and current_user.id != brdge.user_id:
-            return jsonify({"error": "Unauthorized access"}), 403
-
-        # Get the latest script to extract agent personality
+        # Get the latest script to extract data
         script = (
             BrdgeScript.query.filter_by(brdge_id=brdge_id)
             .order_by(BrdgeScript.id.desc())
             .first()
         )
+
+        if not script:
+            return jsonify({"error": "No script found for this brdge"}), 404
 
         # Create simplified agent personality with only the editable fields
         simplified_agent_personality = {
@@ -3148,7 +3143,7 @@ def get_agent_config(brdge_id):
             "communication_style": "friendly",
         }
 
-        if script and script.content and "agent_personality" in script.content:
+        if script.content and "agent_personality" in script.content:
             content = script.content
             agent_personality = content.get("agent_personality", {})
 
@@ -3182,22 +3177,42 @@ def get_agent_config(brdge_id):
                 }
             )
 
-        # Add teaching_persona to the response
-        if script and script.content and "teaching_persona" in script.content:
-            response["teaching_persona"] = script.content.get("teaching_persona")
+        # Include data from script content
+        if script.content:
+            # Add teaching_persona to the response
+            if "teaching_persona" in script.content:
+                response["teaching_persona"] = script.content.get("teaching_persona")
 
-        # Add engagement_opportunities to the response - make sure it's properly captured
-        if script and script.content and "engagement_opportunities" in script.content:
-            opportunities = script.content.get("engagement_opportunities")
-            logger.info(f"Found {len(opportunities)} engagement opportunities")
-            response["engagement_opportunities"] = opportunities
-        else:
-            logger.info("No engagement opportunities found in script content")
-            # Check if they might be at a different path in the content
-            if script and script.content:
-                logger.info(f"Content keys: {script.content.keys()}")
+            # Add engagement_opportunities to the response
+            if "engagement_opportunities" in script.content:
+                opportunities = script.content.get("engagement_opportunities")
+                logger.info(f"Found {len(opportunities)} engagement opportunities")
+                response["engagement_opportunities"] = opportunities
 
-        return jsonify(response), 200
+            # Add timeline to the response (from video_timeline or timeline)
+            if "video_timeline" in script.content:
+                response["timeline"] = script.content.get("video_timeline")
+            elif "timeline" in script.content:
+                response["timeline"] = script.content.get("timeline")
+
+            # Add knowledge_base to the response
+            if "knowledge_base" in script.content:
+                response["knowledge_base"] = script.content.get("knowledge_base")
+
+            # Add qa_pairs to the response if available
+            if "qa_pairs" in script.content:
+                response["qa_pairs"] = script.content.get("qa_pairs")
+
+            # Add brdge data for completeness
+            response["brdge"] = brdge.to_dict()
+
+        # Cache control headers to ensure fresh data
+        response_obj = jsonify(response)
+        response_obj.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response_obj.headers["Pragma"] = "no-cache"
+        response_obj.headers["Expires"] = "0"
+
+        return response_obj, 200
 
     except Exception as e:
         logger.error(f"Error fetching agent config: {str(e)}")

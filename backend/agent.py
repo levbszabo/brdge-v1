@@ -109,26 +109,34 @@ class ChatAssistant(VoicePipelineAgent):
             return False
 
         try:
-            # Fetch script data directly - this has everything we need
+            # Fetch script data from the agent-config endpoint
             response = requests.get(
-                f"{self.api_base_url}/brdges/{self.brdge_id}/script"
+                f"{self.api_base_url}/brdges/{self.brdge_id}/agent-config"
             )
             response.raise_for_status()
-            self.script_data = response.json()
+            config_data = response.json()
 
-            # Extract the full brdge script content
-            self.brdge = self.script_data.get("brdge", {})
-            self.agent_personality = self.script_data.get("content", {}).get(
-                "agent_personality", {}
-            )
-            self.knowledge_base = self.script_data.get("content", {}).get(
-                "knowledge_base", {}
-            )
-            self.qa_pairs = self.script_data.get("content", {}).get("qa_pairs", [])
-            self.timeline = self.script_data.get("content", {}).get("timeline", [])
-            self.engagement_opportunities = self.script_data.get("content", {}).get(
+            # Extract data from the agent-config response
+            self.brdge = config_data.get("brdge", {})
+            self.agent_personality = config_data.get("agentPersonality", {})
+            self.teaching_persona = config_data.get("teaching_persona", {})
+            self.knowledge_base = config_data.get("knowledge_base", {})
+            self.qa_pairs = config_data.get("qa_pairs", [])
+
+            # Get timeline data from either the dedicated field or from video_timeline
+            self.timeline = config_data.get("timeline", {})
+
+            # Extract engagement opportunities
+            self.engagement_opportunities = config_data.get(
                 "engagement_opportunities", []
             )
+
+            # Log retrieved data for debugging
+            logger.info(
+                f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
+            )
+            if self.timeline:
+                logger.info(f"Timeline data retrieved successfully")
 
             # Log brdge object structure for debugging
             logger.info(f"Brdge object structure: {json.dumps(self.brdge, indent=2)}")
@@ -190,6 +198,7 @@ class ChatAssistant(VoicePipelineAgent):
             return True
         except Exception as e:
             logger.error(f"Error initializing agent: {e}")
+            logger.error(f"Exception details: {str(e)}")
             return False
 
     def _build_knowledge_content(self, knowledge_base):
@@ -314,53 +323,35 @@ Below is the complete JSON data containing everything you need to know about the
 - QA_PAIRS: Pre-answered questions and answers about the content - use these directly when relevant
 - TIMELINE: Chronological breakdown of what happens in the video, with timestamps, spoken text, and visuals
 - KNOWLEDGE_BASE: Additional information and context about topics in the video
-- KNOWLEDGE_GRAPH: Shows relationships between key entities mentioned in the video
-- AGENT_PERSONALITY: Your personality traits, communication style, and expertise areas
+- TEACHING_PERSONA: Information about the teaching style and persona to adopt
 - ENGAGEMENT_OPPORTUNITIES: Key moments where you should provide more detailed information
 
 ## RAW JSON CONTENT:
 """
 
-            # Include the complete content data as JSON to ensure nothing is lost
-            if (
-                hasattr(self, "script_data")
-                and self.script_data
-                and "content" in self.script_data
-            ):
-                content_data = self.script_data.get("content", {})
-                # Format the JSON to be more readable in the prompt
-                formatted_json = json.dumps(content_data, indent=2)
-                prompt += f"""
-```json
-{formatted_json}
-```
-"""
-            else:
-                # If for some reason we don't have the complete content data, add what we have
-                available_data = {}
+            # Construct a comprehensive data object to include in the prompt
+            content_data = {
+                "teaching_persona": (
+                    self.teaching_persona if hasattr(self, "teaching_persona") else {}
+                ),
+                "knowledge_base": (
+                    self.knowledge_base if hasattr(self, "knowledge_base") else {}
+                ),
+                "qa_pairs": self.qa_pairs if hasattr(self, "qa_pairs") else [],
+                "timeline": self.timeline if hasattr(self, "timeline") else {},
+                "engagement_opportunities": (
+                    self.engagement_opportunities
+                    if hasattr(self, "engagement_opportunities")
+                    else []
+                ),
+                "agent_personality": (
+                    self.agent_personality if hasattr(self, "agent_personality") else {}
+                ),
+            }
 
-                if hasattr(self, "agent_personality") and self.agent_personality:
-                    available_data["agent_personality"] = self.agent_personality
-
-                if hasattr(self, "knowledge_base") and self.knowledge_base:
-                    available_data["knowledge_base"] = self.knowledge_base
-
-                if hasattr(self, "qa_pairs") and self.qa_pairs:
-                    available_data["qa_pairs"] = self.qa_pairs
-
-                if hasattr(self, "timeline") and self.timeline:
-                    available_data["timeline"] = self.timeline
-
-                if (
-                    hasattr(self, "engagement_opportunities")
-                    and self.engagement_opportunities
-                ):
-                    available_data["engagement_opportunities"] = (
-                        self.engagement_opportunities
-                    )
-
-                formatted_json = json.dumps(available_data, indent=2)
-                prompt += f"""
+            # Format the JSON to be more readable in the prompt
+            formatted_json = json.dumps(content_data, indent=2)
+            prompt += f"""
 ```json
 {formatted_json}
 ```
@@ -374,15 +365,16 @@ When answering questions:
 1. First check QA_PAIRS for direct matches to the question
 2. If not found, use TIMELINE to locate relevant information by timestamp
 3. Use KNOWLEDGE_BASE for deeper context and explanations
-4. Reference KNOWLEDGE_GRAPH to understand relationships between concepts
-5. Maintain your personality from AGENT_PERSONALITY in all responses
+4. Reference relationships between concepts if available
+5. Maintain your personality from TEACHING_PERSONA in all responses
 
-Important tips:
-- Use METADATA to understand the overall context of the video
-- Cite specific TIMELINE timestamps when relevant to answer questions
-- Never mention that you're looking up information in a JSON structure
-- Respond as if you're the presenter who created the video
-- Always maintain a friendly, conversational tone
+# ENGAGEMENT OPPORTUNITIES
+
+If the user is at a timestamp that matches an ENGAGEMENT_OPPORTUNITY:
+1. Be prepared to initiate a quiz or discussion based on the engagement_type
+2. For quiz types, ask the questions provided in quiz_items
+3. For discussion types, facilitate open-ended conversations using the provided topics
+4. Provide feedback based on the follow_up guidance
 
 # FINAL REMINDER
 
