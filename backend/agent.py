@@ -591,6 +591,44 @@ async def entrypoint(ctx: JobContext):
 
     chat = rtc.ChatManager(ctx.room)
 
+    # Add handler for data channel messages
+    @ctx.room.on("data_received")
+    def on_data_received(data_packet: rtc.DataPacket):
+        """Handle incoming data channel message."""
+        sender = data_packet.participant.identity  # who sent the data
+        topic = getattr(data_packet, "topic", "unknown")  # Get the topic if available
+
+        logger.info(f"Received data packet from {sender} on topic: {topic}")
+
+        payload = data_packet.data  # the raw payload (bytes)
+        try:
+            # Decode bytes to string
+            message_str = payload.decode("utf-8")
+            logger.debug(f"Decoded message: {message_str}")
+
+            # Parse JSON
+            message = json.loads(message_str)
+
+            # Look for timestamp messages
+            if message.get("type") == "timestamp" and "time" in message:
+                current_time = message["time"]
+                logger.info(f"Received video timestamp from {sender}: {current_time}")
+
+                # Log additional context
+                if hasattr(data_packet, "kind"):
+                    logger.debug(f"Data packet kind: {data_packet.kind}")
+            else:
+                # Other message types can be handled separately if needed
+                logger.info(f"Received non-timestamp data from {sender}: {message}")
+        except UnicodeDecodeError:
+            logger.error(
+                f"Failed to decode message as UTF-8. Raw bytes: {payload[:20]}..."
+            )
+        except json.JSONDecodeError:
+            logger.error(f"Failed to parse message as JSON: {message_str[:100]}")
+        except Exception as e:
+            logger.error(f"Error processing data packet: {e}", exc_info=True)
+
     @chat.on("message_received")
     def on_chat_received(msg: rtc.ChatMessage):
         if not agent:
