@@ -180,13 +180,13 @@ class ChatAssistant(VoicePipelineAgent):
             self.system_prompt = self._build_enhanced_system_prompt()
 
             # Log the full system prompt for debugging
-            logger.info(
-                "====================== FULL SYSTEM PROMPT ======================"
-            )
-            logger.info(self.system_prompt)
-            logger.info(
-                "================================================================"
-            )
+            # logger.info(
+            #     "====================== FULL SYSTEM PROMPT ======================"
+            # )
+            # logger.info(self.system_prompt)
+            # logger.info(
+            #     "================================================================"
+            # )
 
             # Update the chat context with new system prompt if already initialized
             if hasattr(self, "chat_ctx") and self.chat_ctx and self.chat_ctx.messages:
