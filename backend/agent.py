@@ -545,9 +545,9 @@ async def entrypoint(ctx: JobContext):
             try:
                 # Add message to agent's chat context
                 agent.chat_ctx.append(role="user", text=cleaned_message)
-                # agent.chat_ctx.append(
-                #     role="system", text=f"Current timestamp: {agent.current_timestamp}"
-                # )
+                agent.chat_ctx.append(
+                    role="system", text=f"Current timestamp: {agent.current_timestamp}"
+                )
                 # Get response from LLM
                 response = await agent.say(
                     agent.llm.chat(chat_ctx=agent.chat_ctx),
