@@ -85,6 +85,7 @@ class ChatAssistant(VoicePipelineAgent):
             "message": None,
             "was_interrupted": False,
         }
+        self.current_timestamp = 0  # Initialize timestamp property
         self.system_prompt = None
 
         # Initialize agent with data from the script endpoint
@@ -598,21 +599,28 @@ async def entrypoint(ctx: JobContext):
         sender = data_packet.participant.identity  # who sent the data
         topic = getattr(data_packet, "topic", "unknown")  # Get the topic if available
 
-        logger.info(f"Received data packet from {sender} on topic: {topic}")
+        logger.info(
+            f"Received data packet from {sender} on topic: {topic}, payload size: {len(data_packet.data)} bytes"
+        )
 
-        payload = data_packet.data  # the raw payload (bytes)
         try:
             # Decode bytes to string
-            message_str = payload.decode("utf-8")
+            message_str = data_packet.data.decode("utf-8")
             logger.debug(f"Decoded message: {message_str}")
 
             # Parse JSON
             message = json.loads(message_str)
+            logger.info(f"Parsed message: {message}")
 
             # Look for timestamp messages
             if message.get("type") == "timestamp" and "time" in message:
                 current_time = message["time"]
                 logger.info(f"Received video timestamp from {sender}: {current_time}")
+
+                # Store the timestamp in the agent instance
+                if agent:
+                    agent.current_timestamp = current_time
+                    logger.info(f"Updated agent current_timestamp to {current_time}")
 
                 # Log additional context
                 if hasattr(data_packet, "kind"):
@@ -622,7 +630,7 @@ async def entrypoint(ctx: JobContext):
                 logger.info(f"Received non-timestamp data from {sender}: {message}")
         except UnicodeDecodeError:
             logger.error(
-                f"Failed to decode message as UTF-8. Raw bytes: {payload[:20]}..."
+                f"Failed to decode message as UTF-8. Raw bytes: {data_packet.data[:20]}..."
             )
         except json.JSONDecodeError:
             logger.error(f"Failed to parse message as JSON: {message_str[:100]}")
