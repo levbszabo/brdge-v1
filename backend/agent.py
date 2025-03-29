@@ -570,6 +570,11 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
             # Interrupt any current speech
             self.interrupt(interrupt_all=True)
 
+            # Initialize prompt with a default value
+            prompt = (
+                f"Let me ask you a question about {', '.join(concepts)}: {question}"
+            )
+
             # Format the engagement based on type
             if engagement_type == "quiz":
                 options = quiz_item.get("options", [])
@@ -642,6 +647,21 @@ Evaluate their response based on these guidelines:
 Guide the discussion naturally without being overly evaluative.
 """,
                 )
+            else:
+                # Add a fallback case for unknown engagement types
+                logger.warning(
+                    f"Unknown engagement type: {engagement_type}, using default prompt"
+                )
+                self.chat_ctx.append(
+                    role="system",
+                    text=f"""
+You are now in engagement mode. Present this question to the user:
+
+QUESTION: {question}
+
+After they respond, continue the conversation naturally.
+""",
+                )
 
             # Say the engagement prompt
             logger.info(f"Presenting engagement: {prompt}")
@@ -649,6 +669,10 @@ Guide the discussion naturally without being overly evaluative.
 
         except Exception as e:
             logger.error(f"Error triggering engagement opportunity: {e}")
+            # Add stack trace for better debugging
+            import traceback
+
+            logger.error(f"Stack trace: {traceback.format_exc()}")
 
 
 async def entrypoint(ctx: JobContext):
