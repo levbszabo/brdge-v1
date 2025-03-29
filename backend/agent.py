@@ -68,8 +68,9 @@ def prewarm(proc: JobProcess):
 class ChatAssistant(VoicePipelineAgent):
     """Enhanced voice assistant that handles chat interactions with personality and knowledge base"""
 
-    def __init__(self, vad, brdge_id: str = None):
+    def __init__(self, vad, brdge_id: str = None, room: rtc.Room = None):
         self.brdge_id = brdge_id
+        self.room = room
         self.api_base_url = API_BASE_URL
         self.personality = ""
         self.knowledge_content = ""
@@ -508,6 +509,56 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
                 f"Triggering {engagement_type} engagement about {', '.join(concepts)}"
             )
 
+            # Pause the video via RPC before starting the engagement
+            try:
+                # Get remote participants using the correct property
+                if self.room and self.room.local_participant:
+                    # Use .remote_participants.values() instead of get_remote_participants()
+                    remote_participants = self.room.remote_participants.values()
+                    logger.info(
+                        f"Found {len(list(remote_participants))} remote participants"
+                    )
+
+                    for participant in remote_participants:
+                        try:
+                            # Create the pause command
+                            pause_command = json.dumps(
+                                {
+                                    "action": "pause",
+                                    "reason": "engagement",
+                                    "timestamp": datetime.utcnow().isoformat(),
+                                }
+                            )
+
+                            logger.info(
+                                f"Attempting to pause video for participant {participant.identity}"
+                            )
+
+                            # Call the RPC method
+                            response = await self.room.local_participant.perform_rpc(
+                                destination_identity=participant.identity,
+                                method="controlVideoPlayer",
+                                payload=pause_command,
+                                response_timeout=5.0,
+                            )
+
+                            logger.info(
+                                f"RPC response from {participant.identity}: {response}"
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"Error calling RPC for participant {participant.identity}: {e}"
+                            )
+                            logger.error(f"Exception details: {str(e)}")
+                else:
+                    logger.warning(
+                        "Cannot pause video: room or local participant not available"
+                    )
+            except Exception as e:
+                logger.error(f"Error pausing video via RPC: {e}")
+                logger.error(f"Exception details: {str(e)}")
+
+            # Continue with the rest of the method as before...
             if not quiz_items:
                 logger.warning("No quiz items found in opportunity")
                 return
@@ -633,7 +684,7 @@ async def entrypoint(ctx: JobContext):
         vad = silero.VAD.load()
 
     # Initialize agent with brdge_id
-    agent = ChatAssistant(vad, brdge_id)
+    agent = ChatAssistant(vad, brdge_id, ctx.room)
 
     chat = rtc.ChatManager(ctx.room)
 
@@ -655,8 +706,17 @@ async def entrypoint(ctx: JobContext):
             # Parse JSON
             message = json.loads(message_str)
 
-            # Look for timestamp messages
-            if message.get("type") == "timestamp" and "time" in message:
+            # Handle different message types based on topic
+            if topic == "agent-control":
+                # Handle agent control messages
+                if message.get("type") == "interrupt":
+                    logger.info(f"Received interrupt command from {sender}")
+                    if agent:
+                        # Interrupt the agent's speech
+                        agent.interrupt(interrupt_all=True)
+                        logger.info("Agent speech interrupted")
+            # Existing timestamp handling
+            elif message.get("type") == "timestamp" and "time" in message:
                 # Store raw seconds value
                 raw_seconds = message["time"]
 
