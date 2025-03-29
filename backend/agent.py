@@ -85,23 +85,18 @@ class ChatAssistant(VoicePipelineAgent):
             "message": None,
             "was_interrupted": False,
         }
-        self.current_timestamp = 0  # Initialize timestamp property
+        self.current_timestamp_seconds = 0  # Raw seconds for calculations
+        self.current_timestamp = "00:00:00"  # Formatted string for display
         self.system_prompt = None
 
         # Initialize agent with data from the script endpoint
         self.initialize()
 
         def _my_default_before_llm_cb(self, chat_ctx: ChatContext) -> LLMStream:
-            # Convert timestamp from seconds to HH:MM:SS format
-            hours = int(self.current_timestamp // 3600)
-            minutes = int((self.current_timestamp % 3600) // 60)
-            seconds = int(self.current_timestamp % 60)
-            timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-            print("current_timestamp", timestamp_str)
+            print("current_timestamp", self.current_timestamp)
             chat_ctx.append(
                 role="system",
-                text=f"Current video timestamp: {timestamp_str}",
+                text=f"Current video timestamp: {self.current_timestamp}",
             )
             return self.llm.chat(
                 chat_ctx=chat_ctx,
@@ -223,11 +218,8 @@ class ChatAssistant(VoicePipelineAgent):
     def _build_enhanced_system_prompt(self):
         """Build an enhanced system prompt that includes the raw JSON data with instructions on how to use it"""
         try:
-            # Calculate timestamp string
-            hours = int(self.current_timestamp // 3600)
-            minutes = int((self.current_timestamp % 3600) // 60)
-            seconds = int(self.current_timestamp % 60)
-            timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            # Use pre-formatted timestamp string
+            timestamp_str = self.current_timestamp
 
             # Start with core identity and interaction guidelines
             content_data = {
@@ -495,8 +487,8 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("data_received")
     def on_data_received(data_packet: rtc.DataPacket):
         """Handle incoming data channel message."""
-        sender = data_packet.participant.identity  # who sent the data
-        topic = getattr(data_packet, "topic", "unknown")  # Get the topic if available
+        sender = data_packet.participant.identity
+        topic = getattr(data_packet, "topic", "unknown")
 
         logger.info(
             f"Received data packet from {sender} on topic: {topic}, payload size: {len(data_packet.data)} bytes"
@@ -505,34 +497,43 @@ async def entrypoint(ctx: JobContext):
         try:
             # Decode bytes to string
             message_str = data_packet.data.decode("utf-8")
-            logger.debug(f"Decoded message: {message_str}")
 
             # Parse JSON
             message = json.loads(message_str)
-            logger.info(f"Parsed message: {message}")
 
             # Look for timestamp messages
             if message.get("type") == "timestamp" and "time" in message:
-                current_time = message["time"]
-                logger.info(f"Received video timestamp from {sender}: {current_time}")
+                # Store raw seconds value
+                raw_seconds = message["time"]
 
-                # Store the timestamp in the agent instance
+                # Convert to HH:MM:SS format immediately
+                hours = int(raw_seconds // 3600)
+                minutes = int((raw_seconds % 3600) // 60)
+                seconds = int(raw_seconds % 60)
+                formatted_timestamp = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+                logger.info(
+                    f"Received video timestamp from {sender}: {raw_seconds} → {formatted_timestamp}"
+                )
+
+                # Store both values in the agent instance
                 if agent:
-                    agent.current_timestamp = current_time
-                    logger.info(f"Updated agent current_timestamp to {current_time}")
+                    agent.current_timestamp_seconds = (
+                        raw_seconds  # Keep raw value for calculations
+                    )
+                    agent.current_timestamp = (
+                        formatted_timestamp  # Store formatted string for display
+                    )
+                    logger.info(
+                        f"Updated agent current_timestamp to {formatted_timestamp}"
+                    )
 
-                # Log additional context
-                if hasattr(data_packet, "kind"):
-                    logger.debug(f"Data packet kind: {data_packet.kind}")
+                    # Log additional context
+                    if hasattr(data_packet, "kind"):
+                        logger.debug(f"Data packet kind: {data_packet.kind}")
             else:
                 # Other message types can be handled separately if needed
                 logger.info(f"Received non-timestamp data from {sender}: {message}")
-        except UnicodeDecodeError:
-            logger.error(
-                f"Failed to decode message as UTF-8. Raw bytes: {data_packet.data[:20]}..."
-            )
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse message as JSON: {message_str[:100]}")
         except Exception as e:
             logger.error(f"Error processing data packet: {e}", exc_info=True)
 
@@ -557,12 +558,8 @@ async def entrypoint(ctx: JobContext):
             try:
                 # Add message to agent's chat context
                 agent.chat_ctx.append(role="user", text=cleaned_message)
-                hours = int(agent.current_timestamp // 3600)
-                minutes = int((agent.current_timestamp % 3600) // 60)
-                seconds = int(agent.current_timestamp % 60)
-                timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
                 agent.chat_ctx.append(
-                    role="system", text=f"Current timestamp: {timestamp_str}"
+                    role="system", text=f"Current timestamp: {agent.current_timestamp}"
                 )
                 # Get response from LLM
                 response = await agent.say(
