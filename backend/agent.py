@@ -12,7 +12,7 @@ import requests
 import asyncio
 from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import openai, deepgram, silero, cartesia
-from livekit.agents.llm import ChatImage
+from livekit.agents.llm import ChatImage, ChatContext, LLMStream
 from livekit import rtc
 from livekit.rtc import VideoFrame, DataPacket
 from livekit.rtc._proto import video_frame_pb2
@@ -91,6 +91,17 @@ class ChatAssistant(VoicePipelineAgent):
         # Initialize agent with data from the script endpoint
         self.initialize()
 
+        def _my_default_before_llm_cb(self, chat_ctx: ChatContext) -> LLMStream:
+            print("current_timestamp", self.current_timestamp)
+            chat_ctx.append(
+                role="system",
+                text=f"Current video timestamp: {self.current_timestamp}",
+            )
+            return self.llm.chat(
+                chat_ctx=chat_ctx,
+                fnc_ctx=self.fnc_ctx,
+            )
+
         # Initialize with configured TTS voice
         super().__init__(
             vad=vad,
@@ -99,6 +110,7 @@ class ChatAssistant(VoicePipelineAgent):
             tts=cartesia.TTS(model="sonic-2", voice=self.voice_id),
             chat_ctx=llm.ChatContext().append(role="system", text=self.system_prompt),
             interrupt_speech_duration=0.2,
+            before_llm_cb=_my_default_before_llm_cb,
         )
         logger.info(f"Agent initialized with API base URL: {self.api_base_url}")
         self._setup_event_handlers()
@@ -125,7 +137,7 @@ class ChatAssistant(VoicePipelineAgent):
             self.qa_pairs = config_data.get("qa_pairs", [])
 
             # Get timeline data from either the dedicated field or from video_timeline
-            self.timeline = config_data.get("timeline", {})
+            self.video_timeline = config_data.get("timeline", {})
 
             # Extract engagement opportunities
             self.engagement_opportunities = config_data.get(
@@ -136,7 +148,7 @@ class ChatAssistant(VoicePipelineAgent):
             logger.info(
                 f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
             )
-            if self.timeline:
+            if self.video_timeline:
                 logger.info(f"Timeline data retrieved successfully")
 
             # Log brdge object structure for debugging
@@ -180,15 +192,6 @@ class ChatAssistant(VoicePipelineAgent):
             # Build system prompt with enriched data
             self.system_prompt = self._build_enhanced_system_prompt()
 
-            # Log the full system prompt for debugging
-            # logger.info(
-            #     "====================== FULL SYSTEM PROMPT ======================"
-            # )
-            # logger.info(self.system_prompt)
-            # logger.info(
-            #     "================================================================"
-            # )
-
             # Update the chat context with new system prompt if already initialized
             if hasattr(self, "chat_ctx") and self.chat_ctx and self.chat_ctx.messages:
                 self.chat_ctx.messages[0] = llm.ChatMessage.create(
@@ -202,135 +205,19 @@ class ChatAssistant(VoicePipelineAgent):
             logger.error(f"Exception details: {str(e)}")
             return False
 
-    def _build_knowledge_content(self, knowledge_base):
-        """Build knowledge content string from knowledge base entries"""
-        content = ""
-        for entry in knowledge_base:
-            if isinstance(entry, dict) and "name" in entry and "content" in entry:
-                content += f"\n# {entry['name']}\n{entry['content']}\n"
-        return content
-
-    def _process_transcript(self, transcript_data):
-        """Process transcript data into read and remaining segments"""
-        # Implementation depends on your transcript data structure
-        # This is a placeholder implementation
-        if "segments" in transcript_data:
-            segments = transcript_data.get("segments", [])
-            current_position = transcript_data.get("current_position", 0)
-
-            # Split segments into read and remaining based on current_position
-            self.transcript_read = [
-                seg["text"]
-                for seg in segments
-                if seg.get("start", 0) < current_position
-            ]
-            self.transcript_remaining = [
-                seg["text"]
-                for seg in segments
-                if seg.get("start", 0) >= current_position
-            ]
-
-    def _rebuild_system_prompt(self):
-        """Rebuild the system prompt incorporating all current context"""
-        recent_context = ""
-        if self.transcript_read:
-            recent_segments = self.transcript_read[-3:]
-            recent_context = " ".join(recent_segments)
-
-        merged_system_text = f"""{SYSTEM_PROMPT_BASE}
-Agent Personality:
-{self.personality}
-Knowledge Base:
-{self.knowledge_content}
-Document Knowledge:
-{self.document_knowledge}
-Current Presentation Context:
-You are currently at a point where you've just discussed: {recent_context}
-Full Transcript Coverage:
-Already Covered: {' '.join(self.transcript_read)}
-Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_remaining else "End of presentation"}
-"""
-        if self.chat_ctx.messages:
-            self.chat_ctx.messages[0] = llm.ChatMessage.create(
-                role="system",
-                text=merged_system_text,
-            )
-        else:
-            self.chat_ctx.append(role="system", text=merged_system_text)
+    # def _before_llm_cb(self, agent):
+    #     """Callback function to modify the system prompt before LLM calls"""
+    #     logger.info(
+    #         f"_before_llm_cb called with current_timestamp: {self.current_timestamp}"
+    #     )
+    #     await agent.chat_ctx.append(
+    #         role="system", text=f"Current timestamp: {agent.current_timestamp}"
+    #     )
 
     def _build_enhanced_system_prompt(self):
         """Build an enhanced system prompt that includes the raw JSON data with instructions on how to use it"""
         try:
-            # Extract basic personality info for the identity section
-            name = "Brdge AI Assistant"
-            expertise = []
-            persona_background = ""
-            communication_style = "friendly"
-            common_phrases = []
-
-            # Safely extract agent personality data if available
-            if isinstance(self.agent_personality, dict):
-                name = self.agent_personality.get("name", name)
-                expertise = self.agent_personality.get("expertise", expertise)
-                persona_background = self.agent_personality.get(
-                    "persona_background", persona_background
-                )
-                communication_style = self.agent_personality.get(
-                    "communication_style", communication_style
-                )
-
-                # Get voice characteristics for common phrases
-                voice_chars = self.agent_personality.get("voice_characteristics", {})
-                if isinstance(voice_chars, dict):
-                    common_phrases = voice_chars.get("common_phrases", [])
-
             # Start with core identity and interaction guidelines
-            prompt = f"""
-# CORE IDENTITY AND ROLE
-
-You are {name}, an expert on the content being presented in this video. You embody the presenter's knowledge, style, and expertise.
-
-## Your Expertise Areas:
-{', '.join(expertise) if isinstance(expertise, list) and expertise else "General knowledge"}
-
-## Your Background:
-{persona_background}
-
-## Your Communication Style:
-Your tone is {communication_style}. You speak naturally and conversationally, as if explaining concepts to a friend or colleague.
-{f"You often use phrases like {', '.join(common_phrases[:3])}" if common_phrases and len(common_phrases) > 0 else ""}
-
-# INTERACTION GUIDELINES
-
-1. CONVERSATIONAL TONE: Speak naturally using contractions (I'm, we'll, that's) and casual phrases.
-
-2. CONCISE RESPONSES: Prefer shorter answers (1-3 sentences) unless detailed explanation is requested. Get to the point quickly.
-
-3. FIRST-PERSON PERSPECTIVE: You ARE the presenter. Use "I" and "my" when referencing content or opinions in the video.
-
-4. KEEP IT NATURAL: Never mention AI, knowledge bases, or that you're an assistant. You're simply the presenter answering questions.
-
-5. NO DISCLAIMERS: Don't use phrases like "based on the video" or "according to the content." Speak as the authoritative source.
-
-6. AUTHENTIC GAPS: If you don't know something specific from the video, say "I haven't covered that in detail" instead of claiming AI limitations.
-
-# COMPLETE VIDEO CONTENT DATA
-
-Below is the complete JSON data containing everything you need to know about the video content. Use this data to answer questions accurately:
-
-## HOW TO USE THIS DATA:
-
-- METADATA: Contains basic information about the video like title, summary, and key topics
-- QA_PAIRS: Pre-answered questions and answers about the content - use these directly when relevant
-- TIMELINE: Chronological breakdown of what happens in the video, with timestamps, spoken text, and visuals
-- KNOWLEDGE_BASE: Additional information and context about topics in the video
-- TEACHING_PERSONA: Information about the teaching style and persona to adopt
-- ENGAGEMENT_OPPORTUNITIES: Key moments where you should provide more detailed information
-
-## RAW JSON CONTENT:
-"""
-
-            # Construct a comprehensive data object to include in the prompt
             content_data = {
                 "teaching_persona": (
                     self.teaching_persona if hasattr(self, "teaching_persona") else {}
@@ -339,7 +226,9 @@ Below is the complete JSON data containing everything you need to know about the
                     self.knowledge_base if hasattr(self, "knowledge_base") else {}
                 ),
                 "qa_pairs": self.qa_pairs if hasattr(self, "qa_pairs") else [],
-                "timeline": self.timeline if hasattr(self, "timeline") else {},
+                "video_timeline": (
+                    self.video_timeline if hasattr(self, "video_timeline") else {}
+                ),
                 "engagement_opportunities": (
                     self.engagement_opportunities
                     if hasattr(self, "engagement_opportunities")
@@ -348,11 +237,17 @@ Below is the complete JSON data containing everything you need to know about the
                 "agent_personality": (
                     self.agent_personality if hasattr(self, "agent_personality") else {}
                 ),
+                "current_timestamp": self.current_timestamp,
             }
 
             # Format the JSON to be more readable in the prompt
             formatted_json = json.dumps(content_data, indent=2)
-            prompt += f"""
+
+            # Start with an explicit timestamp mention
+            prompt = f"""
+IMPORTANT: The current video timestamp can change throughout your interaction with the user,
+ensure you are always using the most up to date timestamp.
+
 ```json
 {formatted_json}
 ```
@@ -361,25 +256,17 @@ Below is the complete JSON data containing everything you need to know about the
             # Add specific instructions on how to use the data
             prompt += """
 # HOW TO RESPOND USING THE DATA
+IMPORTANT: The current video timestamp is shown above. When asked about the current time or timestamp, 
+always reference this exact value.
+
+Always consider the current_timestamp when answering questions since that will give you 
+some important context about where you are in the video. 
 
 When answering questions:
-1. First check QA_PAIRS for direct matches to the question
-2. If not found, use TIMELINE to locate relevant information by timestamp
-3. Use KNOWLEDGE_BASE for deeper context and explanations
-4. Reference relationships between concepts if available
-5. Maintain your personality from TEACHING_PERSONA in all responses
-
-# ENGAGEMENT OPPORTUNITIES
-
-If the user is at a timestamp that matches an ENGAGEMENT_OPPORTUNITY:
-1. Be prepared to initiate a quiz or discussion based on the engagement_type
-2. For quiz types, ask the questions provided in quiz_items
-3. For discussion types, facilitate open-ended conversations using the provided topics
-4. Provide feedback based on the follow_up guidance
-
-# FINAL REMINDER
-
-Remember: You are engaging directly with someone who's watching this video. Be helpful, engaging, and authentic. Your goal is to make them feel like they're having a direct conversation with the presenter.
+1. If not found, use VIDEO TIMELINE to locate relevant information by timestamp
+2. Use KNOWLEDGE_BASE for deeper context and explanations
+3. Reference relationships between concepts if available
+4. Maintain your personality from TEACHING_PERSONA in all responses
 """
 
             return prompt
@@ -651,13 +538,16 @@ async def entrypoint(ctx: JobContext):
             return
 
         logger.info(f"Received chat message: {cleaned_message}")
+        # agent._before_llm_cb(agent, agent.chat_ctx)
 
         # Process with LLM
         async def process_message():
             try:
                 # Add message to agent's chat context
                 agent.chat_ctx.append(role="user", text=cleaned_message)
-
+                # agent.chat_ctx.append(
+                #     role="system", text=f"Current timestamp: {agent.current_timestamp}"
+                # )
                 # Get response from LLM
                 response = await agent.say(
                     agent.llm.chat(chat_ctx=agent.chat_ctx),
