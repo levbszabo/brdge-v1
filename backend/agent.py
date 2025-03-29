@@ -92,10 +92,16 @@ class ChatAssistant(VoicePipelineAgent):
         self.initialize()
 
         def _my_default_before_llm_cb(self, chat_ctx: ChatContext) -> LLMStream:
-            print("current_timestamp", self.current_timestamp)
+            # Convert timestamp from seconds to HH:MM:SS format
+            hours = int(self.current_timestamp // 3600)
+            minutes = int((self.current_timestamp % 3600) // 60)
+            seconds = int(self.current_timestamp % 60)
+            timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+            print("current_timestamp", timestamp_str)
             chat_ctx.append(
                 role="system",
-                text=f"Current video timestamp: {self.current_timestamp}",
+                text=f"Current video timestamp: {timestamp_str}",
             )
             return self.llm.chat(
                 chat_ctx=chat_ctx,
@@ -217,6 +223,12 @@ class ChatAssistant(VoicePipelineAgent):
     def _build_enhanced_system_prompt(self):
         """Build an enhanced system prompt that includes the raw JSON data with instructions on how to use it"""
         try:
+            # Calculate timestamp string
+            hours = int(self.current_timestamp // 3600)
+            minutes = int((self.current_timestamp % 3600) // 60)
+            seconds = int(self.current_timestamp % 60)
+            timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
             # Start with core identity and interaction guidelines
             content_data = {
                 "teaching_persona": (
@@ -237,7 +249,7 @@ class ChatAssistant(VoicePipelineAgent):
                 "agent_personality": (
                     self.agent_personality if hasattr(self, "agent_personality") else {}
                 ),
-                "current_timestamp": self.current_timestamp,
+                "current_timestamp": timestamp_str,
             }
 
             # Format the JSON to be more readable in the prompt
@@ -545,8 +557,12 @@ async def entrypoint(ctx: JobContext):
             try:
                 # Add message to agent's chat context
                 agent.chat_ctx.append(role="user", text=cleaned_message)
+                hours = int(agent.current_timestamp // 3600)
+                minutes = int((agent.current_timestamp % 3600) // 60)
+                seconds = int(agent.current_timestamp % 60)
+                timestamp_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
                 agent.chat_ctx.append(
-                    role="system", text=f"Current timestamp: {agent.current_timestamp}"
+                    role="system", text=f"Current timestamp: {timestamp_str}"
                 )
                 # Get response from LLM
                 response = await agent.say(
