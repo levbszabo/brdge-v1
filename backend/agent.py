@@ -85,8 +85,11 @@ class ChatAssistant(VoicePipelineAgent):
             "message": None,
             "was_interrupted": False,
         }
-        self.current_timestamp_seconds = 0  # Raw seconds for calculations
-        self.current_timestamp = "00:00:00"  # Formatted string for display
+        self.current_timestamp_seconds = 0
+        self.current_timestamp = "00:00:00"
+        self.triggered_opportunities = (
+            set()
+        )  # Track which opportunities have been triggered
         self.system_prompt = None
 
         # Initialize agent with data from the script endpoint
@@ -445,6 +448,157 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
     #     logger.info("Interrupting current speech")
     #     return super().interrupt(interrupt_all=interrupt_all)
 
+    async def check_engagement_opportunities(self, current_time_seconds):
+        """Check if there are any engagement opportunities near the current timestamp"""
+        if (
+            not hasattr(self, "engagement_opportunities")
+            or not self.engagement_opportunities
+        ):
+            logger.info("No engagement opportunities available to check")
+            return False
+
+        # Define proximity threshold (1 second)
+        threshold = 1.0
+
+        for opportunity in self.engagement_opportunities:
+            try:
+                # Get timestamp from opportunity
+                opp_timestamp_str = opportunity.get("timestamp", "00:00:00")
+
+                # Convert HH:MM:SS to seconds for comparison
+                h, m, s = map(int, opp_timestamp_str.split(":"))
+                opp_time_seconds = h * 3600 + m * 60 + s
+
+                # Check if we're within threshold of this opportunity
+                if abs(current_time_seconds - opp_time_seconds) <= threshold:
+                    logger.info(f"Found engagement opportunity at {opp_timestamp_str}")
+
+                    # Check if this opportunity has been triggered already
+                    opp_id = opportunity.get("id")
+                    if (
+                        hasattr(self, "triggered_opportunities")
+                        and opp_id in self.triggered_opportunities
+                    ):
+                        logger.info(f"Opportunity {opp_id} already triggered, skipping")
+                        return False
+
+                    # Trigger this opportunity
+                    await self.trigger_engagement_opportunity(opportunity)
+
+                    # Mark this opportunity as triggered
+                    if not hasattr(self, "triggered_opportunities"):
+                        self.triggered_opportunities = set()
+                    self.triggered_opportunities.add(opp_id)
+
+                    return True
+            except Exception as e:
+                logger.error(f"Error checking opportunity: {e}")
+
+        return False
+
+    async def trigger_engagement_opportunity(self, opportunity):
+        """Present an engagement opportunity to the user"""
+        try:
+            # Extract details from the opportunity
+            engagement_type = opportunity.get("engagement_type", "")
+            concepts = opportunity.get("concepts_addressed", [])
+            quiz_items = opportunity.get("quiz_items", [])
+
+            logger.info(
+                f"Triggering {engagement_type} engagement about {', '.join(concepts)}"
+            )
+
+            if not quiz_items:
+                logger.warning("No quiz items found in opportunity")
+                return
+
+            # Take the first quiz item
+            quiz_item = quiz_items[0]
+            question = quiz_item.get("question", "")
+
+            # Interrupt any current speech
+            self.interrupt(interrupt_all=True)
+
+            # Format the engagement based on type
+            if engagement_type == "quiz":
+                options = quiz_item.get("options", [])
+                correct_option = quiz_item.get("correct_option")
+                explanation = quiz_item.get("explanation", "")
+
+                # Build quiz prompt
+                prompt = f"I'd like to check your understanding with a quick question: {question}"
+
+                if options:
+                    prompt += "\n\nOptions:"
+                    for i, option in enumerate(options):
+                        prompt += f"\n{i+1}. {option}"
+
+                # Use different quote style to avoid backslash issues
+                if_correct = quiz_item.get("follow_up", {}).get(
+                    "if_correct", "That's correct!"
+                )
+                if_incorrect = quiz_item.get("follow_up", {}).get(
+                    "if_incorrect", "Not quite."
+                )
+
+                # Add context for the LLM with fixed f-string
+                self.chat_ctx.append(
+                    role="system",
+                    text=f"""
+You are now in engagement mode. Present this quiz to the user exactly as formatted below.
+Don't say "here's a quiz" or similar prefacing - just present it naturally as if you decided to ask this.
+
+QUIZ QUESTION: {question}
+
+{"OPTIONS: " + ", ".join(options) if options else ""}
+
+When the user responds:
+- If they select {correct_option} or give an answer similar to it, respond with: "{if_correct}"
+- If they give a different answer, respond with: "{if_incorrect}"
+- If appropriate, you can add: "{explanation}"
+
+After handling their response, continue the conversation normally.
+""",
+                )
+
+            elif engagement_type == "discussion":
+                expected_answer = quiz_item.get("expected_answer", "")
+
+                # Get follow-up responses separately to avoid backslash issues
+                if_correct = quiz_item.get("follow_up", {}).get(
+                    "if_correct", "That's a great point!"
+                )
+                if_incorrect = quiz_item.get("follow_up", {}).get(
+                    "if_incorrect", "Consider also..."
+                )
+
+                # Build discussion prompt
+                prompt = f"Let's discuss something: {question}"
+
+                # Add context for the LLM with fixed f-string
+                self.chat_ctx.append(
+                    role="system",
+                    text=f"""
+You are now in engagement mode. Present this discussion question to the user:
+
+DISCUSSION QUESTION: {question}
+
+Evaluate their response based on these guidelines:
+- A good response should include points like: {expected_answer}
+- If their response is thoughtful and covers key points, respond with: "{if_correct}"
+- If their response seems incomplete, respond with: "{if_incorrect}"
+
+Guide the discussion naturally without being overly evaluative.
+""",
+                )
+
+            # Say the engagement prompt
+            logger.info(f"Presenting engagement: {prompt}")
+            await self.say(prompt, allow_interruptions=True)
+
+        except Exception as e:
+            logger.error(f"Error triggering engagement opportunity: {e}")
+
 
 async def entrypoint(ctx: JobContext):
     logger.info("Entrypoint started")
@@ -518,14 +672,15 @@ async def entrypoint(ctx: JobContext):
 
                 # Store both values in the agent instance
                 if agent:
-                    agent.current_timestamp_seconds = (
-                        raw_seconds  # Keep raw value for calculations
-                    )
-                    agent.current_timestamp = (
-                        formatted_timestamp  # Store formatted string for display
-                    )
+                    agent.current_timestamp_seconds = raw_seconds
+                    agent.current_timestamp = formatted_timestamp
                     logger.info(
                         f"Updated agent current_timestamp to {formatted_timestamp}"
+                    )
+
+                    # Check for engagement opportunities at this timestamp
+                    asyncio.create_task(
+                        agent.check_engagement_opportunities(raw_seconds)
                     )
 
                     # Log additional context
