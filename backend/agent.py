@@ -571,9 +571,7 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
             self.interrupt(interrupt_all=True)
 
             # Initialize prompt with a default value
-            prompt = (
-                f"Let me ask you a question about {', '.join(concepts)}: {question}"
-            )
+            prompt = f"{question}"
 
             # Format the engagement based on type
             if engagement_type == "quiz":
@@ -582,12 +580,12 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
                 explanation = quiz_item.get("explanation", "")
 
                 # Build quiz prompt
-                prompt = f"I'd like to check your understanding with a quick question: {question}"
+                prompt = f"{question}"
 
                 if options:
-                    prompt += "\n\nOptions:"
+                    prompt += "\n"
                     for i, option in enumerate(options):
-                        prompt += f"\n{i+1}. {option}"
+                        prompt += f"{i+1}.{option}.\n\n "
 
                 # Use different quote style to avoid backslash issues
                 if_correct = quiz_item.get("follow_up", {}).get(
@@ -629,23 +627,23 @@ After handling their response, continue the conversation normally.
                 )
 
                 # Build discussion prompt
-                prompt = f"Let's discuss something: {question}"
+                prompt = f"{question}"
 
                 # Add context for the LLM with fixed f-string
                 self.chat_ctx.append(
                     role="system",
                     text=f"""
-You are now in engagement mode. Present this discussion question to the user:
+                    You are now in engagement mode. Present this discussion question to the user:
 
-DISCUSSION QUESTION: {question}
+                    DISCUSSION QUESTION: {question}
 
-Evaluate their response based on these guidelines:
-- A good response should include points like: {expected_answer}
-- If their response is thoughtful and covers key points, respond with: "{if_correct}"
-- If their response seems incomplete, respond with: "{if_incorrect}"
+                    Evaluate their response based on these guidelines:
+                    - A good response should include points like: {expected_answer}
+                    - If their response is thoughtful and covers key points, respond with: "{if_correct}"
+                    - If their response seems incomplete, respond with: "{if_incorrect}"
 
-Guide the discussion naturally without being overly evaluative.
-""",
+                    Guide the discussion naturally without being overly evaluative.
+                    """,
                 )
             else:
                 # Add a fallback case for unknown engagement types
@@ -655,12 +653,12 @@ Guide the discussion naturally without being overly evaluative.
                 self.chat_ctx.append(
                     role="system",
                     text=f"""
-You are now in engagement mode. Present this question to the user:
+                    You are now in engagement mode. Present this question to the user:
 
-QUESTION: {question}
+                    QUESTION: {question}
 
-After they respond, continue the conversation naturally.
-""",
+                    After they respond, continue the conversation naturally.
+                    """,
                 )
 
             # Say the engagement prompt

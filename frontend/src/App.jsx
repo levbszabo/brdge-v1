@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, GlobalStyles } from '@mui/material';
 import theme from './theme';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header'; // Make sure you have this component
@@ -31,15 +31,44 @@ import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
 import RoomPage from './pages/RoomPage';
 import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
+import darkParchmentTexture from './assets/textures/dark-parchment.png'; // Import the texture
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
+
+// Define Global Styles for background texture
+const globalStyles = (
+  <GlobalStyles
+    styles={{
+      body: {
+        backgroundColor: theme.palette.background.default, // Use parchmentLight from theme
+        // Apply the texture as a fixed overlay
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: `url(${darkParchmentTexture})`,
+          backgroundSize: 'cover',
+          backgroundAttachment: 'fixed', // Keep it fixed
+          opacity: 0.15, // Adjust opacity as needed
+          mixBlendMode: 'multiply',
+          zIndex: -1, // Ensure it's behind all content
+          pointerEvents: 'none',
+        },
+      },
+    }}
+  />
+);
 
 function Layout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const isLandingPage = location.pathname === '/';
 
   // Define public routes
   const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services'];
@@ -106,9 +135,18 @@ function Layout({ children }) {
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
+      {/* Apply global styles here, after CssBaseline but before main content Box */}
+      {globalStyles}
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Header />
-        <Box component="main" sx={{ flexGrow: 1 }}>
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            // Add padding top to account for the fixed header
+            pt: isLandingPage ? 0 : { xs: '48px', sm: '64px' }
+          }}
+        >
           {children}
         </Box>
       </Box>

@@ -2,55 +2,56 @@ import React from 'react';
 import { Box, Typography, Link, Stack } from '@mui/material';
 import { Mail } from 'lucide-react';
 import { Link as RouterLink } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 
 const Footer = () => {
+    const theme = useTheme();
+
     return (
         <Box
             component="footer"
             sx={{
                 width: '100%',
                 py: { xs: 2, sm: 2.5 },
-                px: { xs: 2, sm: 3 },
-                background: 'rgba(0, 0, 0, 0.3)',
-                backdropFilter: 'blur(10px)',
-                borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                px: { xs: 2, sm: 3, md: 4 },
+                background: theme.palette.background.paper + 'e6',
+                backdropFilter: 'blur(8px)',
+                borderTop: `1px solid ${theme.palette.divider}`,
                 display: 'flex',
                 flexDirection: { xs: 'column', sm: 'row' },
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: { xs: 1, sm: 0 },
+                gap: { xs: 2, sm: 3 },
                 position: 'relative',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 10
+                zIndex: theme.zIndex.appBar - 1
             }}
         >
             <Stack
                 direction={{ xs: 'column', sm: 'row' }}
-                spacing={{ xs: 1, sm: 3 }}
-                alignItems={{ xs: 'center', sm: 'flex-start' }}
+                spacing={{ xs: 1.5, sm: 3 }}
+                alignItems={{ xs: 'center', sm: 'center' }}
                 sx={{
-                    color: 'rgba(255, 255, 255, 0.7)'
+                    color: theme.palette.text.secondary
                 }}
             >
                 <Box
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 0.5,
+                        gap: 0.75,
                     }}
                 >
-                    <Mail size={14} />
+                    <Mail size={14} style={{ color: theme.palette.secondary.main }} />
                     <Link
                         href="mailto:levi@brdge-ai.com"
                         sx={{
                             color: 'inherit',
                             textDecoration: 'none',
                             fontSize: '0.875rem',
+                            fontFamily: theme.typography.body2.fontFamily,
                             '&:hover': {
-                                color: '#00ffcc',
-                                textDecoration: 'none'
+                                color: theme.palette.secondary.main,
+                                textDecoration: 'underline'
                             }
                         }}
                     >
@@ -62,19 +63,19 @@ const Footer = () => {
                     direction="row"
                     spacing={2}
                     divider={
-                        <Box
+                        <Typography
                             component="span"
                             sx={{
-                                color: 'rgba(255, 255, 255, 0.3)',
+                                color: theme.palette.text.disabled,
                                 fontSize: '0.875rem'
                             }}
                         >
                             •
-                        </Box>
+                        </Typography>
                     }
                     sx={{
                         fontSize: '0.875rem',
-                        color: 'rgba(255, 255, 255, 0.5)'
+                        color: theme.palette.text.disabled
                     }}
                 >
                     <Link
@@ -83,8 +84,10 @@ const Footer = () => {
                         sx={{
                             color: 'inherit',
                             textDecoration: 'none',
+                            fontFamily: theme.typography.body2.fontFamily,
                             '&:hover': {
-                                color: '#00ffcc'
+                                color: theme.palette.text.secondary,
+                                textDecoration: 'underline'
                             }
                         }}
                     >
@@ -96,8 +99,10 @@ const Footer = () => {
                         sx={{
                             color: 'inherit',
                             textDecoration: 'none',
+                            fontFamily: theme.typography.body2.fontFamily,
                             '&:hover': {
-                                color: '#00ffcc'
+                                color: theme.palette.text.secondary,
+                                textDecoration: 'underline'
                             }
                         }}
                     >
@@ -109,8 +114,9 @@ const Footer = () => {
             <Typography
                 variant="body2"
                 sx={{
-                    color: 'rgba(255, 255, 255, 0.5)',
+                    color: theme.palette.text.disabled,
                     fontSize: '0.875rem',
+                    fontFamily: theme.typography.body2.fontFamily,
                     textAlign: { xs: 'center', sm: 'right' }
                 }}
             >

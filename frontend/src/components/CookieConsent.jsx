@@ -1,40 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Typography, Slide } from '@mui/material';
 import { Link } from 'react-router-dom';
+import { useTheme } from '@mui/material/styles';
 
 const GA_MEASUREMENT_ID = 'G-H5CM8J1TPE';
 
 const CookieConsent = () => {
     const [show, setShow] = useState(false);
+    const theme = useTheme();
 
     useEffect(() => {
-        // Check if user has already consented
         const hasConsented = localStorage.getItem('cookieConsent');
         if (!hasConsented) {
             setShow(true);
         } else if (hasConsented === 'true') {
-            // If user has previously consented, initialize GA
             initializeGA();
         }
     }, []);
 
     const initializeGA = () => {
-        // Initialize Google Analytics
-        window.gtag('consent', 'update', {
-            'analytics_storage': 'granted'
-        });
+        if (typeof window.gtag === 'function') {
+            window.gtag('consent', 'update', {
+                'analytics_storage': 'granted'
+            });
+        }
     };
 
     const disableGA = () => {
-        // Disable Google Analytics
-        window.gtag('consent', 'update', {
-            'analytics_storage': 'denied'
-        });
-
-        // Optionally, you can also delete existing cookies
-        document.cookie.split(";").forEach(function (c) {
-            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-        });
+        if (typeof window.gtag === 'function') {
+            window.gtag('consent', 'update', {
+                'analytics_storage': 'denied'
+            });
+        }
     };
 
     const handleAccept = () => {
@@ -59,33 +56,36 @@ const CookieConsent = () => {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    zIndex: 9999,
-                    background: 'rgba(0, 27, 61, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    borderTop: '1px solid rgba(34, 211, 238, 0.1)',
-                    boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.2)',
-                    p: { xs: 2, sm: 3 },
+                    zIndex: theme.zIndex.snackbar,
+                    background: theme.palette.background.default + 'f2',
+                    backdropFilter: 'blur(8px)',
+                    borderTop: `1px solid ${theme.palette.divider}`,
+                    boxShadow: theme.shadows[8],
+                    p: { xs: 2, sm: 2.5 },
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
                     alignItems: { xs: 'stretch', md: 'center' },
                     justifyContent: 'center',
-                    gap: 2
+                    gap: { xs: 2, sm: 3 }
                 }}
             >
                 <Typography
                     variant="body2"
                     sx={{
-                        color: 'rgba(255, 255, 255, 0.8)',
+                        color: theme.palette.text.secondary,
                         textAlign: { xs: 'center', md: 'left' },
-                        maxWidth: '800px'
+                        maxWidth: '800px',
+                        fontFamily: theme.typography.body2.fontFamily,
+                        lineHeight: 1.6,
                     }}
                 >
-                    We use cookies and Google Analytics to enhance your experience and analyze site usage. By clicking "Accept", you consent to our use of cookies. Read our{' '}
+                    We use cookies to enhance your experience. By clicking "Accept", you consent to our use of cookies. Read our{' '}
                     <Link
                         to="/policy#privacy"
                         style={{
-                            color: 'rgba(34, 211, 238, 0.9)',
-                            textDecoration: 'none'
+                            color: theme.palette.secondary.main,
+                            textDecoration: 'underline',
+                            fontWeight: 500,
                         }}
                     >
                         Privacy Policy
@@ -96,17 +96,18 @@ const CookieConsent = () => {
                     display: 'flex',
                     gap: 2,
                     justifyContent: { xs: 'center', md: 'flex-end' },
-                    minWidth: { md: '300px' }
+                    minWidth: { md: '240px' }
                 }}>
                     <Button
                         variant="outlined"
                         onClick={handleDecline}
+                        size="medium"
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.8)',
-                            borderColor: 'rgba(34, 211, 238, 0.3)',
+                            color: theme.palette.secondary.main,
+                            borderColor: theme.palette.secondary.main + '80',
                             '&:hover': {
-                                borderColor: 'rgba(34, 211, 238, 0.5)',
-                                background: 'rgba(34, 211, 238, 0.05)'
+                                borderColor: theme.palette.secondary.main,
+                                backgroundColor: theme.palette.action.hover
                             }
                         }}
                     >
@@ -115,10 +116,13 @@ const CookieConsent = () => {
                     <Button
                         variant="contained"
                         onClick={handleAccept}
+                        size="medium"
                         sx={{
-                            background: 'linear-gradient(45deg, rgba(34, 211, 238, 0.8), rgba(34, 211, 238, 0.6))',
+                            backgroundColor: theme.palette.primary.main,
+                            color: theme.palette.primary.contrastText,
                             '&:hover': {
-                                background: 'linear-gradient(45deg, rgba(34, 211, 238, 0.9), rgba(34, 211, 238, 0.7))',
+                                backgroundColor: theme.palette.primary.light,
+                                boxShadow: theme.shadows[4]
                             }
                         }}
                     >
@@ -130,4 +134,4 @@ const CookieConsent = () => {
     );
 };
 
-export default CookieConsent; 
+export default CookieConsent;

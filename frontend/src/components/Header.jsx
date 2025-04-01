@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import {
     AppBar,
     Toolbar,
@@ -9,11 +9,14 @@ import {
     Drawer,
     List,
     ListItem,
+    ListItemButton,
     ListItemText,
-    Avatar
+    Avatar,
+    useScrollTrigger,
+    Divider
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { logout } from '../utils/auth';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -28,6 +31,26 @@ function Header() {
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
+    const location = useLocation();
+
+    // Determine if we're on the landing page
+    const isLandingPage = location.pathname === '/';
+
+    // Track scroll position for transparent to solid transition
+    const scrollTrigger = useScrollTrigger({
+        disableHysteresis: true,
+        threshold: 20,
+    });
+
+    // Header background should be more visible when scrolled
+    const headerBackground = isLandingPage
+        ? scrollTrigger
+            ? theme.palette.background.paper + 'e6'
+            : theme.palette.background.paper + 'cc'
+        : theme.palette.background.paper + 'cc';
+
+    // Text colors based on landing page
+    const textColor = isLandingPage ? theme.palette.text.primary : theme.palette.text.primary;
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -37,27 +60,29 @@ function Header() {
                 })
                 .catch(error => {
                     console.error('Error fetching user profile:', error);
-                    // If token is invalid/expired, handle logout
-                    if (error.response?.status === 401) {
+                    if (error.response?.status === 401 || error.response?.status === 403) {
                         handleLogout();
                     }
                 });
+        } else {
+            setUserEmail('');
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, navigate]);
 
     // Get first letter of email for avatar
     const avatarLetter = userEmail ? userEmail[0].toUpperCase() : 'U';
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         logout();
         setIsAuthenticated(false);
         navigate('/login');
         if (isMobile) setDrawerOpen(false);
-    };
+    }, [setIsAuthenticated, navigate, isMobile]);
 
-    const handleProfileClick = () => {
+    const handleProfileClick = useCallback(() => {
         navigate('/profile');
-    };
+        if (isMobile) setDrawerOpen(false);
+    }, [navigate, isMobile]);
 
     // Different menu items based on authentication status
     const menuItems = isAuthenticated
@@ -70,223 +95,238 @@ function Header() {
             { text: 'Pricing', link: '/pricing' },
             { text: 'Contact', link: '/contact' },
             { text: 'Login', link: '/login' },
-            { text: 'Sign Up', link: '/signup' }
+            { text: 'Sign Up', link: '/signup', variant: 'button' }
         ];
 
+    // Common styles for menu buttons/links
+    const menuItemStyle = {
+        color: theme.palette.text.secondary,
+        fontWeight: 400,
+        fontFamily: theme.typography.fontFamily,
+        textTransform: 'none',
+        fontSize: '0.95rem',
+        padding: '6px 12px',
+        borderRadius: theme.shape.borderRadius,
+        '&:hover': {
+            color: theme.palette.primary.main,
+            backgroundColor: theme.palette.action.hover
+        }
+    };
+
+    // Styles specific for the Sign Up button
+    const signUpButtonStyle = {
+        ...theme.components.MuiButton.styleOverrides.contained,
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        padding: '6px 18px',
+        fontSize: '0.95rem',
+        marginLeft: '10px',
+        '&:hover': {
+            backgroundColor: theme.palette.primary.light,
+            boxShadow: theme.shadows[2],
+        }
+    };
+
     const renderMenuItems = () => (
-        <>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {menuItems.map((item) => (
-                <Button
-                    key={item.text}
-                    color="inherit"
-                    component={item.link ? RouterLink : 'button'}
-                    to={item.link}
-                    onClick={item.onClick}
-                    sx={{
-                        color: 'white',
-                        '&:hover': {
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    }}
-                >
-                    {item.text}
-                </Button>
+                item.variant === 'button' ? (
+                    <Button
+                        key={item.text}
+                        component={RouterLink}
+                        to={item.link}
+                        size="small"
+                        sx={signUpButtonStyle}
+                    >
+                        {item.text}
+                    </Button>
+                ) : (
+                    <Button
+                        key={item.text}
+                        component={item.link ? RouterLink : 'button'}
+                        to={item.link}
+                        onClick={item.onClick}
+                        sx={menuItemStyle}
+                    >
+                        {item.text}
+                    </Button>
+                )
             ))}
-        </>
+        </Box>
     );
 
+    const drawerPaperStyle = {
+        boxSizing: 'border-box',
+        width: 240,
+        backgroundColor: theme.palette.background.default,
+        borderRight: `1px solid ${theme.palette.divider}`,
+    };
+
+    const drawerItemStyle = {
+        color: theme.palette.text.secondary,
+        '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+            color: theme.palette.text.primary,
+        }
+    };
+
+    const drawerSignUpStyle = {
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        borderRadius: theme.shape.borderRadius,
+        margin: '8px 16px',
+        '&:hover': {
+            backgroundColor: theme.palette.primary.light,
+        },
+        '& .MuiListItemText-primary': {
+            fontWeight: 500,
+        }
+    };
+
     const renderMobileMenu = () => (
-        <List>
-            {menuItems.map((item) => (
-                <ListItem
-                    button
-                    key={item.text}
-                    component={item.link ? RouterLink : 'button'}
-                    to={item.link}
-                    onClick={() => {
-                        setDrawerOpen(false);
-                        if (item.onClick) item.onClick();
-                    }}
-                >
-                    <ListItemText primary={item.text} />
+        <Box sx={{ width: 'auto' }} role="presentation">
+            <List>
+                {menuItems.map((item) => (
+                    item.variant === 'button' ? (
+                        <ListItem key={item.text} disablePadding sx={{ padding: '0 8px' }}>
+                            <ListItemButton
+                                component={RouterLink}
+                                to={item.link}
+                                onClick={() => setDrawerOpen(false)}
+                                sx={drawerSignUpStyle}
+                            >
+                                <ListItemText primary={item.text} />
+                            </ListItemButton>
+                        </ListItem>
+                    ) : (
+                        <ListItem key={item.text} disablePadding>
+                            <ListItemButton
+                                component={item.link ? RouterLink : 'button'}
+                                to={item.link}
+                                onClick={() => {
+                                    setDrawerOpen(false);
+                                    if (item.onClick) item.onClick();
+                                }}
+                                sx={drawerItemStyle}
+                            >
+                                <ListItemText primary={item.text} />
+                            </ListItemButton>
+                        </ListItem>
+                    )
+                ))}
+            </List>
+            {isAuthenticated && <Divider sx={{ my: 1, borderColor: theme.palette.divider + '60' }} />}
+            {isAuthenticated && (
+                <ListItem disablePadding>
+                    <ListItemButton onClick={handleProfileClick} sx={drawerItemStyle}>
+                        <Avatar sx={{ width: 24, height: 24, mr: 1.5, bgcolor: theme.palette.secondary.main }}>
+                            <PersonIcon sx={{ fontSize: 16 }} />
+                        </Avatar>
+                        <ListItemText primary="Profile" />
+                    </ListItemButton>
                 </ListItem>
-            ))}
-        </List>
+            )}
+        </Box>
     );
 
     return (
-        <AppBar
-            position="fixed"
-            elevation={0}
-            sx={{
-                background: 'transparent',
-                backdropFilter: 'none',
-                pt: { xs: 0, sm: 1 },
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                zIndex: 1000
-            }}
-        >
-            <Toolbar sx={{
-                minHeight: { xs: '32px', sm: '48px' },
-                px: { xs: 1, sm: 2 },
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                mt: { xs: 0.5, sm: 0 }
-            }}>
-                <Box sx={{
+        <>
+            <AppBar
+                position="fixed"
+                elevation={scrollTrigger ? 3 : 1}
+                sx={{
+                    background: headerBackground,
+                    backdropFilter: 'blur(10px)',
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    zIndex: theme.zIndex.drawer + 1,
+                    transition: theme.transitions.create(['background-color', 'box-shadow', 'border-color'], {
+                        duration: theme.transitions.duration.short,
+                    }),
+                }}
+            >
+                <Toolbar sx={{
+                    minHeight: { xs: '48px', sm: '56px', md: '64px' },
+                    px: { xs: 1, sm: 2, md: 3 },
                     display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    flex: { xs: '1', sm: '0 1 auto' },
-                    height: { xs: '32px', sm: 'auto' }
                 }}>
-                    <RouterLink to="/" style={{
-                        color: 'inherit',
-                        textDecoration: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        height: '100%'
-                    }}>
-                        <Typography
-                            variant="h6"
-                            component="div"
-                            sx={{
-                                color: 'white',
-                                display: 'block',
-                                fontSize: { xs: '0.95rem', sm: '1.25rem' },
-                                fontWeight: 500,
-                                letterSpacing: '0.02em',
-                                lineHeight: 1,
-                                transform: { xs: 'none', sm: 'translateY(-1px)' },
-                                textShadow: '0 0 10px rgba(0,255,204,0.3)',
-                                '&:hover': {
-                                    textShadow: '0 0 15px rgba(0,255,204,0.4)',
-                                }
-                            }}
-                        >
-                            Brdge AI
-                        </Typography>
-                    </RouterLink>
-                </Box>
-
-                {isMobile ? (
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: { xs: 1, sm: 1.5 }
-                    }}>
-                        {isAuthenticated && (
-                            <IconButton
-                                onClick={handleProfileClick}
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        <RouterLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                            <Typography
+                                variant="h6"
+                                component="div"
                                 sx={{
-                                    width: { xs: 28, sm: 36 },
-                                    height: { xs: 28, sm: 36 },
-                                    '& .MuiAvatar-root': {
-                                        width: { xs: 24, sm: 28 },
-                                        height: { xs: 24, sm: 28 }
-                                    }
+                                    color: textColor,
+                                    fontFamily: theme.typography.h1.fontFamily,
+                                    fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem' },
+                                    fontWeight: 600,
+                                    letterSpacing: '0.01em',
+                                    lineHeight: 1,
+                                    transition: 'color 0.2s ease-in-out',
+                                    '&:hover': {
+                                        color: theme.palette.secondary.main,
+                                    },
                                 }}
                             >
-                                <Avatar
+                                Brdge AI
+                            </Typography>
+                        </RouterLink>
+                    </Box>
+
+                    {!isMobile && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {renderMenuItems()}
+                            {isAuthenticated && (
+                                <IconButton
+                                    onClick={handleProfileClick}
+                                    size="small"
                                     sx={{
-                                        bgcolor: theme.palette.primary.main,
+                                        ml: 1,
+                                        bgcolor: theme.palette.action.hover,
+                                        '&:hover': { bgcolor: theme.palette.action.selected }
                                     }}
                                 >
-                                    <PersonIcon sx={{ fontSize: { xs: 18, sm: 24 } }} />
-                                </Avatar>
-                            </IconButton>
-                        )}
-                        <IconButton
-                            aria-label="menu"
-                            onClick={() => setDrawerOpen(true)}
-                            sx={{
-                                width: 32,
-                                height: 32,
-                                color: 'white'
-                            }}
-                        >
-                            <MenuIcon sx={{ fontSize: 20 }} />
-                        </IconButton>
-
-                        <Drawer
-                            anchor="right"
-                            open={drawerOpen}
-                            onClose={() => setDrawerOpen(false)}
-                            PaperProps={{
-                                sx: {
-                                    width: '80%',
-                                    maxWidth: '300px',
-                                    background: '#001B3D',
-                                    color: 'white'
-                                }
-                            }}
-                        >
-                            <Box sx={{
-                                pt: 2,
-                                pb: 1,
-                                px: 2,
-                                borderBottom: '1px solid rgba(255,255,255,0.1)'
-                            }}>
-                                <Typography variant="h6" sx={{ color: 'white' }}>
-                                    Menu
-                                </Typography>
-                            </Box>
-                            <List sx={{ pt: 1 }}>
-                                {menuItems.map((item) => (
-                                    <ListItem
-                                        button
-                                        key={item.text}
-                                        component={item.link ? RouterLink : 'button'}
-                                        to={item.link}
-                                        onClick={() => {
-                                            setDrawerOpen(false);
-                                            if (item.onClick) item.onClick();
-                                        }}
+                                    <Avatar
                                         sx={{
-                                            py: 2,
-                                            color: 'white',
-                                            '&:hover': {
-                                                backgroundColor: 'rgba(255,255,255,0.1)'
-                                            }
+                                            width: 32,
+                                            height: 32,
+                                            bgcolor: theme.palette.secondary.main,
+                                            color: theme.palette.background.paper
                                         }}
                                     >
-                                        <ListItemText
-                                            primary={item.text}
-                                            primaryTypographyProps={{
-                                                sx: { fontSize: '1.1rem' }
-                                            }}
-                                        />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Drawer>
-                    </Box>
-                ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {renderMenuItems()}
-                        {isAuthenticated && (
+                                        <PersonIcon sx={{ fontSize: 20 }} />
+                                    </Avatar>
+                                </IconButton>
+                            )}
+                        </Box>
+                    )}
+
+                    {isMobile && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <IconButton
-                                onClick={handleProfileClick}
-                                sx={{ ml: 2 }}
+                                edge="end"
+                                aria-label="menu"
+                                onClick={() => setDrawerOpen(true)}
+                                sx={{ color: textColor }}
                             >
-                                <Avatar
-                                    sx={{
-                                        width: 28,
-                                        height: 28,
-                                        bgcolor: theme.palette.primary.main,
-                                    }}
-                                >
-                                    <PersonIcon sx={{ fontSize: 18 }} />
-                                </Avatar>
+                                <MenuIcon />
                             </IconButton>
-                        )}
-                    </Box>
-                )}
-            </Toolbar>
-        </AppBar>
+                        </Box>
+                    )}
+                </Toolbar>
+            </AppBar>
+
+            <Drawer
+                anchor="right"
+                open={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                PaperProps={{ sx: drawerPaperStyle }}
+                ModalProps={{ keepMounted: true }}
+            >
+                {renderMobileMenu()}
+            </Drawer>
+        </>
     );
 }
 
