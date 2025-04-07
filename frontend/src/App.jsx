@@ -33,6 +33,7 @@ import RoomPage from './pages/RoomPage';
 import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
 import darkParchmentTexture from './assets/textures/dark-parchment.png'; // Import the texture
+import MarketplacePage from './pages/Marketplace';
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -72,7 +73,7 @@ function Layout({ children }) {
   const isLandingPage = location.pathname === '/';
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services', '/course-slide-builder'];
+  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services', '/course-slide-builder', '/marketplace'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -226,6 +227,7 @@ function App() {
                 />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
                 <Route path="/room" element={<RoomPage />} />
+                <Route path="/marketplace" element={<MarketplacePage />} />
               </Routes>
             </Layout>
             <CookieConsent />

@@ -88,12 +88,14 @@ function Header() {
     const menuItems = isAuthenticated
         ? [
             { text: 'Home', link: '/home' },
+            { text: 'Marketplace', link: '/marketplace' },
             { text: 'Services', link: '/services' },
             { text: 'Contact', link: '/contact' },
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
             { text: 'Demos', link: '/demos' },
+            { text: 'Marketplace', link: '/marketplace' },
             { text: 'Services', link: '/services' },
             { text: 'Pricing', link: '/pricing' },
             { text: 'Contact', link: '/contact' },
