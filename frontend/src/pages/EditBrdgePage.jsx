@@ -18,6 +18,7 @@ function EditBrdgePage() {
     const [courseInfo, setCourseInfo] = useState(null);
     const [isEnrolled, setIsEnrolled] = useState(false);
     const [premiumAccessDialogOpen, setPremiumAccessDialogOpen] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState(null);
 
     useEffect(() => {
         const checkAuthorization = async () => {
@@ -85,6 +86,21 @@ function EditBrdgePage() {
                 let courseModule = null;
                 let courseData = null;
 
+                // First, if user is authenticated, get their ID regardless of course/standalone brdge
+                if (authToken) {
+                    try {
+                        const userResponse = await api.get('/user/current');
+                        setCurrentUserId(userResponse.data.id);
+
+                        // If this is the owner, grant access
+                        if (userResponse.data.id === brdge.user_id) {
+                            hasAccess = true;
+                        }
+                    } catch (err) {
+                        console.error('Error fetching user data:', err);
+                    }
+                }
+
                 // Check if this brdge is part of a course
                 if (brdge.course_modules && brdge.course_modules.length > 0) {
                     // Find the first course this brdge belongs to
@@ -132,17 +148,7 @@ function EditBrdgePage() {
                     if (brdge.shareable) {
                         hasAccess = true;
                     }
-                    // If user is the owner, allow access
-                    else if (authToken) {
-                        try {
-                            const userResponse = await api.get('/user/current');
-                            if (userResponse.data.id === brdge.user_id) {
-                                hasAccess = true;
-                            }
-                        } catch (err) {
-                            console.error('Error checking user identity:', err);
-                        }
-                    }
+                    // Owner access is already checked above
                 }
 
                 // If access was denied, set error message based on module permission
@@ -267,7 +273,12 @@ function EditBrdgePage() {
                 zIndex: 1,
                 WebkitOverflowScrolling: 'touch'
             }}>
-                <AgentConnector brdgeId={id} agentType="edit" token={authToken} />
+                <AgentConnector
+                    brdgeId={id}
+                    agentType="edit"
+                    token={authToken}
+                    userId={currentUserId}
+                />
             </Box>
 
             {/* Premium Access Dialog */}

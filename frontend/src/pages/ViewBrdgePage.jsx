@@ -24,6 +24,8 @@ function ViewBrdgePage() {
     const [isEnrolled, setIsEnrolled] = useState(false);
     const [enrollButtonLoading, setEnrollButtonLoading] = useState(false);
 
+    const [currentUserId, setCurrentUserId] = useState(null);
+
     useEffect(() => {
         // Prevent scrolling on the body
         document.body.style.overflow = 'hidden';
@@ -70,6 +72,16 @@ function ViewBrdgePage() {
                         }
                     } catch (err) {
                         console.error('Error fetching course info:', err);
+                    }
+                }
+
+                // Get current user ID if authenticated
+                if (token) {
+                    try {
+                        const userResponse = await api.get('/user/current');
+                        setCurrentUserId(userResponse.data.id);
+                    } catch (userError) {
+                        console.error('Error fetching user info:', userError);
                     }
                 }
             } catch (error) {
@@ -319,6 +331,7 @@ function ViewBrdgePage() {
                     brdgeId={id}
                     agentType="view"
                     token={token}
+                    userId={currentUserId}
                 />
             </Box>
         </Box>

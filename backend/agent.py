@@ -364,16 +364,34 @@ When answering questions:
                                 "agent_message": msg.content,
                             },
                         )
+
                         response.raise_for_status()
                         logger.info(
                             f"Updated usage log {self.current_speech['log_id']} with interruption"
                         )
+
+                    # Prepare user_id data for logging
+                    viewer_user_id = None
+                    anonymous_id = None
+                    user_id_str = (
+                        str(self.user_id) if self.user_id is not None else None
+                    )
+
+                    if user_id_str:
+                        if user_id_str.startswith("anon_"):
+                            anonymous_id = user_id_str
+                        else:
+                            try:
+                                viewer_user_id = int(user_id_str)
+                            except ValueError:
+                                logger.error(f"Invalid user_id format: {self.user_id}")
+
                     response = requests.post(
                         f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
                         json={
                             "brdge_id": self.brdge_id,
-                            "viewer_user_id": None,
-                            "anonymous_id": None,
+                            "viewer_user_id": viewer_user_id,
+                            "anonymous_id": anonymous_id,
                             "role": "agent",
                             "message": msg.content,
                             "timestamp": datetime.utcnow().isoformat(),
@@ -419,12 +437,29 @@ When answering questions:
                         logger.info(
                             f"Updated usage log {self.current_speech['log_id']} with completion"
                         )
+
+                    # Prepare user_id data for logging
+                    viewer_user_id = None
+                    anonymous_id = None
+                    user_id_str = (
+                        str(self.user_id) if self.user_id is not None else None
+                    )
+
+                    if user_id_str:
+                        if user_id_str.startswith("anon_"):
+                            anonymous_id = user_id_str
+                        else:
+                            try:
+                                viewer_user_id = int(user_id_str)
+                            except ValueError:
+                                logger.error(f"Invalid user_id format: {self.user_id}")
+
                     response = requests.post(
                         f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
                         json={
                             "brdge_id": self.brdge_id,
-                            "viewer_user_id": None,
-                            "anonymous_id": None,
+                            "viewer_user_id": viewer_user_id,
+                            "anonymous_id": anonymous_id,
                             "role": "agent",
                             "message": msg.content,
                             "timestamp": datetime.utcnow().isoformat(),
@@ -456,12 +491,28 @@ When answering questions:
                 ).total_seconds() / 60.0
 
                 try:
+                    # Prepare user_id data for logging
+                    viewer_user_id = None
+                    anonymous_id = None
+                    user_id_str = (
+                        str(self.user_id) if self.user_id is not None else None
+                    )
+
+                    if user_id_str:
+                        if user_id_str.startswith("anon_"):
+                            anonymous_id = user_id_str
+                        else:
+                            try:
+                                viewer_user_id = int(user_id_str)
+                            except ValueError:
+                                logger.error(f"Invalid user_id format: {self.user_id}")
+
                     response = requests.post(
                         f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
                         json={
                             "brdge_id": self.brdge_id,
-                            "viewer_user_id": None,
-                            "anonymous_id": None,
+                            "viewer_user_id": viewer_user_id,
+                            "anonymous_id": anonymous_id,
                             "role": "user",
                             "message": msg.content,
                             "timestamp": datetime.utcnow().isoformat(),
@@ -738,16 +789,28 @@ async def entrypoint(ctx: JobContext):
     participant = await ctx.wait_for_participant()
     logger.info(f"Starting assistant for participant {participant.identity}")
 
-    # Extract brdge_id from participant identity
+    # Add more detailed logging about the participant identity
+    logger.info(f"Full participant identity: {participant.identity}")
+
+    # Extract user_id and brdge_id
+    user_id = None
+    brdge_id = None
     try:
-        # Expected format: "brdge_<brdge_id>_<user_id>"
         identity_parts = participant.identity.split("-")
-        brdge_id = identity_parts[1]
+        logger.info(f"Identity parts: {identity_parts}")
+
+        # Print specific parts if available
+        if len(identity_parts) >= 3:
+            # If format is like "brdge-<brdge_id>-<user_id>"
+            brdge_id = identity_parts[1]
+            user_id = identity_parts[2]
+            logger.info(f"Extracted brdge_id: {brdge_id}, user_id: {user_id}")
+        elif len(identity_parts) >= 2:
+            brdge_id = identity_parts[1]
+            logger.info(f"Extracted brdge_id: {brdge_id}, no user_id found")
     except Exception as e:
         logger.error(f"Error parsing participant identity: {e}")
         return
-
-    logger.info(f"Extracted brdge_id: {brdge_id}")
 
     # Get the prewarmed VAD model with fallback
     try:
@@ -765,6 +828,10 @@ async def entrypoint(ctx: JobContext):
 
     # Initialize agent with brdge_id
     agent = ChatAssistant(vad, brdge_id, ctx.room)
+
+    # Set the user_id in the agent instance
+    agent.user_id = user_id
+    logger.info(f"Set agent.user_id to: {user_id}")
 
     chat = rtc.ChatManager(ctx.room)
 
@@ -846,12 +913,28 @@ async def entrypoint(ctx: JobContext):
             return
 
         logger.info(f"Received chat message: {cleaned_message}")
+
+        # Prepare user_id data for logging
+        viewer_user_id = None
+        anonymous_id = None
+        user_id_str = str(agent.user_id) if agent.user_id is not None else None
+
+        if user_id_str:
+            if user_id_str.startswith("anon_"):
+                anonymous_id = user_id_str
+            else:
+                try:
+                    viewer_user_id = int(user_id_str)
+                except ValueError:
+                    logger.error(f"Invalid user_id format: {agent.user_id}")
+
+        # Log the chat message with user ID information
         response = requests.post(
             f"{agent.api_base_url}/brdges/{agent.brdge_id}/conversation-logs",
             json={
                 "brdge_id": agent.brdge_id,
-                "viewer_user_id": None,
-                "anonymous_id": None,
+                "viewer_user_id": viewer_user_id,
+                "anonymous_id": anonymous_id,
                 "role": "user",
                 "message": cleaned_message,
                 "timestamp": datetime.utcnow().isoformat(),

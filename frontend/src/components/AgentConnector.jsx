@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { api } from '../api';
 
-function AgentConnector({ brdgeId, agentType = 'edit', token }) {
+function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
     const [connectorUrl, setConnectorUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -38,7 +38,8 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
                     apiBaseUrl: cleanApiBaseUrl,
                     agentType: agentType,
                     token: token || '',
-                    mobile: isMobile ? '1' : '0'
+                    mobile: isMobile ? '1' : '0',
+                    userId: userId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
                 });
 
                 const url = `${baseUrl}?${params.toString()}`;
@@ -54,7 +55,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
         };
 
         initConnection();
-    }, [brdgeId, agentType, token, isMobile]);
+    }, [brdgeId, agentType, token, isMobile, userId]);
 
     useEffect(() => {
         const initAudio = async () => {
@@ -82,7 +83,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token }) {
                 gap: 2
             }}>
                 <CircularProgress color="inherit" size={24} />
-                <Typography variant="h6">Connecting to Agent...</Typography>
+                <Typography variant="h6">Connecting...</Typography>
             </Box>
         );
     }
