@@ -468,8 +468,11 @@ class CourseModule(db.Model):
         # Add access_level from permissions if available
         if hasattr(self, "permissions") and self.permissions:
             result["access_level"] = self.permissions.access_level
+            # Add convenience boolean for public access
+            result["is_public"] = self.permissions.access_level == "public"
         else:
             result["access_level"] = "enrolled"  # Default
+            result["is_public"] = False
 
         return result
 

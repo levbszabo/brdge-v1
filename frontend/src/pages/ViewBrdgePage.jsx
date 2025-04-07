@@ -256,7 +256,7 @@ function ViewBrdgePage() {
                     <Button
                         variant="outlined"
                         color="secondary"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/home')}
                         sx={{ mt: 3 }}
                     >
                         Return to Dashboard

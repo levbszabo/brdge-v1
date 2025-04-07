@@ -34,8 +34,9 @@ import {
     Collapse,
     FormControlLabel,
     useTheme,
+    LinearProgress,
 } from '@mui/material';
-import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft, ExternalLink, LogOut } from 'lucide-react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { motion } from 'framer-motion';
 import { api } from '../api';
@@ -58,6 +59,9 @@ const createStyles = (theme) => ({
         py: 4,
         position: 'relative', // Needed for ivy borders
         overflow: 'hidden', // Hide overflowing ivy
+        border: `3px solid #3a5f3a`, // Added sleek green border
+        borderRadius: '12px', // Added rounded corners
+        boxShadow: `inset 0 0 10px rgba(0,0,0,0.3), 0 0 15px rgba(58, 95, 58, 0.3)`, // Added inner shadow and green glow
         // Add global parchment texture background
         '&::before': {
             content: '""',
@@ -473,10 +477,10 @@ const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate }) => {
                                 border: `1px solid ${theme.palette.secondary.main}20`,
                             }}>
                                 <Typography variant="body2" sx={{ color: theme.palette.text.primary, mb: 1 }}>
-                                    🔄 Drag & Drop
+                                    🛍️ Marketplace
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                    Easily organize your content by dragging modules between courses.
+                                    Browse and enroll in a growing marketplace of AI-powered courses created by educators and experts in various fields.
                                 </Typography>
                             </Box>
                         </Box>
@@ -663,6 +667,7 @@ function BrdgeListPage() {
     const [brdges, setBrdges] = useState([]);
     const [courses, setCourses] = useState([]);
     const [marketplaceCourses, setMarketplaceCourses] = useState([]);
+    const [enrolledCourses, setEnrolledCourses] = useState([]); // New state for enrolled courses
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -704,6 +709,9 @@ function BrdgeListPage() {
     const [editedCourseName, setEditedCourseName] = useState('');
     const [savingCourse, setSavingCourse] = useState(false);
     const [courseLinkCopied, setCourseLinkCopied] = useState(false);
+    // Add this state variable near other dialog state variables
+    const [unenrollDialogOpen, setUnenrollDialogOpen] = useState(false);
+    const [courseToUnenroll, setCourseToUnenroll] = useState(null);
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -712,6 +720,7 @@ function BrdgeListPage() {
         fetchBrdges();
         fetchCourses();
         fetchMarketplaceCourses();
+        fetchEnrolledCourses(); // Add this new function call
         fetchStats();
     }, []);
 
@@ -790,6 +799,26 @@ function BrdgeListPage() {
         } catch (error) {
             console.error('Error fetching marketplace courses:', error);
             showSnackbar('Failed to fetch marketplace courses', 'error');
+        }
+    };
+
+    const fetchEnrolledCourses = async () => {
+        try {
+            const token = getAuthToken();
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            // Use our new dedicated API endpoint for enrolled courses
+            const response = await api.get('/courses/enrolled');
+
+            // The API now returns enrolled courses directly with enrollment details
+            setEnrolledCourses(response.data.enrolled_courses || []);
+
+        } catch (error) {
+            console.error('Error fetching enrolled courses:', error);
+            showSnackbar('Failed to fetch enrolled courses', 'error');
         }
     };
 
@@ -1677,6 +1706,49 @@ function BrdgeListPage() {
         return url;
     };
 
+    // Add function to handle unenrolling from a course
+    const handleUnenroll = async (courseId) => {
+        try {
+            await api.post(`/courses/${courseId}/unenroll`);
+
+            // Update the local state by removing the unenrolled course
+            setEnrolledCourses(prevCourses =>
+                prevCourses.filter(course => course.id !== courseId)
+            );
+
+            showSnackbar('Successfully unenrolled from course', 'success');
+        } catch (error) {
+            console.error('Error unenrolling from course:', error);
+            showSnackbar('Failed to unenroll from course', 'error');
+        }
+    };
+
+    // Add this function to handle unenrolling from a course
+    const handleUnenrollClick = (course) => {
+        setCourseToUnenroll(course);
+        setUnenrollDialogOpen(true);
+    };
+
+    const confirmUnenroll = async () => {
+        if (!courseToUnenroll) return;
+
+        try {
+            await api.post(`/courses/${courseToUnenroll.id}/unenroll`);
+
+            // Update the local state by removing the unenrolled course
+            setEnrolledCourses(prevCourses =>
+                prevCourses.filter(course => course.id !== courseToUnenroll.id)
+            );
+
+            showSnackbar('Successfully unenrolled from course', 'success');
+            setUnenrollDialogOpen(false);
+            setCourseToUnenroll(null);
+        } catch (error) {
+            console.error('Error unenrolling from course:', error);
+            showSnackbar('Failed to unenroll from course', 'error');
+        }
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -2036,13 +2108,234 @@ function BrdgeListPage() {
 
                         {/* Main Content Area */}
                         <Box>
-                            {/* Your Courses Section with enhanced visual separation */}
+                            {/* Enrolled Courses Section */}
                             <Box sx={createStyles(theme).sectionContainer}>
-                                {/* Remove these lines:
-                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', top: -5, left: -5, width: { xs: '40px', md: '60px' }, opacity: 0.4, pointerEvents: 'none', transform: 'rotate(120deg)', zIndex: 2 }} />
-                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', bottom: -5, right: -5, width: { xs: '40px', md: '60px' }, opacity: 0.3, pointerEvents: 'none', transform: 'rotate(0deg)', zIndex: 2 }} />
-                                */}
+                                <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                    <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
+                                    Enrolled Courses
+                                </Typography>
 
+                                {enrolledCourses.length === 0 ? (
+                                    <Box sx={{
+                                        p: 4,
+                                        textAlign: 'center',
+                                        backgroundColor: theme.palette.background.default + '50',
+                                        borderRadius: '12px',
+                                        border: `1px dashed ${theme.palette.divider}`
+                                    }}>
+                                        <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                            You're not enrolled in any courses yet.
+                                        </Typography>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<BookOpen size={20} />}
+                                            onClick={() => navigate('/marketplace')}
+                                            sx={createStyles(theme).actionButton}
+                                        >
+                                            Browse Courses
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <Box>
+                                        {enrolledCourses.map(course => (
+                                            <Box
+                                                key={course.id}
+                                                sx={{
+                                                    ...createStyles(theme).courseCard,
+                                                    // Add a subtle indicator that these are enrolled courses
+                                                    borderLeft: `4px solid ${theme.palette.secondary.main}70`,
+                                                }}
+                                            >
+                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                    <Box>
+                                                        <Typography
+                                                            variant="h6"
+                                                            sx={{
+                                                                color: theme.palette.text.primary,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                fontFamily: theme.typography.h6.fontFamily,
+                                                            }}
+                                                        >
+                                                            {course.name}
+                                                            {course.enrollment.has_premium_access && (
+                                                                <Chip
+                                                                    size="small"
+                                                                    label="Premium"
+                                                                    sx={{
+                                                                        ml: 1,
+                                                                        bgcolor: `${theme.palette.secondary.main}20`,
+                                                                        color: theme.palette.secondary.main,
+                                                                        border: `1px solid ${theme.palette.secondary.main}40`,
+                                                                        fontWeight: 500,
+                                                                    }}
+                                                                />
+                                                            )}
+                                                        </Typography>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                                                Progress:
+                                                            </Typography>
+                                                            <Box sx={{ flex: 1, maxWidth: 200 }}>
+                                                                <LinearProgress
+                                                                    variant="determinate"
+                                                                    value={course.enrollment.progress}
+                                                                    sx={{
+                                                                        height: 8,
+                                                                        borderRadius: 4,
+                                                                        bgcolor: `${theme.palette.background.default}90`,
+                                                                        '& .MuiLinearProgress-bar': {
+                                                                            bgcolor: theme.palette.secondary.main,
+                                                                            borderRadius: 4,
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </Box>
+                                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                                                {Math.round(course.enrollment.progress)}%
+                                                            </Typography>
+                                                        </Box>
+                                                        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block', mt: 0.5 }}>
+                                                            Last accessed: {
+                                                                course.enrollment.last_accessed_at
+                                                                    ? new Date(course.enrollment.last_accessed_at).toLocaleDateString()
+                                                                    : 'Never'
+                                                            }
+                                                        </Typography>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                                        <Tooltip title="View Course">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => navigate(`/c/${course.public_id}`)}
+                                                                sx={{
+                                                                    color: theme.palette.text.disabled,
+                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                }}
+                                                            >
+                                                                <ExternalLink size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Unenroll">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleUnenrollClick(course);
+                                                                }}
+                                                                sx={{
+                                                                    color: theme.palette.text.disabled,
+                                                                    '&:hover': { color: theme.palette.error.main, backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                                                                }}
+                                                            >
+                                                                <LogOut size={18} />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Box>
+                                                </Box>
+
+                                                {/* Module List */}
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    mb: 2,
+                                                    borderBottom: `1px solid ${theme.palette.divider}20`,
+                                                    pb: 2
+                                                }}>
+                                                    <Typography variant="subtitle2" sx={{
+                                                        color: theme.palette.text.secondary,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                        fontFamily: theme.typography.h5.fontFamily
+                                                    }}>
+                                                        <GraduationCap size={16} style={{ color: theme.palette.secondary.main }} />
+                                                        Modules in this Course
+                                                    </Typography>
+                                                </Box>
+
+                                                {/* Course Modules */}
+                                                {course.modules && course.modules.length > 0 ? (
+                                                    <Box sx={{ pl: 1 }}>
+                                                        {/* Sort modules by position before mapping */}
+                                                        {[...course.modules]
+                                                            .sort((a, b) => a.position - b.position)
+                                                            .map((module, index) => (
+                                                                <Box
+                                                                    key={module.id}
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center',
+                                                                        mb: 1,
+                                                                        py: 1,
+                                                                        px: 1,
+                                                                        borderRadius: '4px',
+                                                                        cursor: 'pointer',
+                                                                        '&:hover': { backgroundColor: `${theme.palette.background.paper}80` }
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        navigate(`/viewBridge/${module.brdge_id}-${module.brdge?.public_id?.substring(0, 6) || module.public_id?.substring(0, 6) || ''}`);
+                                                                    }}
+                                                                >
+                                                                    <Typography
+                                                                        variant="body2"
+                                                                        sx={{
+                                                                            color: theme.palette.text.secondary,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center'
+                                                                        }}
+                                                                    >
+                                                                        {index + 1}. {module.brdge?.name || module.name}
+                                                                        {module.access_level === 'premium' && !course.enrollment.has_premium_access ? (
+                                                                            <Tooltip title="Premium Module - Requires Premium Access">
+                                                                                <Box sx={{ display: 'inline-flex', ml: 1 }}>
+                                                                                    <Lock size={14} color={theme.palette.error.light} />
+                                                                                </Box>
+                                                                            </Tooltip>
+                                                                        ) : null}
+                                                                    </Typography>
+
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/viewBridge/${module.brdge_id}-${module.brdge?.public_id?.substring(0, 6) || module.public_id?.substring(0, 6) || ''}`);
+                                                                        }}
+                                                                        sx={{
+                                                                            color: theme.palette.text.secondary,
+                                                                            padding: '4px',
+                                                                            '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                        }}
+                                                                    >
+                                                                        <BookOpen size={16} />
+                                                                    </IconButton>
+                                                                </Box>
+                                                            ))}
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{
+                                                        p: 3,
+                                                        textAlign: 'center',
+                                                        backgroundColor: theme.palette.background.default + '50',
+                                                        borderRadius: '8px',
+                                                        border: `1px dashed ${theme.palette.divider}20`
+                                                    }}>
+                                                        <Typography variant="body2" sx={{ color: theme.palette.text.disabled }}>
+                                                            No modules available in this course
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* Your Courses Section */}
+                            <Box sx={createStyles(theme).sectionContainer}>
                                 <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
                                     <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
                                     Your Courses
@@ -2302,32 +2595,12 @@ function BrdgeListPage() {
                                 )}
                             </Box>
 
-                            {/* Your AI Modules Section with enhanced visual separation */}
+                            {/* Your AI Modules Section */}
                             <Box sx={createStyles(theme).sectionContainer}>
-                                {/* Remove these lines:
-                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', top: -5, right: -5, width: { xs: '40px', md: '60px' }, opacity: 0.3, pointerEvents: 'none', transform: 'rotate(90deg)', zIndex: 2 }} />
-                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', bottom: -5, left: -5, width: { xs: '40px', md: '60px' }, opacity: 0.3, pointerEvents: 'none', transform: 'rotate(-90deg)', zIndex: 2 }} />
-                                */}
-
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
-                                        <GraduationCap size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
-                                        Your AI Modules
-                                    </Typography>
-
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<Plus size={20} />}
-                                        onClick={handleCreateClick}
-                                        sx={{
-                                            ...createStyles(theme).actionButton,
-                                            height: '36px',
-                                            px: 2
-                                        }}
-                                    >
-                                        New Module
-                                    </Button>
-                                </Box>
+                                <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                    <GraduationCap size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
+                                    Your AI Modules
+                                </Typography>
 
                                 {/* Add this block to render the actual modules */}
                                 {brdges.length === 0 ? (
@@ -2483,7 +2756,7 @@ function BrdgeListPage() {
                                         }}
                                         onClick={() => navigate('/marketplace')}
                                     >
-                                        Browse More Templates
+                                        Browse Marketplace
                                     </Button>
                                 </Box>
 
@@ -3520,7 +3793,7 @@ function BrdgeListPage() {
                             <strong>Course:</strong> {courseToShare?.name}
                         </Typography>
                         <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mt: 1 }}> {/* Ink Faded */}
-                            When shared, others can view this course's modules and content.
+                            When shared, others can view this course, individual module access is controlled within the course edit page.
                         </Typography>
                         <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <AutoStoriesIcon sx={{ color: theme.palette.secondary.main, fontSize: 16 }} /> {/* Use Sepia color for icon */}
@@ -3544,6 +3817,170 @@ function BrdgeListPage() {
                         }}
                     >
                         Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Unenroll Confirmation Dialog */}
+            <Dialog
+                open={unenrollDialogOpen}
+                onClose={() => setUnenrollDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        backgroundColor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        borderRadius: 2,
+                        boxShadow: theme.shadows[4],
+                        border: `1px solid ${theme.palette.divider}`,
+                        minWidth: { xs: '90%', sm: 400 },
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    padding: '20px 24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    position: 'relative',
+                    backgroundColor: theme.palette.background.default,
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: -1,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '60%',
+                        height: '1px',
+                        background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`,
+                        boxShadow: `0 0 10px ${theme.palette.error.main}30`
+                    }
+                }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        backgroundColor: `${theme.palette.error.main}10`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 0 15px ${theme.palette.error.main}20`
+                    }}>
+                        <LogOut size={20} color={theme.palette.error.main} />
+                    </Box>
+                    <Box>
+                        <Typography variant="h6" sx={{
+                            color: theme.palette.error.main,
+                            fontWeight: 600,
+                            fontSize: '1.1rem'
+                        }}>
+                            Unenroll from Course
+                        </Typography>
+                        <Typography variant="caption" sx={{
+                            color: theme.palette.text.secondary,
+                            display: 'block',
+                            mt: 0.5
+                        }}>
+                            "{courseToUnenroll?.name}"
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent sx={{
+                    padding: '24px',
+                    backgroundColor: `${theme.palette.error.main}05`
+                }}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 2,
+                        p: 3,
+                        borderRadius: '12px',
+                        backgroundColor: `${theme.palette.error.main}08`,
+                        border: `1px solid ${theme.palette.error.main}15`
+                    }}>
+                        <Box sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            backgroundColor: `${theme.palette.error.main}20`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            mt: 0.5
+                        }}>
+                            <Typography sx={{
+                                color: theme.palette.error.main,
+                                fontSize: '1rem',
+                                fontWeight: 600
+                            }}>!</Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="body1" sx={{
+                                color: theme.palette.text.primary,
+                                fontWeight: 500,
+                                mb: 1
+                            }}>
+                                Are you sure you want to unenroll from this course?
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: theme.palette.text.secondary,
+                                fontSize: '0.875rem',
+                                lineHeight: 1.6,
+                                mb: 1
+                            }}>
+                                You will lose access to all course materials and your progress will be reset. You can enroll again later if you change your mind.
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: theme.palette.error.main,
+                                fontWeight: 500,
+                                mt: 2
+                            }}>
+                                This action cannot be undone.
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{
+                    borderTop: `1px solid ${theme.palette.divider}`,
+                    padding: '16px 24px',
+                    gap: 2,
+                    justifyContent: 'space-between',
+                    backgroundColor: theme.palette.background.paper
+                }}>
+                    <Button
+                        onClick={() => setUnenrollDialogOpen(false)}
+                        sx={{
+                            color: theme.palette.text.secondary,
+                            px: 3,
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                color: theme.palette.text.primary,
+                                backgroundColor: theme.palette.action.hover
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmUnenroll}
+                        sx={{
+                            backgroundColor: `${theme.palette.error.main}15`,
+                            color: theme.palette.error.main,
+                            borderRadius: '8px',
+                            px: 3,
+                            fontWeight: 600,
+                            border: `1px solid ${theme.palette.error.main}30`,
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                backgroundColor: `${theme.palette.error.main}25`,
+                                borderColor: `${theme.palette.error.main}50`,
+                                boxShadow: theme.shadows[2]
+                            }
+                        }}
+                    >
+                        Unenroll
                     </Button>
                 </DialogActions>
             </Dialog>

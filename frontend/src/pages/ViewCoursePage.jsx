@@ -219,7 +219,12 @@ function ViewCoursePage() {
     }, [courseData?.id]);
 
     const handleStartModule = (moduleId, publicId) => {
-        if (!isEnrolled) {
+        // Find the module data to check if it's public
+        const moduleData = courseData.modules.find(m => m.brdge_id === moduleId);
+        const isModulePublic = moduleData?.is_public || false;
+
+        // Only check enrollment for non-public modules
+        if (!isEnrolled && !isModulePublic) {
             setModuleAccessDialogOpen(true);
             return;
         }
@@ -365,7 +370,12 @@ function ViewCoursePage() {
     };
 
     const handleModuleClick = (modulePublicId, moduleId) => {
-        if (!isEnrolled) {
+        // Find the module data to check if it's public
+        const moduleData = courseData.modules.find(m => m.brdge_id === moduleId);
+        const isModulePublic = moduleData?.is_public || false;
+
+        // Only check enrollment for non-public modules
+        if (!isEnrolled && !isModulePublic) {
             setModuleAccessDialogOpen(true);
             return;
         }
@@ -708,40 +718,70 @@ function ViewCoursePage() {
                                 }} />
 
                                 <motion.div variants={itemVariants}>
-                                    <Typography variant="h3" component="h1" sx={{
-                                        color: theme.palette.text.primary,
-                                        fontFamily: theme.typography.headingFontFamily, // Use Neo-Scholar heading font
-                                        fontWeight: 600,
-                                        mb: 2,
-                                        fontSize: { xs: '1.8rem', md: '2.5rem' },
-                                        textShadow: `0 0 15px ${theme.palette.secondary.main}30`, // Sepia shadow
-                                        position: 'relative',
-                                        zIndex: 1,
-                                        '&::after': { // Add decorative underline
-                                            content: '""',
-                                            position: 'absolute',
-                                            bottom: -8,
-                                            left: 0,
-                                            width: '80px',
-                                            height: '3px',
-                                            background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.main}40, transparent)`,
-                                        }
-                                    }}>
+                                    <Typography
+                                        variant="h3"
+                                        component="h1"
+                                        sx={{
+                                            fontFamily: theme.typography.headingFontFamily,
+                                            fontSize: { xs: '2.2rem', sm: '3.2rem', md: '4.2rem' },
+                                            fontWeight: 500,
+                                            color: theme.palette.text.primary,
+                                            mb: 1.5,
+                                            letterSpacing: '-0.02em',
+                                            position: 'relative',
+                                            '&::after': {
+                                                content: '""',
+                                                display: 'block',
+                                                width: '80px',
+                                                height: '2px',
+                                                background: `linear-gradient(90deg, ${theme.palette.secondary.main}, transparent)`,
+                                                margin: '15px 0 0',
+                                                borderRadius: '2px',
+                                                opacity: 0.8,
+                                            }
+                                        }}
+                                    >
                                         {courseData.name}
                                     </Typography>
                                 </motion.div>
 
                                 <motion.div variants={itemVariants}>
-                                    <Typography variant="body1" sx={{
-                                        color: theme.palette.text.secondary,
-                                        mb: 3,
-                                        maxWidth: '800px',
-                                        lineHeight: 1.6,
-                                        fontSize: '1.05rem',
-                                        position: 'relative',
-                                        zIndex: 1
-                                    }}>
-                                        {courseData.description || "Explore this interactive AI-powered learning course. Navigate through modules at your own pace and engage with immersive content."}
+                                    <Typography
+                                        variant="body1"
+                                        sx={{
+                                            color: theme.palette.text.secondary,
+                                            mb: 3,
+                                            maxWidth: '800px',
+                                            lineHeight: 1.6,
+                                            fontSize: '1.05rem',
+                                            position: 'relative',
+                                            zIndex: 1,
+                                            '& strong': {
+                                                fontWeight: 600,
+                                                color: theme.palette.text.primary,
+                                                position: 'relative',
+                                                display: 'inline-block',
+                                                '&::after': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    bottom: -2,
+                                                    left: 0,
+                                                    right: 0,
+                                                    height: '1px',
+                                                    background: `linear-gradient(90deg, ${theme.palette.secondary.main}80, transparent)`,
+                                                    opacity: 0.5,
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        {courseData.description ? (
+                                            <span dangerouslySetInnerHTML={{
+                                                __html: courseData.description
+                                                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Convert **text** to <strong>
+                                            }} />
+                                        ) : (
+                                            "Explore this interactive AI-powered learning course. Navigate through modules at your own pace and engage with immersive content."
+                                        )}
                                     </Typography>
                                 </motion.div>
 
@@ -752,15 +792,27 @@ function ViewCoursePage() {
                                         gap: 2,
                                         alignItems: 'center',
                                         position: 'relative',
-                                        zIndex: 1
+                                        zIndex: 1,
+                                        '&::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: -10,
+                                            left: 0,
+                                            width: '40px',
+                                            height: '1px',
+                                            background: `linear-gradient(90deg, ${theme.palette.secondary.main}50, transparent)`,
+                                            opacity: 0.7
+                                        }
                                     }}>
                                         <Chip
                                             icon={<AutoStoriesIcon sx={{ color: theme.palette.secondary.main }} />}
                                             label={`${courseData.modules?.length || 0} Modules`}
                                             sx={{
-                                                bgcolor: `${theme.palette.secondary.main}10`, // Sepia background
-                                                color: theme.palette.text.primary, // Ink for text
-                                                border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
+                                                bgcolor: `${theme.palette.secondary.main}10`,
+                                                color: theme.palette.text.primary,
+                                                border: `1px solid ${theme.palette.secondary.main}30`,
+                                                fontFamily: theme.typography.headingFontFamily,
+                                                fontWeight: 500,
                                                 '& .MuiChip-icon': {
                                                     color: theme.palette.secondary.main
                                                 }
@@ -771,9 +823,11 @@ function ViewCoursePage() {
                                             icon={<TimerIcon sx={{ color: theme.palette.secondary.main }} />}
                                             label="Self-paced learning"
                                             sx={{
-                                                bgcolor: `${theme.palette.secondary.main}10`, // Sepia background 
-                                                color: theme.palette.text.primary, // Ink for text
-                                                border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
+                                                bgcolor: `${theme.palette.secondary.main}10`,
+                                                color: theme.palette.text.primary,
+                                                border: `1px solid ${theme.palette.secondary.main}30`,
+                                                fontFamily: theme.typography.headingFontFamily,
+                                                fontWeight: 500,
                                                 '& .MuiChip-icon': {
                                                     color: theme.palette.secondary.main
                                                 }
@@ -784,9 +838,11 @@ function ViewCoursePage() {
                                             icon={<VerifiedIcon sx={{ color: theme.palette.secondary.main }} />}
                                             label="AI-powered"
                                             sx={{
-                                                bgcolor: `${theme.palette.secondary.main}10`, // Sepia background
-                                                color: theme.palette.text.primary, // Ink for text
-                                                border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
+                                                bgcolor: `${theme.palette.secondary.main}10`,
+                                                color: theme.palette.text.primary,
+                                                border: `1px solid ${theme.palette.secondary.main}30`,
+                                                fontFamily: theme.typography.headingFontFamily,
+                                                fontWeight: 500,
                                                 '& .MuiChip-icon': {
                                                     color: theme.palette.secondary.main
                                                 }
@@ -798,19 +854,49 @@ function ViewCoursePage() {
                                             alignItems: 'center',
                                             gap: 1,
                                             ml: { xs: 0, md: 'auto' },
-                                            mt: { xs: 1, md: 0 }
+                                            mt: { xs: 1, md: 0 },
+                                            position: 'relative',
+                                            pr: 2,
+                                            '&::after': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                top: '50%',
+                                                right: 0,
+                                                width: '8px',
+                                                height: '1px',
+                                                background: theme.palette.secondary.main,
+                                                opacity: 0.5,
+                                                transform: 'rotate(45deg)'
+                                            }
                                         }}>
                                             <Avatar
                                                 sx={{
                                                     width: 30,
                                                     height: 30,
-                                                    bgcolor: `${theme.palette.secondary.main}20`, // Sepia background
-                                                    border: `1px solid ${theme.palette.secondary.main}40` // Sepia border
+                                                    bgcolor: `${theme.palette.secondary.main}20`,
+                                                    border: `1px solid ${theme.palette.secondary.main}40`
                                                 }}
                                             >
                                                 <PersonIcon sx={{ fontSize: 18, color: theme.palette.secondary.dark }} />
                                             </Avatar>
-                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    color: theme.palette.text.secondary,
+                                                    fontStyle: 'italic',
+                                                    position: 'relative',
+                                                    '&::after': {
+                                                        content: '""',
+                                                        position: 'absolute',
+                                                        bottom: -2,
+                                                        left: 0,
+                                                        right: 0,
+                                                        height: '1px',
+                                                        background: `linear-gradient(90deg, ${theme.palette.secondary.main}40, transparent)`,
+                                                        opacity: 0.5
+                                                    }
+                                                }}
+                                            >
                                                 Created by {courseData.author || "Brdge AI Instructor"}
                                             </Typography>
                                         </Box>
@@ -822,15 +908,41 @@ function ViewCoursePage() {
 
                     {/* Course modules section */}
                     <motion.div variants={itemVariants}>
-                        <Typography variant="h4" component="h2" sx={{
-                            color: theme.palette.text.primary,
-                            mb: 3,
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1,
-                            fontFamily: theme.typography.headingFontFamily
-                        }}>
+                        <Typography
+                            variant="h4"
+                            component="h2"
+                            sx={{
+                                color: theme.palette.text.primary,
+                                mb: 3,
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1,
+                                fontFamily: theme.typography.headingFontFamily,
+                                position: 'relative',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: -15,
+                                    left: 0,
+                                    width: '30px',
+                                    height: '1px',
+                                    background: theme.palette.secondary.main,
+                                    opacity: 0.6,
+                                },
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: -10,
+                                    left: 0,
+                                    width: '60px',
+                                    height: '2px',
+                                    background: `linear-gradient(90deg, ${theme.palette.secondary.main}, transparent)`,
+                                    opacity: 0.7,
+                                    borderRadius: '1px',
+                                }
+                            }}
+                        >
                             <AutoStoriesIcon sx={{ color: theme.palette.secondary.main }} />
                             Course Modules
                         </Typography>
@@ -1238,6 +1350,38 @@ function ViewCoursePage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5 }}
                         >
+                            <Box
+                                sx={{
+                                    mt: 5,
+                                    position: 'relative',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: '10%',
+                                        right: '10%',
+                                        height: '1px',
+                                        background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
+                                        opacity: 0.7
+                                    }
+                                }}
+                            >
+                                <Box
+                                    component="img"
+                                    src={theme.textures.stampLogo}
+                                    alt=""
+                                    sx={{
+                                        position: 'absolute',
+                                        top: '-20px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        width: '40px',
+                                        height: '40px',
+                                        opacity: 0.2
+                                    }}
+                                />
+                            </Box>
+
                             <Box sx={{
                                 mt: 5,
                                 p: 3,
@@ -1251,7 +1395,7 @@ function ViewCoursePage() {
                                 gap: { xs: 2, md: 4 },
                                 position: 'relative',
                                 overflow: 'hidden',
-                                '&::before': { // Add parchment texture
+                                '&::before': {
                                     content: '""',
                                     position: 'absolute',
                                     inset: 0,
@@ -1260,12 +1404,36 @@ function ViewCoursePage() {
                                     opacity: 0.08,
                                     mixBlendMode: 'multiply',
                                     zIndex: 0,
+                                },
+                                // Add decorative corners
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 10,
+                                    left: 10,
+                                    width: '20px',
+                                    height: '20px',
+                                    borderTop: `1px solid ${theme.palette.secondary.main}40`,
+                                    borderLeft: `1px solid ${theme.palette.secondary.main}40`,
+                                    opacity: 0.8
+                                },
+                                '& .corner-br': {
+                                    position: 'absolute',
+                                    bottom: 10,
+                                    right: 10,
+                                    width: '20px',
+                                    height: '20px',
+                                    borderBottom: `1px solid ${theme.palette.secondary.main}40`,
+                                    borderRight: `1px solid ${theme.palette.secondary.main}40`,
+                                    opacity: 0.8
                                 }
                             }}>
+                                <Box className="corner-br" />
                                 <Typography variant="h6" sx={{
                                     color: theme.palette.text.primary,
                                     fontFamily: theme.typography.headingFontFamily,
                                     fontWeight: 600,
+                                    fontStyle: 'italic',
                                     minWidth: '140px',
                                     position: 'relative',
                                     zIndex: 1
@@ -1332,6 +1500,41 @@ function ViewCoursePage() {
                         transition={{ delay: 0.6 }}
                     >
                         <Box sx={{
+                            mt: 8,
+                            mb: 5,
+                            position: 'relative',
+                            height: '40px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            '&::before, &::after': {
+                                content: '""',
+                                height: '1px',
+                                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}50, transparent)`,
+                                position: 'absolute',
+                                top: '50%',
+                                width: '35%'
+                            },
+                            '&::before': {
+                                left: 0
+                            },
+                            '&::after': {
+                                right: 0
+                            }
+                        }}>
+                            <Box
+                                component="img"
+                                src={theme.textures.stampLogo}
+                                alt=""
+                                sx={{
+                                    width: '40px',
+                                    height: '40px',
+                                    opacity: 0.2
+                                }}
+                            />
+                        </Box>
+
+                        <Box sx={{
                             mt: 5,
                             p: 3,
                             borderRadius: '16px',
@@ -1349,22 +1552,20 @@ function ViewCoursePage() {
                                 opacity: 0.12,
                                 mixBlendMode: 'multiply',
                                 zIndex: 0,
+                            },
+                            // Add decorative ivy
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 10,
+                                left: 10,
+                                width: '20px',
+                                height: '20px',
+                                borderTop: `1px solid ${theme.palette.secondary.main}40`,
+                                borderLeft: `1px solid ${theme.palette.secondary.main}40`,
+                                opacity: 0.8
                             }
                         }}>
-                            {/* Decorative ivy */}
-                            <Box
-                                component="img"
-                                src={theme.textures.ivyCorner}
-                                sx={{
-                                    position: 'absolute',
-                                    bottom: -10,
-                                    right: -10,
-                                    width: '100px',
-                                    height: '100px',
-                                    opacity: 0.2,
-                                    zIndex: 0
-                                }}
-                            />
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={7}>
                                     <Typography variant="h5" sx={{
@@ -1440,13 +1641,15 @@ function ViewCoursePage() {
                                             size="large"
                                             startIcon={<PlayArrowIcon />}
                                             onClick={() => {
-                                                if (!isEnrolled) {
-                                                    setModuleAccessDialogOpen(true);
-                                                    return;
-                                                }
-
                                                 if (courseData.modules && courseData.modules.length > 0) {
                                                     const activeModuleData = courseData.modules[activeModule];
+                                                    const isModulePublic = activeModuleData?.is_public || false;
+
+                                                    if (!isEnrolled && !isModulePublic) {
+                                                        setModuleAccessDialogOpen(true);
+                                                        return;
+                                                    }
+
                                                     if (activeModuleData && activeModuleData.brdge_id) {
                                                         const publicId = activeModuleData.brdge?.public_id || activeModuleData.public_id;
                                                         const shortPublicId = typeof publicId === 'string' ?
@@ -1482,7 +1685,7 @@ function ViewCoursePage() {
 
                     {/* Enrollment Button */}
                     <Box sx={{
-                        mt: 5,
+                        mt: 8,
                         p: 4,
                         borderRadius: '16px',
                         bgcolor: theme.palette.background.paper, // Parchment paper
@@ -1536,26 +1739,42 @@ function ViewCoursePage() {
                                 width: '100%',
                                 maxWidth: '500px'
                             }}>
-                                <Typography variant="h5" sx={{
-                                    color: theme.palette.text.primary,
-                                    fontFamily: theme.typography.headingFontFamily,
-                                    mb: 1,
-                                    position: 'relative',
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: -8,
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        width: '40%',
-                                        height: '2px',
-                                        background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
-                                    }
-                                }}>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        color: theme.palette.text.primary,
+                                        fontFamily: theme.typography.headingFontFamily,
+                                        mb: 1,
+                                        fontStyle: 'italic',
+                                        position: 'relative',
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            bottom: -8,
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            width: '40%',
+                                            height: '1px',
+                                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
+                                        }
+                                    }}
+                                >
                                     Join This Course
                                 </Typography>
-                                <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                    Enrolling gives you full access to all course materials and interactive AI modules.
+                                <Typography
+                                    variant="body1"
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        mb: 2,
+                                        '& strong': {
+                                            fontWeight: 600,
+                                            fontFamily: theme.typography.headingFontFamily,
+                                            color: theme.palette.secondary.main,
+                                            fontStyle: 'italic'
+                                        }
+                                    }}
+                                >
+                                    Enrolling gives you <strong>full access</strong> to all course materials and interactive AI modules.
                                 </Typography>
                                 <Button
                                     variant="contained"
@@ -1622,7 +1841,7 @@ function ViewCoursePage() {
                                         mb: 1,
                                         boxShadow: `0 0 15px ${theme.palette.secondary.main}30`,
                                     }}>
-                                        <Check size={32} color={theme.palette.secondary.main} />
+                                        <VerifiedIcon sx={{ color: theme.palette.secondary.main, fontSize: 20 }} />
                                     </Box>
                                     <Typography variant="h5" sx={{
                                         fontFamily: theme.typography.headingFontFamily,
@@ -1697,13 +1916,14 @@ function ViewCoursePage() {
                     borderBottom: `1px solid ${theme.palette.divider}`,
                     fontFamily: theme.typography.headingFontFamily,
                     py: 2.5,
+                    fontWeight: 600,
                     position: 'relative',
                     '&::after': {
                         content: '""',
                         position: 'absolute',
                         bottom: 0,
                         left: '10%',
-                        width: '80%',
+                        right: '10%',
                         height: '1px',
                         background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}50, transparent)`,
                     }
@@ -1717,10 +1937,25 @@ function ViewCoursePage() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
+                            position: 'relative',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: -2,
+                                left: -2,
+                                right: -2,
+                                bottom: -2,
+                                borderRadius: '50%',
+                                border: `1px solid ${theme.palette.secondary.main}30`,
+                                opacity: 0.7
+                            }
                         }}>
                             <Lock size={16} color={theme.palette.secondary.main} />
                         </Box>
-                        <Typography variant="h6" sx={{ fontFamily: theme.typography.headingFontFamily }}>
+                        <Typography sx={{
+                            fontFamily: theme.typography.headingFontFamily,
+                            fontWeight: 600,
+                        }}>
                             Enrollment Required
                         </Typography>
                     </Box>
@@ -1808,13 +2043,14 @@ function ViewCoursePage() {
                     borderBottom: `1px solid ${theme.palette.divider}`,
                     fontFamily: theme.typography.headingFontFamily,
                     py: 2.5,
+                    fontWeight: 600,
                     position: 'relative',
                     '&::after': {
                         content: '""',
                         position: 'absolute',
                         bottom: 0,
                         left: '10%',
-                        width: '80%',
+                        right: '10%',
                         height: '1px',
                         background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`,
                     }
@@ -1831,7 +2067,13 @@ function ViewCoursePage() {
                         }}>
                             <AlertTriangle size={16} color={theme.palette.error.main} />
                         </Box>
-                        <Typography variant="h6" sx={{ fontFamily: theme.typography.headingFontFamily }}>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontFamily: theme.typography.headingFontFamily,
+                                fontStyle: 'italic'
+                            }}
+                        >
                             Confirm Unenrollment
                         </Typography>
                     </Box>

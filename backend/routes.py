@@ -4278,8 +4278,19 @@ def get_public_course_by_id(public_id):
             if not current_user_id or course.user_id != int(current_user_id):
                 return jsonify({"error": "Course is not public"}), 403
 
-        # Get course data
+        # Get course data with full module details including permissions
         course_data = course.to_dict()
+
+        # Enhance module data with explicit permissions to ensure is_public is set
+        if "modules" in course_data and course_data["modules"]:
+            for i, module_data in enumerate(course_data["modules"]):
+                module_id = module_data.get("id")
+                if module_id:
+                    # Get the actual module object to access permissions
+                    module = CourseModule.query.get(module_id)
+                    if module:
+                        # This will include access_level and is_public
+                        course_data["modules"][i] = module.to_dict()
 
         # Check if user is enrolled if logged in
         if get_jwt_identity():
@@ -4411,6 +4422,72 @@ def update_module_permissions(user, course_id, module_id):
         return jsonify({"error": "Failed to update module permissions"}), 500
 
 
+@app.route("/api/courses/enrolled", methods=["GET"])
+@jwt_required()
+def get_user_enrolled_courses():
+    """Get all courses a user is enrolled in with detailed information"""
+    try:
+        current_user = get_current_user()
+
+        # Query all active enrollments for this user
+        enrollments = Enrollment.query.filter_by(
+            user_id=current_user.id, status="active"
+        ).all()
+
+        # Collect course data with enrollment details
+        enrolled_courses = []
+        for enrollment in enrollments:
+            course = Course.query.get(enrollment.course_id)
+            if not course:
+                continue
+
+            # Get course data
+            course_data = course.to_dict()
+
+            # Add enrollment-specific data
+            course_data["enrollment"] = {
+                "id": enrollment.id,
+                "status": enrollment.status,
+                "progress": enrollment.progress,
+                "has_premium_access": enrollment.has_premium_access,
+                "last_accessed_at": (
+                    enrollment.last_accessed_at.isoformat()
+                    if enrollment.last_accessed_at
+                    else None
+                ),
+                "enrolled_at": (
+                    enrollment.enrolled_at.isoformat()
+                    if enrollment.enrolled_at
+                    else None
+                ),
+            }
+
+            # For each module, determine if the user can access it based on their enrollment
+            if "modules" in course_data and course_data["modules"]:
+                for module in course_data["modules"]:
+                    # Get module permissions
+                    module_id = module.get("id")
+                    if module_id:
+                        course_module = CourseModule.query.get(module_id)
+                        if course_module:
+                            # Check access level
+                            can_access = course_module.can_access(current_user)
+                            module["can_access"] = can_access
+
+            enrolled_courses.append(course_data)
+
+        return (
+            jsonify(
+                {"enrolled_courses": enrolled_courses, "count": len(enrolled_courses)}
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching enrolled courses: {str(e)}")
+        return jsonify({"error": "Failed to fetch enrolled courses"}), 500
+
+
 @app.route("/api/courses/<int:course_id>/public", methods=["GET"])
 @jwt_required(optional=True)
 def get_public_course_details(course_id):
@@ -4440,247 +4517,3 @@ def get_public_course_details(course_id):
     except Exception as e:
         app.logger.error(f"Error getting public course: {str(e)}")
         return jsonify({"error": "Failed to get course details"}), 500
-
-
-@app.route(
-    "/api/courses/<int:course_id>/enrollments/<int:enrollment_id>/toggle-premium",
-    methods=["POST"],
-)
-@jwt_required()
-def toggle_premium_access(course_id, enrollment_id):
-    current_user = get_current_user()
-    course = Course.query.get_or_404(course_id)
-
-    # Verify the current user is the course owner
-    if current_user.id != course.user_id:
-        return jsonify({"error": "Unauthorized"}), 403
-
-    enrollment = Enrollment.query.get_or_404(enrollment_id)
-
-    # Verify the enrollment belongs to the specified course
-    if enrollment.course_id != course_id:
-        return jsonify({"error": "Enrollment does not belong to this course"}), 400
-
-    # Toggle premium access
-    enrollment.has_premium_access = not enrollment.has_premium_access
-    db.session.commit()
-
-    return (
-        jsonify(
-            {
-                "enrollment": enrollment.to_dict(),
-                "message": f"Premium access {'granted' if enrollment.has_premium_access else 'revoked'}",
-            }
-        ),
-        200,
-    )
-
-
-@app.route("/api/brdges/<int:brdge_id>/status", methods=["GET"])
-@login_required
-def get_brdge_status(user, brdge_id):
-    try:
-        # Get the latest script for this brdge
-        script = (
-            BrdgeScript.query.filter_by(brdge_id=brdge_id)
-            .order_by(BrdgeScript.id.desc())
-            .first()
-        )
-
-        if not script:
-            return jsonify({"status": "pending", "logs": [], "progress": 0}), 200
-
-        # Get metadata with logs
-        metadata = script.script_metadata or {}
-        logs = metadata.get("logs", [])
-        progress = metadata.get("progress", 0)
-
-        # Return the status, progress, and logs
-        return (
-            jsonify(
-                {
-                    "status": script.status,
-                    "logs": logs,
-                    "progress": progress,
-                    "updated_at": (
-                        script.created_at.isoformat() if script.created_at else None
-                    ),
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error getting brdge status: {str(e)}")
-        return jsonify({"error": "Error getting brdge status", "detail": str(e)}), 500
-
-
-def process_brdge_content_with_logs(
-    brdge_id, video_local_path, pdf_local_path, template_type, script_id
-):
-    """Process brdge content with detailed logging."""
-    try:
-        script_obj = BrdgeScript.query.get(script_id)
-        if not script_obj:
-            logger.error(f"Could not find BrdgeScript with ID {script_id}")
-            return
-
-        # Initialize metadata if needed
-        if not script_obj.script_metadata:
-            script_obj.script_metadata = {"logs": [], "progress": 0}
-
-        # Helper function to add logs
-        def add_log(message, status="info", progress=None):
-            metadata = script_obj.script_metadata
-            metadata["logs"].append(
-                {"message": message, "status": status, "timestamp": time.time()}
-            )
-            if progress is not None:
-                metadata["progress"] = progress
-            script_obj.script_metadata = metadata
-            db.session.commit()
-
-        # Begin processing
-        add_log("Starting content analysis", "info", 5)
-
-        # Step 1: Extract video content
-        add_log("Analyzing video content...", "info", 10)
-        # [Your video processing code here]
-        add_log("Video analysis complete", "success", 30)
-
-        # Step 2: Process PDF if available
-        if pdf_local_path:
-            add_log("Processing presentation content...", "info", 35)
-            # [Your PDF processing code here]
-            add_log("Presentation analysis complete", "success", 50)
-
-        # Step 3: Generate knowledge base
-        add_log("Building knowledge base from content...", "info", 55)
-        # [Your knowledge base generation code here]
-        add_log("Knowledge base creation complete", "success", 70)
-
-        # Step 4: Create teaching persona
-        add_log("Extracting teaching patterns...", "info", 75)
-        # [Your teaching persona extraction code here]
-        add_log("Teaching persona analysis complete", "success", 85)
-
-        # Step 5: Generate engagement opportunities
-        add_log("Identifying engagement opportunities...", "info", 90)
-        # [Your engagement opportunities code here]
-        add_log("Engagement opportunities identified", "success", 95)
-
-        # Step 6: Finalize and save results
-        add_log("Compiling extracted intelligence...", "info", 98)
-
-        # Call your actual processing function here
-        extraction_results = process_brdge_content(
-            brdge_id, video_local_path, pdf_local_path, template_type
-        )
-
-        # Update the script content with extraction results
-        script_obj.content = extraction_results
-        script_obj.status = "completed"
-        add_log("Content processing completed!", "success", 100)
-
-        db.session.commit()
-
-        # Clean up temporary files
-        if os.path.exists(video_local_path):
-            os.remove(video_local_path)
-        if pdf_local_path and os.path.exists(pdf_local_path):
-            os.remove(pdf_local_path)
-
-    except Exception as e:
-        logger.error(
-            f"Error in process_brdge_content_with_logs: {str(e)}", exc_info=True
-        )
-        try:
-            if script_obj:
-                script_obj.status = "failed"
-                if script_obj.script_metadata:
-                    script_obj.script_metadata["logs"].append(
-                        {
-                            "message": "Processing failed. Please try again.",
-                            "status": "error",
-                            "timestamp": time.time(),
-                        }
-                    )
-                db.session.commit()
-        except Exception:
-            logger.error("Failed to update script status on error", exc_info=True)
-
-
-@app.route("/api/brdges/<int:brdge_id>/conversation-logs", methods=["POST"])
-def create_conversation_log(brdge_id):
-    """Create a new conversation log entry for agent or user messages"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Invalid JSON payload"}), 400
-
-        # Ensure brdge exists and get owner_id
-        brdge = Brdge.query.get_or_404(brdge_id)
-        owner_id = brdge.user_id
-
-        # Validate required fields from payload
-        role = data.get("role")
-        message = data.get("message")
-        if not role or role not in ["agent", "user"]:
-            return (
-                jsonify(
-                    {"error": "Missing or invalid 'role' (must be 'agent' or 'user')"}
-                ),
-                400,
-            )
-        if message is None:  # Allow empty strings but not missing field
-            return jsonify({"error": "Missing 'message' field"}), 400
-
-        # Get optional fields
-        viewer_user_id = data.get("viewer_user_id")
-        anonymous_id = data.get("anonymous_id")
-        was_interrupted = data.get("was_interrupted", False)
-        duration_seconds = data.get("duration_seconds")  # Nullable
-
-        # Parse timestamp if provided, otherwise default
-        timestamp_str = data.get("timestamp")
-        timestamp = (
-            datetime.fromisoformat(timestamp_str)
-            if timestamp_str
-            else datetime.utcnow()
-        )
-
-        # Create new conversation log
-        conversation_log = ConversationLogs(
-            brdge_id=brdge_id,
-            owner_id=owner_id,
-            viewer_user_id=viewer_user_id,
-            anonymous_id=anonymous_id,
-            role=role,
-            message=message,
-            timestamp=timestamp,
-            was_interrupted=was_interrupted,
-            duration_seconds=duration_seconds,
-        )
-
-        db.session.add(conversation_log)
-        db.session.commit()
-
-        logger.info(
-            f"Created conversation log with ID: {conversation_log.id} for brdge {brdge_id}"
-        )
-        return (
-            jsonify(
-                {
-                    "id": conversation_log.id,
-                    "message": "Conversation log created successfully",
-                }
-            ),
-            201,
-        )
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Error creating conversation log: {e}")
-        # Add more detail to the error log
-        logger.exception("Full error details during conversation log creation:")
-        return jsonify({"error": f"Failed to create conversation log: {str(e)}"}), 500

@@ -61,6 +61,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import PublicIcon from '@mui/icons-material/Public';
 import PersonIcon from '@mui/icons-material/Person';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import { Copy, Check } from 'lucide-react';
 
 // Animation variants
 const containerVariants = {
@@ -169,6 +170,10 @@ function EditCoursePage() {
     // Add state for enrollments
     const [enrollments, setEnrollments] = useState([]);
     const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+
+    // Add these state variables for the share dialog
+    const [linkCopied, setLinkCopied] = useState(false);
+    const [savingShareStatus, setSavingShareStatus] = useState(false);
 
     // Create a debounced save function
     const debouncedSaveDescription = useCallback(
@@ -330,33 +335,55 @@ function EditCoursePage() {
         }
     };
 
+    // Remove the old implementation and keep only the new one
     const handleToggleShareable = async () => {
+        if (!course) return;
+
         try {
-            setSavingCourse(true);
-            await api.post(`/courses/${id}/toggle_shareable`);
-            setIsShareable(!isShareable);
-            setTimeout(() => setSaveSuccess(true), 3000);
+            setSavingShareStatus(true);
+            const response = await api.post(`/courses/${id}/toggle_shareable`);
+            const newShareableStatus = response.data.shareable;
+
+            setCourse(prevCourse => ({
+                ...prevCourse,
+                shareable: newShareableStatus
+            }));
+
+            setIsShareable(newShareableStatus);
+            showSnackbar(`Course is now ${newShareableStatus ? 'public' : 'private'}`, 'success');
+
+            // If now shareable and wasn't before, automatically copy the link to encourage sharing
+            if (newShareableStatus && !isShareable) {
+                setTimeout(() => {
+                    handleCopyLink();
+                }, 300);
+            }
         } catch (error) {
-            console.error('Error toggling shareable status:', error);
+            console.error('Error toggling share status:', error);
+            showSnackbar('Failed to update sharing settings', 'error');
         } finally {
-            setSavingCourse(false);
+            setSavingShareStatus(false);
         }
     };
 
+    // Add this handler for opening the share dialog
     const handleOpenShareDialog = () => {
         setShareDialogOpen(true);
     };
 
+    // Add this handler for closing the share dialog
     const handleCloseShareDialog = () => {
         setShareDialogOpen(false);
-        setCopiedLink(false);
+        setLinkCopied(false);
     };
 
+    // Add this handler for copying the shareable link
     const handleCopyLink = () => {
         const shareableLink = `${window.location.origin}/c/${course.public_id}`;
         navigator.clipboard.writeText(shareableLink);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 3000);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 3000);
+        showSnackbar('Link copied to clipboard!', 'success');
     };
 
     const handleOpenAddModuleDialog = () => {
@@ -888,7 +915,7 @@ function EditCoursePage() {
                             <Button
                                 variant="contained"
                                 color="primary"
-                                onClick={() => navigate('/')}
+                                onClick={() => navigate('/home')}
                                 sx={{ mt: 2 }}
                             >
                                 Back to Dashboard
@@ -929,7 +956,6 @@ function EditCoursePage() {
                 {/* Tabs Navigation - Modified to connect with header */}
                 <Box sx={{
                     bgcolor: theme.palette.background.paper,
-                    // Remove top border radius to visually connect with header
                     borderRadius: '0 0 16px 16px',
                     overflow: 'hidden',
                     border: `1px solid ${theme.palette.divider}`,
@@ -954,11 +980,13 @@ function EditCoursePage() {
                                 transition: 'all 0.3s ease',
                                 fontSize: '0.9rem',
                                 letterSpacing: '0.03em',
+                                fontWeight: 500,
                                 '&.Mui-selected': {
                                     color: theme.palette.secondary.main,
+                                    fontWeight: 600,
                                 },
                                 '&:hover': {
-                                    bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                    bgcolor: 'rgba(0, 0, 0, 0.02)',
                                     color: theme.palette.text.primary,
                                 },
                                 '& .MuiSvgIcon-root': {
@@ -1026,7 +1054,7 @@ function EditCoursePage() {
                                     borderRadius: '12px',
                                     overflow: 'hidden',
                                     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                                    border: `1px dashed ${theme.palette.divider}`,
+                                    border: courseThumbPreview ? 'none' : `1px dashed ${theme.palette.divider}`,
                                     '&::before': {
                                         content: '""',
                                         display: 'block',
@@ -1080,6 +1108,14 @@ function EditCoursePage() {
                                                     startIcon={<AddPhotoAlternateIcon />}
                                                     sx={{
                                                         bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                                        backdropFilter: 'blur(4px)',
+                                                        fontWeight: 500,
+                                                        borderRadius: '50px',
+                                                        px: 2,
+                                                        py: 1,
+                                                        '&:hover': {
+                                                            bgcolor: 'rgba(0, 0, 0, 0.3)',
+                                                        }
                                                     }}
                                                 >
                                                     Change
@@ -1102,9 +1138,16 @@ function EditCoursePage() {
                                                 flexDirection: 'column',
                                                 gap: 1,
                                                 padding: 2,
+                                                border: 'none',
+                                                borderRadius: '12px',
+                                                backgroundColor: 'rgba(0, 0, 0, 0.03)',
+                                                transition: 'all 0.2s ease',
+                                                '&:hover': {
+                                                    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+                                                }
                                             }}
                                         >
-                                            <Typography variant="body2" sx={{ mt: 1 }}>
+                                            <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
                                                 Add Course Thumbnail
                                             </Typography>
                                             <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
@@ -1124,7 +1167,8 @@ function EditCoursePage() {
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             bgcolor: 'rgba(0, 0, 0, 0.5)',
-                                            zIndex: 5
+                                            zIndex: 5,
+                                            backdropFilter: 'blur(4px)'
                                         }}>
                                             <CircularProgress size={40} sx={{ color: theme.palette.secondary.main }} />
                                         </Box>
@@ -1159,6 +1203,35 @@ function EditCoursePage() {
                                             variant="contained"
                                             onClick={handleSaveCourse}
                                             color="primary"
+                                            sx={{
+                                                borderRadius: '50px',
+                                                px: 3,
+                                                py: 1,
+                                                fontWeight: 500,
+                                                boxShadow: theme.shadows[2],
+                                                '&:hover': {
+                                                    boxShadow: theme.shadows[4],
+                                                    transform: 'translateY(-2px)'
+                                                },
+                                                transition: 'all 0.2s ease',
+                                                position: 'relative',
+                                                overflow: 'hidden',
+                                                // Add Neo-Scholar decorative underline effect on hover
+                                                '&::after': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    bottom: 0,
+                                                    left: '15%',
+                                                    right: '15%',
+                                                    height: '2px',
+                                                    background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
+                                                    opacity: 0,
+                                                    transition: 'opacity 0.3s ease'
+                                                },
+                                                '&:hover::after': {
+                                                    opacity: 1
+                                                }
+                                            }}
                                         >
                                             Save
                                         </Button>
@@ -1206,21 +1279,37 @@ function EditCoursePage() {
                                         startIcon={<AddIcon />}
                                         onClick={handleOpenAddModuleDialog}
                                         sx={{
-                                            // Replace cyan gradient with Neo-Scholar theme colors
-                                            background: theme.palette.primary.main, // Changed from cyan gradient to ink color
-                                            borderRadius: '10px',
+                                            borderRadius: '8px',
                                             px: 2.5,
                                             py: 1,
                                             fontSize: '0.9rem',
                                             fontWeight: 500,
-                                            color: theme.palette.primary.contrastText, // Parchment text color
+                                            color: theme.palette.primary.contrastText,
                                             textTransform: 'none',
+                                            backgroundColor: theme.palette.primary.main,
+                                            transition: 'all 0.3s ease',
+                                            position: 'relative',
+                                            overflow: 'hidden',
                                             '&:hover': {
-                                                background: theme.palette.primary.dark, // Darker ink on hover
+                                                backgroundColor: theme.palette.primary.dark,
                                                 transform: 'translateY(-2px)',
-                                                boxShadow: `0 4px 12px ${theme.palette.primary.main}40`, // Ink shadow instead of cyan
+                                                boxShadow: `0 4px 12px ${theme.palette.primary.main}40`,
                                             },
-                                            transition: 'all 0.3s ease'
+                                            // Add decorative line that animates on hover
+                                            '&::after': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                left: '15%',
+                                                right: '15%',
+                                                height: '2px',
+                                                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
+                                                opacity: 0,
+                                                transition: 'opacity 0.3s ease'
+                                            },
+                                            '&:hover::after': {
+                                                opacity: 1
+                                            }
                                         }}
                                     >
                                         Add Module
@@ -1284,6 +1373,10 @@ function EditCoursePage() {
                                                                 },
                                                                 '& .module-overlay': {
                                                                     opacity: 1,
+                                                                },
+                                                                // Add decorative corners on hover
+                                                                '& .corner-tl, & .corner-br': {
+                                                                    opacity: 0.8
                                                                 }
                                                             },
                                                             '&::before': {
@@ -1295,8 +1388,35 @@ function EditCoursePage() {
                                                                 opacity: 0.05,
                                                                 mixBlendMode: 'multiply',
                                                                 zIndex: 0,
+                                                            },
+                                                            // Add decorative corner elements
+                                                            '& .corner-tl': {
+                                                                position: 'absolute',
+                                                                top: 10,
+                                                                left: 10,
+                                                                width: '20px',
+                                                                height: '20px',
+                                                                borderTop: `1px solid ${theme.palette.secondary.main}50`,
+                                                                borderLeft: `1px solid ${theme.palette.secondary.main}50`,
+                                                                opacity: 0.4,
+                                                                transition: 'opacity 0.3s ease',
+                                                                zIndex: 5
+                                                            },
+                                                            '& .corner-br': {
+                                                                position: 'absolute',
+                                                                bottom: 10,
+                                                                right: 10,
+                                                                width: '20px',
+                                                                height: '20px',
+                                                                borderBottom: `1px solid ${theme.palette.secondary.main}50`,
+                                                                borderRight: `1px solid ${theme.palette.secondary.main}50`,
+                                                                opacity: 0.4,
+                                                                transition: 'opacity 0.3s ease',
+                                                                zIndex: 5
                                                             }
                                                         }}>
+                                                            <Box className="corner-tl" />
+                                                            <Box className="corner-br" />
                                                             <Box sx={{ position: 'relative', height: '250px' }}>
                                                                 {/* Module Label */}
                                                                 <Box
@@ -1636,42 +1756,35 @@ function EditCoursePage() {
                                                                         display: 'flex',
                                                                         alignItems: 'center',
                                                                         gap: 1,
-                                                                        mb: 1.5
+                                                                        mb: 1.5,
+                                                                        position: 'relative',
+                                                                        pl: 1,
+                                                                        // Add light sepia left border for scholarly appearance
+                                                                        '&::before': {
+                                                                            content: '""',
+                                                                            position: 'absolute',
+                                                                            top: '10%',
+                                                                            bottom: '10%',
+                                                                            left: 0,
+                                                                            width: '2px',
+                                                                            background: `linear-gradient(to bottom, transparent, ${theme.palette.secondary.main}40, transparent)`,
+                                                                            borderRadius: '1px'
+                                                                        }
                                                                     }}>
-                                                                        <LockIcon sx={{ fontSize: 18, color: theme.palette.secondary.main }} /> {/* Sepia icon instead of cyan */}
+                                                                        <LockIcon sx={{
+                                                                            fontSize: 18,
+                                                                            color: theme.palette.secondary.main,
+                                                                            opacity: 0.9
+                                                                        }} />
                                                                         <Typography variant="subtitle2" sx={{
-                                                                            color: theme.palette.text.primary, // Ink text
-                                                                            fontWeight: '500'
+                                                                            color: theme.palette.text.primary,
+                                                                            fontWeight: '500',
+                                                                            fontFamily: theme.typography.headingFontFamily,
+                                                                            fontSize: '0.95rem',
+                                                                            fontStyle: 'italic'
                                                                         }}>
                                                                             Content Access Control
                                                                         </Typography>
-                                                                        <Tooltip
-                                                                            title={
-                                                                                <Box sx={{ p: 1 }}>
-                                                                                    <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>Access Level Settings:</Typography>
-                                                                                    <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Public</b>: Anyone can access, even without enrollment</Typography>
-                                                                                    <Typography variant="body2" sx={{ mb: 0.5 }}>• <b>Enrolled</b>: Only enrolled users can access</Typography>
-                                                                                    <Typography variant="body2">• <b>Premium</b>: Requires premium enrollment access</Typography>
-                                                                                </Box>
-                                                                            }
-                                                                            arrow
-                                                                            placement="top"
-                                                                        >
-                                                                            <IconButton
-                                                                                size="small"
-                                                                                sx={{
-                                                                                    ml: 0.5,
-                                                                                    width: 18,
-                                                                                    height: 18,
-                                                                                    backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                                                                    '&:hover': {
-                                                                                        backgroundColor: 'rgba(34, 211, 238, 0.2)'
-                                                                                    }
-                                                                                }}
-                                                                            >
-                                                                                <InfoIcon sx={{ fontSize: 14, color: '#00E5FF' }} />
-                                                                            </IconButton>
-                                                                        </Tooltip>
                                                                     </Box>
 
                                                                     <Box sx={{
@@ -1714,26 +1827,24 @@ function EditCoursePage() {
                                                                                         sx={{
                                                                                             textTransform: 'none',
                                                                                             backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                                `${theme.palette.secondary.main}22` : 'transparent',
+                                                                                                `${theme.palette.secondary.main}15` : 'transparent',
                                                                                             color: (module.access_level || 'enrolled') === level ?
                                                                                                 theme.palette.secondary.main : theme.palette.text.secondary,
-                                                                                            borderColor: theme.palette.secondary.main,
-                                                                                            borderWidth: (module.access_level || 'enrolled') === level ? '2px' : '1px',
+                                                                                            borderColor: (module.access_level || 'enrolled') === level ?
+                                                                                                theme.palette.secondary.main : theme.palette.divider,
+                                                                                            borderWidth: '1px',
                                                                                             padding: '8px 10px',
-                                                                                            borderRadius: '10px',
-                                                                                            fontSize: '0.8rem',
+                                                                                            borderRadius: '8px',
+                                                                                            fontSize: '0.85rem',
                                                                                             fontWeight: (module.access_level || 'enrolled') === level ? '600' : '400',
-                                                                                            boxShadow: (module.access_level || 'enrolled') === level ?
-                                                                                                `0 0 15px ${theme.palette.secondary.main}66, 0 0 5px ${theme.palette.secondary.main}33 inset` : 'none',
-                                                                                            transform: (module.access_level || 'enrolled') === level ? 'scale(1.05)' : 'scale(1)',
-                                                                                            zIndex: (module.access_level || 'enrolled') === level ? 2 : 1,
-                                                                                            position: 'relative',
+                                                                                            boxShadow: 'none',
+                                                                                            transition: 'all 0.2s ease',
                                                                                             '&:hover': {
                                                                                                 backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                                    `${theme.palette.secondary.main}33` : `${theme.palette.secondary.main}15`,
+                                                                                                    `${theme.palette.secondary.main}25` : `${theme.palette.secondary.main}08`,
                                                                                                 borderColor: theme.palette.secondary.main,
+                                                                                                transform: 'translateY(-1px)',
                                                                                             },
-                                                                                            transition: 'all 0.2s ease',
                                                                                         }}
                                                                                     >
                                                                                         {label}
@@ -2248,11 +2359,11 @@ function EditCoursePage() {
                     onClose={handleCloseShareDialog}
                     PaperProps={{
                         sx: {
-                            bgcolor: theme.palette.background.paper, // Parchment background
-                            color: theme.palette.text.primary, // Ink text
+                            bgcolor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
                             borderRadius: 2,
                             boxShadow: theme.shadows[5],
-                            border: `1px solid ${theme.palette.divider}`, // Sepia border
+                            border: `1px solid ${theme.palette.divider}`,
                             minWidth: { xs: '90%', sm: 400 },
                             position: 'relative',
                             '&::before': {
@@ -2270,26 +2381,190 @@ function EditCoursePage() {
                     }}
                 >
                     <DialogTitle sx={{
-                        bgcolor: `${theme.palette.secondary.main}15`, // Sepia background instead of cyan
-                        color: theme.palette.text.primary, // Ink text
-                        borderBottom: `1px solid ${theme.palette.divider}`, // Sepia border
+                        bgcolor: theme.palette.background.default,
+                        color: theme.palette.text.primary,
+                        borderBottom: `1px solid ${theme.palette.divider}`,
                         fontFamily: theme.typography.headingFontFamily,
-                        fontWeight: 'bold',
-                        letterSpacing: '0.02em',
-                        fontSize: '1.5rem',
+                        py: 2.5,
+                        fontWeight: 600,
                         position: 'relative',
-                        zIndex: 1
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: 0,
+                            left: '10%',
+                            right: '10%',
+                            height: '1px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}50, transparent)`,
+                        }
                     }}>
-                        Share Course
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                backgroundColor: `${theme.palette.secondary.main}15`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: -2,
+                                    left: -2,
+                                    right: -2,
+                                    bottom: -2,
+                                    borderRadius: '50%',
+                                    border: `1px solid ${theme.palette.secondary.main}30`,
+                                    opacity: 0.7
+                                }
+                            }}>
+                                <ShareIcon sx={{ fontSize: 18, color: theme.palette.secondary.main }} />
+                            </Box>
+                            <Typography sx={{
+                                fontFamily: theme.typography.headingFontFamily,
+                                fontWeight: 600,
+                            }}>
+                                Share Course
+                            </Typography>
+                        </Box>
                     </DialogTitle>
                     <DialogContent sx={{ p: 3, mt: 1, position: 'relative', zIndex: 1 }}>
-                        {/* Dialog content with theme styling */}
+                        <Typography
+                            variant="body1"
+                            gutterBottom
+                            sx={{
+                                color: theme.palette.text.secondary,
+                                fontSize: '1rem',
+                                lineHeight: 1.6,
+                                mb: 3
+                            }}
+                        >
+                            {isShareable ?
+                                "This course is currently public. Anyone with the link can view it." :
+                                "This course is currently private. Only you can access it."}
+                        </Typography>
+
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={isShareable || false}
+                                    onChange={handleToggleShareable}
+                                    color="secondary"
+                                    disabled={savingShareStatus}
+                                />
+                            }
+                            label={
+                                <Typography sx={{
+                                    color: theme.palette.text.primary,
+                                    fontSize: '1rem',
+                                    fontWeight: 500
+                                }}>
+                                    Public Course
+                                </Typography>
+                            }
+                            sx={{
+                                my: 1.5,
+                                display: 'block',
+                                '& .MuiFormControlLabel-label': {
+                                    color: theme.palette.text.primary
+                                }
+                            }}
+                        />
+
+                        {isShareable && (
+                            <Box sx={{ mt: 3 }}>
+                                <Typography
+                                    variant="body2"
+                                    gutterBottom
+                                    sx={{
+                                        color: theme.palette.text.secondary,
+                                        mb: 1
+                                    }}
+                                >
+                                    Share this link:
+                                </Typography>
+                                <TextField
+                                    fullWidth
+                                    value={`${window.location.origin}/c/${course?.public_id}`}
+                                    InputProps={{
+                                        readOnly: true,
+                                        sx: {
+                                            color: theme.palette.text.primary,
+                                            bgcolor: theme.palette.background.default,
+                                            '& .MuiInputBase-input': {
+                                                color: theme.palette.text.primary,
+                                            }
+                                        },
+                                        endAdornment: (
+                                            <InputAdornment position="end">
+                                                <IconButton
+                                                    onClick={handleCopyLink}
+                                                    edge="end"
+                                                    sx={{ color: linkCopied ? theme.palette.success.main : theme.palette.secondary.main }}
+                                                >
+                                                    {linkCopied ? <Check size={18} /> : <Copy size={18} />}
+                                                </IconButton>
+                                            </InputAdornment>
+                                        )
+                                    }}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            '& fieldset': { borderColor: `${theme.palette.secondary.main}50` },
+                                            '&:hover fieldset': { borderColor: theme.palette.secondary.main },
+                                        }
+                                    }}
+                                />
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        display: 'block',
+                                        mt: 1,
+                                        color: linkCopied ? theme.palette.success.main : theme.palette.text.disabled,
+                                        transition: 'color 0.3s ease'
+                                    }}
+                                >
+                                    {linkCopied ? '✓ Link copied to clipboard!' : 'Click the copy icon to copy the link'}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        <Box sx={{
+                            mt: 3,
+                            p: 2,
+                            bgcolor: `${theme.palette.secondary.main}08`,
+                            borderRadius: '8px',
+                            border: `1px solid ${theme.palette.secondary.main}15`
+                        }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
+                                <strong>Course:</strong> {course?.name}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mt: 1 }}>
+                                When shared, others can view this course. Individual module access is controlled in the Content tab.
+                            </Typography>
+                            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <AutoStoriesIcon sx={{ color: theme.palette.secondary.main, fontSize: 16 }} />
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                    {course?.modules?.length || 0} module(s) in this course
+                                </Typography>
+                            </Box>
+                        </Box>
                     </DialogContent>
                     <DialogActions sx={{ px: 3, pb: 2, position: 'relative', zIndex: 1 }}>
                         <Button
                             onClick={handleCloseShareDialog}
                             variant="outlined"
-                            color="secondary"
+                            sx={{
+                                color: theme.palette.secondary.main,
+                                borderColor: `${theme.palette.secondary.main}50`,
+                                '&:hover': {
+                                    borderColor: theme.palette.secondary.main,
+                                    backgroundColor: `${theme.palette.secondary.main}10`
+                                }
+                            }}
                         >
                             Close
                         </Button>
@@ -2638,44 +2913,106 @@ function EditCoursePage() {
                     onClose={handleCancelDeleteModule}
                     PaperProps={{
                         sx: {
-                            bgcolor: 'rgba(20, 20, 35, 0.85)',
-                            backdropFilter: 'blur(10px)',
-                            color: 'text.primary',
-                            borderRadius: 3,
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-                            border: '1px solid rgba(255, 0, 0, 0.2)'
+                            bgcolor: theme.palette.background.paper,
+                            color: theme.palette.text.primary,
+                            borderRadius: '12px',
+                            boxShadow: theme.shadows[4],
+                            border: `1px solid ${theme.palette.divider}`,
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.darkParchment})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.1,
+                                mixBlendMode: 'multiply',
+                                zIndex: 0,
+                            },
+                            '& > *': {
+                                position: 'relative',
+                                zIndex: 1
+                            }
                         }
                     }}
                     maxWidth="xs"
                     fullWidth
                 >
                     <DialogTitle sx={{
-                        bgcolor: 'rgba(211, 47, 47, 0.5)',
-                        color: 'error.contrastText',
-                        borderBottom: '1px solid rgba(255, 0, 0, 0.2)',
-                        backdropFilter: 'blur(5px)',
-                        fontFamily: 'Satoshi, sans-serif',
-                        fontWeight: 'bold',
-                        letterSpacing: '0.02em'
+                        bgcolor: theme.palette.background.default,
+                        color: theme.palette.error.main,
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        fontFamily: theme.typography.headingFontFamily,
+                        py: 2.5,
+                        fontWeight: 600,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: 0,
+                            left: '10%',
+                            right: '10%',
+                            height: '1px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`,
+                        }
                     }}>
-                        Remove Module
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                backgroundColor: `${theme.palette.error.main}15`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: -2,
+                                    left: -2,
+                                    right: -2,
+                                    bottom: -2,
+                                    borderRadius: '50%',
+                                    border: `1px solid ${theme.palette.error.main}30`,
+                                    opacity: 0.7
+                                }
+                            }}>
+                                <DeleteIcon sx={{ fontSize: 18, color: theme.palette.error.main }} />
+                            </Box>
+                            <Typography sx={{
+                                fontFamily: theme.typography.headingFontFamily,
+                                fontWeight: 600,
+                            }}>
+                                Remove Module
+                            </Typography>
+                        </Box>
                     </DialogTitle>
                     <DialogContent sx={{ p: 3, mt: 1 }}>
-                        <Typography sx={{ fontFamily: 'Satoshi, sans-serif' }}>
+                        <Typography sx={{
+                            fontFamily: theme.typography.fontFamily,
+                            color: theme.palette.text.primary,
+                            lineHeight: 1.6
+                        }}>
                             Are you sure you want to remove this module from the course?
                             This won't delete the Brdge itself.
                         </Typography>
                     </DialogContent>
-                    <DialogActions sx={{ px: 3, pb: 2 }}>
-                        <Button onClick={handleCancelDeleteModule} variant="outlined" sx={{
-                            fontFamily: 'Satoshi, sans-serif',
-                            borderColor: '#00BCD4',
-                            color: '#80DEEA',
-                            '&:hover': {
-                                borderColor: '#00E5FF',
-                                backgroundColor: 'rgba(0, 229, 255, 0.08)'
-                            }
-                        }}>
+                    <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
+                        <Button
+                            onClick={handleCancelDeleteModule}
+                            variant="outlined"
+                            sx={{
+                                fontFamily: theme.typography.fontFamily,
+                                color: theme.palette.text.secondary,
+                                borderColor: theme.palette.divider,
+                                '&:hover': {
+                                    borderColor: theme.palette.secondary.main,
+                                    backgroundColor: `${theme.palette.secondary.main}08`
+                                }
+                            }}
+                        >
                             Cancel
                         </Button>
                         <Button
@@ -2683,11 +3020,10 @@ function EditCoursePage() {
                             color="error"
                             variant="contained"
                             sx={{
-                                fontFamily: 'Satoshi, sans-serif',
-                                backgroundImage: 'linear-gradient(45deg, #f44336 30%, #d32f2f 90%)',
-                                boxShadow: '0 4px 10px rgba(211, 47, 47, 0.3)',
+                                fontFamily: theme.typography.fontFamily,
+                                boxShadow: theme.shadows[2],
                                 '&:hover': {
-                                    boxShadow: '0 6px 15px rgba(211, 47, 47, 0.4)'
+                                    boxShadow: theme.shadows[4]
                                 }
                             }}
                         >
@@ -2695,6 +3031,49 @@ function EditCoursePage() {
                         </Button>
                     </DialogActions>
                 </Dialog>
+
+                {/* Add a scholarly divider between sections */}
+                <Box
+                    component={motion.div}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5, duration: 0.8 }}
+                    sx={{
+                        width: '100%',
+                        height: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        my: 4,
+                        position: 'relative',
+                        '&::before, &::after': {
+                            content: '""',
+                            position: 'absolute',
+                            top: '50%',
+                            height: '1px',
+                            width: '35%',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}40, transparent)`
+                        },
+                        '&::before': {
+                            left: 0
+                        },
+                        '&::after': {
+                            right: 0
+                        }
+                    }}
+                >
+                    <Box
+                        component="img"
+                        src={theme.textures.stampLogo}
+                        alt=""
+                        sx={{
+                            width: '32px',
+                            height: '32px',
+                            opacity: 0.15,
+                            filter: 'grayscale(0.5)'
+                        }}
+                    />
+                </Box>
             </Box>
         </motion.div>
     );
