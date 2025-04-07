@@ -391,9 +391,9 @@ const IntroducingBrdgeAI = () => {
             ref={ref}
             disableGutters
             sx={{
-                pt: { xs: spacing.sectionPadding.xs, md: spacing.sectionPadding.md },
-                pb: { xs: spacing.sectionPadding.xs, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md },
-                px: { xs: 0, sm: 0 },
+                pt: { xs: 4, md: spacing.sectionPadding.md }, // Reduced top padding on mobile
+                pb: { xs: 4, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md }, // Reduced bottom padding on mobile
+                px: { xs: 2, sm: 0 }, // Added horizontal padding on mobile
                 position: 'relative',
                 // Apply parchment container styling with proper edges
                 ...parchmentContainer,
@@ -627,7 +627,7 @@ const IntroducingBrdgeAI = () => {
                             maxWidth: { xs: '100%', sm: '90%', md: '80%' },
                             textAlign: 'center',
                             mx: 'auto',
-                            px: { xs: 2, sm: 4 },
+                            px: { xs: 3, sm: 4 }, // Increased horizontal padding on mobile
                             mb: { xs: 4, sm: 6 },
                             mt: { xs: 3, sm: 4 }
                         }}
@@ -770,7 +770,7 @@ const IntroducingBrdgeAI = () => {
                             width: '100%',
                             maxWidth: { xs: '100%', sm: '90%', md: '700px' },
                             mx: 'auto',
-                            px: { xs: 2, sm: 0 }
+                            px: { xs: 3, sm: 0 } // Increased horizontal padding on mobile
                         }}
                     >
                         <Button
@@ -896,7 +896,7 @@ const HeroSection = () => {
                     position: 'absolute',
                     bottom: '-5px',
                     left: '-5px',
-                    width: { xs: '70px', sm: '90px', md: '110px' },
+                    width: { xs: '50px', sm: '90px', md: '110px' }, // Smaller on mobile
                     height: 'auto',
                     objectFit: 'contain',
                     opacity: 0.5,
@@ -917,7 +917,7 @@ const HeroSection = () => {
                     position: 'absolute',
                     bottom: '-5px',
                     right: '-5px',
-                    width: { xs: '70px', sm: '90px', md: '110px' },
+                    width: { xs: '50px', sm: '90px', md: '110px' }, // Smaller on mobile
                     height: 'auto',
                     objectFit: 'contain',
                     transform: 'scaleX(-1)',
@@ -929,7 +929,7 @@ const HeroSection = () => {
                 }}
             />
 
-            {/* Accent Leaves */}
+            {/* Accent Leaves - Hide on mobile */}
             <Box
                 component="img"
                 src={ivyLeaves}
@@ -943,6 +943,7 @@ const HeroSection = () => {
                     zIndex: 5,
                     transform: 'rotate(-15deg)',
                     filter: 'brightness(1.3) hue-rotate(70deg) saturate(0.9) drop-shadow(0 0 5px rgba(40, 180, 100, 0.3))',
+                    display: { xs: 'none', sm: 'block' }, // Hide on mobile to save space
                 }}
             />
 
@@ -962,8 +963,8 @@ const HeroSection = () => {
                     // and using a more controlled width
                     maxWidth: '100%',
                     mx: 'auto',
-                    paddingTop: { xs: 4, sm: 6, md: 8 },
-                    paddingBottom: { xs: 8, sm: 10 },
+                    paddingTop: { xs: 5, sm: 6, md: 8 }, // Increased top padding on mobile
+                    paddingBottom: { xs: 10, sm: 10 }, // Increased bottom padding on mobile
                     background: `linear-gradient(165deg, ${colors.parchmentLight} 0%, ${colors.parchment} 100%)`,
                     '&::after': {
                         content: '""',
@@ -1138,7 +1139,7 @@ const HeroSection = () => {
                         alignItems: 'center',
                         width: '100%',
                         mx: 'auto',
-                        px: { xs: 2, sm: 3, md: 4 },
+                        px: { xs: 2, sm: 3, md: 4 }, // Added more padding on mobile
                     }}
                 >
                     {/* Background Parallax Effect */}
@@ -1279,11 +1280,13 @@ const HeroSection = () => {
                             transition={{ delay: 0.3, duration: 0.6 }}
                             sx={{
                                 fontFamily: headingFontFamily,
-                                fontSize: { xs: '0.75rem', sm: '0.8rem' },
+                                fontSize: { xs: '0.65rem', sm: '0.8rem' }, // Even smaller on mobile
                                 letterSpacing: '0.1em',
                                 textTransform: 'uppercase',
                                 color: colors.sepia,
-                                mb: 2,
+                                mb: { xs: 1.5, sm: 2 },
+                                mt: { xs: 3, sm: 0 }, // Add top margin on mobile only
+                                pt: { xs: 3, sm: 0 }, // Add top padding on mobile only
                                 opacity: 0.9,
                             }}
                         >
@@ -1298,9 +1301,9 @@ const HeroSection = () => {
                             className="heading-large neo-scholar-heading"
                             sx={{
                                 fontFamily: headingFontFamily,
-                                fontSize: { xs: '2.6rem', sm: '3.2rem', md: '4.2rem' },
+                                fontSize: { xs: '2.2rem', sm: '3.2rem', md: '4.2rem' }, // Reduced font size on mobile
                                 fontWeight: 500,
-                                lineHeight: { xs: 1.2, sm: 1.15 },
+                                lineHeight: { xs: 1.3, sm: 1.15 }, // Increased line height on mobile for better readability
                                 ...inkTextStyle,
                                 mb: 1.5,
                                 letterSpacing: '-0.02em',
@@ -1448,7 +1451,7 @@ const HeroSection = () => {
                             width: '100%',
                             mx: 'auto',
                             mb: { xs: 4, sm: 5 },
-                            px: { xs: 1, sm: 0 },
+                            px: { xs: 2, sm: 0 }, // Added horizontal padding on mobile
                             gap: { xs: 3, sm: 3.5 },
                             position: 'relative',
                             padding: { xs: 2, sm: 3, md: 3.5 },
@@ -1508,7 +1511,7 @@ const HeroSection = () => {
                                     justifyContent: 'center',
                                     width: '100%',
                                     position: 'relative',
-                                    px: { xs: 1, sm: 1.5 },
+                                    px: { xs: 2, sm: 1.5 }, // More padding on mobile
                                     py: 0.5,
                                     // Enhanced dividers between items
                                     borderBottom: index !== 3 ? `1px dashed ${colors.sepia}20` : 'none',
@@ -1532,14 +1535,14 @@ const HeroSection = () => {
                                 <Box
                                     className="feature-icon"
                                     sx={{
-                                        width: { xs: '36px', sm: '40px' },
-                                        height: { xs: '36px', sm: '40px' },
+                                        width: { xs: '32px', sm: '40px' }, // Smaller on mobile
+                                        height: { xs: '32px', sm: '40px' }, // Smaller on mobile
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         opacity: 0.9,
                                         position: 'relative',
-                                        marginRight: 2,
+                                        marginRight: { xs: 1.5, sm: 2 }, // Less margin on mobile
                                         marginTop: '0px',
                                         transition: 'transform 0.3s ease-out, filter 0.3s ease-out',
                                         // Add subtle ornate border
@@ -1560,7 +1563,7 @@ const HeroSection = () => {
                                     {item.icon}
                                 </Box>
 
-                                {/* Text with refined styling */}
+                                {/* Improved text rendering for mobile */}
                                 <Box
                                     className="feature-text"
                                     sx={{
@@ -1576,7 +1579,7 @@ const HeroSection = () => {
                                     <Typography
                                         sx={{
                                             fontFamily: fontFamily,
-                                            fontSize: { xs: '1rem', sm: '1.05rem' },
+                                            fontSize: { xs: '0.95rem', sm: '1.05rem' }, // Smaller font on mobile
                                             fontWeight: 300,
                                             color: colors.inkLight,
                                             lineHeight: 1.6,
@@ -1593,7 +1596,7 @@ const HeroSection = () => {
                                         }}
                                         sx={{
                                             fontFamily: headingFontFamily,
-                                            fontSize: { xs: '1rem', sm: '1.05rem' },
+                                            fontSize: { xs: '0.95rem', sm: '1.05rem' }, // Smaller font on mobile
                                             fontWeight: 600,
                                             fontStyle: 'italic',
                                             color: colors.sepia,
@@ -1635,13 +1638,13 @@ const HeroSection = () => {
                         transition={{ delay: 1.4, duration: 0.8 }}
                         sx={{
                             display: 'flex',
-                            gap: { xs: 2.5, sm: 3.5 },
+                            gap: { xs: 2, sm: 3.5 },
                             justifyContent: 'center',
                             flexDirection: { xs: 'column', sm: 'row' },
                             width: '100%',
-                            maxWidth: { xs: '100%', sm: '600px' },
+                            maxWidth: { xs: '90%', sm: '600px' },
                             mx: 'auto',
-                            mb: { xs: 4, sm: 5 },
+                            mb: { xs: 3, sm: 5 }, // Less margin on mobile
                             px: { xs: 2, sm: 0 },
                             position: 'relative',
                             // Add ornate decorative element above buttons
@@ -1677,6 +1680,8 @@ const HeroSection = () => {
                                     ...createButtonStyles('primary'),
                                     position: 'relative',
                                     overflow: 'hidden',
+                                    py: { xs: 1.5, sm: 1.75 }, // Less padding on mobile
+                                    fontSize: { xs: '1rem', sm: '1.15rem' }, // Smaller font on mobile
                                     // Add subtle shine effect on hover
                                     '&::before': {
                                         content: '""',
@@ -1716,6 +1721,8 @@ const HeroSection = () => {
                                 sx={{
                                     ...createButtonStyles('secondary'),
                                     position: 'relative',
+                                    py: { xs: 1.5, sm: 1.75 }, // Less padding on mobile
+                                    fontSize: { xs: '1rem', sm: '1.15rem' }, // Smaller font on mobile
                                     // Add subtle illuminate effect
                                     '&::before': {
                                         content: '""',
@@ -1771,17 +1778,17 @@ const HeroSection = () => {
                             maxWidth: '700px',
                             mx: 'auto',
                             mt: 3,
-                            mb: 10, // Increased from mb: 3 to add more space below the quote
+                            mb: { xs: 8, sm: 10 }, // Adjusted spacing for mobile
                             position: 'relative',
                             // Add enhanced divider styling with room for logo
                             '&::before, &::after': {
                                 content: '""',
                                 position: 'absolute',
-                                width: '35%', // Shortened to make room for logo
+                                width: { xs: '30%', sm: '35%' }, // Shorter on mobile
                                 height: '1px',
                                 background: `linear-gradient(90deg, transparent, ${colors.sepia}50, transparent)`,
                                 left: 0,
-                                bottom: '-80px', // Moved down from -30px to -60px
+                                bottom: { xs: '-50px', sm: '-80px' }, // Less space on mobile
                                 zIndex: 1,
                             },
                             '&::after': {
@@ -1795,10 +1802,11 @@ const HeroSection = () => {
                             sx={{
                                 fontFamily: headingFontFamily,
                                 fontStyle: 'italic',
-                                fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                fontSize: { xs: '1rem', sm: '1.2rem' }, // Smaller on mobile
                                 color: colors.sepia,
                                 lineHeight: 1.6,
                                 position: 'relative',
+                                px: { xs: 2, sm: 0 }, // Add padding on mobile
                                 '&::before, &::after': {
                                     content: '"""',
                                     fontFamily: headingFontFamily,
@@ -1824,11 +1832,11 @@ const HeroSection = () => {
                         <Box
                             sx={{
                                 position: 'absolute',
-                                bottom: '-120px', // Moved down from -40px to -70px
+                                bottom: { xs: '-80px', sm: '-120px' }, // Reduced bottom spacing on mobile
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: '90px', // Increased from 50px to 80px
-                                height: '90px', // Increased from 50px to 80px
+                                width: { xs: '70px', sm: '90px' }, // Smaller on mobile
+                                height: { xs: '70px', sm: '90px' }, // Smaller on mobile
                                 backgroundColor: colors.parchmentLight,
                                 borderRadius: '50%',
                                 display: 'flex',
@@ -1841,7 +1849,7 @@ const HeroSection = () => {
                                 '&::before': {
                                     content: '""',
                                     position: 'absolute',
-                                    inset: '5px', // Increased from 3px to 5px for the larger size
+                                    inset: { xs: '4px', sm: '5px' }, // Adjusted for mobile
                                     borderRadius: '50%',
                                     border: `3px solid ${colors.sepia}20`,
                                     zIndex: 3,
@@ -1853,12 +1861,11 @@ const HeroSection = () => {
                                 src={stampLogoTexture}
                                 alt=""
                                 sx={{
-                                    width: '90px', // Set to a proper size that fits within the container
-                                    height: '90px',
+                                    width: { xs: '70px', sm: '90px' }, // Smaller on mobile
+                                    height: { xs: '70px', sm: '90px' }, // Smaller on mobile
                                     objectFit: 'contain',
                                     opacity: 0.85,
                                     filter: 'contrast(1.1)',
-                                    // transform: 'rotate(0deg)',
                                 }}
                             />
                         </Box>
@@ -1932,7 +1939,7 @@ const HowItWorksSection = () => {
     return (
         <Box sx={{
             background: 'transparent',
-            py: spacing.sectionPadding,
+            py: { xs: 4, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md }, // Less padding on mobile
             position: 'relative',
             // Add decorative elements to enhance the scholarly aesthetic
             '&::before': {
@@ -2650,8 +2657,8 @@ const FinalCTA = () => {
                 position: 'relative',
                 background: `url('/textures/parchment.png')`,
                 overflow: 'hidden',
-                pt: { xs: 8, sm: 10, md: 12 },
-                pb: { xs: 8, sm: 10, md: 12 },
+                pt: { xs: 6, sm: 10, md: 12 }, // Reduced top padding on mobile
+                pb: { xs: 6, sm: 10, md: 12 }, // Reduced bottom padding on mobile
             }}
         >
             {/* Left Ivy - Enhanced styling */}
@@ -2821,14 +2828,13 @@ const FinalCTA = () => {
                 align="center"
                 sx={{
                     fontFamily: headingFontFamily,
-                    fontSize: { xs: '2.0rem', sm: '2.8rem', md: '3.4rem' },
+                    fontSize: { xs: '1.8rem', sm: '2.8rem', md: '3.4rem' }, // Reduced size on mobile
                     fontWeight: 600,
-                    // Change from white to ink color
                     color: colors.ink,
                     mb: 1,
                     textTransform: 'none',
-                    lineHeight: { xs: 1.2, sm: 1.3 },
-                    px: { xs: 1, sm: 0 },
+                    lineHeight: { xs: 1.3, sm: 1.3 }, // Adjusted line height
+                    px: { xs: 2, sm: 0 }, // Added horizontal padding on mobile
                 }}
             >
                 Ready to Let Your Teaching
@@ -2838,15 +2844,14 @@ const FinalCTA = () => {
                 align="center"
                 sx={{
                     fontFamily: headingFontFamily,
-                    fontSize: { xs: '2.0rem', sm: '2.8rem', md: '3.4rem' },
+                    fontSize: { xs: '1.8rem', sm: '2.8rem', md: '3.4rem' }, // Reduced size on mobile
                     fontWeight: 700,
                     color: colors.sepia, // Change from accent to sepia
-                    mb: { xs: 4, sm: 5 },
+                    mb: { xs: 3, sm: 5 }, // Less margin on mobile
                     textTransform: 'none',
                     letterSpacing: '-0.02em',
-                    // textShadow: '0 0 8px rgba(0,255,204,0.15)', // Remove or reduce glow
-                    lineHeight: { xs: 1.2, sm: 1.3 },
-                    px: { xs: 1, sm: 0 },
+                    lineHeight: { xs: 1.3, sm: 1.3 }, // Adjusted line height
+                    px: { xs: 2, sm: 0 }, // Added horizontal padding on mobile
                 }}
             >
                 Reach More Students?
@@ -2857,15 +2862,14 @@ const FinalCTA = () => {
                 align="center"
                 sx={{
                     fontFamily: fontFamily,
-                    fontSize: { xs: '1.05rem', sm: '1.15rem', md: '1.25rem' },
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }, // Smaller on mobile
                     fontWeight: 400,
-                    // Change from white to inkLight for better contrast
                     color: colors.inkLight,
-                    mb: { xs: 5, sm: 6 },
-                    maxWidth: { xs: '100%', sm: '700px' },
+                    mb: { xs: 4, sm: 6 }, // Less margin on mobile
+                    maxWidth: { xs: '95%', sm: '700px' }, // Wider on mobile
                     mx: 'auto',
                     lineHeight: 1.6,
-                    px: { xs: 1, sm: 0 },
+                    px: { xs: 2, sm: 0 }, // Added padding on mobile
                 }}
             >
                 Join educators transforming traditional videos into interactive learning experiences. Scale your impact, improve student outcomes, and provide personalized guidance—all without your constant presence.
@@ -2939,13 +2943,13 @@ const FinalCTA = () => {
 };
 
 // Create a more ornate scholarly divider
-const ScholarlyDivider = ({ margin = { xs: 5, sm: 6, md: 8 }, width = '70%' }) => (
+const ScholarlyDivider = ({ margin = { xs: 4, sm: 6, md: 8 }, width = { xs: '85%', sm: '70%' } }) => (
     <Box
         sx={{
             my: margin,
             mx: 'auto',
             width: width,
-            height: '8px', // Increased height for more presence
+            height: { xs: '6px', sm: '8px' }, // Smaller height on mobile
             position: 'relative',
             opacity: 0.9, // Increased opacity for better visibility
             display: 'flex',
@@ -2986,8 +2990,8 @@ const ScholarlyDivider = ({ margin = { xs: 5, sm: 6, md: 8 }, width = '70%' }) =
         <Box
             sx={{
                 position: 'relative',
-                width: '50px', // Larger stamp
-                height: '50px', // Maintain aspect ratio
+                width: { xs: '40px', sm: '50px' }, // Smaller on mobile
+                height: { xs: '40px', sm: '50px' }, // Smaller on mobile
                 backgroundColor: colors.parchmentLight,
                 borderRadius: '50%',
                 display: 'flex',
@@ -3001,7 +3005,7 @@ const ScholarlyDivider = ({ margin = { xs: 5, sm: 6, md: 8 }, width = '70%' }) =
                 '&::before': {
                     content: '""',
                     position: 'absolute',
-                    inset: '3px',
+                    inset: { xs: '2px', sm: '3px' }, // Smaller on mobile
                     borderRadius: '50%',
                     border: `1px solid ${colors.sepia}20`,
                     zIndex: 3,
@@ -3013,8 +3017,8 @@ const ScholarlyDivider = ({ margin = { xs: 5, sm: 6, md: 8 }, width = '70%' }) =
                 src={stampLogoTexture}
                 alt=""
                 sx={{
-                    width: '35px', // Slightly smaller than container
-                    height: '35px',
+                    width: { xs: '28px', sm: '35px' }, // Smaller on mobile
+                    height: { xs: '28px', sm: '35px' }, // Smaller on mobile
                     objectFit: 'contain',
                     opacity: 0.85,
                     filter: 'contrast(1.1)',
@@ -3075,7 +3079,7 @@ const StorySection = () => {
 
     return (
         <Box sx={{
-            py: spacing.sectionPadding,
+            py: { xs: 5, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md }, // Adjusted padding on mobile
             position: 'relative',
             // Enhanced background with parchment styling
             background: `linear-gradient(135deg, ${colors.parchmentLight} 0%, ${colors.parchment} 100%)`,
@@ -3402,9 +3406,9 @@ const StorySection = () => {
                                             sx={{
                                                 fontFamily: headingFontFamily,
                                                 color: colors.ink,
-                                                fontSize: { xs: '1.8rem', sm: '2.2rem' },
+                                                fontSize: { xs: '1.6rem', sm: '2.2rem' }, // Smaller on mobile
                                                 fontWeight: 600,
-                                                mb: 2,
+                                                mb: { xs: 1.5, sm: 2 }, // Less margin on mobile
                                                 position: 'relative',
                                                 display: 'inline-block',
                                                 // Add underline effect
@@ -3432,10 +3436,10 @@ const StorySection = () => {
                                             variant="h6"
                                             sx={{
                                                 color: colors.sepia,
-                                                mb: 3,
+                                                mb: { xs: 2, sm: 3 }, // Less margin on mobile
                                                 fontFamily: headingFontFamily,
                                                 fontStyle: 'italic',
-                                                fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                                fontSize: { xs: '1rem', sm: '1.2rem' }, // Smaller on mobile
                                                 fontWeight: 500,
                                                 opacity: 0.85,
                                                 // Add subtle sepia glow
@@ -3448,10 +3452,11 @@ const StorySection = () => {
                                         <Typography
                                             sx={{
                                                 color: colors.inkLight,
-                                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                                fontSize: { xs: '0.95rem', sm: '1.1rem' }, // Smaller on mobile
                                                 fontFamily: fontFamily,
                                                 lineHeight: 1.7,
                                                 position: 'relative',
+                                                px: { xs: 1, sm: 0 }, // Added padding on mobile
                                                 // Add quill pen flourish
                                                 '&::after': {
                                                     content: '""',

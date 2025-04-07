@@ -88,10 +88,13 @@ function Header() {
     const menuItems = isAuthenticated
         ? [
             { text: 'Home', link: '/home' },
+            { text: 'Services', link: '/services' },
+            { text: 'Contact', link: '/contact' },
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
             { text: 'Demos', link: '/demos' },
+            { text: 'Services', link: '/services' },
             { text: 'Pricing', link: '/pricing' },
             { text: 'Contact', link: '/contact' },
             { text: 'Login', link: '/login' },
@@ -180,6 +183,7 @@ function Header() {
         },
         '& .MuiListItemText-primary': {
             fontWeight: 500,
+            color: theme.palette.common.white,
         }
     };
 
