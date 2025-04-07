@@ -25,7 +25,7 @@ import {
 import { useInView } from 'react-intersection-observer';
 import { useNavigate, Link } from 'react-router-dom';
 
-// Styled Card with a glassy look + subtle gradient
+// Styled Card with a scholarly/parchment look
 const StyledCard = styled(Card)(({ theme, disabled }) => ({
     height: '100%',
     minHeight: '420px',
@@ -33,82 +33,81 @@ const StyledCard = styled(Card)(({ theme, disabled }) => ({
     flexDirection: 'column',
     borderRadius: '16px',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    backdropFilter: 'blur(15px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+    backgroundColor: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: theme.shadows[1],
     transition: 'all 0.3s ease-in-out',
     position: 'relative',
     filter: disabled ? 'grayscale(20%)' : 'none',
     '&:hover': {
         transform: disabled ? 'none' : 'translateY(-10px)',
         boxShadow: disabled
-            ? '0 8px 32px rgba(0, 0, 0, 0.2)'
-            : '0 12px 40px rgba(0, 180, 219, 0.2)',
+            ? theme.shadows[1]
+            : theme.shadows[4],
         '& .icon-wrapper': {
             background: disabled
-                ? 'rgba(79, 156, 249, 0.1)'
-                : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
+                ? `${theme.palette.secondary.main}15`
+                : theme.palette.secondary.main,
             transform: 'scale(1.05)',
         },
         '& .highlight-text': {
-            color: '#4FC3F7',
+            color: theme.palette.secondary.main,
         }
     },
 }));
 
 // Icon container with hover glow
-const IconWrapper = styled(Box)({
+const IconWrapper = styled(Box)(({ theme }) => ({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     padding: '1.75rem',
-    backgroundColor: 'rgba(79, 156, 249, 0.1)',
+    backgroundColor: `${theme.palette.secondary.main}15`,
     transition: 'all 0.3s ease-in-out',
     '& .MuiSvgIcon-root': {
         fontSize: '2.5rem',
-        color: '#4F9CF9',
+        color: theme.palette.secondary.main,
         transition: 'color 0.3s',
     },
     '&:hover': {
-        boxShadow: '0 0 15px rgba(79, 156, 249, 0.4)',
+        boxShadow: `0 0 15px ${theme.palette.secondary.main}40`,
         '& .MuiSvgIcon-root': {
-            color: '#00FFCC',
+            color: theme.palette.primary.main,
             transform: 'scale(1.1)',
         },
     },
-});
+}));
 
 // Coming Soon ribbon
-const ComingSoonBadge = styled(Box)({
+const ComingSoonBadge = styled(Box)(({ theme }) => ({
     position: 'absolute',
     top: '26px',
     right: '-32px',
     transform: 'rotate(45deg)',
-    backgroundColor: '#4F9CF9',
-    color: 'white',
+    backgroundColor: theme.palette.secondary.main,
+    color: theme.palette.primary.contrastText,
     padding: '5px 36px',
     fontSize: '0.8rem',
     fontWeight: 600,
     zIndex: 10,
-    boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
+    boxShadow: theme.shadows[2],
     letterSpacing: '0.05em',
-});
+}));
 
-// Custom CTA button with gradient
+// Custom CTA button with theme styling
 const GradientButton = styled(Button)(({ theme }) => ({
-    background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
-    color: '#000000',
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
     fontWeight: 600,
     borderRadius: '50px',
     padding: '12px 32px',
     fontSize: '1.1rem',
     textTransform: 'none',
     transition: 'all 0.3s ease',
-    boxShadow: '0 4px 15px rgba(0, 255, 204, 0.3)',
+    boxShadow: theme.shadows[2],
     '&:hover': {
-        background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-        boxShadow: '0 6px 20px rgba(0, 255, 204, 0.4)',
+        backgroundColor: theme.palette.primary.dark,
+        boxShadow: theme.shadows[4],
         transform: 'translateY(-2px)',
     }
 }));
@@ -204,41 +203,56 @@ const DemoPage = () => {
         <Box
             sx={{
                 minHeight: '100vh',
-                background:
-                    'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+                bgcolor: theme.palette.background.default,
                 position: 'relative',
                 overflow: 'hidden',
                 py: { xs: 8, md: 12 },
+                // Parchment texture background
                 '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    mixBlendMode: 'multiply'
+                },
+                // Left glow effect
+                '&::after': {
                     content: '""',
                     position: 'absolute',
                     top: '10%',
                     left: '-10%',
                     width: '500px',
                     height: '500px',
-                    background:
-                        'radial-gradient(circle, rgba(0,180,219,0.15) 0%, transparent 70%)',
+                    background: `radial-gradient(circle, ${theme.palette.secondary.main}15 0%, transparent 70%)`,
                     borderRadius: '50%',
                     filter: 'blur(60px)',
                     animation: 'float 15s infinite alternate',
+                    zIndex: 0,
                 },
-                '&::after': {
+            }}
+        >
+            {/* Right glow effect */}
+            <Box
+                sx={{
                     content: '""',
                     position: 'absolute',
                     bottom: '5%',
                     right: '-10%',
                     width: '400px',
                     height: '400px',
-                    background:
-                        'radial-gradient(circle, rgba(0,255,204,0.15) 0%, transparent 70%)',
+                    background: `radial-gradient(circle, ${theme.palette.primary.main}15 0%, transparent 70%)`,
                     borderRadius: '50%',
                     filter: 'blur(60px)',
                     animation: 'float 12s infinite alternate-reverse',
                     zIndex: 0,
-                },
-            }}
-        >
-            <Container maxWidth="lg" ref={ref}>
+                }}
+            />
+
+            <Container maxWidth="lg" ref={ref} sx={{ position: 'relative', zIndex: 1 }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -250,15 +264,14 @@ const DemoPage = () => {
                         align="center"
                         sx={{
                             mb: { xs: 2, md: 3 },
-                            fontFamily: 'Satoshi',
+                            fontFamily: theme.typography.headingFontFamily,
                             fontWeight: '600',
                             fontSize: { xs: '1.8rem', sm: '2.4rem', md: '3rem' },
-                            color: 'white',
+                            color: theme.palette.text.primary,
                             textTransform: 'none',
                             letterSpacing: '-0.02em',
                             lineHeight: 1.1,
                             position: 'relative',
-                            textShadow: '0 0 40px rgba(34, 211, 238, 0.25)',
                             '&::after': {
                                 content: '""',
                                 position: 'absolute',
@@ -266,11 +279,9 @@ const DemoPage = () => {
                                 left: '50%',
                                 transform: 'translateX(-50%)',
                                 width: '120px',
-                                height: '1px',
-                                background:
-                                    'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
+                                height: '2px',
+                                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
                                 borderRadius: '1px',
-                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)',
                             },
                         }}
                     >
@@ -282,8 +293,8 @@ const DemoPage = () => {
                         align="center"
                         sx={{
                             mb: { xs: 4, md: 6 },
-                            fontFamily: 'Satoshi',
-                            color: 'rgba(255, 255, 255, 0.8)',
+                            fontFamily: theme.typography.fontFamily,
+                            color: theme.palette.text.secondary,
                             maxWidth: '800px',
                             mx: 'auto',
                             fontSize: { xs: '0.95rem', sm: '1rem', md: '1.15rem' },
@@ -343,7 +354,7 @@ const DemoPage = () => {
                                                             variant="h6"
                                                             sx={{
                                                                 fontWeight: 600,
-                                                                color: '#4F9CF9',
+                                                                color: theme.palette.secondary.main,
                                                                 fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                                                 mb: { xs: 0.5, sm: 1 },
                                                             }}
@@ -353,7 +364,7 @@ const DemoPage = () => {
                                                         <Typography
                                                             variant="body2"
                                                             sx={{
-                                                                color: 'rgba(255, 255, 255, 0.9)',
+                                                                color: theme.palette.text.primary,
                                                                 lineHeight: 1.6,
                                                                 mb: { xs: 1.5, sm: 2 },
                                                                 fontSize: { xs: '0.9rem', sm: '0.95rem' },
@@ -377,7 +388,7 @@ const DemoPage = () => {
                                                                             width: '6px',
                                                                             height: '6px',
                                                                             borderRadius: '50%',
-                                                                            backgroundColor: '#4F9CF9',
+                                                                            backgroundColor: theme.palette.secondary.main,
                                                                             mr: 1.5,
                                                                             minWidth: '6px',
                                                                         }}
@@ -386,7 +397,7 @@ const DemoPage = () => {
                                                                         variant="body2"
                                                                         className="highlight-text"
                                                                         sx={{
-                                                                            color: 'rgba(255, 255, 255, 0.8)',
+                                                                            color: theme.palette.text.secondary,
                                                                             transition: 'color 0.3s ease',
                                                                             fontSize: { xs: '0.85rem', sm: '0.9rem' },
                                                                         }}
@@ -403,8 +414,8 @@ const DemoPage = () => {
                                                                     py: 1,
                                                                     px: 2,
                                                                     borderRadius: '4px',
-                                                                    backgroundColor: 'rgba(79, 156, 249, 0.1)',
-                                                                    color: '#4FC3F7',
+                                                                    backgroundColor: `${theme.palette.secondary.main}10`,
+                                                                    color: theme.palette.secondary.main,
                                                                     display: 'inline-block',
                                                                     fontSize: { xs: '0.8rem', sm: '0.85rem' },
                                                                     fontWeight: 500,
@@ -420,15 +431,12 @@ const DemoPage = () => {
                                                         <Button
                                                             fullWidth
                                                             variant="contained"
+                                                            color="primary"
                                                             disabled={demo.disabled}
                                                             onClick={() =>
                                                                 handleExploreDemo(demo.url, demo.disabled)
                                                             }
                                                             sx={{
-                                                                background: demo.disabled
-                                                                    ? 'rgba(79, 156, 249, 0.3)'
-                                                                    : 'linear-gradient(45deg, #00B4DB, #4F9CF9)',
-                                                                color: 'white',
                                                                 borderRadius: '50px',
                                                                 py: { xs: 1.2, sm: 1.5 },
                                                                 textTransform: 'none',
@@ -437,11 +445,7 @@ const DemoPage = () => {
                                                                 cursor: demo.disabled ? 'not-allowed' : 'pointer',
                                                                 transition: 'all 0.3s ease',
                                                                 '&:hover': {
-                                                                    background: demo.disabled
-                                                                        ? 'rgba(79, 156, 249, 0.3)'
-                                                                        : 'linear-gradient(45deg, #4F9CF9, #00B4DB)',
                                                                     transform: 'translateY(-2px)',
-                                                                    boxShadow: '0 4px 15px rgba(0, 180, 219, 0.3)',
                                                                 },
                                                             }}
                                                         >
@@ -467,7 +471,7 @@ const DemoPage = () => {
                                                         height: '60px',
                                                         flexShrink: 0,
                                                         borderRadius: '12px',
-                                                        backgroundColor: 'rgba(79, 156, 249, 0.1)',
+                                                        backgroundColor: `${theme.palette.secondary.main}10`,
                                                     }}>
                                                         {demo.icon}
                                                     </Box>
@@ -476,7 +480,7 @@ const DemoPage = () => {
                                                             variant="h6"
                                                             sx={{
                                                                 fontWeight: 600,
-                                                                color: '#4F9CF9',
+                                                                color: theme.palette.secondary.main,
                                                                 fontSize: { xs: '1rem', sm: '1.1rem' },
                                                                 mb: 0.5,
                                                             }}
@@ -486,7 +490,7 @@ const DemoPage = () => {
                                                         <Typography
                                                             variant="body2"
                                                             sx={{
-                                                                color: 'rgba(255, 255, 255, 0.75)',
+                                                                color: theme.palette.text.secondary,
                                                                 lineHeight: 1.5,
                                                                 fontSize: { xs: '0.85rem', sm: '0.9rem' },
                                                                 display: '-webkit-box',
@@ -518,9 +522,8 @@ const DemoPage = () => {
                                     display: 'flex',
                                     flexDirection: 'column',
                                     borderRadius: '16px',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                                    backdropFilter: 'blur(10px)',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                                    bgcolor: theme.palette.background.paper,
+                                    border: `1px solid ${theme.palette.divider}`,
                                     p: { xs: 3, sm: 4 },
                                     zIndex: 2,
                                     '&::before': {
@@ -530,7 +533,7 @@ const DemoPage = () => {
                                         left: 0,
                                         right: 0,
                                         height: '3px',
-                                        background: 'linear-gradient(90deg, #00ffcc, #00B4DB, #00ffcc)',
+                                        background: `linear-gradient(90deg, ${theme.palette.secondary.light}, ${theme.palette.secondary.main}, ${theme.palette.secondary.light})`,
                                     }
                                 }}
                             >
@@ -540,8 +543,9 @@ const DemoPage = () => {
                                         fontSize: { xs: '1.8rem', sm: '2rem', md: '2.2rem' },
                                         fontWeight: 700,
                                         mb: 2,
-                                        color: 'white',
+                                        color: theme.palette.text.primary,
                                         lineHeight: 1.2,
+                                        fontFamily: theme.typography.headingFontFamily,
                                     }}
                                 >
                                     Want a Custom AI Demo for Your Course?
@@ -551,7 +555,7 @@ const DemoPage = () => {
                                     variant="body1"
                                     sx={{
                                         fontSize: { xs: '0.95rem', sm: '1rem' },
-                                        color: 'rgba(255, 255, 255, 0.85)',
+                                        color: theme.palette.text.secondary,
                                         mb: 3,
                                         lineHeight: 1.6,
                                     }}
@@ -571,7 +575,7 @@ const DemoPage = () => {
                                         >
                                             <CheckCircle
                                                 sx={{
-                                                    color: '#00ffcc',
+                                                    color: theme.palette.secondary.main,
                                                     mr: 1.5,
                                                     fontSize: '1.25rem',
                                                     mt: 0.2,
@@ -583,7 +587,7 @@ const DemoPage = () => {
                                                     sx={{
                                                         fontSize: { xs: '0.95rem', sm: '1rem' },
                                                         fontWeight: 600,
-                                                        color: '#00ffcc',
+                                                        color: theme.palette.secondary.main,
                                                         mb: 0.5,
                                                     }}
                                                 >
@@ -593,7 +597,7 @@ const DemoPage = () => {
                                                     variant="body2"
                                                     sx={{
                                                         fontSize: { xs: '0.85rem', sm: '0.9rem' },
-                                                        color: 'rgba(255, 255, 255, 0.75)',
+                                                        color: theme.palette.text.secondary,
                                                     }}
                                                 >
                                                     {feature.description}
@@ -622,12 +626,12 @@ const DemoPage = () => {
                                                 height: '100%',
                                                 position: 'relative',
                                                 borderRadius: '50%',
-                                                backgroundColor: 'rgba(0, 255, 204, 0.05)',
-                                                border: '1px solid rgba(0, 255, 204, 0.2)',
+                                                backgroundColor: `${theme.palette.secondary.main}05`,
+                                                border: `1px solid ${theme.palette.secondary.main}20`,
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                boxShadow: '0 0 50px rgba(0, 255, 204, 0.15)',
+                                                boxShadow: `0 0 50px ${theme.palette.secondary.main}15`,
                                                 '&::before': {
                                                     content: '""',
                                                     position: 'absolute',
@@ -636,7 +640,7 @@ const DemoPage = () => {
                                                     right: '-15px',
                                                     bottom: '-15px',
                                                     borderRadius: '50%',
-                                                    border: '1px solid rgba(0, 255, 204, 0.1)',
+                                                    border: `1px solid ${theme.palette.secondary.main}10`,
                                                     animation: 'pulse 3s infinite ease-in-out',
                                                 },
                                                 '&::after': {
@@ -647,7 +651,7 @@ const DemoPage = () => {
                                                     right: '-30px',
                                                     bottom: '-30px',
                                                     borderRadius: '50%',
-                                                    border: '1px solid rgba(0, 255, 204, 0.05)',
+                                                    border: `1px solid ${theme.palette.secondary.main}05`,
                                                     animation: 'pulse 3s infinite ease-in-out 1.5s',
                                                 },
                                             }}
@@ -655,7 +659,7 @@ const DemoPage = () => {
                                             <Chat
                                                 sx={{
                                                     fontSize: '65px',
-                                                    color: '#00ffcc',
+                                                    color: theme.palette.secondary.main,
                                                     opacity: 0.8,
                                                 }}
                                             />
@@ -666,7 +670,7 @@ const DemoPage = () => {
                                                     right: '-10%',
                                                     padding: '10px',
                                                     borderRadius: '50%',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    backgroundColor: `${theme.palette.background.paper}80`,
                                                     backdropFilter: 'blur(5px)',
                                                     animation: 'float 4s ease-in-out infinite',
                                                 }}
@@ -674,7 +678,7 @@ const DemoPage = () => {
                                                 <School
                                                     sx={{
                                                         fontSize: '24px',
-                                                        color: '#00B4DB',
+                                                        color: theme.palette.primary.main,
                                                     }}
                                                 />
                                             </Box>
@@ -685,7 +689,7 @@ const DemoPage = () => {
                                                     left: '-5%',
                                                     padding: '8px',
                                                     borderRadius: '50%',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                                    backgroundColor: `${theme.palette.background.paper}80`,
                                                     backdropFilter: 'blur(5px)',
                                                     animation: 'float 4s ease-in-out infinite 2s',
                                                 }}
@@ -693,7 +697,7 @@ const DemoPage = () => {
                                                 <AutoAwesome
                                                     sx={{
                                                         fontSize: '20px',
-                                                        color: '#00ffcc',
+                                                        color: theme.palette.secondary.main,
                                                     }}
                                                 />
                                             </Box>

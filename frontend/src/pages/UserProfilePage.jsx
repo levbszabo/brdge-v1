@@ -26,7 +26,6 @@ import {
     IconButton
 } from '@mui/material';
 import { api } from '../api';
-import { Link } from 'react-router-dom';
 import PersonIcon from '@mui/icons-material/Person';
 import CheckIcon from '@mui/icons-material/Check';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -40,6 +39,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import SaveIcon from '@mui/icons-material/Save';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import CloseIcon from '@mui/icons-material/Close';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -103,16 +103,6 @@ const tierCardStyles = (isActive, isPremium) => ({
     transition: 'all 0.4s ease',
     position: 'relative',
     overflow: 'hidden',
-    height: '100%',
-    '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: isPremium
-            ? '0 8px 32px rgba(34, 211, 238, 0.3)'
-            : '0 8px 32px rgba(255, 255, 255, 0.1)',
-        border: isPremium
-            ? '1px solid rgba(34, 211, 238, 0.4)'
-            : '1px solid rgba(255, 255, 255, 0.12)',
-    },
     '&::before': {
         content: '""',
         position: 'absolute',
@@ -126,88 +116,92 @@ const tierCardStyles = (isActive, isPremium) => ({
     }
 });
 
-const TierButton = ({ isActive, isPremium, onClick, children }) => (
-    <Button
-        variant="contained"
-        disabled={isActive}
-        onClick={onClick}
-        sx={{
-            minWidth: '120px',
-            height: '36px',
-            borderRadius: '12px',
-            textTransform: 'none',
-            fontSize: '0.85rem',
-            fontWeight: 500,
-            letterSpacing: '0.02em',
-            boxShadow: 'none',
-            padding: '0 12px',
-            background: isActive
-                ? 'rgba(66, 133, 244, 0.1)'
-                : isPremium
-                    ? 'linear-gradient(to right, #4285F4, #5B9AF5)'
-                    : '#4285F4',
-            color: isActive
-                ? '#4285F4'
-                : '#FFFFFF',
-            border: 'none',
-            transition: 'all 0.2s ease',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-            margin: '0 auto',
-            display: 'block',
+const TierButton = ({ isActive, isPremium, onClick, children, tier }) => {
+    const theme = useTheme();
 
+    let buttonStyles = {};
+    if (isActive) {
+        buttonStyles = {
+            ...theme.components.MuiButton.styleOverrides.outlinedSecondary,
+            borderColor: theme.palette.sepia.main,
+            backgroundColor: theme.palette.sepia.faded + '30',
+            color: theme.palette.sepia.main,
+            cursor: 'default',
             '&:hover': {
-                background: isActive
-                    ? 'rgba(66, 133, 244, 0.1)'
-                    : isPremium
-                        ? 'linear-gradient(to right, #3B78E7, #4285F4)'
-                        : '#3B78E7',
-                boxShadow: '0 4px 12px rgba(66, 133, 244, 0.3)',
-                transform: 'translateY(-1px)'
+                backgroundColor: theme.palette.sepia.faded + '30',
+                borderColor: theme.palette.sepia.main,
+                boxShadow: 'none',
+                transform: 'none'
             },
-
             '&.Mui-disabled': {
-                background: 'rgba(66, 133, 244, 0.1)',
-                color: '#4285F4',
+                borderColor: theme.palette.sepia.main,
+                backgroundColor: theme.palette.sepia.faded + '30',
+                color: theme.palette.sepia.main,
                 opacity: 1
-            },
-
-            '&:active': {
-                transform: 'translateY(1px)',
-                boxShadow: 'none'
             }
-        }}
-    >
-        <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            justifyContent: 'center',
-            width: '100%'
-        }}>
-            {isActive ? (
-                <>
-                    <CheckIcon sx={{
-                        fontSize: '16px',
-                        color: '#4285F4'
-                    }} />
-                    <span>Current Plan</span>
-                </>
-            ) : (
-                <>
-                    {isPremium && (
-                        <StarIcon sx={{
-                            fontSize: '16px',
-                            color: '#FFFFFF'
-                        }} />
-                    )}
-                    <span>{children}</span>
-                </>
-            )}
-        </Box>
-    </Button>
-);
+        };
+    } else if (tier === 'free') {
+        buttonStyles = theme.components.MuiButton.styleOverrides.outlinedSecondary;
+    }
+    else if (isPremium) {
+        buttonStyles = theme.components.MuiButton.styleOverrides.containedPrimary;
+    } else {
+        buttonStyles = theme.components.MuiButton.styleOverrides.outlinedSecondary;
+    }
+
+    return (
+        <Button
+            variant={isActive ? "outlined" : (isPremium && tier !== 'free') ? "contained" : "outlined"}
+            disabled={isActive}
+            onClick={onClick}
+            sx={{
+                ...buttonStyles,
+                minWidth: '120px',
+                height: '40px',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                padding: '0 16px',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                margin: '0 auto',
+                display: 'block',
+                transition: 'all 0.2s ease-out',
+
+                '&:hover': {
+                    ...buttonStyles['&:hover'],
+                    ...(isActive ? {} : { transform: 'translateY(-1px)', boxShadow: `0 4px 12px ${theme.palette.primary.main}30` }),
+                },
+
+                '&:active': {
+                    ...(isActive ? {} : { transform: 'translateY(0px)', boxShadow: 'none' }),
+                },
+            }}
+        >
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                justifyContent: 'center',
+                width: '100%'
+            }}>
+                {isActive ? (
+                    <>
+                        <CheckIcon sx={{ fontSize: '18px', color: 'inherit' }} />
+                        <span>Current Plan</span>
+                    </>
+                ) : (
+                    <>
+                        {isPremium && (
+                            <StarIcon sx={{ fontSize: '18px', color: 'inherit' }} />
+                        )}
+                        <span>{children}</span>
+                    </>
+                )}
+            </Box>
+        </Button>
+    );
+};
 
 const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium, tier }) => {
     const theme = useTheme();
@@ -218,88 +212,108 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
 
     return (
         <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.2 }}
+            whileHover={{ y: -3 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             style={{ height: '100%' }}
         >
-            <Paper elevation={3} sx={{
-                p: { xs: 3, sm: 4 },
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: '24px',
-                background: isPremium
-                    ? 'linear-gradient(135deg, rgba(0, 82, 204, 0.15), rgba(7, 71, 166, 0.15))'
-                    : 'rgba(255, 255, 255, 0.02)',
-                border: isActive ? '2px solid #22D3EE' : '1px solid rgba(255, 255, 255, 0.08)',
-                color: '#ffffff',
-                position: 'relative',
-                overflow: 'hidden',
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                    boxShadow: isPremium
-                        ? '0 12px 40px rgba(34, 211, 238, 0.3)'
-                        : '0 12px 40px rgba(0, 0, 0, 0.3)',
+            <Paper
+                elevation={isActive ? 4 : 1}
+                sx={{
+                    p: { xs: 2.5, sm: 3 },
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: '16px',
                     border: isActive
-                        ? '2px solid #22D3EE'
-                        : `1px solid ${isPremium ? 'rgba(34, 211, 238, 0.4)' : 'rgba(255, 255, 255, 0.12)'}`,
-                }
-            }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                        ? `2px solid ${theme.palette.sepia.main}`
+                        : `1px solid ${theme.palette.divider}`,
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        inset: 0,
+                        backgroundImage: `url(${theme.textures.darkParchment})`,
+                        backgroundSize: 'cover',
+                        opacity: 0.04,
+                        mixBlendMode: 'multiply',
+                        pointerEvents: 'none',
+                        zIndex: 0,
+                        borderRadius: 'inherit',
+                    },
+                    '& > *': {
+                        position: 'relative',
+                        zIndex: 1,
+                    },
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        boxShadow: isActive ? theme.shadows[6] : theme.shadows[4],
+                        borderColor: isActive
+                            ? theme.palette.sepia.main
+                            : theme.palette.sepia.light,
+                    },
+                }}
+            >
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    mb: 3,
+                    flexWrap: 'wrap',
+                    gap: 1,
+                }}>
                     <Box>
-                        <Typography variant="h5" sx={{
-                            fontSize: { xs: '1.5rem', sm: '1.75rem' },
-                            fontWeight: 700,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            mb: 1,
-                            fontFamily: 'Satoshi'
+                        <Typography variant="h4" sx={{
+                            fontWeight: 600,
+                            color: theme.palette.text.primary,
+                            mb: 0.5,
+                            lineHeight: 1.2,
                         }}>
                             {title}
                         </Typography>
-                        <Typography variant="h4" sx={{
-                            fontSize: { xs: '2rem', sm: '2.5rem' },
-                            fontWeight: 800,
-                            letterSpacing: '-0.03em',
-                            background: isPremium
-                                ? 'linear-gradient(135deg, #22D3EE, #0EA5E9)'
-                                : 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            mb: 2,
-                            fontFamily: 'Satoshi'
+                        <Typography variant="h5" sx={{
+                            fontWeight: 500,
+                            color: theme.palette.secondary.main,
+                            mb: 1,
+                            lineHeight: 1.2,
                         }}>
                             {price}
                         </Typography>
                     </Box>
-                    <TierButton
-                        isActive={isActive}
-                        isPremium={isPremium}
-                        onClick={handleClick}
-                    >
-                        {isActive ? 'Current Plan' : 'Upgrade'}
-                    </TierButton>
+                    <Box sx={{ mt: 0.5, width: { xs: '100%', sm: 'auto' } }}>
+                        <TierButton
+                            isActive={isActive}
+                            isPremium={isPremium}
+                            tier={tier}
+                            onClick={handleClick}
+                        >
+                            {isActive ? 'Current Plan' :
+                                (tier === 'free' && !isActive) ? 'Select Plan' :
+                                    (isPremium) ? 'Upgrade Plan' :
+                                        'Select Plan'}
+                        </TierButton>
+                    </Box>
                 </Box>
-                <Box sx={{ flexGrow: 1 }}>
+
+                <Box sx={{ flexGrow: 1, mb: 3 }}>
                     {features.map((feature, index) => (
                         <Box key={index} sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            mb: 2,
-                            color: 'rgba(255, 255, 255, 0.8)'
+                            mb: 1.5,
+                            color: theme.palette.text.secondary,
                         }}>
                             <CheckIcon sx={{
                                 mr: 1.5,
-                                color: isPremium ? '#22D3EE' : 'rgba(255, 255, 255, 0.5)',
-                                fontSize: '1.2rem'
+                                color: theme.palette.secondary.main,
+                                fontSize: '1.1rem'
                             }} />
                             <Typography sx={{
-                                fontSize: '1rem',
+                                fontFamily: theme.typography.fontFamily,
+                                fontSize: '0.95rem',
                                 lineHeight: 1.5,
-                                letterSpacing: '0.01em',
-                                fontFamily: 'Satoshi'
+                                color: theme.palette.text.primary,
+                                fontWeight: 400,
                             }}>
                                 {feature}
                             </Typography>
@@ -311,235 +325,67 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
     );
 };
 
-const styles = {
-    pageBackground: {
-        background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 100%)',
-        minHeight: '100vh',
-        padding: '40px 0',
-        position: 'relative',
-        overflow: 'hidden'
-    },
-    card: {
-        ...cardStyles,
-        padding: '24px',
-        color: 'white',
-        marginBottom: '24px'
-    },
-    profileSection: {
-        textAlign: 'center',
-        padding: { xs: '24px', md: '32px' },
-        '& .MuiAvatar-root': {
-            width: { xs: 80, md: 100 },
-            height: { xs: 80, md: 100 },
-            margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(34, 211, 238, 0.2))',
-            border: '2px solid rgba(34, 211, 238, 0.3)',
-            boxShadow: '0 8px 32px rgba(34, 211, 238, 0.2)',
-            color: 'rgba(255, 255, 255, 0.9)'
-        }
-    },
-    subscriptionCard: {
-        background: 'rgba(2, 6, 23, 0.5)',
-        borderRadius: '16px',
-        padding: '24px',
-        position: 'relative',
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-        '&.active': {
-            background: 'rgba(0, 122, 255, 0.1)',
-            border: '1px solid rgba(0, 122, 255, 0.3)',
-            '&::before': {
-                content: '"Current Plan"',
-                position: 'absolute',
-                top: '12px',
-                right: '12px',
-                background: '#007AFF',
-                padding: '6px 12px',
-                borderRadius: '20px',
-                fontSize: '12px',
-                fontWeight: 500
-            }
-        }
-    },
-    planPrice: {
-        fontSize: '32px',
-        fontWeight: 700,
-        color: 'white',
-        marginBottom: '8px'
-    },
-    planFeatures: {
-        '& li': {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '8px',
-            color: 'rgba(255, 255, 255, 0.8)',
-            '& svg': {
-                color: '#00B4DB'
-            }
-        }
-    },
-    usageStats: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        marginTop: '24px',
-        '& .stat': {
-            textAlign: 'center',
-            '& .value': {
-                fontSize: '36px',
-                fontWeight: 700,
-                background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                marginBottom: '4px'
-            },
-            '& .label': {
-                color: 'rgba(255, 255, 255, 0.6)',
-                fontSize: '14px'
-            }
-        }
-    },
-    progressBar: {
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        '& .MuiLinearProgress-bar': {
-            background: 'linear-gradient(90deg, #007AFF, #00B4DB)'
-        }
-    },
-    button: {
-        borderRadius: '20px',
-        textTransform: 'none',
-        padding: '8px 16px',
-        fontSize: '14px',
-        fontWeight: 500,
-        '&.upgrade': {
-            background: 'linear-gradient(90deg, #007AFF, #00B4DB)',
-            color: 'white',
-            '&:hover': {
-                background: 'linear-gradient(90deg, #0066CC, #0099CC)'
-            }
-        },
-        '&.cancel': {
-            color: '#FF3B30',
-            borderColor: '#FF3B30',
-            '&:hover': {
-                background: 'rgba(255, 59, 48, 0.1)'
-            }
-        }
-    },
-    billingInfo: {
-        '& .billing-header': {
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '24px',
-            '& .MuiSvgIcon-root': {
-                color: '#007AFF',
-                fontSize: '20px'
-            },
-            '& .MuiTypography-root': {
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: '16px',
-                fontWeight: 500
-            }
-        },
-        '& .billing-content': {
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-        },
-        '& .billing-row': {
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            color: 'rgba(255, 255, 255, 0.7)',
-            fontSize: '14px',
-            '& .label': {
-                color: 'rgba(255, 255, 255, 0.5)'
-            },
-            '& .value': {
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontWeight: 500
-            }
-        },
-        '& .payment-chip': {
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            padding: '6px 12px',
-            fontSize: '14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            width: 'fit-content',
-            '& .MuiSvgIcon-root': {
-                fontSize: '16px',
-                color: 'rgba(255, 255, 255, 0.5)'
-            }
-        },
-        '& .cancel-button': {
-            marginTop: '24px',
-            color: '#FF3B30',
-            borderColor: 'rgba(255, 59, 48, 0.5)',
-            '&:hover': {
-                borderColor: '#FF3B30',
-                background: 'rgba(255, 59, 48, 0.1)'
-            }
-        }
-    }
-};
-
 function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
+    const theme = useTheme();
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [showCancelSuccess, setShowCancelSuccess] = useState(false);
     const [error, setError] = useState(null);
-    const [allowOverage, setAllowOverage] = useState(true);
+    const [allowOverage, setAllowOverage] = useState(userProfile?.account?.allow_overage ?? true);
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric'
-        });
+        try {
+            return new Date(dateString).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return 'Invalid Date';
+        }
     };
 
     const handleOverageToggle = async () => {
+        const newOverageSetting = !allowOverage;
+        setAllowOverage(newOverageSetting);
+        setError(null);
         try {
             const response = await api.post('/update-overage-settings', {
-                allow_overage: !allowOverage
+                allow_overage: newOverageSetting
             });
-            if (response.data.success) {
-                setAllowOverage(!allowOverage);
+            if (!response.data.success || response.data.allow_overage !== newOverageSetting) {
+                setAllowOverage(!newOverageSetting);
+                setError('Failed to update overage settings on the server.');
             }
         } catch (error) {
-            setError(error.response?.data?.error || 'Failed to update overage settings');
+            setAllowOverage(!newOverageSetting);
+            setError(error.response?.data?.error || 'Failed to communicate with server to update overage settings.');
+            console.error("Error updating overage settings:", error);
         }
     };
 
     useEffect(() => {
-        // Initialize allowOverage from user profile if available
         if (userProfile?.account?.allow_overage !== undefined) {
             setAllowOverage(userProfile.account.allow_overage);
         }
     }, [userProfile]);
 
     return (
-        <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
-            <Paper elevation={0} sx={styles.card}>
+        <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+            <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
                 {showCancelSuccess && (
                     <Alert
                         severity="success"
                         onClose={() => setShowCancelSuccess(false)}
                         sx={{
                             mb: 2,
-                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                            color: '#22D3EE',
-                            border: '1px solid rgba(34, 211, 238, 0.2)',
-                            '& .MuiAlert-icon': { color: '#22D3EE' }
+                            backgroundColor: theme.palette.parchment.light,
+                            color: theme.palette.text.primary,
+                            border: `1px solid ${theme.palette.sepia.light}`,
+                            '& .MuiAlert-icon': { color: theme.palette.secondary.main }
                         }}
                     >
-                        Your subscription has been successfully canceled.
+                        Your subscription has been successfully canceled and will remain active until the end of the current period.
                     </Alert>
                 )}
 
@@ -549,204 +395,195 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                         onClose={() => setError(null)}
                         sx={{
                             mb: 2,
-                            backgroundColor: 'rgba(255, 75, 75, 0.1)',
-                            color: '#FF4B4B',
-                            border: '1px solid rgba(255, 75, 75, 0.2)',
-                            '& .MuiAlert-icon': { color: '#FF4B4B' }
+                            backgroundColor: theme.palette.parchment.light,
+                            color: theme.palette.error.main,
+                            border: `1px solid ${theme.palette.error.main}`,
+                            '& .MuiAlert-icon': { color: theme.palette.error.main }
                         }}
                     >
                         {error}
                     </Alert>
                 )}
 
-                <Box sx={styles.billingInfo}>
-                    <div className="billing-header">
-                        <ReceiptIcon sx={{ color: '#22D3EE' }} />
-                        <Typography sx={{
-                            background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
+                <Box sx={{ mb: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                        <ReceiptIcon sx={{ color: theme.palette.secondary.main }} />
+                        <Typography variant="h6" sx={{
+                            color: theme.palette.text.primary,
+                            fontWeight: 600,
                         }}>
                             Billing Information
                         </Typography>
-                    </div>
+                    </Box>
 
-                    <div className="billing-content">
-                        <div className="billing-row">
-                            <span className="label">Plan</span>
-                            <span className="value" style={{
-                                background: 'linear-gradient(90deg, #22D3EE, #0EA5E9)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                fontWeight: 600
-                            }}>
+                    <Grid container spacing={1.5}>
+                        <Grid item xs={5}><Typography variant="body2" color="text.secondary">Plan</Typography></Grid>
+                        <Grid item xs={7} textAlign="right">
+                            <Typography variant="body1" sx={{ fontWeight: 600, color: theme.palette.secondary.main }}>
                                 {currentPlan === 'pro' ? 'Premium' :
                                     currentPlan === 'standard' ? 'Standard' : 'Free'} Plan
-                            </span>
-                        </div>
+                            </Typography>
+                        </Grid>
 
-                        <div className="billing-row">
-                            <span className="label">Billing Period</span>
-                            <span className="value">Monthly</span>
-                        </div>
+                        <Grid item xs={5}><Typography variant="body2" color="text.secondary">Billing Period</Typography></Grid>
+                        <Grid item xs={7} textAlign="right"><Typography variant="body1" color="text.primary">Monthly</Typography></Grid>
 
                         {currentPlan !== 'free' && (
-                            <div className="billing-row">
-                                <span className="label">Next Payment</span>
-                                <span className="value">
-                                    {formatDate(userProfile?.account?.next_billing_date)}
-                                </span>
-                            </div>
-                        )}
-
-                        {currentPlan !== 'free' && (
-                            <div className="billing-row">
-                                <span className="label">Payment Method</span>
-                                <div className="payment-chip">
-                                    <PaymentIcon />
-                                    <span>••••{userProfile?.payment_method_last4 || '****'}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Add overage toggle for standard and premium plans */}
-                        {(currentPlan === 'standard' || currentPlan === 'pro') && (
-                            <Box sx={{
-                                mt: 2,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                borderRadius: '8px',
-                                background: 'rgba(255, 255, 255, 0.02)',
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
-                                p: 1.5,
-                            }}>
-                                <Box>
-                                    <Typography sx={{
-                                        color: 'rgba(255, 255, 255, 0.9)',
-                                        fontSize: '0.9rem',
-                                        fontWeight: 500,
-                                        lineHeight: 1.2,
-                                    }}>
-                                        Allow overage usage
+                            <>
+                                <Grid item xs={5}><Typography variant="body2" color="text.secondary">Next Payment</Typography></Grid>
+                                <Grid item xs={7} textAlign="right">
+                                    <Typography variant="body1" color="text.primary">
+                                        {formatDate(userProfile?.account?.next_billing_date)}
                                     </Typography>
-                                    <Typography sx={{
-                                        color: 'rgba(255, 255, 255, 0.5)',
-                                        fontSize: '0.75rem',
-                                        mt: 0.5,
-                                    }}>
-                                        $0.12/min for additional student engagement minutes
-                                    </Typography>
-                                </Box>
-                                <Switch
-                                    checked={allowOverage}
-                                    onChange={handleOverageToggle}
-                                    sx={{
-                                        '& .MuiSwitch-switchBase.Mui-checked': {
-                                            color: '#22D3EE',
-                                            '&:hover': {
-                                                backgroundColor: 'rgba(34, 211, 238, 0.08)',
-                                            },
-                                        },
-                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                            backgroundColor: '#22D3EE',
-                                        },
-                                    }}
-                                />
-                            </Box>
-                        )}
+                                </Grid>
 
-                        {currentPlan !== 'free' && (
-                            <Button
-                                variant="outlined"
-                                startIcon={<CancelIcon />}
-                                fullWidth
-                                sx={{
-                                    mt: 3,
-                                    color: '#FF4B4B',
-                                    borderColor: 'rgba(255, 75, 75, 0.3)',
-                                    '&:hover': {
-                                        borderColor: '#FF4B4B',
-                                        backgroundColor: 'rgba(255, 75, 75, 0.1)'
-                                    }
-                                }}
-                                onClick={() => setOpenConfirmDialog(true)}
-                            >
-                                Cancel Plan
-                            </Button>
+                                <Grid item xs={5}><Typography variant="body2" color="text.secondary">Payment Method</Typography></Grid>
+                                <Grid item xs={7} textAlign="right">
+                                    <Chip
+                                        icon={<PaymentIcon sx={{ color: theme.palette.text.secondary }} />}
+                                        label={`•••• ${userProfile?.payment_method_last4 || '****'}`}
+                                        size="small"
+                                        sx={{
+                                            backgroundColor: theme.palette.parchment.dark,
+                                            color: theme.palette.text.primary,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            fontSize: '0.8rem',
+                                            height: '26px'
+                                        }}
+                                    />
+                                </Grid>
+                            </>
                         )}
-                    </div>
+                    </Grid>
                 </Box>
+
+                {(currentPlan === 'standard' || currentPlan === 'pro') && (
+                    <Box sx={{
+                        mt: 2, mb: 3,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderRadius: '8px',
+                        backgroundColor: theme.palette.parchment.dark + '80',
+                        border: `1px solid ${theme.palette.divider}`,
+                        p: 1.5,
+                    }}>
+                        <Box>
+                            <Typography sx={{
+                                color: theme.palette.text.primary,
+                                fontSize: '0.95rem',
+                                fontWeight: 500,
+                                lineHeight: 1.3,
+                            }}>
+                                Allow Overage Usage
+                            </Typography>
+                            <Typography sx={{
+                                color: theme.palette.text.secondary,
+                                fontSize: '0.8rem',
+                                mt: 0.5,
+                            }}>
+                                $0.12/min for additional engagement minutes
+                            </Typography>
+                        </Box>
+                        <Switch
+                            checked={allowOverage}
+                            onChange={handleOverageToggle}
+                            sx={{
+                                '& .MuiSwitch-switchBase.Mui-checked': {
+                                    color: theme.palette.secondary.main,
+                                    '&:hover': {
+                                        backgroundColor: alpha(theme.palette.secondary.main, 0.1),
+                                    },
+                                },
+                                '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                                    backgroundColor: theme.palette.secondary.main,
+                                },
+                                '& .MuiSwitch-switchBase': {
+                                    color: theme.palette.inkFaded,
+                                },
+                                '& .MuiSwitch-track': {
+                                    backgroundColor: theme.palette.sepiaFaded,
+                                }
+                            }}
+                        />
+                    </Box>
+                )}
+
+                {currentPlan !== 'free' && (
+                    <Button
+                        variant="outlined"
+                        startIcon={<CancelIcon />}
+                        fullWidth
+                        onClick={() => setOpenConfirmDialog(true)}
+                        sx={{
+                            borderColor: theme.palette.error.main,
+                            color: theme.palette.error.main,
+                            mt: 1,
+                            '&:hover': {
+                                borderColor: theme.palette.error.dark || theme.palette.error.main,
+                                backgroundColor: alpha(theme.palette.error.main, 0.08),
+                            }
+                        }}
+                    >
+                        Cancel Plan
+                    </Button>
+                )}
 
                 <Dialog
                     open={openConfirmDialog}
                     onClose={() => setOpenConfirmDialog(false)}
                     PaperProps={{
                         sx: {
-                            background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.95), rgba(7, 11, 35, 0.95))',
-                            backdropFilter: 'blur(20px)',
-                            border: '1px solid rgba(255, 255, 255, 0.07)',
-                            borderRadius: '24px',
-                            color: 'white',
-                            maxWidth: '480px',
+                            maxWidth: '500px',
                             width: '100%',
-                            p: 4,
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                            '& .MuiDialogContent-root': {
-                                padding: 0,
-                                mt: 2
-                            }
+                            p: { xs: 2, sm: 3 },
                         }
                     }}
                 >
-                    <DialogContent>
-                        <Box sx={{ textAlign: 'center', mb: 4 }}>
-                            <Typography
-                                variant="h5"
-                                sx={{
-                                    fontWeight: 600,
-                                    background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                    mb: 2,
-                                    fontFamily: 'Satoshi'
-                                }}
-                            >
-                                Cancel Subscription?
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    fontSize: '1.1rem',
-                                    fontWeight: 500,
-                                    fontFamily: 'Satoshi'
-                                }}
-                            >
-                                We're sorry to see you go
-                            </Typography>
-                        </Box>
+                    <DialogTitle sx={{ p: 0, mb: 2, textAlign: 'center' }}>
+                        <Typography
+                            variant="h5"
+                            sx={{
+                                fontWeight: 600,
+                                color: theme.palette.error.main,
+                                mb: 1,
+                            }}
+                        >
+                            Cancel Subscription?
+                        </Typography>
+                        <Typography
+                            sx={{
+                                color: theme.palette.text.secondary,
+                                fontSize: '1rem',
+                                fontWeight: 400,
+                            }}
+                        >
+                            Your access remains until the current period ends.
+                        </Typography>
+                    </DialogTitle>
 
-                        <Box sx={{ mb: 4 }}>
+                    <DialogContent sx={{ p: 0 }}>
+                        <Box sx={{ mb: 3 }}>
                             {[
                                 {
                                     title: 'Active Until Period End',
-                                    description: 'Your subscription remains active until the end of your current billing period',
-                                    icon: <CalendarTodayIcon />
+                                    description: `Your ${currentPlan} plan remains active until ${formatDate(userProfile?.account?.next_billing_date)}.`,
+                                    icon: <CalendarTodayIcon sx={{ color: theme.palette.secondary.main }} />
                                 },
                                 {
                                     title: 'Preserved Content',
-                                    description: 'Your course modules will be preserved but will become inactive',
-                                    icon: <SaveIcon />
+                                    description: 'Your course modules will be preserved but inactive after the period ends.',
+                                    icon: <SaveIcon sx={{ color: theme.palette.secondary.main }} />
                                 },
                                 {
                                     title: 'Reactivate Anytime',
-                                    description: 'You can reactivate your subscription at any time to regain access',
-                                    icon: <AutorenewIcon />
+                                    description: 'You can easily reactivate your subscription later.',
+                                    icon: <AutorenewIcon sx={{ color: theme.palette.secondary.main }} />
                                 },
                                 {
                                     title: 'Free Tier Access',
-                                    description: 'Free tier limits will apply after cancellation (1 Course with 1 Module, 30 minutes/month)',
-                                    icon: <LockOpenIcon />
+                                    description: 'Free tier limits apply after cancellation (1 Course/Module, 30 mins/month).',
+                                    icon: <LockOpenIcon sx={{ color: theme.palette.secondary.main }} />
                                 }
                             ].map((item, index) => (
                                 <Box
@@ -755,40 +592,27 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                         display: 'flex',
                                         alignItems: 'flex-start',
                                         gap: 2,
-                                        mb: 3,
-                                        p: 2,
-                                        borderRadius: '12px',
-                                        background: 'rgba(255, 255, 255, 0.03)',
-                                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                                        transition: 'all 0.2s ease',
-                                        '&:hover': {
-                                            background: 'rgba(255, 255, 255, 0.05)',
-                                            transform: 'translateX(4px)'
-                                        }
+                                        mb: 2,
+                                        p: 1.5,
+                                        borderRadius: '8px',
+                                        backgroundColor: theme.palette.parchment.dark + '60',
+                                        border: `1px solid ${theme.palette.divider}`,
                                     }}
                                 >
-                                    <Box sx={{
-                                        p: 1,
-                                        borderRadius: '8px',
-                                        background: 'rgba(255, 59, 48, 0.1)',
-                                        color: '#FF3B30'
-                                    }}>
-                                        {item.icon}
-                                    </Box>
+                                    <Box sx={{ pt: 0.5 }}>{item.icon}</Box>
                                     <Box>
                                         <Typography sx={{
                                             fontWeight: 600,
                                             mb: 0.5,
-                                            color: 'rgba(255, 255, 255, 0.9)',
-                                            fontFamily: 'Satoshi'
+                                            color: theme.palette.text.primary,
+                                            fontSize: '0.95rem'
                                         }}>
                                             {item.title}
                                         </Typography>
                                         <Typography sx={{
-                                            fontSize: '0.9rem',
-                                            color: 'rgba(255, 255, 255, 0.6)',
+                                            fontSize: '0.85rem',
+                                            color: theme.palette.text.secondary,
                                             lineHeight: 1.4,
-                                            fontFamily: 'Satoshi'
                                         }}>
                                             {item.description}
                                         </Typography>
@@ -796,67 +620,44 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 </Box>
                             ))}
                         </Box>
-
-                        <Box sx={{
-                            display: 'flex',
-                            gap: 2,
-                            justifyContent: 'flex-end',
-                            mt: 4
-                        }}>
-                            <Button
-                                variant="outlined"
-                                onClick={() => setOpenConfirmDialog(false)}
-                                sx={{
-                                    color: 'white',
-                                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                                    borderRadius: '12px',
-                                    px: 3,
-                                    py: 1.2,
-                                    textTransform: 'none',
-                                    fontSize: '1rem',
-                                    fontWeight: 500,
-                                    fontFamily: 'Satoshi',
-                                    '&:hover': {
-                                        borderColor: 'rgba(255, 255, 255, 0.5)',
-                                        background: 'rgba(255, 255, 255, 0.05)'
-                                    }
-                                }}
-                            >
-                                Keep Subscription
-                            </Button>
-                            <Button
-                                variant="contained"
-                                onClick={async () => {
-                                    try {
-                                        const response = await api.post('/cancel-subscription');
-                                        if (response.data.message) {
-                                            setShowCancelSuccess(true);
-                                            setOpenConfirmDialog(false);
-                                            onSubscriptionChange();
-                                        }
-                                    } catch (error) {
-                                        console.error('Error canceling subscription:', error);
-                                        setError(error.response?.data?.error || 'Failed to cancel subscription');
-                                    }
-                                }}
-                                sx={{
-                                    background: 'linear-gradient(135deg, #FF3B30, #FF453A)',
-                                    borderRadius: '12px',
-                                    px: 3,
-                                    py: 1.2,
-                                    textTransform: 'none',
-                                    fontSize: '1rem',
-                                    fontWeight: 500,
-                                    fontFamily: 'Satoshi',
-                                    '&:hover': {
-                                        background: 'linear-gradient(135deg, #FF453A, #FF5147)'
-                                    }
-                                }}
-                            >
-                                Confirm Cancellation
-                            </Button>
-                        </Box>
                     </DialogContent>
+
+                    <DialogActions sx={{ p: 0, pt: 1 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setOpenConfirmDialog(false)}
+                        >
+                            Keep Subscription
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={async () => {
+                                setError(null);
+                                try {
+                                    const response = await api.post('/cancel-subscription');
+                                    if (response.data.message) {
+                                        setShowCancelSuccess(true);
+                                        setOpenConfirmDialog(false);
+                                        onSubscriptionChange();
+                                    } else {
+                                        setError('Received an unexpected response while canceling.');
+                                    }
+                                } catch (error) {
+                                    console.error('Error canceling subscription:', error);
+                                    setError(error.response?.data?.error || 'Failed to cancel subscription. Please try again or contact support.');
+                                }
+                            }}
+                            sx={{
+                                backgroundColor: theme.palette.error.main,
+                                color: theme.palette.error.contrastText || '#fff',
+                                '&:hover': {
+                                    backgroundColor: theme.palette.error.dark || '#a30000',
+                                }
+                            }}
+                        >
+                            Confirm Cancellation
+                        </Button>
+                    </DialogActions>
                 </Dialog>
             </Paper>
         </motion.div>
@@ -864,47 +665,50 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
 }
 
 function UsageStats({ currentPlan }) {
+    const theme = useTheme();
     const [stats, setStats] = useState({
         brdges_created: 0,
-        brdges_limit: '2',
+        brdges_limit: getBrdgeLimit(currentPlan),
         minutes_used: 0,
-        minutes_limit: 30
+        minutes_limit: getMinutesLimit(currentPlan)
     });
+    const [loadingStats, setLoadingStats] = useState(true);
+    const [statsError, setStatsError] = useState(null);
 
-    const getBrdgeLimit = (accountType) => {
+    function getBrdgeLimit(accountType) {
         switch (accountType) {
-            case 'pro':
-                return 'Unlimited';
-            case 'standard':
-                return 10;
-            default:
-                return 1;
+            case 'pro': return 'Unlimited';
+            case 'standard': return 10;
+            default: return 1;
         }
-    };
+    }
 
-    const getMinutesLimit = (accountType) => {
+    function getMinutesLimit(accountType) {
         switch (accountType) {
-            case 'pro':
-                return 1000;
-            case 'standard':
-                return 300;
-            default:
-                return 30;
+            case 'pro': return 1000;
+            case 'standard': return 300;
+            default: return 30;
         }
-    };
+    }
 
     useEffect(() => {
         const fetchStats = async () => {
+            setLoadingStats(true);
+            setStatsError(null);
             try {
                 const response = await api.get('/user/stats');
                 const accountType = response.data.account_type || 'free';
                 setStats({
-                    ...response.data,
+                    brdges_created: response.data.brdges_created ?? 0,
+                    minutes_used: Math.round(response.data.minutes_used ?? 0),
                     brdges_limit: getBrdgeLimit(accountType),
                     minutes_limit: getMinutesLimit(accountType)
                 });
             } catch (error) {
                 console.error('Error fetching stats:', error);
+                setStatsError('Could not load usage statistics.');
+            } finally {
+                setLoadingStats(false);
             }
         };
 
@@ -912,12 +716,14 @@ function UsageStats({ currentPlan }) {
     }, []);
 
     const getBrdgeUsagePercentage = () => {
-        if (stats.brdges_limit === 'Unlimited') return 0;
+        if (loadingStats || statsError || stats.brdges_limit === 'Unlimited' || !stats.brdges_limit) return 0;
         return (stats.brdges_created / parseInt(stats.brdges_limit)) * 100;
     };
 
     const getMinutesUsagePercentage = () => {
-        return (stats.minutes_used / stats.minutes_limit) * 100;
+        if (loadingStats || statsError || !stats.minutes_limit) return 0;
+        const percentage = (stats.minutes_used / stats.minutes_limit) * 100;
+        return Math.min(percentage, 100);
     };
 
     const getUsageDescription = (currentStats) => {
@@ -928,76 +734,86 @@ function UsageStats({ currentPlan }) {
         const minutesUsed = Math.round(currentStats.minutes_used);
         const minutesLimit = currentStats.minutes_limit;
 
-        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} Courses/Modules and ${minutesUsed}/${minutesLimit} engagement minutes`;
+        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} Courses/Modules and ${minutesUsed}/${minutesLimit} engagement minutes this period.`;
     };
 
     return (
-        <motion.div whileHover={{ scale: 1.01 }} transition={{ duration: 0.2 }}>
-            <Paper elevation={0} sx={styles.card}>
-                <Typography variant="h6" gutterBottom sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    mb: 3,
-                    background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                }}>
-                    <StarIcon sx={{ color: '#22D3EE' }} />
-                    Usage Statistics
-                </Typography>
+        <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+            <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                    <StarIcon sx={{ color: theme.palette.secondary.main }} />
+                    <Typography variant="h6" sx={{
+                        color: theme.palette.text.primary,
+                        fontWeight: 600,
+                    }}>
+                        Usage Statistics
+                    </Typography>
+                </Box>
 
-                <Grid container spacing={4}>
-                    <Grid item xs={12}>
-                        <Box sx={{ mb: 3 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    Course Modules
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: 'white' }}>
-                                    {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
-                                </Typography>
-                            </Box>
-                            <LinearProgress
-                                variant="determinate"
-                                value={getBrdgeUsagePercentage()}
-                                sx={{
-                                    height: 4,
-                                    borderRadius: 2,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                    '& .MuiLinearProgress-bar': {
-                                        background: 'linear-gradient(90deg, #22D3EE, #0EA5E9)'
-                                    }
-                                }}
-                            />
-                        </Box>
-                    </Grid>
+                {loadingStats && <CircularProgress size={24} sx={{ display: 'block', margin: '20px auto' }} />}
+                {statsError && <Alert severity="error" sx={{ mb: 2 }}>{statsError}</Alert>}
 
-                    <Grid item xs={12}>
-                        <Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    AI Interaction Minutes
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: 'white' }}>
-                                    {stats.minutes_used} / {stats.minutes_limit}
-                                </Typography>
+                {!loadingStats && !statsError && (
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}>
+                            <Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+                                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                        Course Modules
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                        {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={getBrdgeUsagePercentage()}
+                                    sx={{
+                                        height: 6,
+                                        borderRadius: 3,
+                                        backgroundColor: theme.palette.parchment.dark,
+                                        '& .MuiLinearProgress-bar': {
+                                            backgroundColor: theme.palette.secondary.main
+                                        }
+                                    }}
+                                />
                             </Box>
-                            <LinearProgress
-                                variant="determinate"
-                                value={getMinutesUsagePercentage()}
-                                sx={{
-                                    height: 4,
-                                    borderRadius: 2,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                    '& .MuiLinearProgress-bar': {
-                                        background: 'linear-gradient(90deg, #22D3EE, #0EA5E9)'
-                                    }
-                                }}
-                            />
-                        </Box>
+                        </Grid>
+
+                        <Grid item xs={12} sm={6}>
+                            <Box>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+                                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                        Engagement Minutes
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                        {stats.minutes_used} / {stats.minutes_limit}
+                                    </Typography>
+                                </Box>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={getMinutesUsagePercentage()}
+                                    sx={{
+                                        height: 6,
+                                        borderRadius: 3,
+                                        backgroundColor: theme.palette.parchment.dark,
+                                        '& .MuiLinearProgress-bar': {
+                                            backgroundColor: theme.palette.secondary.main
+                                        }
+                                    }}
+                                />
+                            </Box>
+                        </Grid>
+
+                        {(currentPlan === 'standard' || currentPlan === 'pro') && stats.minutes_used > stats.minutes_limit && (
+                            <Grid item xs={12}>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, textAlign: 'center', display: 'block', mt: 1 }}>
+                                    Overage minutes are billed at $0.12/min.
+                                </Typography>
+                            </Grid>
+                        )}
                     </Grid>
-                </Grid>
+                )}
             </Paper>
         </motion.div>
     );
@@ -1009,7 +825,6 @@ function UserProfilePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showSuccess, setShowSuccess] = useState(false);
-    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentError, setPaymentError] = useState(null);
     const [openContactDialog, setOpenContactDialog] = useState(false);
@@ -1018,15 +833,17 @@ function UserProfilePage() {
     const [successMessage, setSuccessMessage] = useState('');
 
     const fetchUserProfile = async () => {
+        setLoading(true);
+        setError(null);
         try {
             console.log('Fetching user profile...');
             const response = await api.get('/user/profile');
             console.log('Profile data received:', response.data);
             setUserProfile(response.data);
-            setLoading(false);
         } catch (err) {
             console.error('Error fetching profile:', err);
-            setError(err.response?.data?.error || 'Failed to load user profile');
+            setError(err.response?.data?.error || 'Failed to load user profile. Please try refreshing the page.');
+        } finally {
             setLoading(false);
         }
     };
@@ -1039,90 +856,97 @@ function UserProfilePage() {
         const checkPaymentStatus = async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const paymentSuccess = urlParams.get('payment') === 'success';
+            const cancelled = urlParams.get('cancelled') === 'true';
+            const tier = localStorage.getItem('selected_tier');
 
-            if (paymentSuccess) {
-                console.log('Payment success detected, refreshing profile...');
+            if (paymentSuccess && tier) {
+                console.log(`Payment success detected for ${tier}, verifying and refreshing...`);
+                setLoading(true);
+                setShowSuccess(false);
                 try {
                     await fetchUserProfile();
                     setShowSuccess(true);
+                    setSuccessMessage('Subscription updated successfully!');
                     window.history.replaceState({}, document.title, "/profile");
+                    localStorage.removeItem('selected_tier');
                 } catch (error) {
-                    console.error('Error refreshing profile:', error);
-                    setError('Failed to refresh profile after payment');
+                    console.error('Error processing successful payment:', error);
+                    setError('Payment succeeded, but failed to update profile. Please refresh.');
+                } finally {
+                    setLoading(false);
                 }
+            } else if (cancelled) {
+                console.log('Checkout process cancelled.');
+                setError('Checkout process was cancelled.');
+                window.history.replaceState({}, document.title, "/profile");
+                localStorage.removeItem('selected_tier');
             }
         };
 
         checkPaymentStatus();
-        fetchUserProfile(); // Initial profile fetch
     }, []);
 
-    const handleStandardUpgrade = async () => {
+    const handleCheckout = async (tier) => {
         setIsProcessing(true);
         setPaymentError(null);
+        setError(null);
         try {
-            localStorage.setItem('selected_tier', 'standard');
-            const response = await api.post('/create-checkout-session', {
-                tier: 'standard'
-            });
-
+            localStorage.setItem('selected_tier', tier);
+            const response = await api.post('/create-checkout-session', { tier });
             if (response.data.url) {
                 window.location.href = response.data.url;
+            } else {
+                throw new Error("No checkout URL received from server.");
             }
         } catch (error) {
-            console.error('Error:', error);
-            setPaymentError(error.response?.data?.error || 'Failed to start checkout process');
-        } finally {
+            console.error(`Error creating checkout for ${tier}:`, error);
+            setPaymentError(error.response?.data?.error || `Failed to start ${tier} checkout process. Please try again.`);
+            localStorage.removeItem('selected_tier');
             setIsProcessing(false);
         }
     };
 
-    const handlePremiumUpgrade = async () => {
-        setIsProcessing(true);
-        setPaymentError(null);
-        try {
-            localStorage.setItem('selected_tier', 'premium');
-            const response = await api.post('/create-checkout-session', {
-                tier: 'premium'
-            });
-
-            if (response.data.url) {
-                window.location.href = response.data.url;
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            setPaymentError(error.response?.data?.error || 'Failed to start checkout process');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+    const handleStandardUpgrade = () => handleCheckout('standard');
+    const handlePremiumUpgrade = () => handleCheckout('premium');
 
     const handleManageSubscription = async () => {
+        setIsProcessing(true);
+        setError(null);
+        setPaymentError(null);
         try {
-            setIsProcessing(true);
-            setError(null);
             const response = await api.post('/create-portal-session');
-
             if (response.data.url) {
+                localStorage.setItem('return_from_portal', 'true');
                 console.log('Redirecting to portal:', response.data.url);
                 window.location.href = response.data.url;
+            } else {
+                throw new Error("No portal URL received from server.");
             }
         } catch (error) {
             console.error('Error accessing subscription management:', error);
-            setError(error.response?.data?.error || 'Failed to access subscription management');
-        } finally {
+            setError(error.response?.data?.error || 'Failed to access subscription management portal. Please try again.');
             setIsProcessing(false);
         }
     };
 
-    // Add this useEffect to handle return from portal
     useEffect(() => {
         const handleReturnFromPortal = async () => {
-            const returnToProfile = localStorage.getItem('return_to_profile');
-            if (returnToProfile) {
-                localStorage.removeItem('return_to_profile');
-                await fetchUserProfile();
-                setShowSuccess(true);
+            const returnFromPortal = localStorage.getItem('return_from_portal');
+            if (returnFromPortal) {
+                console.log("Returned from Stripe portal, refreshing profile...");
+                localStorage.removeItem('return_from_portal');
+                setLoading(true);
+                setShowSuccess(false);
+                try {
+                    await fetchUserProfile();
+                    setShowSuccess(true);
+                    setSuccessMessage("Your subscription details may have been updated.");
+                } catch (error) {
+                    console.error('Error refreshing profile after portal return:', error);
+                    setError('Failed to refresh profile after returning from portal. Please refresh the page.');
+                } finally {
+                    setLoading(false);
+                }
             }
         };
 
@@ -1131,15 +955,17 @@ function UserProfilePage() {
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'UTC'  // Ensure consistent timezone handling
-        }).format(date);
+        try {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            }).format(date);
+        } catch (e) {
+            console.warn(`Invalid date encountered: ${dateString}`);
+            return 'Invalid Date';
+        }
     };
 
     const getPlanBadgeColor = (plan) => {
@@ -1154,7 +980,7 @@ function UserProfilePage() {
     };
 
     const handleSubscriptionChange = async () => {
-        // Refresh user profile after subscription change
+        console.log("Subscription changed locally (e.g., cancellation), refreshing profile...");
         await fetchUserProfile();
     };
 
@@ -1163,18 +989,14 @@ function UserProfilePage() {
             const response = await api.post('/verify-subscription', { tier });
             console.log('Verification response:', response.data);
 
-            // Refresh the user profile
             await fetchUserProfile();
 
-            // Show success message
             setShowSuccess(true);
             setPaymentError(null);
 
-            // Clean up URL and localStorage
             window.history.replaceState({}, document.title, "/profile");
             localStorage.removeItem('selected_tier');
 
-            // Scroll to top to show success message
             window.scrollTo(0, 0);
         } catch (error) {
             console.error('Error verifying payment:', error);
@@ -1184,19 +1006,21 @@ function UserProfilePage() {
 
     const handleContactSubmit = async () => {
         if (!contactMessage.trim()) return;
-
         setIsSending(true);
+        setError(null);
         try {
             const response = await api.post('/contact', { message: contactMessage });
             if (response.data.success) {
                 setContactMessage('');
                 setOpenContactDialog(false);
                 setShowSuccess(true);
-                setSuccessMessage("Your message has been submitted. We'll get back to you soon!");
+                setSuccessMessage("Your message has been sent. We'll get back to you soon!");
+            } else {
+                throw new Error(response.data.error || "Failed to send message.");
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            setError('Failed to send message. Please try again.');
+            setError(error.message || 'Failed to send message. Please try again.');
         } finally {
             setIsSending(false);
         }
@@ -1204,16 +1028,26 @@ function UserProfilePage() {
 
     if (loading) {
         return (
-            <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-                <CircularProgress />
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 64px)">
+                <CircularProgress sx={{ color: theme.palette.secondary.main }} />
             </Box>
         );
     }
 
-    if (error) {
+    if (error && !userProfile) {
         return (
-            <Container maxWidth="md">
-                <Typography color="error" align="center">{error}</Typography>
+            <Container maxWidth="md" sx={{ py: 5, textAlign: 'center' }}>
+                <Alert severity="error" sx={{}}>{error}</Alert>
+                <Button onClick={fetchUserProfile} sx={{ mt: 2 }}>Try Again</Button>
+            </Container>
+        );
+    }
+
+    if (!userProfile) {
+        return (
+            <Container maxWidth="md" sx={{ py: 5, textAlign: 'center' }}>
+                <Typography>Could not load user profile.</Typography>
+                <Button onClick={fetchUserProfile} sx={{ mt: 2 }}>Try Again</Button>
             </Container>
         );
     }
@@ -1223,499 +1057,277 @@ function UserProfilePage() {
     const subscriptionTiers = [
         {
             title: "Free",
-            price: "$0/month",
+            price: "$0 / month",
             features: [
-                "1 Course with 1 Module",
-                "30 Student Engagement Minutes Monthly",
-                "Email Support",
-                "Basic Customization"
+                "1 Course & 1 Module Limit",
+                "30 Engagement Minutes / Mo",
+                "Basic AI Interaction",
+                "Community Support",
             ],
             isActive: currentPlan === 'free',
             tier: 'free',
-            onClick: handleManageSubscription
+            onClick: currentPlan !== 'free' ? handleManageSubscription : undefined,
+            isPremium: false,
         },
         {
             title: "Standard",
-            price: "$99/month",
+            price: "$99 / month",
             features: [
-                "1 Course with up to 10 Modules",
-                "300 Student Engagement Minutes Monthly",
-                "Priority Email Support",
-                "Advanced Customization",
-                "Basic Student Analytics"
+                "1 Course & 10 Modules",
+                "300 Engagement Minutes / Mo",
+                "Enhanced AI Interaction",
+                "Overage Option ($0.12/min)",
+                "Email Support",
             ],
             isActive: currentPlan === 'standard',
-            onClick: currentPlan === 'pro' ? handleManageSubscription : handleStandardUpgrade,
-            tier: 'standard'
+            tier: 'standard',
+            onClick: currentPlan === 'pro'
+                ? handleManageSubscription
+                : handleStandardUpgrade,
+            isPremium: false,
         },
         {
             title: "Premium",
-            price: "$249/month",
+            price: "$249 / month",
             features: [
-                "Unlimited Courses and Modules",
-                "1000 Student Engagement Minutes Monthly",
+                "Unlimited Courses & Modules",
+                "1000 Engagement Minutes / Mo",
+                "Advanced AI Interaction",
+                "Overage Option ($0.12/min)",
                 "Priority Support",
-                "Complete Customization",
-                "Comprehensive Student Analytics",
-                "LMS Integration"
             ],
             isActive: currentPlan === 'pro',
+            tier: 'premium',
             onClick: handlePremiumUpgrade,
             isPremium: true,
-            tier: 'premium'
         }
     ];
 
-    const getSubscriptionDescription = (currentPlan) => {
-        switch (currentPlan) {
+    const getSubscriptionDescription = (plan) => {
+        switch (plan) {
             case 'standard':
-                return "You're on our Standard plan with 300 student engagement minutes/month. Upgrade to Premium for unlimited courses and modules!";
+                return "Manage your Standard plan or upgrade for unlimited possibilities.";
             case 'pro':
-                return "You're on our Premium plan with 1000 student engagement minutes/month and unlimited courses and modules!";
+                return "You have unlocked all features with the Premium plan.";
             default:
-                return "Upgrade your plan to create more courses and get more student engagement minutes.";
+                return "Choose a plan to unlock more features and increase your limits.";
         }
     };
 
     return (
-        <Box sx={styles.pageBackground}>
-            <Box sx={{
-                position: 'absolute',
-                top: '10%',
-                left: '15%',
-                width: '400px',
-                height: '400px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                transform: 'rotate(45deg)',
-                animation: 'rotate 30s linear infinite',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: -1,
-                    padding: '1px',
-                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
-                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude'
-                }
-            }} />
-            <Box sx={{
-                position: 'absolute',
-                bottom: '15%',
-                right: '10%',
-                width: '300px',
-                height: '300px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '50%',
-                animation: 'rotateReverse 25s linear infinite',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: -1,
-                    borderRadius: 'inherit',
-                    padding: '1px',
-                    background: 'linear-gradient(45deg, transparent, rgba(255,255,255,0.2))',
-                    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-                    WebkitMaskComposite: 'xor',
-                    maskComposite: 'exclude'
-                }
-            }} />
-
+        <Box sx={{
+            backgroundColor: theme.palette.background.default,
+            minHeight: 'calc(100vh - 64px)',
+            py: { xs: 3, md: 5 },
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'fixed',
+                inset: 0,
+                backgroundImage: `url(${theme.textures.darkParchment})`,
+                backgroundSize: 'cover',
+                opacity: 0.08,
+                mixBlendMode: 'multiply',
+                pointerEvents: 'none',
+                zIndex: -1,
+            }
+        }}>
             <Container
                 maxWidth="lg"
                 sx={{
                     position: 'relative',
                     zIndex: 1,
-                    px: { xs: 2, sm: 3, md: 4 } // Responsive padding
+                    px: { xs: 2, sm: 3 }
                 }}
             >
-                {showSuccess && (
-                    <Box sx={{ mb: 4 }}>
-                        <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
+                {(showSuccess && successMessage) && (
+                    <motion.div>
+                        <Alert
+                            severity="success"
+                            onClose={() => { setShowSuccess(false); setSuccessMessage(''); }}
+                            sx={{
+                                mb: 3,
+                                backgroundColor: theme.palette.parchment.light,
+                                color: theme.palette.text.primary,
+                                border: `1px solid ${theme.palette.secondary.light}`,
+                                '& .MuiAlert-icon': { color: theme.palette.secondary.main }
+                            }}
                         >
-                            <Alert
-                                severity="success"
-                                sx={{
-                                    ...styles.glassCard,
-                                    backgroundColor: 'rgba(0, 200, 83, 0.1)',
-                                    color: 'rgba(255, 255, 255, 0.9)',
-                                    '& .MuiAlert-icon': {
-                                        color: '#00ffcc'
-                                    }
-                                }}
-                                onClose={() => setShowSuccess(false)}
-                            >
-                                {successMessage || 'Your subscription has been updated successfully!'}
-                            </Alert>
-                        </motion.div>
-                    </Box>
+                            {successMessage}
+                        </Alert>
+                    </motion.div>
+                )}
+                {(error && !paymentError) && (
+                    <motion.div>
+                        <Alert
+                            severity="error"
+                            onClose={() => setError(null)}
+                            sx={{
+                                mb: 3,
+                                backgroundColor: theme.palette.parchment.light,
+                                color: theme.palette.error.main,
+                                border: `1px solid ${theme.palette.error.main}`,
+                                '& .MuiAlert-icon': { color: theme.palette.error.main }
+                            }}
+                        >
+                            {error}
+                        </Alert>
+                    </motion.div>
+                )}
+                {paymentError && (
+                    <motion.div>
+                        <Alert
+                            severity="error"
+                            onClose={() => setPaymentError(null)}
+                            sx={{
+                                mb: 3,
+                                backgroundColor: theme.palette.parchment.light,
+                                color: theme.palette.error.main,
+                                border: `1px solid ${theme.palette.error.main}`,
+                                '& .MuiAlert-icon': { color: theme.palette.error.main }
+                            }}
+                        >
+                            {paymentError}
+                        </Alert>
+                    </motion.div>
                 )}
 
-                <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
+                <Grid container spacing={{ xs: 3, md: 4 }}>
                     <Grid item xs={12} md={4}>
-                        {/* Profile Card */}
-                        <Paper elevation={0} sx={styles.card}>
-                            <Box sx={styles.profileSection}>
-                                <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    transition={{ type: "spring", stiffness: 300 }}
-                                >
+                        <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
+                            <Paper elevation={1} sx={{ p: 3, mb: 3, textAlign: 'center', borderRadius: '16px' }}>
+                                <motion.div whileHover={{ scale: 1.03 }}>
                                     <Avatar
                                         sx={{
-                                            width: 100,
-                                            height: 100,
-                                            bgcolor: 'transparent',
+                                            width: { xs: 80, md: 90 },
+                                            height: { xs: 80, md: 90 },
+                                            bgcolor: theme.palette.sepia.faded,
+                                            color: theme.palette.sepia.main,
                                             margin: '0 auto',
-                                            mb: 3,
-                                            background: 'linear-gradient(135deg, #2196F3, #00BCD4)',
-                                            border: '3px solid rgba(255, 255, 255, 0.1)',
-                                            boxShadow: '0 8px 32px rgba(33, 150, 243, 0.2)'
+                                            mb: 2,
+                                            border: `2px solid ${theme.palette.sepia.light}`,
+                                            boxShadow: theme.shadows[2]
                                         }}
                                     >
-                                        <PersonIcon sx={{ fontSize: 40, color: 'white' }} />
+                                        <PersonIcon sx={{ fontSize: { xs: 35, md: 40 } }} />
                                     </Avatar>
                                 </motion.div>
-                                <Typography sx={{
-                                    ...typography.heading,
+                                <Typography variant="h6" sx={{
+                                    color: theme.palette.text.primary,
+                                    fontWeight: 600,
                                     mb: 0.5,
-                                    fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                                    wordBreak: 'break-all'
                                 }}>
                                     {userProfile?.email}
                                 </Typography>
-                                <Typography sx={{ ...typography.caption, mb: 3 }}>
+                                <Typography variant="caption" sx={{
+                                    display: 'block',
+                                    mb: 2
+                                }}>
                                     Educator since {formatDate(userProfile?.account?.created_at)}
                                 </Typography>
 
                                 <Button
-                                    component={RouterLink}
-                                    to="/contact"
-                                    sx={{
-                                        color: 'rgba(255, 255, 255, 0.5)',
-                                        fontSize: '0.85rem',
-                                        textTransform: 'none',
-                                        '&:hover': {
-                                            color: '#22D3EE',
-                                            background: 'rgba(34, 211, 238, 0.05)'
-                                        },
-                                        padding: '4px 12px',
-                                        borderRadius: '8px',
-                                        minWidth: 'auto',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        mx: 'auto'
-                                    }}
+                                    variant="outlined"
+                                    startIcon={<MailOutlineIcon />}
+                                    onClick={() => setOpenContactDialog(true)}
                                 >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" fill="currentColor" />
-                                    </svg>
                                     Contact Support
                                 </Button>
-                            </Box>
-                        </Paper>
+                            </Paper>
+                        </motion.div>
 
                         <BillingCard
                             userProfile={userProfile}
                             currentPlan={currentPlan}
                             onSubscriptionChange={handleSubscriptionChange}
-                            onManageSubscription={handleManageSubscription}
                         />
 
                         <UsageStats currentPlan={currentPlan} />
                     </Grid>
 
-                    {/* Subscription Plans Section */}
                     <Grid item xs={12} md={8}>
-                        <Paper elevation={0} sx={{
-                            ...styles.card,
-                            padding: { xs: '24px', sm: '32px', md: '40px' },
-                            paddingLeft: { xs: '16px', sm: '24px', md: '32px' },
-                            paddingRight: { xs: '16px', sm: '24px', md: '32px' },
-                            background: 'linear-gradient(145deg, rgba(2, 6, 23, 0.98), rgba(7, 11, 35, 0.98))',
-                            backdropFilter: 'blur(20px)',
-                            borderRadius: '32px',
+                        <Paper elevation={1} sx={{
+                            p: { xs: 2.5, sm: 3, md: 4 },
+                            borderRadius: '16px',
                             position: 'relative',
-                            zIndex: 2
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute', inset: 0,
+                                backgroundImage: `url(${theme.textures.lightMarble})`,
+                                backgroundSize: 'cover', opacity: 0.05,
+                                mixBlendMode: 'overlay',
+                                pointerEvents: 'none', zIndex: 0, borderRadius: 'inherit',
+                            },
+                            '& > *': { position: 'relative', zIndex: 1 }
                         }}>
-                            <Box>
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 3,
-                                    mb: 8
-                                }}>
-                                    <Box
-                                        sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: '14px',
-                                            background: 'linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(33, 150, 243, 0.1))',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            boxShadow: '0 8px 32px rgba(0, 188, 212, 0.1)',
-                                            zIndex: 3
-                                        }}
-                                    >
-                                        <StarIcon
-                                            sx={{
-                                                fontSize: 24,
-                                                color: '#00BCD4',
-                                                filter: 'drop-shadow(0 0 10px rgba(0, 188, 212, 0.3))'
-                                            }}
-                                        />
-                                    </Box>
-                                    <div>
-                                        <Typography sx={{
-                                            fontSize: '2.5rem',
-                                            fontWeight: 600,
-                                            background: 'linear-gradient(to right, #FFFFFF, rgba(255, 255, 255, 0.8))',
-                                            WebkitBackgroundClip: 'text',
-                                            WebkitTextFillColor: 'transparent',
-                                            mb: 1,
-                                            letterSpacing: '-0.02em'
-                                        }}>
-                                            Your Teaching Plan
-                                        </Typography>
-                                        <Typography sx={{
-                                            fontSize: '1.1rem',
-                                            color: 'rgba(255, 255, 255, 0.6)',
-                                            fontWeight: 400
-                                        }}>
-                                            {getSubscriptionDescription(currentPlan)}
-                                        </Typography>
-                                    </div>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 2,
+                                mb: { xs: 4, md: 5 }
+                            }}>
+                                <Box>
+                                    <Typography variant="h3" sx={{
+                                        fontWeight: 500,
+                                        mb: 0.5,
+                                        lineHeight: 1.2,
+                                    }}>
+                                        Your Teaching Plan
+                                    </Typography>
+                                    <Typography variant="body1" sx={{
+                                        color: theme.palette.text.secondary,
+                                    }}>
+                                        {getSubscriptionDescription(currentPlan)}
+                                    </Typography>
                                 </Box>
-
-                                <Grid container spacing={1.5} sx={{ position: 'relative', zIndex: 2 }}>
-                                    {subscriptionTiers.map((tier, index) => (
-                                        <Grid item xs={12} sm={4} key={index}>
-                                            <motion.div
-                                                whileHover={{ scale: 1.01 }}
-                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                                style={{ height: '100%', position: 'relative', zIndex: 2 }}
-                                            >
-                                                <Card
-                                                    elevation={0}
-                                                    sx={{
-                                                        ...tierCardStyles(tier.isActive, tier.isPremium),
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        position: 'relative',
-                                                        zIndex: 2
-                                                    }}
-                                                >
-                                                    <CardContent sx={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        height: '100%',
-                                                        p: 2.5,
-                                                        '&:last-child': { pb: 2.5 },
-                                                        position: 'relative',
-                                                        zIndex: 2
-                                                    }}>
-                                                        {/* Title and Price */}
-                                                        <Box sx={{ mb: 3, textAlign: 'center', position: 'relative', zIndex: 2 }}>
-                                                            <Typography
-                                                                variant="h6"
-                                                                sx={{
-                                                                    fontSize: '1.1rem',
-                                                                    fontWeight: 500,
-                                                                    color: 'rgba(255, 255, 255, 0.9)',
-                                                                    mb: 2,
-                                                                    letterSpacing: '-0.01em'
-                                                                }}
-                                                            >
-                                                                {tier.title}
-                                                            </Typography>
-                                                            <Typography
-                                                                variant="h4"
-                                                                sx={{
-                                                                    fontSize: '2.5rem',
-                                                                    fontWeight: 600,
-                                                                    background: tier.isPremium
-                                                                        ? 'linear-gradient(135deg, #2196F3, #00BCD4)'
-                                                                        : 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
-                                                                    WebkitBackgroundClip: 'text',
-                                                                    WebkitTextFillColor: 'transparent',
-                                                                    mb: 0.5,
-                                                                    letterSpacing: '-0.02em'
-                                                                }}
-                                                            >
-                                                                {tier.price.split('/')[0]}
-                                                            </Typography>
-                                                            <Typography
-                                                                sx={{
-                                                                    fontSize: '0.9rem',
-                                                                    color: 'rgba(255, 255, 255, 0.5)',
-                                                                    fontWeight: 400
-                                                                }}
-                                                            >
-                                                                per month
-                                                            </Typography>
-                                                        </Box>
-
-                                                        {/* Features List */}
-                                                        <Box sx={{
-                                                            display: 'flex',
-                                                            flexDirection: 'column',
-                                                            gap: 2,
-                                                            mb: 3,
-                                                            flexGrow: 1,
-                                                            position: 'relative',
-                                                            zIndex: 2
-                                                        }}>
-                                                            {tier.features.map((feature, idx) => (
-                                                                <Box
-                                                                    key={idx}
-                                                                    sx={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 2,
-                                                                        position: 'relative',
-                                                                        zIndex: 2
-                                                                    }}
-                                                                >
-                                                                    <CheckIcon sx={{
-                                                                        fontSize: '1rem',
-                                                                        color: tier.isPremium ? '#00BCD4' : '#4CAF50',
-                                                                        filter: tier.isPremium ? 'drop-shadow(0 0 6px rgba(0, 188, 212, 0.3))' : 'none'
-                                                                    }} />
-                                                                    <Typography sx={{
-                                                                        fontSize: '0.95rem',
-                                                                        color: 'rgba(255, 255, 255, 0.7)',
-                                                                        fontWeight: 400,
-                                                                        letterSpacing: '0.01em',
-                                                                        lineHeight: 1.2
-                                                                    }}>
-                                                                        {feature}
-                                                                    </Typography>
-                                                                </Box>
-                                                            ))}
-                                                        </Box>
-
-                                                        {/* Action Button */}
-                                                        <Box sx={{ mt: 'auto', position: 'relative', zIndex: 2 }}>
-                                                            <Button
-                                                                fullWidth
-                                                                variant={tier.isPremium ? "contained" : "outlined"}
-                                                                disabled={tier.isActive}
-                                                                onClick={tier.onClick}
-                                                                sx={{
-                                                                    py: 1.5,
-                                                                    borderRadius: '12px',
-                                                                    textTransform: 'none',
-                                                                    fontSize: '1rem',
-                                                                    fontWeight: 500,
-                                                                    letterSpacing: '0.01em',
-                                                                    background: tier.isPremium
-                                                                        ? 'linear-gradient(135deg, #00BCD4, #00ACC1)'
-                                                                        : 'transparent',
-                                                                    border: tier.isPremium
-                                                                        ? 'none'
-                                                                        : '1px solid rgba(255, 255, 255, 0.15)',
-                                                                    color: tier.isPremium ? 'white' : '#00BCD4',
-                                                                    boxShadow: tier.isPremium ? '0 8px 32px rgba(0, 188, 212, 0.15)' : 'none',
-                                                                    '&:hover': {
-                                                                        background: tier.isPremium
-                                                                            ? 'linear-gradient(135deg, #00ACC1, #0097A7)'
-                                                                            : 'rgba(0, 188, 212, 0.1)',
-                                                                        border: tier.isPremium
-                                                                            ? 'none'
-                                                                            : '1px solid #00BCD4',
-                                                                        boxShadow: tier.isPremium ? '0 12px 40px rgba(0, 188, 212, 0.2)' : 'none'
-                                                                    },
-                                                                    '&.Mui-disabled': {
-                                                                        background: 'rgba(255, 255, 255, 0.1)',
-                                                                        color: 'white',
-                                                                        border: 'none'
-                                                                    }
-                                                                }}
-                                                            >
-                                                                {tier.isActive ? 'Current Plan' :
-                                                                    (tier.title === 'Free' && currentPlan !== 'free') ? 'Downgrade' :
-                                                                        (tier.title === 'Standard' && currentPlan === 'free') ? 'Upgrade' :
-                                                                            (tier.title === 'Standard' && currentPlan === 'pro') ? 'Downgrade' :
-                                                                                (tier.title === 'Premium' && currentPlan !== 'pro') ? 'Upgrade' :
-                                                                                    'Select Plan'}
-                                                            </Button>
-
-                                                            {/* Show upgrade benefits */}
-                                                            {!tier.isActive && shouldShowUpgradeButton(currentPlan, tier.tier) && (
-                                                                <Typography
-                                                                    sx={{
-                                                                        fontSize: '0.8rem',
-                                                                        color: 'rgba(255, 255, 255, 0.5)',
-                                                                        mt: 1.5,
-                                                                        textAlign: 'center',
-                                                                        fontStyle: 'italic'
-                                                                    }}
-                                                                >
-                                                                    {tier.tier === 'standard' ? '+1 course with up to 10 modules, +270 minutes' : '+unlimited courses/modules, +700 minutes'}
-                                                                </Typography>
-                                                            )}
-
-                                                            {paymentError && (
-                                                                <Typography
-                                                                    color="error"
-                                                                    sx={{
-                                                                        mt: 1,
-                                                                        fontSize: '0.875rem',
-                                                                        textAlign: 'center'
-                                                                    }}
-                                                                >
-                                                                    {paymentError}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    </CardContent>
-                                                </Card>
-                                            </motion.div>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-
-                                <Typography
-                                    sx={{
-                                        mt: 4,
-                                        textAlign: 'center',
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                        fontSize: '1rem',
-                                        fontWeight: 400,
-                                        letterSpacing: '0.01em',
-                                        lineHeight: 1.6,
-                                        fontFamily: 'Satoshi',
-                                        '& span': {
-                                            color: '#22D3EE',
-                                            fontWeight: 500
-                                        }
-                                    }}
-                                >
-                                    Standard and Premium plans are billed at <span>$0.12 per minute</span> for AI interaction usage above the included monthly minutes.
-                                </Typography>
-
-                                <Typography
-                                    sx={{
-                                        mt: 2,
-                                        textAlign: 'center',
-                                        color: 'rgba(255, 255, 255, 0.6)',
-                                        fontSize: '0.9rem'
-                                    }}
-                                >
-                                    For educational institutions or custom solutions, please <RouterLink
-                                        to="/contact"
-                                        style={{
-                                            color: '#22D3EE',
-                                            textDecoration: 'none'
-                                        }}
-                                    >
-                                        contact us
-                                    </RouterLink> to discuss tailored plans.
-                                </Typography>
                             </Box>
+
+                            <Grid container spacing={3}>
+                                {subscriptionTiers.map((tier, index) => (
+                                    <Grid item xs={12} md={4} key={index} sx={{ display: 'flex' }}>
+                                        <SubscriptionTier {...tier} />
+                                    </Grid>
+                                ))}
+                            </Grid>
+
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mt: 4,
+                                    textAlign: 'center',
+                                    color: theme.palette.text.secondary,
+                                    '& span': {
+                                        color: theme.palette.text.primary,
+                                        fontWeight: 500,
+                                    }
+                                }}
+                            >
+                                Standard and Premium plans include an option for overage at <span>$0.12 per minute</span> for engagement beyond the monthly allowance. Manage this in Billing Information.
+                            </Typography>
+
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    mt: 2,
+                                    textAlign: 'center',
+                                    display: 'block',
+                                    color: theme.palette.text.secondary,
+                                }}
+                            >
+                                Need a custom solution?{' '}
+                                <RouterLink
+                                    to="/contact"
+                                    style={{
+                                        color: theme.palette.secondary.main,
+                                        textDecoration: 'underline',
+                                        textDecorationColor: theme.palette.secondary.light,
+                                    }}
+                                >
+                                    Contact Us
+                                </RouterLink>
+                            </Typography>
                         </Paper>
                     </Grid>
                 </Grid>
@@ -1727,50 +1339,23 @@ function UserProfilePage() {
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
-                    sx: {
-                        background: 'linear-gradient(145deg, rgba(2, 6, 23, 0.98), rgba(7, 11, 35, 0.98))',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                    }
+                    sx: { p: { xs: 2, sm: 3 } }
                 }}
             >
-                <DialogTitle sx={{
-                    color: 'white',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    pb: 1
-                }}>
+                <DialogTitle sx={{ p: 0, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography
                         variant="h6"
-                        sx={{
-                            background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            fontWeight: 600
-                        }}
+                        sx={{ fontWeight: 600, color: theme.palette.text.primary }}
                     >
-                        Contact Us
+                        Contact Support
                     </Typography>
-                    <IconButton
-                        onClick={() => setOpenContactDialog(false)}
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.5)',
-                            '&:hover': { color: 'white' }
-                        }}
-                    >
-                        <CloseIcon />
+                    <IconButton onClick={() => setOpenContactDialog(false)} size="small">
+                        <CloseIcon sx={{ color: theme.palette.text.secondary }} />
                     </IconButton>
                 </DialogTitle>
-                <DialogContent>
-                    <Typography
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.6)',
-                            mb: 2,
-                            fontSize: '0.95rem'
-                        }}
-                    >
-                        Have questions or need assistance? We're here to help!
+                <DialogContent sx={{ p: 0, mb: 2 }}>
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                        Have questions or need assistance? Send us a message.
                     </Typography>
                     <TextField
                         multiline
@@ -1779,101 +1364,41 @@ function UserProfilePage() {
                         placeholder="Type your message here..."
                         value={contactMessage}
                         onChange={(e) => setContactMessage(e.target.value)}
-                        sx={{
-                            '& .MuiOutlinedInput-root': {
-                                color: 'white',
-                                backgroundColor: 'rgba(255, 255, 255, 0.03)',
-                                borderRadius: '12px',
-                                '& fieldset': {
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                                },
-                                '&:hover fieldset': {
-                                    borderColor: 'rgba(34, 211, 238, 0.3)',
-                                },
-                                '&.Mui-focused fieldset': {
-                                    borderColor: '#22D3EE',
-                                },
-                            },
-                            '& .MuiInputBase-input::placeholder': {
-                                color: 'rgba(255, 255, 255, 0.5)',
-                                opacity: 1,
-                            },
-                        }}
                     />
+                    {error && openContactDialog && (
+                        <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>
+                    )}
                 </DialogContent>
-                <DialogActions sx={{ p: 2, pt: 1 }}>
+                <DialogActions sx={{ p: 0 }}>
                     <Button
-                        onClick={() => setOpenContactDialog(false)}
-                        sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            '&:hover': {
-                                background: 'rgba(255, 255, 255, 0.05)'
-                            }
-                        }}
+                        variant="outlined"
+                        onClick={() => { setOpenContactDialog(false); setError(null); }}
                     >
                         Cancel
                     </Button>
                     <Button
+                        variant="contained"
                         onClick={handleContactSubmit}
                         disabled={!contactMessage.trim() || isSending}
-                        sx={{
-                            background: 'linear-gradient(135deg, #22D3EE, #0EA5E9)',
-                            color: 'white',
-                            px: 3,
-                            '&:hover': {
-                                background: 'linear-gradient(135deg, #0EA5E9, #0284C7)',
-                            },
-                            '&.Mui-disabled': {
-                                background: 'rgba(255, 255, 255, 0.1)',
-                                color: 'rgba(255, 255, 255, 0.3)',
-                            }
-                        }}
                     >
-                        {isSending ? 'Sending...' : 'Send Message'}
+                        {isSending ? <CircularProgress size={20} color="inherit" /> : 'Send Message'}
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            <style>
-                {`
-                    @keyframes float {
-                        0% { transform: translateY(0px) rotate(0deg); }
-                        50% { transform: translateY(-20px) rotate(5deg); }
-                        100% { transform: translateY(0px) rotate(0deg); }
-                    }
-                    @keyframes rotate {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
-                    @keyframes rotateReverse {
-                        from { transform: rotate(360deg); }
-                        to { transform: rotate(0deg); }
-                    }
-                    .tier-card {
-                        transition: transform 0.3s ease, box-shadow 0.3s ease;
-                    }
-                    .tier-card:hover {
-                        transform: translateY(-4px);
-                        box-shadow: 0 6px 16px rgba(0, 188, 212, 0.4);
-                    }
-                    @media (max-width: 600px) {
-                        .tier-card {
-                            margin-bottom: 16px;
-                        }
-                        .feature-list {
-                            padding-left: 8px;
-                            padding-right: 8px;
-                        }
-                    }
-                `}
-            </style>
         </Box>
     );
 }
 
-const shouldShowUpgradeButton = (currentPlan, targetTier) => {
-    const planOrder = { 'free': 0, 'standard': 1, 'premium': 2, 'pro': 2 };
-    return planOrder[targetTier] > planOrder[currentPlan];
-};
+function alpha(color, opacity) {
+    if (!color.startsWith('#')) {
+        console.warn("Basic alpha function requires hex color format");
+        return color;
+    }
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
 
 export default UserProfilePage;

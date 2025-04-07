@@ -1,5 +1,15 @@
 import { createTheme } from '@mui/material/styles';
 import darkParchmentTexture from './assets/textures/dark-parchment.png'; // Assuming path
+import lightMarbleTexture from './assets/textures/light_marble.jpg';
+import grainyMarbleTexture from './assets/textures/grainy-marble.jpg'; // Corrected import name
+import crumbledParchmentTexture from './assets/textures/crumbled_parchment.jpg'; // Corrected import name
+import oldMapTexture from './assets/textures/old_map.jpg';
+import stampLogoTexture from './assets/brdge-stamp-logo.png'; // Assuming path
+
+// Import Ivy assets (adjust paths as necessary)
+import ivyVertical from './assets/ivy/ivy_straight_solid.svg';
+import ivyHorizontal from './assets/ivy_horizontal.svg'; // Check if this path is correct
+import ivyCorner from './assets/ivy/ivy_corner_solid.svg';
 
 // Neo-Scholar Color Palette
 const colors = {
@@ -103,14 +113,23 @@ const theme = createTheme({
         },
         text: {
             primary: colors.ink,
-            secondary: colors.inkLight,
-            disabled: colors.inkFaded,
+            secondary: colors.inkFaded,
         },
         background: {
-            default: colors.parchmentLight, // Base background
-            paper: colors.parchment,      // Paper/Card background
+            default: colors.parchmentDark, // Darker Parchment
+            paper: colors.parchment,      // Warmer Parchment
         },
         divider: `${colors.sepia}40`, // Sepia with transparency
+        parchment: {
+            light: colors.parchmentLight,
+            main: colors.parchment,
+            dark: colors.parchmentDark,
+        },
+        sepia: {
+            faded: colors.sepiaFaded,
+            light: colors.sepiaLight,
+            main: colors.sepia,
+        },
     },
     typography: {
         fontFamily: fontFamily,
@@ -133,7 +152,20 @@ const theme = createTheme({
             fontWeight: 300,
             color: colors.inkFaded,
             fontSize: '0.8rem'
-        }
+        },
+        headingFontFamily: '"Canela Text", serif', // Add heading font
+    },
+    textures: { // Update texture paths
+        darkParchment: darkParchmentTexture,
+        lightMarble: lightMarbleTexture,
+        grainyMarble: grainyMarbleTexture,
+        crumbledParchment: crumbledParchmentTexture,
+        oldMap: oldMapTexture,
+        stampLogo: stampLogoTexture,
+        // Add Ivy textures
+        ivyVertical: ivyVertical,
+        ivyHorizontal: ivyHorizontal,
+        ivyCorner: ivyCorner,
     },
     components: {
         // Default component overrides
@@ -288,3 +320,35 @@ const theme = createTheme({
 });
 
 export default theme;
+
+// Example mixin function in theme.js or styles utility
+export const createParchmentContainerStyles = (theme) => ({
+    position: 'relative',
+    background: theme.palette.parchment.main, // Use defined theme color
+    borderRadius: '16px', // Match sectionContainer rounding
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: `url(${theme.textures.darkParchment})`, // Use defined texture
+        backgroundSize: 'cover',
+        opacity: 0.15,
+        mixBlendMode: 'multiply',
+        borderRadius: '16px', // Match container rounding
+        zIndex: 0,
+    },
+    border: `1px solid ${theme.palette.sepia.main}40`, // Use defined theme color
+    boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+    '& > *': {
+        position: 'relative',
+        zIndex: 1,
+    },
+    // ... other shared styles
+});
+
+// Usage in a component:
+// import { useTheme } from '@mui/material/styles';
+// import { createParchmentContainerStyles } from '../theme'; // Adjust path
+// const theme = useTheme();
+// const styles = createParchmentContainerStyles(theme);
+// <Box sx={styles}>...</Box>

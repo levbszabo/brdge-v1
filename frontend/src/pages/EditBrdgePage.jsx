@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
+import { Box, Typography, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Paper } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
 import { api } from '../api';
@@ -214,7 +214,6 @@ function EditBrdgePage() {
             height: '100dvh',
             width: '100%',
             maxWidth: '100%',
-            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
             position: 'fixed',
             top: 0,
             left: 0,
@@ -222,36 +221,43 @@ function EditBrdgePage() {
             bottom: 0,
             overflow: 'hidden',
             touchAction: 'none',
+            // Apply theme background with parchment texture
+            bgcolor: theme.palette.background.default,
+            // Add parchment texture
             '&::before': {
                 content: '""',
                 position: 'absolute',
-                top: '5%',
-                left: '-5%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 20s infinite alternate',
-                zIndex: 0
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundImage: `url(${theme.textures.darkParchment})`,
+                backgroundSize: 'cover',
+                opacity: 0.15,
+                pointerEvents: 'none',
+                zIndex: 0,
+                mixBlendMode: 'multiply'
             },
+            // Add subtle glow effects
             '&::after': {
                 content: '""',
                 position: 'absolute',
                 bottom: '5%',
-                right: '-5%',
+                right: '5%',
                 width: '500px',
                 height: '500px',
-                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
+                background: `radial-gradient(circle, ${theme.palette.secondary.main}15 0%, transparent 70%)`,
                 borderRadius: '50%',
-                filter: 'blur(80px)',
+                filter: 'blur(60px)',
                 animation: 'float 25s infinite alternate-reverse',
                 zIndex: 0
             }
         }}>
             <Box sx={{
-                height: '64px',
-                flexShrink: 0
+                height: { xs: '44px', sm: '50px', md: '56px' },
+                flexShrink: 0,
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                // This can be used for a header if needed
             }} />
 
             <Box sx={{
@@ -268,22 +274,31 @@ function EditBrdgePage() {
             <Dialog
                 open={premiumAccessDialogOpen}
                 onClose={() => setPremiumAccessDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        bgcolor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        backgroundImage: 'none', // Remove default gradient
+                        border: `1px solid ${theme.palette.divider}`,
+                        boxShadow: theme.shadows[3]
+                    }
+                }}
             >
                 <DialogTitle sx={{
-                    bgcolor: 'rgba(0, 10, 30, 0.9)',
-                    color: 'white'
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontFamily: theme.typography.headingFontFamily
                 }}>
                     Premium Access Required
                 </DialogTitle>
-                <DialogContent sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', color: 'white' }}>
-                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                <DialogContent>
+                    <DialogContentText sx={{ color: theme.palette.text.secondary, my: 2 }}>
                         This module requires premium access. Please upgrade your enrollment to access premium content.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', p: 2 }}>
+                <DialogActions sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
                     <Button
                         onClick={() => setPremiumAccessDialogOpen(false)}
-                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                        sx={{ color: theme.palette.text.secondary }}
                     >
                         Cancel
                     </Button>
@@ -294,10 +309,7 @@ function EditBrdgePage() {
                             handleUpgradeToPremium();
                         }}
                         variant="contained"
-                        sx={{
-                            background: 'linear-gradient(45deg, #9C27B0 30%, #BA68C8 90%)',
-                            boxShadow: '0 4px 15px rgba(156, 39, 176, 0.3)',
-                        }}
+                        color="primary"
                     >
                         Upgrade to Premium
                     </Button>

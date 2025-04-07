@@ -34,23 +34,48 @@ import {
 import { useInView } from 'react-intersection-observer';
 import { useNavigate, Link } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
+import { createParchmentContainerStyles } from '../theme';
 
-// Number bubble for process steps with pulse animation
+// Scholarly divider for section separation
+const ScholarlyDivider = styled(Box)(({ theme }) => ({
+    position: 'relative',
+    height: '40px',
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '40px 0',
+    '&::before, &::after': {
+        content: '""',
+        height: '1px',
+        background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}80, transparent)`,
+        flexGrow: 1,
+    },
+    '&::before': {
+        marginRight: '20px',
+    },
+    '&::after': {
+        marginLeft: '20px',
+    }
+}));
+
+// Number bubble for process steps with sepia styling
 const NumberBubble = styled(Box)(({ theme }) => ({
     width: '70px',
     height: '70px',
     borderRadius: '50%',
-    background: 'linear-gradient(135deg, #00B4DB, #4F9CF9)',
-    color: 'white',
+    background: `linear-gradient(135deg, ${theme.palette.sepia.light}, ${theme.palette.sepia.main})`,
+    color: theme.palette.parchment.light,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     fontWeight: 700,
     fontSize: '1.8rem',
     margin: '0 auto',
-    boxShadow: '0 4px 20px rgba(0, 180, 219, 0.4)',
+    boxShadow: `0 4px 20px ${theme.palette.sepia.main}40`,
     position: 'relative',
     transition: 'all 0.3s ease',
+    border: `3px solid ${theme.palette.parchment.main}`,
     '&:hover': {
         transform: 'scale(1.1) rotate(5deg)',
     },
@@ -60,7 +85,7 @@ const NumberBubble = styled(Box)(({ theme }) => ({
         width: '100%',
         height: '100%',
         borderRadius: '50%',
-        border: '2px solid rgba(0, 180, 219, 0.3)',
+        border: `2px solid ${theme.palette.sepia.main}30`,
         animation: 'pulse 3s infinite',
     },
     '&::before': {
@@ -69,71 +94,59 @@ const NumberBubble = styled(Box)(({ theme }) => ({
         width: '120%',
         height: '120%',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 180, 219, 0.2) 0%, transparent 70%)',
+        background: `radial-gradient(circle, ${theme.palette.sepia.main}20 0%, transparent 70%)`,
         animation: 'rotate 8s linear infinite',
     }
 }));
 
-// Gradient Text
-const GradientText = styled('span')({
-    background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
+// Sepia Gradient Text
+const SepiaText = styled('span')(({ theme }) => ({
+    background: `linear-gradient(45deg, ${theme.palette.sepia.main}, ${theme.palette.sepia.light})`,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     display: 'inline-block',
-});
+    fontFamily: theme.typography.headingFontFamily,
+    fontStyle: 'italic',
+}));
 
-// Service Option Card with consistent height and improved hover
-const OptionCard = styled(Card)({
+// Neo-Scholar styled card
+const ScholarlyCard = styled(Card)(({ theme }) => ({
     height: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '20px',
-    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+    backgroundColor: theme.palette.parchment.main,
+    position: 'relative',
+    borderRadius: '12px',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    border: `1px solid ${theme.palette.sepia.main}40`,
+    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        transform: 'translateY(-12px)',
-        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3)',
-        border: '1px solid rgba(0, 180, 219, 0.3)',
+        transform: 'translateY(-10px)',
+        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+        border: `1px solid ${theme.palette.sepia.main}60`,
     },
-    position: 'relative',
     '&::before': {
         content: '""',
         position: 'absolute',
-        top: 0,
-        right: 0,
-        left: 0,
-        height: '4px',
-        background: 'linear-gradient(90deg, #00ffcc, #00B4DB)',
-        opacity: 0,
-        transition: 'opacity 0.3s ease',
+        inset: 0,
+        backgroundImage: `url(${theme.textures.darkParchment})`,
+        backgroundSize: 'cover',
+        opacity: 0.15,
+        mixBlendMode: 'multiply',
+        zIndex: 0,
     },
-    '&:hover::before': {
-        opacity: 1,
-    },
-    '&::after': {
-        content: '""',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '100%',
-        background: 'linear-gradient(0deg, rgba(0, 180, 219, 0.1) 0%, transparent 50%)',
-        opacity: 0,
-        transition: 'opacity 0.3s ease',
-    },
-    '&:hover::after': {
-        opacity: 1,
+    '& > *': {
+        position: 'relative',
+        zIndex: 1,
     }
-});
+}));
 
-// Results Metric Card with improved animation
-const MetricCard = styled(Box)({
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: '20px',
+// Results Metric Card with parchment styling
+const MetricCard = styled(Box)(({ theme }) => ({
+    backgroundColor: theme.palette.parchment.main,
+    position: 'relative',
+    borderRadius: '12px',
     padding: '32px 24px',
     textAlign: 'center',
     height: '100%',
@@ -141,59 +154,51 @@ const MetricCard = styled(Box)({
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
-    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-    border: '1px solid rgba(255, 255, 255, 0.05)',
-    position: 'relative',
+    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    border: `1px solid ${theme.palette.sepia.main}40`,
     overflow: 'hidden',
     '&:hover': {
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        transform: 'translateY(-12px) scale(1.03)',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
-        border: '1px solid rgba(0, 180, 219, 0.3)',
+        transform: 'translateY(-10px)',
+        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)',
+        border: `1px solid ${theme.palette.sepia.main}70`,
     },
-    '&::after': {
+    '&::before': {
         content: '""',
         position: 'absolute',
-        width: '200px',
-        height: '200px',
-        background: 'radial-gradient(circle, rgba(0, 255, 204, 0.15) 0%, transparent 70%)',
-        borderRadius: '50%',
-        top: '-100px',
-        right: '-100px',
-        transition: 'all 0.6s ease',
+        inset: 0,
+        backgroundImage: `url(${theme.textures.darkParchment})`,
+        backgroundSize: 'cover',
+        opacity: 0.15,
+        mixBlendMode: 'multiply',
+        zIndex: 0,
     },
-    '&:hover::after': {
-        transform: 'scale(1.5) rotate(45deg)',
+    '& > *': {
+        position: 'relative',
+        zIndex: 1,
     }
-});
+}));
 
-// Lead Form Container with enhanced styling
-const LeadFormContainer = styled(Paper)({
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    backdropFilter: 'blur(15px)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    borderRadius: '20px',
+// Lead Form Container with parchment styling
+const LeadFormContainer = styled(Paper)(({ theme }) => ({
+    ...createParchmentContainerStyles(theme),
     padding: '40px',
     maxWidth: '600px',
     margin: '0 auto',
-    boxShadow: '0 15px 50px rgba(0, 0, 0, 0.2)',
     position: 'relative',
     overflow: 'hidden',
-    '&::before': {
+    '&::after': {
         content: '""',
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        height: '4px',
-        background: 'linear-gradient(90deg, #00ffcc, #00B4DB, #00ffcc)',
-        backgroundSize: '200% 100%',
-        animation: 'gradientMove 3s ease infinite',
+        height: '3px',
+        background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
     }
-});
+}));
 
 // Process Step Card
-const ProcessCard = styled(Box)({
+const ProcessCard = styled(Box)(({ theme }) => ({
     padding: '20px',
     height: '100%',
     display: 'flex',
@@ -204,33 +209,33 @@ const ProcessCard = styled(Box)({
     '&:hover': {
         transform: 'translateY(-5px)',
     }
-});
+}));
 
-// Results and metrics
+// Results and metrics with updated colors
 const resultMetrics = [
     {
         metric: "65%",
         description: "Increase in course completion rates",
         icon: <Timeline sx={{ fontSize: 34, mb: 1 }} />,
-        color: "#00ffcc"
+        color: "#9C7C38" // sepia
     },
     {
         metric: "3x",
         description: "More student questions answered",
         icon: <TouchApp sx={{ fontSize: 34, mb: 1 }} />,
-        color: "#4F9CF9"
+        color: "#B89F63" // sepiaLight
     },
     {
         metric: "15+",
         description: "Hours saved weekly per instructor",
         icon: <Equalizer sx={{ fontSize: 34, mb: 1 }} />,
-        color: "#00B4DB"
+        color: "#9C7C38" // sepia
     },
     {
         metric: "40%",
         description: "Reduction in support requests",
         icon: <PeopleAlt sx={{ fontSize: 34, mb: 1 }} />,
-        color: "#00ffcc"
+        color: "#B89F63" // sepiaLight
     }
 ];
 
@@ -258,7 +263,7 @@ const processSteps = [
     }
 ];
 
-// Service features array update with accurate process steps
+// Service features array
 const serviceFeatures = [
     {
         step: 1,
@@ -338,11 +343,14 @@ const ServicesPage = () => {
         setSubmitted(true);
     };
 
+    // Create parchment container styles from theme
+    const parchmentContainerStyles = createParchmentContainerStyles(theme);
+
     return (
         <Box
             sx={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 40%, #003366 100%)',
+                background: theme.palette.parchment.light,
                 position: 'relative',
                 overflow: 'hidden',
                 py: { xs: 8, md: 12 },
@@ -353,18 +361,31 @@ const ServicesPage = () => {
                     left: 0,
                     right: 0,
                     height: '100%',
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.15,
+                    mixBlendMode: 'multiply',
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                },
+                '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '100%',
                     backgroundImage: `
-                        radial-gradient(circle at 20% 15%, rgba(0, 180, 219, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 80% 85%, rgba(0, 255, 204, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 60% 40%, rgba(79, 156, 249, 0.1) 0%, transparent 50%)
+                        radial-gradient(circle at 20% 15%, ${theme.palette.sepia.main}15 0%, transparent 40%),
+                        radial-gradient(circle at 80% 85%, ${theme.palette.sepia.light}15 0%, transparent 40%)
                     `,
                     pointerEvents: 'none',
-                    animation: 'gradientShift 15s ease infinite',
+                    zIndex: 0,
                 },
             }}
         >
             {/* Hero Section */}
-            <Container maxWidth="lg" ref={mainRef}>
+            <Container maxWidth="lg" ref={mainRef} sx={{ position: 'relative', zIndex: 1 }}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={mainInView ? { opacity: 1, y: 0 } : {}}
@@ -372,26 +393,25 @@ const ServicesPage = () => {
                     style={{ textAlign: 'center' }}
                 >
                     <Typography
-                        variant={isMobile ? 'h3' : 'h1'}
+                        variant="h1"
                         component="h1"
                         sx={{
-                            fontFamily: 'Satoshi',
+                            fontFamily: theme.typography.headingFontFamily,
                             fontWeight: 700,
                             fontSize: { xs: '1.8rem', sm: '2.2rem', md: '3rem' },
-                            color: 'white',
+                            color: theme.palette.ink,
                             mb: { xs: 1, md: 1.5 },
                             lineHeight: 1.2,
-                            textTransform: 'none',
-                            textShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+                            fontStyle: 'italic',
                             px: { xs: 1, md: 0 },
                         }}
                     >
-                        Let AI Build Your Course <GradientText>While You Sleep</GradientText>
+                        Let AI Build Your Course <SepiaText>While You Sleep</SepiaText>
                     </Typography>
                     <Typography
                         variant="h5"
                         sx={{
-                            color: 'rgba(255,255,255,0.9)',
+                            color: theme.palette.text.primary,
                             maxWidth: '850px',
                             mx: 'auto',
                             mb: 2.5,
@@ -399,7 +419,7 @@ const ServicesPage = () => {
                             lineHeight: 1.4,
                         }}
                     >
-                        We take your course materials <GradientText>(or help you create them from scratch)</GradientText> and transform them into a fully AI-powered, interactive learning experience so you can scale faster and engage more students.
+                        We take your course materials <SepiaText>(or help you create them from scratch)</SepiaText> and transform them into a fully AI-powered, interactive learning experience so you can scale faster and engage more students.
                     </Typography>
 
                     {/* Interactive Demo Section - Moved to top and always visible */}
@@ -408,7 +428,7 @@ const ServicesPage = () => {
                             variant="h6"
                             align="center"
                             sx={{
-                                color: 'rgba(255,255,255,0.9)',
+                                color: theme.palette.text.primary,
                                 maxWidth: '700px',
                                 mx: 'auto',
                                 mb: 1.5,
@@ -416,11 +436,12 @@ const ServicesPage = () => {
                                 fontWeight: 500,
                             }}
                         >
-                            👇 <GradientText>Try it yourself</GradientText> - This is what your students will experience 👇
+                            👇 <SepiaText>Try it yourself</SepiaText> - This is what your students will experience 👇
                         </Typography>
 
                         <Box
                             sx={{
+                                ...parchmentContainerStyles,
                                 width: '100%',
                                 height: { xs: '320px', sm: '350px', md: '400px' },
                                 maxWidth: '900px',
@@ -428,8 +449,8 @@ const ServicesPage = () => {
                                 borderRadius: '16px',
                                 overflow: 'hidden',
                                 position: 'relative',
-                                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
-                                border: '1px solid rgba(0, 180, 219, 0.3)',
+                                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+                                border: `1px solid ${theme.palette.sepia.main}40`,
                                 mb: 1.5,
                                 animation: 'fadeIn 0.8s ease',
                                 '@keyframes fadeIn': {
@@ -449,7 +470,7 @@ const ServicesPage = () => {
                             variant="body2"
                             align="center"
                             sx={{
-                                color: 'rgba(255,255,255,0.7)',
+                                color: theme.palette.text.secondary,
                                 maxWidth: '700px',
                                 mx: 'auto',
                                 fontSize: '0.85rem',
@@ -467,18 +488,26 @@ const ServicesPage = () => {
                             py: { xs: 1.5, md: 1.8 },
                             px: 5,
                             mt: 2,
-                            borderRadius: '50px',
+                            borderRadius: '8px',
                             fontSize: '1.1rem',
-                            background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
                             fontWeight: 600,
-                            boxShadow: '0 8px 25px rgba(0, 255, 204, 0.3)',
-                            '&:hover': {
-                                background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-                                boxShadow: '0 10px 30px rgba(0, 255, 204, 0.4)',
-                                transform: 'translateY(-3px)',
-                            },
-                            transition: 'all 0.3s ease',
                             mb: { xs: 6, md: 8 },
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: 0,
+                                left: '10%',
+                                right: '10%',
+                                height: '2px',
+                                background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
+                                opacity: 0,
+                                transition: 'opacity 0.3s ease',
+                            },
+                            '&:hover::after': {
+                                opacity: 1,
+                            }
                         }}
                         onClick={() => {
                             document.getElementById('lead-form-section').scrollIntoView({
@@ -492,8 +521,21 @@ const ServicesPage = () => {
                 </motion.div>
             </Container>
 
+            <ScholarlyDivider>
+                <Box
+                    component="img"
+                    src={theme.textures.stampLogo}
+                    alt="Decorative stamp"
+                    sx={{
+                        width: '40px',
+                        height: '40px',
+                        opacity: 0.7
+                    }}
+                />
+            </ScholarlyDivider>
+
             {/* Service Section */}
-            <Container maxWidth="lg" sx={{ mb: 15 }} ref={servicesRef}>
+            <Container maxWidth="lg" sx={{ mb: 15, position: 'relative', zIndex: 1 }} ref={servicesRef}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={servicesInView ? { opacity: 1, y: 0 } : {}}
@@ -503,22 +545,22 @@ const ServicesPage = () => {
                         variant="h2"
                         align="center"
                         sx={{
-                            fontFamily: 'Satoshi',
+                            fontFamily: theme.typography.headingFontFamily,
                             fontWeight: 700,
-                            color: 'white',
+                            color: theme.palette.text.primary,
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            textTransform: 'none',
+                            fontStyle: 'italic',
                         }}
                     >
-                        Done-For-You <GradientText>AI Course Creation</GradientText>
+                        Done-For-You <SepiaText>AI Course Creation</SepiaText>
                     </Typography>
                     <Typography
                         variant="h6"
                         align="center"
                         sx={{
-                            color: 'rgba(255,255,255,0.9)',
+                            color: theme.palette.text.primary,
                             maxWidth: '800px',
                             mx: 'auto',
                             mb: 6,
@@ -532,33 +574,38 @@ const ServicesPage = () => {
 
                     <Box
                         sx={{
+                            ...parchmentContainerStyles,
                             maxWidth: '1000px',
                             mx: 'auto',
                             p: { xs: 2, sm: 3, md: 6 },
                             borderRadius: { xs: '15px', md: '20px' },
-                            background: 'linear-gradient(135deg, rgba(0,27,55,0.6) 0%, rgba(0,41,84,0.4) 100%)',
-                            backdropFilter: 'blur(15px)',
-                            border: '1px solid rgba(255,255,255,0.08)',
                             mb: 8,
                             position: 'relative',
                             overflow: 'hidden',
+                            border: `1px solid ${theme.palette.sepia.main}30`,
+                            boxShadow: '0 15px 40px rgba(0, 0, 0, 0.1)',
                             '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.darkParchment})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.1,
+                                mixBlendMode: 'multiply',
+                                zIndex: 0,
+                            },
+                            '&::after': {
                                 content: '""',
                                 position: 'absolute',
                                 top: 0,
                                 left: 0,
                                 right: 0,
-                                height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(0, 255, 204, 0.5), transparent)',
+                                height: '4px',
+                                background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}80, transparent)`,
                             },
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                height: '1px',
-                                background: 'linear-gradient(90deg, transparent, rgba(79, 156, 249, 0.5), transparent)',
+                            '& > *': {
+                                position: 'relative',
+                                zIndex: 1,
                             }
                         }}
                     >
@@ -566,15 +613,15 @@ const ServicesPage = () => {
                             variant="h5"
                             align="center"
                             sx={{
+                                fontFamily: theme.typography.headingFontFamily,
                                 fontWeight: 600,
                                 mb: 5,
-                                background: 'linear-gradient(45deg, #4F9CF9, #00ffcc)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
+                                color: theme.palette.sepia.main,
                                 fontSize: { xs: '1.3rem', md: '1.5rem' },
                                 position: 'relative',
                                 display: 'inline-block',
                                 mx: 'auto',
+                                fontStyle: 'italic',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
@@ -582,8 +629,8 @@ const ServicesPage = () => {
                                     left: '50%',
                                     transform: 'translateX(-50%)',
                                     width: '80px',
-                                    height: '2px',
-                                    background: 'linear-gradient(90deg, #00ffcc, #4F9CF9)',
+                                    height: '1px',
+                                    background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
                                 }
                             }}
                         >
@@ -601,7 +648,7 @@ const ServicesPage = () => {
                                 bottom: 0,
                                 left: { xs: '20px', md: '26px' },
                                 width: '2px',
-                                background: 'linear-gradient(to bottom, #00ffcc, rgba(0,180,219,0.4), #4F9CF9)',
+                                background: `linear-gradient(to bottom, ${theme.palette.sepia.light}, ${theme.palette.sepia.main}50, ${theme.palette.sepia.main})`,
                                 zIndex: 0,
                                 display: { xs: 'block', md: 'block' }
                             }
@@ -626,18 +673,18 @@ const ServicesPage = () => {
                                             height: { xs: '40px', md: '54px' },
                                             borderRadius: '50%',
                                             background: idx % 2 === 0
-                                                ? 'linear-gradient(135deg, #00B4DB, #4F9CF9)'
-                                                : 'linear-gradient(135deg, #00ffcc, #00B4DB)',
+                                                ? `linear-gradient(135deg, ${theme.palette.sepia.light}, ${theme.palette.sepia.main})`
+                                                : `linear-gradient(135deg, ${theme.palette.sepia.main}, ${theme.palette.sepia.light})`,
                                             display: 'flex',
                                             justifyContent: 'center',
                                             alignItems: 'center',
-                                            color: 'white',
+                                            color: theme.palette.parchment.light,
                                             fontWeight: 700,
                                             fontSize: { xs: '1.2rem', md: '1.4rem' },
                                             mr: { xs: 2, md: 3 },
                                             flexShrink: 0,
-                                            boxShadow: '0 4px 20px rgba(0, 180, 219, 0.3)',
-                                            border: '4px solid rgba(2,12,27,0.8)',
+                                            boxShadow: `0 4px 15px ${theme.palette.sepia.main}30`,
+                                            border: `4px solid ${theme.palette.parchment.main}`,
                                             zIndex: 2,
                                             position: 'relative',
                                             '&::before': {
@@ -648,7 +695,7 @@ const ServicesPage = () => {
                                                 right: '-4px',
                                                 bottom: '-4px',
                                                 borderRadius: '50%',
-                                                background: 'linear-gradient(135deg, rgba(0, 180, 219, 0.2), rgba(0, 255, 204, 0.2))',
+                                                background: `linear-gradient(135deg, ${theme.palette.sepia.main}20, ${theme.palette.sepia.light}20)`,
                                                 zIndex: -1,
                                                 animation: 'pulse 3s infinite',
                                             }
@@ -660,16 +707,12 @@ const ServicesPage = () => {
                                         <Typography
                                             variant="h6"
                                             sx={{
-                                                color: 'white',
+                                                fontFamily: theme.typography.headingFontFamily,
+                                                color: theme.palette.text.primary,
                                                 fontWeight: 600,
                                                 fontSize: { xs: '1rem', sm: '1.1rem', md: '1.3rem' },
                                                 mb: { xs: 0.5, md: 1 },
-                                                textShadow: '0 2px 10px rgba(0,0,0,0.3)',
-                                                background: idx % 2 === 0
-                                                    ? 'linear-gradient(45deg, #ffffff, #4F9CF9)'
-                                                    : 'linear-gradient(45deg, #ffffff, #00ffcc)',
-                                                WebkitBackgroundClip: 'text',
-                                                WebkitTextFillColor: 'transparent',
+                                                fontStyle: 'italic',
                                             }}
                                         >
                                             {feature.title}
@@ -677,7 +720,7 @@ const ServicesPage = () => {
                                         <Typography
                                             variant="body1"
                                             sx={{
-                                                color: 'rgba(255,255,255,0.9)',
+                                                color: theme.palette.text.secondary,
                                                 fontSize: { xs: '0.95rem', sm: '1rem', md: '1.05rem' },
                                                 lineHeight: { xs: 1.5, md: 1.6 },
                                                 position: 'relative',
@@ -695,24 +738,15 @@ const ServicesPage = () => {
                             sx={{
                                 mt: 5,
                                 pt: 4,
-                                borderTop: '1px solid rgba(255,255,255,0.1)',
+                                borderTop: `1px dashed ${theme.palette.sepia.main}30`,
                                 position: 'relative',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: '1px',
-                                    background: 'linear-gradient(90deg, transparent, rgba(0, 180, 219, 0.3), transparent)',
-                                }
                             }}
                         >
                             <Typography
                                 variant="body1"
                                 align="center"
                                 sx={{
-                                    color: 'rgba(255,255,255,0.95)',
+                                    color: theme.palette.text.primary,
                                     fontSize: '1.1rem',
                                     fontStyle: 'italic',
                                     maxWidth: '850px',
@@ -728,8 +762,22 @@ const ServicesPage = () => {
                 </motion.div>
             </Container>
 
+            <ScholarlyDivider>
+                <Box
+                    component="img"
+                    src={theme.textures.stampLogo}
+                    alt="Decorative stamp"
+                    sx={{
+                        width: '40px',
+                        height: '40px',
+                        opacity: 0.7,
+                        transform: 'rotate(45deg)'
+                    }}
+                />
+            </ScholarlyDivider>
+
             {/* Results Section */}
-            <Container maxWidth="lg" sx={{ mb: 15 }} ref={resultsRef}>
+            <Container maxWidth="lg" sx={{ mb: 15, position: 'relative', zIndex: 1 }} ref={resultsRef}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={resultsInView ? { opacity: 1, y: 0 } : {}}
@@ -740,21 +788,21 @@ const ServicesPage = () => {
                         variant="h2"
                         align="center"
                         sx={{
-                            fontFamily: 'Satoshi',
+                            fontFamily: theme.typography.headingFontFamily,
                             fontWeight: 700,
-                            color: 'white',
+                            color: theme.palette.text.primary,
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            textTransform: 'none',
+                            fontStyle: 'italic',
                         }}
                     >
-                        Proven <GradientText>Results</GradientText> For Educators
+                        Proven <SepiaText>Results</SepiaText> For Educators
                     </Typography>
                     <Typography
                         variant="h6"
                         sx={{
-                            color: 'rgba(255,255,255,0.9)',
+                            color: theme.palette.text.primary,
                             maxWidth: '700px',
                             mx: 'auto',
                             mb: 8,
@@ -778,12 +826,12 @@ const ServicesPage = () => {
                                         <Typography
                                             variant="h2"
                                             sx={{
+                                                fontFamily: theme.typography.headingFontFamily,
                                                 fontWeight: 700,
                                                 fontSize: { xs: '2.2rem', md: '2.8rem' },
-                                                background: `linear-gradient(45deg, ${item.color}, #00B4DB)`,
-                                                WebkitBackgroundClip: 'text',
-                                                WebkitTextFillColor: 'transparent',
+                                                color: theme.palette.sepia.main,
                                                 mb: 1,
+                                                fontStyle: 'italic',
                                             }}
                                         >
                                             {item.metric}
@@ -791,7 +839,7 @@ const ServicesPage = () => {
                                         <Typography
                                             variant="body1"
                                             sx={{
-                                                color: 'white',
+                                                color: theme.palette.text.primary,
                                                 fontWeight: 500,
                                             }}
                                         >
@@ -805,8 +853,22 @@ const ServicesPage = () => {
                 </motion.div>
             </Container>
 
+            <ScholarlyDivider>
+                <Box
+                    component="img"
+                    src={theme.textures.stampLogo}
+                    alt="Decorative stamp"
+                    sx={{
+                        width: '40px',
+                        height: '40px',
+                        opacity: 0.7,
+                        transform: 'rotate(90deg)'
+                    }}
+                />
+            </ScholarlyDivider>
+
             {/* Process Section */}
-            <Container maxWidth="lg" sx={{ mb: 15 }} ref={processRef}>
+            <Container maxWidth="lg" sx={{ mb: 15, position: 'relative', zIndex: 1 }} ref={processRef}>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={processInView ? { opacity: 1, y: 0 } : {}}
@@ -817,21 +879,21 @@ const ServicesPage = () => {
                         variant="h2"
                         align="center"
                         sx={{
-                            fontFamily: 'Satoshi',
+                            fontFamily: theme.typography.headingFontFamily,
                             fontWeight: 700,
-                            color: 'white',
+                            color: theme.palette.text.primary,
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            textTransform: 'none',
+                            fontStyle: 'italic',
                         }}
                     >
-                        Our <GradientText>Proven</GradientText> Process
+                        Our <SepiaText>Proven</SepiaText> Process
                     </Typography>
                     <Typography
                         variant="h6"
                         sx={{
-                            color: 'rgba(255,255,255,0.9)',
+                            color: theme.palette.text.primary,
                             maxWidth: '700px',
                             mx: 'auto',
                             mb: 8,
@@ -840,13 +902,20 @@ const ServicesPage = () => {
                         We handle every step to turn your teaching into an interactive experience
                     </Typography>
 
-                    <Box sx={{ position: 'relative' }}>
+                    <Box
+                        sx={{
+                            position: 'relative',
+                            ...parchmentContainerStyles,
+                            padding: { xs: 3, md: 5 },
+                            borderRadius: '16px',
+                        }}
+                    >
                         {/* Connection line between process steps */}
                         <Box
                             sx={{
                                 position: 'absolute',
-                                height: '2px',
-                                backgroundColor: 'rgba(79, 156, 249, 0.3)',
+                                height: '1px',
+                                backgroundColor: `${theme.palette.sepia.main}30`,
                                 top: '30px',
                                 left: { xs: '0', md: '20%' },
                                 right: { xs: '0', md: '20%' },
@@ -868,18 +937,23 @@ const ServicesPage = () => {
                                             <Typography
                                                 variant="h6"
                                                 sx={{
+                                                    fontFamily: theme.typography.headingFontFamily,
                                                     fontWeight: 600,
-                                                    color: '#4F9CF9',
+                                                    color: theme.palette.sepia.main,
                                                     mt: 3,
                                                     mb: 2,
-                                                    fontSize: '1.2rem'
+                                                    fontSize: '1.2rem',
+                                                    fontStyle: 'italic',
                                                 }}
                                             >
                                                 {step.title}
                                             </Typography>
                                             <Typography
                                                 variant="body1"
-                                                sx={{ color: 'rgba(255,255,255,0.8)', lineHeight: 1.6 }}
+                                                sx={{
+                                                    color: theme.palette.text.primary,
+                                                    lineHeight: 1.6
+                                                }}
                                             >
                                                 {step.description}
                                             </Typography>
@@ -892,8 +966,22 @@ const ServicesPage = () => {
                 </motion.div>
             </Container>
 
+            <ScholarlyDivider>
+                <Box
+                    component="img"
+                    src={theme.textures.stampLogo}
+                    alt="Decorative stamp"
+                    sx={{
+                        width: '40px',
+                        height: '40px',
+                        opacity: 0.7,
+                        transform: 'rotate(180deg)'
+                    }}
+                />
+            </ScholarlyDivider>
+
             {/* Lead Form Section */}
-            <Container maxWidth="lg" sx={{ mb: 15 }} ref={formRef} id="lead-form-section">
+            <Container maxWidth="lg" sx={{ mb: 15, position: 'relative', zIndex: 1 }} ref={formRef} id="lead-form-section">
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={formInView ? { opacity: 1, y: 0 } : {}}
@@ -903,21 +991,22 @@ const ServicesPage = () => {
                         variant="h2"
                         align="center"
                         sx={{
+                            fontFamily: theme.typography.headingFontFamily,
                             fontWeight: 700,
-                            color: 'white',
+                            color: theme.palette.text.primary,
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            textTransform: 'none',
+                            fontStyle: 'italic',
                         }}
                     >
-                        Transform Your Course with <GradientText>AI</GradientText>
+                        Transform Your Course with <SepiaText>AI</SepiaText>
                     </Typography>
                     <Typography
                         variant="h6"
                         align="center"
                         sx={{
-                            color: 'rgba(255,255,255,0.9)',
+                            color: theme.palette.text.primary,
                             maxWidth: '700px',
                             mx: 'auto',
                             mb: 8,
@@ -939,11 +1028,25 @@ const ServicesPage = () => {
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ duration: 0.5 }}
                                 >
-                                    <CheckCircle sx={{ fontSize: 70, color: '#00ffcc', mb: 3 }} />
-                                    <Typography variant="h5" sx={{ color: 'white', mb: 2 }}>
+                                    <CheckCircle sx={{ fontSize: 70, color: theme.palette.sepia.main, mb: 3 }} />
+                                    <Typography
+                                        variant="h5"
+                                        sx={{
+                                            color: theme.palette.text.primary,
+                                            mb: 2,
+                                            fontFamily: theme.typography.headingFontFamily,
+                                            fontStyle: 'italic',
+                                        }}
+                                    >
                                         Thank you for applying!
                                     </Typography>
-                                    <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.1rem' }}>
+                                    <Typography
+                                        variant="body1"
+                                        sx={{
+                                            color: theme.palette.text.secondary,
+                                            fontSize: '1.1rem'
+                                        }}
+                                    >
                                         We'll be in touch within 24 hours to schedule your free AI course audit.
                                     </Typography>
                                 </motion.div>
@@ -960,16 +1063,6 @@ const ServicesPage = () => {
                                     required
                                     sx={{
                                         mb: 3,
-                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                        borderRadius: '8px',
-                                        '& .MuiOutlinedInput-root': {
-                                            '&:hover fieldset': {
-                                                borderColor: '#00B4DB',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#00B4DB',
-                                            },
-                                        },
                                     }}
                                 />
                                 <TextField
@@ -983,21 +1076,21 @@ const ServicesPage = () => {
                                     onChange={handleInputChange}
                                     sx={{
                                         mb: 3,
-                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                        borderRadius: '8px',
-                                        '& .MuiOutlinedInput-root': {
-                                            '&:hover fieldset': {
-                                                borderColor: '#00B4DB',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#00B4DB',
-                                            },
-                                        },
                                     }}
                                 />
 
                                 <FormControl component="fieldset" sx={{ mb: 3, width: '100%' }}>
-                                    <FormLabel component="legend" sx={{ color: 'white', mb: 1.5, fontSize: '1rem' }}>
+                                    <FormLabel
+                                        component="legend"
+                                        sx={{
+                                            color: theme.palette.text.primary,
+                                            mb: 1.5,
+                                            fontSize: '1rem',
+                                            '&.Mui-focused': {
+                                                color: theme.palette.sepia.main,
+                                            },
+                                        }}
+                                    >
                                         Do you have an existing course?
                                     </FormLabel>
                                     <RadioGroup
@@ -1009,24 +1102,24 @@ const ServicesPage = () => {
                                         <FormControlLabel
                                             value="yes"
                                             control={<Radio sx={{
-                                                color: 'white',
+                                                color: theme.palette.sepia.light,
                                                 '&.Mui-checked': {
-                                                    color: '#00ffcc',
+                                                    color: theme.palette.sepia.main,
                                                 },
                                             }} />}
                                             label="Yes"
-                                            sx={{ color: 'white' }}
+                                            sx={{ color: theme.palette.text.primary }}
                                         />
                                         <FormControlLabel
                                             value="no"
                                             control={<Radio sx={{
-                                                color: 'white',
+                                                color: theme.palette.sepia.light,
                                                 '&.Mui-checked': {
-                                                    color: '#00ffcc',
+                                                    color: theme.palette.sepia.main,
                                                 },
                                             }} />}
                                             label="No, I need one built from scratch"
-                                            sx={{ color: 'white' }}
+                                            sx={{ color: theme.palette.text.primary }}
                                         />
                                     </RadioGroup>
                                 </FormControl>
@@ -1040,16 +1133,6 @@ const ServicesPage = () => {
                                     onChange={handleInputChange}
                                     sx={{
                                         mb: 4,
-                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                        borderRadius: '8px',
-                                        '& .MuiOutlinedInput-root': {
-                                            '&:hover fieldset': {
-                                                borderColor: '#00B4DB',
-                                            },
-                                            '&.Mui-focused fieldset': {
-                                                borderColor: '#00B4DB',
-                                            },
-                                        },
                                     }}
                                 />
 
@@ -1060,29 +1143,25 @@ const ServicesPage = () => {
                                     sx={{
                                         py: { xs: 1.5, md: 2 },
                                         px: { xs: 4, md: 6 },
-                                        borderRadius: '50px',
+                                        borderRadius: '8px',
                                         fontSize: { xs: '1rem', md: '1.1rem' },
-                                        background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
                                         fontWeight: 600,
-                                        boxShadow: '0 8px 25px rgba(0, 255, 204, 0.3)',
                                         position: 'relative',
                                         overflow: 'hidden',
-                                        '&:hover': {
-                                            background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-                                            boxShadow: '0 12px 35px rgba(0, 255, 204, 0.4)',
-                                            transform: { xs: 'translateY(-2px)', md: 'translateY(-4px)' },
-                                        },
                                         '&::after': {
                                             content: '""',
                                             position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: '100%',
-                                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                                            animation: 'shimmer 2s infinite',
+                                            bottom: 0,
+                                            left: '10%',
+                                            right: '10%',
+                                            height: '2px',
+                                            background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
+                                            opacity: 0,
+                                            transition: 'opacity 0.3s ease',
                                         },
-                                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        '&:hover::after': {
+                                            opacity: 1,
+                                        },
                                     }}
                                 >
                                     Transform Your Course Now
@@ -1093,7 +1172,7 @@ const ServicesPage = () => {
                                         display: 'block',
                                         textAlign: 'center',
                                         mt: 2,
-                                        color: 'rgba(255,255,255,0.8)',
+                                        color: theme.palette.text.secondary,
                                         fontSize: '0.9rem',
                                         fontStyle: 'italic'
                                     }}
@@ -1106,51 +1185,64 @@ const ServicesPage = () => {
                 </motion.div>
             </Container>
 
+            <ScholarlyDivider>
+                <Box
+                    component="img"
+                    src={theme.textures.stampLogo}
+                    alt="Decorative stamp"
+                    sx={{
+                        width: '40px',
+                        height: '40px',
+                        opacity: 0.7,
+                        transform: 'rotate(270deg)'
+                    }}
+                />
+            </ScholarlyDivider>
+
             {/* Final CTA Section */}
             <Box
                 sx={{
                     mb: { xs: 6, md: 8 },
                     py: { xs: 6, md: 8 },
                     px: { xs: 2, sm: 3, md: 6 },
-                    backgroundImage: 'linear-gradient(135deg, rgba(0,180,219,0.18) 0%, rgba(0,41,74,0.18) 100%)',
-                    border: '1px solid rgba(0,180,219,0.25)',
+                    ...parchmentContainerStyles,
                     textAlign: 'center',
                     position: 'relative',
                     zIndex: 1,
                     mx: 'auto',
                     maxWidth: { xs: '95%', sm: '900px' },
                     borderRadius: '20px',
-                    boxShadow: '0 30px 60px rgba(0, 0, 0, 0.15)',
+                    boxShadow: '0 15px 40px rgba(0, 0, 0, 0.1)',
+                    border: `1px solid ${theme.palette.sepia.main}40`,
                     overflow: 'hidden',
-                    '&::before': {
+                    '&::after': {
                         content: '""',
                         position: 'absolute',
-                        top: '-50%',
-                        left: '-20%',
-                        width: '140%',
-                        height: '200%',
-                        backgroundImage: 'radial-gradient(circle, rgba(0, 255, 204, 0.08) 0%, transparent 60%)',
-                        transform: 'rotate(-20deg)',
-                        pointerEvents: 'none',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
                     }
                 }}
             >
                 <Typography
                     variant="h2"
                     sx={{
+                        fontFamily: theme.typography.headingFontFamily,
                         fontWeight: 700,
-                        color: 'white',
+                        color: theme.palette.text.primary,
                         mb: 3,
                         fontSize: { xs: '1.8rem', md: '2.5rem' },
-                        textTransform: 'none',
+                        fontStyle: 'italic',
                     }}
                 >
-                    Scale Your Teaching with <GradientText>AI Power</GradientText>
+                    Scale Your Teaching with <SepiaText>AI Power</SepiaText>
                 </Typography>
                 <Typography
                     variant="body1"
                     sx={{
-                        color: 'rgba(255,255,255,0.9)',
+                        color: theme.palette.text.primary,
                         mb: 5,
                         fontSize: '1.2rem',
                         maxWidth: '650px',
@@ -1165,29 +1257,10 @@ const ServicesPage = () => {
                     sx={{
                         py: 2,
                         px: 6,
-                        borderRadius: '50px',
+                        borderRadius: '8px',
                         fontSize: '1.1rem',
-                        background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
                         fontWeight: 600,
-                        boxShadow: '0 8px 25px rgba(0, 255, 204, 0.3)',
                         position: 'relative',
-                        overflow: 'hidden',
-                        '&:hover': {
-                            background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-                            boxShadow: '0 12px 35px rgba(0, 255, 204, 0.4)',
-                            transform: 'translateY(-4px)',
-                        },
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                            animation: 'shimmer 2s infinite',
-                        },
-                        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     }}
                     onClick={() => {
                         document.getElementById('lead-form-section').scrollIntoView({
@@ -1207,8 +1280,8 @@ const ServicesPage = () => {
                     50% { transform: scale(1.2); opacity: 0.5; }
                     100% { transform: scale(1); opacity: 1; }
                 }
-        @keyframes float {
-          0% { transform: translateY(0px); }
+                @keyframes float {
+                    0% { transform: translateY(0px); }
                     50% { transform: translateY(20px); }
                     100% { transform: translateY(0px); }
                 }
@@ -1221,16 +1294,7 @@ const ServicesPage = () => {
                     50% { background-position: 100% 50%; }
                     100% { background-position: 0% 50%; }
                 }
-                @keyframes gradientShift {
-                    0% { opacity: 0.8; }
-                    50% { opacity: 1; }
-                    100% { opacity: 0.8; }
-                }
-                @keyframes shimmer {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
-        }
-      `}</style>
+            `}</style>
         </Box>
     );
 };

@@ -585,7 +585,7 @@ Upcoming Topics: {' '.join(self.transcript_remaining[:2]) if self.transcript_rem
                 if options:
                     prompt += "\n"
                     for i, option in enumerate(options):
-                        prompt += f"{i+1}.{option}.\n\n "
+                        prompt += f"{i+1}) {option}.\n"
 
                 # Use different quote style to avoid backslash issues
                 if_correct = quiz_item.get("follow_up", {}).get(

@@ -219,7 +219,7 @@ function Header() {
             {isAuthenticated && (
                 <ListItem disablePadding>
                     <ListItemButton onClick={handleProfileClick} sx={drawerItemStyle}>
-                        <Avatar sx={{ width: 24, height: 24, mr: 1.5, bgcolor: theme.palette.secondary.main }}>
+                        <Avatar sx={{ width: 24, height: 24, mr: 1.5, bgcolor: theme.palette.primary.light, color: theme.palette.primary.main }}>
                             <PersonIcon sx={{ fontSize: 16 }} />
                         </Avatar>
                         <ListItemText primary="Profile" />
@@ -245,8 +245,10 @@ function Header() {
                 }}
             >
                 <Toolbar sx={{
-                    minHeight: { xs: '48px', sm: '56px', md: '64px' },
+                    minHeight: { xs: '44px', sm: '50px', md: '56px' },
+                    height: { xs: '44px', sm: '50px', md: '56px' },
                     px: { xs: 1, sm: 2, md: 3 },
+                    py: 0,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -291,8 +293,8 @@ function Header() {
                                         sx={{
                                             width: 32,
                                             height: 32,
-                                            bgcolor: theme.palette.secondary.main,
-                                            color: theme.palette.background.paper
+                                            bgcolor: theme.palette.primary.main,
+                                            color: theme.palette.background.default
                                         }}
                                     >
                                         <PersonIcon sx={{ fontSize: 20 }} />

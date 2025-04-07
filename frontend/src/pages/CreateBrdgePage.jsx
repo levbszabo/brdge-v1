@@ -6,11 +6,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, Clock, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { useTheme } from '@mui/material/styles';
+import { Box, Typography, Button, TextField, CircularProgress, Paper } from '@mui/material';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024;  // 500MB in bytes
 
 function CreateBrdgePage() {
+    const theme = useTheme();
     const [name, setName] = useState('');
     const [file, setFile] = useState(null);
     const [videoFile, setVideoFile] = useState(null);
@@ -309,263 +312,308 @@ function CreateBrdgePage() {
         });
 
         return (
-            <div className="space-y-5">
-                <div className="relative h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                    <motion.div
-                        className="absolute inset-y-0 left-0 bg-cyan-500"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${processingStatus.progress}%` }}
-                        transition={{ duration: 0.5 }}
-                    />
-                </div>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
+                <Typography variant="h5" sx={{ color: theme.palette.text.primary }}>
+                    Building Your AI Module...
+                </Typography>
+                <Box sx={{ width: '100%', position: 'relative' }}>
+                    <Box sx={{ height: 8, width: '100%', bgcolor: `${theme.palette.secondary.main}30`, borderRadius: '4px', overflow: 'hidden' }}>
+                        <motion.div
+                            style={{ height: '100%', backgroundColor: theme.palette.secondary.main }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${processingStatus.progress}%` }}
+                            transition={{ duration: 0.5 }}
+                        />
+                    </Box>
+                    <Typography variant="caption" sx={{ position: 'absolute', right: 0, top: 10, color: theme.palette.text.secondary }}>
+                        {Math.round(processingStatus.progress)}%
+                    </Typography>
+                </Box>
 
-                <div className="flex justify-between text-sm">
-                    <span className="text-cyan-400 font-medium">{Math.round(processingStatus.progress)}% Complete</span>
-                    <span className="text-gray-400">
-                        Status: {processingStatus.status === "completed" ? "Complete" :
-                            processingStatus.status === "failed" ? "Failed" :
-                                "Processing..."}
-                    </span>
-                </div>
+                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                    Status: {processingStatus.status === "completed" ? "Complete" :
+                        processingStatus.status === "failed" ? "Failed" :
+                            "Processing..."}
+                </Typography>
 
-                <div
+                <Paper
                     ref={logContainerRef}
-                    className="max-h-96 overflow-y-auto bg-gray-900/40 rounded-lg p-4 border border-gray-800/50"
+                    elevation={0}
+                    sx={{
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        bgcolor: 'rgba(0,0,0,0.05)', // Subtle background for logs
+                        borderRadius: '8px',
+                        p: 2,
+                        width: '100%',
+                        border: `1px solid ${theme.palette.divider}`
+                    }}
                 >
-                    <div className="space-y-3">
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {displayLogs.length > 0 ? (
-                            displayLogs.map((log, index) => {
-                                return (
-                                    <motion.div
-                                        key={index}
-                                        className="flex items-start gap-2 text-green-400"
-                                        initial={{ opacity: 0, y: 5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.3 }}
-                                    >
-                                        <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                                        <span className="text-sm">{log.message}</span>
-                                    </motion.div>
-                                );
-                            })
+                            displayLogs.map((log, index) => (
+                                <motion.div
+                                    key={index}
+                                    style={{ display: 'flex', alignItems: 'flex-start', gap: 1, color: theme.palette.text.secondary }}
+                                    initial={{ opacity: 0, y: 5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <CheckCircle style={{ width: 16, height: 16, marginTop: 2, color: theme.palette.secondary.main }} />
+                                    <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{log.message}</Typography>
+                                </motion.div>
+                            ))
                         ) : (
-                            <div className="text-sm text-gray-300 animate-pulse">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-cyan-400" />
-                                    <span>Initializing AI module creation...</span>
-                                </div>
-                            </div>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.text.secondary, fontStyle: 'italic' }}>
+                                <Clock style={{ width: 16, height: 16, color: theme.palette.secondary.main }} />
+                                <Typography variant="body2">Initializing AI module creation...</Typography>
+                            </Box>
                         )}
-                    </div>
-                </div>
+                    </Box>
+                </Paper>
 
-                <div className="text-center text-sm text-cyan-400 font-medium">
+                <Typography variant="body1" sx={{ color: theme.palette.secondary.light, fontStyle: 'italic' }}>
                     {processingStatus.status === "completed" ? "Processing complete! Redirecting..." :
                         "We're analyzing your content and building your AI Module"}
-                </div>
-            </div>
+                </Typography>
+            </Box>
         );
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#0A1929] via-[#121212] to-[#0A1929] flex items-center justify-center relative overflow-hidden">
-            {/* Enhanced Background Effect */}
-            <div className="absolute inset-0 overflow-hidden">
-                {/* Single elegant gradient */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-blue-900/20 blur-[120px] animate-pulse-slow" />
-            </div>
-
-            <div className="container max-w-3xl mx-auto px-4 py-12 relative z-10">
+        <Box sx={{
+            minHeight: '100vh',
+            bgcolor: theme.palette.background.default,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            py: 6,
+            px: 2,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0, left: 0, right: 0, bottom: 0,
+                backgroundImage: `url(${theme.textures.darkParchment})`,
+                backgroundSize: 'cover',
+                backgroundAttachment: 'fixed',
+                opacity: 0.1,
+                pointerEvents: 'none',
+                zIndex: 0,
+                mixBlendMode: 'multiply',
+            }
+        }}>
+            <Box maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <h1 className="text-4xl font-semibold text-white mb-12 text-center relative">
+                    <Typography variant="h2" component="h1" sx={{
+                        color: theme.palette.text.primary,
+                        textAlign: 'center',
+                        mb: 5,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            display: 'block',
+                            width: '60px',
+                            height: '2px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}, transparent)`,
+                            margin: '10px auto 0',
+                            borderRadius: '1px',
+                            opacity: 0.8,
+                        }
+                    }}>
                         Create New AI Module
-                        <div className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-40 h-0.5 bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent" />
-                    </h1>
+                    </Typography>
 
-                    <div className="bg-gray-900/40 backdrop-blur-xl rounded-2xl border border-gray-800/50 p-8 shadow-xl">
-                        <div className="relative z-10">
+                    <Paper elevation={0} sx={{
+                        p: { xs: 3, sm: 4 },
+                        borderRadius: '12px',
+                        backgroundColor: theme.palette.background.paper,
+                        border: `1px solid ${theme.palette.divider}`,
+                        boxShadow: theme.shadows[2]
+                    }}>
+                        <Box sx={{ position: 'relative', zIndex: 1 }}>
                             {error && (
-                                <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                    {error}
-                                </div>
+                                <Box sx={{
+                                    mb: 3,
+                                    p: 2,
+                                    borderRadius: '8px',
+                                    bgcolor: `${theme.palette.error.main}20`,
+                                    border: `1px solid ${theme.palette.error.main}40`,
+                                    color: theme.palette.error.main,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                }}>
+                                    <AlertTriangle size={18} />
+                                    <Typography variant="body2">{error}</Typography>
+                                </Box>
                             )}
 
                             {loading && createdBrdgeId ? (
                                 <ProcessingDisplay />
                             ) : (
-                                <form onSubmit={handleSubmit} className="space-y-10">
-                                    {/* Module Name */}
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                                            AI Module Name
-                                        </label>
-                                        <input
+                                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <Box>
+                                        <Typography variant="h6" component="label" htmlFor="module-name" sx={{ color: theme.palette.text.primary, mb: 1, display: 'block' }}>
+                                            Module Name
+                                        </Typography>
+                                        <TextField
+                                            id="module-name"
                                             type="text"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            placeholder="Enter a name for your AI Module"
+                                            placeholder="Enter a name..."
                                             required
-                                            className="w-full bg-gray-900/40 border border-gray-700/50 rounded-lg 
-                                            px-4 py-2.5 text-base text-gray-100
-                                            placeholder:text-gray-500 
-                                            focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 
-                                            hover:border-cyan-500/30 
-                                            transition-all duration-200"
+                                            fullWidth
                                         />
-                                    </div>
+                                    </Box>
 
-                                    {/* Video Upload Section */}
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <div className="text-gray-300 text-sm">
-                                                1. Upload your video presentation (MP4)
-                                            </div>
-                                            <div className="text-gray-400/70 text-xs italic">
-                                                Upload a video of your presentation or lecture. We'll analyze this to create an AI assistant that can engage with your audience.
-                                            </div>
-                                        </div>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box>
+                                            <Typography variant="h6" sx={{ color: theme.palette.text.primary }}>
+                                                1. Upload Video (MP4)
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic' }}>
+                                                Upload your presentation or lecture (max 500MB).
+                                            </Typography>
+                                        </Box>
 
                                         {!videoFile ? (
-                                            <div
+                                            <Box
                                                 onDragOver={handleDragOver}
                                                 onDragLeave={handleDragLeave}
                                                 onDrop={handleDrop}
-                                                className={`
-                                                    relative h-40
-                                                    ${isDragging ? 'bg-cyan-500/10' : ''}
-                                                    transition-colors duration-200
-                                                `}
+                                                sx={{
+                                                    position: 'relative',
+                                                    transition: 'background-color 0.2s ease',
+                                                    bgcolor: isDragging ? `${theme.palette.secondary.main}15` : 'transparent',
+                                                }}
                                             >
-                                                <label className={`
-                                                    h-full flex flex-col items-center justify-center gap-4 
-                                                    border-2 border-dashed rounded-lg p-8
-                                                    cursor-pointer transition-all duration-200
-                                                    ${isDragging
-                                                        ? 'border-cyan-400 bg-cyan-500/5'
-                                                        : 'border-gray-700/50 hover:border-cyan-500/30'
+                                                <Box component="label" sx={{
+                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+                                                    minHeight: '160px',
+                                                    border: `2px dashed ${isDragging ? theme.palette.secondary.main : theme.palette.divider}`,
+                                                    borderRadius: '8px',
+                                                    p: 3,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    '&:hover': {
+                                                        borderColor: theme.palette.secondary.light,
+                                                        bgcolor: `${theme.palette.secondary.main}08`
                                                     }
-                                                    group
-                                                `}>
-                                                    <div className="p-4 rounded-full bg-gray-800/50 group-hover:bg-cyan-500/10 transition-all duration-200">
-                                                        <Upload className="w-6 h-6 text-gray-400 group-hover:text-cyan-400" />
-                                                    </div>
-                                                    <div className="text-center space-y-2">
-                                                        <p className="text-sm font-medium text-gray-300 group-hover:text-cyan-400">
-                                                            {isDragging ? 'Drop your video here' : 'Drag and drop or click to upload'}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            Supported format: MP4 only
-                                                        </p>
-                                                        <p className="text-[11px] text-gray-500">
-                                                            Maximum file size: 500MB
-                                                        </p>
-                                                    </div>
-                                                    <input
+                                                }}>
+                                                    <Box sx={{
+                                                        p: 1.5,
+                                                        borderRadius: '50%',
+                                                        bgcolor: 'rgba(0,0,0,0.1)',
+                                                        border: `1px solid ${theme.palette.divider}`
+                                                    }}>
+                                                        <Upload style={{ width: 24, height: 24, color: theme.palette.text.secondary }} />
+                                                    </Box>
+                                                    <Box sx={{ textAlign: 'center' }}>
+                                                        <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                                            {isDragging ? 'Drop video here' : 'Drag & drop or click'}
+                                                        </Typography>
+                                                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                                            MP4 format, max 500MB
+                                                        </Typography>
+                                                    </Box>
+                                                    <TextField
                                                         type="file"
                                                         onChange={handleVideoFileUpload}
                                                         accept="video/mp4"
-                                                        className="hidden"
+                                                        sx={{ display: 'none' }}
+                                                        inputProps={{ id: 'video-upload-input' }}
                                                     />
-                                                </label>
-                                            </div>
+                                                </Box>
+                                            </Box>
                                         ) : (
-                                            <div className="flex items-center gap-3 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-                                                <div className="p-2 rounded-lg bg-cyan-500/20">
-                                                    <Video className="w-5 h-5 text-cyan-400" />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-cyan-400 truncate">
+                                            <Paper elevation={0} sx={{
+                                                display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '8px',
+                                                bgcolor: `${theme.palette.secondary.main}15`, border: `1px solid ${theme.palette.secondary.main}30`
+                                            }}>
+                                                <Box sx={{ p: 1, borderRadius: '4px', bgcolor: `${theme.palette.secondary.main}25` }}>
+                                                    <Video style={{ width: 20, height: 20, color: theme.palette.secondary.main }} />
+                                                </Box>
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {videoFile.name}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">
+                                                    </Typography>
+                                                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                                                         {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setVideoFile(null)}
-                                                    className="p-2 hover:bg-red-500/20 rounded-lg text-red-400"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M18 6L6 18"></path>
-                                                        <path d="M6 6l12 12"></path>
+                                                    </Typography>
+                                                </Box>
+                                                <Button variant="text" onClick={() => setVideoFile(null)} sx={{ color: theme.palette.error.main, minWidth: 'auto', p: 0.5 }}>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
                                                     </svg>
-                                                </button>
-                                            </div>
+                                                </Button>
+                                            </Paper>
                                         )}
-                                    </div>
+                                    </Box>
 
-                                    {/* Presentation Upload - Optional */}
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <div className="text-gray-300 text-sm">
-                                                2. (Optional) Upload your presentation (PDF)
-                                            </div>
-                                            <div className="text-gray-400/70 text-xs italic">
-                                                Adding a PDF enhances your AI Module's understanding and improves its ability to assist your audience
-                                            </div>
-                                        </div>
-                                        <motion.label
-                                            htmlFor="pdf-upload"
-                                            className={`flex items-center justify-center gap-2 py-3 rounded-lg 
-                                            border cursor-pointer transition-all duration-200
-                                            ${file
-                                                    ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-                                                    : 'border-gray-700/50 text-gray-400 hover:border-cyan-500/40 hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)]'
-                                                }`}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        <Box>
+                                            <Typography variant="h6" sx={{ color: theme.palette.text.primary }}>
+                                                2. (Optional) Upload Presentation (PDF)
+                                            </Typography>
+                                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic' }}>
+                                                Enhances AI understanding (max 20MB).
+                                            </Typography>
+                                        </Box>
+                                        <Button
+                                            component="label"
+                                            variant={file ? "contained" : "outlined"}
+                                            color="secondary"
+                                            startIcon={<FileText size={16} />}
+                                            sx={{
+                                                justifyContent: 'center',
+                                                py: 1.5,
+                                                borderColor: file ? 'transparent' : theme.palette.secondary.main,
+                                                bgcolor: file ? `${theme.palette.secondary.main}25` : 'transparent',
+                                                color: file ? theme.palette.secondary.dark : theme.palette.secondary.main,
+                                                '&:hover': {
+                                                    bgcolor: file ? `${theme.palette.secondary.main}35` : `${theme.palette.secondary.main}10`,
+                                                    borderColor: theme.palette.secondary.light
+                                                }
+                                            }}
                                         >
-                                            <FileText className="w-4 h-4" />
-                                            <span className="text-sm">
-                                                {file ? `Selected: ${file.name}` : `Upload Presentation (PDF)`}
-                                            </span>
-                                            <input
+                                            {file ? `Selected: ${file.name}` : `Upload PDF`}
+                                            <TextField
                                                 type="file"
-                                                id="pdf-upload"
                                                 accept=".pdf"
                                                 onChange={(e) => setFile(e.target.files[0])}
-                                                className="hidden"
+                                                sx={{ display: 'none' }}
+                                                inputProps={{ id: 'pdf-upload-input' }}
                                             />
-                                        </motion.label>
-                                    </div>
+                                        </Button>
+                                    </Box>
 
-                                    {/* Submit Button */}
-                                    <div className="space-y-4">
-                                        <motion.button
+                                    <Box sx={{ mt: 2 }}>
+                                        <Button
                                             type="submit"
+                                            variant="contained"
+                                            color="primary"
                                             disabled={loading || !videoFile}
-                                            className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500
-                                            text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed
-                                            shadow-lg shadow-cyan-500/20 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)]
-                                            transition-all duration-200 relative overflow-hidden
-                                            border border-cyan-500/20"
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
+                                            fullWidth
+                                            endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight size={16} />}
+                                            sx={{ py: 1.5, fontSize: '1rem' }}
                                         >
-                                            <span className="relative z-10 flex items-center justify-center gap-2">
-                                                {loading ? (
-                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        Create AI Module
-                                                        <ArrowRight className="w-4 h-4" />
-                                                    </>
-                                                )}
-                                            </span>
-                                        </motion.button>
-                                    </div>
-                                </form>
+                                            {loading ? 'Creating...' : 'Create AI Module'}
+                                        </Button>
+                                    </Box>
+                                </Box>
                             )}
-                        </div>
-                    </div>
+                        </Box>
+                    </Paper>
                 </motion.div>
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 }
 

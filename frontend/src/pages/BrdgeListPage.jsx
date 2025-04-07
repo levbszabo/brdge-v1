@@ -33,6 +33,7 @@ import {
     TableCell,
     Collapse,
     FormControlLabel,
+    useTheme,
 } from '@mui/material';
 import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft } from 'lucide-react';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -48,48 +49,47 @@ import CourseList from '../components/CourseList';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
+import { createParchmentContainerStyles } from '../theme'; // <-- Import the helper function
 
-// Unified theme colors
-const theme = {
-    colors: {
-        primary: '#4F9CF9',
-        primaryGlow: 'rgba(34, 211, 238, 0.8)',
-        background: '#0B0F1B',
-        backgroundLight: '#101727',
-        backgroundDarker: '#090D16',
-        surface: 'rgba(255, 255, 255, 0.04)',
-        border: 'rgba(255, 255, 255, 0.1)',
-        borderGlow: 'rgba(34, 211, 238, 0.3)',
-        text: {
-            primary: '#FFFFFF',
-            secondary: 'rgba(255, 255, 255, 0.7)',
-            glow: '#22D3EE'
-        }
-    },
-    transitions: {
-        default: 'all 0.2s ease-in-out'
-    },
-    shadows: {
-        glow: '0 0 15px rgba(34, 211, 238, 0.3)',
-        strongGlow: '0 0 20px rgba(34, 211, 238, 0.5)'
-    }
-};
-
-// Unified styles with enhanced glowing elements
-const styles = {
+// Create styles function that uses the theme
+const createStyles = (theme) => ({
     pageContainer: {
-        minHeight: '100vh',
-        background: `linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.backgroundLight} 100%)`,
+        background: theme.palette.background.default, // Base dark parchment
         py: 4,
-        boxShadow: 'inset 0 0 60px rgba(0, 0, 0, 0.4)',
+        position: 'relative', // Needed for ivy borders
+        overflow: 'hidden', // Hide overflowing ivy
+        // Add global parchment texture background
+        '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url(${theme.textures.darkParchment})`,
+            backgroundAttachment: 'fixed', // Keep texture fixed
+            backgroundSize: 'cover',
+            opacity: 0.1, // Subtle global texture
+            mixBlendMode: 'multiply',
+            zIndex: 0,
+        },
+        // Add subtle marble texture to the very background for depth
+        '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url(${theme.textures.lightMarble})`, // Or grainyMarble
+            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover',
+            opacity: 0.05, // Very subtle
+            mixBlendMode: 'overlay', // Blend differently
+            zIndex: -1, // Behind parchment
+        },
     },
     header: {
-        color: theme.colors.text.primary,
+        color: theme.palette.text.primary, // Ink color from theme
         mb: 3,
         fontWeight: 600,
         textAlign: 'center',
         position: 'relative',
-        textShadow: '0 0 10px rgba(34, 211, 238, 0.4)',
+        fontFamily: theme.typography.headingFontFamily, // Use heading font
         '&::after': {
             content: '""',
             position: 'absolute',
@@ -98,30 +98,29 @@ const styles = {
             transform: 'translateX(-50%)',
             width: '80px',
             height: '2px',
-            background: 'linear-gradient(90deg, transparent, #22D3EE, transparent)',
-            boxShadow: '0 0 10px rgba(34, 211, 238, 0.8)'
+            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}, transparent)`, // Sepia gradient
         }
     },
     sectionHeader: {
-        color: theme.colors.text.primary,
+        color: theme.palette.text.primary, // Ink color
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
         fontWeight: 600,
         mb: 2,
-        textShadow: '0 0 8px rgba(34, 211, 238, 0.3)',
+        fontFamily: theme.typography.headingFontFamily, // Use heading font
         position: 'relative',
+        // Replace side line with a subtle quill-like mark or remove
         '&::before': {
             content: '""',
             position: 'absolute',
-            left: '-15px',
+            left: '-20px', // Adjust position
             top: '50%',
-            transform: 'translateY(-50%)',
-            width: '4px',
-            height: '70%',
-            background: 'linear-gradient(to bottom, transparent, #22D3EE, transparent)',
-            borderRadius: '2px',
-            boxShadow: '0 0 8px rgba(34, 211, 238, 0.6)'
+            transform: 'translateY(-50%) rotate(-10deg)',
+            width: '15px',
+            height: '1px',
+            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80)`, // Sepia mark
+            opacity: 0.7,
         }
     },
     ctaBlock: {
@@ -131,33 +130,40 @@ const styles = {
         flexWrap: { xs: 'wrap', sm: 'nowrap' }
     },
     courseCard: {
+        ...createParchmentContainerStyles(theme), // Apply parchment container style
         p: 3,
-        borderRadius: '12px',
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '12px', // Keep specific rounding if different from mixin
+        // backgroundColor: theme.palette.background.paper, // Handled by mixin
+        border: `1px solid ${theme.palette.divider}`, // Handled by mixin, override if needed
         mb: 2,
         transition: 'all 0.3s ease',
         position: 'relative',
         overflow: 'hidden',
-        '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)',
-            opacity: 0,
-            transition: 'opacity 0.3s ease'
+        // boxShadow: theme.shadows[1], // Handled by mixin
+        '&::before': { // Texture overlay from mixin
+            ...createParchmentContainerStyles(theme)['&::before'], // Inherit mixin's before
+            opacity: 0.1, // Adjust opacity if needed for cards
         },
+        // Remove the top gradient line, rely on parchment style
+        // '&::before': {
+        //     content: '""',
+        //     position: 'absolute',
+        //     top: 0,
+        //     left: 0,
+        //     right: 0,
+        //     height: '1px',
+        //     background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.light}50, transparent)`,
+        //     opacity: 0,
+        //     transition: 'opacity 0.3s ease'
+        // },
         '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3), 0 0 15px rgba(34, 211, 238, 0.15)',
-            borderColor: 'rgba(34, 211, 238, 0.3)',
+            // backgroundColor: theme.palette.background.default, // Use darker parchment on hover
+            boxShadow: theme.shadows[3], // Keep enhanced shadow
+            borderColor: `${theme.palette.secondary.main}60`, // Sepia border highlight
             transform: 'translateY(-2px)',
-            '&::before': {
-                opacity: 1
-            }
+            // '&::before': { // Potentially increase texture opacity on hover
+            //     opacity: 1
+            // }
         },
     },
     moduleUsageBadge: {
@@ -167,18 +173,18 @@ const styles = {
         py: 0.5,
         px: 1,
         borderRadius: '4px',
-        backgroundColor: 'rgba(34, 211, 238, 0.15)',
-        color: '#22D3EE',
+        backgroundColor: `${theme.palette.secondary.light}20`,
+        color: theme.palette.secondary.main,
         ml: 1,
     },
     tabContainer: {
         mb: 4,
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        borderBottom: `1px solid ${theme.palette.divider}`,
     },
     tab: {
-        color: 'rgba(255, 255, 255, 0.7)',
+        color: theme.palette.text.secondary,
         '&.Mui-selected': {
-            color: '#22D3EE',
+            color: theme.palette.secondary.main,
         },
         textTransform: 'none',
         minWidth: 'auto',
@@ -191,28 +197,39 @@ const styles = {
     marketplaceSection: {
         py: 3,
         borderRadius: '16px',
-        backgroundColor: theme.colors.backgroundDarker,
-        border: '1px solid rgba(34, 211, 238, 0.15)',
-        boxShadow: '0 0 20px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(34, 211, 238, 0.05)',
+        backgroundColor: theme.palette.background.paper, // Use paper background
+        border: `1px solid ${theme.palette.divider}`, // Standard divider border
+        boxShadow: theme.shadows[1],
         mt: 4,
         position: 'relative',
         overflow: 'hidden',
+        // Add the dark parchment texture using theme
         '&::before': {
             content: '""',
             position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0,
-            background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, transparent 100%)',
-            pointerEvents: 'none'
-        }
+            inset: 0,
+            backgroundImage: `url(${theme.textures.darkParchment})`, // Use texture from theme
+            backgroundSize: 'cover',
+            opacity: 0.08, // Adjust opacity as needed
+            mixBlendMode: 'multiply',
+            pointerEvents: 'none',
+            zIndex: 0,
+        },
+        // Ensure content is above the pseudo-element
+        '& > *': {
+            position: 'relative',
+            zIndex: 1,
+        },
     },
     marketplaceHeader: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         mb: 3,
+        p: 2, // Add padding inside the header
+        px: 3,
+        borderBottom: `1px solid ${theme.palette.divider}50`, // Use divider with opacity
+        // Remove specific background/border from header, let the section handle it
     },
     marketplaceGrid: {
         display: 'grid',
@@ -222,18 +239,18 @@ const styles = {
     marketplaceCard: {
         p: 3,
         borderRadius: '12px',
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
         transition: 'all 0.2s ease',
         cursor: 'pointer',
         '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            backgroundColor: theme.palette.background.default,
             transform: 'translateY(-2px)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-            borderColor: 'rgba(34, 211, 238, 0.3)',
+            boxShadow: theme.shadows[3],
+            borderColor: `${theme.palette.secondary.main}60`,
         },
     },
     bulkActionsBar: {
@@ -242,90 +259,114 @@ const styles = {
         justifyContent: 'space-between',
         p: 2,
         borderRadius: '8px',
-        backgroundColor: 'rgba(34, 211, 238, 0.08)',
+        backgroundColor: `${theme.palette.secondary.main}10`,
         mb: 2,
-        boxShadow: '0 0 15px rgba(34, 211, 238, 0.1)',
+        boxShadow: theme.shadows[1],
     },
     actionButton: {
-        backgroundColor: 'rgba(34, 211, 238, 0.1)',
-        color: theme.colors.text.glow,
+        backgroundColor: `${theme.palette.secondary.main}10`,
+        color: theme.palette.secondary.main,
         borderRadius: '8px',
-        border: '1px solid rgba(34, 211, 238, 0.3)',
-        boxShadow: '0 0 10px rgba(34, 211, 238, 0.1)',
+        border: `1px solid ${theme.palette.secondary.main}40`,
+        boxShadow: theme.shadows[1],
         transition: 'all 0.2s ease',
         textTransform: 'none',
         '&:hover': {
-            backgroundColor: 'rgba(34, 211, 238, 0.15)',
-            borderColor: 'rgba(34, 211, 238, 0.5)',
-            boxShadow: '0 0 20px rgba(34, 211, 238, 0.3)',
+            backgroundColor: `${theme.palette.secondary.main}20`,
+            borderColor: `${theme.palette.secondary.main}60`,
+            boxShadow: theme.shadows[2],
             transform: 'translateY(-1px)'
         }
     },
     statsCard: {
         p: 2,
         borderRadius: '10px',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
-        border: '1px solid rgba(34, 211, 238, 0.15)',
+        backgroundColor: theme.palette.background.paper,
+        border: `1px solid ${theme.palette.divider}`,
     },
     sectionContainer: {
+        ...createParchmentContainerStyles(theme), // Apply parchment container style
         mb: 5,
         p: 3,
-        borderRadius: '16px',
-        backgroundColor: 'rgba(0, 0, 0, 0.15)',
-        border: '1px solid rgba(255, 255, 255, 0.07)',
-        boxShadow: 'inset 0 0 30px rgba(0, 0, 0, 0.2)',
+        // borderRadius: '16px', // Handled by mixin
+        // backgroundColor: theme.palette.background.paper, // Handled by mixin
+        // border: `1px solid ${theme.palette.divider}`, // Handled by mixin
+        // boxShadow: theme.shadows[1], // Handled by mixin
+        position: 'relative',
+        overflow: 'hidden', // Keep overflow hidden for potential internal effects
+        // Remove the radial gradient, rely on parchment style
+        // '&::after': {
+        //     content: '""',
+        //     position: 'absolute',
+        //     top: 0,
+        //     left: 0,
+        //     width: '100%',
+        //     height: '100%',
+        //     background: `radial-gradient(ellipse at top left, ${theme.palette.secondary.light}10, transparent 70%)`,
+        //     pointerEvents: 'none'
+        // }
+    },
+    listContainer: { // Apply parchment style to the module list container too
+        ...createParchmentContainerStyles(theme),
+        p: 3,
+        // borderRadius: '16px', // Handled by mixin
+        // backgroundColor: theme.palette.background.paper, // Handled by mixin
+        // border: `1px solid ${theme.palette.divider}`, // Handled by mixin
+        // boxShadow: theme.shadows[1], // Handled by mixin
         position: 'relative',
         overflow: 'hidden',
-        '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'radial-gradient(ellipse at top left, rgba(34, 211, 238, 0.03), transparent 70%)',
-            pointerEvents: 'none'
-        }
+        // Remove the radial gradient
+        // '&::after': {
+        //     content: '""',
+        //     position: 'absolute',
+        //     top: 0,
+        //     left: 0,
+        //     width: '100%',
+        //     height: '100%',
+        //     background: `radial-gradient(ellipse at top left, ${theme.palette.secondary.light}10, transparent 70%)`,
+        //     pointerEvents: 'none'
+        // }
     },
-};
+});
 
-// Add these new styles
-const sidebarStyles = {
+// Add these new styles using the theme
+const createSidebarStyles = (theme) => ({
     sidebar: {
         position: 'fixed',
         right: 0,
         top: 0,
         height: '100vh',
-        width: 320,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+        width: 280,
+        backgroundColor: `${theme.palette.background.paper}E6`, // With transparency
         backdropFilter: 'blur(10px)',
-        borderLeft: '1px solid rgba(34, 211, 238, 0.15)',
+        borderLeft: `1px solid ${theme.palette.divider}`,
         transition: 'transform 0.3s ease-in-out',
         zIndex: 900,
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '-5px 0 20px rgba(0, 0, 0, 0.2)',
+        boxShadow: theme.shadows[3],
         transform: 'translateX(100%)', // Start offscreen
         pt: '64px', // Account for header height
     },
     toggleButton: {
-        position: 'absolute',
-        left: -40,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        width: 40,
-        height: 40,
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        borderRadius: '8px 0 0 8px',
+        position: 'fixed',
+        right: 15,
+        top: 80,
+        width: 36,
+        height: 36,
+        backgroundColor: theme.palette.background.paper,
+        borderRadius: '50%',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        border: '1px solid rgba(34, 211, 238, 0.15)',
-        borderRight: 'none',
+        border: `1px solid ${theme.palette.divider}`,
         transition: 'all 0.2s ease',
+        zIndex: 850,
+        boxShadow: theme.shadows[2],
         '&:hover': {
-            backgroundColor: 'rgba(34, 211, 238, 0.1)',
+            backgroundColor: `${theme.palette.secondary.main}10`,
+            transform: 'scale(1.1)',
         }
     },
     content: {
@@ -336,112 +377,120 @@ const sidebarStyles = {
             width: '6px',
         },
         '&::-webkit-scrollbar-track': {
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: `${theme.palette.background.paper}50`,
         },
         '&::-webkit-scrollbar-thumb': {
-            background: 'rgba(34, 211, 238, 0.2)',
+            background: `${theme.palette.secondary.main}30`,
             borderRadius: '3px',
             '&:hover': {
-                background: 'rgba(34, 211, 238, 0.3)',
+                background: `${theme.palette.secondary.main}50`,
             }
         }
     }
-};
+});
 
 // Add this new component for the sidebar
 const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate }) => {
+    const theme = useTheme();
+
     return (
-        <Box
-            sx={{
-                ...sidebarStyles.sidebar,
-                transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-                backgroundColor: 'rgba(0, 11, 27, 0.95)', // Darker, more transparent background
-            }}
-        >
+        <>
             <Box
                 onClick={onToggle}
-                sx={sidebarStyles.toggleButton}
+                sx={{
+                    ...createSidebarStyles(theme).toggleButton,
+                    right: isOpen ? 295 : 15, // Move button when sidebar is open
+                }}
             >
-                {isOpen ? <ChevronRight size={20} color="#22D3EE" /> : <ChevronLeft size={20} color="#22D3EE" />}
+                {isOpen ? <ChevronRight size={20} color={theme.palette.secondary.main} /> : <ChevronLeft size={20} color={theme.palette.secondary.main} />}
             </Box>
 
-            <Box sx={sidebarStyles.content}>
-                {/* Welcome Section */}
-                <Box sx={{ mb: 4 }}>
-                    <Typography variant="h6" sx={{
-                        color: '#22D3EE',
-                        fontWeight: 600,
-                        mb: 2,
-                        textShadow: '0 0 8px rgba(34, 211, 238, 0.4)'
-                    }}>
-                        Welcome to the Hub
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)', mb: 2, lineHeight: 1.6 }}>
-                        Your AI-powered education center for creating, managing, and sharing interactive learning materials.
-                    </Typography>
-                </Box>
+            <Box
+                sx={{
+                    ...createSidebarStyles(theme).sidebar,
+                    transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+                    backgroundColor: theme.palette.background.paper + 'E6', // ~90% opacity parchmentDark
+                }}
+            >
+                <Box sx={createSidebarStyles(theme).content}>
+                    {/* Welcome Section */}
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="h6" sx={{
+                            color: theme.palette.secondary.main,
+                            fontWeight: 600,
+                            mb: 2,
+                            fontFamily: theme.typography.h6.fontFamily
+                        }}>
+                            Welcome to the Hub
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2, lineHeight: 1.6 }}>
+                            Your AI-powered education center for creating, managing, and sharing interactive learning materials.
+                        </Typography>
+                    </Box>
 
-                {/* Quick Tips Section */}
-                <Box sx={{ mb: 4 }}>
-                    <Typography variant="subtitle2" sx={{
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        mb: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                    }}>
-                        Quick Tips
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: '8px',
-                            backgroundColor: 'rgba(34, 211, 238, 0.05)',
-                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                    {/* Quick Tips Section */}
+                    <Box sx={{ mb: 4 }}>
+                        <Typography variant="subtitle2" sx={{
+                            color: theme.palette.text.primary,
+                            mb: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
                         }}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)', mb: 1 }}>
-                                💡 Create AI Modules
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                Start by creating AI-powered learning modules with interactive content and chat capabilities.
-                            </Typography>
-                        </Box>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: '8px',
-                            backgroundColor: 'rgba(34, 211, 238, 0.05)',
-                            border: '1px solid rgba(34, 211, 238, 0.15)',
-                        }}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)', mb: 1 }}>
-                                📚 Organize into Courses
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                Group your modules into structured courses for better organization and learning flow.
-                            </Typography>
-                        </Box>
-                        <Box sx={{
-                            p: 2,
-                            borderRadius: '8px',
-                            backgroundColor: 'rgba(34, 211, 238, 0.05)',
-                            border: '1px solid rgba(34, 211, 238, 0.15)',
-                        }}>
-                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)', mb: 1 }}>
-                                🔄 Drag & Drop
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                                Easily organize your content by dragging modules between courses.
-                            </Typography>
+                            Quick Tips
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <Box sx={{
+                                p: 2,
+                                borderRadius: '8px',
+                                backgroundColor: `${theme.palette.secondary.main}05`,
+                                border: `1px solid ${theme.palette.secondary.main}20`,
+                            }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.primary, mb: 1 }}>
+                                    💡 Create AI Modules
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                    Start by creating AI-powered learning modules with interactive content and chat capabilities.
+                                </Typography>
+                            </Box>
+                            <Box sx={{
+                                p: 2,
+                                borderRadius: '8px',
+                                backgroundColor: `${theme.palette.secondary.main}05`,
+                                border: `1px solid ${theme.palette.secondary.main}20`,
+                            }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.primary, mb: 1 }}>
+                                    📚 Organize into Courses
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                    Group your modules into structured courses for better organization and learning flow.
+                                </Typography>
+                            </Box>
+                            <Box sx={{
+                                p: 2,
+                                borderRadius: '8px',
+                                backgroundColor: `${theme.palette.secondary.main}05`,
+                                border: `1px solid ${theme.palette.secondary.main}20`,
+                            }}>
+                                <Typography variant="body2" sx={{ color: theme.palette.text.primary, mb: 1 }}>
+                                    🔄 Drag & Drop
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                    Easily organize your content by dragging modules between courses.
+                                </Typography>
+                            </Box>
                         </Box>
                     </Box>
                 </Box>
             </Box>
-        </Box>
+        </>
     );
 };
 
 // Add this component after the InfoSidebar component
 const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, handleRemoveModuleFromCourse, moveModule }) => {
     const ref = React.useRef(null);
+    const theme = useTheme();
 
     // Set up drag source
     const [{ isDragging }, drag] = useDrag({
@@ -524,17 +573,17 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
                 py: 1,
                 px: 1,
                 borderRadius: '4px',
-                backgroundColor: isDragging ? 'rgba(34, 211, 238, 0.1)' : 'transparent',
+                backgroundColor: isDragging ? `${theme.palette.secondary.main}10` : 'transparent',
                 opacity: isDragging ? 0.5 : 1,
-                border: isDragging ? '1px dashed rgba(34, 211, 238, 0.3)' : '1px solid transparent',
+                border: isDragging ? `1px dashed ${theme.palette.secondary.main}50` : '1px solid transparent',
                 cursor: 'move',
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.03)' }
+                '&:hover': { backgroundColor: `${theme.palette.background.paper}80` }
             }}
         >
             <Typography
                 variant="body2"
                 sx={{
-                    color: 'rgba(255, 255, 255, 0.8)',
+                    color: theme.palette.text.secondary,
                     display: 'flex',
                     alignItems: 'center'
                 }}
@@ -543,13 +592,13 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
                 {module.shareable ? (
                     <Tooltip title="Public Module">
                         <Box sx={{ display: 'inline-flex', ml: 1 }}>
-                            <Globe size={14} color="#22D3EE" />
+                            <Globe size={14} color={theme.palette.secondary.main} />
                         </Box>
                     </Tooltip>
                 ) : (
                     <Tooltip title="Private Module">
                         <Box sx={{ display: 'inline-flex', ml: 1 }}>
-                            <Lock size={14} color="rgba(255, 255, 255, 0.5)" />
+                            <Lock size={14} color={theme.palette.text.disabled} />
                         </Box>
                     </Tooltip>
                 )}
@@ -564,9 +613,9 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
                             handleView(null, { id: module.brdge_id, public_id: module.public_id });
                         }}
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.6)',
+                            color: theme.palette.text.secondary,
                             padding: '4px',
-                            '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                            '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
                         }}
                     >
                         <BookOpen size={16} />
@@ -580,9 +629,9 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
                             handleEdit(null, { id: module.brdge_id, public_id: module.public_id });
                         }}
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.6)',
+                            color: theme.palette.text.secondary,
                             padding: '4px',
-                            '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                            '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
                         }}
                     >
                         <Edit size={16} />
@@ -596,9 +645,9 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
                             handleRemoveModuleFromCourse(courseId, module.id);
                         }}
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.6)',
+                            color: theme.palette.text.secondary,
                             padding: '4px',
-                            '&:hover': { color: '#FF4B4B', backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                            '&:hover': { color: theme.palette.error.main, backgroundColor: `${theme.palette.error.main}10` }
                         }}
                     >
                         <Trash2 size={16} />
@@ -610,6 +659,7 @@ const DraggableModuleItem = ({ module, index, courseId, handleEdit, handleView, 
 };
 
 function BrdgeListPage() {
+    const theme = useTheme(); // Add this at the beginning of the component
     const [brdges, setBrdges] = useState([]);
     const [courses, setCourses] = useState([]);
     const [marketplaceCourses, setMarketplaceCourses] = useState([]);
@@ -648,7 +698,7 @@ function BrdgeListPage() {
     const [dropTargetCourseId, setDropTargetCourseId] = useState(null);
     const [courseDialogOpen, setCourseDialogOpen] = useState(false);
     const [newCourseData, setNewCourseData] = useState({ name: '', description: '' });
-    const [sidebarOpen, setSidebarOpen] = useState(true); // Change from false to true
+    const [sidebarOpen, setSidebarOpen] = useState(false); // Change to start with sidebar closed
     // Add these state variables near other state declarations
     const [editingCourseId, setEditingCourseId] = useState(null);
     const [editedCourseName, setEditedCourseName] = useState('');
@@ -1630,28 +1680,33 @@ function BrdgeListPage() {
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-                <CircularProgress sx={{ color: theme.colors.primary }} />
+                <CircularProgress sx={{ color: theme.palette.secondary.main }} />
             </Box>
         );
     }
 
     return (
         <DndProvider backend={HTML5Backend}>
+            {/* Apply page container styles */}
             <Box sx={{
-                ...styles.pageContainer,
+                ...createStyles(theme).pageContainer,
                 display: 'flex',
                 minHeight: '100vh',
             }}>
+                {/* Remove Left Ivy Border Box */}
+                {/* Remove Right Ivy Border Box */}
+
                 <Box sx={{
                     flex: 1,
-                    transition: 'margin 0.3s ease',
-                    mr: sidebarOpen ? '320px' : 0, // Add margin when sidebar is open
+                    width: '100%',
+                    position: 'relative',
+                    zIndex: 1,
                 }}>
                     <Container maxWidth="lg" sx={{
                         py: 4,
-                        px: 3,
+                        px: { xs: 2, sm: 3, md: 4 }, // Adjust padding to account for ivy borders if needed
                     }}>
-                        <Typography variant="h4" sx={styles.header}>
+                        <Typography variant="h4" sx={createStyles(theme).header}>
                             Learning Hub
                         </Typography>
 
@@ -1673,16 +1728,21 @@ function BrdgeListPage() {
                                 {/* Course Stats Card */}
                                 <Grid item xs={12} sm={4}>
                                     <Tooltip title="Total number of courses you've created. Courses help you organize modules into structured learning paths.">
-                                        <Box sx={{
-                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                                        <Box sx={{ // Use theme styles for stats cards
+                                            backgroundColor: theme.palette.background.paper, // Parchment paper bg
+                                            border: `1px solid ${theme.palette.divider}`, // Sepia divider border
                                             p: 1.5,
                                             borderRadius: '10px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: 2,
                                             height: '100%',
-                                            cursor: 'help'
+                                            cursor: 'help',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                borderColor: theme.palette.secondary.light, // Lighter sepia border on hover
+                                                boxShadow: theme.shadows[2],
+                                            }
                                         }}>
                                             <Box sx={{
                                                 height: 38,
@@ -1690,22 +1750,21 @@ function BrdgeListPage() {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                backgroundColor: `${theme.palette.secondary.main}15`, // Sepia tint background for icon
                                                 borderRadius: '50%',
-                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
+                                                boxShadow: `0 0 10px ${theme.palette.secondary.main}30`, // Sepia shadow
                                             }}>
-                                                <BookOpen size={20} color="#22D3EE" />
+                                                <BookOpen size={20} color={theme.palette.secondary.main} /> {/* Use Sepia color */}
                                             </Box>
-
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="body2" sx={{
-                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    color: theme.palette.text.secondary, // Ink Faded
                                                     fontSize: '0.75rem'
                                                 }}>
                                                     Courses Created
                                                 </Typography>
                                                 <Typography variant="h6" sx={{
-                                                    color: 'white',
+                                                    color: theme.palette.text.primary, // Ink
                                                     fontWeight: 'bold',
                                                     mt: 0.5,
                                                     display: 'flex',
@@ -1713,7 +1772,7 @@ function BrdgeListPage() {
                                                     gap: 0.5
                                                 }}>
                                                     {courses.length}
-                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                    <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}> {/* Ink Faded */}
                                                         total
                                                     </Typography>
                                                 </Typography>
@@ -1725,16 +1784,21 @@ function BrdgeListPage() {
                                 {/* AI Modules Stats Card */}
                                 <Grid item xs={12} sm={4}>
                                     <Tooltip title="Number of AI Modules you've created out of your plan limit. Modules are interactive learning components powered by AI.">
-                                        <Box sx={{
-                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                                        <Box sx={{ // Use theme styles for stats cards
+                                            backgroundColor: theme.palette.background.paper,
+                                            border: `1px solid ${theme.palette.divider}`,
                                             p: 1.5,
                                             borderRadius: '10px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: 2,
                                             height: '100%',
-                                            cursor: 'help'
+                                            cursor: 'help',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                borderColor: theme.palette.secondary.light,
+                                                boxShadow: theme.shadows[2],
+                                            }
                                         }}>
                                             <Box sx={{
                                                 height: 38,
@@ -1742,22 +1806,21 @@ function BrdgeListPage() {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                backgroundColor: `${theme.palette.secondary.main}15`,
                                                 borderRadius: '50%',
-                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
+                                                boxShadow: `0 0 10px ${theme.palette.secondary.main}30`,
                                             }}>
-                                                <GraduationCap size={20} color="#22D3EE" />
+                                                <GraduationCap size={20} color={theme.palette.secondary.main} /> {/* Use Sepia color */}
                                             </Box>
-
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="body2" sx={{
-                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    color: theme.palette.text.secondary, // Ink Faded
                                                     fontSize: '0.75rem'
                                                 }}>
                                                     AI Modules
                                                 </Typography>
                                                 <Typography variant="h6" sx={{
-                                                    color: 'white',
+                                                    color: theme.palette.text.primary, // Ink
                                                     fontWeight: 'bold',
                                                     mt: 0.5,
                                                     display: 'flex',
@@ -1765,7 +1828,7 @@ function BrdgeListPage() {
                                                     gap: 0.5
                                                 }}>
                                                     {userStats.brdges_created}
-                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                    <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}> {/* Ink Faded */}
                                                         {userStats.brdges_limit === 'Unlimited' ?
                                                             '/ ∞' :
                                                             `/ ${userStats.brdges_limit}`}
@@ -1779,16 +1842,21 @@ function BrdgeListPage() {
                                 {/* AI Minutes Stats Card */}
                                 <Grid item xs={12} sm={4}>
                                     <Tooltip title="AI interaction minutes used out of your plan allocation. These minutes are consumed when users interact with your modules.">
-                                        <Box sx={{
-                                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                            border: '1px solid rgba(34, 211, 238, 0.15)',
+                                        <Box sx={{ // Use theme styles for stats cards
+                                            backgroundColor: theme.palette.background.paper,
+                                            border: `1px solid ${theme.palette.divider}`,
                                             p: 1.5,
                                             borderRadius: '10px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: 2,
                                             height: '100%',
-                                            cursor: 'help'
+                                            cursor: 'help',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                borderColor: theme.palette.secondary.light,
+                                                boxShadow: theme.shadows[2],
+                                            }
                                         }}>
                                             <Box sx={{
                                                 height: 38,
@@ -1796,22 +1864,21 @@ function BrdgeListPage() {
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                                                backgroundColor: `${theme.palette.secondary.main}15`,
                                                 borderRadius: '50%',
-                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)',
+                                                boxShadow: `0 0 10px ${theme.palette.secondary.main}30`,
                                             }}>
-                                                <MessageSquare size={20} color="#22D3EE" />
+                                                <MessageSquare size={20} color={theme.palette.secondary.main} /> {/* Use Sepia color */}
                                             </Box>
-
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="body2" sx={{
-                                                    color: 'rgba(255, 255, 255, 0.7)',
+                                                    color: theme.palette.text.secondary, // Ink Faded
                                                     fontSize: '0.75rem'
                                                 }}>
                                                     AI Minutes
                                                 </Typography>
                                                 <Typography variant="h6" sx={{
-                                                    color: 'white',
+                                                    color: theme.palette.text.primary, // Ink
                                                     fontWeight: 'bold',
                                                     mt: 0.5,
                                                     display: 'flex',
@@ -1819,7 +1886,7 @@ function BrdgeListPage() {
                                                     gap: 0.5
                                                 }}>
                                                     {userStats.minutes_used}
-                                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                                    <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}> {/* Ink Faded */}
                                                         / {userStats.minutes_limit}
                                                     </Typography>
                                                 </Typography>
@@ -1837,25 +1904,25 @@ function BrdgeListPage() {
                                         mt: 1,
                                         p: 1.5,
                                         borderRadius: '8px',
-                                        backgroundColor: 'rgba(34, 211, 238, 0.08)',
-                                        border: '1px dashed rgba(34, 211, 238, 0.2)',
+                                        backgroundColor: `${theme.palette.secondary.light}15`, // Light sepia tint background
+                                        border: `1px dashed ${theme.palette.secondary.main}30`, // Sepia dashed border
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between'
                                     }}>
-                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                        <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}> {/* Ink Faded */}
                                             You're approaching your plan limits. Upgrade to unlock more AI capabilities.
                                         </Typography>
                                         <Button
                                             size="small"
                                             variant="outlined"
                                             onClick={() => navigate('/profile')}
-                                            sx={{
-                                                color: '#22D3EE',
-                                                borderColor: 'rgba(34, 211, 238, 0.3)',
+                                            sx={{ // Use theme's secondary button style, but smaller
+                                                color: theme.palette.secondary.main, // Sepia
+                                                borderColor: `${theme.palette.secondary.main}50`, // Sepia border
                                                 '&:hover': {
-                                                    borderColor: 'rgba(34, 211, 238, 0.6)',
-                                                    backgroundColor: 'rgba(34, 211, 238, 0.05)'
+                                                    borderColor: theme.palette.secondary.main, // Stronger Sepia border
+                                                    backgroundColor: `${theme.palette.secondary.main}10` // Sepia tint background
                                                 }
                                             }}
                                         >
@@ -1864,7 +1931,7 @@ function BrdgeListPage() {
                                     </Box>
                                 )}
 
-                            {/* Enhanced Search Bar with glow */}
+                            {/* Enhanced Search Bar with sepia styling */}
                             <Box sx={{ position: 'relative', mt: 3, mb: 3 }}>
                                 <Search
                                     size={20}
@@ -1873,7 +1940,7 @@ function BrdgeListPage() {
                                         left: 12,
                                         top: '50%',
                                         transform: 'translateY(-50%)',
-                                        color: 'rgba(34, 211, 238, 0.7)'
+                                        color: theme.palette.secondary.main
                                     }}
                                 />
                                 <InputBase
@@ -1886,40 +1953,41 @@ function BrdgeListPage() {
                                         pr: 2,
                                         py: 1.2,
                                         borderRadius: '50px',
-                                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                                        color: 'white',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(34, 211, 238, 0.2)',
+                                        backgroundColor: theme.palette.background.default,
+                                        color: theme.palette.text.primary,
+                                        border: `1px solid ${theme.palette.divider}`,
                                         transition: 'all 0.3s ease',
-                                        boxShadow: '0 0 5px rgba(34, 211, 238, 0.1)',
+                                        boxShadow: theme.shadows[1],
                                         '&:hover': {
-                                            backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                                            borderColor: 'rgba(34, 211, 238, 0.3)',
-                                            boxShadow: '0 0 10px rgba(34, 211, 238, 0.15)'
+                                            backgroundColor: theme.palette.background.paper,
+                                            borderColor: `${theme.palette.secondary.main}50`,
+                                            boxShadow: theme.shadows[3]
                                         },
                                         '&:focus-within': {
-                                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                                            border: '1px solid rgba(34, 211, 238, 0.5)',
-                                            boxShadow: '0 0 15px rgba(34, 211, 238, 0.25)'
+                                            backgroundColor: theme.palette.background.default,
+                                            border: `1px solid ${theme.palette.secondary.main}70`,
+                                            boxShadow: theme.shadows[3]
                                         }
                                     }}
                                 />
                             </Box>
 
                             {/* CTA Block - Create Buttons */}
-                            <Box sx={styles.ctaBlock}>
+                            <Box sx={createStyles(theme).ctaBlock}>
                                 <Tooltip title="Create a new AI Module to share interactive content with your students">
                                     <Button
                                         variant="contained"
                                         startIcon={<Plus size={20} />}
                                         onClick={handleCreateClick}
                                         sx={{
-                                            ...styles.actionButton,
-                                            backgroundColor: 'rgba(34, 211, 238, 0.15)',
-                                            boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
+                                            ...createStyles(theme).actionButton,
+                                            backgroundColor: theme.palette.secondary.main,
+                                            color: theme.palette.getContrastText(theme.palette.secondary.main),
+                                            boxShadow: theme.shadows[2],
+                                            border: 'none',
                                             '&:hover': {
-                                                backgroundColor: 'rgba(34, 211, 238, 0.25)',
-                                                boxShadow: '0 0 25px rgba(34, 211, 238, 0.4)',
+                                                backgroundColor: theme.palette.secondary.main,
+                                                boxShadow: theme.shadows[4],
                                                 transform: 'translateY(-2px)'
                                             }
                                         }}
@@ -1930,16 +1998,19 @@ function BrdgeListPage() {
                                 </Tooltip>
                                 <Tooltip title="Create a new Course to organize your modules into a structured learning path">
                                     <Button
-                                        variant="contained"
+                                        variant="outlined"
                                         startIcon={<BookOpen size={20} />}
-                                        onClick={handleCreateCourse}  // Changed from setCourseDialogOpen(true) to direct function call
+                                        onClick={handleCreateCourse}
                                         sx={{
-                                            ...styles.actionButton,
-                                            backgroundColor: 'rgba(34, 211, 238, 0.15)',
-                                            boxShadow: '0 0 15px rgba(34, 211, 238, 0.2)',
+                                            ...createStyles(theme).actionButton,
+                                            backgroundColor: theme.palette.background.paper,
+                                            color: theme.palette.text.primary,
+                                            borderColor: `${theme.palette.divider}50`,
+                                            boxShadow: theme.shadows[1],
                                             '&:hover': {
-                                                backgroundColor: 'rgba(34, 211, 238, 0.25)',
-                                                boxShadow: '0 0 25px rgba(34, 211, 238, 0.4)',
+                                                backgroundColor: theme.palette.background.default,
+                                                borderColor: theme.palette.secondary.main,
+                                                boxShadow: theme.shadows[3],
                                                 transform: 'translateY(-2px)'
                                             }
                                         }}
@@ -1950,7 +2021,7 @@ function BrdgeListPage() {
                                 </Tooltip>
                             </Box>
 
-                            {/* Visual divider with glow effect */}
+                            {/* Visual divider with sepia effect */}
                             <Box sx={{
                                 position: 'absolute',
                                 bottom: 0,
@@ -1958,17 +2029,22 @@ function BrdgeListPage() {
                                 transform: 'translateX(-50%)',
                                 width: '50%',
                                 height: '2px',
-                                background: 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.7), transparent)',
-                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.5)'
+                                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
+                                boxShadow: `0 0 5px ${theme.palette.secondary.main}30`
                             }} />
                         </Box>
 
                         {/* Main Content Area */}
                         <Box>
                             {/* Your Courses Section with enhanced visual separation */}
-                            <Box sx={styles.sectionContainer}>
-                                <Typography variant="h5" sx={styles.sectionHeader}>
-                                    <BookOpen size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
+                            <Box sx={createStyles(theme).sectionContainer}>
+                                {/* Remove these lines:
+                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', top: -5, left: -5, width: { xs: '40px', md: '60px' }, opacity: 0.4, pointerEvents: 'none', transform: 'rotate(120deg)', zIndex: 2 }} />
+                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', bottom: -5, right: -5, width: { xs: '40px', md: '60px' }, opacity: 0.3, pointerEvents: 'none', transform: 'rotate(0deg)', zIndex: 2 }} />
+                                */}
+
+                                <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                    <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
                                     Your Courses
                                 </Typography>
 
@@ -1976,18 +2052,18 @@ function BrdgeListPage() {
                                     <Box sx={{
                                         p: 4,
                                         textAlign: 'center',
-                                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                                        backgroundColor: theme.palette.background.default + '50',
                                         borderRadius: '12px',
-                                        border: '1px dashed rgba(255, 255, 255, 0.2)'
+                                        border: `1px dashed ${theme.palette.divider}`
                                     }}>
-                                        <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+                                        <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                             You haven't created any courses yet.
                                         </Typography>
                                         <Button
                                             variant="contained"
                                             startIcon={<BookOpen size={20} />}
                                             onClick={() => navigate('/create-course')}
-                                            sx={styles.actionButton}
+                                            sx={createStyles(theme).actionButton}
                                         >
                                             Create Your First Course
                                         </Button>
@@ -1999,9 +2075,9 @@ function BrdgeListPage() {
                                                 key={course.id}
                                                 id={`course-${course.id}`}  // Add this ID attribute
                                                 sx={{
-                                                    ...styles.courseCard,
-                                                    borderColor: dropTargetCourseId === course.id ? '#22D3EE' : 'rgba(255, 255, 255, 0.1)',
-                                                    boxShadow: dropTargetCourseId === course.id ? '0 0 20px rgba(34, 211, 238, 0.3)' : undefined,
+                                                    ...createStyles(theme).courseCard,
+                                                    borderColor: dropTargetCourseId === course.id ? theme.palette.secondary.main : `${theme.palette.divider}50`,
+                                                    boxShadow: dropTargetCourseId === course.id ? `0 0 20px ${theme.palette.secondary.main}40` : undefined,
                                                 }}
                                                 onDragOver={(e) => handleDragOver(e, course.id)}
                                                 onDrop={(e) => handleDrop(e, course.id)}
@@ -2019,16 +2095,16 @@ function BrdgeListPage() {
                                                                     size="small"
                                                                     sx={{
                                                                         '& .MuiOutlinedInput-root': {
-                                                                            color: 'white',
-                                                                            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                                                            color: theme.palette.text.primary,
+                                                                            backgroundColor: theme.palette.background.paper,
                                                                             '& fieldset': {
-                                                                                borderColor: 'rgba(34, 211, 238, 0.3)',
+                                                                                borderColor: `${theme.palette.divider}50`,
                                                                             },
                                                                             '&:hover fieldset': {
-                                                                                borderColor: 'rgba(34, 211, 238, 0.5)',
+                                                                                borderColor: `${theme.palette.divider}70`,
                                                                             },
                                                                             '&.Mui-focused fieldset': {
-                                                                                borderColor: '#22D3EE',
+                                                                                borderColor: theme.palette.secondary.main,
                                                                             },
                                                                         },
                                                                     }}
@@ -2038,14 +2114,14 @@ function BrdgeListPage() {
                                                                                 <IconButton
                                                                                     size="small"
                                                                                     onClick={() => handleSaveCourseName(course.id)}
-                                                                                    sx={{ color: '#22D3EE' }}
+                                                                                    sx={{ color: theme.palette.secondary.main }}
                                                                                 >
                                                                                     <Check size={16} />
                                                                                 </IconButton>
                                                                                 <IconButton
                                                                                     size="small"
                                                                                     onClick={handleCancelEditingCourse}
-                                                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                                                                    sx={{ color: theme.palette.text.disabled }}
                                                                                 >
                                                                                     <Trash2 size={16} />
                                                                                 </IconButton>
@@ -2063,13 +2139,14 @@ function BrdgeListPage() {
                                                             <Typography
                                                                 variant="h6"
                                                                 sx={{
-                                                                    color: 'white',
+                                                                    color: theme.palette.text.primary,
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     cursor: 'pointer',
+                                                                    fontFamily: theme.typography.h6.fontFamily,
                                                                     '&:hover': {
                                                                         textDecoration: 'underline',
-                                                                        textDecorationColor: 'rgba(34, 211, 238, 0.5)',
+                                                                        textDecorationColor: `${theme.palette.secondary.main}50`,
                                                                     }
                                                                 }}
                                                                 onClick={(e) => handleStartEditingCourse(e, course)}
@@ -2077,7 +2154,7 @@ function BrdgeListPage() {
                                                                 {course.name}
                                                             </Typography>
                                                         )}
-                                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mt: 0.5 }}>
+                                                        <Typography variant="body2" sx={{ color: theme.palette.text.disabled, mt: 0.5 }}>
                                                             {course.modules?.length || 0} modules | Last updated: {
                                                                 course.updated_at ? new Date(course.updated_at).toLocaleDateString() : 'N/A'
                                                             }
@@ -2092,8 +2169,8 @@ function BrdgeListPage() {
                                                                     handleViewCourse(course);
                                                                 }}
                                                                 sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.7)',
-                                                                    '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                                                                    color: theme.palette.text.disabled,
+                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
                                                                 }}
                                                             >
                                                                 <BookOpen size={18} />
@@ -2107,8 +2184,8 @@ function BrdgeListPage() {
                                                                     handleEditCourse(course);
                                                                 }}
                                                                 sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.7)',
-                                                                    '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                                                                    color: theme.palette.text.disabled,
+                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
                                                                 }}
                                                             >
                                                                 <Edit size={18} />
@@ -2122,12 +2199,12 @@ function BrdgeListPage() {
                                                                     handleShareCourse(course);
                                                                 }}
                                                                 sx={{
-                                                                    color: course.shareable ? '#22D3EE' : 'rgba(255, 255, 255, 0.7)',
-                                                                    '&:hover': { color: '#22D3EE', backgroundColor: 'rgba(34, 211, 238, 0.1)' }
+                                                                    color: course.shareable ? theme.palette.secondary.main : theme.palette.text.disabled,
+                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
                                                                 }}
                                                             >
                                                                 {course.shareable ?
-                                                                    <Globe size={18} style={{ filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} /> :
+                                                                    <Globe size={18} style={{ filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} /> :
                                                                     <Lock size={18} />
                                                                 }
                                                             </IconButton>
@@ -2140,8 +2217,8 @@ function BrdgeListPage() {
                                                                     handleDeleteCourse(course);
                                                                 }}
                                                                 sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.7)',
-                                                                    '&:hover': { color: '#FF4B4B', backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                                                                    color: theme.palette.text.disabled,
+                                                                    '&:hover': { color: theme.palette.error.main, backgroundColor: 'rgba(255, 75, 75, 0.1)' }
                                                                 }}
                                                             >
                                                                 <Trash2 size={18} />
@@ -2156,11 +2233,17 @@ function BrdgeListPage() {
                                                     justifyContent: 'space-between',
                                                     alignItems: 'center',
                                                     mb: 2,
-                                                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                                                    borderBottom: `1px solid ${theme.palette.divider}20`,
                                                     pb: 2
                                                 }}>
-                                                    <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.8)', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <GraduationCap size={16} style={{ color: '#22D3EE' }} />
+                                                    <Typography variant="subtitle2" sx={{
+                                                        color: theme.palette.text.secondary,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 1,
+                                                        fontFamily: theme.typography.h5.fontFamily
+                                                    }}>
+                                                        <GraduationCap size={16} style={{ color: theme.palette.secondary.main }} />
                                                         Modules in this Course
                                                     </Typography>
                                                     <Button
@@ -2169,11 +2252,11 @@ function BrdgeListPage() {
                                                         startIcon={<Plus size={14} />}
                                                         onClick={() => handleOpenModuleSelection(course)}
                                                         sx={{
-                                                            color: '#22D3EE',
-                                                            borderColor: 'rgba(34, 211, 238, 0.3)',
+                                                            color: theme.palette.secondary.main,
+                                                            borderColor: `${theme.palette.divider}40`,
                                                             '&:hover': {
-                                                                backgroundColor: 'rgba(34, 211, 238, 0.08)',
-                                                                borderColor: 'rgba(34, 211, 238, 0.5)',
+                                                                backgroundColor: `${theme.palette.divider}10`,
+                                                                borderColor: theme.palette.secondary.main,
                                                             }
                                                         }}
                                                     >
@@ -2201,14 +2284,14 @@ function BrdgeListPage() {
                                                     <Box sx={{
                                                         p: 3,
                                                         textAlign: 'center',
-                                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                                        backgroundColor: theme.palette.background.default + '50',
                                                         borderRadius: '8px',
-                                                        border: '1px dashed rgba(255, 255, 255, 0.1)'
+                                                        border: `1px dashed ${theme.palette.divider}20`
                                                     }}>
-                                                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)', mb: 1 }}>
+                                                        <Typography variant="body2" sx={{ color: theme.palette.text.disabled, mb: 1 }}>
                                                             No modules in this course yet
                                                         </Typography>
-                                                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.4)', display: 'block' }}>
+                                                        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block' }}>
                                                             Click "Add Module" or drag modules here
                                                         </Typography>
                                                     </Box>
@@ -2220,10 +2303,15 @@ function BrdgeListPage() {
                             </Box>
 
                             {/* Your AI Modules Section with enhanced visual separation */}
-                            <Box sx={styles.sectionContainer}>
+                            <Box sx={createStyles(theme).sectionContainer}>
+                                {/* Remove these lines:
+                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', top: -5, right: -5, width: { xs: '40px', md: '60px' }, opacity: 0.3, pointerEvents: 'none', transform: 'rotate(90deg)', zIndex: 2 }} />
+                                <Box component="img" src={theme.textures.ivyCorner} sx={{ position: 'absolute', bottom: -5, left: -5, width: { xs: '40px', md: '60px' }, opacity: 0.3, pointerEvents: 'none', transform: 'rotate(-90deg)', zIndex: 2 }} />
+                                */}
+
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h5" sx={styles.sectionHeader}>
-                                        <GraduationCap size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
+                                    <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                        <GraduationCap size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
                                         Your AI Modules
                                     </Typography>
 
@@ -2232,7 +2320,7 @@ function BrdgeListPage() {
                                         startIcon={<Plus size={20} />}
                                         onClick={handleCreateClick}
                                         sx={{
-                                            ...styles.actionButton,
+                                            ...createStyles(theme).actionButton,
                                             height: '36px',
                                             px: 2
                                         }}
@@ -2251,9 +2339,9 @@ function BrdgeListPage() {
                                         py: 10,
                                         px: 4,
                                         textAlign: 'center',
-                                        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                        backgroundColor: theme.palette.background.default + '70',
                                         borderRadius: '16px',
-                                        border: '1px solid rgba(34, 211, 238, 0.1)',
+                                        border: `1px solid ${theme.palette.divider}20`,
                                         backdropFilter: 'blur(10px)'
                                     }}>
                                         <Box sx={{
@@ -2263,24 +2351,24 @@ function BrdgeListPage() {
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             borderRadius: '50%',
-                                            backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                            boxShadow: '0 0 20px rgba(34, 211, 238, 0.2)',
+                                            backgroundColor: `${theme.palette.secondary.main}10`,
+                                            boxShadow: `0 0 20px ${theme.palette.secondary.main}20`,
                                             mb: 3
                                         }}>
-                                            <GraduationCap size={40} style={{ color: '#22D3EE' }} />
+                                            <GraduationCap size={40} style={{ color: theme.palette.secondary.main }} />
                                         </Box>
 
                                         <Typography variant="h4" sx={{
-                                            color: '#FFFFFF',
+                                            color: theme.palette.text.primary,
                                             fontWeight: 600,
                                             mb: 2,
-                                            textShadow: '0 0 10px rgba(34, 211, 238, 0.3)'
+                                            fontFamily: theme.typography.h4.fontFamily
                                         }}>
                                             Create Your First AI Module
                                         </Typography>
 
                                         <Typography variant="body1" sx={{
-                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            color: theme.palette.text.secondary,
                                             mb: 4,
                                             maxWidth: 600
                                         }}>
@@ -2293,22 +2381,21 @@ function BrdgeListPage() {
                                             onClick={handleCreateClick}
                                             disabled={!canCreateBrdge()}
                                             sx={{
-                                                backgroundColor: 'rgba(34, 211, 238, 0.2)',
-                                                backdropFilter: 'blur(10px)',
-                                                color: '#FFFFFF',
+                                                backgroundColor: theme.palette.text.primary,
+                                                color: theme.palette.background.paper,
                                                 borderRadius: '12px',
                                                 px: 4,
                                                 py: 1.5,
-                                                border: '1px solid rgba(34, 211, 238, 0.3)',
-                                                boxShadow: '0 0 20px rgba(34, 211, 238, 0.15)',
+                                                border: 'none',
+                                                boxShadow: theme.shadows[3],
                                                 '&:hover': {
-                                                    backgroundColor: 'rgba(34, 211, 238, 0.3)',
-                                                    boxShadow: '0 0 30px rgba(34, 211, 238, 0.3)',
+                                                    backgroundColor: theme.palette.text.secondary,
+                                                    boxShadow: theme.shadows[4],
                                                     transform: 'translateY(-2px)'
                                                 },
                                                 '&.Mui-disabled': {
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                                                    color: 'rgba(255, 255, 255, 0.3)'
+                                                    backgroundColor: `${theme.palette.text.disabled}30`,
+                                                    color: theme.palette.text.disabled
                                                 }
                                             }}
                                         >
@@ -2317,15 +2404,15 @@ function BrdgeListPage() {
 
                                         {!canCreateBrdge() && (
                                             <Typography variant="caption" sx={{
-                                                color: 'rgba(255, 255, 255, 0.5)',
-                                                mt: this.theme === 'dark' ? 2 : 1
+                                                color: theme.palette.text.disabled,
+                                                mt: 2
                                             }}>
                                                 You've reached your modules limit. Upgrade your plan for more!
                                             </Typography>
                                         )}
                                     </Box>
                                 ) : (
-                                    <Box sx={styles.listContainer}>
+                                    <Box sx={createStyles(theme).listContainer}>
                                         <BrdgeList
                                             brdges={filteredBrdges}
                                             onView={handleView}
@@ -2349,36 +2436,49 @@ function BrdgeListPage() {
                             </Box>
 
                             {/* Enhanced Marketplace Section - Collapsible with better visual treatment */}
-                            <Box sx={styles.marketplaceSection}>
+                            <Box sx={createStyles(theme).marketplaceSection}>
+                                {/* Add crumbled parchment edge effect to top/bottom */}
                                 <Box sx={{
-                                    ...styles.marketplaceHeader,
-                                    p: 2,
-                                    px: 3,
-                                    borderBottom: '1px solid rgba(34, 211, 238, 0.2)'
+                                    position: 'absolute', top: 0, left: '10%', right: '10%', height: '8px',
+                                    backgroundImage: `url(${theme.textures.crumbledParchment})`, backgroundSize: 'auto 100%', backgroundRepeat: 'repeat-x',
+                                    mask: 'linear-gradient(to right, transparent, black 20%, black 80%, transparent)', opacity: 0.3, zIndex: 2
+                                }} />
+                                <Box sx={{
+                                    position: 'absolute', bottom: 0, left: '10%', right: '10%', height: '8px',
+                                    backgroundImage: `url(${theme.textures.crumbledParchment})`, backgroundSize: 'auto 100%', backgroundRepeat: 'repeat-x',
+                                    mask: 'linear-gradient(to right, transparent, black 20%, black 80%, transparent)', opacity: 0.3, zIndex: 2, transform: 'scaleY(-1)'
+                                }} />
+
+                                <Box sx={{
+                                    ...createStyles(theme).marketplaceHeader,
+                                    // Remove borderBottom here as it's added in the style definition
+                                    // borderBottom: '1px solid rgba(34, 211, 238, 0.2)'
                                 }}>
                                     <Typography variant="h5" sx={{
-                                        ...styles.sectionHeader,
+                                        ...createStyles(theme).sectionHeader,
+                                        mb: 0, // Remove bottom margin from header title
                                         '&::before': {
                                             display: 'none' // Remove the side indicator for marketplace
                                         }
                                     }}>
-                                        <BookOpen size={24} style={{ color: '#22D3EE', filter: 'drop-shadow(0 0 5px rgba(34, 211, 238, 0.5))' }} />
+                                        {/* Use secondary color for the icon */}
+                                        <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
                                         AI Course Marketplace
                                     </Typography>
                                     <Button
                                         variant="text"
                                         sx={{
-                                            color: '#22D3EE',
+                                            color: theme.palette.secondary.main, // Use secondary color
                                             textTransform: 'none',
-                                            backgroundColor: 'rgba(34, 211, 238, 0.05)',
+                                            backgroundColor: `${theme.palette.secondary.main}08`, // Subtle secondary background
                                             borderRadius: '20px',
-                                            border: '1px solid rgba(34, 211, 238, 0.2)',
+                                            border: `1px solid ${theme.palette.secondary.main}30`, // Secondary border
                                             px: 2,
                                             transition: 'all 0.3s ease',
                                             '&:hover': {
-                                                backgroundColor: 'rgba(34, 211, 238, 0.1)',
-                                                boxShadow: '0 0 10px rgba(34, 211, 238, 0.2)',
-                                                border: '1px solid rgba(34, 211, 238, 0.3)',
+                                                backgroundColor: `${theme.palette.secondary.main}15`,
+                                                boxShadow: `0 0 10px ${theme.palette.secondary.main}20`,
+                                                border: `1px solid ${theme.palette.secondary.main}40`,
                                             }
                                         }}
                                         onClick={() => navigate('/marketplace')}
@@ -2390,33 +2490,34 @@ function BrdgeListPage() {
                                 {/* Replace the Collapse component with a regular Box */}
                                 <Box sx={{ px: 3, pt: 3 }}>
                                     <Typography variant="subtitle1" sx={{
-                                        color: theme.colors.text.glow,
+                                        color: theme.palette.text.primary,
                                         mb: 2,
-                                        textShadow: '0 0 5px rgba(34, 211, 238, 0.4)'
+                                        // Use secondary color for text shadow
+                                        textShadow: `0 0 5px ${theme.palette.secondary.main}40`
                                     }}>
                                         Popular Courses & Templates
                                     </Typography>
 
                                     {/* The rest of the marketplace content stays the same */}
                                     <Box sx={{
-                                        ...styles.marketplaceGrid,
+                                        ...createStyles(theme).marketplaceGrid,
                                         gap: 3,
                                     }}>
                                         {marketplaceCourses.map((course) => (
                                             <Box
                                                 key={course.id}
                                                 sx={{
-                                                    ...styles.marketplaceCard,
+                                                    ...createStyles(theme).marketplaceCard,
                                                     p: 0,
                                                     borderRadius: '12px',
-                                                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                                                    border: '1px solid rgba(34, 211, 238, 0.2)',
+                                                    backgroundColor: theme.palette.background.default, // Use default background
+                                                    border: `1px solid ${theme.palette.divider}50`, // Use divider
                                                     overflow: 'hidden',
                                                     transition: 'all 0.3s ease',
                                                     '&:hover': {
                                                         transform: 'translateY(-5px)',
-                                                        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5), 0 0 15px rgba(34, 211, 238, 0.2)',
-                                                        borderColor: 'rgba(34, 211, 238, 0.4)',
+                                                        boxShadow: `0 10px 25px rgba(0, 0, 0, 0.15), 0 0 15px ${theme.palette.secondary.main}20`, // Use secondary glow
+                                                        borderColor: `${theme.palette.secondary.main}40`, // Use secondary border on hover
                                                     }
                                                 }}
                                                 onClick={() => handleViewCourse(course)}
@@ -2427,10 +2528,10 @@ function BrdgeListPage() {
                                                         position: 'relative',
                                                         width: '100%',
                                                         paddingTop: '56.25%', // 16:9 aspect ratio
-                                                        borderBottom: '1px solid rgba(34, 211, 238, 0.15)',
+                                                        borderBottom: `1px solid ${theme.palette.divider}`,
                                                         backgroundColor: course.thumbnail_url
                                                             ? 'transparent'
-                                                            : 'linear-gradient(135deg, rgba(0, 41, 132, 0.4) 0%, rgba(34, 211, 238, 0.1) 100%)',
+                                                            : `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
                                                         overflow: 'hidden',
                                                     }}
                                                 >
@@ -2450,7 +2551,7 @@ function BrdgeListPage() {
                                                                 }}
                                                                 alt={`Thumbnail for ${course.name}`}
                                                             />
-                                                            {/* Overlay for better text visibility */}
+                                                            {/* Overlay for better text visibility - Use theme colors */}
                                                             <Box
                                                                 sx={{
                                                                     position: 'absolute',
@@ -2458,7 +2559,8 @@ function BrdgeListPage() {
                                                                     left: 0,
                                                                     width: '100%',
                                                                     height: '100%',
-                                                                    background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%)',
+                                                                    // Use a darker overlay, perhaps primary dark or similar
+                                                                    background: `linear-gradient(135deg, ${theme.palette.background.paper}90 0%, ${theme.palette.background.paper}40 100%)`,
                                                                 }}
                                                             />
                                                         </>
@@ -2473,8 +2575,8 @@ function BrdgeListPage() {
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
                                                         }}>
-                                                            <BookOpen size={36} color="#22D3EE" style={{
-                                                                filter: 'drop-shadow(0 0 10px rgba(34, 211, 238, 0.8))'
+                                                            <BookOpen size={36} color={theme.palette.secondary.main} style={{
+                                                                filter: `drop-shadow(0 0 10px ${theme.palette.secondary.main}40)`
                                                             }} />
                                                         </Box>
                                                     )}
@@ -2484,14 +2586,14 @@ function BrdgeListPage() {
                                                         position: 'absolute',
                                                         top: 10,
                                                         left: 10,
-                                                        backgroundColor: 'rgba(0,0,0,0.6)',
-                                                        color: '#22D3EE',
+                                                        backgroundColor: `${theme.palette.background.paper}C0`,
+                                                        color: theme.palette.secondary.main, // Use secondary color
                                                         borderRadius: '4px',
                                                         padding: '2px 8px',
                                                         fontSize: '0.75rem',
                                                         fontWeight: 'medium',
                                                         zIndex: 2,
-                                                        border: '1px solid rgba(34, 211, 238, 0.3)',
+                                                        border: `1px solid ${theme.palette.divider}`,
                                                     }}>
                                                         {course.modules?.length || 0} modules
                                                     </Box>
@@ -2499,13 +2601,13 @@ function BrdgeListPage() {
 
                                                 <Box sx={{ p: 2 }}>
                                                     <Typography variant="h6" sx={{
-                                                        color: 'white',
+                                                        color: theme.palette.text.primary,
                                                         mb: 1,
-                                                        textShadow: '0 0 5px rgba(34, 211, 238, 0.3)'
+                                                        fontFamily: theme.typography.h6.fontFamily
                                                     }}>
                                                         {course.name}
                                                     </Typography>
-                                                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+                                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                                         {course.description ? (
                                                             course.description.length > 60
                                                                 ? `${course.description.substring(0, 60)}...`
@@ -2516,9 +2618,9 @@ function BrdgeListPage() {
                                                         mt: 'auto',
                                                         display: 'flex',
                                                         alignItems: 'center',
-                                                        color: 'rgba(255, 255, 255, 0.5)'
+                                                        color: theme.palette.text.disabled
                                                     }}>
-                                                        <User size={14} style={{ marginRight: '4px', color: '#22D3EE' }} />
+                                                        <User size={14} style={{ marginRight: '4px', color: theme.palette.secondary.main }} />
                                                         Created by: {course.created_by || 'Brdge AI Team'}
                                                     </Typography>
                                                 </Box>
@@ -2531,11 +2633,11 @@ function BrdgeListPage() {
                                                 gridColumn: '1 / -1',
                                                 p: 4,
                                                 textAlign: 'center',
-                                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                                backgroundColor: `${theme.palette.background.default}50`,
                                                 borderRadius: '12px',
-                                                border: '1px dashed rgba(34, 211, 238, 0.2)'
+                                                border: `1px dashed ${theme.palette.divider}`
                                             }}>
-                                                <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+                                                <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                                     No marketplace courses available yet.
                                                 </Typography>
                                             </Box>
@@ -2551,14 +2653,14 @@ function BrdgeListPage() {
                             onClose={() => setBatchDeleteDialogOpen(false)}
                             sx={{
                                 '& .MuiDialog-paper': {
-                                    backgroundColor: 'rgba(17, 25, 40, 0.95)',
+                                    backgroundColor: theme.palette.background.paper,
                                     backdropFilter: 'blur(16px)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    color: theme.palette.text.primary,
                                     borderRadius: '16px',
-                                    color: 'white',
                                     minWidth: '400px',
-                                    boxShadow: '0 0 40px rgba(0,0,0,0.5)',
-                                    overflow: 'hidden'
+                                    boxShadow: theme.shadows[4],
+                                    overflow: 'hidden',
+                                    border: `1px solid ${theme.palette.divider}`
                                 },
                                 '& .MuiBackdrop-root': {
                                     backdropFilter: 'blur(8px)'
@@ -2566,7 +2668,7 @@ function BrdgeListPage() {
                             }}
                         >
                             <DialogTitle sx={{
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderBottom: `1px solid ${theme.palette.divider}`,
                                 padding: '20px 24px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2580,32 +2682,32 @@ function BrdgeListPage() {
                                     transform: 'translateX(-50%)',
                                     width: '60%',
                                     height: '1px',
-                                    background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
-                                    boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
+                                    background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`,
+                                    boxShadow: `0 0 10px ${theme.palette.error.main}30`
                                 }
                             }}>
                                 <Box sx={{
                                     width: 40,
                                     height: 40,
                                     borderRadius: '50%',
-                                    backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                    backgroundColor: `${theme.palette.error.main}10`,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    boxShadow: '0 0 15px rgba(255, 75, 75, 0.2)'
+                                    boxShadow: `0 0 15px ${theme.palette.error.main}20`
                                 }}>
-                                    <Trash2 size={20} color="#FF4B4B" />
+                                    <Trash2 size={20} color={theme.palette.error.main} />
                                 </Box>
                                 <Box>
                                     <Typography variant="h6" sx={{
-                                        color: '#FF4B4B',
+                                        color: theme.palette.error.main,
                                         fontWeight: 600,
                                         fontSize: '1.1rem'
                                     }}>
                                         Delete Multiple Modules
                                     </Typography>
                                     <Typography variant="caption" sx={{
-                                        color: 'rgba(255, 255, 255, 0.7)',
+                                        color: theme.palette.text.secondary,
                                         display: 'block',
                                         mt: 0.5
                                     }}>
@@ -2615,7 +2717,7 @@ function BrdgeListPage() {
                             </DialogTitle>
                             <DialogContent sx={{
                                 padding: '24px',
-                                backgroundColor: 'rgba(255, 75, 75, 0.02)'
+                                backgroundColor: `${theme.palette.error.main}02`
                             }}>
                                 <Box sx={{
                                     display: 'flex',
@@ -2623,14 +2725,14 @@ function BrdgeListPage() {
                                     gap: 2,
                                     p: 3,
                                     borderRadius: '12px',
-                                    backgroundColor: 'rgba(255, 75, 75, 0.05)',
-                                    border: '1px solid rgba(255, 75, 75, 0.1)'
+                                    backgroundColor: `${theme.palette.error.main}05`,
+                                    border: `1px solid ${theme.palette.error.main}10`
                                 }}>
                                     <Box sx={{
                                         width: 28,
                                         height: 28,
                                         borderRadius: '50%',
-                                        backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                                        backgroundColor: `${theme.palette.error.main}15`,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -2638,21 +2740,21 @@ function BrdgeListPage() {
                                         mt: 0.5
                                     }}>
                                         <Typography sx={{
-                                            color: '#FF4B4B',
+                                            color: theme.palette.error.main,
                                             fontSize: '1rem',
                                             fontWeight: 600
                                         }}>!</Typography>
                                     </Box>
                                     <Box>
                                         <Typography variant="body1" sx={{
-                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            color: theme.palette.text.primary,
                                             fontWeight: 500,
                                             mb: 1
                                         }}>
                                             Are you sure you want to delete these modules?
                                         </Typography>
                                         <Typography variant="body2" sx={{
-                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            color: theme.palette.text.secondary,
                                             fontSize: '0.875rem',
                                             lineHeight: 1.6,
                                             mb: 1
@@ -2661,7 +2763,7 @@ function BrdgeListPage() {
                                         </Typography>
                                         <Box component="ul" sx={{
                                             pl: 2,
-                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            color: theme.palette.text.secondary,
                                             fontSize: '0.875rem',
                                             '& li': { mb: 0.5 }
                                         }}>
@@ -2670,7 +2772,7 @@ function BrdgeListPage() {
                                             <li>References in any courses using these modules</li>
                                         </Box>
                                         <Typography variant="body2" sx={{
-                                            color: '#FF4B4B',
+                                            color: theme.palette.error.main,
                                             fontWeight: 500,
                                             mt: 2
                                         }}>
@@ -2680,26 +2782,26 @@ function BrdgeListPage() {
                                 </Box>
                             </DialogContent>
                             <DialogActions sx={{
-                                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderTop: `1px solid ${theme.palette.divider}`,
                                 padding: '16px 24px',
                                 gap: 2,
                                 justifyContent: 'space-between',
-                                backgroundColor: 'rgba(17, 25, 40, 0.98)'
+                                backgroundColor: theme.palette.background.paper
                             }}>
-                                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.disabled }}>
                                     Selected: {selectedModules.length} module{selectedModules.length !== 1 ? 's' : ''}
                                 </Typography>
                                 <Box sx={{ display: 'flex', gap: 2 }}>
                                     <Button
                                         onClick={() => setBatchDeleteDialogOpen(false)}
                                         sx={{
-                                            color: 'rgba(255, 255, 255, 0.7)',
+                                            color: theme.palette.text.secondary,
                                             px: 3,
                                             borderRadius: '8px',
                                             transition: 'all 0.2s ease',
                                             '&:hover': {
-                                                color: 'white',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                                color: theme.palette.text.primary,
+                                                backgroundColor: `${theme.palette.action.hover}`
                                             }
                                         }}
                                     >
@@ -2708,17 +2810,17 @@ function BrdgeListPage() {
                                     <Button
                                         onClick={confirmBatchDelete}
                                         sx={{
-                                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
-                                            color: '#FF4B4B',
+                                            backgroundColor: `${theme.palette.error.main}15`,
+                                            color: theme.palette.error.main,
                                             borderRadius: '8px',
                                             px: 3,
                                             fontWeight: 600,
-                                            border: '1px solid rgba(255, 75, 75, 0.3)',
+                                            border: `1px solid ${theme.palette.error.main}30`,
                                             transition: 'all 0.2s ease',
                                             '&:hover': {
-                                                backgroundColor: 'rgba(255, 75, 75, 0.25)',
-                                                borderColor: 'rgba(255, 75, 75, 0.5)',
-                                                boxShadow: '0 0 20px rgba(255, 75, 75, 0.3)'
+                                                backgroundColor: `${theme.palette.error.main}25`,
+                                                borderColor: `${theme.palette.error.main}50`,
+                                                boxShadow: theme.shadows[2]
                                             }
                                         }}
                                     >
@@ -2948,29 +3050,33 @@ function BrdgeListPage() {
             <Dialog
                 open={deleteCourseDialogOpen}
                 onClose={() => setDeleteCourseDialogOpen(false)}
-                sx={{
-                    '& .MuiDialog-paper': {
-                        backgroundColor: 'rgba(17, 25, 40, 0.95)',
-                        backdropFilter: 'blur(16px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '16px',
-                        color: 'white',
-                        minWidth: '400px',
-                        boxShadow: '0 0 40px rgba(0,0,0,0.5)',
-                        overflow: 'hidden'
-                    },
-                    '& .MuiBackdrop-root': {
-                        backdropFilter: 'blur(8px)'
+                PaperProps={{ // Use PaperProps to style the dialog paper with theme
+                    sx: {
+                        backgroundColor: theme.palette.background.paper, // Parchment Dark bg
+                        color: theme.palette.text.primary, // Ink color
+                        borderRadius: 2, // Consistent rounding
+                        boxShadow: theme.shadows[4], // Use theme shadow
+                        border: `1px solid ${theme.palette.divider}`, // Sepia border
+                        minWidth: { xs: '90%', sm: 400 },
+                        overflow: 'hidden' // Keep overflow hidden
                     }
                 }}
+            // Optional: Style backdrop if needed, theme might handle this
+            // sx={{
+            //     '& .MuiBackdrop-root': {
+            //         backdropFilter: 'blur(5px)', // Example blur
+            //         backgroundColor: 'rgba(0,0,0,0.3)' // Example overlay color
+            //     }
+            // }}
             >
                 <DialogTitle sx={{
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderBottom: `1px solid ${theme.palette.divider}`, // Sepia divider
                     padding: '20px 24px',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,
                     position: 'relative',
+                    backgroundColor: theme.palette.background.default, // Slightly darker parchment for title
                     '&::after': {
                         content: '""',
                         position: 'absolute',
@@ -2979,32 +3085,32 @@ function BrdgeListPage() {
                         transform: 'translateX(-50%)',
                         width: '60%',
                         height: '1px',
-                        background: 'linear-gradient(90deg, transparent, rgba(255, 75, 75, 0.5), transparent)',
-                        boxShadow: '0 0 10px rgba(255, 75, 75, 0.3)'
+                        background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`, // Error color gradient
+                        boxShadow: `0 0 10px ${theme.palette.error.main}30` // Error color shadow
                     }
                 }}>
                     <Box sx={{
                         width: 40,
                         height: 40,
                         borderRadius: '50%',
-                        backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                        backgroundColor: `${theme.palette.error.main}10`, // Error tint bg
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 0 15px rgba(255, 75, 75, 0.2)'
+                        boxShadow: `0 0 15px ${theme.palette.error.main}20` // Error tint shadow
                     }}>
-                        <Trash2 size={20} color="#FF4B4B" />
+                        <Trash2 size={20} color={theme.palette.error.main} /> {/* Error color icon */}
                     </Box>
                     <Box>
                         <Typography variant="h6" sx={{
-                            color: '#FF4B4B',
+                            color: theme.palette.error.main, // Error color text
                             fontWeight: 600,
                             fontSize: '1.1rem'
                         }}>
                             Delete Course
                         </Typography>
                         <Typography variant="caption" sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
+                            color: theme.palette.text.secondary, // Ink faded
                             display: 'block',
                             mt: 0.5
                         }}>
@@ -3014,7 +3120,7 @@ function BrdgeListPage() {
                 </DialogTitle>
                 <DialogContent sx={{
                     padding: '24px',
-                    backgroundColor: 'rgba(255, 75, 75, 0.02)'
+                    backgroundColor: `${theme.palette.error.main}05` // Very subtle error tint background
                 }}>
                     <Box sx={{
                         display: 'flex',
@@ -3022,14 +3128,14 @@ function BrdgeListPage() {
                         gap: 2,
                         p: 3,
                         borderRadius: '12px',
-                        backgroundColor: 'rgba(255, 75, 75, 0.05)',
-                        border: '1px solid rgba(255, 75, 75, 0.1)'
+                        backgroundColor: `${theme.palette.error.main}08`, // Error tint background
+                        border: `1px solid ${theme.palette.error.main}15` // Error tint border
                     }}>
                         <Box sx={{
                             width: 28,
                             height: 28,
                             borderRadius: '50%',
-                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
+                            backgroundColor: `${theme.palette.error.main}20`, // Error tint background for icon
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -3037,21 +3143,21 @@ function BrdgeListPage() {
                             mt: 0.5
                         }}>
                             <Typography sx={{
-                                color: '#FF4B4B',
+                                color: theme.palette.error.main, // Error color
                                 fontSize: '1rem',
                                 fontWeight: 600
                             }}>!</Typography>
                         </Box>
                         <Box>
                             <Typography variant="body1" sx={{
-                                color: 'rgba(255, 255, 255, 0.9)',
+                                color: theme.palette.text.primary, // Ink
                                 fontWeight: 500,
                                 mb: 1
                             }}>
                                 Are you sure you want to delete this course?
                             </Typography>
                             <Typography variant="body2" sx={{
-                                color: 'rgba(255, 255, 255, 0.7)',
+                                color: theme.palette.text.secondary, // Ink Faded
                                 fontSize: '0.875rem',
                                 lineHeight: 1.6,
                                 mb: 1
@@ -3059,11 +3165,12 @@ function BrdgeListPage() {
                                 This will remove the course and its structure, but all your modules will remain available in your library.
                             </Typography>
                             <Typography variant="body2" sx={{
-                                color: 'rgba(255, 255, 255, 0.7)',
+                                color: theme.palette.text.secondary, // Ink Faded
                                 fontSize: '0.875rem',
-                                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                backgroundColor: theme.palette.background.default, // Use default parchment for inner box
                                 p: 1.5,
                                 borderRadius: '6px',
+                                border: `1px solid ${theme.palette.divider}50`, // Add subtle sepia border
                                 mt: 2
                             }}>
                                 <strong>Modules affected:</strong> {courseToDelete?.modules?.length || 0} module(s) will be removed from this course but will remain in your library.
@@ -3072,22 +3179,22 @@ function BrdgeListPage() {
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderTop: `1px solid ${theme.palette.divider}`, // Sepia divider
                     padding: '16px 24px',
                     gap: 2,
                     justifyContent: 'space-between',
-                    backgroundColor: 'rgba(17, 25, 40, 0.98)'
+                    backgroundColor: theme.palette.background.paper // Parchment Dark bg for actions
                 }}>
                     <Button
                         onClick={() => setDeleteCourseDialogOpen(false)}
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.7)',
+                            color: theme.palette.text.secondary, // Use theme text color
                             px: 3,
                             borderRadius: '8px',
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                                color: 'white',
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                color: theme.palette.text.primary, // Ink on hover
+                                backgroundColor: theme.palette.action.hover // Use theme hover action color
                             }
                         }}
                     >
@@ -3096,17 +3203,17 @@ function BrdgeListPage() {
                     <Button
                         onClick={confirmDeleteCourse}
                         sx={{
-                            backgroundColor: 'rgba(255, 75, 75, 0.15)',
-                            color: '#FF4B4B',
+                            backgroundColor: `${theme.palette.error.main}15`, // Error tint background
+                            color: theme.palette.error.main, // Error color text
                             borderRadius: '8px',
                             px: 3,
                             fontWeight: 600,
-                            border: '1px solid rgba(255, 75, 75, 0.3)',
+                            border: `1px solid ${theme.palette.error.main}30`, // Error color border
                             transition: 'all 0.2s ease',
                             '&:hover': {
-                                backgroundColor: 'rgba(255, 75, 75, 0.25)',
-                                borderColor: 'rgba(255, 75, 75, 0.5)',
-                                boxShadow: '0 0 20px rgba(255, 75, 75, 0.3)'
+                                backgroundColor: `${theme.palette.error.main}25`, // Darker error tint on hover
+                                borderColor: `${theme.palette.error.main}50`, // Stronger error border on hover
+                                boxShadow: theme.shadows[2] // Use theme shadow
                             }
                         }}
                     >
@@ -3121,22 +3228,20 @@ function BrdgeListPage() {
                 onClose={handleCloseShare}
                 PaperProps={{
                     sx: {
-                        bgcolor: 'rgba(20, 20, 35, 0.95)',
-                        backdropFilter: 'blur(10px)',
-                        color: '#fff',
-                        borderRadius: 3,
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-                        border: '1px solid rgba(0, 229, 255, 0.2)',
+                        bgcolor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        borderRadius: 2,
+                        boxShadow: theme.shadows[4],
+                        border: `1px solid ${theme.palette.divider}`,
                         minWidth: { xs: '90%', sm: 400 },
                     }
                 }}
             >
                 <DialogTitle sx={{
-                    bgcolor: 'rgba(0, 188, 212, 0.15)',
-                    color: '#fff',
-                    borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
-                    backdropFilter: 'blur(5px)',
-                    fontFamily: 'Satoshi, sans-serif',
+                    bgcolor: theme.palette.background.default,
+                    color: theme.palette.text.primary,
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontFamily: theme.typography.h6.fontFamily,
                     fontWeight: 'bold',
                     letterSpacing: '0.02em',
                     fontSize: '1.5rem'
@@ -3148,7 +3253,7 @@ function BrdgeListPage() {
                         variant="body1"
                         gutterBottom
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.9)',
+                            color: theme.palette.text.secondary,
                             fontSize: '1rem',
                             lineHeight: 1.6,
                             mb: 3
@@ -3164,20 +3269,12 @@ function BrdgeListPage() {
                             <Switch
                                 checked={brdgeToShare?.shareable || false}
                                 onChange={handleShareToggle}
-                                color="primary"
-                                sx={{
-                                    '& .MuiSwitch-switchBase.Mui-checked': {
-                                        color: '#00E5FF',
-                                    },
-                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                        backgroundColor: '#00BCD4',
-                                    },
-                                }}
+                                color="secondary"
                             />
                         }
                         label={
                             <Typography sx={{
-                                color: '#fff',
+                                color: theme.palette.text.primary,
                                 fontSize: '1rem',
                                 fontWeight: 500
                             }}>
@@ -3188,7 +3285,7 @@ function BrdgeListPage() {
                             my: 1.5,
                             display: 'block',
                             '& .MuiFormControlLabel-label': {
-                                color: '#fff'
+                                color: theme.palette.text.primary
                             }
                         }}
                     />
@@ -3199,7 +3296,7 @@ function BrdgeListPage() {
                                 variant="body2"
                                 gutterBottom
                                 sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    color: theme.palette.text.secondary,
                                     mb: 1
                                 }}
                             >
@@ -3211,10 +3308,10 @@ function BrdgeListPage() {
                                 InputProps={{
                                     readOnly: true,
                                     sx: {
-                                        color: '#fff',
-                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
+                                        color: theme.palette.text.primary,
+                                        bgcolor: theme.palette.background.default,
                                         '& .MuiInputBase-input': {
-                                            color: '#fff',
+                                            color: theme.palette.text.primary,
                                         }
                                     },
                                     endAdornment: (
@@ -3222,7 +3319,7 @@ function BrdgeListPage() {
                                             <IconButton
                                                 onClick={handleCopyLink}
                                                 edge="end"
-                                                sx={{ color: linkCopied ? '#4CAF50' : '#00E5FF' }}
+                                                sx={{ color: linkCopied ? '#4CAF50' : theme.palette.secondary.main }}
                                             >
                                                 {linkCopied ? <Check size={18} /> : <Copy size={18} />}
                                             </IconButton>
@@ -3233,8 +3330,8 @@ function BrdgeListPage() {
                                 size="small"
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
-                                        '& fieldset': { borderColor: '#00BCD4' },
-                                        '&:hover fieldset': { borderColor: '#00E5FF' },
+                                        '& fieldset': { borderColor: `${theme.palette.secondary.main}50` },
+                                        '&:hover fieldset': { borderColor: theme.palette.secondary.main },
                                     }
                                 }}
                             />
@@ -3243,7 +3340,7 @@ function BrdgeListPage() {
                                 sx={{
                                     display: 'block',
                                     mt: 1,
-                                    color: linkCopied ? '#4CAF50' : 'rgba(255, 255, 255, 0.5)',
+                                    color: linkCopied ? '#4CAF50' : theme.palette.text.disabled,
                                     transition: 'color 0.3s ease'
                                 }}
                             >
@@ -3255,14 +3352,14 @@ function BrdgeListPage() {
                     <Box sx={{
                         mt: 3,
                         p: 2,
-                        bgcolor: 'rgba(0, 229, 255, 0.05)',
+                        bgcolor: `${theme.palette.background.default}80`,
                         borderRadius: '8px',
-                        border: '1px solid rgba(0, 229, 255, 0.1)'
+                        border: `1px solid ${theme.palette.secondary.main}20`
                     }}>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
                             <strong>Module:</strong> {brdgeToShare?.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', display: 'block', mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block', mt: 1 }}>
                             When shared, others can view this module's content and interact with it.
                         </Typography>
                     </Box>
@@ -3272,11 +3369,11 @@ function BrdgeListPage() {
                         onClick={handleCloseShare}
                         variant="outlined"
                         sx={{
-                            color: '#00E5FF',
-                            borderColor: '#00BCD4',
+                            color: theme.palette.secondary.main,
+                            borderColor: `${theme.palette.secondary.main}50`,
                             '&:hover': {
-                                borderColor: '#00E5FF',
-                                backgroundColor: 'rgba(0, 229, 255, 0.08)'
+                                borderColor: theme.palette.secondary.main,
+                                backgroundColor: `${theme.palette.secondary.main}10`
                             }
                         }}
                     >
@@ -3289,24 +3386,22 @@ function BrdgeListPage() {
             <Dialog
                 open={shareCourseDialogOpen}
                 onClose={handleCloseCourseShare}
-                PaperProps={{
+                PaperProps={{ // Apply theme styling
                     sx: {
-                        bgcolor: 'rgba(20, 20, 35, 0.95)',
-                        backdropFilter: 'blur(10px)',
-                        color: '#fff',
-                        borderRadius: 3,
-                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-                        border: '1px solid rgba(0, 229, 255, 0.2)',
+                        bgcolor: theme.palette.background.paper, // Parchment Dark bg
+                        color: theme.palette.text.primary, // Ink color
+                        borderRadius: 2,
+                        boxShadow: theme.shadows[4],
+                        border: `1px solid ${theme.palette.divider}`, // Sepia border
                         minWidth: { xs: '90%', sm: 400 },
                     }
                 }}
             >
                 <DialogTitle sx={{
-                    bgcolor: 'rgba(0, 188, 212, 0.15)',
-                    color: '#fff',
-                    borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
-                    backdropFilter: 'blur(5px)',
-                    fontFamily: 'Satoshi, sans-serif',
+                    bgcolor: theme.palette.background.default, // Slightly darker parchment for title
+                    color: theme.palette.text.primary, // Ink
+                    borderBottom: `1px solid ${theme.palette.divider}`, // Sepia divider
+                    fontFamily: theme.typography.h6.fontFamily,
                     fontWeight: 'bold',
                     letterSpacing: '0.02em',
                     fontSize: '1.5rem'
@@ -3318,7 +3413,7 @@ function BrdgeListPage() {
                         variant="body1"
                         gutterBottom
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.9)',
+                            color: theme.palette.text.secondary, // Ink Faded
                             fontSize: '1rem',
                             lineHeight: 1.6,
                             mb: 3
@@ -3334,20 +3429,12 @@ function BrdgeListPage() {
                             <Switch
                                 checked={courseToShare?.shareable || false}
                                 onChange={handleCourseShareToggle}
-                                color="primary"
-                                sx={{
-                                    '& .MuiSwitch-switchBase.Mui-checked': {
-                                        color: '#00E5FF',
-                                    },
-                                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                        backgroundColor: '#00BCD4',
-                                    },
-                                }}
+                                color="secondary" // Use theme's secondary color for switch
                             />
                         }
                         label={
                             <Typography sx={{
-                                color: '#fff',
+                                color: theme.palette.text.primary, // Ink
                                 fontSize: '1rem',
                                 fontWeight: 500
                             }}>
@@ -3358,7 +3445,7 @@ function BrdgeListPage() {
                             my: 1.5,
                             display: 'block',
                             '& .MuiFormControlLabel-label': {
-                                color: '#fff'
+                                color: theme.palette.text.primary // Ensure label color matches
                             }
                         }}
                     />
@@ -3369,7 +3456,7 @@ function BrdgeListPage() {
                                 variant="body2"
                                 gutterBottom
                                 sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    color: theme.palette.text.secondary, // Ink Faded
                                     mb: 1
                                 }}
                             >
@@ -3381,10 +3468,10 @@ function BrdgeListPage() {
                                 InputProps={{
                                     readOnly: true,
                                     sx: {
-                                        color: '#fff',
-                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                        '& .MuiInputBase-input': {
-                                            color: '#fff',
+                                        color: theme.palette.text.primary, // Ink
+                                        bgcolor: theme.palette.background.default, // Use theme default background
+                                        '& .MuiInputBase-input': { // Ensure input text uses theme color
+                                            color: theme.palette.text.primary,
                                         }
                                     },
                                     endAdornment: (
@@ -3392,7 +3479,7 @@ function BrdgeListPage() {
                                             <IconButton
                                                 onClick={handleCopyCourseLink}
                                                 edge="end"
-                                                sx={{ color: courseLinkCopied ? '#4CAF50' : '#00E5FF' }}
+                                                sx={{ color: courseLinkCopied ? theme.palette.success.main : theme.palette.secondary.main }} // Use theme success and secondary colors
                                             >
                                                 {courseLinkCopied ? <Check size={18} /> : <Copy size={18} />}
                                             </IconButton>
@@ -3403,8 +3490,8 @@ function BrdgeListPage() {
                                 size="small"
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
-                                        '& fieldset': { borderColor: '#00BCD4' },
-                                        '&:hover fieldset': { borderColor: '#00E5FF' },
+                                        '& fieldset': { borderColor: `${theme.palette.secondary.main}50` }, // Use theme secondary border
+                                        '&:hover fieldset': { borderColor: theme.palette.secondary.main }, // Use stronger theme secondary border on hover
                                     }
                                 }}
                             />
@@ -3413,7 +3500,7 @@ function BrdgeListPage() {
                                 sx={{
                                     display: 'block',
                                     mt: 1,
-                                    color: courseLinkCopied ? '#4CAF50' : 'rgba(255, 255, 255, 0.5)',
+                                    color: courseLinkCopied ? theme.palette.success.main : theme.palette.text.disabled, // Use theme success and disabled colors
                                     transition: 'color 0.3s ease'
                                 }}
                             >
@@ -3425,19 +3512,19 @@ function BrdgeListPage() {
                     <Box sx={{
                         mt: 3,
                         p: 2,
-                        bgcolor: 'rgba(0, 229, 255, 0.05)',
+                        bgcolor: `${theme.palette.secondary.main}08`, // Sepia tint background
                         borderRadius: '8px',
-                        border: '1px solid rgba(0, 229, 255, 0.1)'
+                        border: `1px solid ${theme.palette.secondary.main}15` // Sepia tint border
                     }}>
-                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                        <Typography variant="body2" sx={{ color: theme.palette.text.primary }}> {/* Ink */}
                             <strong>Course:</strong> {courseToShare?.name}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)', display: 'block', mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mt: 1 }}> {/* Ink Faded */}
                             When shared, others can view this course's modules and content.
                         </Typography>
                         <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <AutoStoriesIcon sx={{ color: '#00E5FF', fontSize: 16 }} />
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                            <AutoStoriesIcon sx={{ color: theme.palette.secondary.main, fontSize: 16 }} /> {/* Use Sepia color for icon */}
+                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}> {/* Ink Faded */}
                                 {courseToShare?.modules?.length || 0} module(s) in this course
                             </Typography>
                         </Box>
@@ -3447,12 +3534,12 @@ function BrdgeListPage() {
                     <Button
                         onClick={handleCloseCourseShare}
                         variant="outlined"
-                        sx={{
-                            color: '#00E5FF',
-                            borderColor: '#00BCD4',
+                        sx={{ // Use theme secondary button style
+                            color: theme.palette.secondary.main,
+                            borderColor: `${theme.palette.secondary.main}50`,
                             '&:hover': {
-                                borderColor: '#00E5FF',
-                                backgroundColor: 'rgba(0, 229, 255, 0.08)'
+                                borderColor: theme.palette.secondary.main,
+                                backgroundColor: `${theme.palette.secondary.main}10`
                             }
                         }}
                     >

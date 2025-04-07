@@ -18,6 +18,7 @@ import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
+import CourseSlideBuilderPage from './pages/CourseSlideBuilderPage';
 import { api } from './api';
 import { getAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
@@ -71,7 +72,7 @@ function Layout({ children }) {
   const isLandingPage = location.pathname === '/';
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services'];
+  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services', '/course-slide-builder'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -144,7 +145,7 @@ function Layout({ children }) {
           sx={{
             flexGrow: 1,
             // Add padding top to account for the fixed header
-            pt: isLandingPage ? 0 : { xs: '48px', sm: '64px' }
+            pt: isLandingPage ? 0 : { xs: '44px', sm: '50px', md: '56px' }
           }}
         >
           {children}
@@ -180,6 +181,7 @@ function App() {
                 <Route path="/c/:publicId" element={<ViewCoursePage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/services" element={<ServicesPage />} />
+                <Route path="/course-slide-builder" element={<CourseSlideBuilderPage />} />
                 <Route
                   path="/home"
                   element={

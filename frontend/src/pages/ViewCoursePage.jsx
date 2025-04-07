@@ -22,6 +22,7 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 import TimerIcon from '@mui/icons-material/Timer';
 import PersonIcon from '@mui/icons-material/Person';
 import VerifiedIcon from '@mui/icons-material/Verified';
+import { Check, AlertTriangle, Lock } from 'lucide-react';
 import { getAuthToken } from '../utils/auth';
 import { api } from '../api';
 import { AuthContext } from '../App';
@@ -200,7 +201,7 @@ function ViewCoursePage() {
                 const updatedModules = prevCourse.modules.map(module => {
                     // If module has no thumbnail but its brdge does, copy it up
                     if (!module.thumbnail_url && module.brdge?.thumbnail_url) {
-                        console.log(`Copying thumbnail from brdge to module ${module.id}`);
+                        console.log(`Module ${module.id} has thumbnail in brdge but not directly`);
                         return {
                             ...module,
                             thumbnail_url: module.brdge.thumbnail_url
@@ -385,25 +386,34 @@ function ViewCoursePage() {
                 alignItems: 'center',
                 flexDirection: 'column',
                 height: '100vh',
-                bgcolor: '#0a0a14',
-                background: 'radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.8) 0%, rgba(5, 5, 15, 1) 100%)',
+                bgcolor: theme.palette.background.default,
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                }
             }}>
-                <Box sx={{ position: 'relative', width: 120, height: 120 }}>
+                <Box sx={{ position: 'relative', width: 120, height: 120, zIndex: 1 }}>
                     <CircularProgress
                         variant="determinate"
                         value={loadingProgress}
                         size={120}
                         thickness={2}
                         sx={{
-                            color: '#00E5FF',
-                            opacity: 0.7
+                            color: theme.palette.secondary.main,
                         }}
                     />
                     <CircularProgress
                         size={120}
                         thickness={3}
                         sx={{
-                            color: '#00BCD4',
+                            color: theme.palette.secondary.light,
                             position: 'absolute',
                             left: 0,
                             animationDuration: '3s',
@@ -421,9 +431,8 @@ function ViewCoursePage() {
                         justifyContent: 'center',
                     }}>
                         <Typography variant="h4" sx={{
-                            color: '#FFFFFF',
+                            color: theme.palette.text.primary,
                             fontWeight: 'bold',
-                            textShadow: '0 0 10px rgba(0, 229, 255, 0.7)'
                         }}>
                             {loadingProgress}%
                         </Typography>
@@ -432,12 +441,10 @@ function ViewCoursePage() {
                 <Typography
                     variant="h5"
                     sx={{
-                        color: 'rgba(255, 255, 255, 0.9)',
+                        color: theme.palette.text.primary,
                         fontWeight: 500,
                         mt: 4,
-                        fontFamily: 'Satoshi, sans-serif',
-                        letterSpacing: '0.02em',
-                        textShadow: '0 0 10px rgba(0, 229, 255, 0.4)'
+                        fontFamily: theme.typography.headingFontFamily,
                     }}
                 >
                     Loading Course
@@ -445,8 +452,7 @@ function ViewCoursePage() {
                 <Typography
                     variant="body2"
                     sx={{
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        fontFamily: 'Satoshi, sans-serif',
+                        color: theme.palette.text.secondary,
                         maxWidth: 300,
                         textAlign: 'center',
                         mt: 1
@@ -471,10 +477,20 @@ function ViewCoursePage() {
                     justifyContent: 'center',
                     alignItems: 'center',
                     height: '100vh',
-                    bgcolor: '#0a0a14',
-                    background: 'radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.8) 0%, rgba(5, 5, 15, 1) 100%)',
+                    bgcolor: theme.palette.background.default,
+                    position: 'relative',
                     px: 3,
-                    gap: 2
+                    gap: 2,
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundImage: `url(${theme.textures.darkParchment})`,
+                        backgroundSize: 'cover',
+                        opacity: 0.1,
+                        pointerEvents: 'none',
+                        zIndex: 0,
+                    }
                 }}>
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
@@ -484,25 +500,35 @@ function ViewCoursePage() {
                         <Box
                             sx={{
                                 p: 4,
-                                bgcolor: 'rgba(25, 25, 35, 0.5)',
-                                backdropFilter: 'blur(20px)',
+                                bgcolor: theme.palette.background.paper,
                                 borderRadius: 3,
-                                boxShadow: '0 0 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
-                                border: '1px solid rgba(80, 80, 120, 0.15)',
+                                boxShadow: theme.shadows[2],
+                                border: `1px solid ${theme.palette.divider}`,
                                 textAlign: 'center',
-                                maxWidth: 500
+                                maxWidth: 500,
+                                position: 'relative',
+                                zIndex: 1
                             }}
                         >
                             <Typography
                                 variant="h4"
                                 gutterBottom
                                 sx={{
-                                    color: 'white',
-                                    textShadow: '0 0 10px rgba(244, 67, 54, 0.3)',
+                                    color: theme.palette.text.primary,
                                     fontWeight: 600,
-                                    fontFamily: 'Satoshi, sans-serif',
+                                    fontFamily: theme.typography.headingFontFamily,
                                     letterSpacing: '-0.01em',
-                                    mb: 2
+                                    mb: 2,
+                                    position: 'relative',
+                                    '&::after': {
+                                        content: '""',
+                                        display: 'block',
+                                        width: '40px',
+                                        height: '2px',
+                                        background: theme.palette.secondary.main,
+                                        margin: '10px auto 0',
+                                        borderRadius: '1px',
+                                    }
                                 }}
                             >
                                 {error}
@@ -512,8 +538,7 @@ function ViewCoursePage() {
                                 variant="body1"
                                 gutterBottom
                                 sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    fontFamily: 'Satoshi, sans-serif',
+                                    color: theme.palette.text.secondary,
                                     mb: 3
                                 }}
                             >
@@ -523,8 +548,8 @@ function ViewCoursePage() {
                             <Typography
                                 variant="body2"
                                 sx={{
-                                    color: 'rgba(255, 255, 255, 0.5)',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                                    color: theme.palette.text.secondary,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
                                     p: 2,
                                     borderRadius: '8px',
                                     mb: 3,
@@ -536,21 +561,10 @@ function ViewCoursePage() {
 
                             <Button
                                 variant="contained"
+                                color="primary"
                                 onClick={handleBackToDashboard}
                                 sx={{
                                     mt: 2,
-                                    fontFamily: 'Satoshi, sans-serif',
-                                    background: 'linear-gradient(to right, #0097A7, #00BCD4)',
-                                    boxShadow: '0 4px 10px rgba(0, 229, 255, 0.3)',
-                                    px: 4,
-                                    py: 1.5,
-                                    borderRadius: '12px',
-                                    '&:hover': {
-                                        boxShadow: '0 6px 15px rgba(0, 229, 255, 0.4)',
-                                        transform: 'translateY(-2px)',
-                                        background: 'linear-gradient(to right, #00ACC1, #00BCD4)'
-                                    },
-                                    transition: 'all 0.3s ease'
                                 }}
                             >
                                 Back to Dashboard
@@ -570,28 +584,32 @@ function ViewCoursePage() {
         >
             <Box sx={{
                 minHeight: '100vh',
-                bgcolor: '#0a0a14',
-                color: 'text.primary',
-                backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(0, 200, 255, 0.08) 0%, rgba(0, 0, 0, 0) 80%)',
+                bgcolor: theme.palette.background.default,
+                color: theme.palette.text.primary,
+                position: 'relative',
                 pt: '20px',
                 pb: '40px',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    mixBlendMode: 'multiply'
+                }
             }}>
-                <Container maxWidth="lg">
+                <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
                     {/* Back button and header */}
                     <Box sx={{ mb: 4, display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <motion.div variants={itemVariants}>
                             <Button
                                 startIcon={<ArrowBackIcon />}
                                 onClick={handleBackToDashboard}
-                                sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    textTransform: 'none',
-                                    mb: 2,
-                                    '&:hover': {
-                                        color: '#00E5FF',
-                                        backgroundColor: 'rgba(0, 229, 255, 0.05)'
-                                    }
-                                }}
+                                color="secondary"
+                                sx={{ mb: 2 }}
                             >
                                 Back to Dashboard
                             </Button>
@@ -599,15 +617,41 @@ function ViewCoursePage() {
 
                         <Box sx={{
                             p: 3,
-                            borderRadius: '20px',
-                            bgcolor: 'rgba(0, 229, 255, 0.03)',
-                            border: '1px solid rgba(0, 229, 255, 0.1)',
+                            borderRadius: '16px',
+                            bgcolor: theme.palette.background.paper, // Parchment base
+                            border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
                             mb: 4,
                             position: 'relative',
                             overflow: 'hidden',
                             display: 'flex',
                             flexDirection: { xs: 'column', md: 'row' },
                             gap: 3,
+                            boxShadow: theme.shadows[3], // Add shadows
+                            '&::before': { // Add parchment texture
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.darkParchment})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.1,
+                                mixBlendMode: 'multiply',
+                                zIndex: 0,
+                            },
+                            // Add ornamental ivy to corners
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: -30,
+                                right: -30,
+                                width: '120px',
+                                height: '120px',
+                                backgroundImage: `url(${theme.textures.ivyCorner})`,
+                                backgroundSize: 'contain',
+                                backgroundRepeat: 'no-repeat',
+                                transform: 'rotate(90deg)',
+                                opacity: 0.15,
+                                zIndex: 0,
+                            }
                         }}>
                             {/* Course Thumbnail */}
                             {courseData.thumbnail_url && (
@@ -617,6 +661,9 @@ function ViewCoursePage() {
                                     borderRadius: '12px',
                                     overflow: 'hidden',
                                     flexShrink: 0,
+                                    zIndex: 1, // Ensure above textures
+                                    border: `1px solid ${theme.palette.divider}`, // Add subtle border
+                                    boxShadow: theme.shadows[2],
                                     // Create perfect 16:9 aspect ratio using padding trick
                                     '&::before': {
                                         content: '""',
@@ -655,20 +702,30 @@ function ViewCoursePage() {
                                     width: 150,
                                     height: 150,
                                     borderRadius: '50%',
-                                    background: 'radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%)',
+                                    background: `radial-gradient(circle, ${theme.palette.secondary.main}10 0%, rgba(0, 0, 0, 0) 70%)`, // Sepia glow
                                     opacity: 0.5,
                                     zIndex: 0
                                 }} />
 
                                 <motion.div variants={itemVariants}>
                                     <Typography variant="h3" component="h1" sx={{
-                                        color: '#FFFFFF',
+                                        color: theme.palette.text.primary,
+                                        fontFamily: theme.typography.headingFontFamily, // Use Neo-Scholar heading font
                                         fontWeight: 600,
                                         mb: 2,
                                         fontSize: { xs: '1.8rem', md: '2.5rem' },
-                                        textShadow: '0 0 15px rgba(0, 229, 255, 0.3)',
+                                        textShadow: `0 0 15px ${theme.palette.secondary.main}30`, // Sepia shadow
                                         position: 'relative',
-                                        zIndex: 1
+                                        zIndex: 1,
+                                        '&::after': { // Add decorative underline
+                                            content: '""',
+                                            position: 'absolute',
+                                            bottom: -8,
+                                            left: 0,
+                                            width: '80px',
+                                            height: '3px',
+                                            background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.main}40, transparent)`,
+                                        }
                                     }}>
                                         {courseData.name}
                                     </Typography>
@@ -676,7 +733,7 @@ function ViewCoursePage() {
 
                                 <motion.div variants={itemVariants}>
                                     <Typography variant="body1" sx={{
-                                        color: 'rgba(255, 255, 255, 0.8)',
+                                        color: theme.palette.text.secondary,
                                         mb: 3,
                                         maxWidth: '800px',
                                         lineHeight: 1.6,
@@ -698,40 +755,40 @@ function ViewCoursePage() {
                                         zIndex: 1
                                     }}>
                                         <Chip
-                                            icon={<AutoStoriesIcon sx={{ color: '#00E5FF !important' }} />}
+                                            icon={<AutoStoriesIcon sx={{ color: theme.palette.secondary.main }} />}
                                             label={`${courseData.modules?.length || 0} Modules`}
                                             sx={{
-                                                bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                                color: '#00E5FF',
-                                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                bgcolor: `${theme.palette.secondary.main}10`, // Sepia background
+                                                color: theme.palette.text.primary, // Ink for text
+                                                border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
                                                 '& .MuiChip-icon': {
-                                                    color: '#00E5FF'
+                                                    color: theme.palette.secondary.main
                                                 }
                                             }}
                                         />
 
                                         <Chip
-                                            icon={<TimerIcon sx={{ color: '#00E5FF !important' }} />}
+                                            icon={<TimerIcon sx={{ color: theme.palette.secondary.main }} />}
                                             label="Self-paced learning"
                                             sx={{
-                                                bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                                color: '#00E5FF',
-                                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                bgcolor: `${theme.palette.secondary.main}10`, // Sepia background 
+                                                color: theme.palette.text.primary, // Ink for text
+                                                border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
                                                 '& .MuiChip-icon': {
-                                                    color: '#00E5FF'
+                                                    color: theme.palette.secondary.main
                                                 }
                                             }}
                                         />
 
                                         <Chip
-                                            icon={<VerifiedIcon sx={{ color: '#00E5FF !important' }} />}
+                                            icon={<VerifiedIcon sx={{ color: theme.palette.secondary.main }} />}
                                             label="AI-powered"
                                             sx={{
-                                                bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                                color: '#00E5FF',
-                                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                                bgcolor: `${theme.palette.secondary.main}10`, // Sepia background
+                                                color: theme.palette.text.primary, // Ink for text
+                                                border: `1px solid ${theme.palette.secondary.main}30`, // Sepia border
                                                 '& .MuiChip-icon': {
-                                                    color: '#00E5FF'
+                                                    color: theme.palette.secondary.main
                                                 }
                                             }}
                                         />
@@ -747,13 +804,13 @@ function ViewCoursePage() {
                                                 sx={{
                                                     width: 30,
                                                     height: 30,
-                                                    bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                    border: '1px solid rgba(0, 229, 255, 0.3)'
+                                                    bgcolor: `${theme.palette.secondary.main}20`, // Sepia background
+                                                    border: `1px solid ${theme.palette.secondary.main}40` // Sepia border
                                                 }}
                                             >
-                                                <PersonIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
+                                                <PersonIcon sx={{ fontSize: 18, color: theme.palette.secondary.dark }} />
                                             </Avatar>
-                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                                 Created by {courseData.author || "Brdge AI Instructor"}
                                             </Typography>
                                         </Box>
@@ -766,15 +823,15 @@ function ViewCoursePage() {
                     {/* Course modules section */}
                     <motion.div variants={itemVariants}>
                         <Typography variant="h4" component="h2" sx={{
-                            color: '#FFFFFF',
+                            color: theme.palette.text.primary,
                             mb: 3,
                             fontWeight: 600,
                             display: 'flex',
                             alignItems: 'center',
                             gap: 1,
-                            textShadow: '0 0 10px rgba(0, 229, 255, 0.2)'
+                            fontFamily: theme.typography.headingFontFamily
                         }}>
-                            <AutoStoriesIcon sx={{ color: '#00E5FF', filter: 'drop-shadow(0 0 5px rgba(0, 229, 255, 0.7))' }} />
+                            <AutoStoriesIcon sx={{ color: theme.palette.secondary.main }} />
                             Course Modules
                         </Typography>
                     </motion.div>
@@ -797,19 +854,19 @@ function ViewCoursePage() {
                                     }
                                 },
                                 '& .swiper-button-next, & .swiper-button-prev': {
-                                    color: '#00E5FF',
+                                    color: theme.palette.secondary.main,
                                     '&:after': {
                                         fontSize: '1.5rem',
-                                        textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
+                                        textShadow: `0 0 10px ${theme.palette.secondary.main}50`
                                     }
                                 },
                                 '& .swiper-pagination-bullet': {
-                                    backgroundColor: '#00E5FF',
+                                    backgroundColor: theme.palette.secondary.main,
                                     opacity: 0.7,
                                     '&.swiper-pagination-bullet-active': {
                                         opacity: 1,
                                         transform: 'scale(1.2)',
-                                        boxShadow: '0 0 10px rgba(0, 229, 255, 0.7)'
+                                        boxShadow: `0 0 10px ${theme.palette.secondary.main}70`
                                     }
                                 }
                             }}>
@@ -836,24 +893,31 @@ function ViewCoursePage() {
                                         <SwiperSlide key={module.id} style={{ width: isSmallScreen ? 300 : 400 }}>
                                             <Card sx={{
                                                 height: '100%',
-                                                bgcolor: 'rgba(20, 20, 35, 0.85)',
-                                                backdropFilter: 'blur(10px)',
+                                                bgcolor: theme.palette.background.default,
                                                 borderRadius: '20px',
                                                 overflow: 'hidden',
                                                 position: 'relative',
                                                 transition: 'all 0.3s ease-in-out',
-                                                border: '1px solid rgba(0, 229, 255, 0.1)',
+                                                border: `1px solid ${theme.palette.secondary.main}30`,
+                                                boxShadow: theme.shadows[3],
                                                 '&:hover': {
                                                     transform: 'translateY(-8px)',
-                                                    boxShadow: `
-                                                        0 0 20px rgba(0, 229, 255, 0.2),
-                                                        0 0 40px rgba(0, 229, 255, 0.1),
-                                                        0 0 60px rgba(0, 229, 255, 0.05)
-                                                    `,
+                                                    boxShadow: theme.shadows[5],
+                                                    borderColor: theme.palette.secondary.main,
                                                     '& .module-overlay': {
                                                         opacity: 1,
                                                     }
                                                 },
+                                                '&::before': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                                                    backgroundSize: 'cover',
+                                                    opacity: 0.12,
+                                                    mixBlendMode: 'multiply',
+                                                    zIndex: 0,
+                                                }
                                             }}>
                                                 <Box sx={{ position: 'relative', height: '250px' }}>
                                                     {/* Module Label */}
@@ -866,29 +930,28 @@ function ViewCoursePage() {
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             gap: 1,
-                                                            bgcolor: 'rgba(0, 229, 255, 0.15)',
-                                                            backdropFilter: 'blur(8px)',
+                                                            bgcolor: `${theme.palette.secondary.main}15`,
                                                             borderRadius: '10px',
                                                             padding: '6px 12px',
-                                                            border: '1px solid rgba(0, 229, 255, 0.3)',
+                                                            border: `1px solid ${theme.palette.secondary.main}40`,
                                                             transition: 'all 0.3s ease',
                                                             '&:hover': {
-                                                                bgcolor: 'rgba(0, 229, 255, 0.25)',
+                                                                bgcolor: `${theme.palette.secondary.main}25`,
                                                                 transform: 'scale(1.05)',
                                                             }
                                                         }}
                                                     >
                                                         <AutoStoriesIcon sx={{
                                                             fontSize: '0.9rem',
-                                                            color: '#00E5FF',
-                                                            filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))'
+                                                            color: theme.palette.secondary.main,
+                                                            filter: `drop-shadow(0 0 8px ${theme.palette.secondary.main}50)`
                                                         }} />
                                                         <Typography variant="caption" sx={{
-                                                            color: '#00E5FF',
+                                                            color: theme.palette.secondary.main,
                                                             fontWeight: 'medium',
                                                             fontSize: '0.75rem',
                                                             letterSpacing: '0.03em',
-                                                            textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
+                                                            textShadow: `0 0 10px ${theme.palette.secondary.main}50`
                                                         }}>
                                                             {`Module ${index + 1}`}
                                                         </Typography>
@@ -904,14 +967,13 @@ function ViewCoursePage() {
                                                             zIndex: 3,
                                                             width: 32,
                                                             height: 32,
-                                                            bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                                            backdropFilter: 'blur(8px)',
-                                                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                            bgcolor: `${theme.palette.background.paper}50`,
+                                                            border: `1px solid ${theme.palette.divider}`,
                                                             opacity: 0.7,
                                                             transition: 'all 0.2s ease',
                                                             '&:hover': {
-                                                                bgcolor: 'rgba(0, 229, 255, 0.1)',
-                                                                borderColor: 'rgba(0, 229, 255, 0.3)',
+                                                                bgcolor: `${theme.palette.secondary.main}10`,
+                                                                borderColor: `${theme.palette.secondary.main}40`,
                                                                 opacity: 1,
                                                                 transform: 'scale(1.1)',
                                                             },
@@ -920,13 +982,13 @@ function ViewCoursePage() {
                                                         {bookmarkedModules.includes(module.id) ? (
                                                             <BookmarkIcon sx={{
                                                                 fontSize: '1rem',
-                                                                color: '#00E5FF',
-                                                                filter: 'drop-shadow(0 0 5px rgba(0, 229, 255, 0.5))'
+                                                                color: theme.palette.secondary.main,
+                                                                filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)`
                                                             }} />
                                                         ) : (
                                                             <BookmarkBorderIcon sx={{
                                                                 fontSize: '1rem',
-                                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                                color: theme.palette.text.secondary,
                                                             }} />
                                                         )}
                                                     </IconButton>
@@ -938,7 +1000,7 @@ function ViewCoursePage() {
                                                             height: '100%',
                                                             background: module.thumbnail_url
                                                                 ? 'none'
-                                                                : `linear-gradient(135deg, rgba(0, 21, 36, 0.95) 0%, rgba(0, 151, 167, 0.9) 100%)`,
+                                                                : `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`,
                                                         }}
                                                     >
                                                         {/* Display thumbnail directly if available */}
@@ -966,7 +1028,7 @@ function ViewCoursePage() {
                                                                         // Set a fallback gradient background
                                                                         e.target.style.display = 'none';
                                                                         if (e.target.parentElement) {
-                                                                            e.target.parentElement.style.background = 'linear-gradient(135deg, rgba(0, 21, 36, 0.95) 0%, rgba(0, 151, 167, 0.9) 100%)';
+                                                                            e.target.parentElement.style.background = `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 100%)`;
                                                                         }
                                                                     }}
                                                                 />
@@ -1005,14 +1067,13 @@ function ViewCoursePage() {
                                                                 sx={{
                                                                     width: 80,
                                                                     height: 80,
-                                                                    bgcolor: 'rgba(0, 229, 255, 0.1)',
-                                                                    backdropFilter: 'blur(8px)',
-                                                                    border: '2px solid rgba(0, 229, 255, 0.3)',
+                                                                    bgcolor: `${theme.palette.secondary.main}15`,
+                                                                    border: `2px solid ${theme.palette.secondary.main}40`,
                                                                     transition: 'all 0.3s ease',
                                                                     '&:hover': {
-                                                                        bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                                        bgcolor: `${theme.palette.secondary.main}25`,
                                                                         transform: 'scale(1.1)',
-                                                                        border: '2px solid rgba(0, 229, 255, 0.5)',
+                                                                        border: `2px solid ${theme.palette.secondary.main}70`,
                                                                         '& .play-icon': {
                                                                             transform: 'scale(1.1)',
                                                                         }
@@ -1024,7 +1085,7 @@ function ViewCoursePage() {
                                                                         left: -4,
                                                                         right: -4,
                                                                         bottom: -4,
-                                                                        border: '2px solid rgba(0, 229, 255, 0.2)',
+                                                                        border: `2px solid ${theme.palette.secondary.main}30`,
                                                                         borderRadius: '50%',
                                                                         animation: 'pulseRing 2s infinite',
                                                                     }
@@ -1034,8 +1095,8 @@ function ViewCoursePage() {
                                                                     className="play-icon"
                                                                     sx={{
                                                                         fontSize: 40,
-                                                                        color: '#00E5FF',
-                                                                        filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
+                                                                        color: theme.palette.secondary.main,
+                                                                        filter: `drop-shadow(0 0 8px ${theme.palette.secondary.main}50)`,
                                                                         transition: 'all 0.3s ease',
                                                                     }}
                                                                 />
@@ -1043,8 +1104,8 @@ function ViewCoursePage() {
                                                             <Typography
                                                                 variant="caption"
                                                                 sx={{
-                                                                    color: 'rgba(255, 255, 255, 0.8)',
-                                                                    textShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
+                                                                    color: theme.palette.text.primary,
+                                                                    textShadow: `0 0 10px ${theme.palette.secondary.main}40`,
                                                                     letterSpacing: '0.05em',
                                                                     fontWeight: 500,
                                                                 }}
@@ -1072,7 +1133,7 @@ function ViewCoursePage() {
                                                                     sx={{
                                                                         width: 40,
                                                                         height: 2,
-                                                                        bgcolor: '#00E5FF',
+                                                                        bgcolor: theme.palette.secondary.main,
                                                                         borderRadius: '2px',
                                                                         opacity: 0.6 - (i * 0.2),
                                                                     }}
@@ -1086,10 +1147,13 @@ function ViewCoursePage() {
                                                     p: 3,
                                                     height: 'calc(100% - 250px)',
                                                     display: 'flex',
-                                                    flexDirection: 'column'
+                                                    flexDirection: 'column',
+                                                    position: 'relative',
+                                                    zIndex: 1,
                                                 }}>
                                                     <Typography variant="h5" gutterBottom sx={{
-                                                        color: '#FFFFFF',
+                                                        color: theme.palette.text.primary,
+                                                        fontFamily: theme.typography.headingFontFamily,
                                                         fontWeight: 600,
                                                         fontSize: '1.25rem'
                                                     }}>
@@ -1097,7 +1161,7 @@ function ViewCoursePage() {
                                                     </Typography>
 
                                                     <Typography variant="body2" sx={{
-                                                        color: 'rgba(255, 255, 255, 0.7)',
+                                                        color: theme.palette.text.secondary,
                                                         fontSize: '0.9rem',
                                                         lineHeight: 1.6,
                                                         mb: 'auto',
@@ -1116,14 +1180,15 @@ function ViewCoursePage() {
                                                         fullWidth
                                                         sx={{
                                                             mt: 3,
-                                                            backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                                                            boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
+                                                            backgroundColor: theme.palette.secondary.main,
+                                                            boxShadow: theme.shadows[2],
                                                             fontWeight: 'medium',
                                                             letterSpacing: '0.01em',
                                                             height: '40px',
                                                             borderRadius: '10px',
                                                             '&:hover': {
-                                                                boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)',
+                                                                backgroundColor: theme.palette.secondary.dark,
+                                                                boxShadow: theme.shadows[3],
                                                                 transform: 'translateY(-2px)'
                                                             }
                                                         }}
@@ -1177,17 +1242,33 @@ function ViewCoursePage() {
                                 mt: 5,
                                 p: 3,
                                 borderRadius: '16px',
-                                bgcolor: 'rgba(0, 229, 255, 0.03)',
-                                border: '1px solid rgba(0, 229, 255, 0.1)',
+                                bgcolor: theme.palette.background.paper,
+                                border: `1px solid ${theme.palette.secondary.main}30`,
+                                boxShadow: theme.shadows[1],
                                 display: 'flex',
                                 flexDirection: { xs: 'column', md: 'row' },
                                 alignItems: 'center',
-                                gap: { xs: 2, md: 4 }
+                                gap: { xs: 2, md: 4 },
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&::before': { // Add parchment texture
+                                    content: '""',
+                                    position: 'absolute',
+                                    inset: 0,
+                                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                                    backgroundSize: 'cover',
+                                    opacity: 0.08,
+                                    mixBlendMode: 'multiply',
+                                    zIndex: 0,
+                                }
                             }}>
                                 <Typography variant="h6" sx={{
-                                    color: '#FFFFFF',
+                                    color: theme.palette.text.primary,
+                                    fontFamily: theme.typography.headingFontFamily,
                                     fontWeight: 600,
-                                    minWidth: '140px'
+                                    minWidth: '140px',
+                                    position: 'relative',
+                                    zIndex: 1
                                 }}>
                                     Your Progress
                                 </Typography>
@@ -1199,7 +1280,9 @@ function ViewCoursePage() {
                                     alignItems: 'center',
                                     gap: 1,
                                     flexWrap: 'wrap',
-                                    justifyContent: 'center'
+                                    justifyContent: 'center',
+                                    position: 'relative',
+                                    zIndex: 1
                                 }}>
                                     {courseData.modules.map((_, index) => (
                                         <Box
@@ -1209,14 +1292,17 @@ function ViewCoursePage() {
                                                 height: 12,
                                                 borderRadius: '50%',
                                                 bgcolor: index === activeModule
-                                                    ? '#00E5FF'
-                                                    : 'rgba(255, 255, 255, 0.2)',
+                                                    ? theme.palette.secondary.main
+                                                    : `${theme.palette.divider}90`,
                                                 boxShadow: index === activeModule
-                                                    ? '0 0 10px rgba(0, 229, 255, 0.7)'
+                                                    ? `0 0 10px ${theme.palette.secondary.main}70`
                                                     : 'none',
                                                 transition: 'all 0.3s ease',
                                                 cursor: 'pointer',
                                                 '&:hover': {
+                                                    bgcolor: index === activeModule
+                                                        ? theme.palette.secondary.main
+                                                        : theme.palette.divider,
                                                     transform: 'scale(1.2)',
                                                 }
                                             }}
@@ -1226,9 +1312,11 @@ function ViewCoursePage() {
                                 </Box>
 
                                 <Typography variant="body2" sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    color: theme.palette.text.secondary,
                                     textAlign: { xs: 'center', md: 'right' },
-                                    minWidth: '140px'
+                                    minWidth: '140px',
+                                    position: 'relative',
+                                    zIndex: 1
                                 }}>
                                     Module {activeModule + 1} of {courseData.modules.length}
                                 </Typography>
@@ -1243,39 +1331,82 @@ function ViewCoursePage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.6 }}
                     >
-                        <Paper sx={{
+                        <Box sx={{
                             mt: 5,
                             p: 3,
                             borderRadius: '16px',
-                            bgcolor: 'rgba(0, 10, 30, 0.6)',
-                            border: '1px solid rgba(0, 229, 255, 0.05)',
-                            backdropFilter: 'blur(10px)',
+                            bgcolor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.secondary.main}40`,
+                            boxShadow: theme.shadows[2],
+                            position: 'relative',
+                            overflow: 'hidden',
+                            '&::before': { // Add parchment texture
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.darkParchment})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.12,
+                                mixBlendMode: 'multiply',
+                                zIndex: 0,
+                            }
                         }}>
+                            {/* Decorative ivy */}
+                            <Box
+                                component="img"
+                                src={theme.textures.ivyCorner}
+                                sx={{
+                                    position: 'absolute',
+                                    bottom: -10,
+                                    right: -10,
+                                    width: '100px',
+                                    height: '100px',
+                                    opacity: 0.2,
+                                    zIndex: 0
+                                }}
+                            />
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={7}>
                                     <Typography variant="h5" sx={{
-                                        color: '#FFFFFF',
+                                        color: theme.palette.text.primary,
+                                        fontFamily: theme.typography.headingFontFamily,
                                         fontWeight: 600,
                                         mb: 2,
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 1
+                                        gap: 1.5,
+                                        position: 'relative',
+                                        zIndex: 1
                                     }}>
-                                        <VerifiedIcon sx={{ color: '#00E5FF' }} />
+                                        <Box sx={{
+                                            width: 32,
+                                            height: 32,
+                                            borderRadius: '50%',
+                                            backgroundColor: `${theme.palette.secondary.main}15`,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}>
+                                            <VerifiedIcon sx={{ color: theme.palette.secondary.main, fontSize: 20 }} />
+                                        </Box>
                                         Learning with AI
                                     </Typography>
 
                                     <Typography variant="body1" sx={{
-                                        color: 'rgba(255, 255, 255, 0.8)',
+                                        color: theme.palette.text.secondary,
                                         mb: 2,
-                                        lineHeight: 1.6
+                                        lineHeight: 1.6,
+                                        position: 'relative',
+                                        zIndex: 1
                                     }}>
                                         This course uses advanced AI technology to create an interactive learning experience. Each module adapts to your pace and provides personalized responses to your questions.
                                     </Typography>
 
                                     <Typography variant="body1" sx={{
-                                        color: 'rgba(255, 255, 255, 0.8)',
-                                        lineHeight: 1.6
+                                        color: theme.palette.text.secondary,
+                                        lineHeight: 1.6,
+                                        position: 'relative',
+                                        zIndex: 1
                                     }}>
                                         Complete all modules to master the course material and gain valuable knowledge. You can revisit any module at any time to reinforce your learning.
                                     </Typography>
@@ -1284,16 +1415,20 @@ function ViewCoursePage() {
                                 <Grid item xs={12} md={5}>
                                     <Box sx={{
                                         p: 2,
-                                        border: '1px solid rgba(0, 229, 255, 0.1)',
+                                        border: `1px solid ${theme.palette.secondary.main}30`,
                                         borderRadius: '12px',
-                                        bgcolor: 'rgba(0, 229, 255, 0.02)',
+                                        bgcolor: `${theme.palette.background.default}90`, // Darker parchment
                                         height: '100%',
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        justifyContent: 'center'
+                                        justifyContent: 'center',
+                                        position: 'relative',
+                                        zIndex: 1,
+                                        boxShadow: theme.shadows[1]
                                     }}>
                                         <Typography variant="h6" sx={{
-                                            color: '#FFFFFF',
+                                            color: theme.palette.text.primary,
+                                            fontFamily: theme.typography.headingFontFamily,
                                             textAlign: 'center',
                                             mb: 2
                                         }}>
@@ -1322,15 +1457,17 @@ function ViewCoursePage() {
                                             }}
                                             disabled={!courseData.modules || courseData.modules.length === 0}
                                             sx={{
-                                                background: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                                                boxShadow: '0 4px 15px rgba(0, 229, 255, 0.3)',
+                                                backgroundColor: theme.palette.secondary.main,
+                                                boxShadow: theme.shadows[2],
                                                 py: 1.5,
                                                 borderRadius: '12px',
                                                 textTransform: 'none',
                                                 fontSize: '1rem',
                                                 fontWeight: 500,
+                                                fontFamily: theme.typography.headingFontFamily,
                                                 '&:hover': {
-                                                    boxShadow: '0 6px 20px rgba(0, 229, 255, 0.4)',
+                                                    backgroundColor: theme.palette.secondary.dark,
+                                                    boxShadow: theme.shadows[3],
                                                     transform: 'translateY(-2px)'
                                                 }
                                             }}
@@ -1340,70 +1477,179 @@ function ViewCoursePage() {
                                     </Box>
                                 </Grid>
                             </Grid>
-                        </Paper>
+                        </Box>
                     </motion.div>
 
                     {/* Enrollment Button */}
                     <Box sx={{
                         mt: 5,
-                        p: 3,
+                        p: 4,
                         borderRadius: '16px',
-                        bgcolor: 'rgba(0, 229, 255, 0.03)',
-                        border: '1px solid rgba(0, 229, 255, 0.1)',
+                        bgcolor: theme.palette.background.paper, // Parchment paper
+                        border: `1px solid ${theme.palette.secondary.main}40`, // Sepia border
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
                         flexDirection: 'column',
-                        gap: 2
+                        gap: 3,
+                        position: 'relative',
+                        boxShadow: theme.shadows[2],
+                        overflow: 'hidden',
+                        '&::before': { // Parchment texture
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${theme.textures.darkParchment})`,
+                            backgroundSize: 'cover',
+                            opacity: 0.1,
+                            mixBlendMode: 'multiply',
+                            zIndex: 0,
+                        }
                     }}>
+                        {/* Decorative corner elements */}
+                        <Box component="img" src={theme.textures.ivyCorner} sx={{
+                            position: 'absolute',
+                            top: -5,
+                            left: -5,
+                            width: '50px',
+                            opacity: 0.2,
+                            transform: 'rotate(180deg)',
+                            zIndex: 1
+                        }} />
+                        <Box component="img" src={theme.textures.ivyCorner} sx={{
+                            position: 'absolute',
+                            bottom: -5,
+                            right: -5,
+                            width: '50px',
+                            opacity: 0.2,
+                            transform: 'rotate(0deg)',
+                            zIndex: 1
+                        }} />
                         {!isEnrolled ? (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                size="large"
-                                disabled={enrollButtonLoading}
-                                onClick={handleEnrollClick}
-                                sx={{
-                                    fontWeight: 'bold',
-                                    px: 4,
-                                    py: 1.5,
-                                    borderRadius: '8px'
-                                }}
-                            >
-                                {enrollButtonLoading ? <CircularProgress size={24} color="inherit" /> : 'Enroll Now'}
-                            </Button>
-                        ) : (
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                                <Paper
-                                    elevation={0}
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 2,
+                                zIndex: 1,
+                                textAlign: 'center',
+                                width: '100%',
+                                maxWidth: '500px'
+                            }}>
+                                <Typography variant="h5" sx={{
+                                    color: theme.palette.text.primary,
+                                    fontFamily: theme.typography.headingFontFamily,
+                                    mb: 1,
+                                    position: 'relative',
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: -8,
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        width: '40%',
+                                        height: '2px',
+                                        background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
+                                    }
+                                }}>
+                                    Join This Course
+                                </Typography>
+                                <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                    Enrolling gives you full access to all course materials and interactive AI modules.
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    size="large"
+                                    disabled={enrollButtonLoading}
+                                    onClick={handleEnrollClick}
                                     sx={{
-                                        backgroundColor: theme.palette.success.light,
-                                        color: theme.palette.success.contrastText,
-                                        padding: '10px 24px',
+                                        fontWeight: 'bold',
+                                        px: 5,
+                                        py: 1.8,
                                         borderRadius: '8px',
+                                        backgroundColor: theme.palette.secondary.main, // Sepia button
+                                        color: theme.palette.primary.contrastText,
+                                        boxShadow: theme.shadows[2],
+                                        fontSize: '1.1rem',
+                                        fontFamily: theme.typography.headingFontFamily,
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            backgroundColor: theme.palette.secondary.dark,
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: theme.shadows[4],
+                                        },
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            background: `url(${theme.textures.darkParchment})`,
+                                            backgroundSize: 'cover',
+                                            opacity: 0.07,
+                                            mixBlendMode: 'overlay',
+                                        }
+                                    }}
+                                >
+                                    {enrollButtonLoading ? <CircularProgress size={24} color="inherit" /> : 'Enroll Now'}
+                                </Button>
+                            </Box>
+                        ) : (
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, zIndex: 1, width: '100%', maxWidth: '500px' }}>
+                                <Box
+                                    sx={{
+                                        position: 'relative',
+                                        width: '100%',
+                                        py: 3,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}
+                                >
+                                    <Box sx={{
+                                        width: 64,
+                                        height: 64,
+                                        borderRadius: '50%',
+                                        backgroundColor: `${theme.palette.secondary.main}15`,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        mb: 1
-                                    }}
-                                >
-                                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                                        ✓ Enrolled
+                                        mb: 1,
+                                        boxShadow: `0 0 15px ${theme.palette.secondary.main}30`,
+                                    }}>
+                                        <Check size={32} color={theme.palette.secondary.main} />
+                                    </Box>
+                                    <Typography variant="h5" sx={{
+                                        fontFamily: theme.typography.headingFontFamily,
+                                        color: theme.palette.text.primary,
+                                        fontWeight: 'bold'
+                                    }}>
+                                        You're Enrolled
                                     </Typography>
-                                </Paper>
-
+                                </Box>
+                                <Typography variant="body1" sx={{ color: theme.palette.text.secondary, textAlign: 'center' }}>
+                                    You have full access to all course materials
+                                </Typography>
                                 <Button
-                                    variant="outlined"
-                                    color="error"
+                                    variant="text"
                                     size="medium"
                                     disabled={unenrollButtonLoading}
                                     onClick={handleUnenrollClick}
                                     sx={{
-                                        borderRadius: '8px',
-                                        borderColor: 'rgba(244, 67, 54, 0.5)',
+                                        color: theme.palette.text.secondary,
+                                        borderRadius: '6px',
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        px: 3,
+                                        py: 1,
                                         '&:hover': {
-                                            backgroundColor: 'rgba(244, 67, 54, 0.08)',
-                                            borderColor: '#f44336'
+                                            color: theme.palette.error.main,
+                                            backgroundColor: `${theme.palette.error.main}08`,
+                                            borderColor: `${theme.palette.error.main}30`
                                         }
                                     }}
                                 >
@@ -1415,60 +1661,94 @@ function ViewCoursePage() {
                 </Container>
             </Box>
 
-            {/* Add this unenroll confirmation dialog at the end of your component before the closing tag */}
-            <Dialog
-                open={unenrollDialogOpen}
-                onClose={() => setUnenrollDialogOpen(false)}
-            >
-                <DialogTitle sx={{
-                    bgcolor: 'rgba(0, 10, 30, 0.9)',
-                    color: 'white'
-                }}>
-                    Confirm Unenrollment
-                </DialogTitle>
-                <DialogContent sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', color: 'white' }}>
-                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                        Are you sure you want to unenroll from this course? You can always re-enroll later.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', p: 2 }}>
-                    <Button
-                        onClick={() => setUnenrollDialogOpen(false)}
-                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={confirmUnenroll}
-                        variant="contained"
-                        color="error"
-                        disabled={unenrollButtonLoading}
-                    >
-                        {unenrollButtonLoading ? <CircularProgress size={20} color="inherit" /> : 'Unenroll'}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
             {/* Module Access Dialog - shown when user tries to access a module without enrolling */}
             <Dialog
                 open={moduleAccessDialogOpen}
                 onClose={() => setModuleAccessDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        bgcolor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: '12px',
+                        boxShadow: theme.shadows[4],
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${theme.textures.darkParchment})`,
+                            backgroundSize: 'cover',
+                            opacity: 0.1,
+                            mixBlendMode: 'multiply',
+                            zIndex: 0,
+                        },
+                        '& > *': {
+                            position: 'relative',
+                            zIndex: 1
+                        }
+                    }
+                }}
             >
                 <DialogTitle sx={{
-                    bgcolor: 'rgba(0, 10, 30, 0.9)',
-                    color: 'white'
+                    bgcolor: theme.palette.background.default,
+                    color: theme.palette.text.primary,
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontFamily: theme.typography.headingFontFamily,
+                    py: 2.5,
+                    position: 'relative',
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '10%',
+                        width: '80%',
+                        height: '1px',
+                        background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}50, transparent)`,
+                    }
                 }}>
-                    Enrollment Required
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            backgroundColor: `${theme.palette.secondary.main}15`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}>
+                            <Lock size={16} color={theme.palette.secondary.main} />
+                        </Box>
+                        <Typography variant="h6" sx={{ fontFamily: theme.typography.headingFontFamily }}>
+                            Enrollment Required
+                        </Typography>
+                    </Box>
                 </DialogTitle>
-                <DialogContent sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', color: 'white' }}>
-                    <DialogContentText sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                <DialogContent sx={{
+                    bgcolor: theme.palette.background.paper,
+                    color: theme.palette.text.primary,
+                    py: 3
+                }}>
+                    <DialogContentText sx={{ color: theme.palette.text.secondary, my: 2, fontSize: '1rem', lineHeight: 1.6 }}>
                         You need to enroll in this course before accessing its modules. Enrollment gives you full access to all course materials.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ bgcolor: 'rgba(0, 10, 30, 0.9)', p: 2 }}>
+                <DialogActions sx={{
+                    bgcolor: theme.palette.background.paper,
+                    p: 2.5,
+                    borderTop: `1px solid ${theme.palette.divider}50`,
+                    justifyContent: 'space-between'
+                }}>
                     <Button
                         onClick={() => setModuleAccessDialogOpen(false)}
-                        sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                        color="secondary"
+                        sx={{
+                            color: theme.palette.text.secondary,
+                            '&:hover': {
+                                backgroundColor: `${theme.palette.divider}30`
+                            }
+                        }}
                     >
                         Cancel
                     </Button>
@@ -1478,12 +1758,135 @@ function ViewCoursePage() {
                             handleEnrollClick();
                         }}
                         variant="contained"
+                        color="secondary"
                         sx={{
-                            background: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                            boxShadow: '0 4px 15px rgba(0, 229, 255, 0.3)',
+                            px: 3,
+                            boxShadow: theme.shadows[1],
+                            '&:hover': {
+                                boxShadow: theme.shadows[2]
+                            }
                         }}
                     >
                         Enroll Now
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Unenroll Dialog - shown when user wants to unenroll from the course */}
+            <Dialog
+                open={unenrollDialogOpen}
+                onClose={() => setUnenrollDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        bgcolor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        border: `1px solid ${theme.palette.divider}`,
+                        borderRadius: '12px',
+                        boxShadow: theme.shadows[4],
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${theme.textures.darkParchment})`,
+                            backgroundSize: 'cover',
+                            opacity: 0.1,
+                            mixBlendMode: 'multiply',
+                            zIndex: 0,
+                        },
+                        '& > *': {
+                            position: 'relative',
+                            zIndex: 1
+                        }
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    bgcolor: theme.palette.background.default,
+                    color: theme.palette.text.primary,
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontFamily: theme.typography.headingFontFamily,
+                    py: 2.5,
+                    position: 'relative',
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '10%',
+                        width: '80%',
+                        height: '1px',
+                        background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`,
+                    }
+                }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            backgroundColor: `${theme.palette.error.main}15`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}>
+                            <AlertTriangle size={16} color={theme.palette.error.main} />
+                        </Box>
+                        <Typography variant="h6" sx={{ fontFamily: theme.typography.headingFontFamily }}>
+                            Confirm Unenrollment
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent sx={{
+                    bgcolor: theme.palette.background.paper,
+                    color: theme.palette.text.primary,
+                    py: 3
+                }}>
+                    <DialogContentText sx={{ color: theme.palette.text.secondary, my: 2, fontSize: '1rem', lineHeight: 1.6 }}>
+                        Are you sure you want to unenroll from <strong>{courseData?.name}</strong>?
+                    </DialogContentText>
+                    <DialogContentText sx={{
+                        color: theme.palette.text.secondary,
+                        backgroundColor: theme.palette.background.default,
+                        p: 2,
+                        borderRadius: '8px',
+                        border: `1px solid ${theme.palette.divider}50`,
+                        fontSize: '0.9rem'
+                    }}>
+                        You can always re-enroll later, but your progress in the course may be reset.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{
+                    bgcolor: theme.palette.background.paper,
+                    p: 2.5,
+                    borderTop: `1px solid ${theme.palette.divider}50`,
+                    justifyContent: 'space-between'
+                }}>
+                    <Button
+                        onClick={() => setUnenrollDialogOpen(false)}
+                        color="secondary"
+                        sx={{
+                            color: theme.palette.text.secondary,
+                            '&:hover': {
+                                backgroundColor: `${theme.palette.divider}30`
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmUnenroll}
+                        variant="contained"
+                        color="error"
+                        disabled={unenrollButtonLoading}
+                        sx={{
+                            px: 3,
+                            backgroundColor: `${theme.palette.error.main}90`,
+                            '&:hover': {
+                                backgroundColor: theme.palette.error.main,
+                            }
+                        }}
+                    >
+                        {unenrollButtonLoading ? <CircularProgress size={20} color="inherit" /> : 'Confirm Unenroll'}
                     </Button>
                 </DialogActions>
             </Dialog>

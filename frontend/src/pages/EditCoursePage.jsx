@@ -710,6 +710,7 @@ function EditCoursePage() {
         }
     };
 
+    // Update loading state
     if (loading) {
         return (
             <motion.div
@@ -723,25 +724,34 @@ function EditCoursePage() {
                     alignItems: 'center',
                     flexDirection: 'column',
                     height: '100vh',
-                    bgcolor: '#0a0a14',
-                    background: 'radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.8) 0%, rgba(5, 5, 15, 1) 100%)',
+                    bgcolor: theme.palette.background.default,
+                    position: 'relative',
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundImage: `url(${theme.textures.darkParchment})`,
+                        backgroundSize: 'cover',
+                        opacity: 0.1,
+                        pointerEvents: 'none',
+                        zIndex: 0,
+                    }
                 }}>
-                    <Box sx={{ position: 'relative', width: 120, height: 120 }}>
+                    <Box sx={{ position: 'relative', width: 120, height: 120, zIndex: 1 }}>
                         <CircularProgress
                             variant="determinate"
-                            value={75} // or use a state for progress animation
+                            value={75}
                             size={120}
                             thickness={2}
                             sx={{
-                                color: '#00E5FF',
-                                opacity: 0.7
+                                color: theme.palette.secondary.main,
                             }}
                         />
                         <CircularProgress
                             size={120}
                             thickness={3}
                             sx={{
-                                color: '#00BCD4',
+                                color: theme.palette.secondary.light,
                                 position: 'absolute',
                                 left: 0,
                                 animationDuration: '3s',
@@ -759,9 +769,8 @@ function EditCoursePage() {
                             justifyContent: 'center',
                         }}>
                             <Typography variant="h4" sx={{
-                                color: '#FFFFFF',
+                                color: theme.palette.text.primary,
                                 fontWeight: 'bold',
-                                textShadow: '0 0 10px rgba(0, 229, 255, 0.7)'
                             }}>
                                 75%
                             </Typography>
@@ -770,12 +779,10 @@ function EditCoursePage() {
                     <Typography
                         variant="h5"
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.9)',
+                            color: theme.palette.text.primary,
                             fontWeight: 500,
                             mt: 4,
-                            fontFamily: 'Satoshi, sans-serif',
-                            letterSpacing: '0.02em',
-                            textShadow: '0 0 10px rgba(0, 229, 255, 0.4)'
+                            fontFamily: theme.typography.headingFontFamily,
                         }}
                     >
                         Loading Course Editor
@@ -783,8 +790,7 @@ function EditCoursePage() {
                     <Typography
                         variant="body2"
                         sx={{
-                            color: 'rgba(255, 255, 255, 0.5)',
-                            fontFamily: 'Satoshi, sans-serif',
+                            color: theme.palette.text.secondary,
                             maxWidth: 300,
                             textAlign: 'center',
                             mt: 1
@@ -797,6 +803,7 @@ function EditCoursePage() {
         );
     }
 
+    // Update error state
     if (error) {
         return (
             <motion.div
@@ -810,10 +817,20 @@ function EditCoursePage() {
                     justifyContent: 'center',
                     alignItems: 'center',
                     height: '100vh',
-                    bgcolor: '#0a0a14',
-                    background: 'radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.8) 0%, rgba(5, 5, 15, 1) 100%)',
+                    bgcolor: theme.palette.background.default,
+                    position: 'relative',
                     px: 3,
-                    gap: 2
+                    gap: 2,
+                    '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundImage: `url(${theme.textures.darkParchment})`,
+                        backgroundSize: 'cover',
+                        opacity: 0.1,
+                        pointerEvents: 'none',
+                        zIndex: 0,
+                    }
                 }}>
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
@@ -823,81 +840,56 @@ function EditCoursePage() {
                         <Box
                             sx={{
                                 p: 4,
-                                bgcolor: 'rgba(25, 25, 35, 0.5)',
-                                backdropFilter: 'blur(20px)',
+                                bgcolor: theme.palette.background.paper,
                                 borderRadius: 3,
-                                boxShadow: '0 0 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset',
-                                border: '1px solid rgba(80, 80, 120, 0.15)',
+                                boxShadow: theme.shadows[2],
+                                border: `1px solid ${theme.palette.divider}`,
                                 textAlign: 'center',
-                                maxWidth: 500
+                                maxWidth: 500,
+                                position: 'relative',
+                                zIndex: 1
                             }}
                         >
-                            <motion.div
-                                animate={{
-                                    rotate: [0, 5, -5, 0],
-                                }}
-                                transition={{ duration: 0.5, delay: 0.6 }}
-                            >
-                                <Box sx={{
-                                    width: 80,
-                                    height: 80,
-                                    borderRadius: '50%',
-                                    background: 'rgba(244, 67, 54, 0.15)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    mb: 3,
-                                    mx: 'auto'
-                                }}>
-                                    <CloseIcon sx={{ fontSize: 40, color: '#f44336' }} />
-                                </Box>
-                            </motion.div>
-
                             <Typography
                                 variant="h4"
                                 gutterBottom
                                 sx={{
-                                    color: 'white',
-                                    textShadow: '0 0 10px rgba(244, 67, 54, 0.3)',
+                                    color: theme.palette.text.primary,
                                     fontWeight: 600,
-                                    fontFamily: 'Satoshi, sans-serif',
+                                    fontFamily: theme.typography.headingFontFamily,
                                     letterSpacing: '-0.01em',
-                                    mb: 2
+                                    mb: 2,
+                                    position: 'relative',
+                                    '&::after': {
+                                        content: '""',
+                                        display: 'block',
+                                        width: '40px',
+                                        height: '2px',
+                                        background: theme.palette.secondary.main,
+                                        margin: '10px auto 0',
+                                        borderRadius: '1px',
+                                    }
                                 }}
                             >
-                                Access Denied
+                                {error}
                             </Typography>
 
                             <Typography
                                 variant="body1"
                                 gutterBottom
                                 sx={{
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    fontFamily: 'Satoshi, sans-serif',
+                                    color: theme.palette.text.secondary,
                                     mb: 3
                                 }}
                             >
-                                {error}
+                                You do not have permission to edit this course
                             </Typography>
 
                             <Button
                                 variant="contained"
+                                color="primary"
                                 onClick={() => navigate('/')}
-                                sx={{
-                                    mt: 2,
-                                    fontFamily: 'Satoshi, sans-serif',
-                                    background: 'linear-gradient(to right, #0097A7, #00BCD4)',
-                                    boxShadow: '0 4px 10px rgba(0, 229, 255, 0.3)',
-                                    px: 4,
-                                    py: 1.5,
-                                    borderRadius: '12px',
-                                    '&:hover': {
-                                        boxShadow: '0 6px 15px rgba(0, 229, 255, 0.4)',
-                                        transform: 'translateY(-2px)',
-                                        background: 'linear-gradient(to right, #00ACC1, #00BCD4)'
-                                    },
-                                    transition: 'all 0.3s ease'
-                                }}
+                                sx={{ mt: 2 }}
                             >
                                 Back to Dashboard
                             </Button>
@@ -918,44 +910,56 @@ function EditCoursePage() {
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: '100vh',
-                bgcolor: '#0a0a14',
-                color: 'text.primary',
-                backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(0, 200, 255, 0.08) 0%, rgba(0, 0, 0, 0) 80%)',
-                pt: '64px',
+                bgcolor: theme.palette.background.default,
+                color: theme.palette.text.primary,
+                position: 'relative',
+                pt: 0,
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                    mixBlendMode: 'multiply'
+                }
             }}>
-                {/* Tabs Navigation */}
+                {/* Tabs Navigation - Modified to connect with header */}
                 <Box sx={{
-                    mb: 4,
-                    bgcolor: 'rgba(0, 229, 255, 0.03)',
-                    borderRadius: '16px',
+                    bgcolor: theme.palette.background.paper,
+                    // Remove top border radius to visually connect with header
+                    borderRadius: '0 0 16px 16px',
                     overflow: 'hidden',
-                    border: '1px solid rgba(0, 229, 255, 0.1)',
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderTop: 'none', // Remove top border to connect with header
+                    position: 'relative',
+                    zIndex: 1,
+                    mb: 4,
+                    mt: 0, // Ensure no margin top
+                    boxShadow: theme.shadows[1]
                 }}>
                     <Tabs
                         value={activeTab}
                         onChange={(e, newValue) => setActiveTab(newValue)}
                         sx={{
                             '& .MuiTabs-indicator': {
-                                backgroundColor: '#00E5FF',
+                                backgroundColor: theme.palette.secondary.main,
                                 height: 2,
-                                borderRadius: '2px',
-                                boxShadow: '0 0 8px rgba(0, 229, 255, 0.4)',
                             },
                             '& .MuiTab-root': {
-                                color: 'rgba(255, 255, 255, 0.6)',
+                                color: theme.palette.text.secondary,
                                 minHeight: '56px',
                                 transition: 'all 0.3s ease',
                                 fontSize: '0.9rem',
                                 letterSpacing: '0.03em',
                                 '&.Mui-selected': {
-                                    color: '#00E5FF',
-                                    '& .MuiSvgIcon-root': {
-                                        filter: 'drop-shadow(0 0 6px rgba(0, 229, 255, 0.5))',
-                                    }
+                                    color: theme.palette.secondary.main,
                                 },
                                 '&:hover': {
-                                    bgcolor: 'rgba(0, 229, 255, 0.05)',
-                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                    color: theme.palette.text.primary,
                                 },
                                 '& .MuiSvgIcon-root': {
                                     transition: 'all 0.3s ease',
@@ -984,7 +988,7 @@ function EditCoursePage() {
                 </Box>
 
                 {/* Tab Panels */}
-                <Box sx={{ p: { xs: 2, md: 3 } }}>
+                <Box sx={{ p: { xs: 2, md: 3 }, position: 'relative', zIndex: 1 }}>
                     {/* Content Tab */}
                     {activeTab === 0 && (
                         <>
@@ -994,11 +998,22 @@ function EditCoursePage() {
                                 display: 'flex',
                                 flexDirection: { xs: 'column', md: 'row' },
                                 gap: 3,
-                                bgcolor: 'rgba(0, 229, 255, 0.03)',
-                                backdropFilter: 'blur(20px)',
+                                bgcolor: theme.palette.background.paper,
                                 borderRadius: '16px',
                                 p: 3,
-                                border: '1px solid rgba(0, 229, 255, 0.1)',
+                                border: `1px solid ${theme.palette.divider}`,
+                                position: 'relative',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    inset: 0,
+                                    backgroundImage: `url(${theme.textures.crumbledParchment})`,
+                                    backgroundSize: 'cover',
+                                    opacity: 0.05,
+                                    mixBlendMode: 'multiply',
+                                    borderRadius: '16px',
+                                    zIndex: 0,
+                                }
                             }}>
                                 {/* Thumbnail upload section */}
                                 <Box sx={{
@@ -1010,13 +1025,12 @@ function EditCoursePage() {
                                     justifyContent: 'center',
                                     borderRadius: '12px',
                                     overflow: 'hidden',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                                    border: '1px dashed rgba(0, 229, 255, 0.3)',
-                                    // 16:9 aspect ratio container
+                                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                                    border: `1px dashed ${theme.palette.divider}`,
                                     '&::before': {
                                         content: '""',
                                         display: 'block',
-                                        paddingTop: '56.25%', // 16:9 aspect ratio
+                                        paddingTop: '56.25%',
                                         width: '100%',
                                     }
                                 }}>
@@ -1062,10 +1076,10 @@ function EditCoursePage() {
                                                 <Button
                                                     component="label"
                                                     variant="contained"
+                                                    color="secondary"
                                                     startIcon={<AddPhotoAlternateIcon />}
                                                     sx={{
-                                                        bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                        '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.3)' }
+                                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
                                                     }}
                                                 >
                                                     Change
@@ -1077,6 +1091,7 @@ function EditCoursePage() {
                                         <Button
                                             component="label"
                                             variant="outlined"
+                                            color="secondary"
                                             startIcon={<AddPhotoAlternateIcon />}
                                             sx={{
                                                 position: 'absolute',
@@ -1084,12 +1099,6 @@ function EditCoursePage() {
                                                 left: 0,
                                                 width: '100%',
                                                 height: '100%',
-                                                color: '#00E5FF',
-                                                borderColor: 'rgba(0, 229, 255, 0.3)',
-                                                '&:hover': {
-                                                    borderColor: '#00E5FF',
-                                                    bgcolor: 'rgba(0, 229, 255, 0.05)'
-                                                },
                                                 flexDirection: 'column',
                                                 gap: 1,
                                                 padding: 2,
@@ -1098,7 +1107,7 @@ function EditCoursePage() {
                                             <Typography variant="body2" sx={{ mt: 1 }}>
                                                 Add Course Thumbnail
                                             </Typography>
-                                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
                                                 Recommended: 16:9 ratio
                                             </Typography>
                                             <VisuallyHiddenInput type="file" accept="image/*" onChange={handleCourseThumbUpload} />
@@ -1114,10 +1123,10 @@ function EditCoursePage() {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            bgcolor: 'rgba(0, 0, 0, 0.7)',
+                                            bgcolor: 'rgba(0, 0, 0, 0.5)',
                                             zIndex: 5
                                         }}>
-                                            <CircularProgress size={40} sx={{ color: '#00E5FF' }} />
+                                            <CircularProgress size={40} sx={{ color: theme.palette.secondary.main }} />
                                         </Box>
                                     )}
                                 </Box>
@@ -1134,42 +1143,25 @@ function EditCoursePage() {
                                                 sx: {
                                                     fontSize: '1.75rem',
                                                     fontWeight: '600',
-                                                    color: '#E0F7FA',
+                                                    fontFamily: theme.typography.headingFontFamily,
+                                                    color: theme.palette.text.primary,
                                                     '&::before': { display: 'none' },
                                                     '&::after': { display: 'none' },
                                                     '& input::placeholder': {
-                                                        color: 'rgba(224, 247, 250, 0.3)',
+                                                        color: theme.palette.text.disabled,
                                                         opacity: 1
                                                     }
                                                 }
                                             }}
                                             sx={{ flex: 1 }}
                                         />
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleSaveCourse}
-                                                sx={{
-                                                    background: 'rgba(0, 229, 255, 0.1)',
-                                                    backdropFilter: 'blur(10px)',
-                                                    border: '1px solid rgba(0, 229, 255, 0.2)',
-                                                    borderRadius: '8px',
-                                                    px: 2,
-                                                    py: 0.75,
-                                                    fontSize: '0.85rem',
-                                                    fontWeight: 500,
-                                                    color: '#00E5FF',
-                                                    textTransform: 'none',
-                                                    height: '36px',
-                                                    '&:hover': {
-                                                        background: 'rgba(0, 229, 255, 0.2)',
-                                                        borderColor: '#00E5FF',
-                                                    }
-                                                }}
-                                            >
-                                                Save
-                                            </Button>
-                                        </Box>
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleSaveCourse}
+                                            color="primary"
+                                        >
+                                            Save
+                                        </Button>
                                     </Box>
 
                                     <TextField
@@ -1182,20 +1174,20 @@ function EditCoursePage() {
                                         variant="standard"
                                         sx={{
                                             '& .MuiInputBase-input': {
-                                                color: 'rgba(224, 247, 250, 0.8)',
+                                                color: theme.palette.text.secondary,
                                                 fontSize: '0.95rem',
                                                 lineHeight: '1.5',
                                                 letterSpacing: '0.01em',
                                             },
                                             '& .MuiInputBase-input::placeholder': {
-                                                color: 'rgba(224, 247, 250, 0.3)',
+                                                color: theme.palette.text.disabled,
                                                 opacity: 1
                                             },
                                             '& .MuiInput-underline:before': {
-                                                borderBottomColor: 'rgba(0, 229, 255, 0.15)'
+                                                borderBottomColor: `${theme.palette.divider}`
                                             },
                                             '& .MuiInput-underline:hover:before': {
-                                                borderBottomColor: 'rgba(0, 229, 255, 0.3)'
+                                                borderBottomColor: theme.palette.secondary.main
                                             }
                                         }}
                                     />
@@ -1214,18 +1206,19 @@ function EditCoursePage() {
                                         startIcon={<AddIcon />}
                                         onClick={handleOpenAddModuleDialog}
                                         sx={{
-                                            background: 'linear-gradient(135deg, #00E5FF 0%, #0097A7 100%)',
+                                            // Replace cyan gradient with Neo-Scholar theme colors
+                                            background: theme.palette.primary.main, // Changed from cyan gradient to ink color
                                             borderRadius: '10px',
                                             px: 2.5,
                                             py: 1,
                                             fontSize: '0.9rem',
                                             fontWeight: 500,
-                                            color: '#fff',
+                                            color: theme.palette.primary.contrastText, // Parchment text color
                                             textTransform: 'none',
                                             '&:hover': {
-                                                background: 'linear-gradient(135deg, #00E5FF 20%, #0097A7 120%)',
+                                                background: theme.palette.primary.dark, // Darker ink on hover
                                                 transform: 'translateY(-2px)',
-                                                boxShadow: '0 4px 12px rgba(0, 151, 167, 0.3)',
+                                                boxShadow: `0 4px 12px ${theme.palette.primary.main}40`, // Ink shadow instead of cyan
                                             },
                                             transition: 'all 0.3s ease'
                                         }}
@@ -1277,20 +1270,15 @@ function EditCoursePage() {
                                                     <SwiperSlide key={module.id} style={{ width: 400 }}>
                                                         <Card sx={{
                                                             height: '100%',
-                                                            bgcolor: 'rgba(20, 20, 35, 0.7)',
-                                                            backdropFilter: 'blur(10px)',
+                                                            bgcolor: theme.palette.background.paper,
                                                             borderRadius: '20px',
                                                             overflow: 'hidden',
                                                             position: 'relative',
                                                             transition: 'all 0.3s ease-in-out',
-                                                            border: '1px solid rgba(0, 229, 255, 0.1)',
+                                                            border: `1px solid ${theme.palette.divider}`,
                                                             '&:hover': {
                                                                 transform: 'translateY(-8px)',
-                                                                boxShadow: `
-                                                                0 0 20px rgba(0, 229, 255, 0.2),
-                                                                0 0 40px rgba(0, 229, 255, 0.1),
-                                                                0 0 60px rgba(0, 229, 255, 0.05)
-                                                            `,
+                                                                boxShadow: theme.shadows[8],
                                                                 '& .module-image': {
                                                                     transform: 'scale(1.05)',
                                                                 },
@@ -1298,6 +1286,16 @@ function EditCoursePage() {
                                                                     opacity: 1,
                                                                 }
                                                             },
+                                                            '&::before': {
+                                                                content: '""',
+                                                                position: 'absolute',
+                                                                inset: 0,
+                                                                backgroundImage: `url(${theme.textures.grainyMarble})`,
+                                                                backgroundSize: 'cover',
+                                                                opacity: 0.05,
+                                                                mixBlendMode: 'multiply',
+                                                                zIndex: 0,
+                                                            }
                                                         }}>
                                                             <Box sx={{ position: 'relative', height: '250px' }}>
                                                                 {/* Module Label */}
@@ -1310,29 +1308,26 @@ function EditCoursePage() {
                                                                         display: 'flex',
                                                                         alignItems: 'center',
                                                                         gap: 1,
-                                                                        bgcolor: 'rgba(0, 229, 255, 0.15)',
-                                                                        backdropFilter: 'blur(8px)',
+                                                                        bgcolor: `${theme.palette.secondary.main}15`,
                                                                         borderRadius: '10px',
                                                                         padding: '6px 12px',
-                                                                        border: '1px solid rgba(0, 229, 255, 0.3)',
+                                                                        border: `1px solid ${theme.palette.secondary.main}30`,
                                                                         transition: 'all 0.3s ease',
                                                                         '&:hover': {
-                                                                            bgcolor: 'rgba(0, 229, 255, 0.25)',
+                                                                            bgcolor: `${theme.palette.secondary.main}25`,
                                                                             transform: 'scale(1.05)',
                                                                         }
                                                                     }}
                                                                 >
                                                                     <AutoStoriesIcon sx={{
                                                                         fontSize: '0.9rem',
-                                                                        color: '#00E5FF',
-                                                                        filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))'
+                                                                        color: theme.palette.secondary.main,
                                                                     }} />
                                                                     <Typography variant="caption" sx={{
-                                                                        color: '#00E5FF',
+                                                                        color: theme.palette.secondary.main,
                                                                         fontWeight: 'medium',
                                                                         fontSize: '0.75rem',
                                                                         letterSpacing: '0.03em',
-                                                                        textShadow: '0 0 10px rgba(0, 229, 255, 0.5)'
                                                                     }}>
                                                                         {`Module ${module.position}`}
                                                                     </Typography>
@@ -1417,8 +1412,8 @@ function EditCoursePage() {
                                                                         background: moduleThumbPreviews[module.id] || module.thumbnail_url
                                                                             ? 'none'  // No background when we have a thumbnail
                                                                             : `linear-gradient(135deg, 
-                                                                        rgba(0, 21, 36, 0.95) 0%,
-                                                                        rgba(0, 151, 167, 0.9) 100%)`,
+                                                                        ${theme.palette.background.paper} 0%,
+                                                                        ${theme.palette.parchment.dark} 100%)`, // Replace cyan gradient with parchment
                                                                         '&::before': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
                                                                             content: '""',
                                                                             position: 'absolute',
@@ -1427,9 +1422,9 @@ function EditCoursePage() {
                                                                             right: 0,
                                                                             bottom: 0,
                                                                             background: `radial-gradient(circle at 50% 50%,
-                                                                            rgba(0, 229, 255, 0.15) 0%,
-                                                                            rgba(0, 229, 255, 0.05) 25%,
-                                                                            transparent 50%)`,
+                                                                            ${theme.palette.secondary.main}15 0%,
+                                                                            ${theme.palette.secondary.main}05 25%,
+                                                                            transparent 50%)`, // Replace cyan with sepia
                                                                             opacity: 0.5,
                                                                             transition: 'all 0.3s ease',
                                                                         } : {},
@@ -1516,14 +1511,14 @@ function EditCoursePage() {
                                                                             sx={{
                                                                                 width: 80,
                                                                                 height: 80,
-                                                                                bgcolor: 'rgba(0, 229, 255, 0.1)',
+                                                                                bgcolor: `${theme.palette.secondary.main}10`, // Replace cyan with sepia
                                                                                 backdropFilter: 'blur(8px)',
-                                                                                border: '2px solid rgba(0, 229, 255, 0.3)',
+                                                                                border: `2px solid ${theme.palette.secondary.main}30`, // Sepia border
                                                                                 transition: 'all 0.3s ease',
                                                                                 '&:hover': {
-                                                                                    bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                                                    bgcolor: `${theme.palette.secondary.main}20`, // More opaque sepia on hover
                                                                                     transform: 'scale(1.1)',
-                                                                                    border: '2px solid rgba(0, 229, 255, 0.5)',
+                                                                                    border: `2px solid ${theme.palette.secondary.main}50`, // More opaque sepia border
                                                                                     '& .play-icon': {
                                                                                         transform: 'scale(1.1)',
                                                                                     }
@@ -1535,7 +1530,7 @@ function EditCoursePage() {
                                                                                     left: -4,
                                                                                     right: -4,
                                                                                     bottom: -4,
-                                                                                    border: '2px solid rgba(0, 229, 255, 0.2)',
+                                                                                    border: `2px solid ${theme.palette.secondary.main}20`, // Sepia pulsing border
                                                                                     borderRadius: '50%',
                                                                                     animation: 'pulseRing 2s infinite',
                                                                                 }
@@ -1545,8 +1540,8 @@ function EditCoursePage() {
                                                                                 className="play-icon"
                                                                                 sx={{
                                                                                     fontSize: 40,
-                                                                                    color: '#00E5FF',
-                                                                                    filter: 'drop-shadow(0 0 8px rgba(0, 229, 255, 0.5))',
+                                                                                    color: theme.palette.secondary.main, // Sepia icon instead of cyan
+                                                                                    filter: `drop-shadow(0 0 8px ${theme.palette.secondary.main}50)`, // Sepia glow
                                                                                     transition: 'all 0.3s ease',
                                                                                 }}
                                                                             />
@@ -1554,8 +1549,9 @@ function EditCoursePage() {
                                                                         <Typography
                                                                             variant="caption"
                                                                             sx={{
-                                                                                color: 'rgba(255, 255, 255, 0.8)',
-                                                                                textShadow: '0 0 10px rgba(0, 229, 255, 0.5)',
+                                                                                color: theme.palette.parchment.light,
+                                                                                // Replace cyan glow with sepia
+                                                                                textShadow: `0 0 10px ${theme.palette.secondary.main}50`,
                                                                                 letterSpacing: '0.05em',
                                                                                 fontWeight: 500,
                                                                             }}
@@ -1583,7 +1579,8 @@ function EditCoursePage() {
                                                                                 sx={{
                                                                                     width: 40,
                                                                                     height: 2,
-                                                                                    bgcolor: '#00E5FF',
+                                                                                    // Replace cyan with sepia 
+                                                                                    bgcolor: theme.palette.secondary.main,
                                                                                     borderRadius: '2px',
                                                                                     opacity: 0.6 - (i * 0.2),
                                                                                 }}
@@ -1609,11 +1606,12 @@ function EditCoursePage() {
                                                                         sx: {
                                                                             fontSize: '1.1rem',
                                                                             fontWeight: '600',
-                                                                            color: '#E0F7FA',
+                                                                            // Change from hardcoded cyan to theme colors
+                                                                            color: theme.palette.text.primary,
                                                                             '&::before': { display: 'none' },
                                                                             '&::after': { display: 'none' },
                                                                             '&::placeholder': {
-                                                                                color: 'rgba(224, 247, 250, 0.3)',
+                                                                                color: theme.palette.text.disabled,
                                                                                 opacity: 1
                                                                             }
                                                                         }
@@ -1627,11 +1625,11 @@ function EditCoursePage() {
                                                                     position: 'relative',
                                                                     p: 2,
                                                                     borderRadius: '12px',
-                                                                    backgroundColor: 'rgba(0, 0, 0, 0.15)',
-                                                                    border: '1px solid rgba(34, 211, 238, 0.1)',
+                                                                    backgroundColor: `rgba(0, 0, 0, 0.05)`, // Subtle dark background
+                                                                    border: `1px solid ${theme.palette.secondary.main}10`, // Sepia border instead of cyan
                                                                     transition: 'box-shadow 0.3s ease',
                                                                     '&:hover': {
-                                                                        boxShadow: '0 0 10px rgba(34, 211, 238, 0.1)',
+                                                                        boxShadow: `0 0 10px ${theme.palette.secondary.main}10`, // Sepia glow instead of cyan
                                                                     }
                                                                 }}>
                                                                     <Box sx={{
@@ -1640,9 +1638,9 @@ function EditCoursePage() {
                                                                         gap: 1,
                                                                         mb: 1.5
                                                                     }}>
-                                                                        <LockIcon sx={{ fontSize: 18, color: '#00E5FF' }} />
+                                                                        <LockIcon sx={{ fontSize: 18, color: theme.palette.secondary.main }} /> {/* Sepia icon instead of cyan */}
                                                                         <Typography variant="subtitle2" sx={{
-                                                                            color: 'rgba(255, 255, 255, 0.9)',
+                                                                            color: theme.palette.text.primary, // Ink text
                                                                             fontWeight: '500'
                                                                         }}>
                                                                             Content Access Control
@@ -1685,25 +1683,22 @@ function EditCoursePage() {
                                                                             {
                                                                                 level: 'public',
                                                                                 icon: <PublicIcon sx={{ fontSize: 18 }} />,
-                                                                                color: '#4CAF50',
                                                                                 label: 'Public',
                                                                                 description: 'Anyone can access, even without enrollment'
                                                                             },
                                                                             {
                                                                                 level: 'enrolled',
                                                                                 icon: <PersonIcon sx={{ fontSize: 18 }} />,
-                                                                                color: '#2196F3',
                                                                                 label: 'Enrolled',
                                                                                 description: 'Only enrolled users can access'
                                                                             },
                                                                             {
                                                                                 level: 'premium',
                                                                                 icon: <WorkspacePremiumIcon sx={{ fontSize: 18 }} />,
-                                                                                color: '#9C27B0',
                                                                                 label: 'Premium',
                                                                                 description: 'Requires premium enrollment access'
                                                                             }
-                                                                        ].map(({ level, icon, color, label, description }) => (
+                                                                        ].map(({ level, icon, label, description }) => (
                                                                             <motion.div
                                                                                 key={level}
                                                                                 whileHover={{ scale: 1.05 }}
@@ -1719,42 +1714,24 @@ function EditCoursePage() {
                                                                                         sx={{
                                                                                             textTransform: 'none',
                                                                                             backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                                `${color}22` : 'transparent',
+                                                                                                `${theme.palette.secondary.main}22` : 'transparent',
                                                                                             color: (module.access_level || 'enrolled') === level ?
-                                                                                                color : 'rgba(255, 255, 255, 0.6)',
-                                                                                            borderColor: color,
+                                                                                                theme.palette.secondary.main : theme.palette.text.secondary,
+                                                                                            borderColor: theme.palette.secondary.main,
                                                                                             borderWidth: (module.access_level || 'enrolled') === level ? '2px' : '1px',
                                                                                             padding: '8px 10px',
                                                                                             borderRadius: '10px',
                                                                                             fontSize: '0.8rem',
                                                                                             fontWeight: (module.access_level || 'enrolled') === level ? '600' : '400',
                                                                                             boxShadow: (module.access_level || 'enrolled') === level ?
-                                                                                                `0 0 15px ${color}66, 0 0 5px ${color}33 inset` : 'none',
+                                                                                                `0 0 15px ${theme.palette.secondary.main}66, 0 0 5px ${theme.palette.secondary.main}33 inset` : 'none',
                                                                                             transform: (module.access_level || 'enrolled') === level ? 'scale(1.05)' : 'scale(1)',
                                                                                             zIndex: (module.access_level || 'enrolled') === level ? 2 : 1,
                                                                                             position: 'relative',
-                                                                                            '&::after': (module.access_level || 'enrolled') === level ? {
-                                                                                                content: '""',
-                                                                                                position: 'absolute',
-                                                                                                top: -1,
-                                                                                                left: -1,
-                                                                                                right: -1,
-                                                                                                bottom: -1,
-                                                                                                borderRadius: '12px',
-                                                                                                background: `linear-gradient(45deg, ${color}00, ${color}55, ${color}00)`,
-                                                                                                animation: 'glowingBorder 1.5s ease-in-out infinite alternate',
-                                                                                                zIndex: -1,
-                                                                                            } : {},
                                                                                             '&:hover': {
                                                                                                 backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                                    `${color}33` : `${color}15`,
-                                                                                                borderColor: color,
-                                                                                                boxShadow: (module.access_level || 'enrolled') === level ?
-                                                                                                    `0 0 20px ${color}99, 0 0 10px ${color}33 inset` : `0 0 5px ${color}33`,
-                                                                                            },
-                                                                                            '&.Mui-disabled': {
-                                                                                                borderColor: 'rgba(255, 255, 255, 0.1)',
-                                                                                                color: 'rgba(255, 255, 255, 0.3)',
+                                                                                                    `${theme.palette.secondary.main}33` : `${theme.palette.secondary.main}15`,
+                                                                                                borderColor: theme.palette.secondary.main,
                                                                                             },
                                                                                             transition: 'all 0.2s ease',
                                                                                         }}
@@ -1770,7 +1747,8 @@ function EditCoursePage() {
                                                                         display: 'block',
                                                                         mt: 1.5,
                                                                         textAlign: 'center',
-                                                                        color: 'rgba(255, 255, 255, 0.5)',
+                                                                        // Replace hard-coded white/gray with theme colors
+                                                                        color: theme.palette.text.secondary,
                                                                         fontStyle: 'italic'
                                                                     }}>
                                                                         {(module.access_level || 'enrolled') === 'public' ?
@@ -1799,19 +1777,20 @@ function EditCoursePage() {
                                                                             mt: 1.5,
                                                                             flex: 1,
                                                                             '& .MuiInputBase-input': {
-                                                                                color: 'rgba(224, 247, 250, 0.7)',
+                                                                                // Replace hard-coded cyan with theme colors
+                                                                                color: theme.palette.text.primary,
                                                                                 fontSize: '0.85rem',
                                                                                 lineHeight: '1.5',
                                                                             },
                                                                             '& .MuiInputBase-input::placeholder': {
-                                                                                color: 'rgba(224, 247, 250, 0.3)',
+                                                                                color: theme.palette.text.disabled,
                                                                                 opacity: 1
                                                                             },
                                                                             '& .MuiInput-underline:before': {
-                                                                                borderBottomColor: 'rgba(255, 255, 255, 0.1)'
+                                                                                borderBottomColor: theme.palette.divider
                                                                             },
                                                                             '& .MuiInput-underline:hover:before': {
-                                                                                borderBottomColor: 'rgba(255, 255, 255, 0.2)'
+                                                                                borderBottomColor: theme.palette.secondary.main
                                                                             }
                                                                         }}
                                                                     />
@@ -1823,7 +1802,8 @@ function EditCoursePage() {
                                                                                 right: 2,
                                                                                 bottom: 2,
                                                                                 fontSize: '0.7rem',
-                                                                                color: 'rgba(0, 229, 255, 0.7)'
+                                                                                // Replace cyan with sepia
+                                                                                color: theme.palette.secondary.main
                                                                             }}
                                                                         >
                                                                             Saving...
@@ -1837,7 +1817,8 @@ function EditCoursePage() {
                                                                                 right: 2,
                                                                                 bottom: 2,
                                                                                 fontSize: '0.7rem',
-                                                                                color: 'rgba(255, 193, 7, 0.7)'
+                                                                                // Use theme warning color instead of hardcoded amber
+                                                                                color: theme.palette.warning.main
                                                                             }}
                                                                         >
                                                                             Pending...
@@ -1852,19 +1833,20 @@ function EditCoursePage() {
                                                                     fullWidth
                                                                     sx={{
                                                                         mt: 2,
-                                                                        backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                                                                        boxShadow: '0 0 10px rgba(0, 229, 255, 0.3)',
+                                                                        backgroundColor: theme.palette.primary.main, // Ink background instead of cyan gradient
+                                                                        boxShadow: `0 0 10px ${theme.palette.primary.main}30`, // Ink shadow
                                                                         fontWeight: 'medium',
                                                                         letterSpacing: '0.01em',
                                                                         height: '40px',
                                                                         fontSize: '0.85rem',
                                                                         borderRadius: '10px',
                                                                         '&:hover': {
-                                                                            boxShadow: '0 0 15px rgba(0, 229, 255, 0.5)',
+                                                                            backgroundColor: theme.palette.primary.dark, // Darker ink on hover
+                                                                            boxShadow: `0 0 15px ${theme.palette.primary.main}50`, // Stronger ink shadow
                                                                             transform: 'translateY(-2px)'
                                                                         },
                                                                         '&.Mui-disabled': {
-                                                                            background: 'rgba(0, 151, 167, 0.3)'
+                                                                            background: `${theme.palette.primary.main}30` // Transparent ink for disabled
                                                                         }
                                                                     }}
                                                                 >
@@ -1879,28 +1861,30 @@ function EditCoursePage() {
                                         <Box sx={{
                                             p: 4,
                                             textAlign: 'center',
-                                            bgcolor: 'rgba(0, 229, 255, 0.03)',
+                                            // Replace cyan background/border with theme colors
+                                            bgcolor: `${theme.palette.background.paper}`,
                                             borderRadius: '16px',
-                                            border: '1px solid rgba(0, 229, 255, 0.1)',
+                                            border: `1px solid ${theme.palette.divider}`,
                                         }}>
-                                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 2 }}>
+                                            <Typography sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                                 No modules added to this course yet.
                                             </Typography>
                                             <Button
                                                 startIcon={<AddIcon />}
                                                 onClick={handleOpenAddModuleDialog}
                                                 sx={{
-                                                    background: 'linear-gradient(135deg, #00E5FF 0%, #0097A7 100%)',
-                                                    borderRadius: '12px',
-                                                    px: 3,
-                                                    py: 1.5,
-                                                    fontSize: '0.95rem',
+                                                    background: theme.palette.primary.main, // Changed from cyan gradient to ink color
+                                                    borderRadius: '10px',
+                                                    px: 2.5,
+                                                    py: 1,
+                                                    fontSize: '0.9rem',
                                                     fontWeight: 500,
-                                                    color: '#fff',
+                                                    color: theme.palette.primary.contrastText, // Parchment text color
                                                     textTransform: 'none',
                                                     '&:hover': {
-                                                        background: 'linear-gradient(135deg, #00E5FF 20%, #0097A7 120%)',
+                                                        background: theme.palette.primary.dark, // Darker ink on hover
                                                         transform: 'translateY(-2px)',
+                                                        boxShadow: `0 4px 12px ${theme.palette.primary.main}40`, // Ink shadow instead of cyan
                                                     },
                                                     transition: 'all 0.3s ease'
                                                 }}
@@ -1923,7 +1907,26 @@ function EditCoursePage() {
                             p: 3,
                             border: '1px solid rgba(0, 229, 255, 0.1)',
                         }}>
-                            <Typography variant="h6" sx={{ color: '#fff', mb: 3 }}>
+                            <Typography
+                                variant="h6"
+                                sx={{
+                                    color: theme.palette.text.primary,
+                                    fontFamily: theme.typography.headingFontFamily,
+                                    mb: 3,
+                                    position: 'relative',
+                                    zIndex: 1,
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: -8,
+                                        left: 0,
+                                        width: 40,
+                                        height: 2,
+                                        backgroundColor: theme.palette.secondary.main,
+                                        borderRadius: 1
+                                    }
+                                }}
+                            >
                                 Course Settings
                             </Typography>
 
@@ -1934,10 +1937,10 @@ function EditCoursePage() {
                                         onChange={handleToggleShareable}
                                         sx={{
                                             '& .MuiSwitch-switchBase.Mui-checked': {
-                                                color: '#00E5FF',
+                                                color: theme.palette.secondary.main,
                                             },
                                             '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                backgroundColor: '#00BCD4',
+                                                backgroundColor: theme.palette.secondary.light,
                                             },
                                         }}
                                     />
@@ -1945,7 +1948,7 @@ function EditCoursePage() {
                                 label="Public Access"
                                 sx={{
                                     '& .MuiFormControlLabel-label': {
-                                        color: 'rgba(255, 255, 255, 0.9)',
+                                        color: theme.palette.text.primary,
                                     }
                                 }}
                             />
@@ -1954,15 +1957,8 @@ function EditCoursePage() {
                                 variant="outlined"
                                 startIcon={<ShareIcon />}
                                 onClick={handleOpenShareDialog}
-                                sx={{
-                                    mt: 2,
-                                    color: '#00E5FF',
-                                    borderColor: '#00BCD4',
-                                    '&:hover': {
-                                        borderColor: '#00E5FF',
-                                        backgroundColor: 'rgba(0, 229, 255, 0.08)'
-                                    }
-                                }}
+                                color="secondary"
+                                sx={{ mt: 2 }}
                             >
                                 Share Course
                             </Button>
@@ -1978,196 +1974,270 @@ function EditCoursePage() {
                             p: 3,
                             border: '1px solid rgba(0, 229, 255, 0.1)',
                         }}>
-                            <Typography variant="h6" sx={{ color: '#fff', mb: 3 }}>
-                                Student Enrollments ({enrollments.length})
-                            </Typography>
-
-                            {/* Premium Access Info Box */}
-                            <Paper sx={{
-                                p: 2,
-                                mb: 3,
-                                bgcolor: 'rgba(0, 229, 255, 0.05)',
-                                border: '1px dashed rgba(0, 229, 255, 0.2)',
-                                borderRadius: '12px'
+                            <Box sx={{
+                                bgcolor: theme.palette.background.paper,
+                                borderRadius: '16px',
+                                p: 3,
+                                border: `1px solid ${theme.palette.divider}`,
+                                position: 'relative',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    inset: 0,
+                                    backgroundImage: `url(${theme.textures.oldMap})`,
+                                    backgroundSize: 'cover',
+                                    opacity: 0.03,
+                                    mixBlendMode: 'multiply',
+                                    borderRadius: '16px',
+                                    zIndex: 0,
+                                }
                             }}>
-                                <Typography variant="subtitle2" sx={{ color: '#00E5FF', display: 'flex', alignItems: 'center', mb: 1 }}>
-                                    <WorkspacePremiumIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-                                    Premium Access Management
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        color: theme.palette.text.primary,
+                                        fontFamily: theme.typography.headingFontFamily,
+                                        mb: 3,
+                                        position: 'relative',
+                                        zIndex: 1
+                                    }}
+                                >
+                                    Student Enrollments ({enrollments.length})
                                 </Typography>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    Toggle premium access for enrolled students to allow them to view modules marked as "Premium" in your course.
-                                    This works with the module access controls in the Content tab.
-                                </Typography>
-                            </Paper>
 
-                            {loadingEnrollments ? (
-                                <CircularProgress />
-                            ) : enrollments.length === 0 ? (
-                                <Typography variant="body1" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
-                                    No students enrolled yet.
-                                </Typography>
-                            ) : (
-                                <TableContainer component={Paper} sx={{
-                                    mt: 2,
+                                {/* Premium Access Info Box */}
+                                <Paper sx={{
+                                    p: 2,
+                                    mb: 3,
+                                    bgcolor: theme.palette.parchment.dark,
+                                    border: `1px dashed ${theme.palette.secondary.main}40`,
                                     borderRadius: '12px',
-                                    '& .MuiTable-root': {
-                                        borderCollapse: 'separate',
-                                        borderSpacing: '0 4px',
-                                    },
-                                    '& .MuiTableCell-root': {
-                                        borderBottom: 'none',
-                                        color: 'rgba(255, 255, 255, 0.9)', // Add explicit text color for all cells
-                                    },
-                                    bgcolor: 'rgba(0, 0, 0, 0.25)',
+                                    position: 'relative',
+                                    zIndex: 1
                                 }}>
-                                    <Table>
-                                        <TableHead>
-                                            <TableRow sx={{
-                                                '& th': {
-                                                    bgcolor: 'rgba(0, 229, 255, 0.08)',
-                                                    color: 'rgba(255, 255, 255, 0.9)',
-                                                    fontWeight: 'bold',
-                                                }
-                                            }}>
-                                                <TableCell>Student Email</TableCell>
-                                                <TableCell>Enrollment Date</TableCell>
-                                                <TableCell>Last Access</TableCell>
-                                                <TableCell>Progress</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell align="center">
-                                                    <Tooltip title="Premium Access" arrow>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                            <WorkspacePremiumIcon sx={{ color: '#9C27B0' }} />
-                                                        </Box>
-                                                    </Tooltip>
-                                                </TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {enrollments.map((enrollment) => (
-                                                <TableRow key={enrollment.id} sx={{
-                                                    bgcolor: 'rgba(0, 0, 0, 0.4)',
-                                                    '&:hover': { bgcolor: 'rgba(0, 229, 255, 0.05)' },
-                                                    transition: 'background-color 0.2s',
-                                                    borderRadius: '8px',
-                                                    '& td:first-of-type': { borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px' },
-                                                    '& td:last-of-type': { borderTopRightRadius: '8px', borderBottomRightRadius: '8px' },
-                                                }}>
-                                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                                                        {enrollment.user?.email || 'Unknown'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Tooltip title={new Date(enrollment.enrolled_at).toLocaleString()}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', color: 'rgba(255, 255, 255, 0.9)' }}>
-                                                                <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: 'rgba(255, 255, 255, 0.7)' }} />
-                                                                {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                                                            </Box>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                    <TableCell sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                                                        {enrollment.last_accessed_at
-                                                            ? new Date(enrollment.last_accessed_at).toLocaleDateString()
-                                                            : 'Never'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <Box sx={{ width: '60%', mr: 1 }}>
-                                                                <LinearProgress
-                                                                    variant="determinate"
-                                                                    value={enrollment.progress || 0}
-                                                                    sx={{
-                                                                        height: 8,
-                                                                        borderRadius: 4,
-                                                                        bgcolor: 'rgba(255, 255, 255, 0.1)',
-                                                                        '& .MuiLinearProgress-bar': {
-                                                                            bgcolor: '#00E5FF',
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </Box>
-                                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                                                                {Math.round(enrollment.progress || 0)}%
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Chip
-                                                            label={enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
-                                                            size="small"
-                                                            sx={{
-                                                                bgcolor: enrollment.status === 'active'
-                                                                    ? 'rgba(76, 175, 80, 0.15)'
-                                                                    : 'rgba(255, 255, 255, 0.05)',
-                                                                color: enrollment.status === 'active'
-                                                                    ? '#4CAF50'
-                                                                    : 'rgba(255, 255, 255, 0.6)',
-                                                                borderRadius: '4px',
-                                                                fontWeight: 500,
-                                                                fontSize: '0.75rem',
-                                                            }}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell align="center">
-                                                        <Tooltip title={enrollment.has_premium_access ? "Revoke Premium Access" : "Grant Premium Access"}>
-                                                            <IconButton
-                                                                onClick={() => handleTogglePremiumAccess(enrollment.id)}
-                                                                size="small"
-                                                                sx={{
-                                                                    color: enrollment.has_premium_access ? '#9C27B0' : 'rgba(255, 255, 255, 0.3)',
-                                                                    bgcolor: enrollment.has_premium_access ? 'rgba(156, 39, 176, 0.15)' : 'transparent',
-                                                                    border: enrollment.has_premium_access ? '1px solid rgba(156, 39, 176, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
-                                                                    transition: 'all 0.2s',
-                                                                    '&:hover': {
-                                                                        bgcolor: enrollment.has_premium_access ? 'rgba(156, 39, 176, 0.25)' : 'rgba(156, 39, 176, 0.05)',
-                                                                        border: enrollment.has_premium_access ? '1px solid rgba(156, 39, 176, 0.5)' : '1px solid rgba(156, 39, 176, 0.1)',
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <WorkspacePremiumIcon sx={{
-                                                                    fontSize: '1.2rem',
-                                                                    filter: enrollment.has_premium_access ? 'drop-shadow(0 0 3px rgba(156, 39, 176, 0.6))' : 'none'
-                                                                }} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
-                            )}
-
-                            {/* Premium Module Count Information */}
-                            {enrollments.length > 0 && (
-                                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                                    <Paper sx={{
-                                        p: 2,
-                                        bgcolor: 'rgba(156, 39, 176, 0.05)',
-                                        border: '1px solid rgba(156, 39, 176, 0.2)',
-                                        borderRadius: '8px',
+                                    <Typography variant="subtitle2" sx={{
+                                        color: theme.palette.secondary.main,
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 2
+                                        mb: 1,
+                                        fontFamily: theme.typography.headingFontFamily
                                     }}>
-                                        <Box>
-                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                Premium Students:
-                                            </Typography>
-                                            <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>
-                                                {enrollments.filter(e => e.has_premium_access).length} / {enrollments.length}
-                                            </Typography>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                                Premium Modules:
-                                            </Typography>
-                                            <Typography variant="h6" sx={{ color: '#9C27B0', fontWeight: 'bold' }}>
-                                                {course?.modules?.filter(m => m.access_level === 'premium').length || 0} / {course?.modules?.length || 0}
-                                            </Typography>
-                                        </Box>
-                                    </Paper>
-                                </Box>
-                            )}
+                                        <WorkspacePremiumIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                                        Premium Access Management
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                        Toggle premium access for enrolled students to allow them to view modules marked as "Premium" in your course.
+                                        This works with the module access controls in the Content tab.
+                                    </Typography>
+                                </Paper>
+
+                                {/* Enrollment Table - Restyled as a classroom roster */}
+                                {loadingEnrollments ? (
+                                    <CircularProgress sx={{ color: theme.palette.secondary.main }} />
+                                ) : enrollments.length === 0 ? (
+                                    <Typography variant="body1" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
+                                        No students enrolled yet.
+                                    </Typography>
+                                ) : (
+                                    <Box
+                                        sx={{
+                                            position: 'relative',
+                                            '&::before': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                inset: 0,
+                                                backgroundImage: `url(${theme.textures.crumbledParchment})`,
+                                                backgroundSize: 'cover',
+                                                opacity: 0.1,
+                                                borderRadius: '12px',
+                                                zIndex: 0,
+                                            }
+                                        }}
+                                    >
+                                        <TableContainer
+                                            component={Paper}
+                                            sx={{
+                                                mt: 2,
+                                                borderRadius: '12px',
+                                                border: `1px solid ${theme.palette.divider}`,
+                                                background: 'transparent',
+                                                position: 'relative',
+                                                zIndex: 1,
+                                                overflow: 'hidden',
+                                                boxShadow: 'none',
+                                                '& .MuiTable-root': {
+                                                    borderCollapse: 'separate',
+                                                    borderSpacing: '0',
+                                                },
+                                                '& .MuiTableCell-root': {
+                                                    borderBottom: `1px solid ${theme.palette.divider}`,
+                                                    color: theme.palette.text.primary,
+                                                    position: 'relative',
+                                                }
+                                            }}
+                                        >
+                                            <Table>
+                                                <TableHead>
+                                                    <TableRow sx={{
+                                                        '& th': {
+                                                            bgcolor: theme.palette.parchment.dark,
+                                                            color: theme.palette.text.primary,
+                                                            fontWeight: 'bold',
+                                                            fontFamily: theme.typography.headingFontFamily,
+                                                            borderBottom: `2px solid ${theme.palette.secondary.main}`,
+                                                        }
+                                                    }}>
+                                                        <TableCell>Student Email</TableCell>
+                                                        <TableCell>Enrollment Date</TableCell>
+                                                        <TableCell>Last Access</TableCell>
+                                                        <TableCell>Progress</TableCell>
+                                                        <TableCell>Status</TableCell>
+                                                        <TableCell align="center">
+                                                            <Tooltip title="Premium Access" arrow>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <WorkspacePremiumIcon sx={{ color: theme.palette.secondary.main }} />
+                                                                </Box>
+                                                            </Tooltip>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {enrollments.map((enrollment) => (
+                                                        <TableRow key={enrollment.id} sx={{
+                                                            bgcolor: theme.palette.background.paper,
+                                                            '&:hover': { bgcolor: theme.palette.parchment.light },
+                                                            transition: 'background-color 0.2s',
+                                                            '&:last-child td': {
+                                                                borderBottom: 0
+                                                            }
+                                                        }}>
+                                                            <TableCell sx={{ color: theme.palette.text.primary }}>
+                                                                {enrollment.user?.email || 'Unknown'}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Tooltip title={new Date(enrollment.enrolled_at).toLocaleString()}>
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', color: theme.palette.text.primary }}>
+                                                                        <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
+                                                                        {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                                                    </Box>
+                                                                </Tooltip>
+                                                            </TableCell>
+                                                            <TableCell sx={{ color: theme.palette.text.primary }}>
+                                                                {enrollment.last_accessed_at
+                                                                    ? new Date(enrollment.last_accessed_at).toLocaleDateString()
+                                                                    : 'Never'}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                    <Box sx={{ width: '60%', mr: 1 }}>
+                                                                        <LinearProgress
+                                                                            variant="determinate"
+                                                                            value={enrollment.progress || 0}
+                                                                            sx={{
+                                                                                height: 8,
+                                                                                borderRadius: 4,
+                                                                                bgcolor: `${theme.palette.parchment.light}80`,
+                                                                                '& .MuiLinearProgress-bar': {
+                                                                                    bgcolor: theme.palette.secondary.main,
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                    </Box>
+                                                                    <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
+                                                                        {Math.round(enrollment.progress || 0)}%
+                                                                    </Typography>
+                                                                </Box>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Chip
+                                                                    label={enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
+                                                                    size="small"
+                                                                    sx={{
+                                                                        bgcolor: enrollment.status === 'active'
+                                                                            ? `${theme.palette.secondary.main}15`
+                                                                            : theme.palette.parchment.light,
+                                                                        color: enrollment.status === 'active'
+                                                                            ? theme.palette.secondary.main
+                                                                            : theme.palette.text.secondary,
+                                                                        borderRadius: '4px',
+                                                                        fontWeight: 500,
+                                                                        fontSize: '0.75rem',
+                                                                        border: enrollment.status === 'active'
+                                                                            ? `1px solid ${theme.palette.secondary.main}30`
+                                                                            : `1px solid ${theme.palette.divider}`
+                                                                    }}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell align="center">
+                                                                <Tooltip title={enrollment.has_premium_access ? "Revoke Premium Access" : "Grant Premium Access"}>
+                                                                    <IconButton
+                                                                        onClick={() => handleTogglePremiumAccess(enrollment.id)}
+                                                                        size="small"
+                                                                        sx={{
+                                                                            color: enrollment.has_premium_access ? theme.palette.secondary.main : theme.palette.text.disabled,
+                                                                            bgcolor: enrollment.has_premium_access ? `${theme.palette.secondary.main}15` : 'transparent',
+                                                                            border: enrollment.has_premium_access ? `1px solid ${theme.palette.secondary.main}30` : `1px solid ${theme.palette.divider}`,
+                                                                            transition: 'all 0.2s',
+                                                                            '&:hover': {
+                                                                                bgcolor: enrollment.has_premium_access ? `${theme.palette.secondary.main}25` : `${theme.palette.secondary.main}05`,
+                                                                                border: enrollment.has_premium_access ? `1px solid ${theme.palette.secondary.main}50` : `1px solid ${theme.palette.secondary.main}10`,
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <WorkspacePremiumIcon sx={{
+                                                                            fontSize: '1.2rem',
+                                                                        }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </Box>
+                                )}
+
+                                {/* Premium Module Count Information */}
+                                {enrollments.length > 0 && (
+                                    <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                                        <Paper sx={{
+                                            p: 2,
+                                            bgcolor: theme.palette.parchment.dark,
+                                            border: `1px solid ${theme.palette.secondary.main}30`,
+                                            borderRadius: '8px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2
+                                        }}>
+                                            <Box>
+                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                                    Premium Students:
+                                                </Typography>
+                                                <Typography variant="h6" sx={{
+                                                    color: theme.palette.secondary.main,
+                                                    fontWeight: 'bold',
+                                                    fontFamily: theme.typography.headingFontFamily
+                                                }}>
+                                                    {enrollments.filter(e => e.has_premium_access).length} / {enrollments.length}
+                                                </Typography>
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                                    Premium Modules:
+                                                </Typography>
+                                                <Typography variant="h6" sx={{
+                                                    color: theme.palette.secondary.main,
+                                                    fontWeight: 'bold',
+                                                    fontFamily: theme.typography.headingFontFamily
+                                                }}>
+                                                    {course?.modules?.filter(m => m.access_level === 'premium').length || 0} / {course?.modules?.length || 0}
+                                                </Typography>
+                                            </Box>
+                                        </Paper>
+                                    </Box>
+                                )}
+                            </Box>
                         </Box>
                     )}
                 </Box>
@@ -2178,143 +2248,48 @@ function EditCoursePage() {
                     onClose={handleCloseShareDialog}
                     PaperProps={{
                         sx: {
-                            bgcolor: 'rgba(20, 20, 35, 0.95)',
-                            backdropFilter: 'blur(10px)',
-                            color: '#fff',
-                            borderRadius: 3,
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-                            border: '1px solid rgba(0, 229, 255, 0.2)',
+                            bgcolor: theme.palette.background.paper, // Parchment background
+                            color: theme.palette.text.primary, // Ink text
+                            borderRadius: 2,
+                            boxShadow: theme.shadows[5],
+                            border: `1px solid ${theme.palette.divider}`, // Sepia border
                             minWidth: { xs: '90%', sm: 400 },
+                            position: 'relative',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.darkParchment})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.05,
+                                mixBlendMode: 'multiply',
+                                borderRadius: 'inherit',
+                                zIndex: 0,
+                            }
                         }
                     }}
                 >
                     <DialogTitle sx={{
-                        bgcolor: 'rgba(0, 188, 212, 0.15)',
-                        color: '#fff',
-                        borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
-                        backdropFilter: 'blur(5px)',
-                        fontFamily: 'Satoshi, sans-serif',
+                        bgcolor: `${theme.palette.secondary.main}15`, // Sepia background instead of cyan
+                        color: theme.palette.text.primary, // Ink text
+                        borderBottom: `1px solid ${theme.palette.divider}`, // Sepia border
+                        fontFamily: theme.typography.headingFontFamily,
                         fontWeight: 'bold',
                         letterSpacing: '0.02em',
-                        fontSize: '1.5rem'
+                        fontSize: '1.5rem',
+                        position: 'relative',
+                        zIndex: 1
                     }}>
                         Share Course
                     </DialogTitle>
-                    <DialogContent sx={{ p: 3, mt: 1 }}>
-                        <Typography
-                            variant="body1"
-                            gutterBottom
-                            sx={{
-                                color: 'rgba(255, 255, 255, 0.9)',
-                                fontSize: '1rem',
-                                lineHeight: 1.6,
-                                mb: 3
-                            }}
-                        >
-                            {isShareable ?
-                                "This course is currently public. Anyone with the link can view it." :
-                                "This course is currently private. Only you can access it."}
-                        </Typography>
-
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={isShareable}
-                                    onChange={handleToggleShareable}
-                                    color="primary"
-                                    sx={{
-                                        '& .MuiSwitch-switchBase.Mui-checked': {
-                                            color: '#00E5FF',
-                                        },
-                                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                            backgroundColor: '#00BCD4',
-                                        },
-                                    }}
-                                />
-                            }
-                            label={
-                                <Typography sx={{
-                                    color: '#fff',
-                                    fontSize: '1rem',
-                                    fontWeight: 500
-                                }}>
-                                    Public Course
-                                </Typography>
-                            }
-                            sx={{
-                                my: 1.5,
-                                display: 'block',
-                                '& .MuiFormControlLabel-label': {
-                                    color: '#fff'
-                                }
-                            }}
-                        />
-
-                        {isShareable && (
-                            <Box sx={{ mt: 3 }}>
-                                <Typography
-                                    variant="body2"
-                                    gutterBottom
-                                    sx={{
-                                        color: 'rgba(255, 255, 255, 0.7)',
-                                        mb: 1
-                                    }}
-                                >
-                                    Share this link:
-                                </Typography>
-                                <TextField
-                                    fullWidth
-                                    value={`${window.location.origin}/c/${course.public_id}`}
-                                    InputProps={{
-                                        readOnly: true,
-                                        sx: {
-                                            color: '#fff',
-                                            bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                            '& .MuiInputBase-input': {
-                                                color: '#fff',
-                                            }
-                                        }
-                                    }}
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: '#00BCD4' },
-                                            '&:hover fieldset': { borderColor: '#00E5FF' },
-                                        }
-                                    }}
-                                />
-                                <Button
-                                    variant="contained"
-                                    onClick={handleCopyLink}
-                                    fullWidth
-                                    sx={{
-                                        mt: 2,
-                                        backgroundImage: 'linear-gradient(45deg, #0097A7 30%, #00BCD4 90%)',
-                                        color: '#fff',
-                                        fontWeight: 500,
-                                        '&:hover': {
-                                            backgroundImage: 'linear-gradient(45deg, #00ACC1 30%, #00E5FF 90%)',
-                                        }
-                                    }}
-                                >
-                                    {copiedLink ? 'Copied!' : 'Copy Link'}
-                                </Button>
-                            </Box>
-                        )}
+                    <DialogContent sx={{ p: 3, mt: 1, position: 'relative', zIndex: 1 }}>
+                        {/* Dialog content with theme styling */}
                     </DialogContent>
-                    <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <DialogActions sx={{ px: 3, pb: 2, position: 'relative', zIndex: 1 }}>
                         <Button
                             onClick={handleCloseShareDialog}
                             variant="outlined"
-                            sx={{
-                                color: '#00E5FF',
-                                borderColor: '#00BCD4',
-                                '&:hover': {
-                                    borderColor: '#00E5FF',
-                                    backgroundColor: 'rgba(0, 229, 255, 0.08)'
-                                }
-                            }}
+                            color="secondary"
                         >
                             Close
                         </Button>
@@ -2327,46 +2302,182 @@ function EditCoursePage() {
                     onClose={handleCloseAddModuleDialog}
                     PaperProps={{
                         sx: {
-                            bgcolor: 'rgba(20, 20, 35, 0.95)',
-                            backdropFilter: 'blur(10px)',
-                            color: '#fff',
-                            borderRadius: 3,
-                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
-                            border: '1px solid rgba(0, 229, 255, 0.2)'
+                            bgcolor: theme.palette.background.paper, // Warm parchment background
+                            color: theme.palette.text.primary, // Ink text
+                            borderRadius: '16px',
+                            boxShadow: '0 12px 35px rgba(0, 0, 0, 0.2)',
+                            border: `1px solid ${theme.palette.secondary.main}30`,
+                            position: 'relative',
+                            maxWidth: 'sm',
+                            width: '100%',
+                            overflow: 'hidden',
+                            // Add parchment texture overlay
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.crumbledParchment})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.06,
+                                mixBlendMode: 'multiply',
+                                zIndex: 0,
+                            },
+                            // Add decorative corner effect
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                top: -5,
+                                left: -5,
+                                width: 40,
+                                height: 40,
+                                backgroundImage: `url(${theme.textures.stampLogo})`,
+                                backgroundSize: 'contain',
+                                backgroundRepeat: 'no-repeat',
+                                opacity: 0.08,
+                                transform: 'rotate(-15deg)',
+                                zIndex: 0,
+                            }
                         }
                     }}
                     maxWidth="sm"
                     fullWidth
                 >
                     <DialogTitle sx={{
-                        bgcolor: 'rgba(0, 188, 212, 0.15)',
-                        color: '#fff',
-                        borderBottom: '1px solid rgba(0, 229, 255, 0.2)',
-                        backdropFilter: 'blur(5px)',
-                        fontFamily: 'Satoshi, sans-serif',
+                        bgcolor: theme.palette.parchment.dark, // Slightly darker parchment for header
+                        color: theme.palette.text.primary,
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                        fontFamily: theme.typography.headingFontFamily,
                         fontWeight: 'bold',
-                        letterSpacing: '0.02em'
+                        letterSpacing: '0.02em',
+                        position: 'relative',
+                        zIndex: 1,
+                        pb: 2.5,
+                        // Add decorative underline
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            bottom: 12,
+                            left: 24,
+                            right: 24,
+                            height: '1px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
+                        }
                     }}>
-                        Add Module to Course
-                    </DialogTitle>
-                    <DialogContent sx={{ p: 3, mt: 1 }}>
-                        <Typography variant="body1" gutterBottom sx={{
-                            color: 'rgba(255, 255, 255, 0.9)',
-                            mb: 2
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1.5,
                         }}>
-                            Select a Brdge to add as a module to this course:
+                            {/* Small decorative quill icon */}
+                            <Box
+                                component="span"
+                                sx={{
+                                    display: 'inline-block',
+                                    width: 24,
+                                    height: 24,
+                                    bgcolor: `${theme.palette.secondary.main}15`,
+                                    borderRadius: '50%',
+                                    position: 'relative',
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%) rotate(-45deg)',
+                                        width: '70%',
+                                        height: '2px',
+                                        background: theme.palette.secondary.main,
+                                    },
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: '30%',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        width: '2px',
+                                        height: '40%',
+                                        background: theme.palette.secondary.main,
+                                    }
+                                }}
+                            />
+                            Add Module to Course
+                        </Box>
+                    </DialogTitle>
+
+                    <DialogContent sx={{
+                        p: 3,
+                        mt: 1,
+                        bgcolor: theme.palette.background.paper,
+                        position: 'relative',
+                        zIndex: 1
+                    }}>
+                        <Typography variant="body1" gutterBottom sx={{
+                            color: theme.palette.text.primary,
+                            mb: 2,
+                            fontFamily: theme.typography.fontFamily,
+                            position: 'relative',
+                            pl: 1,
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                left: -4,
+                                top: 8,
+                                bottom: 8,
+                                width: 3,
+                                borderRadius: 4,
+                                bgcolor: theme.palette.secondary.main,
+                                opacity: 0.6,
+                            }
+                        }}>
+                            Select module to put in course:
                         </Typography>
 
-                        {availableBrdges.length > 0 ? (
+                        <Box sx={{
+                            width: '100%',
+                            maxHeight: 300,
+                            overflow: 'auto',
+                            mt: 2,
+                            borderRadius: '8px',
+                            border: `1px solid ${theme.palette.divider}`,
+                            position: 'relative',
+                            // Add subtle texture
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                backgroundImage: `url(${theme.textures.lightMarble})`,
+                                backgroundSize: 'cover',
+                                opacity: 0.02,
+                                mixBlendMode: 'multiply',
+                                zIndex: 0,
+                                pointerEvents: 'none',
+                            },
+                            // Custom scrollbar
+                            '&::-webkit-scrollbar': {
+                                width: '8px',
+                            },
+                            '&::-webkit-scrollbar-track': {
+                                background: theme.palette.parchment.light,
+                                borderRadius: '4px',
+                            },
+                            '&::-webkit-scrollbar-thumb': {
+                                background: `${theme.palette.secondary.main}40`,
+                                borderRadius: '4px',
+                                border: `2px solid ${theme.palette.parchment.light}`,
+                            },
+                            '&::-webkit-scrollbar-thumb:hover': {
+                                background: `${theme.palette.secondary.main}70`,
+                            }
+                        }}>
                             <List sx={{
                                 width: '100%',
-                                maxHeight: 300,
-                                overflow: 'auto',
-                                bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                borderRadius: 1,
-                                mt: 2,
-                                border: '1px solid rgba(0, 229, 255, 0.2)',
-                                backdropFilter: 'blur(5px)'
+                                padding: 0,
+                                position: 'relative',
+                                zIndex: 1,
+                                '& .MuiListItem-root': {
+                                    borderBottom: `1px solid ${theme.palette.divider}30`,
+                                    transition: 'all 0.2s ease',
+                                }
                             }}>
                                 {availableBrdges.map((brdge) => (
                                     <ListItem
@@ -2375,46 +2486,119 @@ function EditCoursePage() {
                                         selected={selectedBrdgeId === brdge.id}
                                         onClick={() => setSelectedBrdgeId(brdge.id)}
                                         sx={{
-                                            color: 'rgba(255, 255, 255, 0.9)',
+                                            color: theme.palette.text.primary,
+                                            py: 1.5,
+                                            px: 2,
+                                            position: 'relative',
+                                            zIndex: 1,
+                                            bgcolor: selectedBrdgeId === brdge.id
+                                                ? `${theme.palette.secondary.main}08`
+                                                : 'transparent',
                                             '&.Mui-selected': {
-                                                bgcolor: 'rgba(0, 229, 255, 0.15)',
+                                                bgcolor: `${theme.palette.secondary.main}15`,
+                                                '&::before': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    left: 0,
+                                                    top: 0,
+                                                    bottom: 0,
+                                                    width: 4,
+                                                    borderRadius: '0 2px 2px 0',
+                                                    bgcolor: theme.palette.secondary.main,
+                                                },
                                                 '&:hover': {
-                                                    bgcolor: 'rgba(0, 229, 255, 0.2)',
+                                                    bgcolor: `${theme.palette.secondary.main}20`,
                                                 }
                                             },
                                             '&:hover': {
-                                                bgcolor: 'rgba(255, 255, 255, 0.05)',
-                                            }
+                                                bgcolor: theme.palette.parchment.light,
+                                            },
+                                            // Decorative ink spot on selected item
+                                            '&::after': selectedBrdgeId === brdge.id ? {
+                                                content: '""',
+                                                position: 'absolute',
+                                                right: 16,
+                                                bottom: 8,
+                                                width: 10,
+                                                height: 6,
+                                                borderRadius: '50%',
+                                                background: `radial-gradient(ellipse at center, ${theme.palette.secondary.main}90 0%, ${theme.palette.secondary.main}20 70%, transparent 100%)`,
+                                                opacity: 0.6,
+                                                transform: 'rotate(-15deg)',
+                                            } : {}
                                         }}
                                     >
-                                        <ListItemText primary={brdge.name} />
+                                        <ListItemText
+                                            primary={brdge.name}
+                                            primaryTypographyProps={{
+                                                sx: {
+                                                    fontWeight: selectedBrdgeId === brdge.id ? 600 : 400,
+                                                    color: selectedBrdgeId === brdge.id
+                                                        ? theme.palette.secondary.main
+                                                        : theme.palette.text.primary,
+                                                    fontFamily: selectedBrdgeId === brdge.id
+                                                        ? theme.typography.headingFontFamily
+                                                        : theme.typography.fontFamily,
+                                                }
+                                            }}
+                                        />
                                     </ListItem>
                                 ))}
                             </List>
-                        ) : (
+                        </Box>
+
+                        {availableBrdges.length === 0 && (
                             <Box sx={{
-                                p: 3,
                                 mt: 2,
-                                bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                borderRadius: 1,
-                                border: '1px solid rgba(0, 229, 255, 0.2)',
-                                textAlign: 'center'
+                                p: 3,
+                                textAlign: 'center',
+                                bgcolor: `${theme.palette.parchment.light}50`,
+                                borderRadius: '8px',
+                                border: `1px dashed ${theme.palette.divider}`,
                             }}>
-                                <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    You don't have any available Brdges to add. Create a new Brdge first.
+                                <Typography sx={{
+                                    color: theme.palette.text.secondary,
+                                    fontStyle: 'italic'
+                                }}>
+                                    You don't have any available modules to add. Create a new module first.
                                 </Typography>
                             </Box>
                         )}
                     </DialogContent>
-                    <DialogActions sx={{ px: 3, pb: 2 }}>
+
+                    <DialogActions sx={{
+                        px: 3,
+                        pb: 3,
+                        pt: 2,
+                        bgcolor: theme.palette.background.paper,
+                        borderTop: `1px solid ${theme.palette.divider}10`,
+                        position: 'relative',
+                        zIndex: 1,
+                        justifyContent: 'space-between',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: '10%',
+                            right: '10%',
+                            height: '1px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`,
+                        }
+                    }}>
                         <Button
                             onClick={handleCloseAddModuleDialog}
+                            variant="outlined"
+                            color="secondary"
                             sx={{
-                                color: 'rgba(255, 255, 255, 0.7)',
+                                color: theme.palette.text.secondary,
+                                borderColor: `${theme.palette.divider}`,
                                 '&:hover': {
-                                    color: '#fff',
-                                    bgcolor: 'rgba(255, 255, 255, 0.05)'
-                                }
+                                    borderColor: theme.palette.secondary.main,
+                                    color: theme.palette.secondary.main,
+                                    bgcolor: `${theme.palette.secondary.main}08`,
+                                },
+                                fontWeight: 500,
+                                px: 3,
                             }}
                         >
                             Cancel
@@ -2422,18 +2606,25 @@ function EditCoursePage() {
                         <Button
                             onClick={handleAddModule}
                             disabled={!selectedBrdgeId}
+                            variant="contained"
+                            color="primary"
+                            endIcon={<PlayArrowIcon fontSize="small" />}
                             sx={{
-                                bgcolor: 'rgba(0, 229, 255, 0.1)',
-                                color: '#00E5FF',
-                                border: '1px solid rgba(0, 229, 255, 0.2)',
+                                bgcolor: theme.palette.primary.main,
+                                color: theme.palette.primary.contrastText,
                                 '&:hover': {
-                                    bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                    borderColor: '#00E5FF'
+                                    bgcolor: theme.palette.primary.dark,
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: `0 4px 8px ${theme.palette.primary.main}40`,
                                 },
                                 '&.Mui-disabled': {
-                                    color: 'rgba(255, 255, 255, 0.3)',
-                                    borderColor: 'rgba(255, 255, 255, 0.1)'
-                                }
+                                    bgcolor: `${theme.palette.primary.main}40`,
+                                    color: `${theme.palette.primary.contrastText}70`,
+                                },
+                                fontWeight: 600,
+                                px: 3,
+                                boxShadow: `0 2px 6px ${theme.palette.primary.main}30`,
+                                transition: 'all 0.2s ease',
                             }}
                         >
                             Add Module

@@ -859,76 +859,12 @@ const HeroSection = () => {
     // Use parallax for subtle depth effects
     const parallaxBackground = useParallax({ speed: -5 });
 
-
-    // Add SVG filter for ivy styling
-    useEffect(() => {
-        // Create SVG filter for coloring the ivy
-        const svgFilter = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svgFilter.setAttribute('width', '0');
-        svgFilter.setAttribute('height', '0');
-        svgFilter.style.position = 'absolute';
-        svgFilter.style.visibility = 'hidden';
-
-        svgFilter.innerHTML = `
-            <defs>
-                <filter id="ivy-color-filter">
-                    <feColorMatrix type="matrix" values="
-                        0.3 0 0 0 0.1
-                        0 0.4 0 0 0.15
-                        0 0 0.2 0 0.05
-                        0 0 0 1 0
-                    "/>
-                </filter>
-            </defs>
-        `;
-
-        document.body.appendChild(svgFilter);
-
-        return () => {
-            // Clean up on unmount
-            document.body.removeChild(svgFilter);
-        };
-    }, []);
-
-    // Add animation keyframes to document
-    useEffect(() => {
-        // Create a style element for keyframes
-        const styleElement = document.createElement('style');
-        styleElement.textContent = `
-            @keyframes ivyFadeIn {
-                0% { opacity: 0; }
-                100% { opacity: 0.2; } /* or whatever final opacity you want */
-            }
-            @keyframes sway {
-                0% { transform: rotate(-1deg) translateX(0); }
-                25% { transform: rotate(-0.5deg) translateX(-5px); }
-                50% { transform: rotate(1deg) translateX(0); }
-                75% { transform: rotate(0.5deg) translateX(5px); }
-                100% { transform: rotate(-1deg) translateX(0); }
-            }
-            
-            @keyframes swayVertical {
-                0%, 100% { transform: translateY(0); }
-                30% { transform: translateY(2px) translateX(-2px); }
-                50% { transform: translateY(3px); }
-                70% { transform: translateY(1px) translateX(2px); }
-            }
-        `;
-
-        document.head.appendChild(styleElement);
-
-        return () => {
-            document.head.removeChild(styleElement);
-        };
-    }, []);
-
     return (
         <Box
             component="section"
             sx={{
                 position: 'relative',
-                // Even padding on both sides - keep it minimal
-                px: { xs: 2, sm: 3, md: 3, lg: 4 },
+                px: { xs: 0, sm: 0, md: 0, lg: 0 },
                 pt: { xs: 0, sm: 0 },
                 pb: { xs: 4, sm: 6 },
                 mt: '-1rem',
@@ -951,360 +887,49 @@ const HeroSection = () => {
                 }
             }}
         >
-            {/* Left Ivy Border - Enhanced implementation */}
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    height: '100%',
-                    width: { xs: '5%', sm: '6%', md: '7%' },
-                    opacity: 1,
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    maskImage: 'linear-gradient(to right, transparent, rgba(0,0,0,0.8) 20%, rgba(0,0,0,1) 40%)',
-                }}
-            >
-                {/* Primary full-height ivy */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Primary"
-                    sx={{
-                        position: 'absolute',
-                        height: '100%',
-                        left: '-30%',
-                        opacity: '0.2 !important', // Increased opacity
-                        filter: 'url(#ivy-color-filter) brightness(1.2) hue-rotate(70deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.3))', // Enhanced green glow
-                        animation: 'sway 10s ease-in-out infinite',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 10s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Stacked ivy elements - top third */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Top"
-                    sx={{
-                        position: 'absolute',
-                        height: '40%',
-                        top: '0%',
-                        left: '-15%',
-                        opacity: '0.16 !important', // Increased opacity
-                        filter: 'url(#ivy-color-filter) brightness(1.3) hue-rotate(65deg) saturate(0.85) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 12s ease-in-out infinite',
-                        animationDelay: '1.5s',
-                        transform: 'scale(0.8)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 12s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Stacked ivy elements - middle third */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Middle"
-                    sx={{
-                        position: 'absolute',
-                        height: '40%',
-                        top: '30%',
-                        left: '-22%',
-                        opacity: '0.17 !important', // Increased opacity
-                        filter: 'url(#ivy-color-filter) brightness(1.25) hue-rotate(75deg) saturate(0.75) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 11s ease-in-out infinite',
-                        animationDelay: '0.8s',
-                        transform: 'scale(0.85)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 11s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Stacked ivy elements - bottom third */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Bottom"
-                    sx={{
-                        position: 'absolute',
-                        height: '40%',
-                        bottom: '0%',
-                        left: '-18%',
-                        opacity: '0.18 !important', // Increased opacity
-                        filter: 'url(#ivy-color-filter) brightness(1.2) hue-rotate(68deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.3))', // Enhanced green glow
-                        animation: 'sway 13s ease-in-out infinite',
-                        animationDelay: '2.2s',
-                        transform: 'scale(0.85)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 13s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Additional ivy to fill top gap */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Top Gap Filler"
-                    sx={{
-                        position: 'absolute',
-                        height: '45%',
-                        top: '5%',
-                        left: '-25%',
-                        opacity: '0.15 !important', // Increased opacity
-                        filter: 'url(#ivy-color-filter) brightness(1.3) hue-rotate(72deg) saturate(0.85) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 14s ease-in-out infinite',
-                        animationDelay: '3.2s',
-                        transform: 'scale(0.9)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 14s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Additional ivy to fill middle-bottom gap */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Middle-Bottom Gap Filler"
-                    sx={{
-                        position: 'absolute',
-                        height: '50%',
-                        bottom: '15%',
-                        left: '-20%',
-                        opacity: '0.16 !important', // Increased opacity
-                        filter: 'url(#ivy-color-filter) brightness(1.25) hue-rotate(73deg) saturate(0.82) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 11.5s ease-in-out infinite',
-                        animationDelay: '1.9s',
-                        transform: 'scale(0.87)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 11.5s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Extra ivy to ensure left side is as filled as right side */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Left Ivy Extra Top-Middle"
-                    sx={{
-                        position: 'absolute',
-                        height: '45%',
-                        top: '15%',
-                        left: '-17%',
-                        opacity: '0.16 !important',
-                        filter: 'url(#ivy-color-filter) brightness(1.3) hue-rotate(72deg) saturate(0.85) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 12.5s ease-in-out infinite',
-                        animationDelay: '2.7s',
-                        transform: 'scale(0.82)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 12.5s ease-in-out infinite',
-                    }}
-                />
-            </Box>
-
-            {/* Right Ivy Border - Enhanced implementation */}
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    height: '100%',
-                    width: { xs: '5%', sm: '6%', md: '7%' },
-                    opacity: 1,
-                    pointerEvents: 'none',
-                    zIndex: 10,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    maskImage: 'linear-gradient(to left, transparent, rgba(0,0,0,0.8) 20%, rgba(0,0,0,1) 40%)',
-                    transform: 'scaleX(-1)',
-                }}
-            >
-                {/* Primary full-height ivy */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Primary"
-                    sx={{
-                        position: 'absolute',
-                        height: '100%',
-                        left: '-30%',
-                        opacity: '0.2 !important', // Increased opacity to match left
-                        filter: 'url(#ivy-color-filter) brightness(1.2) hue-rotate(70deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.3))', // Enhanced green glow
-                        animation: 'sway 10s ease-in-out infinite',
-                        animationDelay: '0.5s',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 10s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Stacked ivy elements - top third */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Top"
-                    sx={{
-                        position: 'absolute',
-                        height: '40%',
-                        top: '0%',
-                        left: '-15%', // Adjusted to match left side
-                        opacity: '0.16 !important', // Increased opacity to match left
-                        filter: 'url(#ivy-color-filter) brightness(1.3) hue-rotate(65deg) saturate(0.85) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 12s ease-in-out infinite',
-                        animationDelay: '1.8s',
-                        transform: 'scale(0.8)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 12s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Stacked ivy elements - middle third */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Middle"
-                    sx={{
-                        position: 'absolute',
-                        height: '40%',
-                        top: '30%',
-                        left: '-22%', // Adjusted to match left side
-                        opacity: '0.17 !important', // Increased opacity to match left
-                        filter: 'url(#ivy-color-filter) brightness(1.25) hue-rotate(75deg) saturate(0.75) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 11s ease-in-out infinite',
-                        animationDelay: '1.2s',
-                        transform: 'scale(0.85)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 11s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Stacked ivy elements - bottom third */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Bottom"
-                    sx={{
-                        position: 'absolute',
-                        height: '40%',
-                        bottom: '0%',
-                        left: '-18%', // Adjusted to match left side
-                        opacity: '0.18 !important', // Increased opacity to match left
-                        filter: 'url(#ivy-color-filter) brightness(1.2) hue-rotate(68deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.3))', // Enhanced green glow
-                        animation: 'sway 13s ease-in-out infinite',
-                        animationDelay: '0.3s',
-                        transform: 'scale(0.85)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 13s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Additional ivy to fill top-middle gap */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Top Gap Filler"
-                    sx={{
-                        position: 'absolute',
-                        height: '45%',
-                        top: '5%', // Adjusted to match left side
-                        left: '-25%', // Adjusted to match left side
-                        opacity: '0.15 !important', // Increased opacity to match left
-                        filter: 'url(#ivy-color-filter) brightness(1.3) hue-rotate(72deg) saturate(0.85) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 14s ease-in-out infinite',
-                        animationDelay: '3.2s',
-                        transform: 'scale(0.9)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 14s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Additional ivy to fill middle-bottom gap */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Middle-Bottom Gap Filler"
-                    sx={{
-                        position: 'absolute',
-                        height: '50%',
-                        bottom: '15%', // Adjusted to match left side
-                        left: '-20%', // Adjusted to match left side
-                        opacity: '0.16 !important', // Increased opacity to match left
-                        filter: 'url(#ivy-color-filter) brightness(1.25) hue-rotate(73deg) saturate(0.82) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 11.5s ease-in-out infinite',
-                        animationDelay: '1.9s',
-                        transform: 'scale(0.87)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 11.5s ease-in-out infinite',
-                    }}
-                />
-
-                {/* Keeping the extra ivy that was unique to right side */}
-                <Box
-                    component="img"
-                    src={ivyVertical}
-                    alt="Right Ivy Extra Top-Middle"
-                    sx={{
-                        position: 'absolute',
-                        height: '45%',
-                        top: '15%',
-                        left: '-17%',
-                        opacity: '0.16 !important',
-                        filter: 'url(#ivy-color-filter) brightness(1.3) hue-rotate(72deg) saturate(0.85) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Enhanced green glow
-                        animation: 'sway 12.5s ease-in-out infinite',
-                        animationDelay: '2.7s',
-                        transform: 'scale(0.82)',
-                        opacity: 0, // Start invisible
-                        animation: 'ivyFadeIn 0.6s ease forwards, sway 12.5s ease-in-out infinite',
-                    }}
-                />
-            </Box>
-
-            {/* Also update the bottom left and right corner ivy color to match */}
-            {/* Bottom Left Corner Ivy */}
+            {/* Bottom Left Corner Ivy - Improved positioning and styling */}
             <Box
                 component="img"
                 src={ivyCorner}
                 alt="Bottom Left Corner Ivy"
                 sx={{
                     position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    width: { xs: '80px', sm: '100px', md: '130px' },
+                    bottom: '-5px',
+                    left: '-5px',
+                    width: { xs: '70px', sm: '90px', md: '110px' },
                     height: 'auto',
                     objectFit: 'contain',
-                    opacity: 0.4, // Increased opacity
+                    opacity: 0.5,
                     zIndex: 11,
                     pointerEvents: 'none',
-                    mixBlendMode: 'multiply',
-                    transform: 'translateY(5px)',
-                    filter: 'brightness(1.2) hue-rotate(70deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.35))', // Enhanced green glow
+                    mixBlendMode: 'normal',
+                    transform: 'translateY(0)',
+                    filter: 'brightness(1.3) hue-rotate(70deg) saturate(0.9) drop-shadow(0 0 4px rgba(40, 180, 100, 0.3))',
                 }}
             />
 
-            {/* Bottom Right Corner Ivy */}
+            {/* Bottom Right Corner Ivy - Improved positioning and styling */}
             <Box
                 component="img"
                 src={ivyCorner}
                 alt="Bottom Right Corner Ivy"
                 sx={{
                     position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: { xs: '80px', sm: '100px', md: '130px' },
+                    bottom: '-5px',
+                    right: '-5px',
+                    width: { xs: '70px', sm: '90px', md: '110px' },
                     height: 'auto',
                     objectFit: 'contain',
-                    transform: 'scaleX(-1) translateY(5px)',
-                    opacity: 0.4, // Increased opacity
+                    transform: 'scaleX(-1)',
+                    opacity: 0.5,
                     zIndex: 11,
                     pointerEvents: 'none',
-                    mixBlendMode: 'multiply',
-                    filter: 'brightness(1.2) hue-rotate(70deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.35))', // Enhanced green glow
+                    mixBlendMode: 'normal',
+                    filter: 'brightness(1.3) hue-rotate(70deg) saturate(0.9) drop-shadow(0 0 4px rgba(40, 180, 100, 0.3))',
                 }}
             />
 
-            {/* Accent Leaves - Made more visible with green glow */}
+            {/* Accent Leaves */}
             <Box
                 component="img"
                 src={ivyLeaves}
@@ -1314,10 +939,10 @@ const HeroSection = () => {
                     top: '20%',
                     left: '45%',
                     width: '120px',
-                    opacity: 0.18, // Increased opacity
+                    opacity: 0.3,
                     zIndex: 5,
                     transform: 'rotate(-15deg)',
-                    filter: 'brightness(1.2) hue-rotate(70deg) saturate(0.8) drop-shadow(0 0 5px rgba(40, 180, 100, 0.25))', // Added green glow to match
+                    filter: 'brightness(1.3) hue-rotate(70deg) saturate(0.9) drop-shadow(0 0 5px rgba(40, 180, 100, 0.3))',
                 }}
             />
 
@@ -2526,8 +2151,8 @@ const HowItWorksSection = () => {
                                             sx={{
                                                 fontFamily: headingFontFamily,
                                                 fontSize: { xs: '1.5rem', sm: '1.75rem' },
-                                                fontWeight: 600,
-                                                color: colors.sepiaLight,
+                                                fontWeight: 700, // Changed from 600 to 700 for bolder text
+                                                color: colors.sepia, // Changed from sepiaLight to sepia for better contrast
                                                 width: '40px',
                                                 textAlign: index % 2 === 0 ? 'right' : 'left',
                                                 order: index % 2 === 0 ? 0 : 1,
@@ -3931,10 +3556,10 @@ function LandingPage() {
                         backgroundImage: `url(${darkParchmentTexture})`,
                         backgroundSize: 'cover',
                         backgroundAttachment: 'fixed', // Keep fixed if desired
-                        opacity: 0.25, // Standardized opacity
+                        opacity: 0.05, // Standardized opacity
                         pointerEvents: 'none',
                         zIndex: 0,
-                        mixBlendMode: 'multiply', // Standardized blend mode
+                        mixBlendMode: 'blend', // Standardized blend mode
                     },
                     // Remove heavy outer border or replace with subtle one
                     '&::after': {
@@ -3948,7 +3573,7 @@ function LandingPage() {
                         borderRadius: '10px',
                         pointerEvents: 'none',
                         zIndex: 0,
-                        opacity: 0.1, // Make it faint
+                        opacity: 0.05, // Make it faint
                     }
                 }}
             >

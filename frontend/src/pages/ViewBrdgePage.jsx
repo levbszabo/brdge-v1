@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Box, Typography, CircularProgress, useTheme, Button } from '@mui/material';
+import { Box, Typography, CircularProgress, useTheme, Button, Paper, Container } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
 import { getAuthToken } from '../utils/auth';
@@ -7,6 +7,7 @@ import { api } from '../api';
 import { AuthContext } from '../App';
 
 function ViewBrdgePage() {
+    const theme = useTheme();
     const params = useParams();
     // Handle both URL formats: /viewBridge/:id-:uid and /b/:publicId
     const id = params.publicId || (params.id ? params.id.split('-')[0] : null);
@@ -14,7 +15,6 @@ function ViewBrdgePage() {
     const token = getAuthToken();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const theme = useTheme();
     const { isAuthenticated } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
@@ -128,97 +128,128 @@ function ViewBrdgePage() {
 
     if (loading) {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100vh',
-                    background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)'
-                }}
-            >
-                <CircularProgress sx={{ color: 'white' }} />
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                bgcolor: theme.palette.background.default,
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                }
+            }}>
+                <CircularProgress sx={{ color: theme.palette.secondary.main, position: 'relative', zIndex: 1 }} />
             </Box>
         );
     }
 
     if (error) {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100vh',
-                    background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
-                    color: 'white',
-                    textAlign: 'center',
-                    px: 3,
-                    gap: 3
-                }}
-            >
-                <Typography variant="h5" gutterBottom>
-                    {error}
-                </Typography>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                bgcolor: theme.palette.background.default,
+                color: theme.palette.text.primary,
+                textAlign: 'center',
+                px: 3,
+                gap: 3,
+                position: 'relative',
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundImage: `url(${theme.textures.darkParchment})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                }
+            }}>
+                <Paper elevation={0} sx={{
+                    p: 4,
+                    maxWidth: 500,
+                    width: '100%',
+                    bgcolor: theme.palette.background.paper,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '8px',
+                    position: 'relative',
+                    zIndex: 1
+                }}>
+                    <Typography variant="h4" gutterBottom sx={{
+                        color: theme.palette.text.primary,
+                        fontFamily: theme.typography.headingFontFamily,
+                        mb: 2,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            display: 'block',
+                            width: '40px',
+                            height: '2px',
+                            background: theme.palette.secondary.main,
+                            margin: '10px auto 0',
+                            borderRadius: '1px',
+                        }
+                    }}>
+                        {error}
+                    </Typography>
 
-                {courseInfo && !isAuthenticated && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="body1">
-                            This module is part of the course: <strong>{courseInfo.name}</strong>
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => {
-                                // Store the current URL to redirect back after login
-                                sessionStorage.setItem('redirectAfterLogin', location.pathname);
-                                navigate('/signup');
-                            }}
-                            sx={{
-                                mt: 1,
-                                backgroundColor: '#00E5FF',
-                                '&:hover': { backgroundColor: '#00BCD4' }
-                            }}
-                        >
-                            Sign in to Access
-                        </Button>
-                    </Box>
-                )}
+                    {courseInfo && !isAuthenticated && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 3 }}>
+                            <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
+                                This module is part of the course: <Typography component="span" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>{courseInfo.name}</Typography>
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={() => {
+                                    // Store the current URL to redirect back after login
+                                    sessionStorage.setItem('redirectAfterLogin', location.pathname);
+                                    navigate('/signup');
+                                }}
+                                sx={{ mt: 1 }}
+                            >
+                                Sign in to Access
+                            </Button>
+                        </Box>
+                    )}
 
-                {courseInfo && isAuthenticated && !isEnrolled && (
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                        <Typography variant="body1">
-                            Enroll in <strong>{courseInfo.name}</strong> to access this content
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleEnrollClick}
-                            disabled={enrollButtonLoading}
-                            sx={{
-                                mt: 1,
-                                backgroundColor: '#00E5FF',
-                                '&:hover': { backgroundColor: '#00BCD4' }
-                            }}
-                        >
-                            {enrollButtonLoading ? <CircularProgress size={24} color="inherit" /> : 'Enroll Now'}
-                        </Button>
-                    </Box>
-                )}
+                    {courseInfo && isAuthenticated && !isEnrolled && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mt: 3 }}>
+                            <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
+                                Enroll in <Typography component="span" sx={{ fontWeight: 'bold', color: theme.palette.text.primary }}>{courseInfo.name}</Typography> to access this content
+                            </Typography>
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={handleEnrollClick}
+                                disabled={enrollButtonLoading}
+                                sx={{ mt: 1 }}
+                            >
+                                {enrollButtonLoading ? <CircularProgress size={24} color="inherit" /> : 'Enroll Now'}
+                            </Button>
+                        </Box>
+                    )}
 
-                <Button
-                    variant="outlined"
-                    onClick={() => navigate('/')}
-                    sx={{
-                        mt: 2,
-                        color: 'white',
-                        borderColor: 'rgba(255,255,255,0.3)',
-                        '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255,255,255,0.1)' }
-                    }}
-                >
-                    Return to Dashboard
-                </Button>
+                    <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => navigate('/')}
+                        sx={{ mt: 3 }}
+                    >
+                        Return to Dashboard
+                    </Button>
+                </Paper>
             </Box>
         );
     }
@@ -230,7 +261,7 @@ function ViewBrdgePage() {
             height: '100dvh',
             width: '100%',
             maxWidth: '100%',
-            background: 'linear-gradient(135deg, #000B1F 0%, #001E3C 50%, #0041C2 100%)',
+            bgcolor: theme.palette.background.default,
             position: 'fixed',
             top: 0,
             left: 0,
@@ -238,37 +269,41 @@ function ViewBrdgePage() {
             bottom: 0,
             overflow: 'hidden',
             touchAction: 'none',
+            // Apply parchment texture
             '&::before': {
                 content: '""',
                 position: 'absolute',
-                top: '5%',
-                left: '-5%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(79, 156, 249, 0.1) 0%, transparent 70%)',
-                borderRadius: '50%',
-                filter: 'blur(80px)',
-                animation: 'float 20s infinite alternate',
-                zIndex: 0
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                backgroundImage: `url(${theme.textures.darkParchment})`,
+                backgroundSize: 'cover',
+                opacity: 0.15,
+                pointerEvents: 'none',
+                zIndex: 0,
+                mixBlendMode: 'multiply'
             },
+            // Add subtle glow accent
             '&::after': {
                 content: '""',
                 position: 'absolute',
                 bottom: '5%',
-                right: '-5%',
-                width: '500px',
-                height: '500px',
-                background: 'radial-gradient(circle, rgba(0, 180, 219, 0.1) 0%, transparent 70%)',
+                right: '5%',
+                width: '40%',
+                height: '40%',
+                background: `radial-gradient(circle, ${theme.palette.secondary.main}15 0%, transparent 70%)`,
                 borderRadius: '50%',
-                filter: 'blur(80px)',
+                filter: 'blur(60px)',
                 animation: 'float 25s infinite alternate-reverse',
                 zIndex: 0
             }
         }}>
             <Box sx={{
-                height: { xs: '40px', sm: '64px' },
+                height: { xs: '44px', sm: '50px', md: '56px' },
                 flexShrink: 0,
-                zIndex: 10
+                zIndex: 10,
+                borderBottom: `1px solid ${theme.palette.divider}30`
             }}>
                 {/* Empty header for spacing only */}
             </Box>

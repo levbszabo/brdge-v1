@@ -1,11 +1,12 @@
 import React from 'react';
-import { Box, Container, Typography, Button, Grid, Paper, Divider, TextField } from '@mui/material';
+import { Box, Container, Typography, Button, Grid, Paper, Divider, TextField, useTheme } from '@mui/material';
 import { Mail, Calendar, MessageSquare, Phone, Users, ThumbsUp, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { ParallaxProvider } from 'react-scroll-parallax';
 
 const ContactPage = () => {
+    const theme = useTheme();
     const [contactRef, contactInView] = useInView({
         threshold: 0.2,
         triggerOnce: true
@@ -19,45 +20,45 @@ const ContactPage = () => {
     return (
         <ParallaxProvider>
             <Box
-                className="gradient-animate"
                 sx={{
                     flexGrow: 1,
                     overflow: 'visible',
-                    background: 'linear-gradient(180deg, #001B3D 0%, #000C1F 25%, #001F5C 50%, #0041C2 75%, #00B4DB 100%)',
-                    backgroundSize: '200% 200%',
-                    color: 'white',
+                    bgcolor: theme.palette.background.default,
+                    color: theme.palette.text.primary,
                     minHeight: '100vh',
                     position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
                     paddingBottom: { xs: 0, sm: 0, md: 0 },
+                    // Apply parchment texture
                     '&::before': {
                         content: '""',
                         position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'radial-gradient(circle at 50% 30%, rgba(0,65,194,0.2) 0%, transparent 70%)',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundImage: `url(${theme.textures.darkParchment})`,
+                        backgroundSize: 'cover',
+                        opacity: 0.1,
                         pointerEvents: 'none',
-                        opacity: 0.6,
-                        mixBlendMode: 'soft-light',
-                        transform: 'translateZ(0)',
-                        willChange: 'opacity',
-                        transition: 'opacity 0.3s ease-out'
+                        zIndex: 0,
+                        mixBlendMode: 'multiply'
+                    },
+                    // Add subtle glow effect
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: '5%',
+                        right: '5%',
+                        width: '40%',
+                        height: '40%',
+                        background: `radial-gradient(circle, ${theme.palette.secondary.main}15 0%, transparent 70%)`,
+                        borderRadius: '50%',
+                        filter: 'blur(60px)',
+                        animation: 'float 25s infinite alternate-reverse',
+                        zIndex: 0
                     }
                 }}
             >
                 <style>{`
-                    @keyframes gradientShift {
-                        0% { background-position: 0% 50%; }
-                        50% { background-position: 100% 50%; }
-                        100% { background-position: 0% 50%; }
-                    }
-                    .gradient-animate {
-                        animation: gradientShift 15s ease infinite;
-                    }
-
                     .calendly-inline-widget {
                         min-width: 320px;
                         height: 700px;
@@ -71,39 +72,6 @@ const ContactPage = () => {
                         .calendly-inline-widget {
                             height: 500px;
                         }
-                    }
-                    
-                    /* UI improvement: Light ray animation for subtle visual interest */
-                    @keyframes lightRay {
-                        0% {
-                            opacity: 0;
-                            transform: translateY(-50%) translateX(-50%) rotate(0deg);
-                        }
-                        20% {
-                            opacity: 0.2;
-                        }
-                        80% {
-                            opacity: 0.2;
-                        }
-                        100% {
-                            opacity: 0;
-                            transform: translateY(-50%) translateX(-50%) rotate(360deg);
-                        }
-                    }
-                    
-                    .header-container::before {
-                        content: '';
-                        position: absolute;
-                        top: 50%;
-                        left: 50%;
-                        width: 150%;
-                        height: 150%;
-                        background: linear-gradient(90deg, transparent, rgba(0, 255, 204, 0.08), transparent);
-                        transform: translateY(-50%) translateX(-50%) rotate(0deg);
-                        opacity: 0;
-                        animation: lightRay 15s ease-in-out infinite;
-                        pointer-events: none;
-                        z-index: -1;
                     }
                     
                     /* Improve mobile touch targets */
@@ -121,9 +89,8 @@ const ContactPage = () => {
                         pt: { xs: 6, sm: 10 },
                         pb: { xs: 4, sm: 6 },
                         position: 'relative',
-                        overflow: 'hidden'
+                        zIndex: 1
                     }}
-                    className="header-container"
                 >
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -137,12 +104,22 @@ const ContactPage = () => {
                                 fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4rem' },
                                 fontWeight: 700,
                                 mb: 2,
-                                background: 'linear-gradient(180deg, #FFFFFF 0%, rgba(255, 255, 255, 0.8) 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                textShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                                color: theme.palette.text.primary,
+                                fontFamily: theme.typography.headingFontFamily,
                                 textTransform: 'none',
-                                letterSpacing: '-0.02em'
+                                letterSpacing: '-0.02em',
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: -10,
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '120px',
+                                    height: '2px',
+                                    background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
+                                    borderRadius: '1px',
+                                }
                             }}
                         >
                             Transform Your Teaching
@@ -156,7 +133,7 @@ const ContactPage = () => {
                                 maxWidth: '800px',
                                 mx: 'auto',
                                 mb: 5,
-                                color: 'rgba(255, 255, 255, 0.9)',
+                                color: theme.palette.text.secondary,
                                 lineHeight: 1.6
                             }}
                         >
@@ -172,7 +149,9 @@ const ContactPage = () => {
                     maxWidth="lg"
                     sx={{
                         flex: 1,
-                        mb: 8
+                        mb: 8,
+                        position: 'relative',
+                        zIndex: 1
                     }}
                 >
                     <Grid container spacing={4}>
@@ -188,13 +167,12 @@ const ContactPage = () => {
                                     sx={{
                                         p: { xs: 3, sm: 4 },
                                         borderRadius: '16px',
-                                        background: 'rgba(255, 255, 255, 0.04)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        bgcolor: theme.palette.background.paper,
+                                        border: `1px solid ${theme.palette.divider}`,
                                         height: '100%',
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+                                        boxShadow: theme.shadows[1]
                                     }}
                                 >
                                     <Typography
@@ -202,8 +180,9 @@ const ContactPage = () => {
                                         sx={{
                                             fontWeight: 600,
                                             mb: 3,
-                                            color: '#00ffcc',
-                                            fontSize: { xs: '1.75rem', sm: '2rem' }
+                                            color: theme.palette.secondary.main,
+                                            fontSize: { xs: '1.75rem', sm: '2rem' },
+                                            fontFamily: theme.typography.headingFontFamily
                                         }}
                                     >
                                         Get in Touch
@@ -215,7 +194,7 @@ const ContactPage = () => {
                                             sx={{
                                                 fontSize: '1.1rem',
                                                 mb: 3,
-                                                color: 'rgba(255, 255, 255, 0.9)',
+                                                color: theme.palette.text.primary,
                                                 lineHeight: 1.6
                                             }}
                                         >
@@ -232,11 +211,11 @@ const ContactPage = () => {
                                                     width: 40,
                                                     height: 40,
                                                     borderRadius: '12px',
-                                                    background: 'rgba(0, 255, 204, 0.1)',
+                                                    background: `${theme.palette.secondary.main}15`,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    color: '#00ffcc'
+                                                    color: theme.palette.secondary.main
                                                 }}
                                             >
                                                 <Mail size={20} />
@@ -244,7 +223,7 @@ const ContactPage = () => {
                                             <Box>
                                                 <Typography
                                                     variant="subtitle2"
-                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 0.5 }}
+                                                    sx={{ color: theme.palette.text.secondary, mb: 0.5 }}
                                                 >
                                                     Email Us
                                                 </Typography>
@@ -253,9 +232,9 @@ const ContactPage = () => {
                                                     component="a"
                                                     href="mailto:levi@brdge-ai.com"
                                                     sx={{
-                                                        color: 'white',
+                                                        color: theme.palette.text.primary,
                                                         textDecoration: 'none',
-                                                        '&:hover': { color: '#00ffcc' }
+                                                        '&:hover': { color: theme.palette.secondary.main }
                                                     }}
                                                 >
                                                     levi@brdge-ai.com
@@ -269,11 +248,11 @@ const ContactPage = () => {
                                                     width: 40,
                                                     height: 40,
                                                     borderRadius: '12px',
-                                                    background: 'rgba(0, 255, 204, 0.1)',
+                                                    background: `${theme.palette.secondary.main}15`,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    color: '#00ffcc'
+                                                    color: theme.palette.secondary.main
                                                 }}
                                             >
                                                 <Calendar size={20} />
@@ -281,7 +260,7 @@ const ContactPage = () => {
                                             <Box>
                                                 <Typography
                                                     variant="subtitle2"
-                                                    sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 0.5 }}
+                                                    sx={{ color: theme.palette.text.secondary, mb: 0.5 }}
                                                 >
                                                     Schedule a Call
                                                 </Typography>
@@ -292,9 +271,9 @@ const ContactPage = () => {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     sx={{
-                                                        color: 'white',
+                                                        color: theme.palette.text.primary,
                                                         textDecoration: 'none',
-                                                        '&:hover': { color: '#00ffcc' }
+                                                        '&:hover': { color: theme.palette.secondary.main }
                                                     }}
                                                 >
                                                     Book a 30-minute consultation
@@ -306,24 +285,20 @@ const ContactPage = () => {
                                     <Box sx={{ mt: 'auto' }}>
                                         <Button
                                             variant="contained"
+                                            color="primary"
                                             size="large"
                                             component="a"
                                             href="https://calendly.com/levi-brdge-ai/30min"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             sx={{
-                                                background: 'linear-gradient(45deg, #00ffcc, #00B4DB)',
-                                                color: '#000000',
                                                 px: { xs: 2, sm: 4 },
                                                 py: { xs: 1.25, sm: 1.5 },
                                                 fontSize: { xs: '0.95rem', sm: '1.1rem' },
                                                 fontWeight: 600,
                                                 borderRadius: '50px',
                                                 width: '100%',
-                                                boxShadow: '0 4px 20px rgba(0, 255, 204, 0.3)',
                                                 '&:hover': {
-                                                    background: 'linear-gradient(45deg, #00B4DB, #00ffcc)',
-                                                    boxShadow: '0 6px 25px rgba(0, 255, 204, 0.4)',
                                                     transform: 'translateY(-2px)'
                                                 },
                                                 transition: 'all 0.3s ease-in-out'
@@ -349,12 +324,11 @@ const ContactPage = () => {
                                     sx={{
                                         p: { xs: 0, sm: 1 },
                                         borderRadius: '16px',
-                                        background: 'rgba(255, 255, 255, 0.04)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        bgcolor: theme.palette.background.paper,
+                                        border: `1px solid ${theme.palette.divider}`,
                                         height: '100%',
                                         overflow: 'hidden',
-                                        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+                                        boxShadow: theme.shadows[1]
                                     }}
                                 >
                                     <div className="calendly-inline-widget">
@@ -379,10 +353,9 @@ const ContactPage = () => {
                             mt: { xs: 6, sm: 8 },
                             p: { xs: 2.5, sm: 5 },
                             borderRadius: '16px',
-                            background: 'linear-gradient(135deg, rgba(0, 41, 122, 0.2) 0%, rgba(0, 180, 219, 0.2) 100%)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(0, 255, 204, 0.1)',
-                            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.2)'
+                            bgcolor: `${theme.palette.primary.main}10`,
+                            border: `1px solid ${theme.palette.primary.main}20`,
+                            boxShadow: theme.shadows[1]
                         }}
                     >
                         <motion.div
@@ -397,7 +370,8 @@ const ContactPage = () => {
                                     fontWeight: 700,
                                     fontSize: { xs: '1.8rem', sm: '2.2rem', md: '2.5rem' },
                                     mb: 3,
-                                    color: 'white'
+                                    color: theme.palette.text.primary,
+                                    fontFamily: theme.typography.headingFontFamily
                                 }}
                             >
                                 Custom AI Teaching Solutions
@@ -411,7 +385,7 @@ const ContactPage = () => {
                                     maxWidth: '800px',
                                     mx: 'auto',
                                     mb: 5,
-                                    color: 'rgba(255, 255, 255, 0.9)',
+                                    color: theme.palette.text.secondary,
                                     lineHeight: 1.6
                                 }}
                             >
@@ -453,13 +427,12 @@ const ContactPage = () => {
                                                     display: 'flex',
                                                     flexDirection: 'column',
                                                     borderRadius: '12px',
-                                                    background: 'rgba(0, 41, 122, 0.3)',
-                                                    backdropFilter: 'blur(5px)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    bgcolor: theme.palette.background.paper,
+                                                    border: `1px solid ${theme.palette.divider}`,
                                                     transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                                                     '&:hover': {
                                                         transform: 'translateY(-5px)',
-                                                        boxShadow: '0 10px 30px rgba(0, 255, 204, 0.15)'
+                                                        boxShadow: theme.shadows[2]
                                                     }
                                                 }}
                                             >
@@ -476,11 +449,11 @@ const ContactPage = () => {
                                                             width: 45,
                                                             height: 45,
                                                             borderRadius: '10px',
-                                                            background: 'rgba(0, 255, 204, 0.15)',
+                                                            background: `${theme.palette.secondary.main}15`,
                                                             display: 'flex',
                                                             alignItems: 'center',
                                                             justifyContent: 'center',
-                                                            color: '#00ffcc'
+                                                            color: theme.palette.secondary.main
                                                         }}
                                                     >
                                                         {item.icon}
@@ -490,7 +463,7 @@ const ContactPage = () => {
                                                         sx={{
                                                             fontWeight: 600,
                                                             fontSize: '1.2rem',
-                                                            color: '#ffffff'
+                                                            color: theme.palette.text.primary
                                                         }}
                                                     >
                                                         {item.title}
@@ -500,7 +473,7 @@ const ContactPage = () => {
                                                 <Typography
                                                     variant="body1"
                                                     sx={{
-                                                        color: 'rgba(255, 255, 255, 0.85)',
+                                                        color: theme.palette.text.secondary,
                                                         mb: 2,
                                                         lineHeight: 1.6,
                                                         flex: 1 // This helps maintain equal height
@@ -523,15 +496,13 @@ const ContactPage = () => {
                             >
                                 <Button
                                     variant="outlined"
+                                    color="secondary"
                                     size="large"
                                     component="a"
                                     href="https://calendly.com/levi-brdge-ai/30min"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     sx={{
-                                        color: '#00ffcc',
-                                        borderColor: 'rgba(0, 255, 204, 0.4)',
-                                        borderWidth: '2px',
                                         px: 4,
                                         py: 1.5,
                                         fontSize: '1.1rem',
@@ -539,8 +510,6 @@ const ContactPage = () => {
                                         borderRadius: '50px',
                                         transition: 'all 0.3s ease',
                                         '&:hover': {
-                                            borderColor: 'rgba(0, 255, 204, 0.6)',
-                                            backgroundColor: 'rgba(0, 255, 204, 0.05)',
                                             transform: 'translateY(-2px)'
                                         }
                                     }}
@@ -554,15 +523,14 @@ const ContactPage = () => {
                 </Container>
 
                 {/* FAQ Section - Short version */}
-                <Container maxWidth="lg" sx={{ mb: 8 }}>
+                <Container maxWidth="lg" sx={{ mb: 8, position: 'relative', zIndex: 1 }}>
                     <Box
                         sx={{
                             p: { xs: 3, sm: 5 },
                             borderRadius: '16px',
-                            background: 'rgba(255, 255, 255, 0.02)',
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+                            bgcolor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
+                            boxShadow: theme.shadows[1]
                         }}
                     >
                         <Typography
@@ -571,8 +539,9 @@ const ContactPage = () => {
                             sx={{
                                 fontWeight: 600,
                                 mb: 4,
-                                color: '#00ffcc',
-                                fontSize: { xs: '1.8rem', sm: '2.2rem' }
+                                color: theme.palette.secondary.main,
+                                fontSize: { xs: '1.8rem', sm: '2.2rem' },
+                                fontFamily: theme.typography.headingFontFamily
                             }}
                         >
                             Frequently Asked Questions
@@ -604,7 +573,7 @@ const ContactPage = () => {
                                             sx={{
                                                 fontWeight: 600,
                                                 mb: 1,
-                                                color: 'white',
+                                                color: theme.palette.text.primary,
                                                 fontSize: '1.1rem'
                                             }}
                                         >
@@ -613,7 +582,7 @@ const ContactPage = () => {
                                         <Typography
                                             variant="body1"
                                             sx={{
-                                                color: 'rgba(255, 255, 255, 0.8)',
+                                                color: theme.palette.text.secondary,
                                                 lineHeight: 1.6
                                             }}
                                         >

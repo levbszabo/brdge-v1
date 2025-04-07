@@ -11,41 +11,30 @@ import {
     TableSortLabel,
     Tooltip,
     Typography,
-    Checkbox
+    Checkbox,
+    useTheme
 } from '@mui/material';
 import { Eye, Pencil, Share2, Trash2, Globe, Lock, BookOpen, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// Unified theme colors (matching BrdgeListPage)
-const theme = {
-    colors: {
-        primary: '#4F9CF9',
-        background: '#0B0F1B',
-        backgroundLight: '#101727',
-        surface: 'rgba(255, 255, 255, 0.04)',
-        border: 'rgba(255, 255, 255, 0.1)',
-        text: {
-            primary: '#FFFFFF',
-            secondary: 'rgba(255, 255, 255, 0.7)'
-        }
-    }
-};
-
-const styles = {
+// Neo-Scholar theme styles
+const createStyles = (theme) => ({
     tableContainer: {
         backgroundColor: 'transparent',
     },
     headerCell: {
-        color: theme.colors.text.secondary,
-        borderBottom: `1px solid ${theme.colors.border}`,
+        color: theme.palette.text.secondary,
+        borderBottom: `1px solid ${theme.palette.divider}`,
         padding: '16px',
+        fontFamily: '"Satoshi", sans-serif',
+        fontWeight: 600,
         '& .MuiTableSortLabel-root': {
-            color: theme.colors.text.secondary,
+            color: theme.palette.text.secondary,
             '&:hover': {
-                color: theme.colors.primary,
+                color: theme.palette.secondary.main,
             },
             '&.Mui-active': {
-                color: theme.colors.primary,
+                color: theme.palette.secondary.main,
             }
         }
     },
@@ -53,19 +42,19 @@ const styles = {
         transition: 'background-color 0.2s ease-in-out',
         cursor: 'pointer',
         '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.03)',
+            backgroundColor: `${theme.palette.background.default}80`,
         }
     },
     cell: {
-        color: theme.colors.text.primary,
-        borderBottom: `1px solid ${theme.colors.border}`,
+        color: theme.palette.text.primary,
+        borderBottom: `1px solid ${theme.palette.divider}`,
         padding: '16px',
     },
     actionButton: {
-        color: theme.colors.text.secondary,
+        color: theme.palette.text.secondary,
         '&:hover': {
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            color: theme.colors.primary,
+            backgroundColor: `${theme.palette.secondary.main}10`,
+            color: theme.palette.secondary.main,
         }
     },
     statusChip: {
@@ -75,43 +64,39 @@ const styles = {
         padding: '6px 12px',
         borderRadius: '16px',
         fontSize: '0.875rem',
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        backgroundColor: `${theme.palette.background.default}70`,
         border: '1px solid',
-        color: theme.colors.text.primary,
+        color: theme.palette.text.primary,
         transition: 'all 0.2s ease-in-out',
         '&.public': {
-            borderColor: 'rgba(34, 211, 238, 0.3)',
-            backgroundColor: 'rgba(34, 211, 238, 0.05)',
+            borderColor: `${theme.palette.secondary.main}50`,
+            backgroundColor: `${theme.palette.secondary.main}10`,
             '& svg': {
-                color: '#22D3EE'
+                color: theme.palette.secondary.main
             }
         },
         '&.private': {
-            borderColor: 'rgba(255, 255, 255, 0.2)',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderColor: `${theme.palette.text.disabled}30`,
+            backgroundColor: `${theme.palette.background.default}50`,
             '& svg': {
-                color: 'rgba(255, 255, 255, 0.7)'
+                color: theme.palette.text.disabled
             }
         }
-    }
-};
-
-// Add styles for checkbox and selection
-const selectionStyles = {
+    },
     checkboxCell: {
         width: '48px',
         padding: '0 0 0 16px'
     },
     checkbox: {
-        color: 'rgba(255, 255, 255, 0.5)',
+        color: theme.palette.text.disabled,
         '&.Mui-checked': {
-            color: '#22D3EE'
+            color: theme.palette.secondary.main
         }
     },
     selectedRow: {
-        backgroundColor: 'rgba(34, 211, 238, 0.05) !important'
+        backgroundColor: `${theme.palette.secondary.main}10 !important`
     }
-};
+});
 
 const BrdgeList = ({
     brdges,
@@ -124,8 +109,14 @@ const BrdgeList = ({
     onSort,
     selectedModules = [],
     onModuleSelect,
-    onSelectAll
+    onSelectAll,
+    draggable = false,
+    onDragStart = null,
+    onDragEnd = null
 }) => {
+    const theme = useTheme();
+    const styles = createStyles(theme);
+
     // Add select all checkbox logic
     const handleSelectAllClick = (event) => {
         if (onSelectAll) {
@@ -152,12 +143,12 @@ const BrdgeList = ({
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            color: shareable ? '#22D3EE' : 'rgba(255,255,255,0.7)',
+            color: shareable ? theme.palette.secondary.main : theme.palette.text.secondary,
             transition: 'all 0.2s ease'
         }}>
             {shareable ? (
                 <Globe size={18} style={{
-                    filter: 'drop-shadow(0 0 8px rgba(34,211,238,0.4))',
+                    filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}30)`,
                     transition: 'all 0.2s ease'
                 }} />
             ) : (
@@ -175,12 +166,12 @@ const BrdgeList = ({
                 <TableHead>
                     <TableRow>
                         {/* Add select all checkbox column */}
-                        <TableCell sx={{ ...styles.headerCell, ...selectionStyles.checkboxCell }}>
+                        <TableCell sx={{ ...styles.headerCell, ...styles.checkboxCell }}>
                             <Checkbox
                                 indeterminate={selectedModules.length > 0 && selectedModules.length < brdges.length}
                                 checked={isAllSelected}
                                 onChange={handleSelectAllClick}
-                                sx={selectionStyles.checkbox}
+                                sx={styles.checkbox}
                             />
                         </TableCell>
 
@@ -215,26 +206,29 @@ const BrdgeList = ({
                                 key={brdge.id}
                                 sx={{
                                     ...styles.row,
-                                    ...(isSelected ? selectionStyles.selectedRow : {})
+                                    ...(isSelected ? styles.selectedRow : {})
                                 }}
                                 component={motion.tr}
                                 whileHover={{ scale: 1.01 }}
                                 transition={{ type: "tween", duration: 0.2 }}
+                                draggable={draggable}
+                                onDragStart={draggable && onDragStart ? (e) => onDragStart(e, brdge.id) : undefined}
+                                onDragEnd={draggable && onDragEnd ? onDragEnd : undefined}
                             >
                                 {/* Add checkbox for row selection */}
-                                <TableCell sx={{ ...styles.cell, ...selectionStyles.checkboxCell }}>
+                                <TableCell sx={{ ...styles.cell, ...styles.checkboxCell }}>
                                     <Checkbox
                                         checked={isSelected}
                                         onChange={() => onModuleSelect(brdge.id)}
                                         onClick={(e) => e.stopPropagation()}
-                                        sx={selectionStyles.checkbox}
+                                        sx={styles.checkbox}
                                     />
                                 </TableCell>
 
                                 {/* Existing cells */}
                                 <TableCell sx={styles.cell}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <BookOpen size={16} style={{ color: '#22D3EE' }} />
+                                        <BookOpen size={16} style={{ color: theme.palette.secondary.main }} />
                                         {brdge.name}
                                     </Box>
                                 </TableCell>
@@ -248,8 +242,8 @@ const BrdgeList = ({
                                     >
                                         <Tooltip title="View">
                                             <IconButton
-                                                onClick={(e) => onView(e, brdge)}
                                                 size="small"
+                                                onClick={(e) => onView(e, brdge)}
                                                 sx={styles.actionButton}
                                             >
                                                 <Eye size={18} />
@@ -257,31 +251,34 @@ const BrdgeList = ({
                                         </Tooltip>
                                         <Tooltip title="Edit">
                                             <IconButton
-                                                onClick={(e) => onEdit(e, brdge)}
                                                 size="small"
+                                                onClick={(e) => onEdit(e, brdge)}
                                                 sx={styles.actionButton}
                                             >
                                                 <Pencil size={18} />
                                             </IconButton>
                                         </Tooltip>
-                                        <Tooltip title="Share with Students">
+                                        <Tooltip title={brdge.shareable ? "Manage Sharing" : "Share"}>
                                             <IconButton
-                                                onClick={(e) => onShare(e, brdge)}
                                                 size="small"
-                                                sx={styles.actionButton}
+                                                onClick={(e) => onShare(e, brdge)}
+                                                sx={{
+                                                    ...styles.actionButton,
+                                                    color: brdge.shareable ? theme.palette.secondary.main : theme.palette.text.secondary,
+                                                }}
                                             >
                                                 <Share2 size={18} />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
                                             <IconButton
-                                                onClick={(e) => onDelete(e, brdge)}
                                                 size="small"
+                                                onClick={(e) => onDelete(e, brdge)}
                                                 sx={{
                                                     ...styles.actionButton,
                                                     '&:hover': {
-                                                        backgroundColor: 'rgba(255, 59, 48, 0.1)',
-                                                        color: '#ff3b30',
+                                                        backgroundColor: 'rgba(255, 75, 75, 0.1)',
+                                                        color: '#FF4B4B',
                                                     }
                                                 }}
                                             >
