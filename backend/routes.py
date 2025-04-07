@@ -33,6 +33,7 @@ from models import (
     CourseModule,
     Enrollment,
     ModulePermissions,
+    ConversationLogs,
 )
 from utils import (
     clone_voice_helper,
@@ -2716,14 +2717,17 @@ def create_usage_log(brdge_id):
     """Create a new usage log entry when agent starts speaking"""
     try:
         data = request.get_json()
-        owner_id = Brdge.query.get(brdge_id).user_id
+        # Ensure brdge exists and get owner_id
+        brdge = Brdge.query.get_or_404(brdge_id)
+        owner_id = brdge.user_id
+
         # Create new usage log
         usage_log = UsageLogs(
             brdge_id=brdge_id,
             owner_id=owner_id,
             viewer_user_id=data.get("viewer_user_id"),
             anonymous_id=data.get("anonymous_id"),
-            agent_message="",
+            agent_message="",  # Agent message will be updated later
             started_at=datetime.fromisoformat(data["started_at"]),
             was_interrupted=data.get("was_interrupted", False),
         )
@@ -4604,3 +4608,79 @@ def process_brdge_content_with_logs(
                 db.session.commit()
         except Exception:
             logger.error("Failed to update script status on error", exc_info=True)
+
+
+@app.route("/api/brdges/<int:brdge_id>/conversation-logs", methods=["POST"])
+def create_conversation_log(brdge_id):
+    """Create a new conversation log entry for agent or user messages"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        # Ensure brdge exists and get owner_id
+        brdge = Brdge.query.get_or_404(brdge_id)
+        owner_id = brdge.user_id
+
+        # Validate required fields from payload
+        role = data.get("role")
+        message = data.get("message")
+        if not role or role not in ["agent", "user"]:
+            return (
+                jsonify(
+                    {"error": "Missing or invalid 'role' (must be 'agent' or 'user')"}
+                ),
+                400,
+            )
+        if message is None:  # Allow empty strings but not missing field
+            return jsonify({"error": "Missing 'message' field"}), 400
+
+        # Get optional fields
+        viewer_user_id = data.get("viewer_user_id")
+        anonymous_id = data.get("anonymous_id")
+        was_interrupted = data.get("was_interrupted", False)
+        duration_seconds = data.get("duration_seconds")  # Nullable
+
+        # Parse timestamp if provided, otherwise default
+        timestamp_str = data.get("timestamp")
+        timestamp = (
+            datetime.fromisoformat(timestamp_str)
+            if timestamp_str
+            else datetime.utcnow()
+        )
+
+        # Create new conversation log
+        conversation_log = ConversationLogs(
+            brdge_id=brdge_id,
+            owner_id=owner_id,
+            viewer_user_id=viewer_user_id,
+            anonymous_id=anonymous_id,
+            role=role,
+            message=message,
+            timestamp=timestamp,
+            was_interrupted=was_interrupted,
+            duration_seconds=duration_seconds,
+        )
+
+        db.session.add(conversation_log)
+        db.session.commit()
+
+        logger.info(
+            f"Created conversation log with ID: {conversation_log.id} for brdge {brdge_id}"
+        )
+        return (
+            jsonify(
+                {
+                    "id": conversation_log.id,
+                    "message": "Conversation log created successfully",
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating conversation log: {e}")
+        # Add more detail to the error log
+        logger.exception("Full error details during conversation log creation:")
+        return jsonify({"error": f"Failed to create conversation log: {str(e)}"}), 500

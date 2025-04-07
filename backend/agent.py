@@ -160,7 +160,7 @@ class ChatAssistant(VoicePipelineAgent):
             logger.info(f"Brdge object structure: {json.dumps(self.brdge, indent=2)}")
 
             # Set voice ID based on brdge settings, fallback to default if null
-            default_voice = "4c74993b-be03-4436-8ef0-10586550b5f2"
+            default_voice = "c99d36f3-5ffd-4253-803a-535c1bc9c306"
 
             # Try to get voice ID from the brdge object directly
             self.voice_id = self.brdge.get("voice_id")
@@ -368,6 +368,20 @@ When answering questions:
                         logger.info(
                             f"Updated usage log {self.current_speech['log_id']} with interruption"
                         )
+                    response = requests.post(
+                        f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
+                        json={
+                            "brdge_id": self.brdge_id,
+                            "viewer_user_id": None,
+                            "anonymous_id": None,
+                            "role": "agent",
+                            "message": msg.content,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "was_interrupted": True,
+                            "duration_seconds": round(duration, 2),
+                        },
+                    )
+
                 except requests.exceptions.RequestException as e:
                     logger.error(f"HTTP Error updating usage log: {e}")
                 except Exception as e:
@@ -405,6 +419,20 @@ When answering questions:
                         logger.info(
                             f"Updated usage log {self.current_speech['log_id']} with completion"
                         )
+                    response = requests.post(
+                        f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
+                        json={
+                            "brdge_id": self.brdge_id,
+                            "viewer_user_id": None,
+                            "anonymous_id": None,
+                            "role": "agent",
+                            "message": msg.content,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "was_interrupted": False,
+                            "duration_seconds": round(duration, 2),
+                        },
+                    )
+
                 except requests.exceptions.RequestException as e:
                     logger.error(f"HTTP Error updating usage log: {e}")
                 except Exception as e:
@@ -415,6 +443,36 @@ When answering questions:
                     "message": None,
                     "was_interrupted": False,
                 }
+
+        @self.on("user_speech_committed")
+        def on_user_speech_completed(msg: llm.ChatMessage):
+            """Track when user's speech completes normally"""
+            logger.info(f"User speech completed: {msg.content}")
+
+            if self.current_speech["started_at"]:
+                ended_at = datetime.utcnow()
+                duration = (
+                    ended_at - self.current_speech["started_at"]
+                ).total_seconds() / 60.0
+
+                try:
+                    response = requests.post(
+                        f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
+                        json={
+                            "brdge_id": self.brdge_id,
+                            "viewer_user_id": None,
+                            "anonymous_id": None,
+                            "role": "user",
+                            "message": msg.content,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "was_interrupted": False,
+                            "duration_seconds": round(duration, 2),
+                        },
+                    )
+                except requests.exceptions.RequestException as e:
+                    logger.error(f"HTTP Error creating conversation log: {e}")
+                except Exception as e:
+                    logger.error(f"Error creating conversation log: {e}")
 
     def _rebuild_system_prompt(self):
         """Rebuild the system prompt incorporating all current context"""
@@ -788,6 +846,19 @@ async def entrypoint(ctx: JobContext):
             return
 
         logger.info(f"Received chat message: {cleaned_message}")
+        response = requests.post(
+            f"{agent.api_base_url}/brdges/{agent.brdge_id}/conversation-logs",
+            json={
+                "brdge_id": agent.brdge_id,
+                "viewer_user_id": None,
+                "anonymous_id": None,
+                "role": "user",
+                "message": cleaned_message,
+                "timestamp": datetime.utcnow().isoformat(),
+                "was_interrupted": False,
+                "duration_seconds": 0.0,
+            },
+        )
         # agent._before_llm_cb(agent, agent.chat_ctx)
 
         # Process with LLM

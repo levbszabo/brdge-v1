@@ -79,6 +79,7 @@ class UserAccount(db.Model):
 
 
 class Brdge(db.Model):
+    __tablename__ = "brdge"  # Explicitly set table name if needed
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
@@ -584,4 +585,52 @@ class ModulePermissions(db.Model):
             "access_level": self.access_level,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ConversationLogs(db.Model):
+    """Logs individual messages from both agents and users within a Brdge interaction"""
+
+    __tablename__ = "conversation_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    viewer_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    anonymous_id = db.Column(db.String(255), nullable=True)
+    role = db.Column(
+        db.Enum("agent", "user", name="conv_role_enum"), nullable=False
+    )  # Added name for enum type
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    was_interrupted = db.Column(db.Boolean, default=False)
+    duration_seconds = db.Column(db.Float, nullable=True)
+
+    # Relationships (adjust backref names as needed to avoid conflicts)
+    brdge = db.relationship(
+        "Brdge", backref=db.backref("conversation_logs", lazy="dynamic")
+    )
+    owner = db.relationship(
+        "User",
+        foreign_keys=[owner_id],
+        backref=db.backref("owned_conversation_logs", lazy="dynamic"),
+    )
+    viewer = db.relationship(
+        "User",
+        foreign_keys=[viewer_user_id],
+        backref=db.backref("viewed_conversation_logs", lazy="dynamic"),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "owner_id": self.owner_id,
+            "viewer_user_id": self.viewer_user_id,
+            "anonymous_id": self.anonymous_id,
+            "role": self.role,
+            "message": self.message,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "was_interrupted": self.was_interrupted,
+            "duration_seconds": self.duration_seconds,
         }
