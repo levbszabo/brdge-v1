@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { api } from '../api';
 
@@ -7,6 +7,8 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
+    const iframeRef = useRef(null);
+    const [isIframeLoaded, setIsIframeLoaded] = useState(false);
 
     useEffect(() => {
         const checkMobile = () => {
@@ -22,17 +24,15 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         const initConnection = async () => {
             setIsLoading(true);
             setError(null);
-            setConnectorUrl(''); // Reset URL at the start of each attempt
+            setConnectorUrl('');
 
             let missingRequiredProps = false;
             if (agentType === 'edit') {
-                // Edit mode requires token and userId
                 if (!brdgeId || !token || !userId) {
                     missingRequiredProps = true;
                     console.log('AgentConnector (Edit Mode) waiting for props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
                 }
             } else {
-                // View mode only requires brdgeId
                 if (!brdgeId) {
                     missingRequiredProps = true;
                     console.log('AgentConnector (View Mode) waiting for brdgeId');
@@ -40,7 +40,6 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
             }
 
             if (missingRequiredProps) {
-                // Keep loading true, don't set error, wait for props
                 return;
             }
 
@@ -53,32 +52,61 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
 
                 const cleanApiBaseUrl = api.defaults.baseURL.replace(/\/$/, '');
                 const baseUrl = process.env.REACT_APP_PLAYGROUND_URL;
+                if (!baseUrl) {
+                    throw new Error('Playground URL (REACT_APP_PLAYGROUND_URL) is not configured');
+                }
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     apiBaseUrl: cleanApiBaseUrl,
                     agentType: agentType,
-                    token: token || '',
                     mobile: isMobile ? '1' : '0',
                     userId: userId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
                 });
 
                 const url = `${baseUrl}?${params.toString()}`;
-                console.log('Connector URL:', url);
+                console.log('Connector URL (token removed):', url);
                 setConnectorUrl(url);
                 setError(null);
             } catch (error) {
                 console.error('Connection error:', error);
                 setError(error.message || 'Failed to initialize connection');
-                // setConnectorUrl(''); // Already reset at the start
             } finally {
-                // We have finished processing for the current valid props (or errored)
                 setIsLoading(false);
             }
         };
 
         initConnection();
-        // Keep dependencies based on props that trigger the logic
-    }, [brdgeId, agentType, token, isMobile, userId]); // Removed connectorUrl and error from dependencies
+    }, [brdgeId, agentType, isMobile, userId]);
+
+    useEffect(() => {
+        if (isIframeLoaded && token && iframeRef.current && iframeRef.current.contentWindow) {
+            const targetOrigin = process.env.REACT_APP_PLAYGROUND_URL;
+
+            // Send initial message
+            sendTokenMessage();
+
+            // Set up retry with increasing delay
+            const retryIntervals = [500, 1000]; // ms
+            retryIntervals.forEach((delay, index) => {
+                setTimeout(() => {
+                    console.log(`Retry ${index + 1} sending AUTH_TOKEN`);
+                    sendTokenMessage();
+                }, delay);
+            });
+
+            function sendTokenMessage() {
+                if (iframeRef.current?.contentWindow) {
+                    console.log(`Sending AUTH_TOKEN to origin: ${targetOrigin}`);
+                    iframeRef.current.contentWindow.postMessage(
+                        { token: token, type: 'AUTH_TOKEN' },
+                        targetOrigin || '*' // Fallback to '*' for testing only
+                    );
+                }
+            }
+        } else {
+            console.log('Conditions not met for sending token via postMessage:', { isIframeLoaded, tokenExists: !!token, iframeExists: !!iframeRef.current });
+        }
+    }, [token, isIframeLoaded]);
 
     useEffect(() => {
         const initAudio = async () => {
@@ -94,7 +122,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         initAudio();
     }, []);
 
-    if (isLoading) {
+    if (isLoading && !connectorUrl) {
         return (
             <Box sx={{
                 width: '100%',
@@ -147,13 +175,17 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
                 }
             }}
         >
-            <iframe
-                src={connectorUrl}
-                title="Agent Connector"
-                allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation"
-                referrerPolicy="origin"
-            />
+            {connectorUrl && (
+                <iframe
+                    ref={iframeRef}
+                    src={connectorUrl}
+                    title="Agent Connector"
+                    allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation"
+                    referrerPolicy="origin"
+                    onLoad={() => setIsIframeLoaded(true)}
+                />
+            )}
         </Box>
     );
 }

@@ -27,7 +27,6 @@ import { getAuthToken } from '../utils/auth';
 import { api } from '../api';
 import { AuthContext } from '../App';
 import { useSnackbar } from '../utils/snackbar';
-import PremiumBadge from '../components/PremiumBadge';
 
 function ViewCoursePage() {
     const theme = useTheme();

@@ -99,7 +99,6 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
-
 # Add these constants at the top of the file with other configurations
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
 STRIPE_PRODUCT_PRICE = 24900  # Price in cents ($249.00) - Premium tier price
@@ -326,9 +325,10 @@ def get_public_brdge_by_id(public_id):
 
 
 @app.route("/api/brdges/<int:brdge_id>", methods=["DELETE"])
-def delete_brdge(brdge_id):
+@login_required
+def delete_brdge(user, brdge_id):
     try:
-        brdge = Brdge.query.get_or_404(brdge_id)
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
 
         # Start database transaction
         db.session.begin_nested()
@@ -395,76 +395,6 @@ def delete_brdge(brdge_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/brdges/<int:brdge_id>/slides/<int:slide_number>", methods=["GET"])
-def get_slide_image(brdge_id, slide_number):
-    brdge = Brdge.query.get_or_404(brdge_id)
-
-    # Check local cache first
-    cache_dir = f"/tmp/brdge/slides_{brdge_id}"
-    cache_file_path = os.path.join(cache_dir, f"slide_{slide_number}.png")
-
-    if os.path.exists(cache_file_path):
-        return send_file(cache_file_path, mimetype="image/png")
-
-    # If not in cache, fetch from S3
-    s3_key = f"{brdge.folder}/slides/slide_{slide_number}.png"
-
-    try:
-        # Ensure cache directory exists
-        os.makedirs(cache_dir, exist_ok=True)
-
-        # Download file from S3 to cache
-        s3_client.download_file(S3_BUCKET, s3_key, cache_file_path)
-
-        # Send the cached file
-        return send_file(cache_file_path, mimetype="image/png")
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            print(f"Error: The slide image does not exist in S3: {s3_key}")
-            abort(404)
-        else:
-            print(f"Error fetching image from S3: {e}")
-            abort(500)
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        abort(500)
-
-
-@app.route("/api/brdges/<string:public_id>/slides/<int:slide_number>", methods=["GET"])
-def get_public_slide_image(public_id, slide_number):
-    brdge = Brdge.query.filter_by(public_id=public_id, shareable=True).first_or_404()
-
-    # Check local cache first
-    cache_dir = f"/tmp/brdge/slides_{brdge.id}"  # Note: Using brdge.id here
-    cache_file_path = os.path.join(cache_dir, f"slide_{slide_number}.png")
-
-    if os.path.exists(cache_file_path):
-        return send_file(cache_file_path, mimetype="image/png")
-
-    # If not in cache, fetch from S3
-    s3_key = f"{brdge.folder}/slides/slide_{slide_number}.png"
-
-    try:
-        # Ensure cache directory exists
-        os.makedirs(cache_dir, exist_ok=True)
-
-        # Download file from S3 to cache
-        s3_client.download_file(S3_BUCKET, s3_key, cache_file_path)
-
-        # Send the cached file
-        return send_file(cache_file_path, mimetype="image/png")
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "404":
-            print(f"Error: The public slide image does not exist in S3: {s3_key}")
-            abort(404)
-        else:
-            print(f"Error fetching public image from S3: {e}")
-            abort(500)
-    except Exception as e:
-        print(f"Unexpected error fetching public slide: {e}")
-        abort(500)
-
-
 @app.route("/api/brdges", methods=["GET"])
 @jwt_required()
 def get_brdges():
@@ -478,182 +408,6 @@ def get_brdges():
     brdges = Brdge.query.filter_by(user_id=current_user.id).all()
     print(f"Brdges found: {len(brdges)}")  # Debug log
     return jsonify({"brdges": [brdge.to_dict() for brdge in brdges]}), 200
-
-
-def generate_initial_scripts(brdge_id: int, slide_images: list) -> dict:
-    """
-    Generate initial scripts from slide images without conversation history.
-    Args:
-        brdge_id: ID of the brdge
-        slide_images: List of PIL Image objects
-    Returns:
-        Generated scripts and agent personas
-    """
-    try:
-        # Create initial walkthrough
-        walkthrough = Walkthrough(
-            brdge_id=brdge_id, total_slides=len(slide_images), status="completed"
-        )
-        db.session.add(walkthrough)
-        db.session.flush()  # Get the walkthrough ID
-
-        # Process each slide image
-        slides_data = {}
-        for idx, image in enumerate(slide_images, 1):
-            try:
-                # Convert to RGB if necessary
-                if image.mode in ("RGBA", "P"):
-                    image = image.convert("RGB")
-
-                # Create a copy for compression
-                img_copy = image.copy()
-
-                # Resize to smaller dimensions while maintaining aspect ratio
-                max_size = (800, 800)
-                img_copy.thumbnail(max_size, Image.Resampling.LANCZOS)
-
-                # Compress to JPEG with reduced quality
-                buffer = io.BytesIO()
-                img_copy.save(buffer, format="JPEG", quality=60, optimize=True)
-                compressed_image = buffer.getvalue()
-
-                # Convert to base64
-                base64_image = base64.b64encode(compressed_image).decode("utf-8")
-                slides_data[str(idx)] = base64_image
-
-            except Exception as e:
-                print(f"Error processing slide {idx}: {e}")
-                continue
-
-        # Prepare the prompt for GPT-4 Vision
-        prompt = """
-        You are analyzing a series of presentation slides to generate two components for each slide:
-        
-        1. A TTS-friendly script that sounds natural and conversational
-        2. Detailed agent persona and interaction guidelines
-        
-        Instructions for Scripts:
-        - Write in plain, natural conversational language
-        - Use contractions and casual phrases (I'm, let's, we're)
-        - NO special characters or formatting marks
-        - NO bracketed instructions or emphasis marks
-        - Include natural pauses through punctuation (commas, periods)
-        - Make it sound like someone talking to a friend
-        - Use simple transition words (so, now, anyway, you see)
-        - Keep sentences shorter and flowing
-        - Write numbers as they would be spoken
-        - Avoid symbols, abbreviations, or anything that might confuse TTS
-        
-        Instructions for Agent Definition:
-        Define a consistent agent persona that embodies the presenter while operating in one of these modes:
-        
-        1. External Engagement Agent:
-           - Share insights with potential customers/partners
-           - Blend personality with professional presentation
-           - Communicate value proposition and expertise
-        
-        2. Internal Training Agent:
-           - Scale knowledge across the organization
-           - Maintain teaching approach and experience sharing
-           - Transfer best practices and insights
-        
-        3. Knowledge Collaboration Agent:
-           - Represent presenter in team discussions
-           - Mirror collaboration and consensus-building
-           - Share expertise while gathering team input
-        
-        4. Educational Guide Agent:
-           - Deliver teaching content interactively
-           - Maintain teaching philosophy and methods
-           - Share knowledge in authentic voice
-        
-        Present the results in this JSON format:
-        {
-          "1": {
-            "script": "Natural conversational script for this slide",
-            "agent": "Detailed agent persona and guidelines"
-          }
-        }
-        
-        Analyze each slide's content and generate appropriate scripts and agent personas.
-        """
-
-        # Call OpenAI API with vision model
-        client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-        # Prepare messages with images
-        messages = [
-            {"role": "system", "content": prompt},
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Please analyze these slides and generate scripts and agent personas for each one.",
-                    }
-                ]
-                + [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{img_data}",
-                            "detail": "low",
-                        },
-                    }
-                    for img_data in slides_data.values()
-                ],
-            },
-        ]
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            max_tokens=4096,
-            temperature=0.3,
-            response_format={"type": "json_object"},
-        )
-
-        generated_content = json.loads(response.choices[0].message.content)
-
-        # Create walkthrough messages for each slide
-        for slide_num, content in generated_content.items():
-            # Add script as assistant message
-            script_message = WalkthroughMessage(
-                walkthrough_id=walkthrough.id,
-                slide_number=int(slide_num),
-                role="assistant",
-                content=content["script"],
-            )
-            db.session.add(script_message)
-
-            # Add agent persona as system message
-            agent_message = WalkthroughMessage(
-                walkthrough_id=walkthrough.id,
-                slide_number=int(slide_num),
-                role="system",
-                content=content["agent"],
-            )
-            db.session.add(agent_message)
-
-        # Save scripts to database
-        script = Scripts(
-            brdge_id=brdge_id,
-            walkthrough_id=walkthrough.id,
-            scripts=generated_content,
-            generated_at=datetime.utcnow(),
-        )
-        db.session.add(script)
-
-        # Mark walkthrough as completed
-        walkthrough.completed_at = datetime.utcnow()
-        db.session.commit()
-
-        return generated_content
-
-    except Exception as e:
-        print(f"Error generating initial scripts: {e}")
-        db.session.rollback()
-        return None
 
 
 def upload_image_to_s3(args):
@@ -1026,17 +780,6 @@ def create_brdge(user):
         return jsonify({"error": "Error creating brdge", "detail": str(e)}), 500
 
 
-@app.route("/api/brdges/<int:brdge_id>/deploy", methods=["POST"])
-def deploy_brdge(brdge_id):
-    brdge = Brdge.query.get_or_404(brdge_id)
-    # Assuming deploying involves making the Brdge publicly accessible
-    # You might need to set a flag in the database or generate a unique token
-    # For simplicity, we'll return the shareable link
-
-    shareable_link = url_for("get_brdge", brdge_id=brdge_id, _external=True)
-    return jsonify({"shareable_link": shareable_link}), 200
-
-
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -1068,12 +811,6 @@ def login():
 def check_auth():
     current_user_id = get_jwt_identity()
     return jsonify(logged_in_as=currentuser_id), 200
-
-
-@app.route("/api/your-endpoint", methods=["GET"])
-def your_endpoint():
-    data = {"message": "Hello from the backend!"}
-    return jsonify(data)
 
 
 @app.route("/api/register", methods=["POST"])
@@ -1110,6 +847,7 @@ def register():
 
 @app.route("/api/brdges/<int:brdge_id>/toggle_shareable", methods=["POST"])
 @jwt_required()
+@cross_origin()
 def toggle_shareable(brdge_id):
     current_user = get_current_user()
     brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first_or_404()
@@ -1398,9 +1136,6 @@ def get_user_stats():
         return jsonify({"error": str(e)}), 500
 
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
-
 @app.route("/api/create-checkout-session", methods=["POST"])
 @login_required
 def create_checkout_session(user):
@@ -1625,366 +1360,17 @@ def create_portal_session(user):
         return jsonify({"error": "Failed to create portal session"}), 500
 
 
-@app.route("/api/brdges/<int:brdge_id>/generate-slide-scripts", methods=["POST"])
-def generate_slide_scripts(brdge_id):
-    """Generate cleaned-up scripts and agent prompts using walkthrough data"""
-    try:
-        data = request.get_json()
-        walkthrough_id = data.get("walkthrough_id")
-
-        if not walkthrough_id:
-            return jsonify({"error": "Walkthrough ID required"}), 400
-
-        # Get walkthrough from database
-        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
-
-        if walkthrough.brdge_id != brdge_id:
-            return jsonify({"error": "Walkthrough does not belong to this brdge"}), 403
-
-        # Get all messages for this walkthrough
-        messages = (
-            WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
-            .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
-            .all()
-        )
-
-        # Organize messages by slide
-        slides_data = {}
-        for msg in messages:
-            slide_num = str(msg.slide_number)
-            if slide_num not in slides_data:
-                slides_data[slide_num] = []
-            slides_data[slide_num].append(
-                {
-                    "role": msg.role,
-                    "content": msg.content,
-                    "timestamp": msg.timestamp.isoformat(),
-                }
-            )
-
-        # Log the conversation transcript for debugging
-        app.logger.info(f"Conversation transcript: {json.dumps(slides_data, indent=2)}")
-
-        # Prepare the prompt with conversation transcript
-        prompt = """
-        You are provided with transcripts of a user's presentation across {num_slides} slides. Generate two components:
-
-        1. A TTS-friendly script that sounds natural and conversational
-        2. Detailed agent persona and interaction guidelines
-
-        Instructions for Scripts:
-        - Write in plain, natural conversational language
-        - Use contractions and casual phrases (I'm, let's, we're)
-        - NO special characters or formatting marks
-        - NO bracketed instructions or emphasis marks
-        - Include natural pauses through punctuation (commas, periods)
-        - Make it sound like someone talking to a friend
-        - Use simple transition words (so, now, anyway, you see)
-        - Keep sentences shorter and flowing
-        - Write numbers as they would be spoken
-        - Avoid symbols, abbreviations, or anything that might confuse TTS
-
-        Instructions for Agent Definition:
-        Define a consistent agent persona that embodies the original presenter while operating in one of these modes. The agent should maintain the presenter's unique voice, expertise, and communication style throughout.
-
-        1. Agent Identity & Mode:
-           First, establish the presenter's baseline characteristics:
-           - Communication style (from walkthrough conversation)
-           - Level of expertise and background
-           - Personal examples and experiences shared
-           - Unique perspectives and insights
-
-           Then, adapt one of these modes while maintaining the presenter's identity:
-           
-           - External Engagement Agent:
-             Purpose: Share presenter's insights with potential customers/partners
-             Style: Blend presenter's personality with professional presentation
-             Focus: Communicate presenter's value proposition and expertise
-           
-           - Internal Training Agent:
-             Purpose: Scale presenter's knowledge across the organization
-             Style: Maintain presenter's teaching approach and experience sharing
-             Focus: Transfer presenter's best practices and insights
-           
-           - Knowledge Collaboration Agent:
-             Purpose: Represent presenter in team discussions and knowledge sharing
-             Style: Mirror presenter's collaboration and consensus-building approach
-             Focus: Share presenter's expertise while gathering team input
-           
-           - Educational Guide Agent:
-             Purpose: Deliver presenter's teaching content interactively
-             Style: Maintain presenter's teaching philosophy and methods
-             Focus: Share presenter's knowledge in their authentic voice
-
-        2. Core Knowledge Base:
-           - Presenter's specific expertise and experience
-           - Real examples and cases from presenter's walkthrough
-           - Industry knowledge demonstrated in presentation
-           - Presenter's unique insights and methodologies
-
-        3. Interaction Strategy:
-           - Adopt presenter's way of gauging audience understanding
-           - Use presenter's preferred explanation methods
-           - Mirror presenter's engagement techniques
-           - Maintain presenter's tone and rapport-building style
-
-        4. Information Collection Goals:
-           - Gather information the presenter would find valuable
-           - Ask questions in presenter's style
-           - Focus on presenter's key areas of interest
-           - Identify action items aligned with presenter's goals
-
-        5. Conversation Navigation:
-           - Use presenter's conversation starters and transitions
-           - Handle questions as presenter would
-           - Address concerns using presenter's approach
-           - Guide conversations toward presenter's intended outcomes
-
-        Note: The agent should feel like having a conversation with the actual presenter, 
-        maintaining their personality while delivering structured content.
-        Note: You must provide exactly {num_slides} scripts and agents in the JSON format
-
-        Present the results in this JSON format:
-        {{
-          "1": {{
-            "script": "Hi everyone! Today I want to share our team's approach to project management. I've been leading projects for over 5 years now, and I've learned some valuable lessons that I think will really help you.",
-            "agent": "Agent Mode: Internal Training Agent
-                     
-                     Identity:
-                     - Embodies Sarah's hands-on leadership style
-                     - Maintains her focus on practical, tested solutions
-                     - Shares her authentic experiences and lessons learned
-                     
-                     Knowledge Base:
-                     - Sarah's project management methodology
-                     - Real examples from her team's successes
-                     - Specific challenges she's overcome
-                     
-                     Interaction Strategy:
-                     - Use Sarah's approachable questioning style
-                     - Share her personal anecdotes when relevant
-                     - Mirror her way of breaking down complex topics
-                     
-                     Information Goals:
-                     - Understand team's current challenges (as Sarah would)
-                     - Identify areas where her experience is most relevant
-                     - Gather feedback she would find valuable
-                     
-                     Conversation Flow:
-                     - Open with Sarah's welcoming style
-                     - Share her methodology through stories
-                     - Address concerns using her problem-solving approach
-                     - Close with her action-oriented next steps"
-          }},
-          "2": {{
-            "script": "Now that we've covered the basics, let's dive into some specific techniques our team uses. I find that having a structured approach while staying flexible is key to successful project delivery.",
-            "agent": "Agent Mode: Internal Training Agent   
-                     
-                     Identity:
-                     - Demonstrates Sarah's detail-oriented approach
-                     - Emphasizes practical implementation steps
-                     - Balances structure with adaptability
-                     
-                     Knowledge Base:
-                     - Specific project management techniques
-                     - Implementation strategies and best practices
-                     - Common pitfalls and solutions
-          }}
-        }}
-
-        -----------Conversation Transcript-----------
-        {transcript}
-        """.format(
-            num_slides=len(slides_data), transcript=json.dumps(slides_data, indent=2)
-        )
-
-        try:
-            # Generate scripts using OpenAI
-            client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                response_format={"type": "json_object"},
-            )
-
-            # Log the OpenAI response for debugging
-            app.logger.info(f"OpenAI response: {response.choices[0].message.content}")
-
-            generated_content = json.loads(response.choices[0].message.content)
-
-            # Ensure proper format for each slide
-            formatted_scripts = {}
-            for slide_num, content in generated_content.items():
-                if (
-                    isinstance(content, dict)
-                    and "script" in content
-                    and "agent" in content
-                ):
-                    formatted_scripts[slide_num] = {
-                        "script": content["script"],
-                        "agent": content["agent"],
-                    }
-                else:
-                    # Handle legacy format or unexpected content
-                    formatted_scripts[slide_num] = {
-                        "script": content if isinstance(content, str) else str(content),
-                        "agent": "Discuss the key points presented in this slide. Ask viewers for their thoughts and experiences related to these concepts.",
-                    }
-
-            # Check for existing scripts and update if found
-            existing_script = Scripts.query.filter_by(
-                brdge_id=brdge_id, walkthrough_id=walkthrough_id
-            ).first()
-
-            if existing_script:
-                existing_script.scripts = formatted_scripts
-                existing_script.generated_at = datetime.utcnow()
-                script = existing_script
-            else:
-                script = Scripts(
-                    brdge_id=brdge_id,
-                    walkthrough_id=walkthrough_id,
-                    scripts=formatted_scripts,
-                    generated_at=datetime.utcnow(),
-                )
-                db.session.add(script)
-
-            db.session.commit()
-            app.logger.info(
-                f"Successfully saved scripts and agent prompts for brdge {brdge_id}"
-            )
-
-            return (
-                jsonify(
-                    {
-                        "message": "Scripts and agent prompts generated successfully",
-                        "scripts": script.scripts,
-                        "metadata": {
-                            "generated_at": script.generated_at.isoformat(),
-                            "walkthrough_id": walkthrough_id,
-                            "num_slides": len(formatted_scripts),
-                        },
-                    }
-                ),
-                200,
-            )
-
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"Error generating scripts and agent prompts: {e}")
-            raise
-
-        # After successful generation and saving to database
-        script = Scripts.query.filter_by(
-            brdge_id=brdge_id, walkthrough_id=walkthrough_id
-        ).first()
-
-        if script:
-            return (
-                jsonify(
-                    {
-                        "message": "Scripts generated successfully",
-                        "has_scripts": True,  # Add this flag
-                        "scripts": script.scripts,
-                        "metadata": {
-                            "generated_at": script.generated_at.isoformat(),
-                            "walkthrough_id": walkthrough_id,
-                            "num_slides": len(script.scripts),
-                        },
-                    }
-                ),
-                200,
-            )
-        else:
-            return (
-                jsonify(
-                    {
-                        "error": "Failed to retrieve generated scripts",
-                        "has_scripts": False,
-                    }
-                ),
-                500,
-            )
-
-    except Exception as e:
-        logger.error(f"Error in script generation: {e}")
-        return jsonify({"error": str(e), "has_scripts": False}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/scripts", methods=["GET"])
-@jwt_required(optional=True)
-@cross_origin()
-def get_brdge_scripts(brdge_id):
-    """Get existing scripts for a brdge if they exist"""
-    try:
-        # Get current user (optional)
-        current_user = get_current_user()
-
-        # Get the brdge to check permissions
-        brdge = Brdge.query.get_or_404(brdge_id)
-
-        # Check if user has access (owner or public brdge)
-        if not brdge.shareable and current_user and current_user.id != brdge.user_id:
-            return jsonify({"error": "Unauthorized access"}), 403
-
-        # Query the most recent script from database
-        script = (
-            Scripts.query.filter_by(brdge_id=brdge_id)
-            .order_by(Scripts.generated_at.desc())
-            .first()
-        )
-
-        if not script:
-            logger.info(f"No scripts found for brdge {brdge_id}")
-            return (
-                jsonify(
-                    {
-                        "has_scripts": False,
-                        "message": "No scripts found",
-                        "brdge_id": brdge_id,
-                    }
-                ),
-                200,
-            )
-
-        logger.info(f"Found scripts for brdge {brdge_id}")
-        return (
-            jsonify(
-                {
-                    "has_scripts": True,
-                    "scripts": script.scripts,
-                    "metadata": {
-                        "generated_at": script.generated_at.isoformat(),
-                        "source_walkthrough_id": script.walkthrough_id,
-                        "brdge_id": brdge_id,
-                    },
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error fetching scripts for brdge {brdge_id}: {str(e)}")
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error fetching scripts",
-                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
-                }
-            ),
-            500,
-        )
-
-
 @app.route("/api/brdges/<int:brdge_id>/voice/clone", methods=["POST"])
+@jwt_required()
 @cross_origin()
 def clone_voice_for_brdge(brdge_id):
     """Clone a voice from uploaded audio sample using Cartesia API"""
     try:
+        current_user = get_current_user()
         # Get the brdge to use its name as default
-        brdge = Brdge.query.filter_by(id=brdge_id).first_or_404()
+        brdge = Brdge.query.filter_by(
+            id=brdge_id, user_id=current_user.id
+        ).first_or_404()
 
         # Get form data
         audio_file = request.files.get("audio")
@@ -2182,504 +1568,6 @@ def get_brdge_voices(brdge_id):
         )
 
 
-@app.route("/api/walkthroughs", methods=["POST"])
-def create_walkthrough():
-    """Create a new walkthrough"""
-    data = request.get_json()
-    brdge_id = data.get("brdge_id")
-    total_slides = data.get("total_slides")
-
-    try:
-        walkthrough = Walkthrough(brdge_id=brdge_id, total_slides=total_slides)
-        db.session.add(walkthrough)
-        db.session.commit()
-
-        return (
-            jsonify(
-                {
-                    "id": walkthrough.id,
-                    "brdge_id": walkthrough.brdge_id,
-                    "created_at": walkthrough.created_at.isoformat(),
-                    "status": walkthrough.status,
-                }
-            ),
-            201,
-        )
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/walkthroughs/<int:walkthrough_id>/messages", methods=["POST"])
-def add_walkthrough_message(walkthrough_id):
-    """Add a message to a walkthrough"""
-    data = request.get_json()
-    slide_number = data.get("slide_number")
-    role = data.get("role")
-    content = data.get("content")
-
-    try:
-        message = WalkthroughMessage(
-            walkthrough_id=walkthrough_id,
-            slide_number=slide_number,
-            role=role,
-            content=content,
-        )
-        db.session.add(message)
-        db.session.commit()
-
-        return (
-            jsonify(
-                {
-                    "id": message.id,
-                    "slide_number": message.slide_number,
-                    "role": message.role,
-                    "timestamp": message.timestamp.isoformat(),
-                }
-            ),
-            201,
-        )
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/walkthroughs/<int:walkthrough_id>/complete", methods=["POST"])
-def complete_walkthrough(walkthrough_id):
-    """Mark a walkthrough as completed"""
-    try:
-        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
-        walkthrough.status = "completed"
-        walkthrough.completed_at = datetime.utcnow()
-        db.session.commit()
-
-        return (
-            jsonify(
-                {
-                    "message": "Walkthrough completed",
-                    "completed_at": walkthrough.completed_at.isoformat(),
-                }
-            ),
-            200,
-        )
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/walkthrough-list", methods=["GET"])
-def get_brdge_walkthroughs(brdge_id):
-    """
-    Get a list of all walkthroughs available for a brdge.
-    Returns labeled walkthroughs that can be used in a dropdown selection.
-    """
-    try:
-        # Get current user but don't require it
-        current_user = get_current_user()
-        logger.info(f"Current user: {current_user.id if current_user else 'None'}")
-
-        # Query walkthroughs directly from database
-        walkthroughs = (
-            Walkthrough.query.filter_by(brdge_id=brdge_id)
-            .order_by(Walkthrough.created_at.desc())
-            .all()
-        )
-
-        if not walkthroughs:
-            logger.info(f"No walkthroughs found for brdge {brdge_id}")
-            return (
-                jsonify(
-                    {
-                        "has_walkthroughs": False,
-                        "walkthroughs": [],
-                        "message": "No walkthroughs found",
-                    }
-                ),
-                200,
-            )
-
-        # Format walkthrough data
-        walkthrough_list = [
-            {
-                "id": w.id,
-                "label": f"Walkthrough {idx + 1}",
-                "timestamp": w.created_at.isoformat(),
-                "slide_count": w.total_slides,
-                "status": w.status,
-                "message_count": w.messages.count(),
-            }
-            for idx, w in enumerate(walkthroughs)
-        ]
-
-        logger.info(
-            f"Found {len(walkthrough_list)} walkthrough(s) for brdge {brdge_id}"
-        )
-        return (
-            jsonify(
-                {
-                    "has_walkthroughs": True,
-                    "walkthroughs": walkthrough_list,
-                    "message": f"Found {len(walkthrough_list)} walkthrough(s)",
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error in get_brdge_walkthroughs: {str(e)}")
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error fetching walkthroughs",
-                    "details": {"brdge_id": brdge_id, "error_type": type(e).__name__},
-                }
-            ),
-            500,
-        )
-
-
-@app.route("/api/walkthroughs/<int:walkthrough_id>", methods=["GET"])
-def get_walkthrough(walkthrough_id):
-    """Get a specific walkthrough's details and messages"""
-    try:
-        walkthrough = Walkthrough.query.get_or_404(walkthrough_id)
-
-        # Get all messages for this walkthrough
-        messages = (
-            WalkthroughMessage.query.filter_by(walkthrough_id=walkthrough_id)
-            .order_by(WalkthroughMessage.slide_number, WalkthroughMessage.timestamp)
-            .all()
-        )
-
-        # Organize messages by slide
-        slides_data = {}
-        for msg in messages:
-            slide_num = str(msg.slide_number)
-            if slide_num not in slides_data:
-                slides_data[slide_num] = []
-            slides_data[slide_num].append(msg.to_dict())
-
-        return (
-            jsonify(
-                {
-                    "id": walkthrough.id,
-                    "brdge_id": walkthrough.brdge_id,
-                    "created_at": walkthrough.created_at.isoformat(),
-                    "completed_at": (
-                        walkthrough.completed_at.isoformat()
-                        if walkthrough.completed_at
-                        else None
-                    ),
-                    "status": walkthrough.status,
-                    "total_slides": walkthrough.total_slides,
-                    "slides": slides_data,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error fetching walkthrough: {e}")
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error fetching walkthrough",
-                    "details": {
-                        "walkthrough_id": walkthrough_id,
-                        "error_type": type(e).__name__,
-                    },
-                }
-            ),
-            500,
-        )
-
-
-@app.route("/api/brdges/<int:brdge_id>/scripts/debug", methods=["GET"])
-def debug_brdge_scripts(brdge_id):
-    """Debug endpoint to check script availability"""
-    try:
-        script = (
-            Scripts.query.filter_by(brdge_id=brdge_id)
-            .order_by(Scripts.generated_at.desc())
-            .first()
-        )
-
-        if not script:
-            return (
-                jsonify(
-                    {
-                        "has_scripts": False,
-                        "message": "No scripts found",
-                        "debug_info": {
-                            "brdge_id": brdge_id,
-                            "scripts_count": Scripts.query.filter_by(
-                                brdge_id=brdge_id
-                            ).count(),
-                        },
-                    }
-                ),
-                200,
-            )
-
-        return (
-            jsonify(
-                {
-                    "has_scripts": True,
-                    "scripts": script.scripts,
-                    "debug_info": {
-                        "brdge_id": brdge_id,
-                        "generated_at": script.generated_at.isoformat(),
-                        "walkthrough_id": script.walkthrough_id,
-                        "script_keys": list(script.scripts.keys()),
-                    },
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error in debug_brdge_scripts: {e}")
-        return (
-            jsonify(
-                {
-                    "error": str(e),
-                    "message": "Error fetching scripts",
-                    "debug_info": {
-                        "brdge_id": brdge_id,
-                        "error_type": type(e).__name__,
-                    },
-                }
-            ),
-            500,
-        )
-
-
-@app.route("/api/brdges/<int:brdge_id>/scripts/update", methods=["PUT"])
-def update_scripts(brdge_id):
-    try:
-        data = request.json.get("scripts", {})
-
-        # Get existing scripts
-        script = (
-            Scripts.query.filter_by(brdge_id=brdge_id)
-            .order_by(Scripts.generated_at.desc())
-            .first()
-        )
-
-        if not script:
-            return jsonify({"error": "No scripts found"}), 404
-
-        existing_scripts = script.scripts
-
-        # Update only the fields that were sent
-        for slide_number, updated_content in data.items():
-            if slide_number not in existing_scripts:
-                existing_scripts[slide_number] = {}
-
-            if "script" in updated_content:
-                existing_scripts[slide_number]["script"] = updated_content["script"]
-            if "agent" in updated_content:
-                existing_scripts[slide_number]["agent"] = updated_content["agent"]
-
-        # Create new version with updated content
-        new_script = Scripts(
-            brdge_id=brdge_id,
-            walkthrough_id=script.walkthrough_id,
-            scripts=existing_scripts,
-            generated_at=datetime.utcnow(),
-        )
-
-        db.session.add(new_script)
-        db.session.commit()
-
-        return jsonify(
-            {"message": "Scripts updated successfully", "scripts": new_script.scripts}
-        )
-
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error updating scripts: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["POST"])
-@jwt_required(optional=True)
-def add_viewer_conversation(brdge_id):
-    try:
-        data = request.get_json()
-        viewer_id = data.get("user_id")
-        message = data.get("message")
-        role = data.get("role")
-        slide_number = data.get("slide_number")
-
-        if not all([viewer_id, message, role]):
-            return jsonify({"error": "Missing required fields"}), 400
-
-        # Handle both int and string user IDs
-        user_id = None
-        anonymous_id = None
-
-        # If viewer_id is already an integer or can be converted to one
-        if isinstance(viewer_id, int) or (
-            isinstance(viewer_id, str) and viewer_id.isdigit()
-        ):
-            user_id = int(viewer_id)
-        else:
-            # If it's a string starting with 'anon_', treat as anonymous
-            anonymous_id = viewer_id
-
-        conversation = ViewerConversation(
-            user_id=user_id,
-            anonymous_id=anonymous_id,
-            brdge_id=brdge_id,
-            message=message,
-            role=role,
-            slide_number=slide_number,
-        )
-
-        db.session.add(conversation)
-        db.session.commit()
-
-        return (
-            jsonify(
-                {"id": conversation.id, "timestamp": conversation.timestamp.isoformat()}
-            ),
-            201,
-        )
-
-    except Exception as e:
-        db.session.rollback()
-        app.logger.error(f"Error logging viewer conversation: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-def get_unique_interaction_counts(brdge_id):
-    """Get counts of unique users who interacted with a brdge"""
-    try:
-        # Debug: Print raw query results
-        user_query = (
-            db.session.query(func.count(distinct(ViewerConversation.user_id)))
-            .filter(
-                ViewerConversation.brdge_id == brdge_id,
-                ViewerConversation.user_id.isnot(None),
-            )
-            .scalar()
-            or 0
-        )
-
-        anon_query = (
-            db.session.query(func.count(distinct(ViewerConversation.anonymous_id)))
-            .filter(
-                ViewerConversation.brdge_id == brdge_id,
-                ViewerConversation.anonymous_id.isnot(None),
-            )
-            .scalar()
-            or 0
-        )
-
-        total_query = (
-            db.session.query(ViewerConversation)
-            .filter(ViewerConversation.brdge_id == brdge_id)
-            .all()
-        )
-
-        app.logger.info(f"Debug - Brdge {brdge_id}:")
-        app.logger.info(f"Unique user IDs: {user_query}")
-        app.logger.info(f"Unique anonymous IDs: {anon_query}")
-        app.logger.info(f"Total conversations: {len(total_query)}")
-
-        # Count unique user_ids (excluding nulls)
-        unique_users = user_query
-
-        # Count unique anonymous_ids (excluding nulls)
-        unique_anon = anon_query
-
-        # Total interactions (messages)
-        total_interactions = len(total_query)
-
-        result = {
-            "unique_users": unique_users,
-            "unique_anonymous_users": unique_anon,
-            "total_unique_users": unique_users + unique_anon,
-            "total_interactions": total_interactions,
-        }
-
-        app.logger.info(f"Final metrics: {result}")
-        return result
-
-    except Exception as e:
-        app.logger.error(f"Error in get_unique_interaction_counts: {e}")
-        return {
-            "unique_users": 0,
-            "unique_anonymous_users": 0,
-            "total_unique_users": 0,
-            "total_interactions": 0,
-        }
-
-
-@app.route("/api/brdges/<int:brdge_id>/viewer-conversations", methods=["GET"])
-@jwt_required(optional=True)
-@cross_origin()
-def get_viewer_conversations(brdge_id):
-    """Get viewer conversations for a brdge"""
-    try:
-        current_user = get_current_user()
-        brdge = Brdge.query.get_or_404(brdge_id)
-
-        app.logger.info(f"Fetching conversations for Brdge {brdge_id}")
-        if current_user:
-            app.logger.info(f"Current user: {current_user.id}")
-
-        # Get interaction counts
-        interaction_stats = get_unique_interaction_counts(brdge_id)
-        app.logger.info(f"Interaction stats: {interaction_stats}")
-
-        # Base query for the brdge
-        query = ViewerConversation.query.filter_by(brdge_id=brdge_id)
-
-        # If user owns the brdge, show all conversations
-        if current_user and current_user.id == brdge.user_id:
-            app.logger.info("User owns the Brdge - showing all conversations")
-        # If user is authenticated but doesn't own the brdge, show only their conversations
-        elif current_user:
-            query = query.filter_by(user_id=current_user.id)
-            app.logger.info(f"Filtering conversations for user {current_user.id}")
-        # If user is not authenticated, require anonymous_id
-        else:
-            anonymous_id = request.args.get("anonymous_id")
-            if anonymous_id:
-                query = query.filter_by(anonymous_id=anonymous_id)
-                app.logger.info(
-                    f"Filtering conversations for anonymous user {anonymous_id}"
-                )
-            else:
-                return (
-                    jsonify(
-                        {"error": "Anonymous ID required for non-authenticated users"}
-                    ),
-                    400,
-                )
-
-        conversations = query.order_by(ViewerConversation.timestamp.desc()).all()
-        app.logger.info(f"Found {len(conversations)} conversations")
-
-        return (
-            jsonify(
-                {
-                    "conversations": [conv.to_dict() for conv in conversations],
-                    "interaction_stats": interaction_stats,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        app.logger.error(f"Error fetching viewer conversations: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
 @app.after_request
 def add_security_headers(response):
     """Add security headers to response"""
@@ -2776,236 +1664,6 @@ def update_usage_log(brdge_id, log_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating usage log: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-# Add this new route for AI script editing
-@app.route("/api/brdges/<int:brdge_id>/scripts/ai-edit", methods=["GET"])
-def ai_edit_script(brdge_id):
-    try:
-        # Parse query params
-        slide_number = request.args.get("slideNumber")
-        edit_instruction = request.args.get("instruction")
-        edit_speech = request.args.get("editSpeech", "true").lower() == "true"
-        edit_knowledge = request.args.get("editKnowledge", "true").lower() == "true"
-        walkthrough_id = request.args.get("walkthroughId")
-
-        if not slide_number or not edit_instruction:
-            return jsonify({"error": "Missing required parameters"}), 400
-
-        if not edit_speech and not edit_knowledge:
-            return jsonify({"error": "At least one edit target must be selected"}), 400
-
-        current_content_str = request.args.get("currentContent", "{}")
-        current_content = json.loads(current_content_str)
-
-        # Get the latest script to use as base for the new version
-        script = (
-            Scripts.query.filter_by(brdge_id=brdge_id)
-            .order_by(Scripts.generated_at.desc())
-            .first()
-        )
-        if not script:
-            return jsonify({"error": "No scripts found for this brdge"}), 404
-
-        script_system_prompt = """You are an advanced AI writing assistant specializing in presentation script optimization.
-
-        Core Guidelines for Presentation Scripts:
-        - Write in plain text only - NO markup, NO special characters
-        - NO emphasis markers, NO pause indicators, NO annotations
-        - Use natural speech patterns and clear punctuation
-        - Write numbers as they should be spoken
-        - Use contractions naturally (I'm, we're, let's)
-        - Keep sentences concise and flowing
-        - Write exactly as it should be read aloud
-        - Avoid any formatting or special characters
-        - Return only the script content, no additional text or markers
-
-        Remember: Focus on creating engaging, natural speech that flows well when spoken aloud.
-        """
-
-        knowledge_system_prompt = """You are an advanced AI writing assistant specializing in AI knowledge base optimization.
-
-        Core Guidelines for AI Knowledge Base:
-        - Structure information hierarchically
-        - Include key concepts and their relationships
-        - Add relevant examples and use cases
-        - Include domain-specific terminology
-        - Add engagement prompts and follow-up questions
-        - Focus on factual content and context
-        - Return only the knowledge content, no additional text or markers
-
-        Remember: Focus on creating comprehensive, well-structured knowledge that helps the AI understand and respond effectively.
-        """
-
-        def generate():
-            try:
-                results = {"script": None, "agent": None, "type": None}
-
-                # Generate script if requested
-                if edit_speech:
-                    results["type"] = "script"
-                    for chunk in generate_script():
-                        if isinstance(chunk, dict):
-                            yield f"data: {json.dumps({'type': 'script', 'token': chunk.get('token', '')})}\n\n"
-                            results["script"] = (results["script"] or "") + chunk.get(
-                                "token", ""
-                            )
-
-                # Generate knowledge if requested
-                if edit_knowledge:
-                    results["type"] = "agent" if not edit_speech else "both"
-                    for chunk in generate_knowledge():
-                        if isinstance(chunk, dict):
-                            yield f"data: {json.dumps({'type': 'agent', 'token': chunk.get('token', '')})}\n\n"
-                            results["agent"] = (results["agent"] or "") + chunk.get(
-                                "token", ""
-                            )
-
-                # Send final content with type information
-                final_content = {
-                    "type": results["type"],
-                    "content": {
-                        "script": (
-                            results["script"]
-                            if edit_speech
-                            else current_content.get("script", "")
-                        ),
-                        "agent": (
-                            results["agent"]
-                            if edit_knowledge
-                            else current_content.get("agent", "")
-                        ),
-                    },
-                }
-
-                yield f"data: {json.dumps({'final': final_content})}\n\n"
-                yield "data: [DONE]\n\n"
-
-            except Exception as e:
-                app.logger.error(f"Error in stream generation: {e}")
-                yield f"data: {json.dumps({'error': str(e)})}\n\n"
-
-        def generate_script():
-            try:
-                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-                stream = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "system", "content": script_system_prompt},
-                        {
-                            "role": "user",
-                            "content": f"""
-                            Original Script: {current_content.get('script', '')}
-                            Edit Request: {edit_instruction}
-                            
-                            Please modify the script according to this request.
-                            Return only the modified script content.
-                        """,
-                        },
-                    ],
-                    stream=True,
-                    temperature=0.0,
-                )
-
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
-                        if content.strip():
-                            yield {"token": content}
-
-            except Exception as e:
-                app.logger.error(f"Error generating script: {e}")
-                raise
-
-        def generate_knowledge():
-            try:
-                client = openai.OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-                stream = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": knowledge_system_prompt},
-                        {
-                            "role": "user",
-                            "content": f"""
-                            Original Knowledge: {current_content.get('agent', '')}
-                            Edit Request: {edit_instruction}
-                            
-                            Please modify the knowledge base according to this request.
-                            Return only the modified knowledge content.
-                        """,
-                        },
-                    ],
-                    stream=True,
-                    temperature=0.0,
-                )
-
-                for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
-                        if content.strip():
-                            yield {"token": content}
-
-            except Exception as e:
-                app.logger.error(f"Error generating knowledge: {e}")
-                raise
-
-        return Response(
-            stream_with_context(generate()),
-            mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Content-Type": "text/event-stream",
-                "X-Accel-Buffering": "no",
-                "Access-Control-Allow-Origin": "*",
-            },
-        )
-    except Exception as e:
-        app.logger.error(f"Error in ai_edit_script: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-# Add new endpoint to get script history
-@app.route("/api/brdges/<int:brdge_id>/scripts/history", methods=["GET"])
-def get_script_history(brdge_id):
-    try:
-        # Get all script versions for this brdge, ordered by timestamp
-        scripts = (
-            Scripts.query.filter_by(brdge_id=brdge_id)
-            .order_by(Scripts.generated_at.desc())
-            .all()
-        )
-        return jsonify([script.to_dict() for script in scripts])
-    except Exception as e:
-        app.logger.error(f"Error fetching script history: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-# Add endpoint to restore a previous version
-@app.route(
-    "/api/brdges/<int:brdge_id>/scripts/<int:script_id>/restore", methods=["POST"]
-)
-def restore_script_version(brdge_id, script_id):
-    try:
-        # Find the script version to restore
-        script_to_restore = Scripts.query.get(script_id)
-        if not script_to_restore or script_to_restore.brdge_id != brdge_id:
-            return jsonify({"error": "Script version not found"}), 404
-
-        # Create a new version with the restored content
-        new_script_version = Scripts(
-            brdge_id=brdge_id,
-            walkthrough_id=script_to_restore.walkthrough_id,
-            scripts=script_to_restore.scripts,
-            generated_at=datetime.utcnow(),
-        )
-        db.session.add(new_script_version)
-        db.session.commit()
-
-        return jsonify(new_script_version.to_dict())
-    except Exception as e:
-        app.logger.error(f"Error restoring script version: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -3225,12 +1883,16 @@ def get_agent_config(brdge_id):
 
 # Add this route for updating agent configuration
 @app.route("/api/brdges/<int:brdge_id>/agent-config", methods=["PUT"])
+@jwt_required()
 @cross_origin()
 def update_agent_config(brdge_id):
     """Update agent configuration for a brdge"""
     try:
-        # Get the brdge and verify it exists
-        brdge = Brdge.query.get_or_404(brdge_id)
+        current_user = get_current_user()
+        # Get the brdge and verify it exists and belongs to the user
+        brdge = Brdge.query.filter_by(
+            id=brdge_id, user_id=current_user.id
+        ).first_or_404()
 
         # Parse the request data
         data = request.json
@@ -3460,37 +2122,6 @@ def get_brdge_script_content(brdge_id):
         return jsonify({"error": str(e)}), 500
 
 
-# Add this debug endpoint for development purposes
-@app.route("/api/brdges/<int:brdge_id>/agent-config-debug", methods=["PUT"])
-@cross_origin()
-def debug_agent_config(brdge_id):
-    """Debug endpoint to inspect the request body for agent config updates"""
-    try:
-        # Get the request data
-        data = request.json
-
-        # Log the full request
-        logger.info(f"DEBUG - Agent config update request for brdge {brdge_id}:")
-        logger.info(f"Headers: {dict(request.headers)}")
-        logger.info(f"Request Body: {json.dumps(data, indent=2)}")
-
-        # Return the data for inspection
-        return (
-            jsonify(
-                {
-                    "message": "Debug info captured",
-                    "request_data": data,
-                    "content_type": request.content_type,
-                    "method": request.method,
-                }
-            ),
-            200,
-        )
-    except Exception as e:
-        logger.error(f"Error in debug endpoint: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
 @app.route("/api/users/voices", methods=["GET"])
 @cross_origin()
 def get_user_voices():
@@ -3637,11 +2268,15 @@ def use_voice_from_other_bridge(brdge_id):
 
 @app.route("/api/brdges/<int:brdge_id>/update-voice", methods=["POST"])
 @cross_origin()
+@jwt_required()
 def update_brdge_voice(brdge_id):
     """Update a brdge's voice_id field"""
     try:
         # Get the brdge without filtering by user_id since we're not using authentication for now
-        brdge = Brdge.query.get_or_404(brdge_id)
+        current_user = get_current_user()
+        brdge = Brdge.query.filter_by(
+            id=brdge_id, user_id=current_user.id
+        ).first_or_404()
 
         # Get the voice_id from request data
         data = request.json
@@ -4517,3 +3152,121 @@ def get_public_course_details(course_id):
     except Exception as e:
         app.logger.error(f"Error getting public course: {str(e)}")
         return jsonify({"error": "Failed to get course details"}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/conversation-logs", methods=["POST"])
+@cross_origin()
+def add_conversation_log(brdge_id):
+    """Store a conversation log entry between agent and user"""
+    try:
+        data = request.get_json()
+
+        # Get required fields
+        message = data.get("message")
+        role = data.get("role")
+        timestamp_str = data.get("timestamp")
+        was_interrupted = data.get("was_interrupted", False)
+        duration_seconds = data.get("duration_seconds", 0.0)
+
+        # Get ownership/viewer info
+        viewer_user_id = data.get("viewer_user_id")
+        anonymous_id = data.get("anonymous_id")
+
+        # Get the brdge to determine owner_id
+        brdge = Brdge.query.get_or_404(brdge_id)
+        owner_id = brdge.user_id
+
+        # Validate required fields
+        if not all([message, role]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Parse timestamp if provided, otherwise use current time
+        if timestamp_str:
+            try:
+                timestamp = datetime.fromisoformat(timestamp_str)
+            except ValueError:
+                timestamp = datetime.utcnow()
+        else:
+            timestamp = datetime.utcnow()
+
+        # Create conversation log
+        conversation_log = ConversationLogs(
+            brdge_id=brdge_id,
+            owner_id=owner_id,
+            viewer_user_id=viewer_user_id,
+            anonymous_id=anonymous_id,
+            role=role,
+            message=message,
+            timestamp=timestamp,
+            was_interrupted=was_interrupted,
+            duration_seconds=duration_seconds,
+        )
+
+        db.session.add(conversation_log)
+        db.session.commit()
+
+        logger.info(f"Added conversation log: {role} message for brdge {brdge_id}")
+
+        return (
+            jsonify(
+                {
+                    "id": conversation_log.id,
+                    "timestamp": conversation_log.timestamp.isoformat(),
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error logging conversation: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/conversation-logs", methods=["GET"])
+@jwt_required(optional=True)
+@cross_origin()
+def get_conversation_logs(brdge_id):
+    """Get conversation logs for a brdge"""
+    try:
+        current_user = get_current_user()
+        brdge = Brdge.query.get_or_404(brdge_id)
+
+        # Base query for the brdge
+        query = ConversationLogs.query.filter_by(brdge_id=brdge_id)
+
+        # If user owns the brdge, show all conversations
+        if current_user and current_user.id == brdge.user_id:
+            pass  # No additional filtering
+        # If user is authenticated but doesn't own the brdge, show only their conversations
+        elif current_user:
+            query = query.filter_by(viewer_user_id=current_user.id)
+        # If user is not authenticated, require anonymous_id
+        else:
+            anonymous_id = request.args.get("anonymous_id")
+            if anonymous_id:
+                query = query.filter_by(anonymous_id=anonymous_id)
+            else:
+                return (
+                    jsonify(
+                        {"error": "Anonymous ID required for non-authenticated users"}
+                    ),
+                    400,
+                )
+
+        # Get conversations with most recent first
+        conversations = query.order_by(ConversationLogs.timestamp.desc()).all()
+
+        return (
+            jsonify(
+                {
+                    "conversations": [conv.to_dict() for conv in conversations],
+                    "count": len(conversations),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching conversation logs: {e}")
+        return jsonify({"error": str(e)}), 500

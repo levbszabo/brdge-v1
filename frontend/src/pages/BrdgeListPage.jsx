@@ -37,15 +37,10 @@ import {
     LinearProgress,
 } from '@mui/material';
 import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft, ExternalLink, LogOut } from 'lucide-react';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { motion } from 'framer-motion';
 import { api } from '../api';
 import { getAuthToken } from '../utils/auth';
 import { useSnackbar } from '../utils/snackbar';
 import BrdgeList from '../components/BrdgeList';
-import EmptyBrdgeState from '../components/EmptyBrdgeState';
-import UsageIndicator from '../components/UsageIndicator';
-import CourseList from '../components/CourseList';
 // At the top with other imports, add these react-dnd imports
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -1021,216 +1016,6 @@ function BrdgeListPage() {
         return underBrdgeLimit && underMinuteLimit;
     };
 
-    const fetchConversationData = async (brdgeId) => {
-        setLoadingConversations(true);
-        try {
-            const response = await api.get(`/brdges/${brdgeId}/viewer-conversations`);
-            const conversations = response.data.conversations || [];
-            const interaction_stats = response.data.interaction_stats;
-
-            // Process conversations to group by user and calculate metrics
-            const processedData = {
-                conversations: conversations,
-                interaction_stats: interaction_stats
-            };
-
-            setConversationData(prev => ({
-                ...prev,
-                [brdgeId]: processedData
-            }));
-        } catch (error) {
-            console.error('Error fetching conversation data:', error);
-            showSnackbar('Failed to load conversation data', 'error');
-        } finally {
-            setLoadingConversations(false);
-        }
-    };
-
-    const ConversationMetrics = ({ brdgeId }) => {
-        const data = conversationData[brdgeId] || {};
-        const totalUsers = Object.keys(data).length;
-        const totalInteractions = Object.values(data).reduce(
-            (sum, user) => sum + user.totalInteractions,
-            0
-        );
-        const averageInteractionsPerUser = totalUsers ? (totalInteractions / totalUsers).toFixed(1) : 0;
-
-        return (
-            <Box sx={{ p: 2, bgcolor: 'rgba(0, 41, 132, 0.1)', borderRadius: 1 }}>
-                <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <User size={18} className="text-cyan-400" />
-                            <Box>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Students</Typography>
-                                <Typography variant="h6" sx={{ color: 'white' }}>{totalUsers}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <MessageSquare size={18} className="text-cyan-400" />
-                            <Box>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Total Interactions</Typography>
-                                <Typography variant="h6" sx={{ color: 'white' }}>{totalInteractions}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <LineChart size={18} className="text-cyan-400" />
-                            <Box>
-                                <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>Avg. Interactions/Student</Typography>
-                                <Typography variant="h6" sx={{ color: 'white' }}>{averageInteractionsPerUser}</Typography>
-                            </Box>
-                        </Box>
-                    </Grid>
-                </Grid>
-            </Box>
-        );
-    };
-
-    const UserConversationList = ({ brdgeId }) => {
-        const [expandedUser, setExpandedUser] = useState(null);
-        const data = conversationData[brdgeId] || {};
-        const conversations = data.conversations || [];
-
-        return (
-            <Box sx={{ mt: 2 }}>
-                {Object.entries(data).map(([userId, userData]) => (
-                    <Accordion
-                        key={userId}
-                        expanded={expandedUser === userId}
-                        onChange={() => setExpandedUser(expandedUser === userId ? null : userId)}
-                        sx={{
-                            bgcolor: 'rgba(0, 41, 132, 0.05)',
-                            '&:before': { display: 'none' },
-                            mb: 1,
-                            color: 'white'
-                        }}
-                    >
-                        <AccordionSummary expandIcon={<ChevronDown className="text-white" size={18} />}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%' }}>
-                                <Box sx={{ flexGrow: 1 }}>
-                                    <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'white' }}>
-                                        <User size={18} className="text-cyan-400" />
-                                        {userData.isAnonymous ? 'Anonymous Student' : `Student ${userId}`}
-                                        {userData.isAnonymous && (
-                                            <Chip
-                                                label="Anonymous"
-                                                size="small"
-                                                variant="outlined"
-                                                sx={{ ml: 1, color: 'rgba(255, 255, 255, 0.7)' }}
-                                            />
-                                        )}
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                        Last active: {new Date(userData.lastInteraction).toLocaleDateString()}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                                    <Tooltip title="Total Interactions">
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'white' }}>
-                                            <MessageSquare size={18} className="text-cyan-400" />
-                                            <Typography>{userData.totalInteractions}</Typography>
-                                        </Box>
-                                    </Tooltip>
-                                    <Tooltip title="Unique Slides Viewed">
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'white' }}>
-                                            <LineChart size={18} className="text-cyan-400" />
-                                            <Typography>{userData.uniqueSlides.size}</Typography>
-                                        </Box>
-                                    </Tooltip>
-                                </Box>
-                            </Box>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Box sx={{
-                                maxHeight: '300px',
-                                overflowY: 'auto',
-                                p: 2,
-                                bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                borderRadius: 1,
-                                color: 'white'
-                            }}>
-                                {userData.messages.map((message, index) => (
-                                    <Box
-                                        key={index}
-                                        sx={{
-                                            mb: 1,
-                                            p: 1,
-                                            borderLeft: '2px solid',
-                                            borderColor: message.role === 'user' ? '#4F9CF9' : 'rgba(255, 255, 255, 0.3)',
-                                            bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                            borderRadius: '4px',
-                                            color: 'white'
-                                        }}
-                                    >
-                                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} display="block">
-                                            {new Date(message.timestamp).toLocaleString()} - Slide {message.slide_number}
-                                        </Typography>
-                                        <Typography variant="body2" sx={{ mt: 0.5, color: 'white' }}>
-                                            {message.message}
-                                        </Typography>
-                                    </Box>
-                                ))}
-                            </Box>
-                        </AccordionDetails>
-                    </Accordion>
-                ))}
-            </Box>
-        );
-    };
-
-    const BrdgeItem = ({ brdge }) => {
-        const [expanded, setExpanded] = useState(false);
-
-        const handleExpandClick = (e) => {
-            e.stopPropagation();
-            setExpanded(!expanded);
-        };
-
-        return (
-            <>
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px',
-                        backgroundColor: '#1A1A1A',
-                        borderRadius: '8px',
-                        marginBottom: '10px',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.3s',
-                        '&:hover': {
-                            backgroundColor: '#333',
-                        },
-                    }}
-                    onClick={handleExpandClick}
-                >
-                    <Typography variant="h6" color="white">
-                        {brdge.name}
-                    </Typography>
-                    <ExpandMoreIcon
-                        sx={{
-                            color: 'white',
-                            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s',
-                        }}
-                    />
-                </Box>
-                {expanded && (
-                    <Box sx={{ padding: '10px', backgroundColor: '#2A2A2A', borderRadius: '8px' }}>
-                        {/* Metrics and session details go here */}
-                        <Typography variant="body2" color="white">
-                            Metrics and session details...
-                        </Typography>
-                    </Box>
-                )}
-            </>
-        );
-    };
 
     const handleCopyLink = () => {
         const shareableUrl = `${window.location.origin}/viewBridge/${brdgeToShare?.id}-${brdgeToShare?.public_id.substring(0, 6)}`;
@@ -4118,6 +3903,182 @@ function BrdgeListPage() {
                         }}
                     >
                         Unenroll
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* AI Module Deletion Confirmation Dialog */}
+            <Dialog
+                open={deleteDialogOpen}
+                onClose={() => setDeleteDialogOpen(false)}
+                PaperProps={{ // Use PaperProps to style the dialog paper with theme
+                    sx: {
+                        backgroundColor: theme.palette.background.paper, // Parchment Dark bg
+                        color: theme.palette.text.primary, // Ink color
+                        borderRadius: 2, // Consistent rounding
+                        boxShadow: theme.shadows[4], // Use theme shadow
+                        border: `1px solid ${theme.palette.divider}`, // Sepia border
+                        minWidth: { xs: '90%', sm: 400 },
+                        overflow: 'hidden' // Keep overflow hidden
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    borderBottom: `1px solid ${theme.palette.divider}`, // Sepia divider
+                    padding: '20px 24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    position: 'relative',
+                    backgroundColor: theme.palette.background.default, // Slightly darker parchment for title
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        bottom: -1,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: '60%',
+                        height: '1px',
+                        background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`, // Error color gradient
+                        boxShadow: `0 0 10px ${theme.palette.error.main}30` // Error color shadow
+                    }
+                }}>
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '50%',
+                        backgroundColor: `${theme.palette.error.main}10`, // Error tint bg
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: `0 0 15px ${theme.palette.error.main}20` // Error tint shadow
+                    }}>
+                        <Trash2 size={20} color={theme.palette.error.main} /> {/* Error color icon */}
+                    </Box>
+                    <Box>
+                        <Typography variant="h6" sx={{
+                            color: theme.palette.error.main, // Error color text
+                            fontWeight: 600,
+                            fontSize: '1.1rem'
+                        }}>
+                            Delete AI Module
+                        </Typography>
+                        <Typography variant="caption" sx={{
+                            color: theme.palette.text.secondary, // Ink faded
+                            display: 'block',
+                            mt: 0.5
+                        }}>
+                            "{brdgeToDelete?.name}"
+                        </Typography>
+                    </Box>
+                </DialogTitle>
+                <DialogContent sx={{
+                    padding: '24px',
+                    backgroundColor: `${theme.palette.error.main}05` // Very subtle error tint background
+                }}>
+                    <Box sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 2,
+                        p: 3,
+                        borderRadius: '12px',
+                        backgroundColor: `${theme.palette.error.main}08`, // Error tint background
+                        border: `1px solid ${theme.palette.error.main}15` // Error tint border
+                    }}>
+                        <Box sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            backgroundColor: `${theme.palette.error.main}20`, // Error tint background for icon
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            mt: 0.5
+                        }}>
+                            <Typography sx={{
+                                color: theme.palette.error.main, // Error color
+                                fontSize: '1rem',
+                                fontWeight: 600
+                            }}>!</Typography>
+                        </Box>
+                        <Box>
+                            <Typography variant="body1" sx={{
+                                color: theme.palette.text.primary, // Ink
+                                fontWeight: 500,
+                                mb: 1
+                            }}>
+                                Are you sure you want to delete this AI Module?
+                            </Typography>
+                            <Typography variant="body2" sx={{
+                                color: theme.palette.text.secondary, // Ink Faded
+                                fontSize: '0.875rem',
+                                lineHeight: 1.6,
+                                mb: 1
+                            }}>
+                                This action cannot be undone. Deleting this module will permanently remove:
+                            </Typography>
+                            <Box component="ul" sx={{
+                                pl: 2,
+                                color: theme.palette.text.secondary, // Ink Faded
+                                fontSize: '0.875rem',
+                                '& li': { mb: 0.5 }
+                            }}>
+                                <li>All module content, configuration, and AI knowledge.</li>
+                                <li>Any associated voice clones created specifically for this module.</li>
+                                <li>Recorded student interactions and analytics data.</li>
+                                <li>It will also be removed from any courses it belongs to.</li>
+                            </Box>
+                            <Typography variant="body2" sx={{
+                                color: theme.palette.error.main, // Error color text
+                                fontWeight: 500,
+                                mt: 2
+                            }}>
+                                This module will be permanently lost.
+                            </Typography>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{
+                    borderTop: `1px solid ${theme.palette.divider}`, // Sepia divider
+                    padding: '16px 24px',
+                    gap: 2,
+                    justifyContent: 'flex-end', // Align buttons to the right
+                    backgroundColor: theme.palette.background.paper // Parchment Dark bg for actions
+                }}>
+                    <Button
+                        onClick={() => setDeleteDialogOpen(false)} // Use the correct state setter
+                        sx={{
+                            color: theme.palette.text.secondary, // Use theme text color
+                            px: 3,
+                            borderRadius: '8px',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                color: theme.palette.text.primary, // Ink on hover
+                                backgroundColor: theme.palette.action.hover // Use theme hover action color
+                            }
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={confirmDelete} // Call the existing confirmDelete function
+                        sx={{
+                            backgroundColor: `${theme.palette.error.main}15`, // Error tint background
+                            color: theme.palette.error.main, // Error color text
+                            borderRadius: '8px',
+                            px: 3,
+                            fontWeight: 600,
+                            border: `1px solid ${theme.palette.error.main}30`, // Error color border
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                                backgroundColor: `${theme.palette.error.main}25`, // Darker error tint on hover
+                                borderColor: `${theme.palette.error.main}50`, // Stronger error border on hover
+                                boxShadow: theme.shadows[2] // Use theme shadow
+                            }
+                        }}
+                    >
+                        Delete Module
                     </Button>
                 </DialogActions>
             </Dialog>
