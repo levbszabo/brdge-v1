@@ -94,7 +94,6 @@ function Header() {
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
-            { text: 'Demos', link: '/demos' },
             { text: 'Marketplace', link: '/marketplace' },
             { text: 'Services', link: '/services' },
             { text: 'Pricing', link: '/pricing' },
@@ -190,47 +189,166 @@ function Header() {
     };
 
     const renderMobileMenu = () => (
-        <Box sx={{ width: 'auto' }} role="presentation">
+        <Box
+            sx={{
+                width: 'auto',
+                pt: { xs: 6, sm: 7 },
+                pb: 3,
+                px: { xs: 1, sm: 2 },
+            }}
+            role="presentation"
+        >
             <List>
-                {menuItems.map((item) => (
-                    item.variant === 'button' ? (
-                        <ListItem key={item.text} disablePadding sx={{ padding: '0 8px' }}>
-                            <ListItemButton
-                                component={RouterLink}
-                                to={item.link}
-                                onClick={() => setDrawerOpen(false)}
-                                sx={drawerSignUpStyle}
-                            >
-                                <ListItemText primary={item.text} />
-                            </ListItemButton>
-                        </ListItem>
-                    ) : (
-                        <ListItem key={item.text} disablePadding>
-                            <ListItemButton
-                                component={item.link ? RouterLink : 'button'}
-                                to={item.link}
-                                onClick={() => {
-                                    setDrawerOpen(false);
-                                    if (item.onClick) item.onClick();
-                                }}
-                                sx={drawerItemStyle}
-                            >
-                                <ListItemText primary={item.text} />
-                            </ListItemButton>
-                        </ListItem>
-                    )
-                ))}
-            </List>
-            {isAuthenticated && <Divider sx={{ my: 1, borderColor: theme.palette.divider + '60' }} />}
-            {isAuthenticated && (
+                {/* Home Dashboard (only for authenticated users) */}
+                {isAuthenticated && (
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            component={RouterLink}
+                            to="/home"
+                            onClick={() => setDrawerOpen(false)}
+                            sx={{
+                                ...drawerItemStyle,
+                                backgroundColor: theme.palette.action.selected + '30',
+                            }}
+                        >
+                            <ListItemText primary="Home Dashboard" />
+                        </ListItemButton>
+                    </ListItem>
+                )}
+
+                {/* Marketplace (for all users) */}
                 <ListItem disablePadding>
-                    <ListItemButton onClick={handleProfileClick} sx={drawerItemStyle}>
-                        <Avatar sx={{ width: 24, height: 24, mr: 1.5, bgcolor: theme.palette.primary.light, color: theme.palette.primary.main }}>
-                            <PersonIcon sx={{ fontSize: 16 }} />
-                        </Avatar>
-                        <ListItemText primary="Profile" />
+                    <ListItemButton
+                        component={RouterLink}
+                        to="/marketplace"
+                        onClick={() => setDrawerOpen(false)}
+                        sx={{
+                            ...drawerItemStyle,
+                        }}
+                    >
+                        <ListItemText primary="Marketplace" />
                     </ListItemButton>
                 </ListItem>
+
+                {/* Services (for all users) */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        component={RouterLink}
+                        to="/services"
+                        onClick={() => setDrawerOpen(false)}
+                        sx={{
+                            ...drawerItemStyle,
+                        }}
+                    >
+                        <ListItemText primary="Services" />
+                    </ListItemButton>
+                </ListItem>
+
+                {/* Pricing (only for non-authenticated users) */}
+                {!isAuthenticated && (
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            component={RouterLink}
+                            to="/pricing"
+                            onClick={() => setDrawerOpen(false)}
+                            sx={{
+                                ...drawerItemStyle,
+                            }}
+                        >
+                            <ListItemText primary="Pricing" />
+                        </ListItemButton>
+                    </ListItem>
+                )}
+
+                {/* Contact (for all users) */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        component={RouterLink}
+                        to="/contact"
+                        onClick={() => setDrawerOpen(false)}
+                        sx={{
+                            ...drawerItemStyle,
+                        }}
+                    >
+                        <ListItemText primary="Contact" />
+                    </ListItemButton>
+                </ListItem>
+
+                {/* Handling Login/Logout */}
+                {isAuthenticated ? (
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            onClick={() => {
+                                handleLogout();
+                                setDrawerOpen(false);
+                            }}
+                            sx={{
+                                ...drawerItemStyle,
+                            }}
+                        >
+                            <ListItemText primary="Logout" />
+                        </ListItemButton>
+                    </ListItem>
+                ) : (
+                    <>
+                        <ListItem disablePadding>
+                            <ListItemButton
+                                component={RouterLink}
+                                to="/login"
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    ...drawerItemStyle,
+                                }}
+                            >
+                                <ListItemText primary="Login" />
+                            </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding sx={{ mt: 1, px: 2 }}>
+                            <ListItemButton
+                                component={RouterLink}
+                                to="/signup"
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    ...drawerSignUpStyle,
+                                    py: 1,
+                                }}
+                            >
+                                <ListItemText primary="Sign Up" />
+                            </ListItemButton>
+                        </ListItem>
+                    </>
+                )}
+            </List>
+
+            {/* Profile Link (only for authenticated users) */}
+            {isAuthenticated && (
+                <>
+                    <Divider sx={{ my: 1.5, borderColor: theme.palette.divider + '60' }} />
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            onClick={() => {
+                                handleProfileClick();
+                                setDrawerOpen(false);
+                            }}
+                            sx={{
+                                ...drawerItemStyle,
+                            }}
+                        >
+                            <Avatar
+                                sx={{
+                                    width: 24,
+                                    height: 24,
+                                    mr: 1.5,
+                                    bgcolor: theme.palette.primary.light,
+                                    color: theme.palette.primary.main
+                                }}
+                            >
+                                <PersonIcon sx={{ fontSize: 16 }} />
+                            </Avatar>
+                            <ListItemText primary="Profile" />
+                        </ListItemButton>
+                    </ListItem>
+                </>
             )}
         </Box>
     );

@@ -59,7 +59,8 @@ function MarketplacePage() {
     const heroSectionStyles = {
         position: 'relative',
         zIndex: 1,
-        height: { xs: '300px', sm: '350px', md: '400px' },
+        minHeight: { xs: '320px', sm: '340px', md: '380px' },
+        height: 'auto',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -67,6 +68,8 @@ function MarketplacePage() {
         textAlign: 'center',
         color: theme.palette.text.primary,
         px: 3,
+        pt: { xs: '60px', sm: '60px', md: '40px' },
+        pb: { xs: 4, sm: 5, md: 5 },
         backgroundImage: `linear-gradient(135deg, ${theme.palette.common.offWhite} 0%, ${theme.palette.sepia.light} 100%)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -132,14 +135,14 @@ function MarketplacePage() {
         '&::after': {
             content: '""',
             position: 'absolute',
-            bottom: 15,
+            top: 15,
             right: 15,
             width: 50,
             height: 50,
             backgroundImage: `url(${theme.textures.stampLogo})`,
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
-            opacity: 0.08,
+            opacity: 0.75,
             pointerEvents: 'none',
             zIndex: 0,
         }
@@ -356,7 +359,21 @@ function MarketplacePage() {
                                 fontWeight: 600,
                                 color: theme.palette.secondary.dark,
                                 lineHeight: 1.3,
-                                mb: 1
+                                mb: 1,
+                                fontSize: '1.2rem',
+                                letterSpacing: '-0.01em',
+                                position: 'relative',
+                                display: 'inline-block',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-4px',
+                                    left: '2px',
+                                    width: '40%',
+                                    height: '1px',
+                                    background: `linear-gradient(90deg, ${theme.palette.secondary.main}80, transparent)`,
+                                    opacity: 0.7,
+                                }
                             }}
                         >
                             {course.name}
@@ -371,8 +388,11 @@ function MarketplacePage() {
                                 display: '-webkit-box',
                                 WebkitLineClamp: 3,
                                 WebkitBoxOrient: 'vertical',
-                                lineHeight: 1.5,
-                                fontSize: '0.85rem'
+                                lineHeight: 1.6,
+                                fontSize: '0.9rem',
+                                letterSpacing: '0.01em',
+                                fontWeight: 300,
+                                color: theme.palette.text.secondary,
                             }}
                         >
                             {course.description || "Explore this interactive AI-powered learning course."}
@@ -421,15 +441,39 @@ function MarketplacePage() {
                             <Typography
                                 variant="h2"
                                 sx={{
-                                    fontFamily: theme.typography.headingFontFamily,
-                                    fontWeight: 600,
-                                    color: 'white',
-                                    mb: 1.5,
-                                    fontSize: { xs: '2.0rem', sm: '2.5rem', md: '3.0rem' },
-                                    textShadow: '0 1px 8px rgba(0,0,0,0.4)'
+                                    fontFamily: '"Canela Text", serif',
+                                    fontWeight: 700,
+                                    color: theme.palette.ink,
+                                    mb: { xs: 3, sm: 2 },
+                                    mt: { xs: 2, sm: 1 },
+                                    fontSize: { xs: '2rem', sm: '2.6rem', md: '3.5rem' },
+                                    letterSpacing: '-0.01em',
+                                    position: 'relative',
+                                    maxWidth: { xs: '95%', sm: '100%' },
+                                    lineHeight: { xs: 1.2, sm: 1.1 },
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: '-10px',
+                                        left: '50%',
+                                        transform: 'translateX(-50%)',
+                                        width: { xs: '40px', sm: '60px' },
+                                        height: '1px',
+                                        background: `linear-gradient(90deg, transparent, ${theme.palette.ink}60, transparent)`,
+                                    },
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: '-10px',
+                                        left: '25%',
+                                        width: '50%',
+                                        height: '2px',
+                                        background: `linear-gradient(90deg, transparent, ${theme.palette.ink}, transparent)`,
+                                        borderRadius: '1px',
+                                    }
                                 }}
                             >
-                                AI-Powered Learning Marketplace
+                                Knowledge Marketplace
                             </Typography>
                         </motion.div>
 
@@ -437,15 +481,18 @@ function MarketplacePage() {
                             <Typography
                                 variant="h6"
                                 sx={{
-                                    color: 'rgba(255,255,255,0.85)',
-                                    mb: 3,
-                                    maxWidth: '700px',
+                                    color: theme.palette.text.secondary,
+                                    mb: { xs: 4, sm: 3 },
+                                    maxWidth: { xs: '90%', sm: '700px' },
                                     mx: 'auto',
-                                    textShadow: '0 1px 6px rgba(0,0,0,0.4)',
-                                    fontSize: { xs: '1.0rem', sm: '1.1rem' }
+                                    fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.15rem' },
+                                    lineHeight: 1.6,
+                                    letterSpacing: '0.01em',
+                                    fontWeight: 400,
+                                    mt: { xs: 2, sm: 3 },
                                 }}
                             >
-                                Discover interactive courses designed to help you master new skills with personalized AI guidance
+                                A curated library of voice-guided courses—each one transformed into a living, interactive learning experience with Brdge AI.
                             </Typography>
                         </motion.div>
 
@@ -456,7 +503,6 @@ function MarketplacePage() {
                                     size="large"
                                     startIcon={<BookOpen />}
                                     onClick={() => {
-                                        // Scroll to course section
                                         document.getElementById('course-section').scrollIntoView({ behavior: 'smooth' });
                                     }}
                                     sx={{
@@ -465,9 +511,10 @@ function MarketplacePage() {
                                         '&:hover': {
                                             backgroundColor: theme.palette.secondary.dark
                                         },
-                                        px: 3,
-                                        py: 1.5,
-                                        borderRadius: '8px'
+                                        px: { xs: 2, sm: 3 },
+                                        py: { xs: 1.2, sm: 1.5 },
+                                        borderRadius: '8px',
+                                        fontSize: { xs: '0.9rem', sm: '1rem' },
                                     }}
                                 >
                                     Browse Courses
@@ -573,7 +620,18 @@ function MarketplacePage() {
                                     color: theme.palette.secondary.dark,
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: 1.5
+                                    gap: 1.5,
+                                    position: 'relative',
+                                    '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: '-8px',
+                                        left: '0',
+                                        width: '60px',
+                                        height: '2px',
+                                        background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.light}80)`,
+                                        borderRadius: '1px',
+                                    }
                                 }}
                             >
                                 <BookOpen size={24} color={theme.palette.secondary.dark} />
@@ -581,7 +639,17 @@ function MarketplacePage() {
                                     selectedCategory === 'new' ? 'New Arrivals' : 'Popular Courses'}
                             </Typography>
 
-                            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                            <Typography
+                                variant="body1"
+                                color="text.secondary"
+                                sx={{
+                                    mb: 3,
+                                    fontFamily: theme.typography.fontFamily,
+                                    fontSize: '1.05rem',
+                                    letterSpacing: '0.01em',
+                                    fontWeight: 300,
+                                }}
+                            >
                                 {filteredCourses.length} courses available
                             </Typography>
 
@@ -649,7 +717,20 @@ function MarketplacePage() {
                                     sx={{
                                         fontFamily: theme.typography.headingFontFamily,
                                         fontWeight: 600,
-                                        color: theme.palette.text.primary
+                                        color: theme.palette.text.primary,
+                                        mb: 2,
+                                        position: 'relative',
+                                        display: 'inline-block',
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            bottom: '-8px',
+                                            left: '25%',
+                                            width: '50%',
+                                            height: '1px',
+                                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
+                                            borderRadius: '1px',
+                                        }
                                     }}
                                 >
                                     Create Your Own Course
@@ -660,7 +741,11 @@ function MarketplacePage() {
                                         color: theme.palette.text.secondary,
                                         mb: 4,
                                         maxWidth: '700px',
-                                        mx: 'auto'
+                                        mx: 'auto',
+                                        fontSize: '1.05rem',
+                                        lineHeight: 1.6,
+                                        fontWeight: 300,
+                                        letterSpacing: '0.01em',
                                     }}
                                 >
                                     Want to share your knowledge with the world? Create your own AI-powered interactive courses with our easy-to-use platform.

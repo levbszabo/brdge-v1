@@ -13,7 +13,6 @@ import EditBrdgePage from './pages/EditBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
 import ViewCoursePage from './pages/ViewCoursePage';
 import EditCoursePage from './pages/EditCoursePage';
-import DemoPage from './pages/DemoPage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
@@ -73,7 +72,7 @@ function Layout({ children }) {
   const isLandingPage = location.pathname === '/';
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/demos', '/pricing', '/policy', '/', '/contact', '/services', '/course-slide-builder', '/marketplace'];
+  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/course-slide-builder', '/marketplace'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -175,7 +174,6 @@ function App() {
               <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
-                <Route path="/demos" element={<DemoPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
                 <Route path="/b/:publicId" element={<ViewBrdgePage />} />

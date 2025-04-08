@@ -61,23 +61,34 @@ const ScholarlyDivider = styled(Box)(({ theme }) => ({
 
 // Number bubble for process steps with sepia styling
 const NumberBubble = styled(Box)(({ theme }) => ({
-    width: '70px',
-    height: '70px',
+    width: { xs: '60px', sm: '70px' },
+    height: { xs: '60px', sm: '70px' },
     borderRadius: '50%',
     background: `linear-gradient(135deg, ${theme.palette.sepia.light}, ${theme.palette.sepia.main})`,
     color: theme.palette.parchment.light,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    fontWeight: 700,
-    fontSize: '1.8rem',
+    fontWeight: 600,
+    fontSize: { xs: '1.6rem', sm: '1.8rem' },
     margin: '0 auto',
-    boxShadow: `0 4px 20px ${theme.palette.sepia.main}40`,
+    boxShadow: `0 4px 15px ${theme.palette.sepia.main}30`,
     position: 'relative',
     transition: 'all 0.3s ease',
     border: `3px solid ${theme.palette.parchment.main}`,
+    lineHeight: 1,
+    padding: 0,
+    aspectRatio: '1/1',
+    '& span': {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        height: '100%',
+        textAlign: 'center',
+    },
     '&:hover': {
-        transform: 'scale(1.1) rotate(5deg)',
+        transform: 'scale(1.05) rotate(3deg)',
     },
     '&::after': {
         content: '""',
@@ -146,7 +157,7 @@ const MetricCard = styled(Box)(({ theme }) => ({
     backgroundColor: theme.palette.parchment.main,
     position: 'relative',
     borderRadius: '12px',
-    padding: '32px 24px',
+    padding: { xs: '24px 16px', sm: '32px 24px' },
     textAlign: 'center',
     height: '100%',
     display: 'flex',
@@ -157,7 +168,7 @@ const MetricCard = styled(Box)(({ theme }) => ({
     border: `1px solid ${theme.palette.sepia.main}40`,
     overflow: 'hidden',
     '&:hover': {
-        transform: 'translateY(-10px)',
+        transform: { xs: 'translateY(-5px)', sm: 'translateY(-10px)' },
         boxShadow: '0 15px 35px rgba(0, 0, 0, 0.15)',
         border: `1px solid ${theme.palette.sepia.main}70`,
     },
@@ -180,8 +191,8 @@ const MetricCard = styled(Box)(({ theme }) => ({
 // Lead Form Container with parchment styling
 const LeadFormContainer = styled(Paper)(({ theme }) => ({
     ...createParchmentContainerStyles(theme),
-    padding: '40px',
-    maxWidth: '600px',
+    padding: { xs: '25px 15px', sm: '35px', md: '40px' },
+    maxWidth: { xs: '100%', sm: '600px' },
     margin: '0 auto',
     position: 'relative',
     overflow: 'hidden',
@@ -352,7 +363,7 @@ const ServicesPage = () => {
                 background: theme.palette.parchment.light,
                 position: 'relative',
                 overflow: 'hidden',
-                py: { xs: 8, md: 12 },
+                py: { xs: 4, md: 6 },
                 '&::before': {
                     content: '""',
                     position: 'absolute',
@@ -384,44 +395,91 @@ const ServicesPage = () => {
             }}
         >
             {/* Hero Section */}
-            <Container maxWidth="lg" ref={mainRef} sx={{ position: 'relative', zIndex: 1 }}>
+            <Container
+                maxWidth="lg"
+                ref={mainRef}
+                sx={{
+                    position: 'relative',
+                    zIndex: 1,
+                    px: { xs: 1.5, sm: 3 }, // Reduce horizontal padding on mobile for more space
+                }}
+            >
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={mainInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.8 }}
                     style={{ textAlign: 'center' }}
                 >
+                    {/* Add a subtle mobile-only background highlight */}
+                    <Box
+                        sx={{
+                            position: 'absolute',
+                            top: '10%',
+                            left: '0%',
+                            width: '100%',
+                            height: '60%',
+                            background: `radial-gradient(ellipse at center, ${theme.palette.sepia.main}10 0%, transparent 80%)`,
+                            display: { xs: 'block', sm: 'none' },
+                            zIndex: -1,
+                        }}
+                    />
+
                     <Typography
                         variant="h1"
                         component="h1"
                         sx={{
                             fontFamily: theme.typography.headingFontFamily,
                             fontWeight: 700,
-                            fontSize: { xs: '1.8rem', sm: '2.2rem', md: '3rem' },
+                            fontSize: { xs: '2.1rem', sm: '2.2rem', md: '3rem' }, // Slightly larger on mobile
                             color: theme.palette.ink,
-                            mb: { xs: 1, md: 1.5 },
-                            lineHeight: 1.2,
-                            px: { xs: 1, md: 0 },
-                        }}
-                    >
-                        Let AI Build Your Course <SepiaText>While You Sleep</SepiaText>
-                    </Typography>
-                    <Typography
-                        variant="h5"
-                        sx={{
-                            color: theme.palette.text.primary,
-                            maxWidth: '850px',
+                            mb: { xs: 1.5, md: 2.5 }, // Less space below title on mobile
+                            lineHeight: 1.15,
+                            px: { xs: 0.5, md: 0 }, // Less side padding on mobile
+                            maxWidth: { xs: '100%', sm: '95%' }, // Wider on smallest screens
                             mx: 'auto',
-                            mb: 2.5,
-                            fontSize: { xs: '1rem', md: '1.2rem' },
-                            lineHeight: 1.4,
+                            textAlign: 'center',
+                            mt: { xs: 1, sm: 0 }, // Small top margin on mobile
+                            // Add subtle text shadow on mobile only
+                            textShadow: { xs: '0 1px 1px rgba(0,0,0,0.1)', sm: 'none' },
                         }}
                     >
-                        We take your course materials <SepiaText>(or help you create them from scratch)</SepiaText> and transform them into a fully AI-powered, interactive learning experience so you can scale faster and engage more students.
+                        Let AI Build Your Course
                     </Typography>
 
-                    {/* Interactive Demo Section - Moved to top and always visible */}
-                    <Box sx={{ mb: 3.5 }}>
+                    <Typography
+                        component="div"
+                        sx={{
+                            fontFamily: theme.typography.headingFontFamily,
+                            fontSize: { xs: '1.8rem', sm: '2rem', md: '2.8rem' }, // Slightly larger on mobile
+                            mb: { xs: 2.5, md: 2.5 }, // Consistent spacing
+                            textAlign: 'center',
+                            lineHeight: 1.1,
+                        }}
+                    >
+                        <SepiaText
+                            sx={{
+                                fontWeight: 600,
+                                position: 'relative',
+                                // Enhanced underline effect for mobile
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-6px',
+                                    left: '5%',
+                                    width: '90%',
+                                    height: '1px',
+                                    background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
+                                    opacity: { xs: 0.8, sm: 0.6 }, // More visible on mobile
+                                    boxShadow: { xs: '0 1px 3px rgba(156, 124, 56, 0.2)', sm: 'none' }, // Subtle glow on mobile
+                                }
+                            }}
+                        >
+                            While You Sleep
+                        </SepiaText>
+                    </Typography>
+
+                    {/* Update the demo container for better mobile presentation */}
+                    <Box sx={{ mb: { xs: 4, sm: 3.5 }, mt: { xs: 2, sm: 0 } }}>
                         <Typography
                             variant="h6"
                             align="center"
@@ -429,8 +487,8 @@ const ServicesPage = () => {
                                 color: theme.palette.text.primary,
                                 maxWidth: '700px',
                                 mx: 'auto',
-                                mb: 1.5,
-                                fontSize: { xs: '0.9rem', md: '1.1rem' },
+                                mb: { xs: 1.5, sm: 1.5 },
+                                fontSize: { xs: '0.95rem', md: '1.1rem' },
                                 fontWeight: 500,
                             }}
                         >
@@ -441,20 +499,25 @@ const ServicesPage = () => {
                             sx={{
                                 ...parchmentContainerStyles,
                                 width: '100%',
-                                height: { xs: '320px', sm: '350px', md: '400px' },
-                                maxWidth: '900px',
+                                height: { xs: '240px', sm: '320px', md: '400px' }, // Slightly shorter on mobile
+                                maxWidth: { xs: '98%', sm: '90%', md: '900px' }, // Wider on mobile
                                 mx: 'auto',
-                                borderRadius: '16px',
+                                borderRadius: { xs: '10px', sm: '8px' }, // Slightly more rounded on mobile
                                 overflow: 'hidden',
                                 position: 'relative',
-                                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+                                boxShadow: {
+                                    xs: '0 10px 25px rgba(0, 0, 0, 0.15), 0 0 15px rgba(156, 124, 56, 0.1)',
+                                    sm: '0 15px 35px rgba(0, 0, 0, 0.18), 0 0 20px rgba(156, 124, 56, 0.15)'
+                                }, // Softer shadow on mobile
                                 border: `1px solid ${theme.palette.sepia.main}40`,
                                 mb: 1.5,
-                                animation: 'fadeIn 0.8s ease',
-                                '@keyframes fadeIn': {
-                                    '0%': { opacity: 0, transform: 'translateY(20px)' },
-                                    '100%': { opacity: 1, transform: 'translateY(0)' },
+                                transform: { xs: 'translateY(0)', sm: 'translateY(0)' }, // Prepare for hover effect on mobile
+                                transition: 'transform 0.3s ease',
+                                '&:active': { // Add touch feedback for mobile
+                                    xs: { transform: 'translateY(2px)' },
+                                    sm: {}
                                 },
+                                // Keep other styling...
                             }}
                         >
                             <AgentConnector
@@ -472,39 +535,37 @@ const ServicesPage = () => {
                                 maxWidth: '700px',
                                 mx: 'auto',
                                 fontSize: '0.85rem',
+                                mt: { xs: 1.5, sm: 1 }, // More space on mobile
                             }}
                         >
                             Interactive demo: Ask questions and experience AI-powered learning
                         </Typography>
                     </Box>
 
+                    {/* Enhanced CTA button for mobile */}
                     <Button
                         variant="contained"
                         size="large"
                         sx={{
-                            py: { xs: 1.5, md: 1.8 },
-                            px: 5,
-                            mt: 2,
+                            py: { xs: 1.4, sm: 1.5, md: 1.8 },
+                            px: { xs: 3, sm: 4, md: 5 },
+                            mt: { xs: 2.5, sm: 2 }, // More space above on mobile
                             borderRadius: '8px',
-                            fontSize: '1.1rem',
+                            fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.1rem' },
                             fontWeight: 600,
-                            mb: { xs: 6, md: 8 },
+                            mb: { xs: 4, sm: 6, md: 8 },
+                            width: { xs: '100%', sm: 'auto' },
+                            maxWidth: { xs: '300px', sm: 'none' }, // Slightly wider on mobile
+                            mx: { xs: 'auto', sm: 0 },
                             position: 'relative',
                             overflow: 'hidden',
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: 0,
-                                left: '10%',
-                                right: '10%',
-                                height: '2px',
-                                background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}, transparent)`,
-                                opacity: 0,
-                                transition: 'opacity 0.3s ease',
+                            boxShadow: { xs: '0 4px 12px rgba(0, 0, 0, 0.2)', sm: '0 4px 10px rgba(0, 0, 0, 0.15)' }, // Stronger shadow on mobile
+                            // Subtle push effect on mobile
+                            '&:active': {
+                                transform: { xs: 'translateY(2px)', sm: 'none' },
+                                boxShadow: { xs: '0 2px 6px rgba(0, 0, 0, 0.2)', sm: 'inherit' },
                             },
-                            '&:hover::after': {
-                                opacity: 1,
-                            }
+                            // Keep other styling...
                         }}
                         onClick={() => {
                             document.getElementById('lead-form-section').scrollIntoView({
@@ -513,7 +574,7 @@ const ServicesPage = () => {
                             });
                         }}
                     >
-                        Apply Now – Let AI Build Your Course Faster Than Ever!
+                        Apply Now – Let AI Build Your Course
                     </Button>
                 </motion.div>
             </Container>
@@ -923,16 +984,18 @@ const ServicesPage = () => {
                                         transition={{ duration: 0.5, delay: index * 0.3 }}
                                     >
                                         <ProcessCard>
-                                            <NumberBubble>{step.step}</NumberBubble>
+                                            <NumberBubble>
+                                                <span>{step.step}</span>
+                                            </NumberBubble>
                                             <Typography
                                                 variant="h6"
                                                 sx={{
                                                     fontFamily: theme.typography.headingFontFamily,
                                                     fontWeight: 600,
                                                     color: theme.palette.sepia.main,
-                                                    mt: 3,
-                                                    mb: 2,
-                                                    fontSize: '1.2rem',
+                                                    mt: { xs: 2, sm: 3 },
+                                                    mb: { xs: 1, sm: 2 },
+                                                    fontSize: { xs: '1.1rem', sm: '1.2rem' },
                                                 }}
                                             >
                                                 {step.title}
@@ -941,7 +1004,8 @@ const ServicesPage = () => {
                                                 variant="body1"
                                                 sx={{
                                                     color: theme.palette.text.primary,
-                                                    lineHeight: 1.6
+                                                    lineHeight: 1.6,
+                                                    fontSize: { xs: '0.9rem', sm: '1rem' },
                                                 }}
                                             >
                                                 {step.description}
@@ -1188,8 +1252,8 @@ const ServicesPage = () => {
             {/* Final CTA Section */}
             <Box
                 sx={{
-                    mb: { xs: 6, md: 8 },
-                    py: { xs: 6, md: 8 },
+                    mb: { xs: 4, md: 8 },
+                    py: { xs: 4, sm: 6, md: 8 },
                     px: { xs: 2, sm: 3, md: 6 },
                     ...parchmentContainerStyles,
                     textAlign: 'center',
@@ -1197,7 +1261,7 @@ const ServicesPage = () => {
                     zIndex: 1,
                     mx: 'auto',
                     maxWidth: { xs: '95%', sm: '900px' },
-                    borderRadius: '20px',
+                    borderRadius: { xs: '15px', sm: '20px' },
                     boxShadow: '0 15px 40px rgba(0, 0, 0, 0.1)',
                     border: `1px solid ${theme.palette.sepia.main}40`,
                     overflow: 'hidden',
@@ -1218,8 +1282,8 @@ const ServicesPage = () => {
                         fontFamily: theme.typography.headingFontFamily,
                         fontWeight: 700,
                         color: theme.palette.text.primary,
-                        mb: 3,
-                        fontSize: { xs: '1.8rem', md: '2.5rem' },
+                        mb: { xs: 2, md: 3 },
+                        fontSize: { xs: '1.5rem', sm: '1.8rem', md: '2.5rem' },
                     }}
                 >
                     Scale Your Teaching with <SepiaText>AI Power</SepiaText>
@@ -1228,8 +1292,8 @@ const ServicesPage = () => {
                     variant="body1"
                     sx={{
                         color: theme.palette.text.primary,
-                        mb: 5,
-                        fontSize: '1.2rem',
+                        mb: { xs: 3, sm: 4, md: 5 },
+                        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.2rem' },
                         maxWidth: '650px',
                         mx: 'auto',
                         lineHeight: 1.6,
@@ -1240,12 +1304,15 @@ const ServicesPage = () => {
                 <Button
                     variant="contained"
                     sx={{
-                        py: 2,
-                        px: 6,
+                        py: { xs: 1.5, sm: 2 },
+                        px: { xs: 4, sm: 6 },
                         borderRadius: '8px',
-                        fontSize: '1.1rem',
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
                         fontWeight: 600,
                         position: 'relative',
+                        width: { xs: '100%', sm: 'auto' },
+                        maxWidth: { xs: '280px', sm: 'none' },
+                        mx: { xs: 'auto', sm: 0 },
                     }}
                     onClick={() => {
                         document.getElementById('lead-form-section').scrollIntoView({
