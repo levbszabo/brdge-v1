@@ -794,10 +794,8 @@ const IntroducingBrdgeAI = () => {
                                 ...createButtonStyles('secondary', false),
                                 flex: { xs: '1 1 auto', sm: 1 },
                             }}
-                            component="a"
-                            href="https://brdge-ai.com/viewBridge/344-96eac2"
-                            target="_blank"
-                            rel="noopener"
+                            component={Link}
+                            to="/marketplace"
                         >
                             Watch Course Demo
                         </Button>
@@ -1380,7 +1378,7 @@ const HeroSection = () => {
                                 }
                             }}
                         >
-                            Brdge AI transforms your lectures into <em>interactive, always-on conversations</em>—bringing your wisdom to every student who needs it.
+                            Transform your lectures into <em>interactive, always-on conversations</em> bringing your wisdom to every student who needs it.
                         </Typography>
 
                         {/* 3. Refined second part of subheading with recommended microcopy */}
@@ -1714,10 +1712,8 @@ const HeroSection = () => {
                             <Button
                                 variant="outlined"
                                 size="large"
-                                component="a"
-                                href="https://brdge-ai.com/viewBridge/344-96eac2"
-                                target="_blank"
-                                rel="noopener"
+                                component={Link}
+                                to="/marketplace"
                                 sx={{
                                     ...createButtonStyles('secondary'),
                                     position: 'relative',
@@ -1762,7 +1758,7 @@ const HeroSection = () => {
                                     }} />
                                 </motion.div>}
                             >
-                                Watch a Brdge in Action
+                                Learn With Brdge AI
                             </Button>
                         </motion.div>
                     </Box>
@@ -2921,10 +2917,8 @@ const FinalCTA = () => {
                         variant="outlined"
                         size="large"
                         fullWidth
-                        component="a"
-                        href="https://brdge-ai.com/viewBridge/344-96eac2"
-                        target="_blank"
-                        rel="noopener"
+                        component={Link}
+                        to="/marketplace"
                         sx={{
                             ...createButtonStyles('secondary', false),
                             position: 'relative',

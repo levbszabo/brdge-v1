@@ -106,7 +106,6 @@ const SepiaText = styled('span')(({ theme }) => ({
     WebkitTextFillColor: 'transparent',
     display: 'inline-block',
     fontFamily: theme.typography.headingFontFamily,
-    fontStyle: 'italic',
 }));
 
 // Neo-Scholar styled card
@@ -402,7 +401,6 @@ const ServicesPage = () => {
                             color: theme.palette.ink,
                             mb: { xs: 1, md: 1.5 },
                             lineHeight: 1.2,
-                            fontStyle: 'italic',
                             px: { xs: 1, md: 0 },
                         }}
                     >
@@ -474,7 +472,6 @@ const ServicesPage = () => {
                                 maxWidth: '700px',
                                 mx: 'auto',
                                 fontSize: '0.85rem',
-                                fontStyle: 'italic',
                             }}
                         >
                             Interactive demo: Ask questions and experience AI-powered learning
@@ -551,7 +548,6 @@ const ServicesPage = () => {
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            fontStyle: 'italic',
                         }}
                     >
                         Done-For-You <SepiaText>AI Course Creation</SepiaText>
@@ -621,7 +617,6 @@ const ServicesPage = () => {
                                 position: 'relative',
                                 display: 'inline-block',
                                 mx: 'auto',
-                                fontStyle: 'italic',
                                 '&::after': {
                                     content: '""',
                                     position: 'absolute',
@@ -712,7 +707,6 @@ const ServicesPage = () => {
                                                 fontWeight: 600,
                                                 fontSize: { xs: '1rem', sm: '1.1rem', md: '1.3rem' },
                                                 mb: { xs: 0.5, md: 1 },
-                                                fontStyle: 'italic',
                                             }}
                                         >
                                             {feature.title}
@@ -748,7 +742,6 @@ const ServicesPage = () => {
                                 sx={{
                                     color: theme.palette.text.primary,
                                     fontSize: '1.1rem',
-                                    fontStyle: 'italic',
                                     maxWidth: '850px',
                                     mx: 'auto',
                                     lineHeight: 1.7,
@@ -794,7 +787,6 @@ const ServicesPage = () => {
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            fontStyle: 'italic',
                         }}
                     >
                         Proven <SepiaText>Results</SepiaText> For Educators
@@ -831,7 +823,6 @@ const ServicesPage = () => {
                                                 fontSize: { xs: '2.2rem', md: '2.8rem' },
                                                 color: theme.palette.sepia.main,
                                                 mb: 1,
-                                                fontStyle: 'italic',
                                             }}
                                         >
                                             {item.metric}
@@ -885,7 +876,6 @@ const ServicesPage = () => {
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            fontStyle: 'italic',
                         }}
                     >
                         Our <SepiaText>Proven</SepiaText> Process
@@ -943,7 +933,6 @@ const ServicesPage = () => {
                                                     mt: 3,
                                                     mb: 2,
                                                     fontSize: '1.2rem',
-                                                    fontStyle: 'italic',
                                                 }}
                                             >
                                                 {step.title}
@@ -997,7 +986,6 @@ const ServicesPage = () => {
                             mb: 2,
                             fontSize: { xs: '1.8rem', md: '2.5rem' },
                             textAlign: 'center',
-                            fontStyle: 'italic',
                         }}
                     >
                         Transform Your Course with <SepiaText>AI</SepiaText>
@@ -1035,7 +1023,6 @@ const ServicesPage = () => {
                                             color: theme.palette.text.primary,
                                             mb: 2,
                                             fontFamily: theme.typography.headingFontFamily,
-                                            fontStyle: 'italic',
                                         }}
                                     >
                                         Thank you for applying!
@@ -1174,7 +1161,6 @@ const ServicesPage = () => {
                                         mt: 2,
                                         color: theme.palette.text.secondary,
                                         fontSize: '0.9rem',
-                                        fontStyle: 'italic'
                                     }}
                                 >
                                     Join the next cohort of AI course creators starting this month
@@ -1234,7 +1220,6 @@ const ServicesPage = () => {
                         color: theme.palette.text.primary,
                         mb: 3,
                         fontSize: { xs: '1.8rem', md: '2.5rem' },
-                        fontStyle: 'italic',
                     }}
                 >
                     Scale Your Teaching with <SepiaText>AI Power</SepiaText>

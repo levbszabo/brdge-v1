@@ -57,9 +57,8 @@ const createStyles = (theme) => ({
     pageContainer: {
         background: theme.palette.background.default, // Base dark parchment
         py: 4,
-        position: 'relative', // Needed for ivy borders
+        position: 'relative', // Needed for border styling
         overflow: 'hidden', // Hide overflowing ivy
-        border: `3px solid #3a5f3a`, // Added sleek green border
         borderRadius: '12px', // Added rounded corners
         boxShadow: `inset 0 0 10px rgba(0,0,0,0.3), 0 0 15px rgba(58, 95, 58, 0.3)`, // Added inner shadow and green glow
         // Add global parchment texture background
@@ -85,6 +84,100 @@ const createStyles = (theme) => ({
             opacity: 0.05, // Very subtle
             mixBlendMode: 'overlay', // Blend differently
             zIndex: -1, // Behind parchment
+        },
+        // Main border
+        '& .border-container': {
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            '& .main-border': {
+                position: 'absolute',
+                inset: 0,
+                border: '2px solid',
+                borderColor: `${theme.palette.secondary.main}30`,
+                boxShadow: `inset 0 0 8px ${theme.palette.secondary.main}05`,
+            },
+            '& .inner-border': {
+                position: 'absolute',
+                inset: 0,
+                margin: 2,
+                border: '2px solid',
+                borderColor: `${theme.palette.secondary.main}20`,
+                borderRadius: '4px',
+                boxShadow: `inset 0 0 5px ${theme.palette.secondary.main}10`,
+            },
+            '& .top-gradient': {
+                position: 'absolute',
+                top: 1,
+                left: 1,
+                right: 1,
+                height: '2px',
+                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}35, transparent)`,
+            },
+            '& .bottom-gradient': {
+                position: 'absolute',
+                bottom: 1,
+                left: 1,
+                right: 1,
+                height: '2px',
+                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}35, transparent)`,
+            },
+            '& .left-gradient': {
+                position: 'absolute',
+                left: 1,
+                top: 1,
+                bottom: 1,
+                width: '2px',
+                background: `linear-gradient(180deg, transparent, ${theme.palette.secondary.main}35, transparent)`,
+            },
+            '& .right-gradient': {
+                position: 'absolute',
+                right: 1,
+                top: 1,
+                bottom: 1,
+                width: '2px',
+                background: `linear-gradient(180deg, transparent, ${theme.palette.secondary.main}35, transparent)`,
+            },
+            '& .top-left-corner': {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: 20,
+                height: 20,
+                borderTop: '2px solid',
+                borderLeft: '2px solid',
+                borderColor: `${theme.palette.secondary.main}40`,
+            },
+            '& .top-right-corner': {
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                width: 20,
+                height: 20,
+                borderTop: '2px solid',
+                borderRight: '2px solid',
+                borderColor: `${theme.palette.secondary.main}40`,
+            },
+            '& .bottom-left-corner': {
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: 20,
+                height: 20,
+                borderBottom: '2px solid',
+                borderLeft: '2px solid',
+                borderColor: `${theme.palette.secondary.main}40`,
+            },
+            '& .bottom-right-corner': {
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 20,
+                height: 20,
+                borderBottom: '2px solid',
+                borderRight: '2px solid',
+                borderColor: `${theme.palette.secondary.main}40`,
+            },
         },
     },
     header: {
@@ -712,6 +805,10 @@ function BrdgeListPage() {
     // Add this state variable near other dialog state variables
     const [unenrollDialogOpen, setUnenrollDialogOpen] = useState(false);
     const [courseToUnenroll, setCourseToUnenroll] = useState(null);
+    // Add these to the existing state declarations near the beginning of the BrdgeListPage function
+    const [enrolledCoursesExpanded, setEnrolledCoursesExpanded] = useState(true);
+    const [yourCoursesExpanded, setYourCoursesExpanded] = useState(true);
+    const [aiModulesExpanded, setAiModulesExpanded] = useState(true);
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -1765,8 +1862,19 @@ function BrdgeListPage() {
                 display: 'flex',
                 minHeight: '100vh',
             }}>
-                {/* Remove Left Ivy Border Box */}
-                {/* Remove Right Ivy Border Box */}
+                {/* Border Elements */}
+                <Box className="border-container">
+                    <Box className="main-border"></Box>
+                    <Box className="inner-border"></Box>
+                    <Box className="top-gradient"></Box>
+                    <Box className="bottom-gradient"></Box>
+                    <Box className="left-gradient"></Box>
+                    <Box className="right-gradient"></Box>
+                    <Box className="top-left-corner"></Box>
+                    <Box className="top-right-corner"></Box>
+                    <Box className="bottom-left-corner"></Box>
+                    <Box className="bottom-right-corner"></Box>
+                </Box>
 
                 <Box sx={{
                     flex: 1,
@@ -2110,602 +2218,631 @@ function BrdgeListPage() {
                         <Box>
                             {/* Enrolled Courses Section */}
                             <Box sx={createStyles(theme).sectionContainer}>
-                                <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
-                                    <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
-                                    Enrolled Courses
-                                </Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                        <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
+                                        Enrolled Courses
+                                    </Typography>
+                                    <IconButton
+                                        onClick={() => setEnrolledCoursesExpanded(!enrolledCoursesExpanded)}
+                                        sx={{ color: theme.palette.secondary.main }}
+                                    >
+                                        {enrolledCoursesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </IconButton>
+                                </Box>
 
-                                {enrolledCourses.length === 0 ? (
-                                    <Box sx={{
-                                        p: 4,
-                                        textAlign: 'center',
-                                        backgroundColor: theme.palette.background.default + '50',
-                                        borderRadius: '12px',
-                                        border: `1px dashed ${theme.palette.divider}`
-                                    }}>
-                                        <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                            You're not enrolled in any courses yet.
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<BookOpen size={20} />}
-                                            onClick={() => navigate('/marketplace')}
-                                            sx={createStyles(theme).actionButton}
-                                        >
-                                            Browse Courses
-                                        </Button>
-                                    </Box>
-                                ) : (
-                                    <Box>
-                                        {enrolledCourses.map(course => (
-                                            <Box
-                                                key={course.id}
-                                                sx={{
-                                                    ...createStyles(theme).courseCard,
-                                                    // Add a subtle indicator that these are enrolled courses
-                                                    borderLeft: `4px solid ${theme.palette.secondary.main}70`,
-                                                }}
+                                <Collapse in={enrolledCoursesExpanded} timeout="auto" unmountOnExit>
+                                    {enrolledCourses.length === 0 ? (
+                                        <Box sx={{
+                                            p: 4,
+                                            textAlign: 'center',
+                                            backgroundColor: theme.palette.background.default + '50',
+                                            borderRadius: '12px',
+                                            border: `1px dashed ${theme.palette.divider}`
+                                        }}>
+                                            <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                                You're not enrolled in any courses yet.
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<BookOpen size={20} />}
+                                                onClick={() => navigate('/marketplace')}
+                                                sx={createStyles(theme).actionButton}
                                             >
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                                    <Box>
-                                                        <Typography
-                                                            variant="h6"
-                                                            sx={{
-                                                                color: theme.palette.text.primary,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                fontFamily: theme.typography.h6.fontFamily,
-                                                            }}
-                                                        >
-                                                            {course.name}
-                                                            {course.enrollment.has_premium_access && (
-                                                                <Chip
-                                                                    size="small"
-                                                                    label="Premium"
-                                                                    sx={{
-                                                                        ml: 1,
-                                                                        bgcolor: `${theme.palette.secondary.main}20`,
-                                                                        color: theme.palette.secondary.main,
-                                                                        border: `1px solid ${theme.palette.secondary.main}40`,
-                                                                        fontWeight: 500,
-                                                                    }}
-                                                                />
-                                                            )}
-                                                        </Typography>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
-                                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                                                Progress:
-                                                            </Typography>
-                                                            <Box sx={{ flex: 1, maxWidth: 200 }}>
-                                                                <LinearProgress
-                                                                    variant="determinate"
-                                                                    value={course.enrollment.progress}
-                                                                    sx={{
-                                                                        height: 8,
-                                                                        borderRadius: 4,
-                                                                        bgcolor: `${theme.palette.background.default}90`,
-                                                                        '& .MuiLinearProgress-bar': {
-                                                                            bgcolor: theme.palette.secondary.main,
-                                                                            borderRadius: 4,
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </Box>
-                                                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                                                {Math.round(course.enrollment.progress)}%
-                                                            </Typography>
-                                                        </Box>
-                                                        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block', mt: 0.5 }}>
-                                                            Last accessed: {
-                                                                course.enrollment.last_accessed_at
-                                                                    ? new Date(course.enrollment.last_accessed_at).toLocaleDateString()
-                                                                    : 'Never'
-                                                            }
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                                        <Tooltip title="View Course">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={() => navigate(`/c/${course.public_id}`)}
-                                                                sx={{
-                                                                    color: theme.palette.text.disabled,
-                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
-                                                                }}
-                                                            >
-                                                                <ExternalLink size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Unenroll">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleUnenrollClick(course);
-                                                                }}
-                                                                sx={{
-                                                                    color: theme.palette.text.disabled,
-                                                                    '&:hover': { color: theme.palette.error.main, backgroundColor: 'rgba(255, 75, 75, 0.1)' }
-                                                                }}
-                                                            >
-                                                                <LogOut size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Box>
-                                                </Box>
-
-                                                {/* Module List */}
-                                                <Box sx={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    mb: 2,
-                                                    borderBottom: `1px solid ${theme.palette.divider}20`,
-                                                    pb: 2
-                                                }}>
-                                                    <Typography variant="subtitle2" sx={{
-                                                        color: theme.palette.text.secondary,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 1,
-                                                        fontFamily: theme.typography.h5.fontFamily
-                                                    }}>
-                                                        <GraduationCap size={16} style={{ color: theme.palette.secondary.main }} />
-                                                        Modules in this Course
-                                                    </Typography>
-                                                </Box>
-
-                                                {/* Course Modules */}
-                                                {course.modules && course.modules.length > 0 ? (
-                                                    <Box sx={{ pl: 1 }}>
-                                                        {/* Sort modules by position before mapping */}
-                                                        {[...course.modules]
-                                                            .sort((a, b) => a.position - b.position)
-                                                            .map((module, index) => (
-                                                                <Box
-                                                                    key={module.id}
-                                                                    sx={{
-                                                                        display: 'flex',
-                                                                        justifyContent: 'space-between',
-                                                                        alignItems: 'center',
-                                                                        mb: 1,
-                                                                        py: 1,
-                                                                        px: 1,
-                                                                        borderRadius: '4px',
-                                                                        cursor: 'pointer',
-                                                                        '&:hover': { backgroundColor: `${theme.palette.background.paper}80` }
-                                                                    }}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        navigate(`/viewBridge/${module.brdge_id}-${module.brdge?.public_id?.substring(0, 6) || module.public_id?.substring(0, 6) || ''}`);
-                                                                    }}
-                                                                >
-                                                                    <Typography
-                                                                        variant="body2"
-                                                                        sx={{
-                                                                            color: theme.palette.text.secondary,
-                                                                            display: 'flex',
-                                                                            alignItems: 'center'
-                                                                        }}
-                                                                    >
-                                                                        {index + 1}. {module.brdge?.name || module.name}
-                                                                        {module.access_level === 'premium' && !course.enrollment.has_premium_access ? (
-                                                                            <Tooltip title="Premium Module - Requires Premium Access">
-                                                                                <Box sx={{ display: 'inline-flex', ml: 1 }}>
-                                                                                    <Lock size={14} color={theme.palette.error.light} />
-                                                                                </Box>
-                                                                            </Tooltip>
-                                                                        ) : null}
-                                                                    </Typography>
-
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            navigate(`/viewBridge/${module.brdge_id}-${module.brdge?.public_id?.substring(0, 6) || module.public_id?.substring(0, 6) || ''}`);
-                                                                        }}
-                                                                        sx={{
-                                                                            color: theme.palette.text.secondary,
-                                                                            padding: '4px',
-                                                                            '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
-                                                                        }}
-                                                                    >
-                                                                        <BookOpen size={16} />
-                                                                    </IconButton>
-                                                                </Box>
-                                                            ))}
-                                                    </Box>
-                                                ) : (
-                                                    <Box sx={{
-                                                        p: 3,
-                                                        textAlign: 'center',
-                                                        backgroundColor: theme.palette.background.default + '50',
-                                                        borderRadius: '8px',
-                                                        border: `1px dashed ${theme.palette.divider}20`
-                                                    }}>
-                                                        <Typography variant="body2" sx={{ color: theme.palette.text.disabled }}>
-                                                            No modules available in this course
-                                                        </Typography>
-                                                    </Box>
-                                                )}
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                )}
-                            </Box>
-
-                            {/* Your Courses Section */}
-                            <Box sx={createStyles(theme).sectionContainer}>
-                                <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
-                                    <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
-                                    Your Courses
-                                </Typography>
-
-                                {courses.length === 0 ? (
-                                    <Box sx={{
-                                        p: 4,
-                                        textAlign: 'center',
-                                        backgroundColor: theme.palette.background.default + '50',
-                                        borderRadius: '12px',
-                                        border: `1px dashed ${theme.palette.divider}`
-                                    }}>
-                                        <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
-                                            You haven't created any courses yet.
-                                        </Typography>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<BookOpen size={20} />}
-                                            onClick={() => navigate('/create-course')}
-                                            sx={createStyles(theme).actionButton}
-                                        >
-                                            Create Your First Course
-                                        </Button>
-                                    </Box>
-                                ) : (
-                                    <Box>
-                                        {courses.map(course => (
-                                            <Box
-                                                key={course.id}
-                                                id={`course-${course.id}`}  // Add this ID attribute
-                                                sx={{
-                                                    ...createStyles(theme).courseCard,
-                                                    borderColor: dropTargetCourseId === course.id ? theme.palette.secondary.main : `${theme.palette.divider}50`,
-                                                    boxShadow: dropTargetCourseId === course.id ? `0 0 20px ${theme.palette.secondary.main}40` : undefined,
-                                                }}
-                                                onDragOver={(e) => handleDragOver(e, course.id)}
-                                                onDrop={(e) => handleDrop(e, course.id)}
-                                                onDragLeave={() => setDropTargetCourseId(null)}
-                                            >
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                                    <Box>
-                                                        {editingCourseId === course.id ? (
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                                <TextField
-                                                                    value={editedCourseName}
-                                                                    onChange={handleCourseNameChange}
-                                                                    autoFocus
-                                                                    variant="outlined"
-                                                                    size="small"
-                                                                    sx={{
-                                                                        '& .MuiOutlinedInput-root': {
-                                                                            color: theme.palette.text.primary,
-                                                                            backgroundColor: theme.palette.background.paper,
-                                                                            '& fieldset': {
-                                                                                borderColor: `${theme.palette.divider}50`,
-                                                                            },
-                                                                            '&:hover fieldset': {
-                                                                                borderColor: `${theme.palette.divider}70`,
-                                                                            },
-                                                                            '&.Mui-focused fieldset': {
-                                                                                borderColor: theme.palette.secondary.main,
-                                                                            },
-                                                                        },
-                                                                    }}
-                                                                    InputProps={{
-                                                                        endAdornment: (
-                                                                            <InputAdornment position="end">
-                                                                                <IconButton
-                                                                                    size="small"
-                                                                                    onClick={() => handleSaveCourseName(course.id)}
-                                                                                    sx={{ color: theme.palette.secondary.main }}
-                                                                                >
-                                                                                    <Check size={16} />
-                                                                                </IconButton>
-                                                                                <IconButton
-                                                                                    size="small"
-                                                                                    onClick={handleCancelEditingCourse}
-                                                                                    sx={{ color: theme.palette.text.disabled }}
-                                                                                >
-                                                                                    <Trash2 size={16} />
-                                                                                </IconButton>
-                                                                            </InputAdornment>
-                                                                        ),
-                                                                    }}
-                                                                    onKeyPress={(e) => {
-                                                                        if (e.key === 'Enter') {
-                                                                            handleSaveCourseName(course.id);
-                                                                        }
-                                                                    }}
-                                                                />
-                                                            </Box>
-                                                        ) : (
+                                                Browse Courses
+                                            </Button>
+                                        </Box>
+                                    ) : (
+                                        <Box>
+                                            {enrolledCourses.map(course => (
+                                                <Box
+                                                    key={course.id}
+                                                    sx={{
+                                                        ...createStyles(theme).courseCard,
+                                                        // Add a subtle indicator that these are enrolled courses
+                                                        borderLeft: `4px solid ${theme.palette.secondary.main}70`,
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                        <Box>
                                                             <Typography
                                                                 variant="h6"
                                                                 sx={{
                                                                     color: theme.palette.text.primary,
                                                                     display: 'flex',
                                                                     alignItems: 'center',
-                                                                    cursor: 'pointer',
                                                                     fontFamily: theme.typography.h6.fontFamily,
-                                                                    '&:hover': {
-                                                                        textDecoration: 'underline',
-                                                                        textDecorationColor: `${theme.palette.secondary.main}50`,
-                                                                    }
                                                                 }}
-                                                                onClick={(e) => handleStartEditingCourse(e, course)}
                                                             >
                                                                 {course.name}
+                                                                {course.enrollment.has_premium_access && (
+                                                                    <Chip
+                                                                        size="small"
+                                                                        label="Premium"
+                                                                        sx={{
+                                                                            ml: 1,
+                                                                            bgcolor: `${theme.palette.secondary.main}20`,
+                                                                            color: theme.palette.secondary.main,
+                                                                            border: `1px solid ${theme.palette.secondary.main}40`,
+                                                                            fontWeight: 500,
+                                                                        }}
+                                                                    />
+                                                                )}
                                                             </Typography>
-                                                        )}
-                                                        <Typography variant="body2" sx={{ color: theme.palette.text.disabled, mt: 0.5 }}>
-                                                            {course.modules?.length || 0} modules | Last updated: {
-                                                                course.updated_at ? new Date(course.updated_at).toLocaleDateString() : 'N/A'
-                                                            }
-                                                        </Typography>
-                                                    </Box>
-                                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                                        <Tooltip title="View Course">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleViewCourse(course);
-                                                                }}
-                                                                sx={{
-                                                                    color: theme.palette.text.disabled,
-                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
-                                                                }}
-                                                            >
-                                                                <BookOpen size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Edit Course">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleEditCourse(course);
-                                                                }}
-                                                                sx={{
-                                                                    color: theme.palette.text.disabled,
-                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
-                                                                }}
-                                                            >
-                                                                <Edit size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title={course.shareable ? "Course is public - Click to manage sharing" : "Course is private - Click to make shareable"}>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleShareCourse(course);
-                                                                }}
-                                                                sx={{
-                                                                    color: course.shareable ? theme.palette.secondary.main : theme.palette.text.disabled,
-                                                                    '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
-                                                                }}
-                                                            >
-                                                                {course.shareable ?
-                                                                    <Globe size={18} style={{ filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} /> :
-                                                                    <Lock size={18} />
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                                                    Progress:
+                                                                </Typography>
+                                                                <Box sx={{ flex: 1, maxWidth: 200 }}>
+                                                                    <LinearProgress
+                                                                        variant="determinate"
+                                                                        value={course.enrollment.progress}
+                                                                        sx={{
+                                                                            height: 8,
+                                                                            borderRadius: 4,
+                                                                            bgcolor: `${theme.palette.background.default}90`,
+                                                                            '& .MuiLinearProgress-bar': {
+                                                                                bgcolor: theme.palette.secondary.main,
+                                                                                borderRadius: 4,
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </Box>
+                                                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                                                    {Math.round(course.enrollment.progress)}%
+                                                                </Typography>
+                                                            </Box>
+                                                            <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block', mt: 0.5 }}>
+                                                                Last accessed: {
+                                                                    course.enrollment.last_accessed_at
+                                                                        ? new Date(course.enrollment.last_accessed_at).toLocaleDateString()
+                                                                        : 'Never'
                                                                 }
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Delete Course">
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDeleteCourse(course);
-                                                                }}
-                                                                sx={{
-                                                                    color: theme.palette.text.disabled,
-                                                                    '&:hover': { color: theme.palette.error.main, backgroundColor: 'rgba(255, 75, 75, 0.1)' }
-                                                                }}
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                            </Typography>
+                                                        </Box>
+                                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                                            <Tooltip title="View Course">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => navigate(`/c/${course.public_id}`)}
+                                                                    sx={{
+                                                                        color: theme.palette.text.disabled,
+                                                                        '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                    }}
+                                                                >
+                                                                    <ExternalLink size={18} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Unenroll">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleUnenrollClick(course);
+                                                                    }}
+                                                                    sx={{
+                                                                        color: theme.palette.text.disabled,
+                                                                        '&:hover': { color: theme.palette.error.main, backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                                                                    }}
+                                                                >
+                                                                    <LogOut size={18} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Box>
                                                     </Box>
-                                                </Box>
 
-                                                {/* Module Management Section */}
-                                                <Box sx={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    mb: 2,
-                                                    borderBottom: `1px solid ${theme.palette.divider}20`,
-                                                    pb: 2
-                                                }}>
-                                                    <Typography variant="subtitle2" sx={{
-                                                        color: theme.palette.text.secondary,
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 1,
-                                                        fontFamily: theme.typography.h5.fontFamily
-                                                    }}>
-                                                        <GraduationCap size={16} style={{ color: theme.palette.secondary.main }} />
-                                                        Modules in this Course
-                                                    </Typography>
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        startIcon={<Plus size={14} />}
-                                                        onClick={() => handleOpenModuleSelection(course)}
-                                                        sx={{
-                                                            color: theme.palette.secondary.main,
-                                                            borderColor: `${theme.palette.divider}40`,
-                                                            '&:hover': {
-                                                                backgroundColor: `${theme.palette.divider}10`,
-                                                                borderColor: theme.palette.secondary.main,
-                                                            }
-                                                        }}
-                                                    >
-                                                        Add Module
-                                                    </Button>
-                                                </Box>
-
-                                                {/* Modules Used in Course */}
-                                                {course.modules && course.modules.length > 0 ? (
-                                                    <Box sx={{ pl: 1 }}>
-                                                        {course.modules.map((module, index) => (
-                                                            <DraggableModuleItem
-                                                                key={module.id}
-                                                                module={module}
-                                                                index={index}
-                                                                courseId={course.id}
-                                                                handleEdit={handleEdit}
-                                                                handleView={handleView}
-                                                                handleRemoveModuleFromCourse={handleRemoveModuleFromCourse}
-                                                                moveModule={moveModule}
-                                                            />
-                                                        ))}
-                                                    </Box>
-                                                ) : (
+                                                    {/* Module List */}
                                                     <Box sx={{
-                                                        p: 3,
-                                                        textAlign: 'center',
-                                                        backgroundColor: theme.palette.background.default + '50',
-                                                        borderRadius: '8px',
-                                                        border: `1px dashed ${theme.palette.divider}20`
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                        borderBottom: `1px solid ${theme.palette.divider}20`,
+                                                        pb: 2
                                                     }}>
-                                                        <Typography variant="body2" sx={{ color: theme.palette.text.disabled, mb: 1 }}>
-                                                            No modules in this course yet
-                                                        </Typography>
-                                                        <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block' }}>
-                                                            Click "Add Module" or drag modules here
+                                                        <Typography variant="subtitle2" sx={{
+                                                            color: theme.palette.text.secondary,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 1,
+                                                            fontFamily: theme.typography.h5.fontFamily
+                                                        }}>
+                                                            <GraduationCap size={16} style={{ color: theme.palette.secondary.main }} />
+                                                            Modules in this Course
                                                         </Typography>
                                                     </Box>
-                                                )}
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                )}
+
+                                                    {/* Course Modules */}
+                                                    {course.modules && course.modules.length > 0 ? (
+                                                        <Box sx={{ pl: 1 }}>
+                                                            {/* Sort modules by position before mapping */}
+                                                            {[...course.modules]
+                                                                .sort((a, b) => a.position - b.position)
+                                                                .map((module, index) => (
+                                                                    <Box
+                                                                        key={module.id}
+                                                                        sx={{
+                                                                            display: 'flex',
+                                                                            justifyContent: 'space-between',
+                                                                            alignItems: 'center',
+                                                                            mb: 1,
+                                                                            py: 1,
+                                                                            px: 1,
+                                                                            borderRadius: '4px',
+                                                                            cursor: 'pointer',
+                                                                            '&:hover': { backgroundColor: `${theme.palette.background.paper}80` }
+                                                                        }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/viewBridge/${module.brdge_id}-${module.brdge?.public_id?.substring(0, 6) || module.public_id?.substring(0, 6) || ''}`);
+                                                                        }}
+                                                                    >
+                                                                        <Typography
+                                                                            variant="body2"
+                                                                            sx={{
+                                                                                color: theme.palette.text.secondary,
+                                                                                display: 'flex',
+                                                                                alignItems: 'center'
+                                                                            }}
+                                                                        >
+                                                                            {index + 1}. {module.brdge?.name || module.name}
+                                                                            {module.access_level === 'premium' && !course.enrollment.has_premium_access ? (
+                                                                                <Tooltip title="Premium Module - Requires Premium Access">
+                                                                                    <Box sx={{ display: 'inline-flex', ml: 1 }}>
+                                                                                        <Lock size={14} color={theme.palette.error.light} />
+                                                                                    </Box>
+                                                                                </Tooltip>
+                                                                            ) : null}
+                                                                        </Typography>
+
+                                                                        <IconButton
+                                                                            size="small"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                navigate(`/viewBridge/${module.brdge_id}-${module.brdge?.public_id?.substring(0, 6) || module.public_id?.substring(0, 6) || ''}`);
+                                                                            }}
+                                                                            sx={{
+                                                                                color: theme.palette.text.secondary,
+                                                                                padding: '4px',
+                                                                                '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                            }}
+                                                                        >
+                                                                            <BookOpen size={16} />
+                                                                        </IconButton>
+                                                                    </Box>
+                                                                ))}
+                                                        </Box>
+                                                    ) : (
+                                                        <Box sx={{
+                                                            p: 3,
+                                                            textAlign: 'center',
+                                                            backgroundColor: theme.palette.background.default + '50',
+                                                            borderRadius: '8px',
+                                                            border: `1px dashed ${theme.palette.divider}20`
+                                                        }}>
+                                                            <Typography variant="body2" sx={{ color: theme.palette.text.disabled }}>
+                                                                No modules available in this course
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    )}
+                                </Collapse>
+                            </Box>
+
+                            {/* Your Courses Section */}
+                            <Box sx={createStyles(theme).sectionContainer}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                        <BookOpen size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
+                                        Your Courses
+                                    </Typography>
+                                    <IconButton
+                                        onClick={() => setYourCoursesExpanded(!yourCoursesExpanded)}
+                                        sx={{ color: theme.palette.secondary.main }}
+                                    >
+                                        {yourCoursesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </IconButton>
+                                </Box>
+
+                                <Collapse in={yourCoursesExpanded} timeout="auto" unmountOnExit>
+                                    {courses.length === 0 ? (
+                                        <Box sx={{
+                                            p: 4,
+                                            textAlign: 'center',
+                                            backgroundColor: theme.palette.background.default + '50',
+                                            borderRadius: '12px',
+                                            border: `1px dashed ${theme.palette.divider}`
+                                        }}>
+                                            <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                                                You haven't created any courses yet.
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<BookOpen size={20} />}
+                                                onClick={() => navigate('/create-course')}
+                                                sx={createStyles(theme).actionButton}
+                                            >
+                                                Create Your First Course
+                                            </Button>
+                                        </Box>
+                                    ) : (
+                                        <Box>
+                                            {courses.map(course => (
+                                                <Box
+                                                    key={course.id}
+                                                    id={`course-${course.id}`}  // Add this ID attribute
+                                                    sx={{
+                                                        ...createStyles(theme).courseCard,
+                                                        borderColor: dropTargetCourseId === course.id ? theme.palette.secondary.main : `${theme.palette.divider}50`,
+                                                        boxShadow: dropTargetCourseId === course.id ? `0 0 20px ${theme.palette.secondary.main}40` : undefined,
+                                                    }}
+                                                    onDragOver={(e) => handleDragOver(e, course.id)}
+                                                    onDrop={(e) => handleDrop(e, course.id)}
+                                                    onDragLeave={() => setDropTargetCourseId(null)}
+                                                >
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                                        <Box>
+                                                            {editingCourseId === course.id ? (
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                                                    <TextField
+                                                                        value={editedCourseName}
+                                                                        onChange={handleCourseNameChange}
+                                                                        autoFocus
+                                                                        variant="outlined"
+                                                                        size="small"
+                                                                        sx={{
+                                                                            '& .MuiOutlinedInput-root': {
+                                                                                color: theme.palette.text.primary,
+                                                                                backgroundColor: theme.palette.background.paper,
+                                                                                '& fieldset': {
+                                                                                    borderColor: `${theme.palette.divider}50`,
+                                                                                },
+                                                                                '&:hover fieldset': {
+                                                                                    borderColor: `${theme.palette.divider}70`,
+                                                                                },
+                                                                                '&.Mui-focused fieldset': {
+                                                                                    borderColor: theme.palette.secondary.main,
+                                                                                },
+                                                                            },
+                                                                        }}
+                                                                        InputProps={{
+                                                                            endAdornment: (
+                                                                                <InputAdornment position="end">
+                                                                                    <IconButton
+                                                                                        size="small"
+                                                                                        onClick={() => handleSaveCourseName(course.id)}
+                                                                                        sx={{ color: theme.palette.secondary.main }}
+                                                                                    >
+                                                                                        <Check size={16} />
+                                                                                    </IconButton>
+                                                                                    <IconButton
+                                                                                        size="small"
+                                                                                        onClick={handleCancelEditingCourse}
+                                                                                        sx={{ color: theme.palette.text.disabled }}
+                                                                                    >
+                                                                                        <Trash2 size={16} />
+                                                                                    </IconButton>
+                                                                                </InputAdornment>
+                                                                            ),
+                                                                        }}
+                                                                        onKeyPress={(e) => {
+                                                                            if (e.key === 'Enter') {
+                                                                                handleSaveCourseName(course.id);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </Box>
+                                                            ) : (
+                                                                <Typography
+                                                                    variant="h6"
+                                                                    sx={{
+                                                                        color: theme.palette.text.primary,
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        cursor: 'pointer',
+                                                                        fontFamily: theme.typography.h6.fontFamily,
+                                                                        '&:hover': {
+                                                                            textDecoration: 'underline',
+                                                                            textDecorationColor: `${theme.palette.secondary.main}50`,
+                                                                        }
+                                                                    }}
+                                                                    onClick={(e) => handleStartEditingCourse(e, course)}
+                                                                >
+                                                                    {course.name}
+                                                                </Typography>
+                                                            )}
+                                                            <Typography variant="body2" sx={{ color: theme.palette.text.disabled, mt: 0.5 }}>
+                                                                {course.modules?.length || 0} modules | Last updated: {
+                                                                    course.updated_at ? new Date(course.updated_at).toLocaleDateString() : 'N/A'
+                                                                }
+                                                            </Typography>
+                                                        </Box>
+                                                        <Box sx={{ display: 'flex', gap: 1 }}>
+                                                            <Tooltip title="View Course">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleViewCourse(course);
+                                                                    }}
+                                                                    sx={{
+                                                                        color: theme.palette.text.disabled,
+                                                                        '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                    }}
+                                                                >
+                                                                    <BookOpen size={18} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Edit Course">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEditCourse(course);
+                                                                    }}
+                                                                    sx={{
+                                                                        color: theme.palette.text.disabled,
+                                                                        '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                    }}
+                                                                >
+                                                                    <Edit size={18} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title={course.shareable ? "Course is public - Click to manage sharing" : "Course is private - Click to make shareable"}>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleShareCourse(course);
+                                                                    }}
+                                                                    sx={{
+                                                                        color: course.shareable ? theme.palette.secondary.main : theme.palette.text.disabled,
+                                                                        '&:hover': { color: theme.palette.secondary.main, backgroundColor: `${theme.palette.secondary.main}10` }
+                                                                    }}
+                                                                >
+                                                                    {course.shareable ?
+                                                                        <Globe size={18} style={{ filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} /> :
+                                                                        <Lock size={18} />
+                                                                    }
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Delete Course">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteCourse(course);
+                                                                    }}
+                                                                    sx={{
+                                                                        color: theme.palette.text.disabled,
+                                                                        '&:hover': { color: theme.palette.error.main, backgroundColor: 'rgba(255, 75, 75, 0.1)' }
+                                                                    }}
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Box>
+                                                    </Box>
+
+                                                    {/* Module Management Section */}
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        mb: 2,
+                                                        borderBottom: `1px solid ${theme.palette.divider}20`,
+                                                        pb: 2
+                                                    }}>
+                                                        <Typography variant="subtitle2" sx={{
+                                                            color: theme.palette.text.secondary,
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 1,
+                                                            fontFamily: theme.typography.h5.fontFamily
+                                                        }}>
+                                                            <GraduationCap size={16} style={{ color: theme.palette.secondary.main }} />
+                                                            Modules in this Course
+                                                        </Typography>
+                                                        <Button
+                                                            variant="outlined"
+                                                            size="small"
+                                                            startIcon={<Plus size={14} />}
+                                                            onClick={() => handleOpenModuleSelection(course)}
+                                                            sx={{
+                                                                color: theme.palette.secondary.main,
+                                                                borderColor: `${theme.palette.divider}40`,
+                                                                '&:hover': {
+                                                                    backgroundColor: `${theme.palette.divider}10`,
+                                                                    borderColor: theme.palette.secondary.main,
+                                                                }
+                                                            }}
+                                                        >
+                                                            Add Module
+                                                        </Button>
+                                                    </Box>
+
+                                                    {/* Modules Used in Course */}
+                                                    {course.modules && course.modules.length > 0 ? (
+                                                        <Box sx={{ pl: 1 }}>
+                                                            {course.modules.map((module, index) => (
+                                                                <DraggableModuleItem
+                                                                    key={module.id}
+                                                                    module={module}
+                                                                    index={index}
+                                                                    courseId={course.id}
+                                                                    handleEdit={handleEdit}
+                                                                    handleView={handleView}
+                                                                    handleRemoveModuleFromCourse={handleRemoveModuleFromCourse}
+                                                                    moveModule={moveModule}
+                                                                />
+                                                            ))}
+                                                        </Box>
+                                                    ) : (
+                                                        <Box sx={{
+                                                            p: 3,
+                                                            textAlign: 'center',
+                                                            backgroundColor: theme.palette.background.default + '50',
+                                                            borderRadius: '8px',
+                                                            border: `1px dashed ${theme.palette.divider}20`
+                                                        }}>
+                                                            <Typography variant="body2" sx={{ color: theme.palette.text.disabled, mb: 1 }}>
+                                                                No modules in this course yet
+                                                            </Typography>
+                                                            <Typography variant="caption" sx={{ color: theme.palette.text.disabled, display: 'block' }}>
+                                                                Click "Add Module" or drag modules here
+                                                            </Typography>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    )}
+                                </Collapse>
                             </Box>
 
                             {/* Your AI Modules Section */}
                             <Box sx={createStyles(theme).sectionContainer}>
-                                <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
-                                    <GraduationCap size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
-                                    Your AI Modules
-                                </Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Typography variant="h5" sx={createStyles(theme).sectionHeader}>
+                                        <GraduationCap size={24} style={{ color: theme.palette.secondary.main, filter: `drop-shadow(0 0 5px ${theme.palette.secondary.main}50)` }} />
+                                        Your AI Modules
+                                    </Typography>
+                                    <IconButton
+                                        onClick={() => setAiModulesExpanded(!aiModulesExpanded)}
+                                        sx={{ color: theme.palette.secondary.main }}
+                                    >
+                                        {aiModulesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                    </IconButton>
+                                </Box>
 
-                                {/* Add this block to render the actual modules */}
-                                {brdges.length === 0 ? (
-                                    <Box sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        py: 10,
-                                        px: 4,
-                                        textAlign: 'center',
-                                        backgroundColor: theme.palette.background.default + '70',
-                                        borderRadius: '16px',
-                                        border: `1px solid ${theme.palette.divider}20`,
-                                        backdropFilter: 'blur(10px)'
-                                    }}>
+                                <Collapse in={aiModulesExpanded} timeout="auto" unmountOnExit>
+                                    {brdges.length === 0 ? (
                                         <Box sx={{
-                                            width: 80,
-                                            height: 80,
                                             display: 'flex',
+                                            flexDirection: 'column',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            borderRadius: '50%',
-                                            backgroundColor: `${theme.palette.secondary.main}10`,
-                                            boxShadow: `0 0 20px ${theme.palette.secondary.main}20`,
-                                            mb: 3
+                                            py: 10,
+                                            px: 4,
+                                            textAlign: 'center',
+                                            backgroundColor: theme.palette.background.default + '70',
+                                            borderRadius: '16px',
+                                            border: `1px solid ${theme.palette.divider}20`,
+                                            backdropFilter: 'blur(10px)'
                                         }}>
-                                            <GraduationCap size={40} style={{ color: theme.palette.secondary.main }} />
-                                        </Box>
-
-                                        <Typography variant="h4" sx={{
-                                            color: theme.palette.text.primary,
-                                            fontWeight: 600,
-                                            mb: 2,
-                                            fontFamily: theme.typography.h4.fontFamily
-                                        }}>
-                                            Create Your First AI Module
-                                        </Typography>
-
-                                        <Typography variant="body1" sx={{
-                                            color: theme.palette.text.secondary,
-                                            mb: 4,
-                                            maxWidth: 600
-                                        }}>
-                                            Transform your course content into an interactive learning experience with personalized AI teaching assistants for your students.
-                                        </Typography>
-
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<Plus size={20} />}
-                                            onClick={handleCreateClick}
-                                            disabled={!canCreateBrdge()}
-                                            sx={{
-                                                backgroundColor: theme.palette.text.primary,
-                                                color: theme.palette.background.paper,
-                                                borderRadius: '12px',
-                                                px: 4,
-                                                py: 1.5,
-                                                border: 'none',
-                                                boxShadow: theme.shadows[3],
-                                                '&:hover': {
-                                                    backgroundColor: theme.palette.text.secondary,
-                                                    boxShadow: theme.shadows[4],
-                                                    transform: 'translateY(-2px)'
-                                                },
-                                                '&.Mui-disabled': {
-                                                    backgroundColor: `${theme.palette.text.disabled}30`,
-                                                    color: theme.palette.text.disabled
-                                                }
-                                            }}
-                                        >
-                                            Create New Module
-                                        </Button>
-
-                                        {!canCreateBrdge() && (
-                                            <Typography variant="caption" sx={{
-                                                color: theme.palette.text.disabled,
-                                                mt: 2
+                                            <Box sx={{
+                                                width: 80,
+                                                height: 80,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                borderRadius: '50%',
+                                                backgroundColor: `${theme.palette.secondary.main}10`,
+                                                boxShadow: `0 0 20px ${theme.palette.secondary.main}20`,
+                                                mb: 3
                                             }}>
-                                                You've reached your modules limit. Upgrade your plan for more!
+                                                <GraduationCap size={40} style={{ color: theme.palette.secondary.main }} />
+                                            </Box>
+
+                                            <Typography variant="h4" sx={{
+                                                color: theme.palette.text.primary,
+                                                fontWeight: 600,
+                                                mb: 2,
+                                                fontFamily: theme.typography.h4.fontFamily
+                                            }}>
+                                                Create Your First AI Module
                                             </Typography>
-                                        )}
-                                    </Box>
-                                ) : (
-                                    <Box sx={createStyles(theme).listContainer}>
-                                        <BrdgeList
-                                            brdges={filteredBrdges}
-                                            onView={handleView}
-                                            onEdit={handleEdit}
-                                            onShare={handleShare}
-                                            onDelete={handleDelete}
-                                            orderBy={orderBy}
-                                            orderDirection={orderDirection}
-                                            onSort={handleSort}
-                                            stats={userStats}
-                                            selectedModules={selectedModules}
-                                            onModuleSelect={handleModuleSelect}
-                                            onSelectAll={handleSelectAll}
-                                            courses={courses}
-                                            draggable={true}
-                                            onDragStart={handleModuleDragStart}
-                                            onDragEnd={handleModuleDragEnd}
-                                        />
-                                    </Box>
-                                )}
+
+                                            <Typography variant="body1" sx={{
+                                                color: theme.palette.text.secondary,
+                                                mb: 4,
+                                                maxWidth: 600
+                                            }}>
+                                                Transform your course content into an interactive learning experience with personalized AI teaching assistants for your students.
+                                            </Typography>
+
+                                            <Button
+                                                variant="contained"
+                                                startIcon={<Plus size={20} />}
+                                                onClick={handleCreateClick}
+                                                disabled={!canCreateBrdge()}
+                                                sx={{
+                                                    backgroundColor: theme.palette.text.primary,
+                                                    color: theme.palette.background.paper,
+                                                    borderRadius: '12px',
+                                                    px: 4,
+                                                    py: 1.5,
+                                                    border: 'none',
+                                                    boxShadow: theme.shadows[3],
+                                                    '&:hover': {
+                                                        backgroundColor: theme.palette.text.secondary,
+                                                        boxShadow: theme.shadows[4],
+                                                        transform: 'translateY(-2px)'
+                                                    },
+                                                    '&.Mui-disabled': {
+                                                        backgroundColor: `${theme.palette.text.disabled}30`,
+                                                        color: theme.palette.text.disabled
+                                                    }
+                                                }}
+                                            >
+                                                Create New Module
+                                            </Button>
+
+                                            {!canCreateBrdge() && (
+                                                <Typography variant="caption" sx={{
+                                                    color: theme.palette.text.disabled,
+                                                    mt: 2
+                                                }}>
+                                                    You've reached your modules limit. Upgrade your plan for more!
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    ) : (
+                                        <Box sx={createStyles(theme).listContainer}>
+                                            <BrdgeList
+                                                brdges={filteredBrdges}
+                                                onView={handleView}
+                                                onEdit={handleEdit}
+                                                onShare={handleShare}
+                                                onDelete={handleDelete}
+                                                orderBy={orderBy}
+                                                orderDirection={orderDirection}
+                                                onSort={handleSort}
+                                                stats={userStats}
+                                                selectedModules={selectedModules}
+                                                onModuleSelect={handleModuleSelect}
+                                                onSelectAll={handleSelectAll}
+                                                courses={courses}
+                                                draggable={true}
+                                                onDragStart={handleModuleDragStart}
+                                                onDragEnd={handleModuleDragEnd}
+                                            />
+                                        </Box>
+                                    )}
+                                </Collapse>
                             </Box>
 
                             {/* Enhanced Marketplace Section - Collapsible with better visual treatment */}
