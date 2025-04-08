@@ -20,11 +20,15 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
 
     useEffect(() => {
         const initConnection = async () => {
-            if (!brdgeId) {
-                setError('No brdgeId provided');
-                setIsLoading(false);
+            setIsLoading(true);
+            setError(null);
+
+            if (!brdgeId || !token || !userId) {
+                console.log('AgentConnector waiting for props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
                 return;
             }
+
+            console.log('AgentConnector proceeding with props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
 
             try {
                 if (!api.defaults.baseURL) {
@@ -49,13 +53,16 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
             } catch (error) {
                 console.error('Connection error:', error);
                 setError(error.message || 'Failed to initialize connection');
+                setConnectorUrl('');
             } finally {
-                setIsLoading(false);
+                if (connectorUrl || error) {
+                    setIsLoading(false);
+                }
             }
         };
 
         initConnection();
-    }, [brdgeId, agentType, token, isMobile, userId]);
+    }, [brdgeId, agentType, token, isMobile, userId, connectorUrl, error]);
 
     useEffect(() => {
         const initAudio = async () => {
@@ -71,7 +78,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         initAudio();
     }, []);
 
-    if (isLoading) {
+    if (isLoading || (!connectorUrl && !error)) {
         return (
             <Box sx={{
                 width: '100%',
@@ -83,7 +90,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
                 gap: 2
             }}>
                 <CircularProgress color="inherit" size={24} />
-                <Typography variant="h6">Connecting...</Typography>
+                <Typography variant="h6">Initializing Connection...</Typography>
             </Box>
         );
     }
