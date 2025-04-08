@@ -22,13 +22,29 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         const initConnection = async () => {
             setIsLoading(true);
             setError(null);
+            setConnectorUrl(''); // Reset URL at the start of each attempt
 
-            if (!brdgeId || !token || !userId) {
-                console.log('AgentConnector waiting for props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
+            let missingRequiredProps = false;
+            if (agentType === 'edit') {
+                // Edit mode requires token and userId
+                if (!brdgeId || !token || !userId) {
+                    missingRequiredProps = true;
+                    console.log('AgentConnector (Edit Mode) waiting for props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
+                }
+            } else {
+                // View mode only requires brdgeId
+                if (!brdgeId) {
+                    missingRequiredProps = true;
+                    console.log('AgentConnector (View Mode) waiting for brdgeId');
+                }
+            }
+
+            if (missingRequiredProps) {
+                // Keep loading true, don't set error, wait for props
                 return;
             }
 
-            console.log('AgentConnector proceeding with props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
+            console.log(`AgentConnector (${agentType} Mode) proceeding with props:`, { brdgeId, tokenExists: !!token, userIdExists: !!userId });
 
             try {
                 if (!api.defaults.baseURL) {
@@ -53,16 +69,16 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
             } catch (error) {
                 console.error('Connection error:', error);
                 setError(error.message || 'Failed to initialize connection');
-                setConnectorUrl('');
+                // setConnectorUrl(''); // Already reset at the start
             } finally {
-                if (connectorUrl || error) {
-                    setIsLoading(false);
-                }
+                // We have finished processing for the current valid props (or errored)
+                setIsLoading(false);
             }
         };
 
         initConnection();
-    }, [brdgeId, agentType, token, isMobile, userId, connectorUrl, error]);
+        // Keep dependencies based on props that trigger the logic
+    }, [brdgeId, agentType, token, isMobile, userId]); // Removed connectorUrl and error from dependencies
 
     useEffect(() => {
         const initAudio = async () => {
@@ -78,7 +94,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         initAudio();
     }, []);
 
-    if (isLoading || (!connectorUrl && !error)) {
+    if (isLoading) {
         return (
             <Box sx={{
                 width: '100%',
