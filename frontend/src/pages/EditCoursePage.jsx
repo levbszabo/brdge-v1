@@ -1365,7 +1365,7 @@ function EditCoursePage() {
                                                                 content: '""',
                                                                 position: 'absolute',
                                                                 inset: 0,
-                                                                backgroundImage: `url(${theme.textures.grainyMarble})`,
+                                                                backgroundImage: `url(${theme.textures.lightMarble})`,
                                                                 backgroundSize: 'cover',
                                                                 opacity: 0.05,
                                                                 mixBlendMode: 'multiply',

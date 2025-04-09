@@ -1,7 +1,6 @@
 import { createTheme } from '@mui/material/styles';
 import darkParchmentTexture from './assets/textures/dark-parchment.png'; // Assuming path
 import lightMarbleTexture from './assets/textures/light_marble.jpg';
-import grainyMarbleTexture from './assets/textures/grainy-marble.jpg'; // Corrected import name
 import crumbledParchmentTexture from './assets/textures/crumbled_parchment.jpg'; // Corrected import name
 import oldMapTexture from './assets/textures/old_map.jpg';
 import stampLogoTexture from './assets/brdge-stamp-logo.png'; // Assuming path
@@ -158,7 +157,6 @@ const theme = createTheme({
     textures: { // Update texture paths
         darkParchment: darkParchmentTexture,
         lightMarble: lightMarbleTexture,
-        grainyMarble: grainyMarbleTexture,
         crumbledParchment: crumbledParchmentTexture,
         oldMap: oldMapTexture,
         stampLogo: stampLogoTexture,
