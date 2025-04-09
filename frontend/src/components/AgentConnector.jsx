@@ -109,7 +109,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
 
     useEffect(() => {
         if (isIframeLoaded && token && iframeRef.current && iframeRef.current.contentWindow) {
-            const targetOrigin = process.env.REACT_APP_PLAYGROUND_URL;
+            const targetOrigin = window.location.origin;
 
             // Send initial message
             sendTokenMessage();
@@ -128,7 +128,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
                     console.log(`Sending AUTH_TOKEN to origin: ${targetOrigin}`);
                     iframeRef.current.contentWindow.postMessage(
                         { token: token, type: 'AUTH_TOKEN' },
-                        targetOrigin || '*' // Fallback to '*' for testing only
+                        targetOrigin // Fallback to '*' for testing only
                     );
                 }
             }
