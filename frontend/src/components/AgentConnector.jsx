@@ -10,6 +10,35 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
     const iframeRef = useRef(null);
     const [isIframeLoaded, setIsIframeLoaded] = useState(false);
 
+    // Add a CSS class to hide iframe controls
+    useEffect(() => {
+        if (iframeRef.current) {
+            // Apply a style to hide any potential bottom controls
+            const style = document.createElement('style');
+            style.textContent = `
+                .iframe-container iframe::-webkit-media-controls-panel {
+                    display: none !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
+                }
+                .iframe-container iframe::-webkit-media-controls {
+                    display: none !important;
+                }
+                .iframe-container iframe::-webkit-media-controls-enclosure {
+                    display: none !important;
+                }
+                .iframe-container iframe::part(control-panel) {
+                    display: none !important;
+                }
+            `;
+            document.head.appendChild(style);
+
+            return () => {
+                document.head.removeChild(style);
+            };
+        }
+    }, [iframeRef.current]);
+
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 640);
@@ -156,6 +185,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
 
     return (
         <Box
+            className="iframe-container"
             sx={{
                 width: '100%',
                 height: '100%',
@@ -184,6 +214,10 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
                     sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation"
                     referrerPolicy="origin"
                     onLoad={() => setIsIframeLoaded(true)}
+                    style={{
+                        WebkitAppearance: 'none',
+                        backgroundColor: 'transparent'
+                    }}
                 />
             )}
         </Box>

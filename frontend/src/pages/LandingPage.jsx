@@ -1,6 +1,6 @@
 // src/pages/LandingPage.jsx
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Container,
@@ -26,26 +26,20 @@ import {
     Share2,
     GraduationCap,
     Briefcase,
-    Rocket,
-    Plus,
-    Minus,
+    Rocket
 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { ParallaxProvider, useParallax } from 'react-scroll-parallax';
 import { useInView } from 'react-intersection-observer';
-import demoVideo from '../assets/brdge-demo2.mp4';
-import logo from '../assets/new-img.png';
 import '../fonts.css';
 import './LandingPage.css';
 import Footer from '../components/Footer';
-import videoDemo from '../assets/brdge-front-page-2.mp4';
+import AgentConnector from '../components/AgentConnector';
 
 // --- Import Assets ---
 import darkParchmentTexture from '../assets/textures/dark-parchment.png';
 import stampLogoTexture from '../assets/brdge-stamp-logo.png';
-import lightMarbleTexture from '../assets/textures/light_marble.jpg';
 import crumbledParchment from '../assets/textures/crumbled_parchment.jpg';
-import grainyMarble from '../assets/textures/grainy-marble.jpg';
 import oldMapTexture from '../assets/textures/old_map.jpg';
 import ivyVertical from '../assets/ivy/ivy_straight_solid.svg';
 import ivyHorizontal from '../assets/ivy_horizontal.svg';
@@ -55,10 +49,10 @@ import ivyLeaves from '../assets/ivy/ivy_leaves.svg';
 // Use existing texture for parchment background for now
 const parchmentTexture = darkParchmentTexture;
 
+// HARDCODED BRIDGE ID FOR DEMO
+const DEMO_BRIDGE_ID = '388'; // Demo Bridge ID from https://brdge-ai.com/viewBridge/344-96eac2
+
 // Use these fallbacks until you can create the proper assets
-const inkTextureOverlay = darkParchmentTexture; // Use existing texture as fallback
-const parchmentEdge = crumbledParchment; // Use crumbled parchment as edge texture
-const parchmentCorner = oldMapTexture; // Use old map for corner decorations
 
 // --- Updated Color Palette ---
 const colors = {
@@ -339,476 +333,7 @@ const ivyAnimations = {
 // but the copy now emphasizes how Brdge AI augments video content with
 // voice-based AI assistants to make sales pitches, Loom videos, onboarding walkthroughs, and training sessions interactive.
 
-//
-// IntroducingBrdgeAI - "Redefining Knowledge Sharing"
-//
-const IntroducingBrdgeAI = () => {
-    const [ref, inView] = useInView({
-        threshold: 0.2,
-        triggerOnce: true
-    });
 
-    const [isPlaying, setIsPlaying] = useState(false);
-    const videoRef = useRef(null);
-
-    // Updated togglePlayPause to use useCallback for better performance
-    const togglePlayPause = useCallback(() => {
-        if (videoRef.current) {
-            if (videoRef.current.paused) {
-                videoRef.current.play()
-                    .then(() => setIsPlaying(true))
-                    .catch(error => console.error("Error playing video:", error));
-            } else {
-                videoRef.current.pause();
-                setIsPlaying(false);
-            }
-        }
-    }, [videoRef]); // Removed isPlaying dependency to prevent stale closure issues
-
-    // Listen for play/pause events from native controls
-    useEffect(() => {
-        const videoElement = videoRef.current;
-
-        const handlePlay = () => setIsPlaying(true);
-        const handlePause = () => setIsPlaying(false);
-
-        if (videoElement) {
-            videoElement.addEventListener('play', handlePlay);
-            videoElement.addEventListener('pause', handlePause);
-        }
-
-        return () => {
-            if (videoElement) {
-                videoElement.removeEventListener('play', handlePlay);
-                videoElement.removeEventListener('pause', handlePause);
-            }
-        };
-    }, []);
-
-    return (
-        <Container
-            maxWidth={false}
-            ref={ref}
-            disableGutters
-            sx={{
-                pt: { xs: 4, md: spacing.sectionPadding.md }, // Reduced top padding on mobile
-                pb: { xs: 4, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md }, // Reduced bottom padding on mobile
-                px: { xs: 2, sm: 0 }, // Added horizontal padding on mobile
-                position: 'relative',
-                // Apply parchment container styling with proper edges
-                ...parchmentContainer,
-                // Override specific styles
-                borderRadius: 0,
-                // Replace decorative map-like corners with frayed/burnt effect
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundImage: `url(${darkParchmentTexture})`,
-                    backgroundSize: 'cover',
-                    opacity: 0.15, // Higher contrast texture
-                    mixBlendMode: 'multiply',
-                },
-                // Replace the straight top border with an irregular frayed edge
-                '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '15px',
-                    backgroundImage: 'radial-gradient(circle at 10% 0, transparent 20px, rgba(156, 124, 56, 0.15) 21px), radial-gradient(circle at 30% 0, transparent 24px, rgba(156, 124, 56, 0.15) 25px), radial-gradient(circle at 50% 0, transparent 18px, rgba(156, 124, 56, 0.15) 19px), radial-gradient(circle at 70% 0, transparent 22px, rgba(156, 124, 56, 0.15) 23px), radial-gradient(circle at 90% 0, transparent 20px, rgba(156, 124, 56, 0.15) 21px)',
-                    backgroundSize: '100% 25px',
-                    backgroundRepeat: 'no-repeat',
-                    opacity: 0.7,
-                    zIndex: 0,
-                },
-                // Make child elements appear above the background texture
-                '& > *': {
-                    position: 'relative',
-                    zIndex: 1,
-                }
-            }}
-        >
-            <motion.div
-                initial="hidden"
-                animate={inView ? "visible" : "hidden"}
-                variants={fadeInUpVariant}
-            >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        width: '100%',
-                        maxWidth: '1200px',
-                        mx: 'auto',
-                        gap: { xs: 3, sm: 4, md: 5 } // More space between elements
-                    }}
-                >
-                    {/* Updated Headline with proper casing and no stamp */}
-                    <Box sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 4,
-                        position: 'relative',
-                    }}>
-                        <Typography
-                            variant="h2"
-                            align="center"
-                            sx={{
-                                fontFamily: headingFontFamily,
-                                fontSize: { xs: '2.4rem', sm: '3.2rem', md: '3.8rem' },
-                                fontWeight: 600,
-                                color: colors.ink,
-                                mb: { xs: 1, sm: 2 },
-                                letterSpacing: '-0.01em',
-                                lineHeight: 1.2,
-                                width: '100%',
-                                padding: { xs: '0 8px', sm: 0 },
-                                position: 'relative', // For decorative elements
-                                textTransform: 'none', // Ensure text is not all caps
-                            }}
-                        >
-                            Turn courses into <Box component="span" sx={{ // Use Box for specific styling
-                                fontFamily: headingFontFamily,
-                                fontStyle: 'italic',
-                                color: colors.ink, // Keep ink color for emphasis
-                                position: 'relative',
-                                display: 'inline-block',
-                                // Subtle sepia underline
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    bottom: '-6px', // Adjust position
-                                    left: '5%',
-                                    width: '90%',
-                                    height: '1.5px', // Thinner line
-                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}, transparent)`,
-                                    opacity: 0.9,
-                                    borderRadius: '1px',
-                                }
-                            }}>AI classrooms</Box>
-                        </Typography>
-
-                        {/* Stamp logo removed as requested */}
-                    </Box>
-
-                    {/* Updated Video Section */}
-                    <Box
-                        className="video-container" // Added class for hover targeting
-                        sx={{
-                            width: '100%',
-                            maxWidth: { xs: '100%', sm: '95%', md: '80%' },
-                            position: 'relative',
-                            borderRadius: { xs: 0, sm: '8px' }, // More subtle rounding
-                            overflow: 'hidden',
-                            mx: 'auto',
-                            mb: 0,
-                            mt: { xs: 2, sm: 1 },
-                            px: { xs: 0, sm: 0, md: 0 },
-                            minHeight: { xs: '250px', sm: 'auto' },
-                            border: {
-                                xs: 'none',
-                                sm: `1px solid ${colors.ink}22` // Subtle border
-                            },
-                            boxShadow: {
-                                xs: 'none',
-                                sm: '0 4px 20px rgba(0,0,0,0.1)',
-                            },
-                        }}
-                    >
-                        <motion.div
-                            initial="hidden"
-                            animate={inView ? "visible" : "hidden"}
-                            variants={fadeInUpVariant}
-                            style={{ width: '100%' }}
-                        >
-                            <Box sx={{
-                                position: 'relative',
-                                width: '100%',
-                                paddingTop: { xs: '62.5%', sm: '56.25%' },
-                                borderRadius: { xs: 0, sm: '8px' }, // Match container
-                                overflow: 'hidden', // Ensure video stays contained
-                                backgroundColor: '#000', // Add dark bg behind video
-                                '& video': {
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    borderRadius: { xs: 0, sm: '7px' }, // Slightly smaller to prevent border overlap
-                                    objectFit: 'cover', // Changed from contain for better fill
-                                }
-                            }}>
-                                <video
-                                    ref={videoRef}
-                                    width="100%"
-                                    height="100%"
-                                    // controls // Removed native controls
-                                    playsInline
-                                    data-webkit-playsinline="true"
-                                    controlsList="nodownload noremoteplayback"
-                                    preload="metadata" // Changed preload to metadata
-                                    style={{
-                                        display: 'block',
-                                        backgroundColor: 'transparent',
-                                    }}
-                                    poster={videoDemo.poster || undefined}
-                                    onClick={togglePlayPause} // Allow clicking video itself to play/pause
-                                >
-                                    <source src={videoDemo} type="video/mp4" />
-                                    Your browser does not support the video tag.
-                                </video>
-
-                                {/* New Subtle Play Button - appears on hover of container */}
-                                {!isPlaying && ( // Show only if not playing
-                                    <Box
-                                        className="video-overlay"
-                                        onClick={togglePlayPause}
-                                        sx={{
-                                            position: 'absolute',
-                                            top: 0, left: 0, right: 0, bottom: 0,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            cursor: 'pointer',
-                                            zIndex: 3,
-                                            backgroundColor: 'rgba(0,0,0,0.1)', // Slightly darker overlay initially
-                                            opacity: 0, // Hidden by default
-                                            transition: 'opacity 0.3s ease, background-color 0.3s ease',
-                                            '.video-container:hover &': { // Target parent hover
-                                                opacity: 1,
-                                                backgroundColor: 'rgba(0,0,0,0.3)', // Darken on hover
-                                            }
-                                        }}
-                                        aria-label="Play Video"
-                                    >
-                                        {/* Simple Play Icon (Triangle) */}
-                                        <Box
-                                            sx={{
-                                                width: '60px', // Smaller size
-                                                height: '60px',
-                                                borderRadius: '50%',
-                                                backgroundColor: 'rgba(255, 255, 255, 0.15)', // Subtle background
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                border: `1px solid ${colors.ink}20`, // Subtle border
-                                                transition: 'transform 0.2s ease, background-color 0.2s ease',
-                                                '.video-overlay:hover &': {
-                                                    transform: 'scale(1.05)',
-                                                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                                                },
-                                                // Play triangle using borders
-                                                '&::after': {
-                                                    content: '""',
-                                                    display: 'block',
-                                                    width: 0,
-                                                    height: 0,
-                                                    borderTop: '10px solid transparent',
-                                                    borderBottom: '10px solid transparent',
-                                                    borderLeft: `16px solid ${colors.ink}`, // Ink color triangle
-                                                    marginLeft: '4px', // Adjust position
-                                                }
-                                            }}
-                                        />
-                                    </Box>
-                                )}
-                            </Box>
-                        </motion.div>
-                    </Box>
-
-                    {/* Updated Text Section */}
-                    <Box
-                        sx={{
-                            width: '100%',
-                            maxWidth: { xs: '100%', sm: '90%', md: '80%' },
-                            textAlign: 'center',
-                            mx: 'auto',
-                            px: { xs: 3, sm: 4 }, // Increased horizontal padding on mobile
-                            mb: { xs: 4, sm: 6 },
-                            mt: { xs: 3, sm: 4 }
-                        }}
-                    >
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                fontFamily: fontFamily,
-                                color: colors.ink,
-                                mb: { xs: 4, sm: 5 },
-                                fontSize: { xs: '1.2rem', sm: '1.35rem', md: '1.45rem' },
-                                fontWeight: 400,
-                                lineHeight: 1.6,
-                                '& strong': {
-                                    color: colors.ink,
-                                    fontWeight: 600,
-                                    fontFamily: fontFamily,
-                                    borderBottom: `2px solid ${colors.sepia}44`,
-                                }
-                            }}
-                        >
-                            Transform your static course videos into interactive learning experiences. Students can pause, ask questions, and receive instant, voice-driven responses from your AI teaching assistant.
-                        </Typography>
-
-                        {/* Updated Feature Bullets - Styling to match HeroSection */}
-                        <Box sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: { xs: 2, sm: 2.5 }, // Reduced gap to match Hero features
-                            mb: { xs: 5, sm: 6 },
-                            mt: { xs: 3, sm: 4 },
-                            alignItems: 'center',
-                            width: '100%',
-                            maxWidth: '680px', // Match Hero features width
-                            mx: 'auto'
-                        }}>
-                            {[
-                                { icon: <VerifiedUser size={22} />, text: "Students ask. Your AI answers.", highlight: "In your voice" },
-                                { icon: <AllInclusive size={22} />, text: "Teach once. Guide forever.", highlight: "Even when you're not there" },
-                                { icon: <AutoFixHigh size={22} />, text: "See what students", highlight: "struggle with most" }
-                            ].map((feature, index) => (
-                                <Box
-                                    key={index}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'flex-start', // Align icon top
-                                        width: '100%',
-                                        transition: 'all 0.2s ease-out',
-                                        gap: 2, // Reduced gap
-                                        py: 1, // Reduced padding
-                                        position: 'relative',
-                                        borderBottom: index !== 2 ? `1px dashed ${colors.sepia}20` : 'none', // Match Hero divider
-                                        paddingBottom: index !== 2 ? 1.5 : 0.5,
-                                        marginBottom: index !== 2 ? 1 : 0,
-                                        '&:hover': {
-                                            backgroundColor: `${colors.parchmentDark}40`,
-                                            '& .feature-text': {
-                                                transform: 'translateX(3px)',
-                                            },
-                                            '& .feature-icon': {
-                                                transform: 'scale(1.1)',
-                                            }
-                                        }
-                                    }}
-                                >
-                                    <Box
-                                        className="feature-icon"
-                                        sx={{
-                                            width: '36px', // Match Hero icon size
-                                            height: '36px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            opacity: 0.9,
-                                            marginRight: 1.5, // Consistent spacing
-                                            transition: 'transform 0.2s ease-out', // Add transform transition
-                                        }}
-                                    >
-                                        {/* Apply theme colors directly to the icon */}
-                                        {React.cloneElement(feature.icon, { color: colors.sepia, strokeWidth: 1.5 })}
-                                    </Box>
-                                    <Box
-                                        className="feature-text"
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: { xs: 'column', sm: 'row' },
-                                            alignItems: { xs: 'flex-start', sm: 'baseline' },
-                                            transition: 'transform 0.2s ease-out',
-                                            gap: { xs: 0.2, sm: 0.8 },
-                                            flex: 1,
-                                        }}
-                                    >
-                                        <Typography sx={{
-                                            fontFamily: fontFamily,
-                                            fontSize: { xs: '1rem', sm: '1.05rem' },
-                                            fontWeight: 300,
-                                            color: colors.inkLight,
-                                            lineHeight: 1.6,
-                                        }}>
-                                            {feature.text}
-                                        </Typography>
-                                        <Typography
-                                            component="span"
-                                            sx={{
-                                                fontFamily: headingFontFamily,
-                                                fontSize: { xs: '1rem', sm: '1.05rem' },
-                                                fontWeight: 600,
-                                                fontStyle: 'italic',
-                                                color: colors.sepia,
-                                                lineHeight: 1.6,
-                                                position: 'relative',
-                                                whiteSpace: 'nowrap',
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    bottom: -1,
-                                                    left: '5px',
-                                                    width: 'calc(100% - 10px)',
-                                                    height: '1px',
-                                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}60, ${colors.sepia}60, transparent)`,
-                                                    opacity: 0.6,
-                                                }
-                                            }}
-                                        >
-                                            {feature.highlight}.
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            ))}
-                        </Box>
-                    </Box>
-
-                    {/* Updated CTA Buttons */}
-                    <Stack
-                        direction={{ xs: 'column', sm: 'row' }}
-                        spacing={{ xs: 3, sm: 4 }}
-                        sx={{
-                            mt: { xs: 2, sm: 3 },
-                            justifyContent: 'center',
-                            width: '100%',
-                            maxWidth: { xs: '100%', sm: '90%', md: '700px' },
-                            mx: 'auto',
-                            px: { xs: 3, sm: 0 } // Increased horizontal padding on mobile
-                        }}
-                    >
-                        <Button
-                            component={Link}
-                            to="/signup"
-                            variant="contained"
-                            size="large"
-                            endIcon={<ArrowForward />}
-                            sx={{
-                                ...createButtonStyles('primary', false),
-                                flex: { xs: '1 1 auto', sm: 1 },
-                            }}
-                        >
-                            Start Creating AI Courses
-                        </Button>
-
-                        <Button
-                            variant="outlined"
-                            size="large"
-                            sx={{
-                                ...createButtonStyles('secondary', false),
-                                flex: { xs: '1 1 auto', sm: 1 },
-                            }}
-                            component={Link}
-                            to="/marketplace"
-                        >
-                            Watch Course Demo
-                        </Button>
-                    </Stack>
-                </Box>
-            </motion.div>
-        </Container>
-    );
-};
-
-//
-// HeroSection - Neo-Scholar meets Futuristic AI
-//
 const HeroSection = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const iconAnimation = useAnimation();
@@ -885,7 +410,8 @@ const HeroSection = () => {
                 }
             }}
         >
-            {/* Bottom Left Corner Ivy - Improved positioning and styling */}
+
+            {/* Bottom Left Corner Ivy - Existing */}
             <Box
                 component="img"
                 src={ivyCorner}
@@ -961,7 +487,7 @@ const HeroSection = () => {
                     // and using a more controlled width
                     maxWidth: '100%',
                     mx: 'auto',
-                    paddingTop: { xs: 5, sm: 6, md: 8 }, // Increased top padding on mobile
+                    paddingTop: { xs: 7, sm: 6, md: 8 }, // Increased top padding on mobile for more breathing room
                     paddingBottom: { xs: 10, sm: 10 }, // Increased bottom padding on mobile
                     background: `linear-gradient(165deg, ${colors.parchmentLight} 0%, ${colors.parchment} 100%)`,
                     '&::after': {
@@ -1282,13 +808,13 @@ const HeroSection = () => {
                                 letterSpacing: '0.1em',
                                 textTransform: 'uppercase',
                                 color: colors.sepia,
-                                mb: { xs: 1.5, sm: 2 },
-                                mt: { xs: 3, sm: 0 }, // Add top margin on mobile only
-                                pt: { xs: 3, sm: 0 }, // Add top padding on mobile only
+                                mb: { xs: 2, sm: 2 },
+                                mt: { xs: 1, sm: 0 }, // Increased top margin on mobile for more breathing space
+                                pt: { xs: 2, sm: 0 }, // Reduced top padding on mobile
                                 opacity: 0.9,
                             }}
                         >
-                            For the Voices That Last.
+                            Built for course creators who want their knowledge to scale — beautifully.
                         </Typography>
 
                         {/* 1. Updated Hero Headline - More poetic, timeless */}
@@ -1325,7 +851,7 @@ const HeroSection = () => {
                                 backgroundImage: `linear-gradient(to bottom, ${colors.ink} 95%, ${colors.sepia}90 100%)`,
                             }}
                         >
-                            Teach Once. Guide Forever.
+                            Teach Smarter with AI
                         </Typography>
 
                         {/* 2. First part of subheading - Enhanced with animated reveal & italic serif */}
@@ -1378,61 +904,10 @@ const HeroSection = () => {
                                 }
                             }}
                         >
-                            Transform your lectures into <em>interactive, always-on conversations</em> bringing your wisdom to every student who needs it.
+                            Upload your lectures or course videos. Brdge AI adds interactive quizzes, discussion prompts, and a<em> personalized AI assistant that answers student questions </em> — in your own voice and teaching style.
                         </Typography>
 
                         {/* 3. Refined second part of subheading with recommended microcopy */}
-                        <Typography
-                            component={motion.p}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.8, duration: 0.8 }}
-                            align="center"
-                            sx={{
-                                fontFamily: fontFamily,
-                                fontSize: { xs: '1.0rem', sm: '1.1rem', md: '1.2rem' },
-                                fontWeight: 300,
-                                lineHeight: 1.7,
-                                color: colors.inkLight,
-                                maxWidth: '630px',
-                                mx: 'auto',
-                                mb: 3,
-                                letterSpacing: '0.01em',
-                                position: 'relative',
-                                order: 4,
-                                // Enhanced hover effect for em text
-                                '& em': {
-                                    fontFamily: headingFontFamily,
-                                    fontStyle: 'italic',
-                                    color: colors.ink,
-                                    fontWeight: 500,
-                                    position: 'relative',
-                                    transition: 'all 0.3s ease',
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: '-1px',
-                                        left: '0',
-                                        right: '0',
-                                        height: '1px',
-                                        background: colors.sepia,
-                                        opacity: 0.4,
-                                        transition: 'transform 0.3s ease',
-                                        transform: 'scaleX(0.95)',
-                                        transformOrigin: 'center',
-                                    },
-                                    '&:hover': {
-                                        color: colors.sepia,
-                                        '&::after': {
-                                            transform: 'scaleX(1.05)',
-                                            opacity: 0.8,
-                                        }
-                                    }
-                                }
-                            }}
-                        >
-                            Whether you're a professor, a coach, or a late-night learner—Brdge helps your <em>voice reach further</em>.
-                        </Typography>
                     </motion.div>
 
                     {/* 5. Enhanced Feature Section with Hover Animations */}
@@ -1486,8 +961,7 @@ const HeroSection = () => {
                         {[
                             { text: "Create AI tutors that answer student questions", highlight: "in your voice", icon: <GraduationCap size={22} color={colors.sepia} strokeWidth={1.5} /> },
                             { text: "Increase course completion rates with", highlight: "personalized guidance", icon: <Sparkles size={22} color={colors.sepia} strokeWidth={1.5} /> },
-                            { text: "Scale your teaching without sacrificing the", highlight: "personal touch", icon: <Briefcase size={22} color={colors.sepia} strokeWidth={1.5} /> },
-                            { text: "Learn what your students need through", highlight: "AI insights", icon: <Mic size={22} color={colors.sepia} strokeWidth={1.5} /> }
+                            { text: "Scale your teaching without sacrificing the", highlight: "personal touch", icon: <Briefcase size={22} color={colors.sepia} strokeWidth={1.5} /> }
                         ].map((item, index) => (
                             <Box
                                 component={motion.div}
@@ -1758,7 +1232,7 @@ const HeroSection = () => {
                                     }} />
                                 </motion.div>}
                             >
-                                Learn With Brdge AI
+                                Explore Courses
                             </Button>
                         </motion.div>
                     </Box>
@@ -1821,14 +1295,14 @@ const HeroSection = () => {
                                 }
                             }}
                         >
-                            The most generous teachers teach once—and keep showing up.
+                            Teach Once, Guide Forever.
                         </Typography>
 
                         {/* Add Logo Stamp to Divider */}
                         <Box
                             sx={{
                                 position: 'absolute',
-                                bottom: { xs: '-80px', sm: '-120px' }, // Reduced bottom spacing on mobile
+                                bottom: { xs: '-85px', sm: '-120px' }, // Adjusted for better positioning in divider
                                 left: '50%',
                                 transform: 'translateX(-50%)',
                                 width: { xs: '70px', sm: '90px' }, // Smaller on mobile
@@ -1901,355 +1375,377 @@ const HeroSection = () => {
 };
 
 //
-// HowItWorksSection - Apply Neo-Scholar aesthetic
+// IntroducingBrdgeAI - "See Brdge AI In Action" (Merged Section)
 //
-const HowItWorksSection = () => {
-    const [ref, inView] = useInView({ threshold: 0.2, triggerOnce: true });
+const IntroducingBrdgeAI = () => {
+    const [ref, inView] = useInView({
+        threshold: 0.1, // Lower threshold for earlier trigger
+        triggerOnce: true
+    });
+
+    // Define steps data directly within the component
     const steps = [
         {
             number: "01",
-            icon: <Upload size={32} />,
+            icon: <Upload size={28} />, // Adjusted size for consistency
             title: "Upload Your Course Content",
-            description: "Submit your lectures, tutorials, or workshop videos. Brdge AI transcribes and prepares your educational content for interactive student engagement."
+            description: "Submit your lectures or slides. Brdge prepares them for engagement."
         },
         {
             number: "02",
-            icon: <Sparkles size={32} />,
-            title: "Create Your Teaching Assistant",
-            description: "Customize your AI tutor by defining its knowledge, tone, and teaching style. Tailor its responses to match your instructional approach and expertise."
+            icon: <Sparkles size={28} />,
+            title: "Create Your AI Teaching Assistant",
+            description: "Define its tone, knowledge, and style to match how you teach."
         },
         {
             number: "03",
-            icon: <Mic size={32} />,
-            title: "Clone Your Teaching Voice",
-            description: "Let your actual voice power every response. Clone your authentic sound so your AI delivers answers that maintain your teaching presence."
+            icon: <Mic size={28} />,
+            title: "Clone Your Voice",
+            description: "Your voice powers every response — no robotic chatbots here."
         },
         {
             number: "04",
-            icon: <Share2 size={32} />,
+            icon: <Share2 size={28} />,
             title: "Share With Students",
-            description: "Distribute one link. As students watch, they can pause, ask questions, and get immediate, voice-driven answers that deepen their understanding."
+            description: "They pause, ask questions, and get instant, personalized answers."
         }
     ];
 
+
     return (
-        <Box sx={{
-            background: 'transparent',
-            py: { xs: 4, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md }, // Less padding on mobile
-            position: 'relative',
-            // Add decorative elements to enhance the scholarly aesthetic
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: '5%',
-                left: '2%',
-                width: '40px',
-                height: '40px',
-                backgroundImage: `url(${darkParchmentTexture})`,
-                backgroundSize: 'contain',
-                opacity: 0.15,
-                mixBlendMode: 'multiply',
-                transform: 'rotate(-15deg)',
-                zIndex: 0,
-            },
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: '8%',
-                right: '4%',
-                width: '50px',
-                height: '50px',
-                backgroundImage: `url(${darkParchmentTexture})`,
-                backgroundSize: 'contain',
-                opacity: 0.25,
-                mixBlendMode: 'multiply',
-                transform: 'rotate(12deg)',
-                zIndex: 0,
-            }
-        }}>
-            <Container maxWidth="lg" ref={ref}>
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.8 }}
+        <Container
+            maxWidth={false} // Keep full width container
+            ref={ref}
+            disableGutters
+            sx={{
+                pt: { xs: 6, sm: 8, md: 10 }, // Adjusted top padding
+                pb: { xs: 6, sm: 8, md: 10 }, // Adjusted bottom padding
+                px: { xs: 0, sm: 0 }, // Remove horizontal padding for full width elements
+                position: 'relative',
+                // Apply parchment container styling - keep background/texture consistent
+                ...parchmentContainer,
+                borderRadius: 0, // No border radius for seamless section flow
+                borderTop: `1px solid ${colors.sepia}20`, // Subtle top border
+                borderBottom: `1px solid ${colors.sepia}20`, // Subtle bottom border
+                // Override default parchmentContainer borders if necessary
+                '&::after': { // Remove or adjust the default parchment border
+                    display: 'none',
+                },
+                // Ensure content appears above texture
+                '& > *': {
+                    position: 'relative',
+                    zIndex: 1,
+                }
+            }}
+        >
+            <motion.div
+                initial="hidden"
+                animate={inView ? "visible" : "hidden"}
+                variants={fadeInUpVariant}
+                transition={{ duration: 0.6, ease: "easeOut" }} // Adjust animation timing
+            >
+                {/* Centered content box */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        width: '100%',
+                        maxWidth: '1200px', // Max width for content inside
+                        mx: 'auto',
+                        px: { xs: 2, sm: 3, md: 4 }, // Add padding inside the content box
+                        gap: { xs: 4, sm: 5, md: 6 } // Consistent gap
+                    }}
                 >
-                    {/* Section Header - Apply heading font */}
+                    {/* Section Header */}
                     <Box sx={{
-                        mb: { xs: 6, sm: 8 },
-                        position: 'relative',
-                        // Add decorative quill stroke
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: '-12px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '80px',
-                            height: '2px',
-                            background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
-                            borderRadius: '2px',
-                            opacity: 0.8,
-                        }
+                        textAlign: 'center',
+                        mb: { xs: 3, sm: 4 },
+                        width: '100%',
+                        maxWidth: '750px', // Max width for header text
+                        mx: 'auto',
                     }}>
+                        {/* Label */}
                         <Typography
-                            variant="h2"
+                            component={motion.p}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.1, duration: 0.5 }}
+                            sx={{
+                                fontFamily: headingFontFamily,
+                                fontSize: '0.8rem',
+                                letterSpacing: '0.1em',
+                                textTransform: 'uppercase',
+                                color: colors.sepia,
+                                mb: 2,
+                                opacity: 0.9,
+                            }}
+                        >
+                            See Brdge AI in Action
+                        </Typography>
+
+                        {/* Headline */}
+                        <Typography
+                            component={motion.h2}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.2, duration: 0.6 }}
                             align="center"
                             sx={{
                                 fontFamily: headingFontFamily,
-                                fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.2rem' },
-                                fontWeight: 600,
-                                color: colors.ink,
+                                fontSize: { xs: '2.4rem', sm: '3.2rem', md: '3.8rem' },
+                                fontWeight: 600, // Bold
+                                ...inkTextStyle, // Apply ink style
                                 mb: 2,
-                                letterSpacing: '-0.02em',
+                                letterSpacing: '-0.01em',
+                                lineHeight: 1.2,
                                 textTransform: 'none',
-                                position: 'relative',
-                                display: 'inline-block',
-                                // Subtle decorative flourish
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: '-15px',
-                                    left: '-25px',
-                                    width: '18px',
-                                    height: '1px',
-                                    background: colors.sepia,
-                                    transform: 'rotate(-30deg)',
-                                    opacity: 0.5,
-                                },
                             }}
                         >
-                            How to Create AI-Powered Courses
+                            From Course Video to Interactive AI Experience — in Minutes
                         </Typography>
 
+                        {/* Subheadline */}
                         <Typography
-                            variant="h5"
+                            component={motion.p}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.3, duration: 0.6 }}
                             align="center"
                             sx={{
                                 fontFamily: fontFamily,
+                                fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                fontWeight: 400, // Normal weight
+                                lineHeight: 1.7,
                                 color: colors.inkLight,
-                                maxWidth: '800px',
+                                maxWidth: '700px', // Specified max-width
                                 mx: 'auto',
-                                fontSize: { xs: '1.05rem', sm: '1.2rem' },
-                                lineHeight: 1.6,
-                                textTransform: 'none',
-                                px: { xs: 1, sm: 0 },
-                                '& strong': {
-                                    fontWeight: 600,
-                                    color: colors.sepia,
-                                    fontFamily: headingFontFamily,
-                                    fontStyle: 'italic',
-                                    position: 'relative',
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: '-2px',
-                                        left: '0',
-                                        right: '0',
-                                        height: '1px',
-                                        background: colors.sepia,
-                                        opacity: 0.4,
-                                    }
-                                }
+                                mb: 0, // Remove bottom margin if video follows immediately
                             }}
                         >
-                            Transform your course content into <strong>interactive learning experiences</strong> with just four simple steps.
+                            Brdge turns your lessons into intelligent, voice-driven learning environments — with quizzes, Q&A, and personalized AI engagement, all powered by your content and voice.
                         </Typography>
                     </Box>
 
-                    {/* Steps Section - Enhanced with Neo-Scholar styling */}
+                    {/* Brdge AI Demo Container */}
+                    <Box
+                        className="demo-container"
+                        component={motion.div}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={inView ? { opacity: 1, scale: 1 } : {}}
+                        transition={{ delay: 0.4, duration: 0.7 }}
+                        sx={{
+                            width: '100%',
+                            maxWidth: { xs: '100%', sm: '100%', md: '90%', lg: '1000px' }, // Increased width
+                            position: 'relative',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            mx: 'auto',
+                            mb: 1.5,
+                            border: `1px solid ${colors.sepia}40`,
+                            boxShadow: `0 10px 35px rgba(0,0,0,0.15), 0 0 15px rgba(156, 124, 56, 0.1)`,
+                            // Hide any default video controls
+                            '& ::-webkit-media-controls-panel': {
+                                display: 'none !important',
+                            },
+                            '& ::-webkit-media-controls': {
+                                display: 'none !important',
+                            },
+                            '& ::-webkit-media-controls-enclosure': {
+                                display: 'none !important',
+                            },
+                            '& video::-webkit-media-controls': {
+                                display: 'none !important',
+                            },
+                            // Add other styling
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '4px',
+                                background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
+                                zIndex: 10,
+                            },
+                            '&::after': {
+                                content: '"Try it out!"',
+                                position: 'absolute',
+                                top: '15px',
+                                right: '15px',
+                                background: colors.sepia,
+                                color: colors.parchmentLight,
+                                padding: '5px 12px',
+                                fontSize: '0.85rem',
+                                fontWeight: 600,
+                                borderRadius: '30px',
+                                zIndex: 10,
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                opacity: 0.9,
+                                pointerEvents: 'none',
+                                display: { xs: 'none', sm: 'block' }
+                            }
+                        }}
+                    >
+                        <Box sx={{
+                            position: 'relative',
+                            width: '100%',
+                            // Adjust aspect ratio to give more height - changed from 16:9 (56.25%) to a taller ratio
+                            paddingTop: { xs: '70%', sm: '65%', md: '60%' },
+                            minHeight: { xs: '400px', sm: '500px', md: '550px' }, // Set minimum height
+                            borderRadius: '10px',
+                            overflow: 'hidden',
+                            backgroundColor: colors.parchmentLight,
+                            '& > div': {
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: '10px',
+                                padding: { xs: '0', sm: '8px' }
+                            },
+                            // Remove any black bar at bottom
+                            '& iframe': {
+                                backgroundColor: 'transparent !important'
+                            },
+                            // Ensure bottom border is fully hidden
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '5px',
+                                background: colors.parchmentLight,
+                                zIndex: 5
+                            },
+                            // Add a subtle pulse animation to encourage interaction
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                width: '80%',
+                                height: '80%',
+                                transform: 'translate(-50%, -50%)',
+                                background: `radial-gradient(circle, ${colors.sepia}10 0%, transparent 70%)`,
+                                borderRadius: '50%',
+                                opacity: 0.7,
+                                animation: 'pulse 3s infinite',
+                                zIndex: 0,
+                                pointerEvents: 'none'
+                            }
+                        }}>
+                            <AgentConnector
+                                brdgeId={DEMO_BRIDGE_ID}
+                                agentType="view"
+                                token=""
+                            />
+                        </Box>
+                    </Box>
+
+                    {/* Small Caption Under Demo */}
+                    <Typography
+                        component={motion.p}
+                        initial={{ opacity: 0 }}
+                        animate={inView ? { opacity: 1 } : {}}
+                        transition={{ delay: 0.5, duration: 0.6 }}
+                        sx={{
+                            fontFamily: fontFamily,
+                            fontSize: '0.9rem',
+                            color: colors.inkFaded,
+                            textAlign: 'center',
+                            mt: 1.5, // Added top margin for spacing
+                            mb: { xs: 4, sm: 5 },
+                            maxWidth: '600px',
+                            mx: 'auto',
+                            // Add emphasis for "interactive" 
+                            '& strong': {
+                                fontWeight: 600,
+                                color: colors.sepia
+                            }
+                        }}
+                    >
+                        <strong>Interactive demo:</strong> Ask questions and see how AI-powered learning works. Built with Brdge.
+                    </Typography>
+
+                    {/* Add keyframe animation for the pulse effect */}
+                    <Box
+                        component="style"
+                        dangerouslySetInnerHTML={{
+                            __html: `
+                                @keyframes pulse {
+                                    0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.8); }
+                                    50% { opacity: 0.2; transform: translate(-50%, -50%) scale(1); }
+                                    100% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.8); }
+                                }
+                            `
+                        }}
+                    />
+
+                    {/* How It Works Steps - Responsive Two-Column Layout */}
                     <Box sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: { xs: 6, sm: 8, md: 8 },
-                        position: 'relative',
-                        maxWidth: '800px',
+                        display: 'grid', // Use Grid for layout
+                        gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, // 1 column on xs, 2 columns on md+
+                        gap: { xs: 4, sm: 5, md: 6 }, // Adjust gap for grid (row and column)
+                        width: '100%',
+                        maxWidth: { xs: '700px', md: '900px' }, // Allow more width for two columns
                         mx: 'auto',
-                        // Refined timeline connector with sepia tint
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            left: { xs: 'calc(30px + 1.5rem)', md: 'calc(50% - 1px)' },
-                            transform: { xs: 'none', md: 'translateX(-50%)' },
-                            top: '40px',
-                            bottom: '40px',
-                            width: '2px',
-                            background: `linear-gradient(180deg, 
-                                transparent, 
-                                ${colors.sepia}20 10%, 
-                                ${colors.sepia}30 50%, 
-                                ${colors.sepia}20 90%, 
-                                transparent)`,
-                            zIndex: 0,
-                            display: 'block',
-                        },
-                        // Add subtle dashed pattern to the connector
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            left: { xs: 'calc(30px + 1.5rem)', md: 'calc(50% - 1px)' },
-                            transform: { xs: 'none', md: 'translateX(-50%)' },
-                            top: '40px',
-                            bottom: '40px',
-                            width: '2px',
-                            background: `repeating-linear-gradient(0deg, 
-                                transparent, 
-                                transparent 4px, 
-                                ${colors.sepia}10 4px, 
-                                ${colors.sepia}10 8px)`,
-                            zIndex: 0,
-                            display: 'block',
-                        }
+                        mb: { xs: 4, sm: 5 }, // Margin below steps
                     }}>
                         {steps.map((step, index) => (
                             <motion.div
                                 key={step.title}
-                                initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+                                // Animate based on grid position? Simpler to just fade/slide in.
+                                initial={{ opacity: 0, x: -20 }}
                                 animate={inView ? { opacity: 1, x: 0 } : {}}
-                                transition={{ duration: 0.8, delay: index * 0.15 }}
+                                transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
                             >
+                                {/* Flexbox for individual step alignment (Badge + Text) */}
                                 <Box sx={{
                                     display: 'flex',
-                                    flexDirection: {
-                                        xs: 'row',
-                                        md: index % 2 === 0 ? 'row' : 'row-reverse'
-                                    },
-                                    alignItems: 'center',
-                                    gap: { xs: 3, md: 6 },
-                                    position: 'relative',
-                                    zIndex: 1,
-                                    transition: 'all 0.3s ease',
-                                    // Add hover effect for each step
-                                    '&:hover': {
-                                        '& .step-number': {
-                                            color: colors.sepia,
-                                            transform: 'scale(1.05)',
-                                        },
-                                        '& .step-icon': {
-                                            transform: 'translateY(-3px)',
-                                            boxShadow: `0 6px 15px ${colors.sepia}20`,
-                                        },
-                                        '& .step-title': {
-                                            color: colors.ink,
-                                            '&::after': {
-                                                width: '100%',
-                                                opacity: 0.8,
-                                            }
-                                        }
-                                    }
+                                    alignItems: 'flex-start',
+                                    gap: { xs: 2.5, sm: 3 },
+                                    height: '100%', // Ensure grid items take full height for alignment if needed
                                 }}>
-                                    {/* Icon and Number - Enhanced with scholarly styling */}
+                                    {/* Number Badge */}
                                     <Box sx={{
-                                        position: 'relative',
+                                        width: { xs: 40, sm: 48 },
+                                        height: { xs: 40, sm: 48 },
+                                        borderRadius: '50%',
+                                        backgroundColor: colors.sepia,
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: 3,
-                                        minWidth: { xs: 'auto', md: '150px' },
-                                        justifyContent: {
-                                            xs: 'flex-start',
-                                            md: index % 2 === 0 ? 'flex-end' : 'flex-start'
-                                        }
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                        border: `1px solid ${colors.sepiaLight}40`,
+                                        boxShadow: `0 2px 4px ${colors.ink}15`,
                                     }}>
                                         <Typography
-                                            className="step-number"
                                             sx={{
                                                 fontFamily: headingFontFamily,
-                                                fontSize: { xs: '1.5rem', sm: '1.75rem' },
-                                                fontWeight: 700, // Changed from 600 to 700 for bolder text
-                                                color: colors.sepia, // Changed from sepiaLight to sepia for better contrast
-                                                width: '40px',
-                                                textAlign: index % 2 === 0 ? 'right' : 'left',
-                                                order: index % 2 === 0 ? 0 : 1,
-                                                transition: 'color 0.3s ease, transform 0.3s ease',
-                                                // Add decorative dot/ornament
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    width: '6px',
-                                                    height: '6px',
-                                                    borderRadius: '50%',
-                                                    backgroundColor: colors.sepia,
-                                                    opacity: 0.5,
-                                                    top: '50%',
-                                                    left: index % 2 === 0 ? 'auto' : '12px',
-                                                    right: index % 2 === 0 ? '12px' : 'auto',
-                                                    transform: 'translateY(-50%)',
-                                                }
+                                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                                fontWeight: 600,
+                                                color: colors.parchmentLight,
+                                                lineHeight: 1,
                                             }}
                                         >
                                             {step.number}
                                         </Typography>
-
-                                        {/* Enhanced Icon Display */}
-                                        <Box
-                                            className="step-icon"
-                                            sx={{
-                                                width: { xs: '60px', sm: '70px' },
-                                                height: { xs: '60px', sm: '70px' },
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: colors.ink,
-                                                position: 'relative',
-                                                order: index % 2 === 0 ? 1 : 0,
-                                                background: `linear-gradient(135deg, ${colors.parchmentLight}, ${colors.parchment})`,
-                                                border: `1px solid ${colors.sepia}30`,
-                                                borderRadius: '12px',
-                                                boxShadow: `0 3px 10px ${colors.inkLight}10`,
-                                                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                                                // Add parchment texture
-                                                '&::before': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    inset: 0,
-                                                    backgroundImage: `url(${darkParchmentTexture})`,
-                                                    backgroundSize: 'cover',
-                                                    opacity: 0.08,
-                                                    borderRadius: '12px',
-                                                    mixBlendMode: 'multiply',
-                                                }
-                                            }}
-                                        >
-                                            {/* Apply theme color directly */}
-                                            {React.cloneElement(step.icon, {
-                                                size: 28,
-                                                color: colors.sepia,
-                                                strokeWidth: 1.5,
-                                                style: { position: 'relative', zIndex: 2 }
-                                            })}
-                                        </Box>
                                     </Box>
 
-                                    {/* Text Content - Enhanced with scholarly styling */}
-                                    <Box sx={{
-                                        flex: 1,
-                                        textAlign: { xs: 'left', md: index % 2 === 0 ? 'left' : 'right' },
-                                        maxWidth: { md: '450px' }
-                                    }}>
+                                    {/* Text Content */}
+                                    <Box sx={{ flex: 1, pt: { xs: 0.5, sm: 0.7 } }}>
                                         <Typography
-                                            className="step-title"
-                                            variant="h5"
+                                            variant="h6"
                                             sx={{
                                                 fontFamily: headingFontFamily,
-                                                mb: 1.5,
-                                                color: colors.sepia,
-                                                fontSize: { xs: '1.3rem', sm: '1.4rem' },
+                                                color: colors.ink,
+                                                fontSize: { xs: '1.15rem', sm: '1.3rem' },
                                                 fontWeight: 600,
-                                                letterSpacing: '-0.01em',
-                                                transition: 'color 0.3s ease',
-                                                position: 'relative',
-                                                display: 'inline-block',
-                                                // Add animated underline effect
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    bottom: '-4px',
-                                                    left: 0,
-                                                    width: '40%',
-                                                    height: '1px',
-                                                    background: `linear-gradient(90deg, ${colors.sepia}80, ${colors.sepia}30)`,
-                                                    transition: 'width 0.3s ease, opacity 0.3s ease',
-                                                    opacity: 0.5,
-                                                }
+                                                mb: 0.5,
+                                                lineHeight: 1.3,
                                             }}
                                         >
                                             {step.title}
@@ -2258,16 +1754,8 @@ const HowItWorksSection = () => {
                                             sx={{
                                                 fontFamily: fontFamily,
                                                 color: colors.inkLight,
-                                                fontSize: { xs: '1.0rem', sm: '1.1rem' },
+                                                fontSize: { xs: '0.95rem', sm: '1rem' },
                                                 lineHeight: 1.6,
-                                                maxWidth: '500px',
-                                                mx: { xs: 0, md: index % 2 === 0 ? 0 : 'auto' },
-                                                // Emphasis styling
-                                                '& strong': {
-                                                    fontWeight: 600,
-                                                    color: colors.ink,
-                                                    position: 'relative',
-                                                }
                                             }}
                                         >
                                             {step.description}
@@ -2278,30 +1766,57 @@ const HowItWorksSection = () => {
                         ))}
                     </Box>
 
-                    {/* Enhanced CTA Button with Neo-Scholar styling */}
+                    {/* Tagline Reprise */}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={inView ? { opacity: 1 } : {}}
+                        transition={{ delay: 0.8, duration: 0.8 }}
+                    >
+                        <Typography
+                            component="blockquote"
+                            sx={{
+                                fontFamily: headingFontFamily, // Serif font
+                                fontStyle: 'italic', // Italic
+                                fontSize: { xs: '1.2rem', sm: '1.4rem' },
+                                color: colors.sepia, // Sepia color
+                                lineHeight: 1.6,
+                                textAlign: 'center', // Centered
+                                maxWidth: '600px',
+                                mx: 'auto',
+                                mb: { xs: 4, sm: 5 }, // Margin below tagline
+                                position: 'relative',
+                                '&::before, &::after': { // Optional quotes
+                                    content: '"""',
+                                    fontFamily: headingFontFamily,
+                                    fontWeight: 600,
+                                    fontSize: '1.5em',
+                                    lineHeight: 0,
+                                    verticalAlign: 'baseline',
+                                    opacity: 0.5,
+                                    color: colors.sepia,
+                                },
+                                '&::before': { marginRight: '0.2em', verticalAlign: 'sub' },
+                                '&::after': { marginLeft: '0.2em' },
+                            }}
+                        >
+                            Teach once. Guide forever.
+                        </Typography>
+                    </motion.div>
+
+                    {/* CTA Section */}
                     <Box sx={{
-                        mt: { xs: 8, sm: 10, md: 12 },
                         textAlign: 'center',
-                        position: 'relative',
-                        // Add decorative flourish
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: '-20px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '30px',
-                            height: '10px',
-                            backgroundImage: `url(${stampLogoTexture})`,
-                            backgroundSize: 'contain',
-                            backgroundPosition: 'center',
-                            backgroundRepeat: 'no-repeat',
-                            opacity: 0.9,
-                        }
+                        width: '100%',
+                        maxWidth: '400px', // Max width for the button container
+                        mx: 'auto',
+                        mb: { xs: 2, sm: 0 }, // Reduced margin at the very bottom of the section
                     }}>
                         <motion.div
                             whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileTap={{ scale: 0.97 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={inView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ delay: 0.9, duration: 0.6 }}
                         >
                             <Button
                                 component={Link}
@@ -2309,337 +1824,37 @@ const HowItWorksSection = () => {
                                 variant="contained"
                                 size="large"
                                 sx={{
-                                    ...createButtonStyles('primary', false),
-                                    position: 'relative',
-                                    backgroundColor: colors.ink,
-                                    color: colors.parchmentLight,
-                                    py: 1.75,
-                                    px: 5,
-                                    '&:hover': {
-                                        backgroundColor: colors.inkLight,
-                                        transform: 'translateY(-3px)',
-                                    },
-                                    // Enhanced accent line
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: 0,
-                                        left: '10%',
-                                        right: '10%',
-                                        height: '3px',
-                                        background: `linear-gradient(90deg, transparent, ${colors.sepia}, transparent)`,
-                                        borderRadius: '2px',
-                                    }
+                                    ...createButtonStyles('primary', false), // Use primary style, non-responsive width
+                                    width: '100%', // Make button full width within its container
+                                    py: { xs: 1.75, sm: 2 },
+                                    fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                                    // Add rocket icon
+                                    '& .MuiButton-endIcon': { marginLeft: '12px' }
                                 }}
-                                endIcon={<Sparkles size={18} />}
+                                endIcon={<Rocket size={20} />}
                             >
                                 Create Your First AI Course
                             </Button>
                         </motion.div>
                     </Box>
-                </motion.div>
-            </Container>
-        </Box>
+
+                </Box> {/* End Centered Content Box */}
+            </motion.div>
+        </Container>
     );
 };
 
 //
-// ImpactSection - Showcasing the broad potential: interactive onboarding, sales, and education
+// HeroSection - Neo-Scholar meets Futuristic AI
 //
-const ImpactSection = () => {
-    const [ref, inView] = useInView({
-        threshold: 0.2,
-        triggerOnce: true,
-    });
 
-    const [expandedCard, setExpandedCard] = useState(null);
 
-    const handleCardClick = (id) => {
-        setExpandedCard(expandedCard === id ? null : id);
-    };
+//
+// HowItWorksSection - Apply Neo-Scholar aesthetic
+//
+// REMOVE THIS ENTIRE COMPONENT DEFINITION
+// const HowItWorksSection = () => { ... };
 
-    const industries = [
-        {
-            id: 'courses',
-            icon: <GraduationCap />,
-            title: 'Course Creators',
-            subtitle: 'Scale your teaching impact without sacrificing quality',
-            details: [
-                {
-                    title: 'Personalized Learning at Scale',
-                    description: 'Let every student interact with your course as if they had a 1:1 session with you, getting personalized guidance in your voice.',
-                },
-                {
-                    title: 'Higher Completion Rates',
-                    description: 'Students who can get immediate answers to their questions are 65% more likely to complete your courses.',
-                },
-                {
-                    title: 'Deeper Engagement',
-                    description: 'Transform passive watching into active learning through AI-powered conversation with your teaching persona.',
-                },
-            ],
-        },
-        {
-            id: 'institutions',
-            icon: <Briefcase />,
-            title: 'Educational Institutions',
-            subtitle: 'Create interactive learning environments that scale expertise',
-            details: [
-                {
-                    title: 'Faculty Knowledge Scaling',
-                    description: 'Allow your best professors and subject matter experts to help more students through AI-powered "always available" guidance.',
-                },
-                {
-                    title: 'Student Support Enhancement',
-                    description: 'Provide 24/7 answers to common questions while identifying students who need additional human support.',
-                },
-                {
-                    title: 'Learning Analytics',
-                    description: 'Gain insights into what topics students find most challenging and where they need additional resources.',
-                },
-            ],
-        },
-        {
-            id: 'corporate',
-            icon: <Rocket />,
-            title: 'Corporate Training',
-            subtitle: 'Transform employee onboarding and continuous learning',
-            details: [
-                {
-                    title: 'Interactive Onboarding',
-                    description: 'New employees can ask questions during training videos, reducing time-to-productivity and increasing retention.',
-                },
-                {
-                    title: 'Knowledge Preservation',
-                    description: 'Capture the expertise of senior staff and subject matter experts in interactive AI versions that guide new team members.',
-                },
-                {
-                    title: 'Consistent Training',
-                    description: "Ensure every employee gets the same quality of instruction and guidance, regardless of when or where they're trained.",
-                },
-            ],
-        },
-    ];
-
-    return (
-        <Box sx={{ background: 'transparent', py: spacing.sectionPadding }}> {/* Added padding */}
-            <Container maxWidth="lg" ref={ref}>
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.8 }}
-                >
-                    {/* Section Header - Apply heading font */}
-                    <Box sx={{ mb: { xs: 6, sm: 8 } }}>
-                        <Typography
-                            variant="h2"
-                            align="center"
-                            sx={{
-                                fontFamily: headingFontFamily,
-                                fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.2rem' },
-                                fontWeight: 600,
-                                color: colors.ink,
-                                mb: 2,
-                                letterSpacing: '-0.02em',
-                                textTransform: 'none',
-                            }}
-                        >
-                            Transform Education at Every Level
-                        </Typography>
-
-                        <Typography
-                            variant="h5" // Style with sx
-                            align="center"
-                            sx={{
-                                fontFamily: fontFamily, // Body font
-                                color: colors.inkLight,
-                                maxWidth: '800px',
-                                mx: 'auto',
-                                fontSize: { xs: '1.05rem', sm: '1.2rem' }, // Adjust size
-                                lineHeight: 1.6,
-                                textTransform: 'none',
-                                px: { xs: 1, sm: 0 },
-                            }}
-                        >
-                            Brdge AI empowers educators at all levels by turning standard course content
-                            into interactive, AI-powered learning experiences.
-                        </Typography>
-                    </Box>
-
-                    {/* Cards Container */}
-                    <Box sx={{
-                        display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-                        gap: { xs: 3, sm: 4 },
-                        width: '100%',
-                    }}>
-                        {industries.map((industry) => (
-                            <Paper
-                                key={industry.id}
-                                onClick={() => handleCardClick(industry.id)}
-                                elevation={0}
-                                sx={{
-                                    ...scholarlyParchment,
-                                    padding: { xs: 2.5, sm: 3 },
-                                    height: '100%',
-                                    cursor: 'pointer',
-                                    background: colors.parchmentDark,
-                                    transition: 'all 0.3s ease',
-                                    position: 'relative',
-                                    pb: 6,
-                                    '&:hover': {
-                                        transform: 'translateY(-3px)',
-                                        boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
-                                    },
-                                    // Remove the corner flourishes by overriding their display
-                                    '& .corner-flourish': {
-                                        display: 'none', // This hides the corner flourishes
-                                    }
-                                }}
-                            >
-                                {/* Remove these lines or comment them out */}
-                                {/* <Box className="corner-flourish corner-flourish-top-left" /> */}
-                                {/* <Box className="corner-flourish corner-flourish-bottom-right" /> */}
-
-                                {/* Rest of the card content */}
-                                <Box sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    // Removed gap, mb, mt to use padding/margins within items
-                                    height: '100%', // Ensure content box takes height
-                                }}>
-                                    {/* Card Header */}
-                                    <Box sx={{
-                                        display: 'flex',
-                                        alignItems: 'flex-start',
-                                        gap: 2.5,
-                                        mb: 2,
-                                    }}>
-                                        {/* Simplified Icon Box */}
-                                        <Box sx={{
-                                            p: 1.5,
-                                            bgcolor: 'rgba(10, 25, 51, 0.05)', // Lighter ink background
-                                            borderRadius: '8px', // Softer rounding
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            border: `1px solid ${colors.mapBorder}30`, // Lighter border
-                                        }}>
-                                            {/* Use Lucide icon directly with theme colors */}
-                                            {React.cloneElement(industry.icon, {
-                                                size: 24, // Consistent size
-                                                color: colors.ink, // Use ink color
-                                                strokeWidth: 1.5
-                                            })}
-                                        </Box>
-
-                                        <Box sx={{ flex: 1 }}>
-                                            <Typography
-                                                sx={{
-                                                    fontFamily: headingFontFamily,
-                                                    color: colors.ink,
-                                                    fontSize: { xs: '1.2rem', sm: '1.3rem' },
-                                                    fontWeight: 600,
-                                                    mb: 0.5,
-                                                    lineHeight: 1.3,
-                                                }}
-                                            >
-                                                {industry.title}
-                                            </Typography>
-                                            <Typography
-                                                sx={{
-                                                    fontFamily: fontFamily,
-                                                    color: colors.inkLight,
-                                                    fontSize: '0.9rem',
-                                                    lineHeight: 1.5,
-                                                }}
-                                            >
-                                                {industry.subtitle}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-
-                                    {/* Expandable Content */}
-                                    <Collapse in={expandedCard === industry.id} sx={{ width: '100%', mt: 'auto' }}>
-                                        <Box sx={{
-                                            pt: 2, // Reduced padding top
-                                            mt: 2, // Added margin top
-                                            borderTop: `1px solid ${colors.mapBorder}40`,
-                                            background: 'transparent',
-                                        }}>
-                                            {industry.details.map((detail, idx) => (
-                                                <Box
-                                                    key={idx}
-                                                    sx={{
-                                                        mb: idx !== industry.details.length - 1 ? 2.5 : 0,
-                                                        background: 'transparent',
-                                                    }}
-                                                >
-                                                    <Typography
-                                                        sx={{
-                                                            fontFamily: fontFamily,
-                                                            color: colors.sepia, // Use sepia for detail title
-                                                            fontWeight: 600,
-                                                            fontSize: '1rem',
-                                                            mb: 0.5,
-                                                        }}
-                                                    >
-                                                        {detail.title}
-                                                    </Typography>
-                                                    <Typography
-                                                        sx={{
-                                                            fontFamily: fontFamily,
-                                                            color: colors.inkLight,
-                                                            fontSize: '0.9rem',
-                                                            lineHeight: 1.6,
-                                                        }}
-                                                    >
-                                                        {detail.description}
-                                                    </Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    </Collapse>
-                                </Box>
-
-                                {/* Custom Chevron Expand Indicator */}
-                                <Box
-                                    sx={{
-                                        position: 'absolute',
-                                        bottom: 16, // Adjusted position
-                                        left: '50%', // Center horizontally
-                                        transform: 'translateX(-50%)', // Center horizontally
-                                        width: 20, // Smaller indicator
-                                        height: 20,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: colors.inkLight, // Theme color for chevron
-                                        transition: 'transform 0.3s ease',
-                                        // Rotate chevron based on expanded state
-                                        ...(expandedCard === industry.id && {
-                                            transform: 'translateX(-50%) rotate(180deg)',
-                                        }),
-                                        '&::before': { // Create chevron using borders
-                                            content: '""',
-                                            display: 'block',
-                                            width: '8px',
-                                            height: '8px',
-                                            borderLeft: `2px solid ${colors.inkLight}`,
-                                            borderBottom: `2px solid ${colors.inkLight}`,
-                                            transform: 'rotate(-45deg)',
-                                            transition: 'border-color 0.3s ease',
-                                        }
-                                    }}
-                                />
-                            </Paper>
-                        ))}
-                    </Box>
-                </motion.div>
-            </Container>
-        </Box>
-    );
-};
 
 //
 // FinalCTA - Apply Neo-Scholar aesthetic
@@ -2928,7 +2143,7 @@ const FinalCTA = () => {
                             // Button styling handled by updated createButtonStyles
                         }}
                     >
-                        Watch Education Demo
+                        Explore Marketplace
                     </Button>
                 </motion.div>
             </Box>
@@ -3023,490 +2238,1408 @@ const ScholarlyDivider = ({ margin = { xs: 4, sm: 6, md: 8 }, width = { xs: '85%
     </Box>
 );
 
-// Create a quill pen mark component for section titles
-const QuillMark = ({ color = colors.sepia, opacity = 0.6, rotation = -10 }) => (
-    <Box
-        sx={{
-            position: 'absolute',
-            width: '25px',
-            height: '3px',
-            background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-            transform: `rotate(${rotation}deg)`,
-            opacity: opacity,
-            borderRadius: '1px',
-        }}
-    />
-);
-
-const storyData = [
-    {
-        title: "A Bridge Between Minds",
-        image: "/brdge-ai-core.png",
-        subtitle: "Where mentorship meets memory.",
-        description: "Brdge AI carries the teacher's voice forward—so students never lose the wisdom they need. The conversation doesn't end when the class does."
-    },
-    {
-        title: "Teach Once Answer Forever",
-        image: "/teach-once.png",
-        subtitle: "Presence without pressure.",
-        description: "You taught with care. Brdge AI carries that care into every answer. Now, students can ask again—and again—and still feel understood."
-    },
-    {
-        title: "The Moment They Both Earned",
-        image: "/moment-earned.png",
-        subtitle: "The reward of real teaching.",
-        description: "Brdge AI helps more students get to this moment—by meeting them when and where they need it most. It's not just scale. It's significance."
-    },
-    {
-        title: "The Future is Self-Taught",
-        image: "/self-taught.webp",
-        subtitle: "The classroom has expanded.",
-        description: "For every student learning at 2AM, for every question they were too afraid to ask—Brdge AI is there. This isn't school as it was. It's learning as it should be. Self-driven. Supportive. Limitless."
-    },
-];
-
-const StorySection = () => {
+//
+// MissionSection - Our philosophy and core values
+//
+const MissionSection = () => {
     const [ref, inView] = useInView({
-        threshold: 0.2,
+        threshold: 0.15,
         triggerOnce: true
     });
 
-    return (
-        <Box sx={{
-            py: { xs: 5, sm: spacing.sectionPadding.sm, md: spacing.sectionPadding.md }, // Adjusted padding on mobile
-            position: 'relative',
-            // Enhanced background with parchment styling
-            background: `linear-gradient(135deg, ${colors.parchmentLight} 0%, ${colors.parchment} 100%)`,
-            // Add subtle texture overlay
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                inset: 0,
-                backgroundImage: `url(${darkParchmentTexture})`,
-                backgroundSize: 'cover',
-                opacity: 0.08,
-                mixBlendMode: 'multiply',
-                zIndex: 0,
-            },
-            // Add decorative top border
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: '15%',
-                right: '15%',
-                height: '6px',
-                backgroundImage: `url(${crumbledParchment})`,
-                backgroundSize: 'cover',
-                mask: `linear-gradient(90deg, transparent, black 30%, black 70%, transparent)`,
-                opacity: 0.15,
-                zIndex: 0,
+    // Animated quill writing effect for decorative elements
+    const quillAnimation = {
+        initial: { width: 0, opacity: 0 },
+        animate: { width: '100%', opacity: 0.8, transition: { duration: 1.5, ease: "easeOut" } }
+    };
+
+    // Animated reveal for pillars
+    const pillarAnimation = {
+        initial: { opacity: 0, y: 20 },
+        animate: (custom) => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.6,
+                delay: 0.3 + custom * 0.15,
+                ease: "easeOut"
             }
-        }}>
-            {/* Decorative Ink Splash Elements */}
-            <Box
-                component={motion.div}
-                animate={{
-                    opacity: [0.12, 0.15, 0.12],
-                    scale: [1, 1.02, 1],
-                }}
-                transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                }}
-                sx={{
+        })
+    };
+
+    // Animated glow effect for logo
+    const glowPulse = {
+        initial: { boxShadow: `0 0 0px ${colors.sepia}00` },
+        animate: {
+            boxShadow: [
+                `0 0 5px ${colors.sepia}30`,
+                `0 0 15px ${colors.sepia}40`,
+                `0 0 5px ${colors.sepia}30`
+            ],
+            transition: {
+                duration: 3.5,
+                repeat: Infinity,
+                repeatType: "mirror"
+            }
+        }
+    };
+
+    // Simplified elegant fade in for headline - removed blue block animation
+    const headlineAnimation = {
+        initial: { opacity: 0, y: 15 },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: { delay: 0.3, duration: 0.8, ease: "easeOut" }
+        }
+    };
+
+    return (
+        <Box
+            component="section"
+            sx={{
+                position: 'relative',
+                py: { xs: 7, sm: 9, md: 11 },
+                background: `linear-gradient(135deg, ${colors.parchmentLight} 0%, ${colors.parchment} 100%)`,
+                borderTop: `1px solid ${colors.sepia}20`,
+                borderBottom: `1px solid ${colors.sepia}20`,
+                overflowX: 'hidden',
+                // Add subtle texture overlay
+                '&::before': {
+                    content: '""',
                     position: 'absolute',
-                    top: '10%',
-                    left: '8%',
-                    width: '10px',
-                    height: '10px',
-                    borderRadius: '50% 60% 40% 50%',
-                    background: colors.sepia,
+                    inset: 0,
+                    backgroundImage: `url(${darkParchmentTexture})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.08,
+                    mixBlendMode: 'multiply',
+                    zIndex: 0,
+                },
+                // Add decorative top/bottom borders
+                '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: '10%',
+                    right: '10%',
+                    height: '6px',
+                    backgroundImage: `url(${crumbledParchment})`,
+                    backgroundSize: 'cover',
+                    mask: `linear-gradient(90deg, transparent, black 30%, black 70%, transparent)`,
                     opacity: 0.15,
                     zIndex: 0,
-                    // Ink splatter details
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: '-4px',
-                        left: '8px',
-                        width: '5px',
-                        height: '5px',
-                        borderRadius: '50% 60% 50% 40%',
-                        background: colors.sepia,
-                        opacity: 0.8,
-                    },
-                }}
-            />
-
+                }
+            }}
+        >
             <Box
-                component={motion.div}
-                animate={{
-                    opacity: [0.15, 0.2, 0.15],
-                    scale: [1, 1.05, 1],
-                }}
-                transition={{
-                    duration: 6,
-                    delay: 1.5,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                }}
+                component="img"
+                src={ivyCorner}
+                alt=""
                 sx={{
                     position: 'absolute',
-                    bottom: '15%',
-                    right: '10%',
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50% 40% 50% 60%',
-                    background: colors.sepia,
+                    bottom: '10px',
+                    right: '10px',
+                    width: { xs: '60px', sm: '80px', md: '100px' },
+                    height: 'auto',
+                    objectFit: 'contain',
                     opacity: 0.2,
-                    zIndex: 0,
+                    zIndex: 1,
+                    filter: 'hue-rotate(40deg) saturate(0.9)',
+                    transform: 'scaleX(-1)',
                 }}
             />
 
-            <Container maxWidth="lg" ref={ref}>
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.8 }}
-                >
-                    {/* Section Header with Neo-Scholar styling */}
-                    <Box sx={{
-                        mb: { xs: 6, sm: 8 },
-                        position: 'relative',
+            <Container
+                maxWidth="lg"
+                ref={ref}
+                sx={{
+                    position: 'relative',
+                    zIndex: 2,
+                }}
+            >
+                <Box
+                    sx={{
                         textAlign: 'center',
-                        // Add decorative quill stroke
+                        mb: { xs: 5, sm: 6, md: 7 },
+                        position: 'relative',
+                    }}
+                >
+                    {/* Section Label - Small caps sepia */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={inView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                    >
+                        <Typography
+                            sx={{
+                                fontFamily: fontFamily,
+                                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                                letterSpacing: '0.15em',
+                                textTransform: 'uppercase',
+                                color: colors.sepia,
+                                mb: 1.5,
+                                opacity: 0.9,
+                                position: 'relative',
+                                display: 'inline-block',
+                                // Add subtle quill mark above
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: '-18px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '30px',
+                                    height: '2px',
+                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
+                                    borderRadius: '2px',
+                                }
+                            }}
+                        >
+                            Our Mission
+                        </Typography>
+                    </motion.div>
+
+                    {/* Main Headline - with elegant animation */}
+                    <motion.div
+                        initial="initial"
+                        animate={inView ? "animate" : "initial"}
+                        variants={headlineAnimation}
+                        style={{ position: 'relative', display: 'inline-block' }}
+                    >
+                        <Typography
+                            component="h2"
+                            sx={{
+                                fontFamily: headingFontFamily,
+                                fontSize: { xs: '2.2rem', sm: '3rem', md: '3.8rem' },
+                                fontWeight: 600,
+                                color: colors.ink,
+                                mb: 3,
+                                maxWidth: '850px',
+                                mx: 'auto',
+                                lineHeight: 1.2,
+                                // Add subtle ink effect
+                                WebkitTextFillColor: 'transparent',
+                                WebkitBackgroundClip: 'text',
+                                backgroundImage: `linear-gradient(to bottom, ${colors.ink} 95%, ${colors.sepia}90 100%)`,
+                                // Add subtle decorative element below
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-15px',
+                                    left: '25%',
+                                    right: '25%',
+                                    height: '1px',
+                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}70, transparent)`,
+                                    opacity: 0.8,
+                                }
+                            }}
+                        >
+                            Built for the Voices That Last
+                        </Typography>
+                    </motion.div>
+
+                    {/* Subheadline - with subtle animation */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={inView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ delay: 0.5, duration: 0.7 }}
+                    >
+                        <Typography
+                            sx={{
+                                fontFamily: fontFamily,
+                                fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                lineHeight: 1.7,
+                                color: colors.inkLight,
+                                mb: 6,
+                                maxWidth: '700px',
+                                mx: 'auto',
+                                px: { xs: 2, sm: 0 },
+                                position: 'relative',
+                                // Add decorative quill line below
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-20px',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    width: '60px',
+                                    height: '2px',
+                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
+                                    borderRadius: '2px',
+                                }
+                            }}
+                        >
+                            Great teaching should last — beyond the moment, beyond the inbox, beyond the burnout.
+                            Brdge AI preserves your presence, your voice, and your impact so your best lessons keep teaching even when you're not there.
+                        </Typography>
+                    </motion.div>
+                </Box>
+
+                {/* Logo and Pillars Container - Responsive layout */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', md: 'row' },
+                        alignItems: 'center',
+                        gap: { xs: 5, md: 6 },
+                        position: 'relative',
+                    }}
+                >
+                    {/* Logo Container with animated glow */}
+                    <Box
+                        component={motion.div}
+                        initial="initial"
+                        animate={inView ? "animate" : "initial"}
+                        variants={glowPulse}
+                        sx={{
+                            width: { xs: '100%', md: '45%' },
+                            maxWidth: { xs: '350px', md: '500px' },
+                            position: 'relative',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            padding: '12px',
+                            background: `linear-gradient(135deg, ${colors.parchmentLight}90, ${colors.parchment}70)`,
+                            border: `1px solid ${colors.sepia}30`,
+                            // Add floating animation
+                            animation: 'float 6s ease-in-out infinite',
+                            // Logo will glow on hover
+                            '&:hover': {
+                                '&::before': {
+                                    opacity: 0.7,
+                                }
+                            },
+                            // Inner glow effect
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: 0,
+                                borderRadius: '8px',
+                                padding: '2px',
+                                background: `linear-gradient(135deg, ${colors.sepia}40, ${colors.sepia}20)`,
+                                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                WebkitMaskComposite: 'xor',
+                                maskComposite: 'exclude',
+                                opacity: 0.4,
+                                transition: 'opacity 0.5s ease'
+                            },
+                            // Elegant corner accents
+                            '&::after': {
+                                content: '""',
+                                position: 'absolute',
+                                inset: '5px',
+                                borderRadius: '4px',
+                                border: `1px solid ${colors.sepia}20`,
+                                pointerEvents: 'none',
+                            }
+                        }}
+                    >
+                        {/* Logo image */}
+                        <Box
+                            component="img"
+                            src="/brdge-ai-core.png"
+                            alt="Brdge AI - Teaching that lasts"
+                            sx={{
+                                width: '100%',
+                                height: 'auto',
+                                borderRadius: '4px',
+                                transition: 'transform 0.5s ease',
+                                '&:hover': {
+                                    transform: 'scale(1.02)',
+                                }
+                            }}
+                        />
+
+                        {/* Create floating animation keyframes */}
+                        <Box
+                            component="style"
+                            dangerouslySetInnerHTML={{
+                                __html: `
+                            @keyframes float {
+                                0% { transform: translateY(0px); }
+                                50% { transform: translateY(-8px); }
+                                100% { transform: translateY(0px); }
+                            }
+                        `
+                            }}
+                        />
+                    </Box>
+
+                    {/* Three Pillars Container */}
+                    <Box
+                        sx={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: { xs: 4, sm: 5 },
+                            width: '100%',
+                            position: 'relative',
+                            // Add decorative vertical line
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: '5%',
+                                bottom: '5%',
+                                left: { xs: '50%', md: 0 },
+                                width: '1px',
+                                transform: { xs: 'translateX(-50%)', md: 'none' },
+                                background: `linear-gradient(to bottom, transparent, ${colors.sepia}40, transparent)`,
+                                display: { xs: 'none', md: 'block' },
+                            }
+                        }}
+                    >
+                        {/* First Pillar - Clarity */}
+                        <Box
+                            component={motion.div}
+                            custom={0}
+                            initial="initial"
+                            animate={inView ? "animate" : "initial"}
+                            variants={pillarAnimation}
+                            whileHover={{ x: 10, transition: { duration: 0.2 } }}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 3,
+                                padding: { xs: 2, md: 3 },
+                                borderRadius: '8px',
+                                transition: 'all 0.3s ease',
+                                position: 'relative',
+                                // Subtle background on hover
+                                '&:hover': {
+                                    background: `linear-gradient(90deg, ${colors.parchmentDark}70, transparent)`,
+                                    '& .pillar-icon': {
+                                        transform: 'translateY(-3px)',
+                                        boxShadow: `0 6px 15px ${colors.sepia}30`,
+                                    },
+                                    '& .pillar-line': {
+                                        width: '100%',
+                                        opacity: 0.7,
+                                    }
+                                }
+                            }}
+                        >
+                            {/* Icon with enhanced styling */}
+                            <Box
+                                className="pillar-icon"
+                                sx={{
+                                    width: { xs: '50px', sm: '55px' },
+                                    height: { xs: '50px', sm: '55px' },
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: `linear-gradient(135deg, ${colors.ink}, ${colors.ink}90)`,
+                                    color: colors.parchmentLight,
+                                    boxShadow: `0 4px 10px ${colors.ink}30`,
+                                    transition: 'all 0.3s ease',
+                                    // Add subtle border
+                                    border: `1px solid ${colors.ink}30`,
+                                    // Add inner ring
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: '5px',
+                                        borderRadius: '50%',
+                                        border: `1px dashed ${colors.parchmentLight}50`,
+                                        opacity: 0.6,
+                                    }
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        fontSize: '1.8rem',
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    🧠
+                                </Box>
+                            </Box>
+
+                            {/* Text Content */}
+                            <Box sx={{ flex: 1 }}>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        fontFamily: headingFontFamily,
+                                        color: colors.ink,
+                                        fontSize: { xs: '1.3rem', sm: '1.5rem' },
+                                        fontWeight: 600,
+                                        mb: 1.5,
+                                        position: 'relative',
+                                    }}
+                                >
+                                    Clarity
+                                    {/* Animated underline */}
+                                    <Box
+                                        className="pillar-line"
+                                        component={motion.div}
+                                        initial={{ width: '30%', opacity: 0.4 }}
+                                        sx={{
+                                            position: 'absolute',
+                                            bottom: '-6px',
+                                            left: 0,
+                                            height: '2px',
+                                            background: `linear-gradient(90deg, ${colors.sepia}90, ${colors.sepia}30)`,
+                                            transition: 'all 0.4s ease',
+                                        }}
+                                    />
+                                </Typography>
+
+                                <Typography
+                                    sx={{
+                                        fontFamily: fontFamily,
+                                        color: colors.inkLight,
+                                        fontSize: '1.05rem',
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    Every great teacher has clarity of thought. Brdge gives them clarity of delivery.
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        {/* Second Pillar - Preservation */}
+                        <Box
+                            component={motion.div}
+                            custom={1}
+                            initial="initial"
+                            animate={inView ? "animate" : "initial"}
+                            variants={pillarAnimation}
+                            whileHover={{ x: 10, transition: { duration: 0.2 } }}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 3,
+                                padding: { xs: 2, md: 3 },
+                                borderRadius: '8px',
+                                transition: 'all 0.3s ease',
+                                position: 'relative',
+                                // Subtle background on hover
+                                '&:hover': {
+                                    background: `linear-gradient(90deg, ${colors.parchmentDark}70, transparent)`,
+                                    '& .pillar-icon': {
+                                        transform: 'translateY(-3px)',
+                                        boxShadow: `0 6px 15px ${colors.sepia}30`,
+                                    },
+                                    '& .pillar-line': {
+                                        width: '100%',
+                                        opacity: 0.7,
+                                    }
+                                }
+                            }}
+                        >
+                            {/* Icon with enhanced styling */}
+                            <Box
+                                className="pillar-icon"
+                                sx={{
+                                    width: { xs: '50px', sm: '55px' },
+                                    height: { xs: '50px', sm: '55px' },
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: `linear-gradient(135deg, ${colors.ink}, ${colors.ink}90)`,
+                                    color: colors.parchmentLight,
+                                    boxShadow: `0 4px 10px ${colors.ink}30`,
+                                    transition: 'all 0.3s ease',
+                                    // Add subtle border
+                                    border: `1px solid ${colors.ink}30`,
+                                    // Add inner ring
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: '5px',
+                                        borderRadius: '50%',
+                                        border: `1px dashed ${colors.parchmentLight}50`,
+                                        opacity: 0.6,
+                                    }
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        fontSize: '1.8rem',
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    🕊️
+                                </Box>
+                            </Box>
+
+                            {/* Text Content */}
+                            <Box sx={{ flex: 1 }}>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        fontFamily: headingFontFamily,
+                                        color: colors.ink,
+                                        fontSize: { xs: '1.3rem', sm: '1.5rem' },
+                                        fontWeight: 600,
+                                        mb: 1.5,
+                                        position: 'relative',
+                                    }}
+                                >
+                                    Preservation
+                                    {/* Animated underline */}
+                                    <Box
+                                        className="pillar-line"
+                                        component={motion.div}
+                                        initial={{ width: '30%', opacity: 0.4 }}
+                                        sx={{
+                                            position: 'absolute',
+                                            bottom: '-6px',
+                                            left: 0,
+                                            height: '2px',
+                                            background: `linear-gradient(90deg, ${colors.sepia}90, ${colors.sepia}30)`,
+                                            transition: 'all 0.4s ease',
+                                        }}
+                                    />
+                                </Typography>
+
+                                <Typography
+                                    sx={{
+                                        fontFamily: fontFamily,
+                                        color: colors.inkLight,
+                                        fontSize: '1.05rem',
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    You taught it once. It mattered. That version of your voice shouldn't disappear.
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        {/* Third Pillar - Balance */}
+                        <Box
+                            component={motion.div}
+                            custom={2}
+                            initial="initial"
+                            animate={inView ? "animate" : "initial"}
+                            variants={pillarAnimation}
+                            whileHover={{ x: 10, transition: { duration: 0.2 } }}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 3,
+                                padding: { xs: 2, md: 3 },
+                                borderRadius: '8px',
+                                transition: 'all 0.3s ease',
+                                position: 'relative',
+                                // Subtle background on hover
+                                '&:hover': {
+                                    background: `linear-gradient(90deg, ${colors.parchmentDark}70, transparent)`,
+                                    '& .pillar-icon': {
+                                        transform: 'translateY(-3px)',
+                                        boxShadow: `0 6px 15px ${colors.sepia}30`,
+                                    },
+                                    '& .pillar-line': {
+                                        width: '100%',
+                                        opacity: 0.7,
+                                    }
+                                }
+                            }}
+                        >
+                            {/* Icon with enhanced styling */}
+                            <Box
+                                className="pillar-icon"
+                                sx={{
+                                    width: { xs: '50px', sm: '55px' },
+                                    height: { xs: '50px', sm: '55px' },
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: `linear-gradient(135deg, ${colors.ink}, ${colors.ink}90)`,
+                                    color: colors.parchmentLight,
+                                    boxShadow: `0 4px 10px ${colors.ink}30`,
+                                    transition: 'all 0.3s ease',
+                                    // Add subtle border
+                                    border: `1px solid ${colors.ink}30`,
+                                    // Add inner ring
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        inset: '5px',
+                                        borderRadius: '50%',
+                                        border: `1px dashed ${colors.parchmentLight}50`,
+                                        opacity: 0.6,
+                                    }
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        fontSize: '1.8rem',
+                                        lineHeight: 1,
+                                    }}
+                                >
+                                    ⚖️
+                                </Box>
+                            </Box>
+
+                            {/* Text Content */}
+                            <Box sx={{ flex: 1 }}>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        fontFamily: headingFontFamily,
+                                        color: colors.ink,
+                                        fontSize: { xs: '1.3rem', sm: '1.5rem' },
+                                        fontWeight: 600,
+                                        mb: 1.5,
+                                        position: 'relative',
+                                    }}
+                                >
+                                    Balance
+                                    {/* Animated underline */}
+                                    <Box
+                                        className="pillar-line"
+                                        component={motion.div}
+                                        initial={{ width: '30%', opacity: 0.4 }}
+                                        sx={{
+                                            position: 'absolute',
+                                            bottom: '-6px',
+                                            left: 0,
+                                            height: '2px',
+                                            background: `linear-gradient(90deg, ${colors.sepia}90, ${colors.sepia}30)`,
+                                            transition: 'all 0.4s ease',
+                                        }}
+                                    />
+                                </Typography>
+
+                                <Typography
+                                    sx={{
+                                        fontFamily: fontFamily,
+                                        color: colors.inkLight,
+                                        fontSize: '1.05rem',
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    Brdge lets you grow your reach without losing your presence — or your peace of mind.
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </Box>
+                </Box>
+
+                {/* Final tagline with animated quill stroke */}
+                <Box
+                    component={motion.div}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={inView ? { opacity: 1, y: 0 } : {}}
+                    transition={{ delay: 1.4, duration: 0.8 }}
+                    sx={{
+                        textAlign: 'center',
+                        mt: { xs: 6, sm: 8 },
+                        position: 'relative',
+                        // Add animated quill stroke path below
                         '&::after': {
                             content: '""',
                             position: 'absolute',
                             bottom: '-15px',
                             left: '50%',
-                            transform: 'translateX(-50%)',
                             width: '80px',
                             height: '2px',
-                            background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
-                            borderRadius: '2px',
-                            opacity: 0.8,
+                            background: `linear-gradient(90deg, transparent, ${colors.sepia}, transparent)`,
+                            transform: 'translateX(-50%) rotate(-1deg)',
+                            opacity: 0.6,
                         }
-                    }}>
-                        <Box
-                            component={motion.div}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={inView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ delay: 0.3, duration: 0.8 }}
-                            sx={{
-                                position: 'relative',
-                                display: 'inline-block',
-                                mb: 2,
-                            }}
-                        >
-                            {/* Decorative quill mark above title */}
-                            <Box sx={{
-                                position: 'absolute',
-                                top: '-20px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: '30px',
-                                height: '12px',
-                                backgroundImage: `url(${stampLogoTexture})`,
-                                backgroundSize: 'cover',
-                                opacity: 0.3,
-                            }} />
-
-                            <Typography variant="h2" sx={{
-                                fontFamily: headingFontFamily,
-                                fontSize: { xs: '2.2rem', sm: '2.8rem', md: '3.4rem' },
-                                fontWeight: 600,
-                                color: colors.ink,
-                                letterSpacing: '-0.02em',
-                                textTransform: 'none',
-                                // Add ink-like text styling
-                                WebkitTextFillColor: 'transparent',
-                                WebkitBackgroundClip: 'text',
-                                backgroundImage: `linear-gradient(to bottom, ${colors.ink} 95%, ${colors.sepia}90 100%)`,
-                            }}>
-                                Why Brdge AI Matters
-                            </Typography>
-                        </Box>
-
-                        <Typography
-                            component={motion.p}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={inView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ delay: 0.5, duration: 0.8 }}
-                            sx={{
-                                fontFamily: fontFamily,
-                                color: colors.inkLight,
-                                fontSize: { xs: '1.05rem', sm: '1.2rem' },
-                                lineHeight: 1.6,
-                                maxWidth: '700px',
-                                mx: 'auto',
-                                px: { xs: 2, sm: 0 },
-                            }}
-                        >
-                            These stories highlight how Brdge AI solves real-world teaching challenges and transforms educational experiences for both educators and students.
-                        </Typography>
-                    </Box>
-
-                    {/* Story Cards with Neo-Scholar styling */}
-                    <Stack spacing={{ xs: 6, md: 8 }}>
-                        {storyData.map((story, index) => (
-                            <motion.div
-                                key={index}
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={inView ? { opacity: 1, y: 0 } : {}}
-                                transition={{ delay: 0.2 + index * 0.1, duration: 0.8 }}
-                            >
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        flexDirection: { xs: 'column', md: index % 2 === 0 ? 'row' : 'row-reverse' },
-                                        alignItems: 'center',
-                                        gap: { xs: 4, md: 6 },
-                                        position: 'relative',
-                                        // Add subtle quill mark for decoration
-                                        '&::before': {
-                                            content: '""',
-                                            position: 'absolute',
-                                            top: index % 2 === 0 ? '10%' : '15%',
-                                            left: index % 2 === 0 ? '45%' : '50%',
-                                            width: '15px',
-                                            height: '1px',
-                                            background: `linear-gradient(90deg, transparent, ${colors.sepia}60, transparent)`,
-                                            transform: `rotate(${index % 2 === 0 ? '-15' : '12'}deg)`,
-                                            opacity: 0.6,
-                                            zIndex: 0,
-                                        }
-                                    }}
-                                >
-                                    {/* Image with scholarly frame styling */}
-                                    <Box
-                                        component={motion.div}
-                                        whileHover={{
-                                            scale: 1.02,
-                                            transition: { duration: 0.3 }
-                                        }}
-                                        sx={{
-                                            width: { xs: '100%', md: '50%' },
-                                            position: 'relative',
-                                            borderRadius: '12px',
-                                            overflow: 'hidden',
-                                            // Add parchment frame effect
-                                            border: `1px solid ${colors.sepia}30`,
-                                            boxShadow: `0 8px 25px rgba(0,0,0,0.12)`,
-                                            padding: '8px',
-                                            background: colors.parchmentLight,
-                                            // Add texture to frame
-                                            '&::before': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                inset: 0,
-                                                backgroundImage: `url(${darkParchmentTexture})`,
-                                                backgroundSize: 'cover',
-                                                opacity: 0.08,
-                                                mixBlendMode: 'multiply',
-                                                zIndex: 0,
-                                            },
-                                            // Add subtle corner decorations
-                                            '&::after': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                right: 0,
-                                                bottom: 0,
-                                                borderRadius: '12px',
-                                                border: `1px solid ${colors.sepia}20`,
-                                                pointerEvents: 'none',
-                                                zIndex: 2,
-                                            }
-                                        }}
-                                    >
-                                        <Box
-                                            component="img"
-                                            src={story.image}
-                                            alt={story.title}
-                                            sx={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover',
-                                                borderRadius: '8px',
-                                                position: 'relative',
-                                                zIndex: 1,
-                                            }}
-                                        />
-
-                                        {/* Add corner flourishes to images */}
-                                        <Box sx={{
-                                            position: 'absolute',
-                                            top: '10px',
-                                            left: '10px',
-                                            width: '20px',
-                                            height: '20px',
-                                            borderTop: `1px solid ${colors.sepia}60`,
-                                            borderLeft: `1px solid ${colors.sepia}60`,
-                                            zIndex: 2,
-                                        }} />
-
-                                        <Box sx={{
-                                            position: 'absolute',
-                                            bottom: '10px',
-                                            right: '10px',
-                                            width: '20px',
-                                            height: '20px',
-                                            borderBottom: `1px solid ${colors.sepia}60`,
-                                            borderRight: `1px solid ${colors.sepia}60`,
-                                            zIndex: 2,
-                                        }} />
-                                    </Box>
-
-                                    {/* Text content with neo-scholar styling */}
-                                    <Box
-                                        component={motion.div}
-                                        whileHover={{ x: index % 2 === 0 ? 5 : -5 }}
-                                        sx={{
-                                            flex: 1,
-                                            textAlign: { xs: 'center', md: 'left' },
-                                            padding: { xs: 2, md: 3 },
-                                            position: 'relative',
-                                            // Add subtle border on hover
-                                            '&:hover::before': {
-                                                opacity: 0.8,
-                                            },
-                                            '&::before': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                left: 0,
-                                                top: '20%',
-                                                bottom: '20%',
-                                                width: '2px',
-                                                background: `linear-gradient(to bottom, transparent, ${colors.sepia}50, transparent)`,
-                                                opacity: 0.4,
-                                                transition: 'opacity 0.3s ease',
-                                                display: { xs: 'none', md: 'block' },
-                                                left: index % 2 === 0 ? 0 : 'auto',
-                                                right: index % 2 === 0 ? 'auto' : 0,
-                                            }
-                                        }}
-                                    >
-                                        <Typography
-                                            variant="h4"
-                                            component={motion.h4}
-                                            whileHover={{
-                                                color: colors.sepia,
-                                                transition: { duration: 0.2 }
-                                            }}
-                                            sx={{
-                                                fontFamily: headingFontFamily,
-                                                color: colors.ink,
-                                                fontSize: { xs: '1.6rem', sm: '2.2rem' }, // Smaller on mobile
-                                                fontWeight: 600,
-                                                mb: { xs: 1.5, sm: 2 }, // Less margin on mobile
-                                                position: 'relative',
-                                                display: 'inline-block',
-                                                // Add underline effect
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    bottom: '-6px',
-                                                    left: { xs: '10%', md: '0%' },
-                                                    width: { xs: '80%', md: '40%' },
-                                                    height: '1px',
-                                                    background: `linear-gradient(90deg, ${colors.sepia}90, ${colors.sepia}30)`,
-                                                    transition: 'width 0.3s ease, opacity 0.3s ease',
-                                                    opacity: 0.7,
-                                                },
-                                                '&:hover::after': {
-                                                    width: { xs: '90%', md: '60%' },
-                                                    opacity: 1,
-                                                }
-                                            }}
-                                        >
-                                            {story.title}
-                                        </Typography>
-
-                                        <Typography
-                                            variant="h6"
-                                            sx={{
-                                                color: colors.sepia,
-                                                mb: { xs: 2, sm: 3 }, // Less margin on mobile
-                                                fontFamily: headingFontFamily,
-                                                fontStyle: 'italic',
-                                                fontSize: { xs: '1rem', sm: '1.2rem' }, // Smaller on mobile
-                                                fontWeight: 500,
-                                                opacity: 0.85,
-                                                // Add subtle sepia glow
-                                                textShadow: `0 0 1px ${colors.sepia}20`,
-                                            }}
-                                        >
-                                            {story.subtitle}
-                                        </Typography>
-
-                                        <Typography
-                                            sx={{
-                                                color: colors.inkLight,
-                                                fontSize: { xs: '0.95rem', sm: '1.1rem' }, // Smaller on mobile
-                                                fontFamily: fontFamily,
-                                                lineHeight: 1.7,
-                                                position: 'relative',
-                                                px: { xs: 1, sm: 0 }, // Added padding on mobile
-                                                // Add quill pen flourish
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    bottom: '-15px',
-                                                    right: { xs: '45%', md: index % 2 === 0 ? '75%' : '5%' },
-                                                    width: '25px',
-                                                    height: '1px',
-                                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}60, transparent)`,
-                                                    transform: 'rotate(-5deg)',
-                                                    opacity: 0.6,
-                                                }
-                                            }}
-                                        >
-                                            {story.description}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            </motion.div>
-                        ))}
-                    </Stack>
-
-                    {/* Add decorative quill mark at the bottom */}
-                    <Box
-                        component={motion.div}
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={inView ? { opacity: 0.4, width: '50px' } : {}}
-                        transition={{ delay: 1.2, duration: 1 }}
+                    }}
+                >
+                    <Typography
                         sx={{
-                            position: 'relative',
-                            height: '2px',
-                            background: `linear-gradient(90deg, transparent, ${colors.sepia}70, ${colors.sepia}40)`,
-                            transform: 'rotate(-1deg)',
-                            marginTop: 8,
-                            marginLeft: 'auto',
-                            marginRight: 'auto',
-                            // Quill stroke decoration
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: '-3px',
-                                right: '5px',
-                                width: '8px',
-                                height: '1px',
-                                background: colors.sepia,
-                                transform: 'rotate(15deg)',
-                                opacity: 0.7,
-                            }
+                            fontFamily: headingFontFamily,
+                            fontStyle: 'italic',
+                            fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                            color: colors.sepia,
+                            lineHeight: 1.5,
+                            maxWidth: '700px',
+                            mx: 'auto',
+                            opacity: 0.85,
                         }}
-                    />
-                </motion.div>
+                    >
+                        Every course is a chance to leave something behind — something that speaks, teaches, and lasts.
+                    </Typography>
+                </Box>
             </Container>
+
+            {/* Animated quill stroke at the bottom */}
+            <Box
+                component={motion.div}
+                initial="initial"
+                animate={inView ? "animate" : "initial"}
+                variants={quillAnimation}
+                sx={{
+                    position: 'absolute',
+                    bottom: '30px',
+                    right: '15%',
+                    height: '2px',
+                    maxWidth: '120px',
+                    background: `linear-gradient(90deg, transparent, ${colors.sepia}60, ${colors.sepia}30)`,
+                    transform: 'rotate(2deg)',
+                    // Quill flourish at the end
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        right: 0,
+                        bottom: '-2px',
+                        width: '5px',
+                        height: '5px',
+                        borderRadius: '50% 50% 0 50%',
+                        background: colors.sepia,
+                        opacity: 0.5,
+                    }
+                }}
+            />
         </Box>
     );
 };
 
+//
+// ShiftSection - Modern learning paradigm shift
+//
+const ShiftSection = () => {
+    const [ref, inView] = useInView({
+        threshold: 0.15,
+        triggerOnce: true
+    });
+
+    // Animation variants
+    const fadeIn = {
+        hidden: { opacity: 0, y: 20 },
+        visible: (custom) => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+                delay: 0.2 + (custom * 0.1),
+                duration: 0.6,
+                ease: "easeOut"
+            }
+        })
+    };
+
+    // Comparison table data
+    const comparisonItems = [
+        { traditional: "Static videos", brdge: "Interactive, voice-led guidance" },
+        { traditional: "One-size-fits-all lessons", brdge: "Personalized learning moments" },
+        { traditional: "Support via email or Slack", brdge: "Instant answers in your voice" },
+        { traditional: "High dropout, low engagement", brdge: "Higher completion + retention" },
+        { traditional: "You do everything", brdge: "Brdge handles 80% of questions" }
+    ];
+
+    return (
+        <Box
+            component="section"
+            sx={{
+                position: 'relative',
+                py: { xs: 7, sm: 9, md: 11 },
+                background: `linear-gradient(135deg, ${colors.parchmentDark} 0%, ${colors.parchment} 100%)`,
+                borderTop: `1px solid ${colors.sepia}20`,
+                borderBottom: `1px solid ${colors.sepia}20`,
+                overflow: 'hidden',
+                // Add subtle texture overlay
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage: `url(${darkParchmentTexture})`,
+                    backgroundSize: 'cover',
+                    opacity: 0.1,
+                    mixBlendMode: 'multiply',
+                    zIndex: 0,
+                }
+            }}
+        >
+            {/* Background decorative elements */}
+            <Box
+                sx={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    width: '20%',
+                    height: '40%',
+                    opacity: 0.05,
+                    background: `url(${ivyStraight})`,
+                    backgroundSize: 'contain',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'top right',
+                    transform: 'scaleX(-1) rotate(20deg)',
+                    zIndex: 0,
+                    pointerEvents: 'none',
+                }}
+            />
+
+            <Container
+                maxWidth="lg"
+                ref={ref}
+                sx={{
+                    position: 'relative',
+                    zIndex: 2,
+                }}
+            >
+                {/* Section Header */}
+                <Box
+                    sx={{
+                        textAlign: 'center',
+                        mb: { xs: 5, sm: 6, md: 7 },
+                        position: 'relative',
+                        maxWidth: '900px',
+                        mx: 'auto',
+                    }}
+                >
+                    {/* Section Label */}
+                    <motion.div
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                        variants={fadeIn}
+                        custom={0}
+                    >
+                        <Typography
+                            sx={{
+                                fontFamily: fontFamily,
+                                fontSize: { xs: '0.75rem', sm: '0.85rem' },
+                                letterSpacing: '0.2em',
+                                textTransform: 'uppercase',
+                                color: colors.sepia,
+                                mb: 1.5,
+                                opacity: 0.9,
+                                fontWeight: 600,
+                            }}
+                        >
+                            The Shift Is Happening
+                        </Typography>
+                    </motion.div>
+
+                    {/* Main Headline */}
+                    <motion.div
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                        variants={fadeIn}
+                        custom={1}
+                    >
+                        <Typography
+                            component="h2"
+                            sx={{
+                                fontFamily: headingFontFamily,
+                                fontSize: { xs: '2.2rem', sm: '3rem', md: '3.5rem' },
+                                fontWeight: 600,
+                                color: colors.ink,
+                                mb: 3,
+                                lineHeight: 1.2,
+                                // Add subtle ink effect
+                                WebkitTextFillColor: 'transparent',
+                                WebkitBackgroundClip: 'text',
+                                backgroundImage: `linear-gradient(to bottom, ${colors.ink} 95%, ${colors.sepia}90 100%)`,
+                                position: 'relative',
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: '-15px',
+                                    left: '25%',
+                                    right: '25%',
+                                    height: '1px',
+                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}70, transparent)`,
+                                    opacity: 0.8,
+                                }
+                            }}
+                        >
+                            Students Are Learning Differently Now
+                        </Typography>
+                    </motion.div>
+
+                    {/* Two-column layout with text and image */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', md: 'row' },
+                            gap: { xs: 4, md: 6 },
+                            width: '100%',
+                            maxWidth: '1050px',
+                            mx: 'auto',
+                            mb: { xs: 6, sm: 8 },
+                            mt: { xs: 2, sm: 3 },
+                            px: { xs: 2, md: 0 },
+                            alignItems: { md: 'center' }, // Center align items on desktop
+                        }}
+                    >
+                        {/* Text Column - Left */}
+                        <Box
+                            component={motion.div}
+                            initial="hidden"
+                            animate={inView ? "visible" : "hidden"}
+                            variants={fadeIn}
+                            custom={2}
+                            sx={{
+                                flex: { md: '1.25' }, // Make text column wider (25% more)
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                alignItems: { xs: 'center', md: 'flex-start' }, // Left align on desktop
+                                pr: { md: 3 }, // Add padding on the right for desktop
+                            }}
+                        >
+                            <Typography
+                                sx={{
+                                    fontFamily: fontFamily,
+                                    fontSize: { xs: '1.1rem', sm: '1.25rem' },
+                                    lineHeight: 1.65, // Increased line-height
+                                    color: colors.inkLight,
+                                    position: 'relative',
+                                    mb: { xs: 2, md: 0 },
+                                    textAlign: { xs: 'center', md: 'left' }, // Left align text on desktop
+                                    maxWidth: '550px', // Control maximum width
+                                    // Add decorative side element for desktop
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        left: -20,
+                                        top: '10%',
+                                        bottom: '10%',
+                                        width: '3px',
+                                        background: `linear-gradient(to bottom, transparent, ${colors.sepia}40, transparent)`,
+                                        display: { xs: 'none', md: 'block' },
+                                    },
+                                    // Enhance styling for each sentence
+                                    '& .sentence': {
+                                        display: 'block',
+                                        mb: 1.2, // Add space between sentences
+                                    },
+                                    // Add subtle emphasis to key phrases
+                                    '& .emphasis': {
+                                        color: colors.ink,
+                                        fontWeight: 500,
+                                    }
+                                }}
+                            >
+                                <span className="sentence">They pause. They question. They search at midnight.</span>
+                                <span className="sentence">They expect answers that are <span className="emphasis">instant, personal, and real</span>.</span>
+
+                                <span className="sentence" style={{ marginTop: '1.2rem' }}>
+                                    Brdge meets them where they are — and helps you stay
+                                    <span className="emphasis"> present</span>,
+                                    even when you're not online.
+                                </span>
+                            </Typography>
+                        </Box>
+
+                        {/* Image Column - Right */}
+                        <Box
+                            component={motion.div}
+                            initial="hidden"
+                            animate={inView ? "visible" : "hidden"}
+                            variants={fadeIn}
+                            custom={3}
+                            sx={{
+                                flex: { md: '1' }, // Standard flex for image
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: { xs: 'center', md: 'flex-end' }, // Right align on desktop
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    position: 'relative',
+                                    width: '100%',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    boxShadow: `0 10px 30px rgba(0,0,0,0.12)`,
+                                    border: `1px solid ${colors.sepia}30`,
+                                    // Use auto height to preserve aspect ratio
+                                    '& img': {
+                                        filter: 'sepia(0.2)',
+                                        transition: 'all 0.5s ease',
+                                        '&:hover': {
+                                            filter: 'sepia(0.1)',
+                                        }
+                                    }
+                                }}
+                            >
+                                <Box
+                                    component="img"
+                                    src="/self-taught.webp"
+                                    alt="Student reading on rooftop - self-guided learning"
+                                    sx={{
+                                        width: '100%',
+                                        height: 'auto', // Auto height to maintain aspect ratio
+                                        display: 'block',
+                                    }}
+                                />
+                            </Box>
+
+                            {/* Caption below image */}
+                            <Typography
+                                component={motion.p}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.5, duration: 0.6 }}
+                                sx={{
+                                    fontFamily: headingFontFamily,
+                                    fontStyle: 'italic',
+                                    fontSize: { xs: '0.95rem', sm: '1.1rem' },
+                                    color: colors.sepia,
+                                    textAlign: 'center',
+                                    width: '100%', // Full width for caption
+                                    mt: 2,
+                                    mb: 1,
+                                    opacity: 0.9,
+                                    position: 'relative',
+                                    // Add decorative element
+                                    '&::before': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        bottom: '-12px',
+                                        left: '15%',
+                                        right: '15%',
+                                        height: '1px',
+                                        background: `linear-gradient(90deg, transparent, ${colors.sepia}50, transparent)`,
+                                    }
+                                }}
+                            >
+                                "This isn't school as it was. It's learning as it should be."
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {/* Comparison Table */}
+                    <motion.div
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                        variants={fadeIn}
+                        custom={4}
+                    >
+                        <Box
+                            sx={{
+                                width: '100%',
+                                maxWidth: '900px',
+                                mx: 'auto',
+                                mb: { xs: 6, sm: 7 },
+                                overflow: 'hidden',
+                                border: `1px solid ${colors.sepia}30`,
+                                borderRadius: '8px',
+                                background: `rgba(255, 255, 255, 0.5)`,
+                                boxShadow: `0 6px 20px rgba(0,0,0,0.08)`,
+                            }}
+                        >
+                            {/* Table Header - Show only on desktop */}
+                            <Box
+                                sx={{
+                                    display: { xs: 'none', sm: 'grid' }, // Hide on mobile
+                                    gridTemplateColumns: 'repeat(2, 1fr)',
+                                    borderBottom: `1px solid ${colors.sepia}30`,
+                                    background: colors.parchmentDark,
+                                }}
+                            >
+                                <Typography
+                                    sx={{
+                                        fontFamily: headingFontFamily,
+                                        fontSize: '1.2rem',
+                                        fontWeight: 600,
+                                        color: colors.ink,
+                                        p: 2.5,
+                                        textAlign: 'center',
+                                        borderRight: `1px solid ${colors.sepia}30`,
+                                    }}
+                                >
+                                    Traditional Online Courses
+                                </Typography>
+                                <Typography
+                                    sx={{
+                                        fontFamily: headingFontFamily,
+                                        fontSize: '1.2rem',
+                                        fontWeight: 600,
+                                        color: colors.ink,
+                                        p: 2.5,
+                                        textAlign: 'center',
+                                        position: 'relative',
+                                        // Add subtle accent
+                                        '&::after': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            bottom: 0,
+                                            left: '30%',
+                                            width: '40%',
+                                            height: '2px',
+                                            background: colors.sepia,
+                                        }
+                                    }}
+                                >
+                                    Brdge-Powered Learning
+                                </Typography>
+                            </Box>
+
+                            {/* Mobile header - only visible on mobile */}
+                            <Box
+                                sx={{
+                                    display: { xs: 'block', sm: 'none' },
+                                    background: colors.parchmentDark,
+                                    borderBottom: `1px solid ${colors.sepia}30`,
+                                    p: 2.5,
+                                    textAlign: 'center',
+                                }}
+                            >
+                                <Typography
+                                    sx={{
+                                        fontFamily: headingFontFamily,
+                                        fontSize: '1.1rem',
+                                        fontWeight: 600,
+                                        color: colors.ink,
+                                        mb: 0.5,
+                                    }}
+                                >
+                                    How Brdge Transforms Learning
+                                </Typography>
+                            </Box>
+
+                            {/* Table Rows - Desktop View */}
+                            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                {comparisonItems.map((item, index) => (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(2, 1fr)',
+                                            borderBottom: index < comparisonItems.length - 1 ? `1px solid ${colors.sepia}15` : 'none',
+                                            '&:hover': {
+                                                background: `rgba(255, 255, 255, 0.7)`,
+                                            }
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                fontFamily: fontFamily,
+                                                fontSize: '1rem',
+                                                color: colors.inkLight,
+                                                p: 2.5,
+                                                textAlign: 'center',
+                                                borderRight: `1px solid ${colors.sepia}15`,
+                                            }}
+                                        >
+                                            {item.traditional}
+                                        </Typography>
+                                        <Typography
+                                            sx={{
+                                                fontFamily: fontFamily,
+                                                fontSize: '1rem',
+                                                fontWeight: 500,
+                                                color: colors.ink,
+                                                p: 2.5,
+                                                textAlign: 'center',
+                                            }}
+                                        >
+                                            {item.brdge}
+                                        </Typography>
+                                    </Box>
+                                ))}
+                            </Box>
+
+                            {/* Mobile Comparison Cards - Stack each comparison as a card */}
+                            <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                                {comparisonItems.map((item, index) => (
+                                    <Box
+                                        key={index}
+                                        sx={{
+                                            position: 'relative',
+                                            borderBottom: index < comparisonItems.length - 1 ? `1px solid ${colors.sepia}15` : 'none',
+                                            py: 3,
+                                            px: 3,
+                                            '&:hover': {
+                                                background: `rgba(255, 255, 255, 0.6)`,
+                                            }
+                                        }}
+                                    >
+                                        {/* Label: Traditional vs Brdge */}
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                fontSize: '0.7rem',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em',
+                                                mb: 1.5,
+                                                opacity: 0.7,
+                                                fontWeight: 600,
+                                            }}
+                                        >
+                                            <Box sx={{ color: colors.inkFaded }}>Traditional</Box>
+                                            <Box sx={{ color: colors.sepia }}>Brdge</Box>
+                                        </Box>
+
+                                        {/* Content container */}
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: 2
+                                            }}
+                                        >
+                                            {/* Traditional vs Brdge comparison */}
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    width: '100%',
+                                                }}
+                                            >
+                                                {/* Traditional side */}
+                                                <Box
+                                                    sx={{
+                                                        flex: 1,
+                                                        pr: 2,
+                                                        py: 1.5,
+                                                        borderRight: `1px dashed ${colors.sepia}30`,
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            fontFamily: fontFamily,
+                                                            fontSize: '0.95rem',
+                                                            color: colors.inkLight,
+                                                            textAlign: 'center',
+                                                        }}
+                                                    >
+                                                        {item.traditional}
+                                                    </Typography>
+                                                </Box>
+
+                                                {/* Brdge side */}
+                                                <Box
+                                                    sx={{
+                                                        flex: 1,
+                                                        pl: 2,
+                                                        py: 1.5,
+                                                        position: 'relative',
+                                                    }}
+                                                >
+                                                    <Typography
+                                                        sx={{
+                                                            fontFamily: fontFamily,
+                                                            fontSize: '0.95rem',
+                                                            fontWeight: 500,
+                                                            color: colors.ink,
+                                                            textAlign: 'center',
+                                                        }}
+                                                    >
+                                                        {item.brdge}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        </Box>
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Box>
+                    </motion.div>
+
+                    {/* Closing Statement */}
+                    <motion.div
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                        variants={fadeIn}
+                        custom={5}
+                    >
+                        <Typography
+                            component="blockquote"
+                            sx={{
+                                fontFamily: headingFontFamily,
+                                fontStyle: 'italic',
+                                fontSize: { xs: '1.2rem', sm: '1.4rem' },
+                                color: colors.sepia,
+                                textAlign: 'center',
+                                maxWidth: '600px',
+                                mx: 'auto',
+                                mb: { xs: 6, sm: 7 }, // Increased margin for better spacing
+                                lineHeight: 1.6,
+                                '&::before, &::after': {
+                                    content: '"""',
+                                    fontFamily: headingFontFamily,
+                                    fontWeight: 600,
+                                    fontSize: '1.5em',
+                                    lineHeight: 0,
+                                    verticalAlign: 'baseline',
+                                    opacity: 0.5,
+                                },
+                                '&::before': { marginRight: '0.2em', verticalAlign: 'sub' },
+                                '&::after': { marginLeft: '0.2em' },
+                            }}
+                        >
+                            You're not just building a course.
+                            <br />
+                            You're building what comes next.
+                        </Typography>
+                    </motion.div>
+
+                    {/* CTA Buttons - Improved spacing and hierarchy */}
+                    <motion.div
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                        variants={fadeIn}
+                        custom={6}
+                    >
+                        <Box
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 3.5, // Increased gap between elements
+                                width: '100%',
+                                maxWidth: '400px',
+                                mx: 'auto',
+                                pt: { xs: 2, sm: 3 }, // Added top padding as requested
+                            }}
+                        >
+                            <motion.div
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                                style={{ width: '100%' }}
+                            >
+                                <Button
+                                    component={Link}
+                                    to="/signup"
+                                    variant="contained"
+                                    size="large"
+                                    fullWidth
+                                    sx={{
+                                        ...createButtonStyles('primary', false),
+                                        position: 'relative',
+                                        minHeight: '56px',
+                                        fontSize: '1.1rem',
+                                        mb: 1.5, // Added bottom margin
+                                    }}
+                                    endIcon={<ArrowForward />}
+                                >
+                                    Create Your First Brdge
+                                </Button>
+                            </motion.div>
+
+                            <Box
+                                component={Link}
+                                to="/contact"
+                                sx={{
+                                    fontFamily: fontFamily,
+                                    fontSize: '0.9rem', // Made slightly smaller
+                                    color: colors.inkLight,
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                    transition: 'all 0.2s ease',
+                                    marginTop: 1, // Added more top spacing
+                                    borderBottom: '1px solid transparent', // Prepare for hover effect
+                                    paddingBottom: '2px',
+                                    '&:hover': {
+                                        color: colors.sepia,
+                                        borderBottom: `1px solid ${colors.sepia}60`, // Added underline on hover
+                                    }
+                                }}
+                            >
+                                Prefer a done-for-you setup? <span style={{ marginLeft: '4px' }}>Talk to our team</span>
+                                <ArrowForward sx={{ fontSize: '0.8rem', ml: 0.5 }} />
+                            </Box>
+                        </Box>
+                    </motion.div>
+                </Box>
+            </Container>
+        </Box>
+    );
+};
 
 function LandingPage() {
     const [ref, inView] = useInView({
@@ -3516,18 +3649,11 @@ function LandingPage() {
     });
 
     useEffect(() => {
-        // Preload video
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'video';
-        link.href = demoVideo;
-        document.head.appendChild(link);
-
+        // Remove preloading of video
         // Smooth scroll behavior
         document.documentElement.style.scrollBehavior = 'smooth';
 
         return () => {
-            document.head.removeChild(link);
             document.documentElement.style.scrollBehavior = 'auto';
         };
     }, []);
@@ -3585,39 +3711,25 @@ function LandingPage() {
                 <Container
                     component="main"
                     ref={ref}
-                    maxWidth="lg"
+                    maxWidth={false} // Changed to false for full-width sections
+                    disableGutters // Remove gutters for full-width sections
                     sx={{
                         position: 'relative',
                         zIndex: 1,
-                        pt: { xs: 5, sm: 3, md: 5 }, // Restored original padding
-                        pb: { xs: 6, sm: 6, md: 8 },
-                        px: { xs: 2, sm: 3, md: 4 },
+                        pt: 0, // Remove top padding for seamless section flow
+                        pb: { xs: 6, sm: 6, md: 8 }, // Keep bottom padding for footer spacing
+                        px: 0, // Remove horizontal padding
                         flex: 1,
-                        // Add torn parchment edge effect
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: '5%',
-                            right: '5%',
-                            height: '8px',
-                            background: `linear-gradient(90deg, transparent 0%, ${colors.mapBorder}20 20%,
-                                        transparent 30%, ${colors.mapBorder}20 40%, transparent 50%,
-                                        ${colors.mapBorder}20 60%, transparent 70%, ${colors.mapBorder}20 80%,
-                                        transparent 100%)`,
-                            opacity: 0.5,
-                            zIndex: 10,
-                        }
+                        // Remove the torn parchment edge effect if sections are full-width
+                        // '&::before': { ... }
                     }}
                 >
-                    {/* Removed top-level motion.div, handled within components */}
+                    {/* Merged Section */}
                     <IntroducingBrdgeAI />
+                    <MissionSection />
                     <ScholarlyDivider />
-                    <HowItWorksSection />
-                    <StorySection />
+                    <ShiftSection />
                     <ScholarlyDivider />
-                    <ImpactSection />
-                    {/* Removed ScholarlyDivider before FinalCTA */}
                     <FinalCTA />
                 </Container>
 
