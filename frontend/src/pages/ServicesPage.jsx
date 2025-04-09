@@ -20,6 +20,7 @@ import {
     Card,
     CardContent,
     Divider,
+    CircularProgress,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { styled } from '@mui/material/styles';
@@ -35,6 +36,7 @@ import { useInView } from 'react-intersection-observer';
 import { useNavigate, Link } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
 import { createParchmentContainerStyles } from '../theme';
+import { api } from '../api';
 
 // Scholarly divider for section separation
 const ScholarlyDivider = styled(Box)(({ theme }) => ({
@@ -340,17 +342,46 @@ const ServicesPage = () => {
         courseTopic: '',
     });
     const [submitted, setSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setLead(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleLeadSubmit = (e) => {
+    const handleLeadSubmit = async (e) => {
         e.preventDefault();
-        // For now, simulate form submission
-        console.log('Lead submitted:', lead);
-        setSubmitted(true);
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            const response = await api.post('/services/leads', {
+                name: lead.name,
+                email: lead.email,
+                hasExistingCourse: lead.hasExistingCourse,
+                courseTopic: lead.courseTopic
+            });
+
+            if (response.data.success) {
+                setSubmitted(true);
+                // Clear form
+                setLead({
+                    name: '',
+                    email: '',
+                    hasExistingCourse: '',
+                    courseTopic: ''
+                });
+            } else {
+                throw new Error(response.data.error || 'Failed to submit form');
+            }
+        } catch (error) {
+            console.error('Error submitting lead:', error);
+            setError(error.response?.data?.error || 'Failed to submit form. Please try again.');
+            setSubmitted(false);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     // Create parchment container styles from theme
@@ -1191,6 +1222,7 @@ const ServicesPage = () => {
                                     type="submit"
                                     variant="contained"
                                     fullWidth
+                                    disabled={isSubmitting}
                                     sx={{
                                         py: { xs: 1.5, md: 2 },
                                         px: { xs: 4, md: 6 },
@@ -1215,7 +1247,11 @@ const ServicesPage = () => {
                                         },
                                     }}
                                 >
-                                    Transform Your Course Now
+                                    {isSubmitting ? (
+                                        <CircularProgress size={24} color="inherit" />
+                                    ) : (
+                                        'Transform Your Course Now'
+                                    )}
                                 </Button>
                                 <Typography
                                     variant="caption"

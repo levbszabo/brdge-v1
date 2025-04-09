@@ -34,6 +34,7 @@ from models import (
     Enrollment,
     ModulePermissions,
     ConversationLogs,
+    ServiceLead,
 )
 from utils import (
     clone_voice_helper,
@@ -78,6 +79,9 @@ from dotenv import load_dotenv
 import ffmpeg
 import time
 import threading
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Load environment variables
 load_dotenv()
@@ -3270,3 +3274,221 @@ def get_conversation_logs(brdge_id):
     except Exception as e:
         logger.error(f"Error fetching conversation logs: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/contact", methods=["POST"])
+@jwt_required()
+def submit_contact_issue():
+    try:
+        current_user = get_current_user()
+        data = request.get_json()
+        message = data.get("message")
+
+        if not message:
+            return jsonify({"error": "Message is required"}), 400
+
+        # Create new user issue
+        user_issue = UserIssues(
+            user_id=current_user.id,
+            message=message,
+            status="pending",
+            created_at=datetime.utcnow(),
+        )
+
+        db.session.add(user_issue)
+        db.session.commit()
+
+        # Send email notification
+        email_content = {"email": current_user.email, "message": message}
+        send_notification_email(
+            subject="New Support Request from Brdge AI",
+            content=email_content,
+            template_type="support",
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Your message has been received. Our team will get back to you soon.",
+                    "issue": user_issue.to_dict(),
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error submitting contact issue: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Failed to submit your message. Please try again.",
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/services/leads", methods=["POST"])
+def submit_service_lead():
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        required_fields = ["name", "email", "hasExistingCourse"]
+        missing_fields = [field for field in required_fields if not data.get(field)]
+        if missing_fields:
+            return (
+                jsonify(
+                    {
+                        "error": "Missing required fields",
+                        "missing_fields": missing_fields,
+                    }
+                ),
+                400,
+            )
+
+        # Validate email format
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_regex, data.get("email")):
+            return jsonify({"error": "Invalid email format"}), 400
+
+        # Create new lead
+        lead = ServiceLead(
+            name=data.get("name"),
+            email=data.get("email"),
+            has_existing_course=data.get("hasExistingCourse") == "yes",
+            course_topic=data.get("courseTopic"),
+            status="new",
+        )
+
+        db.session.add(lead)
+        db.session.commit()
+
+        # Send email notification
+        email_content = {
+            "name": data.get("name"),
+            "email": data.get("email"),
+            "has_existing_course": data.get("hasExistingCourse"),
+            "course_topic": data.get("courseTopic"),
+        }
+        send_notification_email(
+            subject="New Service Lead from Brdge AI",
+            content=email_content,
+            template_type="lead",
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Thank you for your interest! Our team will contact you within 24 hours.",
+                    "lead": lead.to_dict(),
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error submitting service lead: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Failed to submit your information. Please try again.",
+                }
+            ),
+            500,
+        )
+
+
+def send_notification_email(subject, content, template_type="support"):
+    try:
+        email = os.getenv("SMTP_EMAIL", "levi@brdge-ai.com")
+        password = os.getenv("SMTP_PASSWORD")
+
+        msg = MIMEMultipart()
+        msg["From"] = f"Brdge AI Notifications <{email}>"
+        msg["To"] = email
+        msg["Subject"] = subject
+
+        if template_type == "support":
+            html_content = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <h2>🎯 New Support Request</h2>
+                    <p><strong>From User:</strong> {content['email']}</p>
+                    <p><strong>Time:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                    <p><strong>Message:</strong></p>
+                    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px;">
+                        {content['message']}
+                    </div>
+                </body>
+            </html>
+            """
+        else:  # lead template
+            html_content = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <h2>🚀 New Service Lead</h2>
+                    <p><strong>Name:</strong> {content['name']}</p>
+                    <p><strong>Email:</strong> {content['email']}</p>
+                    <p><strong>Has Existing Course:</strong> {content['has_existing_course']}</p>
+                    <p><strong>Course Topic:</strong> {content['course_topic'] or 'Not specified'}</p>
+                    <p><strong>Time:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </body>
+            </html>
+            """
+
+        msg.attach(MIMEText(html_content, "html"))
+
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(email, password)
+            server.send_message(msg)
+
+        logger.info(f"Notification email sent successfully: {subject}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send notification email: {str(e)}")
+        return False
+
+
+@app.route("/api/test-email", methods=["GET"])
+def test_email():
+    """Test email configuration"""
+    try:
+        test_content = {
+            "email": "test@example.com",
+            "message": "This is a test email from Brdge AI system.",
+        }
+
+        success = send_notification_email(
+            subject="Test Email from Brdge AI",
+            content=test_content,
+            template_type="support",
+        )
+
+        if success:
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "message": "Test email sent successfully to your inbox",
+                    }
+                ),
+                200,
+            )
+        else:
+            return (
+                jsonify({"success": False, "message": "Failed to send test email"}),
+                500,
+            )
+
+    except Exception as e:
+        logger.error(f"Error sending test email: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500

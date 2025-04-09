@@ -637,3 +637,36 @@ class ConversationLogs(db.Model):
             "was_interrupted": self.was_interrupted,
             "duration_seconds": self.duration_seconds,
         }
+
+
+class ServiceLead(db.Model):
+    """Tracks potential customers from the services page"""
+
+    __tablename__ = "service_leads"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    has_existing_course = db.Column(db.Boolean, nullable=False)
+    course_topic = db.Column(db.Text, nullable=True)
+    status = db.Column(
+        db.String(20), default="new"
+    )  # new, contacted, qualified, converted
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    contacted_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "has_existing_course": self.has_existing_course,
+            "course_topic": self.course_topic,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "contacted_at": (
+                self.contacted_at.isoformat() if self.contacted_at else None
+            ),
+            "notes": self.notes,
+        }
