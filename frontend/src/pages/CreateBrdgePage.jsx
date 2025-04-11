@@ -8,9 +8,40 @@ import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, Clock, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useTheme } from '@mui/material/styles';
 import { Box, Typography, Button, TextField, CircularProgress, Paper } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024;  // 500MB in bytes
+
+const SepiaText = styled('span')(({ theme }) => ({
+    background: `linear-gradient(45deg, ${theme.palette.sepia.main}, ${theme.palette.sepia.light})`,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    display: 'inline-block',
+    fontFamily: theme.typography.headingFontFamily,
+}));
+
+const ScholarlyDivider = styled(Box)(({ theme }) => ({
+    position: 'relative',
+    height: '40px',
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '20px 0',
+    '&::before, &::after': {
+        content: '""',
+        height: '1px',
+        background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}80, transparent)`,
+        flexGrow: 1,
+    },
+    '&::before': {
+        marginRight: '20px',
+    },
+    '&::after': {
+        marginLeft: '20px',
+    }
+}));
 
 function CreateBrdgePage() {
     const theme = useTheme();
@@ -415,6 +446,7 @@ function CreateBrdgePage() {
                         textAlign: 'center',
                         mb: 5,
                         position: 'relative',
+                        fontFamily: theme.typography.headingFontFamily,
                         '&::after': {
                             content: '""',
                             display: 'block',
@@ -426,7 +458,7 @@ function CreateBrdgePage() {
                             opacity: 0.8,
                         }
                     }}>
-                        Create New AI Module
+                        Create New <SepiaText>AI Module</SepiaText>
                     </Typography>
 
                     <Paper elevation={0} sx={{
@@ -434,8 +466,67 @@ function CreateBrdgePage() {
                         borderRadius: '12px',
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
-                        boxShadow: theme.shadows[2]
+                        boxShadow: theme.shadows[2],
+                        position: 'relative',
+                        overflow: 'hidden',
+                        '&::before': {
+                            content: '""',
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundImage: `url(${theme.textures.darkParchment})`,
+                            backgroundSize: 'cover',
+                            opacity: 0.1,
+                            mixBlendMode: 'multiply',
+                            zIndex: 0,
+                        },
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: '3px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
+                            zIndex: 0,
+                        }
                     }}>
+                        <Box sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: 20,
+                            height: 20,
+                            borderTop: `2px solid ${theme.palette.secondary.main}40`,
+                            borderLeft: `2px solid ${theme.palette.secondary.main}40`,
+                        }} />
+                        <Box sx={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            width: 20,
+                            height: 20,
+                            borderTop: `2px solid ${theme.palette.secondary.main}40`,
+                            borderRight: `2px solid ${theme.palette.secondary.main}40`,
+                        }} />
+                        <Box sx={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            width: 20,
+                            height: 20,
+                            borderBottom: `2px solid ${theme.palette.secondary.main}40`,
+                            borderLeft: `2px solid ${theme.palette.secondary.main}40`,
+                        }} />
+                        <Box sx={{
+                            position: 'absolute',
+                            bottom: 0,
+                            right: 0,
+                            width: 20,
+                            height: 20,
+                            borderBottom: `2px solid ${theme.palette.secondary.main}40`,
+                            borderRight: `2px solid ${theme.palette.secondary.main}40`,
+                        }} />
+
                         <Box sx={{ position: 'relative', zIndex: 1 }}>
                             {error && (
                                 <Box sx={{
@@ -470,6 +561,21 @@ function CreateBrdgePage() {
                                             placeholder="Enter a name..."
                                             required
                                             fullWidth
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    transition: 'all 0.3s ease',
+                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                        borderColor: `${theme.palette.secondary.main}50`,
+                                                    },
+                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                        borderColor: theme.palette.secondary.main,
+                                                        boxShadow: `0 0 0 2px ${theme.palette.secondary.main}20`,
+                                                    },
+                                                },
+                                                '& .MuiInputLabel-root.Mui-focused': {
+                                                    color: theme.palette.secondary.main,
+                                                }
+                                            }}
                                         />
                                     </Box>
 
