@@ -531,7 +531,7 @@ const ServicesPage = () => {
                                 ...parchmentContainerStyles,
                                 height: { xs: '480px', sm: '520px', md: '550px' },
                                 width: '100%',
-                                maxWidth: { xs: '98%', sm: '90%', md: '900px' }, // Wider on mobile
+                                maxWidth: { xs: '98%', sm: '90%', md: '1100px', lg: '1300px' }, // Increased desktop width
                                 mx: 'auto',
                                 borderRadius: { xs: '10px', sm: '8px' }, // Slightly more rounded on mobile
                                 overflow: 'hidden',

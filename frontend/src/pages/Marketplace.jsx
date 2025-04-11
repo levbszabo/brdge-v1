@@ -193,9 +193,19 @@ function MarketplacePage() {
         // If it's already an absolute URL, return it as is
         if (url.startsWith('http')) return url;
 
-        // If it's a relative URL, prepend the API base URL
+        // If it's a relative URL starting with /api
         if (url.startsWith('/api')) {
-            return `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${url}`;
+            const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+            // Remove the duplicate /api if the base URL already ends with /api
+            if (baseUrl.endsWith('/api')) {
+                // Remove the leading /api from the url
+                const cleanUrl = url.replace(/^\/api/, '');
+                return `${baseUrl}${cleanUrl}`;
+            }
+
+            // Otherwise just append as normal
+            return `${baseUrl}${url}`;
         }
 
         return url;
