@@ -1590,9 +1590,9 @@ const IntroducingBrdgeAI = () => {
                         <Box sx={{
                             position: 'relative',
                             width: '100%',
-                            // Adjust aspect ratio to give more height - changed from 16:9 (56.25%) to a taller ratio
-                            paddingTop: { xs: '70%', sm: '65%', md: '60%' },
-                            minHeight: { xs: '400px', sm: '500px', md: '550px' }, // Set minimum height
+                            // Adjust aspect ratio to give more height - aiming for taller on mobile
+                            paddingTop: { xs: '150%', sm: '80%', md: '65%' }, // Increased % for xs again
+                            minHeight: { xs: '500px', sm: '550px', md: '600px' }, // Keep min heights
                             borderRadius: '10px',
                             overflow: 'hidden',
                             backgroundColor: colors.parchmentLight,
