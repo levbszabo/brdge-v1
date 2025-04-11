@@ -1,6 +1,6 @@
 // src/pages/LandingPage.jsx
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Container,
@@ -52,7 +52,56 @@ const parchmentTexture = darkParchmentTexture;
 // HARDCODED BRIDGE ID FOR DEMO
 const DEMO_BRIDGE_ID = '388'; // Demo Bridge ID from https://brdge-ai.com/viewBridge/344-96eac2
 
-// Use these fallbacks until you can create the proper assets
+// Preload critical assets for better performance
+const preloadCriticalAssets = () => {
+    const assets = [
+        darkParchmentTexture,
+        stampLogoTexture,
+        crumbledParchment,
+        ivyVertical,
+        ivyStraight
+    ];
+
+    assets.forEach(asset => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = asset;
+        document.head.appendChild(link);
+    });
+};
+
+// Utility functions for performance optimizations
+// Throttle function to limit execution of handlers
+const throttle = (func, limit) => {
+    let inThrottle;
+    return function () {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+};
+
+// Determine if we're on a mobile device for conditional rendering
+const isMobileDevice = () => {
+    return window.innerWidth < 768;
+};
+
+// --- Animation timing constants ---
+const ANIMATION_TIMING = {
+    // Critical content (0-0.5s)
+    STAGE_1_START: 0.1,
+    // Features and secondary content (0.5-0.8s)
+    STAGE_2_START: 0.5,
+    // Buttons and interactive elements (0.8-1.0s)
+    STAGE_3_START: 0.8,
+    // Decorative elements (1.0s+)
+    STAGE_4_START: 1.0
+};
 
 // --- Updated Color Palette ---
 const colors = {
@@ -339,45 +388,55 @@ const HeroSection = () => {
     const iconAnimation = useAnimation();
     const [ref, inView] = useInView({
         threshold: 0.1,
-        triggerOnce: false
+        triggerOnce: true // Changed to true for performance - only trigger once
     });
 
-    // For animated particles
+    // For animated particles - reduced count for better performance
     const [particles, setParticles] = useState([]);
-    const particleCount = 30; // Increased for richer atmosphere
+    const particleCount = isMobileDevice() ? 10 : 15; // Reduced from 30, even fewer on mobile
 
-    // Create particles on component mount
+    // Create particles on component mount - optimized
     useEffect(() => {
+        // Only generate particles if the section is in view or on desktop
+        if (!inView && isMobileDevice()) return;
+
         const newParticles = Array.from({ length: particleCount }).map((_, i) => ({
             id: i,
-            x: Math.random() * 100, // Random position across width (%)
-            y: Math.random() * 100, // Random position across height (%)
-            size: Math.random() * 3 + 1, // Random size between 1-4px
-            opacity: Math.random() * 0.4 + 0.1, // Random opacity
-            duration: Math.random() * 60 + 30, // Animation duration in seconds
-            delay: Math.random() * 10, // Delay before animation starts
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: Math.random() * 2 + 1, // Reduced max size for performance
+            opacity: Math.random() * 0.3 + 0.1, // Reduced max opacity
+            duration: Math.random() * 40 + 30, // Slightly reduced animation duration
+            delay: Math.random() * 5, // Reduced delay spread for faster initial loading
         }));
 
         setParticles(newParticles);
-    }, []);
+    }, [inView]); // Only recreate particles when section comes into view
 
-    const handleMouseMove = (event) => {
-        const { clientX, clientY } = event;
-        const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
-        const x = (clientX - left) / width;
-        const y = (clientY - top) / height;
-        setMousePosition({ x, y });
-    };
+    // Throttled mouse move handler to improve performance
+    const handleMouseMove = useCallback(
+        throttle((event) => {
+            const { clientX, clientY } = event;
+            const { left, top, width, height } = event.currentTarget.getBoundingClientRect();
+            const x = (clientX - left) / width;
+            const y = (clientY - top) / height;
+            setMousePosition({ x, y });
+        }, 30), // Only update every 30ms
+        []
+    );
 
+    // Optimize animation effect - use less computing power
     useEffect(() => {
-        const moveX = (mousePosition.x - 0.5) * 10; // Further reduced movement
-        const moveY = (mousePosition.y - 0.5) * 10;
+        if (!inView) return; // Don't animate if not in view
+
+        const moveX = (mousePosition.x - 0.5) * 8; // Reduced movement range
+        const moveY = (mousePosition.y - 0.5) * 8;
         iconAnimation.start({
             x: moveX,
             y: moveY,
-            transition: { type: "spring", stiffness: 300, damping: 30 }
+            transition: { type: "spring", stiffness: 200, damping: 30 }
         });
-    }, [mousePosition, iconAnimation]);
+    }, [mousePosition, iconAnimation, inView]);
 
     // Use parallax for subtle depth effects
     const parallaxBackground = useParallax({ speed: -5 });
@@ -780,8 +839,8 @@ const HeroSection = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{
-                            duration: 0.8,
-                            delay: 0.2,
+                            duration: 0.6, // Reduced from 0.8
+                            delay: ANIMATION_TIMING.STAGE_1_START,
                             ease: [0.165, 0.84, 0.44, 1]
                         }}
                         style={{
@@ -801,7 +860,7 @@ const HeroSection = () => {
                             component={motion.p}
                             initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3, duration: 0.6 }}
+                            transition={{ delay: ANIMATION_TIMING.STAGE_1_START, duration: 0.5 }} // Reduced from 0.6, synchronized
                             sx={{
                                 fontFamily: headingFontFamily,
                                 fontSize: { xs: '0.65rem', sm: '0.8rem' }, // Even smaller on mobile
@@ -859,7 +918,7 @@ const HeroSection = () => {
                             component={motion.p}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4, duration: 0.8 }}
+                            transition={{ delay: ANIMATION_TIMING.STAGE_1_START + 0.1, duration: 0.6 }} // Reduced from 0.8, synchronized
                             align="center"
                             sx={{
                                 fontFamily: fontFamily,
@@ -915,7 +974,7 @@ const HeroSection = () => {
                         component={motion.div}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1, duration: 0.8 }}
+                        transition={{ delay: ANIMATION_TIMING.STAGE_2_START, duration: 0.6 }} // Reduced from 1.0/0.8
                         sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -969,8 +1028,8 @@ const HeroSection = () => {
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{
-                                    delay: 1.2 + (index * 0.1),
-                                    duration: 0.5
+                                    delay: ANIMATION_TIMING.STAGE_2_START + 0.1 + (index * 0.05), // Reduced from 1.2, reduced gaps
+                                    duration: 0.4 // Reduced from 0.5
                                 }}
                                 whileHover={{
                                     scale: 1.02,
@@ -1003,7 +1062,7 @@ const HeroSection = () => {
                                     }
                                 }}
                             >
-                                {/* Icon with enhanced styling */}
+                                {/* Icon with enhanced styling - unchanged */}
                                 <Box
                                     className="feature-icon"
                                     sx={{
@@ -1035,7 +1094,7 @@ const HeroSection = () => {
                                     {item.icon}
                                 </Box>
 
-                                {/* Improved text rendering for mobile */}
+                                {/* Feature text - unchanged */}
                                 <Box
                                     className="feature-text"
                                     sx={{
@@ -1107,7 +1166,7 @@ const HeroSection = () => {
                         component={motion.div}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.4, duration: 0.8 }}
+                        transition={{ delay: ANIMATION_TIMING.STAGE_3_START, duration: 0.6 }} // Reduced from 1.4/0.8
                         sx={{
                             display: 'flex',
                             gap: { xs: 2, sm: 3.5 },
@@ -1242,7 +1301,7 @@ const HeroSection = () => {
                         component={motion.div}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.5 }}
+                        transition={{ delay: ANIMATION_TIMING.STAGE_2_START, duration: 0.5 }} // Changed from 0.5
                         sx={{
                             textAlign: 'center',
                             maxWidth: '700px',
@@ -1341,12 +1400,12 @@ const HeroSection = () => {
                         </Box>
                     </Box>
 
-                    {/* Decorative Bottom Quill Stroke */}
+                    {/* Decorative Bottom Quill Stroke - Delayed to STAGE_4 */}
                     <Box
                         component={motion.div}
                         initial={{ opacity: 0, width: 0 }}
                         animate={{ opacity: 0.4, width: '50px' }}
-                        transition={{ delay: 1.6, duration: 1 }}
+                        transition={{ delay: ANIMATION_TIMING.STAGE_4_START, duration: 0.8 }} // Use stage 4 timing
                         sx={{
                             position: 'absolute',
                             bottom: '5%',
@@ -1377,9 +1436,9 @@ const HeroSection = () => {
 //
 // IntroducingBrdgeAI - "See Brdge AI In Action" (Merged Section)
 //
-const IntroducingBrdgeAI = () => {
+const IntroducingBrdgeAI = () => { // Removed memo for now 
     const [ref, inView] = useInView({
-        threshold: 0.1, // Lower threshold for earlier trigger
+        threshold: 0.05, // Lower threshold for earlier trigger (changed from 0.1)
         triggerOnce: true
     });
 
@@ -1411,6 +1470,18 @@ const IntroducingBrdgeAI = () => {
         }
     ];
 
+    // Optimize fade variant for smoother animations
+    const optimizedFadeInVariant = {
+        hidden: { opacity: 0, y: 15 }, // Reduced from 20 for subtler motion
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "easeOut", // Simplified physics
+                duration: 0.5    // Standardized duration
+            }
+        }
+    };
 
     return (
         <Container
@@ -1441,8 +1512,8 @@ const IntroducingBrdgeAI = () => {
             <motion.div
                 initial="hidden"
                 animate={inView ? "visible" : "hidden"}
-                variants={fadeInUpVariant}
-                transition={{ duration: 0.6, ease: "easeOut" }} // Adjust animation timing
+                variants={optimizedFadeInVariant} // Use optimized variant
+                transition={{ duration: 0.5, ease: "easeOut" }} // Standardized timing
             >
                 {/* Centered content box */}
                 <Box
@@ -1470,7 +1541,7 @@ const IntroducingBrdgeAI = () => {
                             component={motion.p}
                             initial={{ opacity: 0, y: -10 }}
                             animate={inView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ delay: 0.1, duration: 0.5 }}
+                            transition={{ delay: 0.1, duration: 0.4 }} // Reduced duration from 0.5
                             sx={{
                                 fontFamily: headingFontFamily,
                                 fontSize: '0.8rem',
@@ -1489,7 +1560,7 @@ const IntroducingBrdgeAI = () => {
                             component={motion.h2}
                             initial={{ opacity: 0, y: 15 }}
                             animate={inView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ delay: 0.2, duration: 0.6 }}
+                            transition={{ delay: 0.15, duration: 0.5 }} // Adjusted timing
                             align="center"
                             sx={{
                                 fontFamily: headingFontFamily,
@@ -1510,7 +1581,7 @@ const IntroducingBrdgeAI = () => {
                             component={motion.p}
                             initial={{ opacity: 0, y: 15 }}
                             animate={inView ? { opacity: 1, y: 0 } : {}}
-                            transition={{ delay: 0.3, duration: 0.6 }}
+                            transition={{ delay: 0.2, duration: 0.5 }} // Adjusted from 0.3/0.6
                             align="center"
                             sx={{
                                 fontFamily: fontFamily,
@@ -1527,13 +1598,13 @@ const IntroducingBrdgeAI = () => {
                         </Typography>
                     </Box>
 
-                    {/* Brdge AI Demo Container */}
+                    {/* Brdge AI Demo Container - Lazy load with IntersectionObserver */}
                     <Box
                         className="demo-container"
                         component={motion.div}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={inView ? { opacity: 1, scale: 1 } : {}}
-                        transition={{ delay: 0.4, duration: 0.7 }}
+                        transition={{ delay: 0.3, duration: 0.6 }} // Adjusted from 0.4/0.7
                         sx={{
                             width: '100%',
                             maxWidth: { xs: '100%', sm: '100%', md: '90%', lg: '1000px' }, // Increased width
@@ -2152,7 +2223,7 @@ const FinalCTA = () => {
 };
 
 // Create a more ornate scholarly divider
-const ScholarlyDivider = ({ margin = { xs: 4, sm: 6, md: 8 }, width = { xs: '85%', sm: '70%' } }) => (
+const ScholarlyDivider = memo(({ margin = { xs: 4, sm: 6, md: 8 }, width = { xs: '85%', sm: '70%' } }) => (
     <Box
         sx={{
             my: margin,
@@ -2236,7 +2307,7 @@ const ScholarlyDivider = ({ margin = { xs: 4, sm: 6, md: 8 }, width = { xs: '85%
             />
         </Box>
     </Box>
-);
+));
 
 //
 // MissionSection - Our philosophy and core values
@@ -3649,6 +3720,9 @@ function LandingPage() {
     });
 
     useEffect(() => {
+        // Preload critical assets
+        preloadCriticalAssets();
+
         // Remove preloading of video
         // Smooth scroll behavior
         document.documentElement.style.scrollBehavior = 'smooth';

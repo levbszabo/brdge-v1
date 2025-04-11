@@ -3499,6 +3499,7 @@ def test_email():
 def get_brdge_status(user, brdge_id):
     try:
         # Get the latest script for this brdge
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
         script = (
             BrdgeScript.query.filter_by(brdge_id=brdge_id)
             .order_by(BrdgeScript.id.desc())
