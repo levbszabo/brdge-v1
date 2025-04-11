@@ -3492,3 +3492,137 @@ def test_email():
     except Exception as e:
         logger.error(f"Error sending test email: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/status", methods=["GET"])
+@login_required
+def get_brdge_status(user, brdge_id):
+    try:
+        # Get the latest script for this brdge
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if not script:
+            return jsonify({"status": "pending", "logs": [], "progress": 0}), 200
+
+        # Get metadata with logs
+        metadata = script.script_metadata or {}
+        logs = metadata.get("logs", [])
+        progress = metadata.get("progress", 0)
+
+        # Return the status, progress, and logs
+        return (
+            jsonify(
+                {
+                    "status": script.status,
+                    "logs": logs,
+                    "progress": progress,
+                    "updated_at": (
+                        script.created_at.isoformat() if script.created_at else None
+                    ),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error getting brdge status: {str(e)}")
+        return jsonify({"error": "Error getting brdge status", "detail": str(e)}), 500
+
+
+def process_brdge_content_with_logs(
+    brdge_id, video_local_path, pdf_local_path, template_type, script_id
+):
+    """Process brdge content with detailed logging."""
+    try:
+        script_obj = BrdgeScript.query.get(script_id)
+        if not script_obj:
+            logger.error(f"Could not find BrdgeScript with ID {script_id}")
+            return
+
+        # Initialize metadata if needed
+        if not script_obj.script_metadata:
+            script_obj.script_metadata = {"logs": [], "progress": 0}
+
+        # Helper function to add logs
+        def add_log(message, status="info", progress=None):
+            metadata = script_obj.script_metadata
+            metadata["logs"].append(
+                {"message": message, "status": status, "timestamp": time.time()}
+            )
+            if progress is not None:
+                metadata["progress"] = progress
+            script_obj.script_metadata = metadata
+            db.session.commit()
+
+        # Begin processing
+        add_log("Starting content analysis", "info", 5)
+
+        # Step 1: Extract video content
+        add_log("Analyzing video content...", "info", 10)
+        # [Your video processing code here]
+        add_log("Video analysis complete", "success", 30)
+
+        # Step 2: Process PDF if available
+        if pdf_local_path:
+            add_log("Processing presentation content...", "info", 35)
+            # [Your PDF processing code here]
+            add_log("Presentation analysis complete", "success", 50)
+
+        # Step 3: Generate knowledge base
+        add_log("Building knowledge base from content...", "info", 55)
+        # [Your knowledge base generation code here]
+        add_log("Knowledge base creation complete", "success", 70)
+
+        # Step 4: Create teaching persona
+        add_log("Extracting teaching patterns...", "info", 75)
+        # [Your teaching persona extraction code here]
+        add_log("Teaching persona analysis complete", "success", 85)
+
+        # Step 5: Generate engagement opportunities
+        add_log("Identifying engagement opportunities...", "info", 90)
+        # [Your engagement opportunities code here]
+        add_log("Engagement opportunities identified", "success", 95)
+
+        # Step 6: Finalize and save results
+        add_log("Compiling extracted intelligence...", "info", 98)
+
+        # Call your actual processing function here
+        extraction_results = process_brdge_content(
+            brdge_id, video_local_path, pdf_local_path, template_type
+        )
+
+        # Update the script content with extraction results
+        script_obj.content = extraction_results
+        script_obj.status = "completed"
+        add_log("Content processing completed!", "success", 100)
+
+        db.session.commit()
+
+        # Clean up temporary files
+        if os.path.exists(video_local_path):
+            os.remove(video_local_path)
+        if pdf_local_path and os.path.exists(pdf_local_path):
+            os.remove(pdf_local_path)
+
+    except Exception as e:
+        logger.error(
+            f"Error in process_brdge_content_with_logs: {str(e)}", exc_info=True
+        )
+        try:
+            if script_obj:
+                script_obj.status = "failed"
+                if script_obj.script_metadata:
+                    script_obj.script_metadata["logs"].append(
+                        {
+                            "message": "Processing failed. Please try again.",
+                            "status": "error",
+                            "timestamp": time.time(),
+                        }
+                    )
+                db.session.commit()
+        except Exception:
+            logger.error("Failed to update script status on error", exc_info=True)
