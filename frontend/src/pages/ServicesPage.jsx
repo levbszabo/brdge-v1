@@ -529,8 +529,8 @@ const ServicesPage = () => {
                         <Box
                             sx={{
                                 ...parchmentContainerStyles,
+                                height: { xs: '480px', sm: '520px', md: '550px' },
                                 width: '100%',
-                                height: { xs: '240px', sm: '320px', md: '400px' }, // Slightly shorter on mobile
                                 maxWidth: { xs: '98%', sm: '90%', md: '900px' }, // Wider on mobile
                                 mx: 'auto',
                                 borderRadius: { xs: '10px', sm: '8px' }, // Slightly more rounded on mobile
