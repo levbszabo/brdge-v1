@@ -137,20 +137,6 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         }
     }, [token, isIframeLoaded]);
 
-    useEffect(() => {
-        const initAudio = async () => {
-            try {
-                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-                const audioContext = new AudioContextClass();
-                await audioContext.resume();
-            } catch (error) {
-                console.error('Error initializing audio:', error);
-            }
-        };
-
-        initAudio();
-    }, []);
-
     if (isLoading && !connectorUrl) {
         return (
             <Box sx={{
