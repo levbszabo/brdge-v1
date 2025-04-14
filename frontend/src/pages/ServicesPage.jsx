@@ -538,6 +538,7 @@ const ServicesPage = () => {
                                         src="/brdge-services-final.mp4"
                                         controls
                                         playsInline
+                                        poster="/poster-services.jpg"
                                         style={{
                                             width: '100%',
                                             height: 'auto',

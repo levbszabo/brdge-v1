@@ -1660,6 +1660,7 @@ const IntroducingBrdgeAI = () => {
                                     src="/brdge-demo.mp4"
                                     controls={isVideoPlaying}
                                     playsInline
+                                    poster="/poster-landing.png" // Use the provided poster image
                                     style={{
                                         width: '100%',
                                         height: 'auto',
