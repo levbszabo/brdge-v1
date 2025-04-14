@@ -305,7 +305,7 @@ const serviceFeatures = [
 ];
 
 // HARDCODED BRIDGE ID FOR DEMO
-const DEMO_BRIDGE_ID = '344'; // Demo Bridge ID from https://brdge-ai.com/viewBridge/344-96eac2
+const DEMO_BRIDGE_ID = '398'; // Demo Bridge ID from https://brdge-ai.com/viewBridge/344-96eac2
 
 const ServicesPage = () => {
     const theme = useTheme();
@@ -511,66 +511,144 @@ const ServicesPage = () => {
 
                     {/* Update the demo container for better mobile presentation */}
                     <Box sx={{ mb: { xs: 4, sm: 3.5 }, mt: { xs: 2, sm: 0 } }}>
-                        <Typography
-                            variant="h6"
-                            align="center"
-                            sx={{
-                                color: theme.palette.text.primary,
-                                maxWidth: '700px',
-                                mx: 'auto',
-                                mb: { xs: 1.5, sm: 1.5 },
-                                fontSize: { xs: '0.95rem', md: '1.1rem' },
-                                fontWeight: 500,
-                            }}
-                        >
-                            👇 <SepiaText>Try it yourself</SepiaText> - This is what your students will experience 👇
-                        </Typography>
+                        {isMobile ? (
+                            // Mobile: Video + Link
+                            <Box
+                                className="demo-container-mobile"
+                                component={motion.div}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={mainInView ? { opacity: 1, scale: 1 } : {}}
+                                transition={{ delay: 0.3, duration: 0.6 }}
+                                sx={{
+                                    width: '100%',
+                                    maxWidth: { xs: '100%', sm: '100%' },
+                                    mx: 'auto',
+                                    mb: 4,
+                                    position: 'relative',
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    border: `1px solid ${theme.palette.sepia.main}30`,
+                                    boxShadow: `0 8px 25px rgba(0,0,0,0.1)`,
+                                    background: theme.palette.parchment.main,
+                                }}
+                            >
+                                {/* Video Container with Position Relative for Play Button Overlay */}
+                                <Box sx={{ position: 'relative' }}>
+                                    <video
+                                        src="/brdge-services-final.mp4"
+                                        controls
+                                        playsInline
+                                        style={{
+                                            width: '100%',
+                                            height: 'auto',
+                                            display: 'block',
+                                        }}
+                                        preload="metadata"
+                                    />
+                                </Box>
 
-                        <Box
-                            sx={{
-                                ...parchmentContainerStyles,
-                                height: { xs: '480px', sm: '520px', md: '550px' },
-                                width: '100%',
-                                maxWidth: { xs: '98%', sm: '90%', md: '1100px', lg: '1300px' }, // Increased desktop width
-                                mx: 'auto',
-                                borderRadius: { xs: '10px', sm: '8px' }, // Slightly more rounded on mobile
-                                overflow: 'hidden',
-                                position: 'relative',
-                                boxShadow: {
-                                    xs: '0 10px 25px rgba(0, 0, 0, 0.15), 0 0 15px rgba(156, 124, 56, 0.1)',
-                                    sm: '0 15px 35px rgba(0, 0, 0, 0.18), 0 0 20px rgba(156, 124, 56, 0.15)'
-                                }, // Softer shadow on mobile
-                                border: `1px solid ${theme.palette.sepia.main}40`,
-                                mb: 1.5,
-                                transform: { xs: 'translateY(0)', sm: 'translateY(0)' }, // Prepare for hover effect on mobile
-                                transition: 'transform 0.3s ease',
-                                '&:active': { // Add touch feedback for mobile
-                                    xs: { transform: 'translateY(2px)' },
-                                    sm: {}
-                                },
-                                // Keep other styling...
-                            }}
-                        >
-                            <AgentConnector
-                                brdgeId={DEMO_BRIDGE_ID}
-                                agentType="view"
-                                token=""
-                            />
-                        </Box>
-
-                        <Typography
-                            variant="body2"
-                            align="center"
-                            sx={{
-                                color: theme.palette.text.secondary,
-                                maxWidth: '700px',
-                                mx: 'auto',
-                                fontSize: '0.85rem',
-                                mt: { xs: 1.5, sm: 1 }, // More space on mobile
-                            }}
-                        >
-                            Interactive demo: Ask questions and experience AI-powered learning
-                        </Typography>
+                                {/* Button Container */}
+                                <Box
+                                    sx={{
+                                        py: 2,
+                                        px: 2,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        background: theme.palette.parchment.main,
+                                        borderTop: `1px solid ${theme.palette.sepia.main}20`
+                                    }}
+                                >
+                                    <Button
+                                        component={Link}
+                                        to={`/viewBridge/${DEMO_BRIDGE_ID}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        variant="text"
+                                        size="small"
+                                        startIcon={<PlayArrow />}
+                                        sx={{
+                                            fontFamily: theme.typography.fontFamily,
+                                            fontSize: '0.8rem',
+                                            py: 0.5,
+                                            px: 1.5,
+                                            color: theme.palette.sepia.main,
+                                            transition: 'all 0.2s ease',
+                                            borderRadius: '4px',
+                                            '&:hover': {
+                                                backgroundColor: `${theme.palette.sepia.main}10`,
+                                            },
+                                            minWidth: 'auto',
+                                            fontWeight: 500,
+                                            textTransform: 'none',
+                                        }}
+                                    >
+                                        Try Interactive Demo
+                                    </Button>
+                                </Box>
+                            </Box>
+                        ) : (
+                            // Desktop: Interactive AgentConnector
+                            <Box
+                                sx={{
+                                    ...parchmentContainerStyles,
+                                    // Position relative for absolute positioning of AgentConnector
+                                    position: 'relative',
+                                    width: '100%',
+                                    // Use paddingTop for responsive aspect ratio instead of fixed height
+                                    paddingTop: { xs: '130%', sm: '75%', md: '60%' },
+                                    // Keep minimum heights as a fallback
+                                    minHeight: { xs: '480px', sm: '520px', md: '550px' },
+                                    maxWidth: { xs: '98%', sm: '90%', md: '1100px', lg: '1300px' },
+                                    mx: 'auto',
+                                    borderRadius: { xs: '10px', sm: '8px' },
+                                    overflow: 'hidden',
+                                    boxShadow: {
+                                        xs: '0 10px 25px rgba(0, 0, 0, 0.15), 0 0 15px rgba(156, 124, 56, 0.1)',
+                                        sm: '0 15px 35px rgba(0, 0, 0, 0.18), 0 0 20px rgba(156, 124, 56, 0.15)'
+                                    },
+                                    border: `1px solid ${theme.palette.sepia.main}40`,
+                                    mb: 1.5,
+                                    transform: { xs: 'translateY(0)', sm: 'translateY(0)' },
+                                    transition: 'transform 0.3s ease',
+                                    '&:active': {
+                                        xs: { transform: 'translateY(2px)' },
+                                        sm: {}
+                                    },
+                                    '&::after': {
+                                        content: '"Try it out!"',
+                                        position: 'absolute',
+                                        top: '15px',
+                                        right: '15px',
+                                        background: theme.palette.sepia.main,
+                                        color: theme.palette.parchment.light,
+                                        padding: '5px 12px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 600,
+                                        borderRadius: '30px',
+                                        zIndex: 10,
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                        opacity: 0.9,
+                                        pointerEvents: 'none',
+                                    },
+                                    '& > div': {
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        borderRadius: '10px',
+                                        padding: { xs: '0', sm: '4px' }
+                                    }
+                                }}
+                            >
+                                <AgentConnector
+                                    brdgeId={DEMO_BRIDGE_ID}
+                                    agentType="view"
+                                    token=""
+                                />
+                            </Box>
+                        )}
                     </Box>
 
                     {/* Enhanced CTA button for mobile */}

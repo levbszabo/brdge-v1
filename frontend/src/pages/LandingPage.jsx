@@ -26,7 +26,8 @@ import {
     Share2,
     GraduationCap,
     Briefcase,
-    Rocket
+    Rocket,
+    ExternalLink
 } from 'lucide-react';
 import { motion, useAnimation, AnimatePresence } from 'framer-motion';
 import { ParallaxProvider, useParallax } from 'react-scroll-parallax';
@@ -50,7 +51,7 @@ import ivyLeaves from '../assets/ivy/ivy_leaves.svg';
 const parchmentTexture = darkParchmentTexture;
 
 // HARDCODED BRIDGE ID FOR DEMO
-const DEMO_BRIDGE_ID = '388'; // Demo Bridge ID from https://brdge-ai.com/viewBridge/344-96eac2
+const DEMO_BRIDGE_ID = '395'; // Demo Bridge ID from https://brdge-ai.com/viewBridge/344-96eac2
 
 // Preload critical assets for better performance
 const preloadCriticalAssets = () => {
@@ -1436,11 +1437,30 @@ const HeroSection = () => {
 //
 // IntroducingBrdgeAI - "See Brdge AI In Action" (Merged Section)
 //
-const IntroducingBrdgeAI = () => { // Removed memo for now 
+const IntroducingBrdgeAI = () => {
     const [ref, inView] = useInView({
-        threshold: 0.05, // Lower threshold for earlier trigger (changed from 0.1)
+        threshold: 0.05,
         triggerOnce: true
     });
+    // Add state for mobile detection
+    const [isMobile, setIsMobile] = useState(false);
+    // Add state to track if video is playing
+    const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+    // Ref for the video element
+    const videoRef = useRef(null);
+
+    // Effect to check device type
+    useEffect(() => {
+        const checkMobile = () => {
+            // Use a common check for mobile devices
+            const mobileCheck = window.innerWidth < 768 ||
+                /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            setIsMobile(mobileCheck);
+        };
+        checkMobile(); // Initial check
+        window.addEventListener('resize', checkMobile); // Update on resize
+        return () => window.removeEventListener('resize', checkMobile); // Cleanup listener
+    }, []);
 
     // Define steps data directly within the component
     const steps = [
@@ -1480,6 +1500,19 @@ const IntroducingBrdgeAI = () => { // Removed memo for now
                 type: "easeOut", // Simplified physics
                 duration: 0.5    // Standardized duration
             }
+        }
+    };
+
+    // Handler for play button click
+    const handlePlayButtonClick = () => {
+        if (videoRef.current) {
+            videoRef.current.play()
+                .then(() => {
+                    setIsVideoPlaying(true);
+                })
+                .catch(error => {
+                    console.error("Error playing video:", error);
+                });
         }
     };
 
@@ -1598,148 +1631,279 @@ const IntroducingBrdgeAI = () => { // Removed memo for now
                         </Typography>
                     </Box>
 
-                    {/* Brdge AI Demo Container - Lazy load with IntersectionObserver */}
-                    <Box
-                        className="demo-container"
-                        component={motion.div}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={inView ? { opacity: 1, scale: 1 } : {}}
-                        transition={{ delay: 0.3, duration: 0.6 }} // Adjusted from 0.4/0.7
-                        sx={{
-                            width: '100%',
-                            maxWidth: { xs: '100%', sm: '100%', md: '90%', lg: '1000px' }, // Increased width
-                            position: 'relative',
-                            borderRadius: '12px',
-                            overflow: 'hidden',
-                            mx: 'auto',
-                            mb: 1.5,
-                            border: `1px solid ${colors.sepia}40`,
-                            boxShadow: `0 10px 35px rgba(0,0,0,0.15), 0 0 15px rgba(156, 124, 56, 0.1)`,
-                            // Hide any default video controls
-                            '& ::-webkit-media-controls-panel': {
-                                display: 'none !important',
-                            },
-                            '& ::-webkit-media-controls': {
-                                display: 'none !important',
-                            },
-                            '& ::-webkit-media-controls-enclosure': {
-                                display: 'none !important',
-                            },
-                            '& video::-webkit-media-controls': {
-                                display: 'none !important',
-                            },
-                            // Add other styling
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: '4px',
-                                background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
-                                zIndex: 10,
-                            },
-                            '&::after': {
-                                content: '"Try it out!"',
-                                position: 'absolute',
-                                top: '15px',
-                                right: '15px',
-                                background: colors.sepia,
-                                color: colors.parchmentLight,
-                                padding: '5px 12px',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                borderRadius: '30px',
-                                zIndex: 10,
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                                opacity: 0.9,
-                                pointerEvents: 'none',
-                                display: { xs: 'none', sm: 'block' }
-                            }
-                        }}
-                    >
-                        <Box sx={{
-                            position: 'relative',
-                            width: '100%',
-                            // Adjust aspect ratio to give more height - aiming for taller on mobile
-                            paddingTop: { xs: '150%', sm: '80%', md: '65%' }, // Increased % for xs again
-                            minHeight: { xs: '500px', sm: '550px', md: '600px' }, // Keep min heights
-                            borderRadius: '10px',
-                            overflow: 'hidden',
-                            backgroundColor: colors.parchmentLight,
-                            '& > div': {
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
+                    {/* --- START Conditional Demo Rendering --- */}
+                    {isMobile ? (
+                        // Mobile: Video + Link
+                        <Box
+                            className="demo-container-mobile"
+                            component={motion.div}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={inView ? { opacity: 1, scale: 1 } : {}}
+                            transition={{ delay: 0.3, duration: 0.6 }}
+                            sx={{
                                 width: '100%',
-                                height: '100%',
-                                borderRadius: '10px',
-                                padding: { xs: '0', sm: '8px' }
-                            },
-                            // Remove any black bar at bottom
-                            '& iframe': {
-                                backgroundColor: 'transparent !important'
-                            },
-                            // Ensure bottom border is fully hidden
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                width: '100%',
-                                height: '5px',
-                                background: colors.parchmentLight,
-                                zIndex: 5
-                            },
-                            // Add a subtle pulse animation to encourage interaction
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                width: '80%',
-                                height: '80%',
-                                transform: 'translate(-50%, -50%)',
-                                background: `radial-gradient(circle, ${colors.sepia}10 0%, transparent 70%)`,
-                                borderRadius: '50%',
-                                opacity: 0.7,
-                                animation: 'pulse 3s infinite',
-                                zIndex: 0,
-                                pointerEvents: 'none'
-                            }
-                        }}>
-                            <AgentConnector
-                                brdgeId={DEMO_BRIDGE_ID}
-                                agentType="view"
-                                token=""
-                            />
-                        </Box>
-                    </Box>
+                                maxWidth: { xs: '100%', sm: '100%' },
+                                mx: 'auto',
+                                mb: 4,
+                                position: 'relative',
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                border: `1px solid ${colors.sepia}30`,
+                                boxShadow: `0 8px 25px rgba(0,0,0,0.1)`,
+                                background: colors.parchmentDark,
+                            }}
+                        >
+                            {/* Video Container with Position Relative for Play Button Overlay */}
+                            <Box sx={{ position: 'relative' }}>
+                                <video
+                                    ref={videoRef}
+                                    src="/brdge-demo.mp4"
+                                    controls={isVideoPlaying}
+                                    playsInline
+                                    style={{
+                                        width: '100%',
+                                        height: 'auto',
+                                        display: 'block',
+                                    }}
+                                    preload="metadata"
+                                    onPlay={() => setIsVideoPlaying(true)}
+                                    onEnded={() => setIsVideoPlaying(false)}
+                                    onPause={() => setIsVideoPlaying(false)}
+                                />
 
-                    {/* Small Caption Under Demo */}
-                    <Typography
-                        component={motion.p}
-                        initial={{ opacity: 0 }}
-                        animate={inView ? { opacity: 1 } : {}}
-                        transition={{ delay: 0.5, duration: 0.6 }}
-                        sx={{
-                            fontFamily: fontFamily,
-                            fontSize: '0.9rem',
-                            color: colors.inkFaded,
-                            textAlign: 'center',
-                            mt: 1.5, // Added top margin for spacing
-                            mb: { xs: 4, sm: 5 },
-                            maxWidth: '600px',
-                            mx: 'auto',
-                            // Add emphasis for "interactive" 
-                            '& strong': {
-                                fontWeight: 600,
-                                color: colors.sepia
-                            }
-                        }}
-                    >
-                        <strong>Interactive demo:</strong> Ask questions and see how AI-powered learning works. Built with Brdge.
-                    </Typography>
+                                {/* Custom Play Button Overlay */}
+                                {!isVideoPlaying && (
+                                    <Box
+                                        onClick={handlePlayButtonClick}
+                                        sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            background: 'rgba(0,0,0,0.3)',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                background: 'rgba(0,0,0,0.4)',
+                                            }
+                                        }}
+                                    >
+                                        {/* Play Icon Circle */}
+                                        <Box
+                                            sx={{
+                                                width: '70px',
+                                                height: '70px',
+                                                borderRadius: '50%',
+                                                background: 'rgba(255,255,255,0.9)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                                transition: 'transform 0.2s ease',
+                                                '&:hover': {
+                                                    transform: 'scale(1.05)',
+                                                }
+                                            }}
+                                        >
+                                            {/* Triangle Play Icon */}
+                                            <Box
+                                                sx={{
+                                                    width: 0,
+                                                    height: 0,
+                                                    borderTop: '15px solid transparent',
+                                                    borderBottom: '15px solid transparent',
+                                                    borderLeft: `24px solid ${colors.sepia}`,
+                                                    transform: 'translateX(3px)', // Center the triangle
+                                                }}
+                                            />
+                                        </Box>
+                                    </Box>
+                                )}
+                            </Box>
+
+                            {/* Button Container */}
+                            <Box
+                                sx={{
+                                    py: 2,
+                                    px: 2,
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
+                                    background: colors.parchment,
+                                    borderTop: `1px solid ${colors.sepia}20`
+                                }}
+                            >
+                                <Button
+                                    component={Link}
+                                    to={`/viewBridge/${DEMO_BRIDGE_ID}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    variant="text"
+                                    size="small"
+                                    startIcon={<ExternalLink size={14} />}
+                                    sx={{
+                                        fontFamily,
+                                        fontSize: '0.8rem',
+                                        py: 0.5,
+                                        px: 1.5,
+                                        color: colors.sepia,
+                                        transition: 'all 0.2s ease',
+                                        borderRadius: '4px',
+                                        '&:hover': {
+                                            backgroundColor: `${colors.sepia}10`,
+                                        },
+                                        minWidth: 'auto',
+                                        fontWeight: 500,
+                                        textTransform: 'none',
+                                    }}
+                                >
+                                    Try Interactive Demo
+                                </Button>
+                            </Box>
+                        </Box>
+                    ) : (
+                        // Desktop: Interactive AgentConnector
+                        <Box
+                            className="demo-container"
+                            component={motion.div}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={inView ? { opacity: 1, scale: 1 } : {}}
+                            transition={{ delay: 0.3, duration: 0.6 }} // Adjusted from 0.4/0.7
+                            sx={{
+                                width: '100%',
+                                maxWidth: { xs: '100%', sm: '100%', md: '95%', lg: '1300px' }, // Increased width to accommodate the panel
+                                position: 'relative',
+                                borderRadius: '12px',
+                                overflow: 'hidden',
+                                mx: 'auto',
+                                mb: 1.5,
+                                border: `1px solid ${colors.sepia}40`,
+                                boxShadow: `0 10px 35px rgba(0,0,0,0.15), 0 0 15px rgba(156, 124, 56, 0.1)`,
+                                // Hide any default video controls
+                                '& ::-webkit-media-controls-panel': { display: 'none !important', },
+                                '& ::-webkit-media-controls': { display: 'none !important', },
+                                '& ::-webkit-media-controls-enclosure': { display: 'none !important', },
+                                '& video::-webkit-media-controls': { display: 'none !important', },
+                                // Add other styling
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '4px',
+                                    background: `linear-gradient(90deg, transparent, ${colors.sepia}80, transparent)`,
+                                    zIndex: 10,
+                                },
+                                '&::after': {
+                                    content: '"Try it out!"',
+                                    position: 'absolute',
+                                    top: '15px',
+                                    right: '15px',
+                                    background: colors.sepia,
+                                    color: colors.parchmentLight,
+                                    padding: '5px 12px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    borderRadius: '30px',
+                                    zIndex: 10,
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                    opacity: 0.9,
+                                    pointerEvents: 'none',
+                                    display: { xs: 'none', sm: 'block' }
+                                }
+                            }}
+                        >
+                            <Box sx={{
+                                position: 'relative',
+                                width: '100%',
+                                // Adjust aspect ratio to give more width-to-height ratio
+                                paddingTop: { xs: '130%', sm: '75%', md: '60%' }, // Reduced percentages to make more width-friendly
+                                minHeight: { xs: '500px', sm: '550px', md: '600px' }, // Keep min heights
+                                borderRadius: '10px',
+                                overflow: 'hidden',
+                                backgroundColor: colors.parchmentLight,
+                                '& > div': {
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: '10px',
+                                    padding: { xs: '0', sm: '8px' }
+                                },
+                                // Remove any black bar at bottom
+                                '& iframe': {
+                                    backgroundColor: 'transparent !important'
+                                },
+                                // Ensure bottom border is fully hidden
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '5px',
+                                    background: colors.parchmentLight,
+                                    zIndex: 5
+                                },
+                                // Add a subtle pulse animation to encourage interaction
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    width: '80%',
+                                    height: '80%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: `radial-gradient(circle, ${colors.sepia}10 0%, transparent 70%)`,
+                                    borderRadius: '50%',
+                                    opacity: 0.7,
+                                    animation: 'pulse 3s infinite',
+                                    zIndex: 0,
+                                    pointerEvents: 'none'
+                                }
+                            }}>
+                                <AgentConnector
+                                    brdgeId={DEMO_BRIDGE_ID}
+                                    agentType="view"
+                                    token="" // Pass token if needed for view mode
+                                />
+                            </Box>
+                        </Box>
+                    )}
+                    {/* --- END Conditional Demo Rendering --- */}
+
+                    {/* Small Caption Under Demo (conditionally shown) */}
+                    {!isMobile && ( // Only show caption on desktop
+                        <Typography
+                            component={motion.p}
+                            initial={{ opacity: 0 }}
+                            animate={inView ? { opacity: 1 } : {}}
+                            transition={{ delay: 0.5, duration: 0.6 }}
+                            sx={{
+                                fontFamily: fontFamily,
+                                fontSize: '0.9rem',
+                                color: colors.inkFaded,
+                                textAlign: 'center',
+                                mt: 1.5, // Added top margin for spacing
+                                mb: { xs: 4, sm: 5 },
+                                maxWidth: '600px',
+                                mx: 'auto',
+                                // Add emphasis for "interactive" 
+                                '& strong': {
+                                    fontWeight: 600,
+                                    color: colors.sepia
+                                }
+                            }}
+                        >
+                            <strong>Interactive demo:</strong> Ask questions and see how AI-powered learning works. Built with Brdge.
+                        </Typography>
+                    )}
 
                     {/* Add keyframe animation for the pulse effect */}
                     <Box
