@@ -156,9 +156,14 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
     5. Key points covered
     
     Requirements:
-    - Ensure segments are of relatively consistent duration (ideally 2-5 minutes) unless there's a strong pedagogical reason for longer segments
+    - Ensure segments are of relatively consistent duration unless there's a strong pedagogical reason for longer segments
     - Verify that all timestamps are in chronological order with each end_time occurring after its corresponding start_time
     - The sections must be a full partition of the video, must not overlap, and must not have any gaps in coverage
+    CONSTRAINTS
+    - No timestamp must exceed the video length
+    - Use 0 padded time (HH:MM:SS).  
+    - If unsure, ask yourself “Could I cite an exact moment?”  if not, omit.  
+    - Do NOT invent content that cannot be heard or seen verbatim.
     
     Return ONLY a JSON object with this structure:
     {
@@ -1067,11 +1072,19 @@ def extract_engagement_opportunities(
     {sections_json}
     ```
     
-    Identify 5-8 strategic points where:
+    Identify 3-5 strategic points where:
     1. A concept has just been explained
     2. A natural pause or transition occurs
     3. A knowledge check would reinforce learning
     4. A potential confusion point needs clarification
+
+    Important
+    -Do not include any points that are not in the video timeline
+    -Every engagement opportunity must have only 1 quiz or discussion question
+    -Do not include the same engagement opportunity more than once
+    -Engagement opportunities should be placed at a point where the instructor would naturally pause
+    -Engagement opportunities cannot be at a timestamp that is greater than the video length or before the start of the video.
+
     
     For each point, create varied quiz items including multiple choice, short answer, and discussion questions.
 
