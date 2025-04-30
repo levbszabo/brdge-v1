@@ -3,10 +3,10 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box, CircularProgress, GlobalStyles } from '@mui/material';
-import theme from './theme';
+import dotbridgeTheme from './dotbridgeTheme';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header'; // Make sure you have this component
-import LandingPage from './pages/LandingPage';
+import DotBridgeLandingPage from './pages/DotBridgeLandingPage'; // Import the new landing page
 import BrdgeListPage from './pages/BrdgeListPage';
 import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
@@ -36,39 +36,31 @@ import MarketplacePage from './pages/Marketplace';
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
 
-// Define Global Styles for background texture
-const globalStyles = (
-  <GlobalStyles
-    styles={{
-      body: {
-        backgroundColor: theme.palette.background.default, // Use parchmentLight from theme
-        // Apply the texture as a fixed overlay
-        '&::before': {
-          content: '""',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: `url(${darkParchmentTexture})`,
-          backgroundSize: 'cover',
-          backgroundAttachment: 'fixed', // Keep it fixed
-          opacity: 0.15, // Adjust opacity as needed
-          mixBlendMode: 'multiply',
-          zIndex: -1, // Ensure it's behind all content
-          pointerEvents: 'none',
-        },
-      },
-    }}
-  />
-);
+// Define Global Styles - Adjust or Remove based on new design
+// Keep CssBaseline, but potentially remove the fixed parchment background for core app pages
+// const globalStyles = (
+//   <GlobalStyles
+//     styles={{
+//       body: {
+//         backgroundColor: dotbridgeTheme.palette.background.default, // Use NEW theme default
+//         // Remove the fixed overlay for core app?
+//         // '/&::before': {
+//         //   content: '""',
+//         //   position: 'fixed',
+//         //   ...
+//         // },
+//       },
+//     }}
+//   />
+// );
 
 function Layout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const isLandingPage = location.pathname === '/';
+  // Determine if header should be shown (e.g., not on view pages?)
+  const showHeader = !location.pathname.startsWith('/viewBridge/') && !location.pathname.startsWith('/b/') && !location.pathname.startsWith('/c/');
 
   // Define public routes
   const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace'];
@@ -102,19 +94,28 @@ function Layout({ children }) {
           }
           // Only redirect if specifically on login/signup pages and no redirect path
           else if (['/login', '/signup'].includes(currentPath)) {
-            navigate('/home', { replace: true });
+            navigate('/home', { replace: true }); // Redirect logged-in users from login/signup to home
           }
         } catch (error) {
           console.error('Token verification failed:', error);
           logout();
           setIsAuthenticated(false);
+          // If token is invalid, and user is on protected route, redirect to login
+          const needsAuth = !publicRoutes.includes(currentPath) &&
+            !isViewBrdgePath(currentPath) &&
+            !isViewCoursePath(currentPath);
+          if (needsAuth) {
+            sessionStorage.setItem('redirectAfterLogin', currentPath); // Store intended path
+            navigate('/login', { replace: true });
+          }
         }
       } else {
-        // Only redirect to login if not on a public route and not on a viewBridge or viewCourse route
+        // No token: redirect to login if not on a public/view route
         const needsAuth = !publicRoutes.includes(currentPath) &&
           !isViewBrdgePath(currentPath) &&
           !isViewCoursePath(currentPath);
         if (needsAuth) {
+          sessionStorage.setItem('redirectAfterLogin', currentPath); // Store intended path
           navigate('/login', { replace: true });
         }
       }
@@ -123,12 +124,14 @@ function Layout({ children }) {
     };
 
     checkAuth();
+    // Depend on location.pathname to re-check auth on navigation
   }, [navigate, location.pathname]);
 
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
+        {/* Use the new theme's primary color for the spinner */}
+        <CircularProgress sx={{ color: dotbridgeTheme.palette.primary.main }} />
       </Box>
     );
   }
@@ -136,15 +139,19 @@ function Layout({ children }) {
   return (
     <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
       {/* Apply global styles here, after CssBaseline but before main content Box */}
-      {globalStyles}
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Header />
+      {/* {globalStyles} // Decide if needed or handled by CssBaseline/Theme */}
+      <Box sx={{
+        display: 'flex', flexDirection: 'column', minHeight: '100vh',
+        // Use the new theme's default background
+        bgcolor: 'background.default'
+      }}>
+        {showHeader && <Header />} {/* Conditionally render Header */}
         <Box
           component="main"
           sx={{
             flexGrow: 1,
-            // Add padding top to account for the fixed header
-            pt: isLandingPage ? 0 : { xs: '44px', sm: '50px', md: '56px' }
+            // Adjust padding based on whether header is shown
+            pt: showHeader ? { xs: '56px', sm: '64px' } : 0 // Use MUI standard header heights approx
           }}
         >
           {children}
@@ -158,20 +165,28 @@ function App() {
   // Get the Google Client ID from the environment variable
   const googleClientId = REACT_APP_GOOGLE_CLIENT_ID;
 
+  if (!googleClientId) {
+    console.error("ERROR: REACT_APP_GOOGLE_CLIENT_ID is not set.");
+    // Optionally render an error message or fallback UI
+    return <Box>Error: Google Client ID not configured.</Box>;
+  }
+
   return (
     <GoogleOAuthProvider
       clientId={googleClientId}
       onScriptLoadError={() => console.error('Google Script failed to load')}
       onScriptLoadSuccess={() => console.log('Google Script loaded successfully')}
     >
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      {/* Use the NEW theme here */}
+      <ThemeProvider theme={dotbridgeTheme}>
+        <CssBaseline /> {/* Ensures basic resets and applies background from theme */}
         <SnackbarProvider>
           <Router>
             <ScrollToTop />
             <Layout>
               <Routes>
-                <Route path="/" element={<LandingPage />} />
+                {/* Use the new Landing Page for the root route */}
+                <Route path="/" element={<DotBridgeLandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
@@ -224,6 +239,8 @@ function App() {
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
                 <Route path="/room" element={<RoomPage />} />
                 <Route path="/marketplace" element={<MarketplacePage />} />
+                {/* Add a catch-all or 404 route if desired */}
+                {/* <Route path="*" element={<NotFoundPage />} /> */}
               </Routes>
             </Layout>
             <CookieConsent />

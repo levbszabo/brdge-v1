@@ -395,7 +395,7 @@ function Header() {
                                     },
                                 }}
                             >
-                                Brdge AI
+                                .bridge
                             </Typography>
                         </RouterLink>
                     </Box>
