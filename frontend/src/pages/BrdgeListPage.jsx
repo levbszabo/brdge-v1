@@ -949,7 +949,9 @@ function BrdgeListPage() {
 
     const handleView = (e, brdge) => {
         if (e) e.stopPropagation();
-        navigate(`/viewBridge/${brdge.id}-${brdge.public_id.substring(0, 6)}`);
+        const id = brdge.id || brdge.brdge_id;
+        const publicIdShort = brdge.public_id ? brdge.public_id.substring(0, 6) : '';
+        navigate(`/viewBridge/${id}-${publicIdShort}`);
     };
 
     const handleEdit = (e, brdge) => {

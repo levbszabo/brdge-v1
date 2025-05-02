@@ -13,7 +13,7 @@ import AgentConnector from '../components/AgentConnector';
 const DEMO_BRIDGE_ID = '398';
 
 const Section = ({ children, sx, ...props }) => (
-    <Box component="section" sx={{ py: { xs: 12, md: 16 }, ...sx }} {...props}>
+    <Box component="section" sx={{ py: { xs: 8, sm: 10, md: 16 }, px: { xs: 2, sm: 3, md: 4 }, ...sx }} {...props}>
         <Container maxWidth="lg">
             {children}
         </Container>
@@ -22,8 +22,9 @@ const Section = ({ children, sx, ...props }) => (
 
 const HeroSection = () => (
     <Box sx={{
-        pt: { xs: 2, md: 4 },
-        pb: { xs: 12, md: 20 },
+        pt: { xs: 4, md: 4 },
+        pb: { xs: 8, md: 20 },
+        px: { xs: 2, sm: 3 },
         textAlign: 'center'
     }}>
         <Container maxWidth="md">
@@ -46,9 +47,10 @@ const HeroSection = () => (
                         display: 'block',
                         mx: 'auto',
                         width: 'auto',
-                        height: { xs: 70, sm: 120 },
-                        mb: 4,
-                        bgcolor: 'transparent'
+                        height: { xs: 75, sm: 140 },
+                        mb: { xs: 3, sm: 4 },
+                        bgcolor: 'transparent',
+                        p: { xs: 0, sm: 2 }
                     }}
                 />
             </motion.div>
@@ -61,7 +63,8 @@ const HeroSection = () => (
                     variant="h1"
                     component="h1"
                     sx={{
-                        mb: 2,
+                        mb: { xs: 2, sm: 2 },
+                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
                     }}
                 >
                     Create AI-Powered Videos That Sell, Teach & Onboard Automatically
@@ -79,8 +82,8 @@ const HeroSection = () => (
                         mb: 6,
                         maxWidth: '700px',
                         mx: 'auto',
-                        fontSize: '1.1rem',
-                        lineHeight: 1.6
+                        fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                        lineHeight: { xs: 1.5, md: 1.6 }
                     }}
                 >
                     DotBridge is the new interactive "bridge" format that turns any video into an AI agent that captures leads, qualifies buyers and coaches users in your own voice. Launch your first bridge in minutes and watch conversion rates jump.
@@ -115,7 +118,7 @@ const HeroSection = () => (
 
 const TrustedBySection = () => (
     <Section sx={{
-        py: { xs: 6, md: 8 }, // Reduced padding for a tighter feel
+        py: { xs: 4, sm: 6, md: 8 }, // Reduced padding for a tighter feel
         borderTop: '1px solid',
         borderColor: 'divider',
         textAlign: 'center'
@@ -149,10 +152,18 @@ const TrustedBySection = () => (
 const WhyNowSection = () => (
     <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
         <Box maxWidth="md" mx="auto" textAlign="center">
-            <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+            <DotBridgeTypography variant='h2' component="h2" sx={{
+                mb: 3,
+                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+            }}>
                 Static Video is Holding You Back.
             </DotBridgeTypography>
-            <DotBridgeTypography variant="h5" color="text.secondary" sx={{ mb: 6, maxWidth: '700px', mx: 'auto' }}>
+            <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                mb: { xs: 4, md: 6 },
+                maxWidth: '700px',
+                mx: 'auto',
+                fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+            }}>
                 Attention spans are shrinking. Engagement is plummeting. If your video is just a one-way street, you're leaving leads, sales, and student success on the table.
             </DotBridgeTypography>
             <Grid container spacing={4} justifyContent="center">
@@ -171,21 +182,27 @@ const WhyNowSection = () => (
 
 const WhatIsBridgeSection = () => (
     <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-        <Grid container spacing={{ xs: 5, md: 10 }} alignItems="center">
+        <Grid container spacing={{ xs: 4, sm: 5, md: 10 }} alignItems="center">
             <Grid item xs={12} md={6}>
                 <DotBridgeTypography variant='overline' color="primary.main" sx={{ mb: 1 }}>The Bridge Format</DotBridgeTypography>
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: 3,
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     Video That Talks Back
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary" sx={{ mb: 4 }}>
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    mb: { xs: 3, md: 4 },
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                }}>
                     Imagine a PDF, but for interactive video. A single "bridge" link or embed contains:
                 </DotBridgeTypography>
-                <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
                     {[{ icon: 'Bot', title: 'AI Agent', text: 'Answers questions 24/7 in your cloned voice.' }, { icon: 'ListChecks', title: 'Dynamic Prompts', text: 'Quizzes, polls & CTAs capture leads & feedback.' }, { icon: 'BarChart3', title: 'Conversion Tracking', text: 'See exactly what drives results.' }].map((item, i) => (
-                        <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2.5 }}>
+                        <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                             <DotBridgeIcon name={item.icon} size={28} color="primary.main" style={{ marginTop: '5px' }} />
                             <Box>
-                                <DotBridgeTypography variant="h6">{item.title}</DotBridgeTypography>
+                                <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>{item.title}</DotBridgeTypography>
                                 <DotBridgeTypography variant="body1" color="text.secondary">{item.text}</DotBridgeTypography>
                             </Box>
                         </Box>
@@ -194,23 +211,34 @@ const WhatIsBridgeSection = () => (
             </Grid>
             <Grid item xs={12} md={6}>
                 <Box sx={{
-                    p: { xs: 3, sm: 5 },
+                    p: 0,
                     textAlign: 'center',
-                    borderRadius: theme => theme.shape.borderRadius,
-                    border: '1px solid',
+                    borderRadius: { xs: 0, sm: theme => theme.shape.borderRadius },
+                    border: { xs: 'none', sm: '1px solid' },
                     borderColor: 'divider',
-                    minHeight: 300,
+                    minHeight: { xs: 'auto', sm: 300 },
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    bgcolor: 'neutral.light'
+                    bgcolor: { xs: 'transparent', sm: 'neutral.light' },
+                    overflow: 'hidden',
+                    mb: { xs: 0, sm: 0 }
                 }}>
-                    <DotBridgeIcon name="Workflow" size={64} color="primary.main" />
-                    <DotBridgeTypography variant="h6" sx={{ mt: 3, mb: 1 }}>Visualization: How Bridge Works</DotBridgeTypography>
-                    <DotBridgeTypography variant="body2" color="text.secondary">
-                        {'(e.g., Flow Diagram: Upload Video -> AI Processing -> Interactive Bridge Output)'}
-                    </DotBridgeTypography>
+                    <Box
+                        component="img"
+                        src="/dotbridge-hero1.jpg"
+                        alt="How Bridge Works"
+                        sx={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block',
+                            objectFit: 'cover',
+                            borderRadius: { xs: 0, sm: 0 },
+                            p: 0,
+                            m: 0
+                        }}
+                    />
                 </Box>
             </Grid>
         </Grid>
@@ -233,11 +261,18 @@ const DemoSection = () => {
 
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="lg" mx="auto" textAlign="center" mb={8}>
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+            <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: { xs: 2, md: 3 },
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     See Bridge in Action
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary" sx={{ maxWidth: '750px', mx: 'auto' }}>
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    maxWidth: '750px',
+                    mx: 'auto',
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                }}>
                     Experience the difference. Interact with a live bridge demo or watch how easy it is to transform your videos.
                 </DotBridgeTypography>
             </Box>
@@ -352,45 +387,156 @@ const ComparisonSection = () => {
         { useCase: "Product Onboarding", before: "Docs & support tickets", after: "Personalized walkthroughs → <strong>Faster Time-to-Value</strong>" }
     ];
 
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="md" mx="auto" textAlign="center" mb={8}>
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+            <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: { xs: 2, md: 3 },
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     Static Video vs. Interactive Bridge
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary">
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                }}>
                     Stop talking <em>at</em> your audience. Start interacting <em>with</em> them.
                 </DotBridgeTypography>
             </Box>
 
-            <Grid container spacing={{ xs: 4, md: 6 }} justifyContent="center">
-                {comparisons.map((item, index) => (
-                    <Grid item xs={12} sm={6} key={index}>
-                        <Box sx={{ height: '100%', p: { xs: 1, sm: 2 } }}>
-                            <DotBridgeTypography variant="h6" sx={{ mb: 3 }}>{item.useCase}</DotBridgeTypography>
-                            <Box sx={{ mb: 3 }}>
-                                <DotBridgeTypography variant="overline" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
-                                    Static Video:
-                                </DotBridgeTypography>
-                                <DotBridgeTypography variant="body1" color="text.primary">
-                                    {item.before}
+            {isMobile ? (
+                <Box>
+                    {comparisons.map((item, index) => (
+                        <DotBridgeCard
+                            key={index}
+                            sx={{
+                                mb: 3,
+                                overflow: 'hidden',
+                                '&:last-child': { mb: 0 }
+                            }}
+                        >
+                            <Box sx={{
+                                p: 2,
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                                bgcolor: 'neutral.light'
+                            }}>
+                                <DotBridgeTypography variant="subtitle1" fontWeight="bold">{item.useCase}</DotBridgeTypography>
+                            </Box>
+
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                            }}>
+                                <Box sx={{
+                                    p: 2,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1.5,
+                                    borderBottom: '1px solid',
+                                    borderColor: 'divider'
+                                }}>
+                                    <DotBridgeIcon name="Video" size={16} color="text.secondary" />
+                                    <Box>
+                                        <DotBridgeTypography variant="caption" color="text.secondary" fontWeight="bold">
+                                            Static Video
+                                        </DotBridgeTypography>
+                                        <DotBridgeTypography variant="body2" color="text.secondary">
+                                            {item.before}
+                                        </DotBridgeTypography>
+                                    </Box>
+                                </Box>
+
+                                <Box sx={{
+                                    p: 2,
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    gap: 1.5,
+                                    bgcolor: 'primary.lighter'
+                                }}>
+                                    <DotBridgeIcon name="Zap" size={16} color="primary.main" style={{ marginTop: '3px' }} />
+                                    <Box>
+                                        <DotBridgeTypography variant="caption" color="primary.main" fontWeight="bold">
+                                            With Bridge
+                                        </DotBridgeTypography>
+                                        <DotBridgeTypography
+                                            variant="body2"
+                                            sx={{ fontWeight: 500 }}
+                                            dangerouslySetInnerHTML={{ __html: item.after }}
+                                        />
+                                    </Box>
+                                </Box>
+                            </Box>
+                        </DotBridgeCard>
+                    ))}
+                </Box>
+            ) : (
+                <DotBridgeCard sx={{ overflow: 'hidden', borderRadius: theme => theme.shape.borderRadius }}>
+                    <Box sx={{ width: '100%', display: 'table', borderCollapse: 'collapse' }}>
+                        {/* Table Header */}
+                        <Box sx={{ display: 'table-row', bgcolor: 'neutral.light' }}>
+                            <Box sx={{ display: 'table-cell', p: 3, borderBottom: '1px solid', borderColor: 'divider', width: '30%' }}>
+                                <DotBridgeTypography variant="subtitle1" fontWeight="bold">Use Case</DotBridgeTypography>
+                            </Box>
+                            <Box sx={{ display: 'table-cell', p: 3, borderBottom: '1px solid', borderColor: 'divider', width: '35%' }}>
+                                <DotBridgeTypography variant="subtitle1" fontWeight="bold" color="text.secondary">
+                                    <DotBridgeIcon name="Video" size={16} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} />
+                                    Static Video
                                 </DotBridgeTypography>
                             </Box>
-                            <Box>
-                                <DotBridgeTypography variant="overline" color="primary.main" display="block" sx={{ mb: 0.5 }}>
-                                    With Bridge:
+                            <Box sx={{ display: 'table-cell', p: 3, borderBottom: '1px solid', borderColor: 'divider', width: '35%' }}>
+                                <DotBridgeTypography variant="subtitle1" fontWeight="bold" color="primary.main">
+                                    <DotBridgeIcon name="Zap" size={16} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} />
+                                    With Bridge
                                 </DotBridgeTypography>
-                                <DotBridgeTypography
-                                    variant="body1"
-                                    color="text.primary"
-                                    sx={{ fontWeight: 500 }}
-                                    dangerouslySetInnerHTML={{ __html: item.after }}
-                                />
                             </Box>
                         </Box>
-                    </Grid>
-                ))}
-            </Grid>
+
+                        {/* Table Rows */}
+                        {comparisons.map((item, index) => (
+                            <Box sx={{ display: 'table-row' }} key={index}>
+                                <Box sx={{
+                                    display: 'table-cell',
+                                    p: 3,
+                                    borderBottom: index < comparisons.length - 1 ? '1px solid' : 'none',
+                                    borderColor: 'divider',
+                                    verticalAlign: 'middle'
+                                }}>
+                                    <DotBridgeTypography variant="h6">{item.useCase}</DotBridgeTypography>
+                                </Box>
+                                <Box sx={{
+                                    display: 'table-cell',
+                                    p: 3,
+                                    borderBottom: index < comparisons.length - 1 ? '1px solid' : 'none',
+                                    borderColor: 'divider',
+                                    bgcolor: 'background.paper',
+                                    verticalAlign: 'middle'
+                                }}>
+                                    <DotBridgeTypography variant="body1" color="text.secondary">{item.before}</DotBridgeTypography>
+                                </Box>
+                                <Box sx={{
+                                    display: 'table-cell',
+                                    p: 3,
+                                    borderBottom: index < comparisons.length - 1 ? '1px solid' : 'none',
+                                    borderColor: 'divider',
+                                    bgcolor: 'primary.lighter',
+                                    verticalAlign: 'middle'
+                                }}>
+                                    <DotBridgeTypography
+                                        variant="body1"
+                                        sx={{ fontWeight: 500 }}
+                                        dangerouslySetInnerHTML={{ __html: item.after }}
+                                    />
+                                </Box>
+                            </Box>
+                        ))}
+                    </Box>
+                </DotBridgeCard>
+            )}
         </Section>
     );
 };
@@ -415,7 +561,11 @@ const FAQSection = () => {
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
             <Box maxWidth="md" mx="auto">
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 8, textAlign: 'center' }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: { xs: 4, md: 8 },
+                    textAlign: 'center',
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     Frequently Asked Questions
                 </DotBridgeTypography>
                 {faqs.map((faq) => (
@@ -423,15 +573,17 @@ const FAQSection = () => {
                         key={faq.id}
                         expanded={expanded === faq.id}
                         onChange={handleChange(faq.id)}
+                        sx={{ mb: 1 }}
                     >
                         <AccordionSummary
                             expandIcon={<DotBridgeIcon name={expanded === faq.id ? "Minus" : "Plus"} size={20} color="primary.main" />}
                             aria-controls={`${faq.id}-content`}
                             id={`${faq.id}-header`}
+                            sx={{ py: { xs: 1.5, md: 2 }, px: { xs: 2, md: 3 } }}
                         >
-                            <DotBridgeTypography variant="h6">{faq.q}</DotBridgeTypography>
+                            <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>{faq.q}</DotBridgeTypography>
                         </AccordionSummary>
-                        <AccordionDetails>
+                        <AccordionDetails sx={{ py: { xs: 1.5, md: 2 }, px: { xs: 2, md: 3 } }}>
                             <DotBridgeTypography variant="body1" color="text.secondary">
                                 {faq.a}
                             </DotBridgeTypography>
@@ -477,25 +629,30 @@ const UseCasesSection = () => {
 
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="md" mx="auto" textAlign="center" mb={8}>
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+            <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: { xs: 2, md: 3 },
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     Transform Any Video Interaction
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary">
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                }}>
                     Replace passive content with active experiences that drive results.
                 </DotBridgeTypography>
             </Box>
-            <Grid container spacing={4}>
+            <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                 {cases.map((item, index) => (
                     <Grid item xs={12} sm={6} md={3} key={index}>
-                        <Box sx={{ height: '100%', textAlign: 'center', p: 2 }}>
-                            <DotBridgeIcon name={item.icon} size={40} color="primary.main" sx={{ mb: 2.5 }} />
-                            <DotBridgeTypography variant="h6" sx={{ mb: 2.5 }}>{item.useCase}</DotBridgeTypography>
-                            <Box sx={{ mb: 2.5 }}>
+                        <Box sx={{ height: '100%', textAlign: 'center', p: { xs: 2, md: 2 } }}>
+                            <DotBridgeIcon name={item.icon} size={40} color="primary.main" sx={{ mb: { xs: 1.5, md: 2.5 } }} />
+                            <DotBridgeTypography variant="h6" sx={{ mb: { xs: 1.5, md: 2.5 } }}>{item.useCase}</DotBridgeTypography>
+                            <Box sx={{ mb: { xs: 1.5, md: 2.5 } }}>
                                 <DotBridgeTypography variant="overline" color="text.secondary">Before</DotBridgeTypography>
                                 <DotBridgeTypography variant="body1" color="text.primary">{item.before}</DotBridgeTypography>
                             </Box>
-                            <Box sx={{ mb: 2.5 }}>
+                            <Box sx={{ mb: { xs: 1.5, md: 2.5 } }}>
                                 <DotBridgeTypography variant="overline" color="primary.main">With Bridge</DotBridgeTypography>
                                 <DotBridgeTypography variant="body1" color="text.primary" sx={{ fontWeight: 500 }}>{item.after}</DotBridgeTypography>
                             </Box>
@@ -519,32 +676,40 @@ const HowItWorksSection = () => {
     ];
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="md" mx="auto" textAlign="center" mb={8}>
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+            <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: { xs: 2, md: 3 },
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     Launch Your First Bridge in Minutes
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary">
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                }}>
                     No code required. Just upload, configure, and publish.
                 </DotBridgeTypography>
             </Box>
-            <Grid container spacing={5} justifyContent="center">
+            <Grid container spacing={{ xs: 3, sm: 4, md: 5 }} justifyContent="center">
                 {steps.map((step, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index} sx={{ textAlign: 'center' }}>
+                    <Grid item xs={6} sm={6} md={3} key={index} sx={{ textAlign: 'center' }}>
                         <Box sx={{
                             display: 'inline-flex',
-                            p: 2.5,
+                            p: { xs: 1.5, md: 2.5 },
                             borderRadius: '50%',
                             bgcolor: 'neutral.light',
-                            mb: 3
+                            mb: { xs: 2, md: 3 }
                         }}>
                             <DotBridgeIcon name={step.icon} size={36} color="primary.main" />
                         </Box>
-                        <DotBridgeTypography variant="h6" sx={{ mb: 1.5 }}>{index + 1}. {step.title}</DotBridgeTypography>
+                        <DotBridgeTypography variant="h6" sx={{
+                            mb: { xs: 1, md: 1.5 },
+                            fontSize: { xs: '1rem', md: '1.25rem' }
+                        }}>{index + 1}. {step.title}</DotBridgeTypography>
                         <DotBridgeTypography variant="body1" color="text.secondary">{step.text}</DotBridgeTypography>
                     </Grid>
                 ))}
             </Grid>
-            <Box textAlign="center" mt={7}>
+            <Box textAlign="center" mt={{ xs: 4, md: 7 }}>
                 <DotBridgeTypography variant="subtitle1" color="text.primary">
                     Total setup time: <Box component="span" sx={{ color: 'primary.main', fontWeight: 'bold' }}>under 10 minutes.</Box>
                 </DotBridgeTypography>
@@ -562,28 +727,39 @@ const ProofSection = () => {
     ];
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="md" mx="auto" textAlign="center" mb={8}>
-                <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+            <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: { xs: 2, md: 3 },
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
                     Proof in the Numbers
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary">
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                }}>
                     Early results from creators using DotBridge.
                 </DotBridgeTypography>
             </Box>
-            <Grid container spacing={4} justifyContent="center">
+            <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center">
                 {metrics.map((metric, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
-                        <DotBridgeCard variant="outlined" sx={{ height: '100%', textAlign: 'center', p: 4 }}>
-                            <DotBridgeTypography variant="h2" color="primary.main" sx={{ mb: 1 }}>
+                    <Grid item xs={6} sm={6} md={3} key={index}>
+                        <DotBridgeCard variant="outlined" sx={{ height: '100%', textAlign: 'center', p: { xs: 2, sm: 3, md: 4 } }}>
+                            <DotBridgeTypography variant="h3" color="primary.main" sx={{
+                                mb: 1,
+                                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.25rem' }
+                            }}>
                                 {metric.value}
                             </DotBridgeTypography>
-                            <DotBridgeTypography variant="h6" sx={{ mb: 0.5 }}>{metric.label}</DotBridgeTypography>
+                            <DotBridgeTypography variant="h6" sx={{
+                                mb: 0.5,
+                                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                            }}>{metric.label}</DotBridgeTypography>
                             <DotBridgeTypography variant="caption" color="text.secondary">{metric.sub}</DotBridgeTypography>
                         </DotBridgeCard>
                     </Grid>
                 ))}
             </Grid>
-            <Box textAlign="center" mt={5}>
+            <Box textAlign="center" mt={{ xs: 3, md: 5 }}>
                 <DotBridgeTypography variant="body2" color="text.secondary">
                     (Detailed case studies coming soon - join the waitlist inside the app.)
                 </DotBridgeTypography>
@@ -594,15 +770,18 @@ const ProofSection = () => {
 
 const PricingSection = () => (
     <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-        <Box maxWidth="md" mx="auto" textAlign="center" mb={8}>
-            <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3 }}>
+        <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+            <DotBridgeTypography variant='h2' component="h2" sx={{
+                mb: { xs: 2, md: 3 },
+                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+            }}>
                 Simple Pricing for Growth
             </DotBridgeTypography>
         </Box>
-        <Grid container spacing={4} justifyContent="center" alignItems="stretch">
+        <Grid container spacing={{ xs: 3, md: 4 }} justifyContent="center" alignItems="stretch">
             <Grid item xs={12} sm={6} md={4}>
                 <DotBridgeCard sx={{
-                    p: 4,
+                    p: { xs: 3, md: 4 },
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
@@ -612,8 +791,11 @@ const PricingSection = () => (
                         boxShadow: (theme) => theme.shadows[2]
                     }
                 }}>
-                    <DotBridgeTypography variant="h4">Free</DotBridgeTypography>
-                    <DotBridgeTypography variant="h2" sx={{ my: 1 }}>$0</DotBridgeTypography>
+                    <DotBridgeTypography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>Free</DotBridgeTypography>
+                    <DotBridgeTypography variant="h2" sx={{
+                        my: 1,
+                        fontSize: { xs: '2rem', md: '2.5rem' }
+                    }}>$0</DotBridgeTypography>
                     <DotBridgeTypography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Forever</DotBridgeTypography>
                     <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4, flexGrow: 1 }}>
                         {[
@@ -693,9 +875,9 @@ const PricingSection = () => (
                     <DotBridgeTypography variant="body2" color="text.secondary" sx={{ mb: 3 }}>per month</DotBridgeTypography>
                     <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4, flexGrow: 1 }}>
                         {[
-                            "Unlimited Links",
+                            "100 Bridge Links",
                             "1000 AI Minutes/mo",
-                            "Unlimited Courses",
+                            "100 Flows",
                             "Voice Clone",
                             "CRM / Webhooks",
                             "Adv. Analytics",
@@ -728,11 +910,14 @@ const PricingSection = () => (
 
 const DFYSection = () => (
     <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-        <DotBridgeCard variant="outlined" sx={{ p: { xs: 4, md: 6 }, textAlign: 'center' }}>
-            <DotBridgeTypography variant='h3' component="h3" sx={{ mb: 2 }}>
+        <DotBridgeCard variant="outlined" sx={{ p: { xs: 3, sm: 4, md: 6 }, textAlign: 'center' }}>
+            <DotBridgeTypography variant='h3' component="h3" sx={{
+                mb: { xs: 1.5, md: 2 },
+                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.25rem' }
+            }}>
                 Need It Built For You?
             </DotBridgeTypography>
-            <DotBridgeTypography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: '650px', mx: 'auto' }}>
+            <DotBridgeTypography variant="body1" color="text.secondary" sx={{ mb: { xs: 3, md: 4 }, maxWidth: '650px', mx: 'auto' }}>
                 Let our expert team build your entire AI Revenue Machine: bridge webinar, VSL, course modules, and marketing campaigns.
             </DotBridgeTypography>
             <DotBridgeButton
@@ -752,10 +937,21 @@ const DFYSection = () => (
 const FinalCTASection = () => (
     <Section sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
-            <DotBridgeTypography variant='h2' component="h2" sx={{ mb: 3, color: 'inherit' }}>
+            <DotBridgeTypography variant='h2' component="h2" sx={{
+                mb: { xs: 2, md: 3 },
+                color: 'inherit',
+                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+            }}>
                 Ready to Turn Video Into Revenue?
             </DotBridgeTypography>
-            <DotBridgeTypography variant="h5" sx={{ mb: 5, maxWidth: '700px', mx: 'auto', color: 'primary.contrastText', opacity: 0.85 }}>
+            <DotBridgeTypography variant="h5" sx={{
+                mb: { xs: 4, md: 5 },
+                maxWidth: '700px',
+                mx: 'auto',
+                color: 'primary.contrastText',
+                opacity: 0.85,
+                fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+            }}>
                 Launch your first bridge today and watch leads, sales and student success climb – while you sleep.
             </DotBridgeTypography>
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2.5, flexWrap: 'wrap' }}>
@@ -800,11 +996,11 @@ function DotBridgeLandingPage() {
         <Box sx={{ backgroundColor: theme.palette.background.default }}>
             <HeroSection />
             <WhyNowSection />
-            <TrustedBySection />
             <WhatIsBridgeSection />
             <ComparisonSection />
             <DemoSection />
             <UseCasesSection />
+            <TrustedBySection />
             <HowItWorksSection />
             <ProofSection />
             <PricingSection />

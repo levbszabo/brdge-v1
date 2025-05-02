@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ShareIcon from '@mui/icons-material/Share';
@@ -21,7 +20,6 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCards, EffectCoverflow, Navigation, Pagination, Autoplay } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/effect-coverflow';
-import 'swiper/css/effect-cards';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -103,18 +101,6 @@ const normalizeThumbnailUrl = (url) => {
     }
 
     return url;
-};
-
-// Add this before your return statement in EditCoursePage
-const glowingBorderKeyframes = {
-    '@keyframes glowingBorder': {
-        '0%': {
-            opacity: 0.5,
-        },
-        '100%': {
-            opacity: 1,
-        },
-    },
 };
 
 function EditCoursePage() {
@@ -744,66 +730,18 @@ function EditCoursePage() {
                     height: '100vh',
                     bgcolor: theme.palette.background.default,
                     position: 'relative',
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundImage: `url(${theme.textures.darkParchment})`,
-                        backgroundSize: 'cover',
-                        opacity: 0.1,
-                        pointerEvents: 'none',
-                        zIndex: 0,
-                    }
                 }}>
-                    <Box sx={{ position: 'relative', width: 120, height: 120, zIndex: 1 }}>
-                        <CircularProgress
-                            variant="determinate"
-                            value={75}
-                            size={120}
-                            thickness={2}
-                            sx={{
-                                color: theme.palette.secondary.main,
-                            }}
-                        />
-                        <CircularProgress
-                            size={120}
-                            thickness={3}
-                            sx={{
-                                color: theme.palette.secondary.light,
-                                position: 'absolute',
-                                left: 0,
-                                animationDuration: '3s',
-                                opacity: 0.5
-                            }}
-                        />
-                        <Box sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            bottom: 0,
-                            right: 0,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}>
-                            <Typography variant="h4" sx={{
-                                color: theme.palette.text.primary,
-                                fontWeight: 'bold',
-                            }}>
-                                75%
-                            </Typography>
-                        </Box>
-                    </Box>
+                    {/* Simplified Loading Indicator */}
+                    <CircularProgress size={60} sx={{ color: theme.palette.primary.main, mb: 3 }} />
                     <Typography
                         variant="h5"
                         sx={{
                             color: theme.palette.text.primary,
                             fontWeight: 500,
-                            mt: 4,
-                            fontFamily: theme.typography.headingFontFamily,
+                            fontFamily: theme.typography.fontFamily,
                         }}
                     >
-                        Loading Course Editor
+                        Loading Course Editor...
                     </Typography>
                     <Typography
                         variant="body2"
@@ -814,7 +752,7 @@ function EditCoursePage() {
                             mt: 1
                         }}
                     >
-                        Preparing your workspace with all modules and editor tools...
+                        Preparing your workspace...
                     </Typography>
                 </Box>
             </motion.div>
@@ -839,16 +777,6 @@ function EditCoursePage() {
                     position: 'relative',
                     px: 3,
                     gap: 2,
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0, left: 0, right: 0, bottom: 0,
-                        backgroundImage: `url(${theme.textures.darkParchment})`,
-                        backgroundSize: 'cover',
-                        opacity: 0.1,
-                        pointerEvents: 'none',
-                        zIndex: 0,
-                    }
                 }}>
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
@@ -856,40 +784,30 @@ function EditCoursePage() {
                         transition={{ delay: 0.2, type: 'spring' }}
                     >
                         <Box
+                            component={Paper}
+                            elevation={2}
                             sx={{
                                 p: 4,
-                                bgcolor: theme.palette.background.paper,
-                                borderRadius: 3,
-                                boxShadow: theme.shadows[2],
+                                borderRadius: theme.shape.borderRadius,
                                 border: `1px solid ${theme.palette.divider}`,
                                 textAlign: 'center',
                                 maxWidth: 500,
                                 position: 'relative',
-                                zIndex: 1
+                                zIndex: 1,
+                                bgcolor: theme.palette.background.paper
                             }}
                         >
                             <Typography
                                 variant="h4"
                                 gutterBottom
                                 sx={{
-                                    color: theme.palette.text.primary,
+                                    color: theme.palette.error.main,
                                     fontWeight: 600,
-                                    fontFamily: theme.typography.headingFontFamily,
-                                    letterSpacing: '-0.01em',
+                                    fontFamily: theme.typography.fontFamily,
                                     mb: 2,
-                                    position: 'relative',
-                                    '&::after': {
-                                        content: '""',
-                                        display: 'block',
-                                        width: '40px',
-                                        height: '2px',
-                                        background: theme.palette.secondary.main,
-                                        margin: '10px auto 0',
-                                        borderRadius: '1px',
-                                    }
                                 }}
                             >
-                                {error}
+                                Error Accessing Course
                             </Typography>
 
                             <Typography
@@ -900,7 +818,7 @@ function EditCoursePage() {
                                     mb: 3
                                 }}
                             >
-                                You do not have permission to edit this course
+                                {error}
                             </Typography>
 
                             <Button
@@ -932,76 +850,66 @@ function EditCoursePage() {
                 color: theme.palette.text.primary,
                 position: 'relative',
                 pt: 0,
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundImage: `url(${theme.textures.darkParchment})`,
-                    backgroundSize: 'cover',
-                    opacity: 0.1,
-                    pointerEvents: 'none',
-                    zIndex: 0,
-                    mixBlendMode: 'multiply'
-                }
             }}>
                 {/* Tabs Navigation - Modified to connect with header */}
                 <Box sx={{
-                    bgcolor: theme.palette.background.paper,
-                    borderRadius: '0 0 16px 16px',
-                    overflow: 'hidden',
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderTop: 'none', // Remove top border to connect with header
-                    position: 'relative',
-                    zIndex: 1,
+                    bgcolor: theme.palette.background.paper, // Theme paper background
+                    borderBottom: `1px solid ${theme.palette.divider}`, // Use theme divider
+                    position: 'sticky', // Make tabs sticky? Optional.
+                    top: 0, // Adjust if you have an AppBar
+                    zIndex: theme.zIndex.appBar - 1, // Ensure it's below AppBar if sticky
                     mb: 4,
-                    mt: 0, // Ensure no margin top
-                    boxShadow: theme.shadows[1]
+                    boxShadow: theme.shadows[1] // Subtle shadow
                 }}>
                     <Tabs
                         value={activeTab}
                         onChange={(e, newValue) => setActiveTab(newValue)}
                         sx={{
                             '& .MuiTabs-indicator': {
-                                backgroundColor: theme.palette.secondary.main,
+                                backgroundColor: theme.palette.primary.main, // Theme primary color
                                 height: 2,
                             },
                             '& .MuiTab-root': {
-                                color: theme.palette.text.secondary,
-                                minHeight: '56px',
+                                color: theme.palette.text.secondary, // Theme secondary text
+                                // minHeight: '56px', // Adjust height if needed
                                 transition: 'all 0.3s ease',
-                                fontSize: '0.9rem',
-                                letterSpacing: '0.03em',
-                                fontWeight: 500,
+                                fontSize: theme.typography.button.fontSize, // Use theme button font size
+                                letterSpacing: theme.typography.button.letterSpacing, // Use theme button letter spacing
+                                fontWeight: theme.typography.button.fontWeight, // Use theme button weight
+                                textTransform: theme.typography.button.textTransform, // Use theme button transform
                                 '&.Mui-selected': {
-                                    color: theme.palette.secondary.main,
-                                    fontWeight: 600,
+                                    color: theme.palette.primary.main, // Theme primary color
+                                    fontWeight: 600, // Slightly bolder selected tab
                                 },
                                 '&:hover': {
-                                    bgcolor: 'rgba(0, 0, 0, 0.02)',
-                                    color: theme.palette.text.primary,
+                                    bgcolor: theme.palette.action.hover, // Theme hover background
+                                    color: theme.palette.text.primary, // Theme primary text on hover
                                 },
                                 '& .MuiSvgIcon-root': {
-                                    transition: 'all 0.3s ease',
+                                    // Adjust icon styles if needed
                                     fontSize: '1.2rem',
-                                    mb: 0.5,
+                                    mb: { xs: 0, sm: 0.5 }, // Only add margin bottom on larger screens if label is below
+                                    mr: { xs: 0.5, sm: 0 }, // Add margin right on smaller screens if side-by-side
                                 }
                             },
                         }}
+                        variant={isSmallScreen ? "fullWidth" : "standard"} // Adjust based on screen size
+                        centered={!isSmallScreen}
                     >
                         <Tab
                             icon={<DescriptionIcon />}
                             label="Content"
-                            sx={{ minHeight: '64px' }}
+                        // Remove fixed height sx={{ minHeight: '64px' }}
                         />
                         <Tab
                             icon={<SettingsIcon />}
                             label="Settings"
-                            sx={{ minHeight: '64px' }}
+                        // Remove fixed height sx={{ minHeight: '64px' }}
                         />
                         <Tab
                             icon={<GroupIcon />}
                             label="Enrollment"
-                            sx={{ minHeight: '64px' }}
+                        // Remove fixed height sx={{ minHeight: '64px' }}
                         />
                     </Tabs>
                 </Box>
@@ -1011,103 +919,60 @@ function EditCoursePage() {
                     {/* Content Tab */}
                     {activeTab === 0 && (
                         <>
-                            {/* Course Header */}
-                            <Box sx={{
-                                mb: 3,
-                                display: 'flex',
-                                flexDirection: { xs: 'column', md: 'row' },
-                                gap: 3,
-                                bgcolor: theme.palette.background.paper,
-                                borderRadius: '16px',
-                                p: 3,
-                                border: `1px solid ${theme.palette.divider}`,
-                                position: 'relative',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    inset: 0,
-                                    backgroundImage: `url(${theme.textures.crumbledParchment})`,
-                                    backgroundSize: 'cover',
-                                    opacity: 0.05,
-                                    mixBlendMode: 'multiply',
-                                    borderRadius: '16px',
-                                    zIndex: 0,
-                                }
-                            }}>
+                            {/* Course Header - REMOVE TEXTURE */}
+                            <Box
+                                component={Paper}
+                                elevation={1}
+                                sx={{
+                                    mb: 3,
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', md: 'row' },
+                                    gap: 3,
+                                    p: 3,
+                                    borderRadius: theme.shape.borderRadius,
+                                    position: 'relative', // Keep for potential absolute children like overlays
+                                }}
+                            >
                                 {/* Thumbnail upload section */}
                                 <Box sx={{
                                     width: { xs: '100%', md: '280px' },
+                                    aspectRatio: '16 / 9', // Maintain aspect ratio
                                     position: 'relative',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    borderRadius: '12px',
+                                    borderRadius: theme.shape.borderRadius, // Theme radius
                                     overflow: 'hidden',
-                                    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                                    border: courseThumbPreview ? 'none' : `1px dashed ${theme.palette.divider}`,
-                                    '&::before': {
-                                        content: '""',
-                                        display: 'block',
-                                        paddingTop: '56.25%',
-                                        width: '100%',
-                                    }
+                                    backgroundColor: theme.palette.neutral.light, // Neutral background
+                                    border: `1px dashed ${theme.palette.divider}`, // Theme divider, dashed for placeholder
                                 }}>
                                     {courseThumbPreview ? (
                                         <Box sx={{
                                             position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: '100%',
-                                            '&:hover .overlay': {
-                                                opacity: 1
-                                            }
+                                            top: 0, left: 0, width: '100%', height: '100%',
+                                            '&:hover .overlay': { opacity: 1 }
                                         }}>
                                             <Box
                                                 component="img"
                                                 src={normalizeThumbnailUrl(courseThumbPreview)}
-                                                sx={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'cover',
-                                                    objectPosition: 'center',
-                                                }}
+                                                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                 alt="Course thumbnail"
                                             />
                                             <Box
                                                 className="overlay"
                                                 sx={{
-                                                    position: 'absolute',
-                                                    top: 0,
-                                                    left: 0,
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    bgcolor: 'rgba(0, 0, 0, 0.5)',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    opacity: 0,
-                                                    transition: 'opacity 0.3s ease'
+                                                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                                    bgcolor: 'rgba(0, 0, 0, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    opacity: 0, transition: 'opacity 0.3s ease'
                                                 }}
                                             >
                                                 <Button
                                                     component="label"
-                                                    variant="contained"
+                                                    variant="contained" // Use secondary or adjust as needed
                                                     color="secondary"
                                                     startIcon={<AddPhotoAlternateIcon />}
-                                                    sx={{
-                                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                                        backdropFilter: 'blur(4px)',
-                                                        fontWeight: 500,
-                                                        borderRadius: '50px',
-                                                        px: 2,
-                                                        py: 1,
-                                                        '&:hover': {
-                                                            bgcolor: 'rgba(0, 0, 0, 0.3)',
-                                                        }
-                                                    }}
+                                                    size="small"
                                                 >
                                                     Change
                                                     <VisuallyHiddenInput type="file" accept="image/*" onChange={handleCourseThumbUpload} />
@@ -1117,114 +982,67 @@ function EditCoursePage() {
                                     ) : (
                                         <Button
                                             component="label"
-                                            variant="outlined"
-                                            color="secondary"
+                                            variant="outlined" // Use primary color
+                                            color="primary"
                                             startIcon={<AddPhotoAlternateIcon />}
                                             sx={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: '100%',
+                                                width: 'auto', // Fit content
+                                                height: 'auto', // Fit content
                                                 flexDirection: 'column',
                                                 gap: 1,
-                                                padding: 2,
-                                                border: 'none',
-                                                borderRadius: '12px',
-                                                backgroundColor: 'rgba(0, 0, 0, 0.03)',
-                                                transition: 'all 0.2s ease',
+                                                borderStyle: 'dashed', // Keep dash for placeholder visual
+                                                borderColor: theme.palette.divider,
+                                                color: theme.palette.text.secondary,
                                                 '&:hover': {
-                                                    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+                                                    backgroundColor: theme.palette.action.hover,
+                                                    borderColor: theme.palette.primary.main,
+                                                    color: theme.palette.primary.main,
                                                 }
                                             }}
                                         >
-                                            <Typography variant="body2" sx={{ mt: 1, fontWeight: 500 }}>
-                                                Add Course Thumbnail
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                                Recommended: 16:9 ratio
-                                            </Typography>
+                                            <Typography variant="button">Add Thumbnail</Typography>
+                                            <Typography variant="caption">16:9 Recommended</Typography>
                                             <VisuallyHiddenInput type="file" accept="image/*" onChange={handleCourseThumbUpload} />
                                         </Button>
                                     )}
                                     {uploadingCourseThumb && (
                                         <Box sx={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            bgcolor: 'rgba(0, 0, 0, 0.5)',
+                                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            bgcolor: 'rgba(255, 255, 255, 0.7)', // Light overlay
                                             zIndex: 5,
-                                            backdropFilter: 'blur(4px)'
                                         }}>
-                                            <CircularProgress size={40} sx={{ color: theme.palette.secondary.main }} />
+                                            <CircularProgress size={40} sx={{ color: theme.palette.primary.main }} />
                                         </Box>
                                     )}
                                 </Box>
 
                                 {/* Course details */}
                                 <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                         <TextField
                                             value={courseTitle}
                                             onChange={(e) => setCourseTitle(e.target.value)}
-                                            variant="standard"
+                                            variant="outlined" // Use outlined variant from theme
                                             placeholder="Enter Course Title"
-                                            InputProps={{
-                                                sx: {
-                                                    fontSize: '1.75rem',
+                                            fullWidth
+                                            sx={{
+                                                flex: 1,
+                                                '& .MuiInputBase-input': { // Style input itself if needed
+                                                    fontSize: '1.5rem', // Adjust size as needed
                                                     fontWeight: '600',
-                                                    fontFamily: theme.typography.headingFontFamily,
-                                                    color: theme.palette.text.primary,
-                                                    '&::before': { display: 'none' },
-                                                    '&::after': { display: 'none' },
-                                                    '& input::placeholder': {
-                                                        color: theme.palette.text.disabled,
-                                                        opacity: 1
-                                                    }
                                                 }
                                             }}
-                                            sx={{ flex: 1 }}
                                         />
                                         <Button
                                             variant="contained"
                                             onClick={handleSaveCourse}
                                             color="primary"
-                                            sx={{
-                                                borderRadius: '50px',
-                                                px: 3,
-                                                py: 1,
-                                                fontWeight: 500,
-                                                boxShadow: theme.shadows[2],
-                                                '&:hover': {
-                                                    boxShadow: theme.shadows[4],
-                                                    transform: 'translateY(-2px)'
-                                                },
-                                                transition: 'all 0.2s ease',
-                                                position: 'relative',
-                                                overflow: 'hidden',
-                                                // Add Neo-Scholar decorative underline effect on hover
-                                                '&::after': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    bottom: 0,
-                                                    left: '15%',
-                                                    right: '15%',
-                                                    height: '2px',
-                                                    background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
-                                                    opacity: 0,
-                                                    transition: 'opacity 0.3s ease'
-                                                },
-                                                '&:hover::after': {
-                                                    opacity: 1
-                                                }
-                                            }}
+                                            disabled={savingCourse} // Disable while saving
+                                            sx={{ mt: 1 }} // Align with TextField baseline
+                                        // Remove decorative hover effects
                                         >
-                                            Save
+                                            {savingCourse ? <CircularProgress size={24} color="inherit" /> : 'Save'}
                                         </Button>
                                     </Box>
 
@@ -1235,25 +1053,8 @@ function EditCoursePage() {
                                         onChange={(e) => setCourseDescription(e.target.value)}
                                         placeholder="Add a compelling course description..."
                                         fullWidth
-                                        variant="standard"
-                                        sx={{
-                                            '& .MuiInputBase-input': {
-                                                color: theme.palette.text.secondary,
-                                                fontSize: '0.95rem',
-                                                lineHeight: '1.5',
-                                                letterSpacing: '0.01em',
-                                            },
-                                            '& .MuiInputBase-input::placeholder': {
-                                                color: theme.palette.text.disabled,
-                                                opacity: 1
-                                            },
-                                            '& .MuiInput-underline:before': {
-                                                borderBottomColor: `${theme.palette.divider}`
-                                            },
-                                            '& .MuiInput-underline:hover:before': {
-                                                borderBottomColor: theme.palette.secondary.main
-                                            }
-                                        }}
+                                        variant="outlined" // Use outlined variant from theme
+                                    // Use default theme styles
                                     />
                                 </Box>
                             </Box>
@@ -1262,69 +1063,57 @@ function EditCoursePage() {
                             <Box sx={{ mb: 4 }}>
                                 <Box sx={{
                                     display: 'flex',
-                                    justifyContent: 'flex-end',
+                                    justifyContent: 'space-between', // Space between title and button
                                     alignItems: 'center',
                                     mb: 2
                                 }}>
+                                    <Typography variant="h5" sx={{ fontWeight: 500 }}>Modules</Typography>
                                     <Button
                                         startIcon={<AddIcon />}
                                         onClick={handleOpenAddModuleDialog}
-                                        sx={{
-                                            borderRadius: '8px',
-                                            px: 2.5,
-                                            py: 1,
-                                            fontSize: '0.9rem',
-                                            fontWeight: 500,
-                                            color: theme.palette.primary.contrastText,
-                                            textTransform: 'none',
-                                            backgroundColor: theme.palette.primary.main,
-                                            transition: 'all 0.3s ease',
-                                            position: 'relative',
-                                            overflow: 'hidden',
-                                            '&:hover': {
-                                                backgroundColor: theme.palette.primary.dark,
-                                                transform: 'translateY(-2px)',
-                                                boxShadow: `0 4px 12px ${theme.palette.primary.main}40`,
-                                            },
-                                            // Add decorative line that animates on hover
-                                            '&::after': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                bottom: 0,
-                                                left: '15%',
-                                                right: '15%',
-                                                height: '2px',
-                                                background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
-                                                opacity: 0,
-                                                transition: 'opacity 0.3s ease'
-                                            },
-                                            '&:hover::after': {
-                                                opacity: 1
-                                            }
-                                        }}
+                                        variant="contained" // Use contained style
+                                        color="primary" // Theme primary color
+                                    // Remove decorative hover effects
                                     >
                                         Add Module
                                     </Button>
                                 </Box>
 
-                                {/* Updated Swiper styling */}
+                                {/* Swiper - REMOVE TEXTURES from CARDS */}
                                 <Box sx={{
+                                    '& .swiper': { /* ... */ },
+                                    '& .swiper-slide': { /* ... */ },
+                                    // ... other swiper styles
                                     '& .swiper': {
-                                        padding: '40px 0',
+                                        padding: '20px 0', // Adjust padding
                                         overflow: 'visible',
                                     },
                                     '& .swiper-slide': {
-                                        width: '400px',
-                                        transform: 'scale(0.9)',
-                                        transition: 'all 0.3s ease',
-                                        opacity: 0.7,
+                                        width: { xs: '90%', sm: '350px', md: '400px' }, // Responsive width
+                                        opacity: 0.8, // Slightly transparent non-active slides
+                                        transform: 'scale(0.95)',
+                                        transition: 'opacity 0.4s ease, transform 0.4s ease',
                                         '&.swiper-slide-active': {
-                                            transform: 'scale(1)',
                                             opacity: 1,
+                                            transform: 'scale(1)',
                                         }
-                                    }
+                                    },
+                                    // Style navigation buttons if needed
+                                    '& .swiper-button-prev, & .swiper-button-next': {
+                                        color: theme.palette.primary.main, // Use theme color
+                                        '&::after': {
+                                            fontSize: '2rem', // Adjust size
+                                        },
+                                    },
+                                    // Style pagination bullets if needed
+                                    '& .swiper-pagination-bullet': {
+                                        backgroundColor: theme.palette.primary.light,
+                                    },
+                                    '& .swiper-pagination-bullet-active': {
+                                        backgroundColor: theme.palette.primary.main,
+                                    },
                                 }}>
-                                    {course && course.modules ? (
+                                    {course && course.modules && course.modules.length > 0 ? (
                                         <Swiper
                                             modules={[EffectCoverflow, Navigation, Pagination]}
                                             effect="coverflow"
@@ -1347,167 +1136,69 @@ function EditCoursePage() {
                                             {course.modules
                                                 .sort((a, b) => a.position - b.position) // Sort by position again to be safe
                                                 .map((module, index) => (
-                                                    <SwiperSlide key={module.id} style={{ width: 400 }}>
+                                                    <SwiperSlide key={module.id}>
                                                         <Card sx={{
                                                             height: '100%',
-                                                            bgcolor: theme.palette.background.paper,
-                                                            borderRadius: '20px',
                                                             overflow: 'hidden',
                                                             position: 'relative',
                                                             transition: 'all 0.3s ease-in-out',
-                                                            border: `1px solid ${theme.palette.divider}`,
-                                                            '&:hover': {
-                                                                transform: 'translateY(-8px)',
-                                                                boxShadow: theme.shadows[8],
-                                                                '& .module-image': {
-                                                                    transform: 'scale(1.05)',
-                                                                },
-                                                                '& .module-overlay': {
-                                                                    opacity: 1,
-                                                                },
-                                                                // Add decorative corners on hover
-                                                                '& .corner-tl, & .corner-br': {
-                                                                    opacity: 0.8
-                                                                }
-                                                            },
-                                                            '&::before': {
-                                                                content: '""',
-                                                                position: 'absolute',
-                                                                inset: 0,
-                                                                backgroundImage: `url(${theme.textures.lightMarble})`,
-                                                                backgroundSize: 'cover',
-                                                                opacity: 0.05,
-                                                                mixBlendMode: 'multiply',
-                                                                zIndex: 0,
-                                                            },
-                                                            // Add decorative corner elements
-                                                            '& .corner-tl': {
-                                                                position: 'absolute',
-                                                                top: 10,
-                                                                left: 10,
-                                                                width: '20px',
-                                                                height: '20px',
-                                                                borderTop: `1px solid ${theme.palette.secondary.main}50`,
-                                                                borderLeft: `1px solid ${theme.palette.secondary.main}50`,
-                                                                opacity: 0.4,
-                                                                transition: 'opacity 0.3s ease',
-                                                                zIndex: 5
-                                                            },
-                                                            '& .corner-br': {
-                                                                position: 'absolute',
-                                                                bottom: 10,
-                                                                right: 10,
-                                                                width: '20px',
-                                                                height: '20px',
-                                                                borderBottom: `1px solid ${theme.palette.secondary.main}50`,
-                                                                borderRight: `1px solid ${theme.palette.secondary.main}50`,
-                                                                opacity: 0.4,
-                                                                transition: 'opacity 0.3s ease',
-                                                                zIndex: 5
-                                                            }
+                                                            // Removed ::before with texture
+                                                            // Removed decorative corners (.corner-tl, .corner-br)
                                                         }}>
-                                                            <Box className="corner-tl" />
-                                                            <Box className="corner-br" />
-                                                            <Box sx={{ position: 'relative', height: '250px' }}>
-                                                                {/* Module Label */}
-                                                                <Box
+                                                            {/* ... CardMedia/Box for thumbnail ... */}
+                                                            <Box sx={{ position: 'relative', height: '200px' /* Adjust height */ }}>
+                                                                {/* Module Label - Simplified */}
+                                                                <Chip
+                                                                    icon={<AutoStoriesIcon fontSize="small" />}
+                                                                    label={`Module ${module.position}`}
+                                                                    size="small"
                                                                     sx={{
                                                                         position: 'absolute',
                                                                         top: 12,
                                                                         left: 12,
                                                                         zIndex: 2,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1,
-                                                                        bgcolor: `${theme.palette.secondary.main}15`,
-                                                                        borderRadius: '10px',
-                                                                        padding: '6px 12px',
-                                                                        border: `1px solid ${theme.palette.secondary.main}30`,
-                                                                        transition: 'all 0.3s ease',
-                                                                        '&:hover': {
-                                                                            bgcolor: `${theme.palette.secondary.main}25`,
-                                                                            transform: 'scale(1.05)',
-                                                                        }
+                                                                        bgcolor: 'rgba(255, 255, 255, 0.8)', // Light background for visibility
+                                                                        color: theme.palette.text.primary,
+                                                                        backdropFilter: 'blur(4px)', // Optional blur
                                                                     }}
-                                                                >
-                                                                    <AutoStoriesIcon sx={{
-                                                                        fontSize: '0.9rem',
-                                                                        color: theme.palette.secondary.main,
-                                                                    }} />
-                                                                    <Typography variant="caption" sx={{
-                                                                        color: theme.palette.secondary.main,
-                                                                        fontWeight: 'medium',
-                                                                        fontSize: '0.75rem',
-                                                                        letterSpacing: '0.03em',
-                                                                    }}>
-                                                                        {`Module ${module.position}`}
-                                                                    </Typography>
-                                                                </Box>
+                                                                />
 
-                                                                {/* Delete Button - Subtle but accessible */}
+                                                                {/* Delete Button - Standard IconButton */}
                                                                 <IconButton
                                                                     onClick={() => handleDeleteModuleClick(module.id)}
+                                                                    size="small"
                                                                     sx={{
                                                                         position: 'absolute',
-                                                                        top: 12,
-                                                                        right: 12,
+                                                                        top: 8,
+                                                                        right: 8,
                                                                         zIndex: 3,
-                                                                        width: 32,
-                                                                        height: 32,
-                                                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                                                        backdropFilter: 'blur(8px)',
-                                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                                        opacity: 0.6,
-                                                                        transition: 'all 0.2s ease',
+                                                                        bgcolor: 'rgba(0, 0, 0, 0.4)',
+                                                                        color: 'white',
                                                                         '&:hover': {
-                                                                            bgcolor: 'rgba(255, 75, 75, 0.2)',
-                                                                            borderColor: 'rgba(255, 75, 75, 0.3)',
-                                                                            opacity: 1,
-                                                                            transform: 'scale(1.05)',
+                                                                            bgcolor: theme.palette.error.dark,
                                                                         },
                                                                     }}
                                                                 >
-                                                                    <DeleteIcon sx={{
-                                                                        fontSize: '0.9rem',
-                                                                        color: 'rgba(255, 255, 255, 0.8)',
-                                                                        transition: 'all 0.2s ease',
-                                                                        '&:hover': {
-                                                                            color: '#FF4B4B',
-                                                                        }
-                                                                    }} />
+                                                                    <DeleteIcon fontSize="small" />
                                                                 </IconButton>
 
-                                                                {/* Thumbnail upload button */}
+                                                                {/* Thumbnail upload button - Standard IconButton */}
                                                                 <IconButton
                                                                     component="label"
+                                                                    size="small"
                                                                     sx={{
                                                                         position: 'absolute',
-                                                                        top: 12,
-                                                                        right: 56, // Position it next to the delete button
+                                                                        top: 8,
+                                                                        right: 44, // Position next to delete
                                                                         zIndex: 3,
-                                                                        width: 32,
-                                                                        height: 32,
-                                                                        bgcolor: 'rgba(0, 0, 0, 0.2)',
-                                                                        backdropFilter: 'blur(8px)',
-                                                                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                                        opacity: 0.6,
-                                                                        transition: 'all 0.2s ease',
+                                                                        bgcolor: 'rgba(0, 0, 0, 0.4)',
+                                                                        color: 'white',
                                                                         '&:hover': {
-                                                                            bgcolor: 'rgba(0, 229, 255, 0.2)',
-                                                                            borderColor: 'rgba(0, 229, 255, 0.3)',
-                                                                            opacity: 1,
-                                                                            transform: 'scale(1.05)',
+                                                                            bgcolor: 'rgba(0, 0, 0, 0.6)',
                                                                         },
                                                                     }}
                                                                 >
-                                                                    <ImageIcon sx={{
-                                                                        fontSize: '0.9rem',
-                                                                        color: 'rgba(255, 255, 255, 0.8)',
-                                                                        transition: 'all 0.2s ease',
-                                                                        '&:hover': {
-                                                                            color: '#00E5FF',
-                                                                        }
-                                                                    }} />
+                                                                    <ImageIcon fontSize="small" />
                                                                     <VisuallyHiddenInput
                                                                         type="file"
                                                                         accept="image/*"
@@ -1515,40 +1206,17 @@ function EditCoursePage() {
                                                                     />
                                                                 </IconButton>
 
-                                                                {/* Replace the module background Box with this */}
+                                                                {/* Module Thumbnail Area - Simplified */}
                                                                 <Box
                                                                     sx={{
                                                                         position: 'relative',
                                                                         height: '100%',
-                                                                        background: moduleThumbPreviews[module.id] || module.thumbnail_url
-                                                                            ? 'none'  // No background when we have a thumbnail
-                                                                            : `linear-gradient(135deg, 
-                                                                        ${theme.palette.background.paper} 0%,
-                                                                        ${theme.palette.parchment.dark} 100%)`, // Replace cyan gradient with parchment
-                                                                        '&::before': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
-                                                                            content: '""',
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            right: 0,
-                                                                            bottom: 0,
-                                                                            background: `radial-gradient(circle at 50% 50%,
-                                                                            ${theme.palette.secondary.main}15 0%,
-                                                                            ${theme.palette.secondary.main}05 25%,
-                                                                            transparent 50%)`, // Replace cyan with sepia
-                                                                            opacity: 0.5,
-                                                                            transition: 'all 0.3s ease',
-                                                                        } : {},
-                                                                        '&::after': (!moduleThumbPreviews[module.id] && !module.thumbnail_url) ? {
-                                                                            content: '""',
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            right: 0,
-                                                                            bottom: 0,
-                                                                            opacity: 0.05,
-                                                                            mixBlendMode: 'overlay',
-                                                                        } : {}
+                                                                        bgcolor: theme.palette.neutral.light, // Neutral background if no image
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        overflow: 'hidden',
+                                                                        // Removed ::before and ::after with gradients/textures
                                                                     }}
                                                                 >
                                                                     {/* Show thumbnail if available */}
@@ -1557,443 +1225,195 @@ function EditCoursePage() {
                                                                             component="img"
                                                                             src={moduleThumbPreviews[module.id] || normalizeThumbnailUrl(module.thumbnail_url)}
                                                                             sx={{
-                                                                                width: '100%',
-                                                                                height: '100%',
-                                                                                objectFit: 'cover',
-                                                                                objectPosition: 'center',
-                                                                                position: 'absolute',
-                                                                                top: 0,
-                                                                                left: 0,
-                                                                                zIndex: 0,
+                                                                                width: '100%', height: '100%', objectFit: 'cover',
+                                                                                position: 'absolute', top: 0, left: 0, zIndex: 0,
                                                                             }}
                                                                             alt={`Thumbnail for ${module.brdge?.name || "module"}`}
                                                                         />
                                                                     )}
 
-                                                                    {/* Add overlay for better text readability */}
-                                                                    {moduleThumbPreviews[module.id] && (
-                                                                        <Box
-                                                                            sx={{
-                                                                                position: 'absolute',
-                                                                                top: 0,
-                                                                                left: 0,
-                                                                                width: '100%',
-                                                                                height: '100%',
-                                                                                background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
-                                                                                zIndex: 1,
-                                                                            }}
-                                                                        />
+                                                                    {/* Overlay for contrast when thumbnail exists */}
+                                                                    {(moduleThumbPreviews[module.id] || module.thumbnail_url) && (
+                                                                        <Box sx={{
+                                                                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                                                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%)', // Subtle gradient
+                                                                            zIndex: 1,
+                                                                        }} />
                                                                     )}
 
-                                                                    {/* Show loading indicator when uploading */}
+                                                                    {/* Loading indicator */}
                                                                     {uploadingModuleThumb[module.id] && (
                                                                         <Box sx={{
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            right: 0,
-                                                                            bottom: 0,
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            justifyContent: 'center',
-                                                                            bgcolor: 'rgba(0, 0, 0, 0.7)',
-                                                                            zIndex: 5
+                                                                            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            bgcolor: 'rgba(255, 255, 255, 0.7)', zIndex: 5
                                                                         }}>
-                                                                            <CircularProgress size={40} sx={{ color: '#00E5FF' }} />
+                                                                            <CircularProgress size={40} sx={{ color: theme.palette.primary.main }} />
                                                                         </Box>
                                                                     )}
 
-                                                                    {/* Animated Play Button */}
-                                                                    <Box
+                                                                    {/* Play Button - Centered, simple */}
+                                                                    <IconButton
+                                                                        onClick={() => handleViewModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
                                                                         sx={{
-                                                                            position: 'absolute',
-                                                                            top: '50%',
-                                                                            left: '50%',
+                                                                            position: 'absolute', // Keep absolute positioning
+                                                                            top: '50%', left: '50%',
                                                                             transform: 'translate(-50%, -50%)',
-                                                                            zIndex: 2,
-                                                                            display: 'flex',
-                                                                            flexDirection: 'column',
-                                                                            alignItems: 'center',
-                                                                            gap: 2,
+                                                                            zIndex: 2, // Above overlay
+                                                                            width: 64, height: 64,
+                                                                            bgcolor: 'rgba(0, 0, 0, 0.5)',
+                                                                            color: 'white',
+                                                                            transition: 'transform 0.2s ease, background-color 0.2s ease',
+                                                                            '&:hover': {
+                                                                                bgcolor: 'rgba(0, 0, 0, 0.7)',
+                                                                                transform: 'translate(-50%, -50%) scale(1.1)',
+                                                                            },
+                                                                            // Removed pulsing animation ::before
                                                                         }}
                                                                     >
-                                                                        <IconButton
-                                                                            onClick={() => handleViewModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
-                                                                            sx={{
-                                                                                width: 80,
-                                                                                height: 80,
-                                                                                bgcolor: `${theme.palette.secondary.main}10`, // Replace cyan with sepia
-                                                                                backdropFilter: 'blur(8px)',
-                                                                                border: `2px solid ${theme.palette.secondary.main}30`, // Sepia border
-                                                                                transition: 'all 0.3s ease',
-                                                                                '&:hover': {
-                                                                                    bgcolor: `${theme.palette.secondary.main}20`, // More opaque sepia on hover
-                                                                                    transform: 'scale(1.1)',
-                                                                                    border: `2px solid ${theme.palette.secondary.main}50`, // More opaque sepia border
-                                                                                    '& .play-icon': {
-                                                                                        transform: 'scale(1.1)',
-                                                                                    }
-                                                                                },
-                                                                                '&::before': {
-                                                                                    content: '""',
-                                                                                    position: 'absolute',
-                                                                                    top: -4,
-                                                                                    left: -4,
-                                                                                    right: -4,
-                                                                                    bottom: -4,
-                                                                                    border: `2px solid ${theme.palette.secondary.main}20`, // Sepia pulsing border
-                                                                                    borderRadius: '50%',
-                                                                                    animation: 'pulseRing 2s infinite',
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <PlayArrowIcon
-                                                                                className="play-icon"
-                                                                                sx={{
-                                                                                    fontSize: 40,
-                                                                                    color: theme.palette.secondary.main, // Sepia icon instead of cyan
-                                                                                    filter: `drop-shadow(0 0 8px ${theme.palette.secondary.main}50)`, // Sepia glow
-                                                                                    transition: 'all 0.3s ease',
-                                                                                }}
-                                                                            />
-                                                                        </IconButton>
-                                                                        <Typography
-                                                                            variant="caption"
-                                                                            sx={{
-                                                                                color: theme.palette.parchment.light,
-                                                                                // Replace cyan glow with sepia
-                                                                                textShadow: `0 0 10px ${theme.palette.secondary.main}50`,
-                                                                                letterSpacing: '0.05em',
-                                                                                fontWeight: 500,
-                                                                            }}
-                                                                        >
-                                                                            Click to View
-                                                                        </Typography>
-                                                                    </Box>
-
-                                                                    {/* Decorative Elements */}
-                                                                    <Box
-                                                                        sx={{
-                                                                            position: 'absolute',
-                                                                            bottom: 20,
-                                                                            left: 20,
-                                                                            right: 20,
-                                                                            display: 'flex',
-                                                                            justifyContent: 'space-between',
-                                                                            opacity: 0.5,
-                                                                            zIndex: 2,
-                                                                        }}
-                                                                    >
-                                                                        {[...Array(3)].map((_, i) => (
-                                                                            <Box
-                                                                                key={i}
-                                                                                sx={{
-                                                                                    width: 40,
-                                                                                    height: 2,
-                                                                                    // Replace cyan with sepia 
-                                                                                    bgcolor: theme.palette.secondary.main,
-                                                                                    borderRadius: '2px',
-                                                                                    opacity: 0.6 - (i * 0.2),
-                                                                                }}
-                                                                            />
-                                                                        ))}
-                                                                    </Box>
+                                                                        <PlayArrowIcon sx={{ fontSize: 40 }} />
+                                                                    </IconButton>
                                                                 </Box>
                                                             </Box>
 
+                                                            {/* CardContent */}
                                                             <CardContent sx={{
-                                                                p: 3,
-                                                                height: 'calc(100% - 250px)',
                                                                 display: 'flex',
-                                                                flexDirection: 'column'
+                                                                flexDirection: 'column',
+                                                                flexGrow: 1,
                                                             }}>
+                                                                {/* ... TextField for title ... */}
                                                                 <TextField
                                                                     value={module.brdge?.name || ''}
                                                                     onChange={(e) => handleModuleNameChange(module.id, e.target.value)}
-                                                                    variant="standard"
+                                                                    variant="outlined" // Use standard variant
+                                                                    size="small"
                                                                     fullWidth
                                                                     placeholder="Module Title"
-                                                                    InputProps={{
-                                                                        sx: {
-                                                                            fontSize: '1.1rem',
-                                                                            fontWeight: '600',
-                                                                            // Change from hardcoded cyan to theme colors
-                                                                            color: theme.palette.text.primary,
-                                                                            '&::before': { display: 'none' },
-                                                                            '&::after': { display: 'none' },
-                                                                            '&::placeholder': {
-                                                                                color: theme.palette.text.disabled,
-                                                                                opacity: 1
-                                                                            }
-                                                                        }
-                                                                    }}
+                                                                    sx={{ mb: 2 }} // Add margin bottom
                                                                 />
 
-                                                                {/* Improved Access Level Control with Tooltips */}
+
+                                                                {/* ... Access Level Control ... */}
                                                                 <Box sx={{
-                                                                    mt: 2,
-                                                                    mb: 2,
-                                                                    position: 'relative',
-                                                                    p: 2,
-                                                                    borderRadius: '12px',
-                                                                    backgroundColor: `rgba(0, 0, 0, 0.05)`, // Subtle dark background
-                                                                    border: `1px solid ${theme.palette.secondary.main}10`, // Sepia border instead of cyan
-                                                                    transition: 'box-shadow 0.3s ease',
-                                                                    '&:hover': {
-                                                                        boxShadow: `0 0 10px ${theme.palette.secondary.main}10`, // Sepia glow instead of cyan
-                                                                    }
+                                                                    mt: 1, mb: 2, p: 1.5, borderRadius: theme.shape.borderRadius,
+                                                                    bgcolor: theme.palette.action.selected, // Use theme subtle background
+                                                                    border: `1px solid ${theme.palette.divider}`,
+                                                                    // Remove hover glow
                                                                 }}>
-                                                                    <Box sx={{
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1,
-                                                                        mb: 1.5,
-                                                                        position: 'relative',
-                                                                        pl: 1,
-                                                                        // Add light sepia left border for scholarly appearance
-                                                                        '&::before': {
-                                                                            content: '""',
-                                                                            position: 'absolute',
-                                                                            top: '10%',
-                                                                            bottom: '10%',
-                                                                            left: 0,
-                                                                            width: '2px',
-                                                                            background: `linear-gradient(to bottom, transparent, ${theme.palette.secondary.main}40, transparent)`,
-                                                                            borderRadius: '1px'
-                                                                        }
-                                                                    }}>
-                                                                        <LockIcon sx={{
-                                                                            fontSize: 18,
-                                                                            color: theme.palette.secondary.main,
-                                                                            opacity: 0.9
-                                                                        }} />
-                                                                        <Typography variant="subtitle2" sx={{
-                                                                            color: theme.palette.text.primary,
-                                                                            fontWeight: '500',
-                                                                            fontFamily: theme.typography.headingFontFamily,
-                                                                            fontSize: '0.95rem',
-                                                                            fontStyle: 'italic'
-                                                                        }}>
-                                                                            Content Access Control
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                                                                        <LockIcon sx={{ fontSize: 18, color: theme.palette.text.secondary }} />
+                                                                        <Typography variant="subtitle2" sx={{ fontWeight: '500' }}>
+                                                                            Content Access
                                                                         </Typography>
                                                                     </Box>
 
-                                                                    <Box sx={{
-                                                                        display: 'flex',
-                                                                        gap: 1.5,
-                                                                        justifyContent: 'space-between'
-                                                                    }}>
+                                                                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'space-between' }}>
                                                                         {[
-                                                                            {
-                                                                                level: 'public',
-                                                                                icon: <PublicIcon sx={{ fontSize: 18 }} />,
-                                                                                label: 'Public',
-                                                                                description: 'Anyone can access, even without enrollment'
-                                                                            },
-                                                                            {
-                                                                                level: 'enrolled',
-                                                                                icon: <PersonIcon sx={{ fontSize: 18 }} />,
-                                                                                label: 'Enrolled',
-                                                                                description: 'Only enrolled users can access'
-                                                                            },
-                                                                            {
-                                                                                level: 'premium',
-                                                                                icon: <WorkspacePremiumIcon sx={{ fontSize: 18 }} />,
-                                                                                label: 'Premium',
-                                                                                description: 'Requires premium enrollment access'
-                                                                            }
+                                                                            { level: 'public', icon: <PublicIcon sx={{ fontSize: 18 }} />, label: 'Public', description: 'Anyone can access' },
+                                                                            { level: 'enrolled', icon: <PersonIcon sx={{ fontSize: 18 }} />, label: 'Enrolled', description: 'Only enrolled users' },
+                                                                            { level: 'premium', icon: <WorkspacePremiumIcon sx={{ fontSize: 18 }} />, label: 'Premium', description: 'Requires premium access' }
                                                                         ].map(({ level, icon, label, description }) => (
-                                                                            <motion.div
-                                                                                key={level}
-                                                                                whileHover={{ scale: 1.05 }}
-                                                                                whileTap={{ scale: 0.95 }}
-                                                                                style={{ flex: 1 }}
-                                                                            >
-                                                                                <Tooltip title={description} arrow placement="top">
-                                                                                    <Button
-                                                                                        variant={(module.access_level || 'enrolled') === level ? "contained" : "outlined"}
-                                                                                        onClick={() => handleAccessLevelChange(module.id, level)}
-                                                                                        startIcon={icon}
-                                                                                        fullWidth
-                                                                                        sx={{
-                                                                                            textTransform: 'none',
-                                                                                            backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                                `${theme.palette.secondary.main}15` : 'transparent',
-                                                                                            color: (module.access_level || 'enrolled') === level ?
-                                                                                                theme.palette.secondary.main : theme.palette.text.secondary,
-                                                                                            borderColor: (module.access_level || 'enrolled') === level ?
-                                                                                                theme.palette.secondary.main : theme.palette.divider,
-                                                                                            borderWidth: '1px',
-                                                                                            padding: '8px 10px',
-                                                                                            borderRadius: '8px',
-                                                                                            fontSize: '0.85rem',
-                                                                                            fontWeight: (module.access_level || 'enrolled') === level ? '600' : '400',
-                                                                                            boxShadow: 'none',
-                                                                                            transition: 'all 0.2s ease',
-                                                                                            '&:hover': {
-                                                                                                backgroundColor: (module.access_level || 'enrolled') === level ?
-                                                                                                    `${theme.palette.secondary.main}25` : `${theme.palette.secondary.main}08`,
-                                                                                                borderColor: theme.palette.secondary.main,
-                                                                                                transform: 'translateY(-1px)',
-                                                                                            },
-                                                                                        }}
-                                                                                    >
-                                                                                        {label}
-                                                                                    </Button>
-                                                                                </Tooltip>
-                                                                            </motion.div>
+                                                                            <Tooltip title={description} arrow placement="top" key={level}>
+                                                                                <Button
+                                                                                    variant={(module.access_level || 'enrolled') === level ? "contained" : "outlined"}
+                                                                                    onClick={() => handleAccessLevelChange(module.id, level)}
+                                                                                    startIcon={icon}
+                                                                                    size="small" // Smaller buttons
+                                                                                    fullWidth
+                                                                                    sx={{
+                                                                                        textTransform: 'none',
+                                                                                        // Use default theme colors for contained/outlined
+                                                                                    }}
+                                                                                >
+                                                                                    {label}
+                                                                                </Button>
+                                                                            </Tooltip>
                                                                         ))}
                                                                     </Box>
-
-                                                                    <Typography variant="caption" sx={{
-                                                                        display: 'block',
-                                                                        mt: 1.5,
-                                                                        textAlign: 'center',
-                                                                        // Replace hard-coded white/gray with theme colors
-                                                                        color: theme.palette.text.secondary,
-                                                                        fontStyle: 'italic'
-                                                                    }}>
-                                                                        {(module.access_level || 'enrolled') === 'public' ?
-                                                                            'This module is accessible to everyone' :
-                                                                            (module.access_level || 'enrolled') === 'enrolled' ?
-                                                                                'Students must enroll in the course to access' :
-                                                                                'Students need premium access to view this content'}
-                                                                    </Typography>
+                                                                    {/* Optional caption - simpler */}
+                                                                    {/* <Typography variant="caption" sx={{ display: 'block', mt: 1, textAlign: 'center', color: theme.palette.text.secondary }}>
+                                                                            Current: {(module.access_level || 'enrolled')}
+                                                                        </Typography> */}
                                                                 </Box>
 
-                                                                <Box sx={{ position: 'relative', width: '100%' }}>
+                                                                {/* ... TextField for description ... */}
+                                                                <Box sx={{ position: 'relative', width: '100%', flexGrow: 1 /* Allow description to take space */ }}>
                                                                     <TextField
                                                                         value={
-                                                                            // Show the pending description if available, otherwise show saved description
                                                                             pendingDescriptions[module.id] !== undefined
                                                                                 ? pendingDescriptions[module.id]
                                                                                 : (module.description || module.brdge?.description || '')
                                                                         }
                                                                         onChange={(e) => handleModuleDescriptionChange(module.id, e.target.value)}
                                                                         multiline
-                                                                        rows={2}
+                                                                        minRows={2} // Min rows
                                                                         fullWidth
-                                                                        variant="standard"
+                                                                        variant="outlined" // Standard variant
+                                                                        size="small"
                                                                         placeholder="Add a description..."
-                                                                        sx={{
-                                                                            mt: 1.5,
-                                                                            flex: 1,
-                                                                            '& .MuiInputBase-input': {
-                                                                                // Replace hard-coded cyan with theme colors
-                                                                                color: theme.palette.text.primary,
-                                                                                fontSize: '0.85rem',
-                                                                                lineHeight: '1.5',
-                                                                            },
-                                                                            '& .MuiInputBase-input::placeholder': {
-                                                                                color: theme.palette.text.disabled,
-                                                                                opacity: 1
-                                                                            },
-                                                                            '& .MuiInput-underline:before': {
-                                                                                borderBottomColor: theme.palette.divider
-                                                                            },
-                                                                            '& .MuiInput-underline:hover:before': {
-                                                                                borderBottomColor: theme.palette.secondary.main
-                                                                            }
-                                                                        }}
+                                                                        sx={{ mt: 1.5, flexGrow: 1 }}
                                                                     />
-                                                                    {/* Show saving indicator */}
-                                                                    {isSavingDescriptions[module.id] && (
-                                                                        <Box
+                                                                    {/* Saving/Pending indicators */}
+                                                                    {(isSavingDescriptions[module.id] || pendingDescriptions[module.id] !== undefined) && (
+                                                                        <Typography
+                                                                            variant="caption"
                                                                             sx={{
                                                                                 position: 'absolute',
-                                                                                right: 2,
-                                                                                bottom: 2,
-                                                                                fontSize: '0.7rem',
-                                                                                // Replace cyan with sepia
-                                                                                color: theme.palette.secondary.main
+                                                                                right: 8,
+                                                                                bottom: 8,
+                                                                                color: isSavingDescriptions[module.id] ? theme.palette.info.main : theme.palette.warning.main,
+                                                                                bgcolor: theme.palette.background.paper, // Ensure visibility over textfield border
+                                                                                px: 0.5,
+                                                                                borderRadius: '4px'
                                                                             }}
                                                                         >
-                                                                            Saving...
-                                                                        </Box>
-                                                                    )}
-                                                                    {/* Show pending indicator */}
-                                                                    {pendingDescriptions[module.id] !== undefined && !isSavingDescriptions[module.id] && (
-                                                                        <Box
-                                                                            sx={{
-                                                                                position: 'absolute',
-                                                                                right: 2,
-                                                                                bottom: 2,
-                                                                                fontSize: '0.7rem',
-                                                                                // Use theme warning color instead of hardcoded amber
-                                                                                color: theme.palette.warning.main
-                                                                            }}
-                                                                        >
-                                                                            Pending...
-                                                                        </Box>
+                                                                            {isSavingDescriptions[module.id] ? "Saving..." : "Pending..."}
+                                                                        </Typography>
                                                                     )}
                                                                 </Box>
 
+
+                                                                {/* ... Edit Module Button ... */}
                                                                 <Button
-                                                                    variant="contained"
+                                                                    variant="contained" // Standard contained button
                                                                     startIcon={<EditIcon sx={{ fontSize: '1rem' }} />}
                                                                     onClick={() => handleEditModule(module.brdge_id, module.brdge?.public_id?.substring(0, 6))}
                                                                     fullWidth
-                                                                    sx={{
-                                                                        mt: 2,
-                                                                        backgroundColor: theme.palette.primary.main, // Ink background instead of cyan gradient
-                                                                        boxShadow: `0 0 10px ${theme.palette.primary.main}30`, // Ink shadow
-                                                                        fontWeight: 'medium',
-                                                                        letterSpacing: '0.01em',
-                                                                        height: '40px',
-                                                                        fontSize: '0.85rem',
-                                                                        borderRadius: '10px',
-                                                                        '&:hover': {
-                                                                            backgroundColor: theme.palette.primary.dark, // Darker ink on hover
-                                                                            boxShadow: `0 0 15px ${theme.palette.primary.main}50`, // Stronger ink shadow
-                                                                            transform: 'translateY(-2px)'
-                                                                        },
-                                                                        '&.Mui-disabled': {
-                                                                            background: `${theme.palette.primary.main}30` // Transparent ink for disabled
-                                                                        }
-                                                                    }}
+                                                                    sx={{ mt: 2 }} // Margin top
+                                                                // Use default theme styles
                                                                 >
                                                                     Edit Module
                                                                 </Button>
+
                                                             </CardContent>
                                                         </Card>
                                                     </SwiperSlide>
+
                                                 ))}
                                         </Swiper>
                                     ) : (
-                                        <Box sx={{
-                                            p: 4,
-                                            textAlign: 'center',
-                                            // Replace cyan background/border with theme colors
-                                            bgcolor: `${theme.palette.background.paper}`,
-                                            borderRadius: '16px',
-                                            border: `1px solid ${theme.palette.divider}`,
-                                        }}>
+                                        <Paper // Use Paper for the empty state
+                                            variant="outlined" // Outlined variant for subtle container
+                                            sx={{
+                                                p: 4,
+                                                textAlign: 'center',
+                                                bgcolor: theme.palette.background.default, // Default background
+                                            }}
+                                        >
                                             <Typography sx={{ color: theme.palette.text.secondary, mb: 2 }}>
                                                 No modules added to this course yet.
                                             </Typography>
                                             <Button
                                                 startIcon={<AddIcon />}
                                                 onClick={handleOpenAddModuleDialog}
-                                                sx={{
-                                                    background: theme.palette.primary.main, // Changed from cyan gradient to ink color
-                                                    borderRadius: '10px',
-                                                    px: 2.5,
-                                                    py: 1,
-                                                    fontSize: '0.9rem',
-                                                    fontWeight: 500,
-                                                    color: theme.palette.primary.contrastText, // Parchment text color
-                                                    textTransform: 'none',
-                                                    '&:hover': {
-                                                        background: theme.palette.primary.dark, // Darker ink on hover
-                                                        transform: 'translateY(-2px)',
-                                                        boxShadow: `0 4px 12px ${theme.palette.primary.main}40`, // Ink shadow instead of cyan
-                                                    },
-                                                    transition: 'all 0.3s ease'
-                                                }}
+                                                variant="contained" // Standard contained button
+                                                color="primary"
                                             >
                                                 Add Your First Module
                                             </Button>
-                                        </Box>
+                                        </Paper>
+
                                     )}
                                 </Box>
                             </Box>
@@ -2002,31 +1422,19 @@ function EditCoursePage() {
 
                     {/* Settings Tab */}
                     {activeTab === 1 && (
-                        <Box sx={{
-                            bgcolor: 'rgba(0, 229, 255, 0.03)',
-                            backdropFilter: 'blur(20px)',
-                            borderRadius: '16px',
-                            p: 3,
-                            border: '1px solid rgba(0, 229, 255, 0.1)',
-                        }}>
+                        <Paper // Use Paper component for settings container
+                            elevation={1}
+                            sx={{
+                                p: 3,
+                                borderRadius: theme.shape.borderRadius,
+                                // Remove blur/border overrides
+                            }}
+                        >
                             <Typography
-                                variant="h6"
+                                variant="h6" // Use standard typography
                                 sx={{
-                                    color: theme.palette.text.primary,
-                                    fontFamily: theme.typography.headingFontFamily,
                                     mb: 3,
-                                    position: 'relative',
-                                    zIndex: 1,
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        bottom: -8,
-                                        left: 0,
-                                        width: 40,
-                                        height: 2,
-                                        backgroundColor: theme.palette.secondary.main,
-                                        borderRadius: 1
-                                    }
+                                    // Remove decorative underline
                                 }}
                             >
                                 Course Settings
@@ -2037,136 +1445,97 @@ function EditCoursePage() {
                                     <Switch
                                         checked={isShareable}
                                         onChange={handleToggleShareable}
-                                        sx={{
-                                            '& .MuiSwitch-switchBase.Mui-checked': {
-                                                color: theme.palette.secondary.main,
-                                            },
-                                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                                backgroundColor: theme.palette.secondary.light,
-                                            },
-                                        }}
+                                        color="primary" // Use primary color for switch
+                                        disabled={savingShareStatus}
                                     />
                                 }
                                 label="Public Access"
-                                sx={{
-                                    '& .MuiFormControlLabel-label': {
-                                        color: theme.palette.text.primary,
-                                    }
-                                }}
+                                sx={{ mb: 2 }} // Add margin
                             />
+                            {savingShareStatus && <CircularProgress size={20} sx={{ ml: 1 }} />} {/* Indicate saving */}
+
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                {isShareable ? "Anyone with the link can view this course." : "Only you and enrolled users (based on module settings) can access this course."}
+                            </Typography>
 
                             <Button
-                                variant="outlined"
+                                variant="outlined" // Standard outlined button
                                 startIcon={<ShareIcon />}
                                 onClick={handleOpenShareDialog}
-                                color="secondary"
-                                sx={{ mt: 2 }}
+                                color="primary" // Use primary color
+                            // Use default theme styles
                             >
-                                Share Course
+                                Sharing Options
                             </Button>
-                        </Box>
+                        </Paper>
+
                     )}
 
-                    {/* Enrollment Tab */}
+                    {/* Enrollment Tab - REMOVE TEXTURE */}
                     {activeTab === 2 && (
-                        <Box sx={{
-                            bgcolor: 'rgba(0, 229, 255, 0.03)',
-                            backdropFilter: 'blur(20px)',
-                            borderRadius: '16px',
-                            p: 3,
-                            border: '1px solid rgba(0, 229, 255, 0.1)',
-                        }}>
-                            <Box sx={{
-                                bgcolor: theme.palette.background.paper,
-                                borderRadius: '16px',
+                        <Paper
+                            elevation={1}
+                            sx={{
                                 p: 3,
-                                border: `1px solid ${theme.palette.divider}`,
+                                borderRadius: theme.shape.borderRadius,
+                            }}
+                        >
+                            <Box sx={{
                                 position: 'relative',
-                                '&::before': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    inset: 0,
-                                    backgroundImage: `url(${theme.textures.oldMap})`,
-                                    backgroundSize: 'cover',
-                                    opacity: 0.03,
-                                    mixBlendMode: 'multiply',
-                                    borderRadius: '16px',
-                                    zIndex: 0,
-                                }
+                                // Removed ::before with oldMap texture
                             }}>
+                                {/* ... Typography for Title ... */}
                                 <Typography
                                     variant="h6"
-                                    sx={{
-                                        color: theme.palette.text.primary,
-                                        fontFamily: theme.typography.headingFontFamily,
-                                        mb: 3,
-                                        position: 'relative',
-                                        zIndex: 1
-                                    }}
+                                    sx={{ mb: 3, position: 'relative', zIndex: 1 }}
                                 >
                                     Student Enrollments ({enrollments.length})
                                 </Typography>
 
-                                {/* Premium Access Info Box */}
+                                {/* ... Premium Access Info Box ... */}
                                 <Paper sx={{
-                                    p: 2,
-                                    mb: 3,
-                                    bgcolor: theme.palette.parchment.dark,
-                                    border: `1px dashed ${theme.palette.secondary.main}40`,
-                                    borderRadius: '12px',
-                                    position: 'relative',
+                                    p: 2, mb: 3,
+                                    bgcolor: theme.palette.action.hover, // Use subtle theme background
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    borderRadius: theme.shape.borderRadius,
+                                    position: 'relative', // Keep for zIndex
                                     zIndex: 1
                                 }}>
-                                    <Typography variant="subtitle2" sx={{
-                                        color: theme.palette.secondary.main,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        mb: 1,
-                                        fontFamily: theme.typography.headingFontFamily
-                                    }}>
-                                        <WorkspacePremiumIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
+                                    <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                        <WorkspacePremiumIcon sx={{ mr: 1, fontSize: '1.2rem', color: theme.palette.primary.main }} />
                                         Premium Access Management
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                                        Toggle premium access for enrolled students to allow them to view modules marked as "Premium" in your course.
-                                        This works with the module access controls in the Content tab.
+                                        Toggle premium access for students to view modules marked "Premium" (controlled in the Content tab).
                                     </Typography>
                                 </Paper>
 
-                                {/* Enrollment Table - Restyled as a classroom roster */}
+
+                                {/* Enrollment Table - REMOVE TEXTURE */}
                                 {loadingEnrollments ? (
-                                    <CircularProgress sx={{ color: theme.palette.secondary.main }} />
+                                    <CircularProgress sx={{ color: theme.palette.primary.main }} />
                                 ) : enrollments.length === 0 ? (
+                                    // ... No students message ...
                                     <Typography variant="body1" color="text.secondary" sx={{ mt: 3, textAlign: 'center' }}>
-                                        No students enrolled yet.
+                                        No students enrolled yet. Share your course to get started!
                                     </Typography>
                                 ) : (
-                                    <Box
-                                        sx={{
-                                            position: 'relative',
-                                            '&::before': {
-                                                content: '""',
-                                                position: 'absolute',
-                                                inset: 0,
-                                                backgroundImage: `url(${theme.textures.crumbledParchment})`,
-                                                backgroundSize: 'cover',
-                                                opacity: 0.1,
-                                                borderRadius: '12px',
-                                                zIndex: 0,
-                                            }
-                                        }}
-                                    >
+                                    <Box sx={{
+                                        position: 'relative',
+                                        // Removed ::before with crumbledParchment texture
+                                    }}>
                                         <TableContainer
                                             component={Paper}
+                                            variant="outlined"
                                             sx={{
                                                 mt: 2,
-                                                borderRadius: '12px',
-                                                border: `1px solid ${theme.palette.divider}`,
-                                                background: 'transparent',
+                                                borderRadius: theme.shape.borderRadius,
+                                                background: 'transparent', // Ensure table bg doesn't hide parent
                                                 position: 'relative',
                                                 zIndex: 1,
-                                                overflow: 'hidden',
+                                                overflow: 'hidden', // Keep for rounded corners
                                                 boxShadow: 'none',
+                                                // ... table/cell styles ...
                                                 '& .MuiTable-root': {
                                                     borderCollapse: 'separate',
                                                     borderSpacing: '0',
@@ -2176,29 +1545,26 @@ function EditCoursePage() {
                                                     color: theme.palette.text.primary,
                                                     position: 'relative',
                                                 }
+
                                             }}
                                         >
-                                            <Table>
+                                            {/* ... Table Head/Body ... */}
+                                            <Table stickyHeader> {/* Make header sticky if table is long */}
                                                 <TableHead>
                                                     <TableRow sx={{
-                                                        '& th': {
-                                                            bgcolor: theme.palette.parchment.dark,
-                                                            color: theme.palette.text.primary,
+                                                        '& th': { // Style header cells
+                                                            bgcolor: theme.palette.grey[200], // Light grey background for header
                                                             fontWeight: 'bold',
-                                                            fontFamily: theme.typography.headingFontFamily,
-                                                            borderBottom: `2px solid ${theme.palette.secondary.main}`,
                                                         }
                                                     }}>
-                                                        <TableCell>Student Email</TableCell>
-                                                        <TableCell>Enrollment Date</TableCell>
-                                                        <TableCell>Last Access</TableCell>
+                                                        <TableCell>Student</TableCell>
+                                                        <TableCell>Enrolled</TableCell>
+                                                        {/* <TableCell>Last Access</TableCell> */}
                                                         <TableCell>Progress</TableCell>
                                                         <TableCell>Status</TableCell>
                                                         <TableCell align="center">
                                                             <Tooltip title="Premium Access" arrow>
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <WorkspacePremiumIcon sx={{ color: theme.palette.secondary.main }} />
-                                                                </Box>
+                                                                <WorkspacePremiumIcon sx={{ color: theme.palette.primary.main }} />
                                                             </Tooltip>
                                                         </TableCell>
                                                     </TableRow>
@@ -2206,29 +1572,29 @@ function EditCoursePage() {
                                                 <TableBody>
                                                     {enrollments.map((enrollment) => (
                                                         <TableRow key={enrollment.id} sx={{
-                                                            bgcolor: theme.palette.background.paper,
-                                                            '&:hover': { bgcolor: theme.palette.parchment.light },
-                                                            transition: 'background-color 0.2s',
+                                                            '&:hover': { bgcolor: theme.palette.action.hover }, // Theme hover
+                                                            // Use default theme styles
                                                             '&:last-child td': {
                                                                 borderBottom: 0
                                                             }
+
                                                         }}>
                                                             <TableCell sx={{ color: theme.palette.text.primary }}>
                                                                 {enrollment.user?.email || 'Unknown'}
                                                             </TableCell>
                                                             <TableCell>
                                                                 <Tooltip title={new Date(enrollment.enrolled_at).toLocaleString()}>
-                                                                    <Box sx={{ display: 'flex', alignItems: 'center', color: theme.palette.text.primary }}>
-                                                                        <CalendarTodayIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', color: theme.palette.text.secondary }}>
+                                                                        <CalendarTodayIcon fontSize="small" sx={{ mr: 1 }} />
                                                                         {new Date(enrollment.enrolled_at).toLocaleDateString()}
                                                                     </Box>
                                                                 </Tooltip>
                                                             </TableCell>
-                                                            <TableCell sx={{ color: theme.palette.text.primary }}>
+                                                            {/* <TableCell sx={{ color: theme.palette.text.primary }}>
                                                                 {enrollment.last_accessed_at
                                                                     ? new Date(enrollment.last_accessed_at).toLocaleDateString()
                                                                     : 'Never'}
-                                                            </TableCell>
+                                                                    </TableCell> */}
                                                             <TableCell>
                                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                                     <Box sx={{ width: '60%', mr: 1 }}>
@@ -2236,16 +1602,16 @@ function EditCoursePage() {
                                                                             variant="determinate"
                                                                             value={enrollment.progress || 0}
                                                                             sx={{
-                                                                                height: 8,
-                                                                                borderRadius: 4,
-                                                                                bgcolor: `${theme.palette.parchment.light}80`,
+                                                                                height: 6, // Slightly thinner
+                                                                                borderRadius: theme.shape.borderRadius,
+                                                                                bgcolor: theme.palette.grey[300], // Neutral background
                                                                                 '& .MuiLinearProgress-bar': {
-                                                                                    bgcolor: theme.palette.secondary.main,
+                                                                                    bgcolor: theme.palette.primary.main, // Theme primary color
                                                                                 }
                                                                             }}
                                                                         />
                                                                     </Box>
-                                                                    <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
+                                                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                                                         {Math.round(enrollment.progress || 0)}%
                                                                     </Typography>
                                                                 </Box>
@@ -2254,20 +1620,8 @@ function EditCoursePage() {
                                                                 <Chip
                                                                     label={enrollment.status.charAt(0).toUpperCase() + enrollment.status.slice(1)}
                                                                     size="small"
-                                                                    sx={{
-                                                                        bgcolor: enrollment.status === 'active'
-                                                                            ? `${theme.palette.secondary.main}15`
-                                                                            : theme.palette.parchment.light,
-                                                                        color: enrollment.status === 'active'
-                                                                            ? theme.palette.secondary.main
-                                                                            : theme.palette.text.secondary,
-                                                                        borderRadius: '4px',
-                                                                        fontWeight: 500,
-                                                                        fontSize: '0.75rem',
-                                                                        border: enrollment.status === 'active'
-                                                                            ? `1px solid ${theme.palette.secondary.main}30`
-                                                                            : `1px solid ${theme.palette.divider}`
-                                                                    }}
+                                                                    color={enrollment.status === 'active' ? 'success' : 'default'} // Use theme colors
+                                                                    variant="outlined" // Use outlined chip style
                                                                 />
                                                             </TableCell>
                                                             <TableCell align="center">
@@ -2276,19 +1630,12 @@ function EditCoursePage() {
                                                                         onClick={() => handleTogglePremiumAccess(enrollment.id)}
                                                                         size="small"
                                                                         sx={{
-                                                                            color: enrollment.has_premium_access ? theme.palette.secondary.main : theme.palette.text.disabled,
-                                                                            bgcolor: enrollment.has_premium_access ? `${theme.palette.secondary.main}15` : 'transparent',
-                                                                            border: enrollment.has_premium_access ? `1px solid ${theme.palette.secondary.main}30` : `1px solid ${theme.palette.divider}`,
-                                                                            transition: 'all 0.2s',
-                                                                            '&:hover': {
-                                                                                bgcolor: enrollment.has_premium_access ? `${theme.palette.secondary.main}25` : `${theme.palette.secondary.main}05`,
-                                                                                border: enrollment.has_premium_access ? `1px solid ${theme.palette.secondary.main}50` : `1px solid ${theme.palette.secondary.main}10`,
-                                                                            }
+                                                                            color: enrollment.has_premium_access ? theme.palette.primary.main : theme.palette.action.disabled,
+                                                                            // Use default IconButton styles
                                                                         }}
+                                                                        disabled={savingCourse} // Disable while saving
                                                                     >
-                                                                        <WorkspacePremiumIcon sx={{
-                                                                            fontSize: '1.2rem',
-                                                                        }} />
+                                                                        <WorkspacePremiumIcon sx={{ fontSize: '1.2rem' }} />
                                                                     </IconButton>
                                                                 </Tooltip>
                                                             </TableCell>
@@ -2296,31 +1643,20 @@ function EditCoursePage() {
                                                     ))}
                                                 </TableBody>
                                             </Table>
+
                                         </TableContainer>
                                     </Box>
                                 )}
 
-                                {/* Premium Module Count Information */}
-                                {enrollments.length > 0 && (
+                                {/* ... Premium Module Count ... */}
+                                {enrollments.length > 0 && course?.modules && course.modules.length > 0 && (
                                     <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                                        <Paper sx={{
-                                            p: 2,
-                                            bgcolor: theme.palette.parchment.dark,
-                                            border: `1px solid ${theme.palette.secondary.main}30`,
-                                            borderRadius: '8px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 2
-                                        }}>
+                                        <Paper variant="outlined" sx={{ p: 2, display: 'flex', gap: 3 }}>
                                             <Box>
                                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                                     Premium Students:
                                                 </Typography>
-                                                <Typography variant="h6" sx={{
-                                                    color: theme.palette.secondary.main,
-                                                    fontWeight: 'bold',
-                                                    fontFamily: theme.typography.headingFontFamily
-                                                }}>
+                                                <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
                                                     {enrollments.filter(e => e.has_premium_access).length} / {enrollments.length}
                                                 </Typography>
                                             </Box>
@@ -2328,113 +1664,48 @@ function EditCoursePage() {
                                                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                                     Premium Modules:
                                                 </Typography>
-                                                <Typography variant="h6" sx={{
-                                                    color: theme.palette.secondary.main,
-                                                    fontWeight: 'bold',
-                                                    fontFamily: theme.typography.headingFontFamily
-                                                }}>
-                                                    {course?.modules?.filter(m => m.access_level === 'premium').length || 0} / {course?.modules?.length || 0}
+                                                <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 'bold' }}>
+                                                    {course.modules.filter(m => m.access_level === 'premium').length} / {course.modules.length}
                                                 </Typography>
                                             </Box>
                                         </Paper>
                                     </Box>
                                 )}
+
                             </Box>
-                        </Box>
+                        </Paper>
                     )}
                 </Box>
 
-                {/* Share Dialog */}
+                {/* Share Dialog - REMOVE TEXTURE */}
                 <Dialog
                     open={shareDialogOpen}
                     onClose={handleCloseShareDialog}
                     PaperProps={{
                         sx: {
-                            bgcolor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                            borderRadius: 2,
-                            boxShadow: theme.shadows[5],
-                            border: `1px solid ${theme.palette.divider}`,
-                            minWidth: { xs: '90%', sm: 400 },
-                            position: 'relative',
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: 0,
-                                backgroundImage: `url(${theme.textures.darkParchment})`,
-                                backgroundSize: 'cover',
-                                opacity: 0.05,
-                                mixBlendMode: 'multiply',
-                                borderRadius: 'inherit',
-                                zIndex: 0,
-                            }
+                            borderRadius: theme.shape.borderRadius,
+                            minWidth: { xs: '90%', sm: 450 },
+                            position: 'relative', // Keep for potential absolute children
+                            // Removed ::before with darkParchment texture
                         }
                     }}
                 >
-                    <DialogTitle sx={{
-                        bgcolor: theme.palette.background.default,
-                        color: theme.palette.text.primary,
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        fontFamily: theme.typography.headingFontFamily,
-                        py: 2.5,
-                        fontWeight: 600,
-                        position: 'relative',
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: 0,
-                            left: '10%',
-                            right: '10%',
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}50, transparent)`,
-                        }
-                    }}>
+                    {/* ... DialogTitle ... */}
+                    <DialogTitle sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: '50%',
-                                backgroundColor: `${theme.palette.secondary.main}15`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                position: 'relative',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: -2,
-                                    left: -2,
-                                    right: -2,
-                                    bottom: -2,
-                                    borderRadius: '50%',
-                                    border: `1px solid ${theme.palette.secondary.main}30`,
-                                    opacity: 0.7
-                                }
-                            }}>
-                                <ShareIcon sx={{ fontSize: 18, color: theme.palette.secondary.main }} />
-                            </Box>
-                            <Typography sx={{
-                                fontFamily: theme.typography.headingFontFamily,
-                                fontWeight: 600,
-                            }}>
-                                Share Course
+                            <ShareIcon sx={{ color: theme.palette.primary.main }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Sharing Options
                             </Typography>
                         </Box>
                     </DialogTitle>
-                    <DialogContent sx={{ p: 3, mt: 1, position: 'relative', zIndex: 1 }}>
-                        <Typography
-                            variant="body1"
-                            gutterBottom
-                            sx={{
-                                color: theme.palette.text.secondary,
-                                fontSize: '1rem',
-                                lineHeight: 1.6,
-                                mb: 3
-                            }}
-                        >
+
+                    {/* ... DialogContent ... */}
+                    <DialogContent sx={{ p: 3, mt: 2, position: 'relative', zIndex: 1 }}>
+                        <Typography variant="body1" gutterBottom sx={{ color: theme.palette.text.secondary, mb: 3 }}>
                             {isShareable ?
-                                "This course is currently public. Anyone with the link can view it." :
-                                "This course is currently private. Only you can access it."}
+                                "This course is public. Anyone with the link can view the content (respecting individual module access levels)." :
+                                "This course is private. Only you can access the edit page. Enrolled users can view content based on module access levels."}
                         </Typography>
 
                         <FormControlLabel
@@ -2442,356 +1713,144 @@ function EditCoursePage() {
                                 <Switch
                                     checked={isShareable || false}
                                     onChange={handleToggleShareable}
-                                    color="secondary"
+                                    color="primary" // Use primary color
                                     disabled={savingShareStatus}
                                 />
                             }
                             label={
-                                <Typography sx={{
-                                    color: theme.palette.text.primary,
-                                    fontSize: '1rem',
-                                    fontWeight: 500
-                                }}>
-                                    Public Course
+                                <Typography sx={{ fontWeight: 500 }}>
+                                    Make Course Public
                                 </Typography>
                             }
-                            sx={{
-                                my: 1.5,
-                                display: 'block',
-                                '& .MuiFormControlLabel-label': {
-                                    color: theme.palette.text.primary
-                                }
-                            }}
+                            sx={{ my: 1.5, display: 'block' }}
                         />
+                        {savingShareStatus && <CircularProgress size={20} sx={{ ml: 1 }} />}
 
-                        {isShareable && (
+                        {isShareable && course?.public_id && (
                             <Box sx={{ mt: 3 }}>
-                                <Typography
-                                    variant="body2"
-                                    gutterBottom
-                                    sx={{
-                                        color: theme.palette.text.secondary,
-                                        mb: 1
-                                    }}
-                                >
-                                    Share this link:
+                                <Typography variant="body2" gutterBottom sx={{ color: theme.palette.text.secondary, mb: 1 }}>
+                                    Public link:
                                 </Typography>
                                 <TextField
                                     fullWidth
-                                    value={`${window.location.origin}/c/${course?.public_id}`}
+                                    value={`${window.location.origin}/c/${course.public_id}`}
                                     InputProps={{
                                         readOnly: true,
-                                        sx: {
-                                            color: theme.palette.text.primary,
-                                            bgcolor: theme.palette.background.default,
-                                            '& .MuiInputBase-input': {
-                                                color: theme.palette.text.primary,
-                                            }
-                                        },
                                         endAdornment: (
                                             <InputAdornment position="end">
-                                                <IconButton
-                                                    onClick={handleCopyLink}
-                                                    edge="end"
-                                                    sx={{ color: linkCopied ? theme.palette.success.main : theme.palette.secondary.main }}
-                                                >
-                                                    {linkCopied ? <Check size={18} /> : <Copy size={18} />}
-                                                </IconButton>
+                                                <Tooltip title={linkCopied ? "Copied!" : "Copy Link"} arrow>
+                                                    <IconButton
+                                                        onClick={handleCopyLink}
+                                                        edge="end"
+                                                        color={linkCopied ? "success" : "primary"} // Use theme colors
+                                                    >
+                                                        {linkCopied ? <Check size={18} /> : <Copy size={18} />}
+                                                    </IconButton>
+                                                </Tooltip>
                                             </InputAdornment>
                                         )
                                     }}
                                     variant="outlined"
                                     size="small"
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': { borderColor: `${theme.palette.secondary.main}50` },
-                                            '&:hover fieldset': { borderColor: theme.palette.secondary.main },
-                                        }
-                                    }}
                                 />
-                                <Typography
-                                    variant="caption"
-                                    sx={{
-                                        display: 'block',
-                                        mt: 1,
-                                        color: linkCopied ? theme.palette.success.main : theme.palette.text.disabled,
-                                        transition: 'color 0.3s ease'
-                                    }}
-                                >
-                                    {linkCopied ? '✓ Link copied to clipboard!' : 'Click the copy icon to copy the link'}
-                                </Typography>
                             </Box>
                         )}
 
-                        <Box sx={{
-                            mt: 3,
-                            p: 2,
-                            bgcolor: `${theme.palette.secondary.main}08`,
-                            borderRadius: '8px',
-                            border: `1px solid ${theme.palette.secondary.main}15`
-                        }}>
-                            <Typography variant="body2" sx={{ color: theme.palette.text.primary }}>
-                                <strong>Course:</strong> {course?.name}
+                        <Paper variant="outlined" sx={{ mt: 3, p: 2, bgcolor: theme.palette.action.hover }}>
+                            <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 'bold' }}>
+                                Course: {course?.name}
                             </Typography>
                             <Typography variant="caption" sx={{ color: theme.palette.text.secondary, display: 'block', mt: 1 }}>
-                                When shared, others can view this course. Individual module access is controlled in the Content tab.
+                                Module access (Public, Enrolled, Premium) is controlled individually in the 'Content' tab.
                             </Typography>
-                            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <AutoStoriesIcon sx={{ color: theme.palette.secondary.main, fontSize: 16 }} />
-                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                                    {course?.modules?.length || 0} module(s) in this course
-                                </Typography>
-                            </Box>
-                        </Box>
+                        </Paper>
                     </DialogContent>
-                    <DialogActions sx={{ px: 3, pb: 2, position: 'relative', zIndex: 1 }}>
-                        <Button
-                            onClick={handleCloseShareDialog}
-                            variant="outlined"
-                            sx={{
-                                color: theme.palette.secondary.main,
-                                borderColor: `${theme.palette.secondary.main}50`,
-                                '&:hover': {
-                                    borderColor: theme.palette.secondary.main,
-                                    backgroundColor: `${theme.palette.secondary.main}10`
-                                }
-                            }}
-                        >
+
+                    {/* ... DialogActions ... */}
+                    <DialogActions sx={{ px: 3, pb: 2 }}>
+                        <Button onClick={handleCloseShareDialog} color="primary" /* Use default theme style */ >
                             Close
                         </Button>
                     </DialogActions>
+
                 </Dialog>
 
-                {/* Add Module Dialog */}
+                {/* Add Module Dialog - REMOVE TEXTURE */}
                 <Dialog
                     open={addModuleDialogOpen}
                     onClose={handleCloseAddModuleDialog}
                     PaperProps={{
                         sx: {
-                            bgcolor: theme.palette.background.paper, // Warm parchment background
-                            color: theme.palette.text.primary, // Ink text
-                            borderRadius: '16px',
-                            boxShadow: '0 12px 35px rgba(0, 0, 0, 0.2)',
-                            border: `1px solid ${theme.palette.secondary.main}30`,
-                            position: 'relative',
+                            borderRadius: theme.shape.borderRadius,
                             maxWidth: 'sm',
                             width: '100%',
-                            overflow: 'hidden',
-                            // Add parchment texture overlay
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: 0,
-                                backgroundImage: `url(${theme.textures.crumbledParchment})`,
-                                backgroundSize: 'cover',
-                                opacity: 0.06,
-                                mixBlendMode: 'multiply',
-                                zIndex: 0,
-                            },
-                            // Add decorative corner effect
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                top: -5,
-                                left: -5,
-                                width: 40,
-                                height: 40,
-                                backgroundImage: `url(${theme.textures.stampLogo})`,
-                                backgroundSize: 'contain',
-                                backgroundRepeat: 'no-repeat',
-                                opacity: 0.08,
-                                transform: 'rotate(-15deg)',
-                                zIndex: 0,
-                            }
+                            overflow: 'hidden', // Keep for consistency
+                            position: 'relative', // Keep for potential absolute children
+                            // Removed ::before with crumbledParchment texture
+                            // Removed ::after with stampLogo texture
                         }
                     }}
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle sx={{
-                        bgcolor: theme.palette.parchment.dark, // Slightly darker parchment for header
-                        color: theme.palette.text.primary,
-                        borderBottom: `1px solid ${theme.palette.divider}`,
-                        fontFamily: theme.typography.headingFontFamily,
-                        fontWeight: 'bold',
-                        letterSpacing: '0.02em',
-                        position: 'relative',
-                        zIndex: 1,
-                        pb: 2.5,
-                        // Add decorative underline
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: 12,
-                            left: 24,
-                            right: 24,
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}70, transparent)`,
-                        }
-                    }}>
-                        <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1.5,
-                        }}>
-                            {/* Small decorative quill icon */}
-                            <Box
-                                component="span"
-                                sx={{
-                                    display: 'inline-block',
-                                    width: 24,
-                                    height: 24,
-                                    bgcolor: `${theme.palette.secondary.main}15`,
-                                    borderRadius: '50%',
-                                    position: 'relative',
-                                    '&::before': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: '50%',
-                                        left: '50%',
-                                        transform: 'translate(-50%, -50%) rotate(-45deg)',
-                                        width: '70%',
-                                        height: '2px',
-                                        background: theme.palette.secondary.main,
-                                    },
-                                    '&::after': {
-                                        content: '""',
-                                        position: 'absolute',
-                                        top: '30%',
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        width: '2px',
-                                        height: '40%',
-                                        background: theme.palette.secondary.main,
-                                    }
-                                }}
-                            />
-                            Add Module to Course
+                    {/* ... DialogTitle ... */}
+                    <DialogTitle sx={{ borderBottom: `1px solid ${theme.palette.divider}` }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            {/* Use a standard icon */}
+                            <AddIcon sx={{ color: theme.palette.primary.main }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Add Module to Course
+                            </Typography>
                         </Box>
                     </DialogTitle>
 
+                    {/* ... DialogContent ... */}
                     <DialogContent sx={{
                         p: 3,
-                        mt: 1,
-                        bgcolor: theme.palette.background.paper,
+                        mt: 2, // Adjusted margin
+                        bgcolor: theme.palette.background.paper, // Ensure background consistency
                         position: 'relative',
                         zIndex: 1
                     }}>
                         <Typography variant="body1" gutterBottom sx={{
-                            color: theme.palette.text.primary,
                             mb: 2,
-                            fontFamily: theme.typography.fontFamily,
-                            position: 'relative',
-                            pl: 1,
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                left: -4,
-                                top: 8,
-                                bottom: 8,
-                                width: 3,
-                                borderRadius: 4,
-                                bgcolor: theme.palette.secondary.main,
-                                opacity: 0.6,
-                            }
+                            // Removed decorative line ::before
                         }}>
-                            Select module to put in course:
+                            Select an existing module to add:
                         </Typography>
 
                         <Box sx={{
                             width: '100%',
                             maxHeight: 300,
                             overflow: 'auto',
-                            mt: 2,
-                            borderRadius: '8px',
+                            mt: 1,
+                            borderRadius: theme.shape.borderRadius,
                             border: `1px solid ${theme.palette.divider}`,
                             position: 'relative',
-                            // Add subtle texture
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: 0,
-                                backgroundImage: `url(${theme.textures.lightMarble})`,
-                                backgroundSize: 'cover',
-                                opacity: 0.02,
-                                mixBlendMode: 'multiply',
-                                zIndex: 0,
-                                pointerEvents: 'none',
-                            },
-                            // Custom scrollbar
-                            '&::-webkit-scrollbar': {
-                                width: '8px',
-                            },
-                            '&::-webkit-scrollbar-track': {
-                                background: theme.palette.parchment.light,
-                                borderRadius: '4px',
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                                background: `${theme.palette.secondary.main}40`,
-                                borderRadius: '4px',
-                                border: `2px solid ${theme.palette.parchment.light}`,
-                            },
-                            '&::-webkit-scrollbar-thumb:hover': {
-                                background: `${theme.palette.secondary.main}70`,
-                            }
+                            // Removed ::before with lightMarble texture
+                            // Removed custom scrollbar styles
                         }}>
-                            <List sx={{
-                                width: '100%',
-                                padding: 0,
-                                position: 'relative',
-                                zIndex: 1,
-                                '& .MuiListItem-root': {
-                                    borderBottom: `1px solid ${theme.palette.divider}30`,
-                                    transition: 'all 0.2s ease',
-                                }
-                            }}>
-                                {availableBrdges.map((brdge) => (
+                            <List sx={{ width: '100%', padding: 0 }}>
+                                {availableBrdges.length > 0 ? availableBrdges.map((brdge) => (
                                     <ListItem
                                         key={brdge.id}
-                                        button
+                                        button // Make it behave like a button
                                         selected={selectedBrdgeId === brdge.id}
                                         onClick={() => setSelectedBrdgeId(brdge.id)}
                                         sx={{
-                                            color: theme.palette.text.primary,
-                                            py: 1.5,
-                                            px: 2,
-                                            position: 'relative',
-                                            zIndex: 1,
-                                            bgcolor: selectedBrdgeId === brdge.id
-                                                ? `${theme.palette.secondary.main}08`
-                                                : 'transparent',
-                                            '&.Mui-selected': {
-                                                bgcolor: `${theme.palette.secondary.main}15`,
-                                                '&::before': {
-                                                    content: '""',
-                                                    position: 'absolute',
-                                                    left: 0,
-                                                    top: 0,
-                                                    bottom: 0,
-                                                    width: 4,
-                                                    borderRadius: '0 2px 2px 0',
-                                                    bgcolor: theme.palette.secondary.main,
-                                                },
+                                            borderBottom: `1px solid ${theme.palette.divider}`, // Divider between items
+                                            '&:last-child': { borderBottom: 'none' }, // Remove last border
+                                            '&.Mui-selected': { // Theme selected style
+                                                bgcolor: theme.palette.action.selected,
+                                                '&::before': { display: 'none' }, // Ensure no leftover pseudo elements
                                                 '&:hover': {
-                                                    bgcolor: `${theme.palette.secondary.main}20`,
+                                                    bgcolor: theme.palette.action.hover,
                                                 }
                                             },
-                                            '&:hover': {
-                                                bgcolor: theme.palette.parchment.light,
+                                            '&:hover': { // Theme hover style
+                                                bgcolor: theme.palette.action.hover,
                                             },
-                                            // Decorative ink spot on selected item
-                                            '&::after': selectedBrdgeId === brdge.id ? {
-                                                content: '""',
-                                                position: 'absolute',
-                                                right: 16,
-                                                bottom: 8,
-                                                width: 10,
-                                                height: 6,
-                                                borderRadius: '50%',
-                                                background: `radial-gradient(ellipse at center, ${theme.palette.secondary.main}90 0%, ${theme.palette.secondary.main}20 70%, transparent 100%)`,
-                                                opacity: 0.6,
-                                                transform: 'rotate(-15deg)',
-                                            } : {}
+                                            // Removed ::after ink spot
                                         }}
                                     >
                                         <ListItemText
@@ -2799,73 +1858,41 @@ function EditCoursePage() {
                                             primaryTypographyProps={{
                                                 sx: {
                                                     fontWeight: selectedBrdgeId === brdge.id ? 600 : 400,
-                                                    color: selectedBrdgeId === brdge.id
-                                                        ? theme.palette.secondary.main
-                                                        : theme.palette.text.primary,
-                                                    fontFamily: selectedBrdgeId === brdge.id
-                                                        ? theme.typography.headingFontFamily
-                                                        : theme.typography.fontFamily,
+                                                    color: selectedBrdgeId === brdge.id ? theme.palette.primary.main : theme.palette.text.primary,
                                                 }
                                             }}
                                         />
                                     </ListItem>
-                                ))}
+                                )) : (
+                                    <ListItem sx={{ justifyContent: 'center', py: 3 }}>
+                                        <Typography color="text.secondary">
+                                            No available modules found. Create a new Brdge first.
+                                        </Typography>
+                                    </ListItem>
+                                )}
                             </List>
+
                         </Box>
 
-                        {availableBrdges.length === 0 && (
-                            <Box sx={{
-                                mt: 2,
-                                p: 3,
-                                textAlign: 'center',
-                                bgcolor: `${theme.palette.parchment.light}50`,
-                                borderRadius: '8px',
-                                border: `1px dashed ${theme.palette.divider}`,
-                            }}>
-                                <Typography sx={{
-                                    color: theme.palette.text.secondary,
-                                    fontStyle: 'italic'
-                                }}>
-                                    You don't have any available modules to add. Create a new module first.
-                                </Typography>
-                            </Box>
-                        )}
+                        {/* ... Empty state message ... */}
                     </DialogContent>
 
+                    {/* ... DialogActions ... */}
                     <DialogActions sx={{
                         px: 3,
-                        pb: 3,
-                        pt: 2,
-                        bgcolor: theme.palette.background.paper,
-                        borderTop: `1px solid ${theme.palette.divider}10`,
+                        pb: 2, // Adjusted padding
+                        pt: 2, // Adjusted padding
+                        bgcolor: theme.palette.background.paper, // Ensure consistent background
+                        borderTop: `1px solid ${theme.palette.divider}`, // Standard divider
                         position: 'relative',
                         zIndex: 1,
-                        justifyContent: 'space-between',
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: '10%',
-                            right: '10%',
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.divider}, transparent)`,
-                        }
+                        justifyContent: 'space-between', // Keep layout
+                        // Removed decorative line ::before
                     }}>
                         <Button
                             onClick={handleCloseAddModuleDialog}
-                            variant="outlined"
-                            color="secondary"
-                            sx={{
-                                color: theme.palette.text.secondary,
-                                borderColor: `${theme.palette.divider}`,
-                                '&:hover': {
-                                    borderColor: theme.palette.secondary.main,
-                                    color: theme.palette.secondary.main,
-                                    bgcolor: `${theme.palette.secondary.main}08`,
-                                },
-                                fontWeight: 500,
-                                px: 3,
-                            }}
+                            color="secondary" // Use theme secondary color
+                            sx={{ /* Default button styles */ }}
                         >
                             Cancel
                         </Button>
@@ -2874,54 +1901,26 @@ function EditCoursePage() {
                             disabled={!selectedBrdgeId}
                             variant="contained"
                             color="primary"
-                            endIcon={<PlayArrowIcon fontSize="small" />}
-                            sx={{
-                                bgcolor: theme.palette.primary.main,
-                                color: theme.palette.primary.contrastText,
-                                '&:hover': {
-                                    bgcolor: theme.palette.primary.dark,
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: `0 4px 8px ${theme.palette.primary.main}40`,
-                                },
-                                '&.Mui-disabled': {
-                                    bgcolor: `${theme.palette.primary.main}40`,
-                                    color: `${theme.palette.primary.contrastText}70`,
-                                },
-                                fontWeight: 600,
-                                px: 3,
-                                boxShadow: `0 2px 6px ${theme.palette.primary.main}30`,
-                                transition: 'all 0.2s ease',
-                            }}
+                            endIcon={<AddIcon />}
+                            sx={{ /* Default button styles */ }}
                         >
-                            Add Module
+                            Add Selected Module
                         </Button>
                     </DialogActions>
+
                 </Dialog>
 
-                {/* Delete Confirmation Dialog */}
+                {/* Delete Confirmation Dialog - REMOVE TEXTURE */}
                 <Dialog
                     open={deleteConfirmOpen}
                     onClose={handleCancelDeleteModule}
                     PaperProps={{
                         sx: {
-                            bgcolor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                            borderRadius: '12px',
-                            boxShadow: theme.shadows[4],
-                            border: `1px solid ${theme.palette.divider}`,
-                            position: 'relative',
-                            overflow: 'hidden',
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute',
-                                inset: 0,
-                                backgroundImage: `url(${theme.textures.darkParchment})`,
-                                backgroundSize: 'cover',
-                                opacity: 0.1,
-                                mixBlendMode: 'multiply',
-                                zIndex: 0,
-                            },
-                            '& > *': {
+                            borderRadius: theme.shape.borderRadius,
+                            position: 'relative', // Keep for potential absolute children
+                            overflow: 'hidden', // Keep for consistency
+                            // Removed ::before with darkParchment texture
+                            '& > *': { // Ensure direct children are above pseudo elements if any remained
                                 position: 'relative',
                                 zIndex: 1
                             }
@@ -2930,79 +1929,32 @@ function EditCoursePage() {
                     maxWidth="xs"
                     fullWidth
                 >
+                    {/* ... DialogTitle ... */}
                     <DialogTitle sx={{
-                        bgcolor: theme.palette.background.default,
-                        color: theme.palette.error.main,
                         borderBottom: `1px solid ${theme.palette.divider}`,
-                        fontFamily: theme.typography.headingFontFamily,
-                        py: 2.5,
-                        fontWeight: 600,
-                        position: 'relative',
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            bottom: 0,
-                            left: '10%',
-                            right: '10%',
-                            height: '1px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.error.main}50, transparent)`,
-                        }
+                        // Removed decorative line ::after
                     }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Box sx={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: '50%',
-                                backgroundColor: `${theme.palette.error.main}15`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                position: 'relative',
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    top: -2,
-                                    left: -2,
-                                    right: -2,
-                                    bottom: -2,
-                                    borderRadius: '50%',
-                                    border: `1px solid ${theme.palette.error.main}30`,
-                                    opacity: 0.7
-                                }
-                            }}>
-                                <DeleteIcon sx={{ fontSize: 18, color: theme.palette.error.main }} />
-                            </Box>
-                            <Typography sx={{
-                                fontFamily: theme.typography.headingFontFamily,
-                                fontWeight: 600,
-                            }}>
-                                Remove Module
+                            <DeleteIcon sx={{ color: theme.palette.error.main }} />
+                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                Remove Module?
                             </Typography>
                         </Box>
                     </DialogTitle>
+
+                    {/* ... DialogContent ... */}
                     <DialogContent sx={{ p: 3, mt: 1 }}>
-                        <Typography sx={{
-                            fontFamily: theme.typography.fontFamily,
-                            color: theme.palette.text.primary,
-                            lineHeight: 1.6
-                        }}>
-                            Are you sure you want to remove this module from the course?
-                            This won't delete the Brdge itself.
+                        <Typography>
+                            Are you sure you want to remove this module from the course? This action cannot be undone, but the Brdge content itself will not be deleted.
                         </Typography>
                     </DialogContent>
+
+                    {/* ... DialogActions ... */}
                     <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
                         <Button
                             onClick={handleCancelDeleteModule}
-                            variant="outlined"
-                            sx={{
-                                fontFamily: theme.typography.fontFamily,
-                                color: theme.palette.text.secondary,
-                                borderColor: theme.palette.divider,
-                                '&:hover': {
-                                    borderColor: theme.palette.secondary.main,
-                                    backgroundColor: `${theme.palette.secondary.main}08`
-                                }
-                            }}
+                            color="secondary" // Theme secondary color
+                            sx={{ /* Default button styles */ }}
                         >
                             Cancel
                         </Button>
@@ -3010,61 +1962,16 @@ function EditCoursePage() {
                             onClick={handleConfirmDeleteModule}
                             color="error"
                             variant="contained"
-                            sx={{
-                                fontFamily: theme.typography.fontFamily,
-                                boxShadow: theme.shadows[2],
-                                '&:hover': {
-                                    boxShadow: theme.shadows[4]
-                                }
-                            }}
+                            sx={{ /* Default button styles */ }}
                         >
                             Remove
                         </Button>
                     </DialogActions>
+
                 </Dialog>
 
-                {/* Add a scholarly divider between sections */}
-                <Box
-                    component={motion.div}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                    sx={{
-                        width: '100%',
-                        height: '40px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        my: 4,
-                        position: 'relative',
-                        '&::before, &::after': {
-                            content: '""',
-                            position: 'absolute',
-                            top: '50%',
-                            height: '1px',
-                            width: '35%',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}40, transparent)`
-                        },
-                        '&::before': {
-                            left: 0
-                        },
-                        '&::after': {
-                            right: 0
-                        }
-                    }}
-                >
-                    <Box
-                        component="img"
-                        src={theme.textures.stampLogo}
-                        alt=""
-                        sx={{
-                            width: '32px',
-                            height: '32px',
-                            opacity: 0.15,
-                            filter: 'grayscale(0.5)'
-                        }}
-                    />
-                </Box>
+                {/* Remove scholarly divider */}
+
             </Box>
         </motion.div>
     );

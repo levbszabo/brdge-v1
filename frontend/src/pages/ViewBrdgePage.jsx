@@ -146,19 +146,9 @@ function ViewBrdgePage() {
                 alignItems: 'center',
                 height: '100vh',
                 bgcolor: theme.palette.background.default,
-                position: 'relative',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundImage: `url(${theme.textures.darkParchment})`,
-                    backgroundSize: 'cover',
-                    opacity: 0.1,
-                    pointerEvents: 'none',
-                    zIndex: 0,
-                }
+                position: 'relative'
             }}>
-                <CircularProgress sx={{ color: theme.palette.secondary.main, position: 'relative', zIndex: 1 }} />
+                <CircularProgress sx={{ color: theme.palette.primary.main, position: 'relative', zIndex: 1 }} />
             </Box>
         );
     }
@@ -176,17 +166,7 @@ function ViewBrdgePage() {
                 textAlign: 'center',
                 px: 3,
                 gap: 3,
-                position: 'relative',
-                '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundImage: `url(${theme.textures.darkParchment})`,
-                    backgroundSize: 'cover',
-                    opacity: 0.1,
-                    pointerEvents: 'none',
-                    zIndex: 0,
-                }
+                position: 'relative'
             }}>
                 <Paper elevation={0} sx={{
                     p: 4,
@@ -194,13 +174,13 @@ function ViewBrdgePage() {
                     width: '100%',
                     bgcolor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
-                    borderRadius: '8px',
+                    borderRadius: theme.shape.borderRadius,
                     position: 'relative',
                     zIndex: 1
                 }}>
                     <Typography variant="h4" gutterBottom sx={{
                         color: theme.palette.text.primary,
-                        fontFamily: theme.typography.headingFontFamily,
+                        fontFamily: theme.typography.h1.fontFamily,
                         mb: 2,
                         position: 'relative',
                         '&::after': {
@@ -208,7 +188,7 @@ function ViewBrdgePage() {
                             display: 'block',
                             width: '40px',
                             height: '2px',
-                            background: theme.palette.secondary.main,
+                            background: theme.palette.primary.main,
                             margin: '10px auto 0',
                             borderRadius: '1px',
                         }
@@ -280,42 +260,13 @@ function ViewBrdgePage() {
             right: 0,
             bottom: 0,
             overflow: 'hidden',
-            touchAction: 'none',
-            // Apply parchment texture
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                backgroundImage: `url(${theme.textures.darkParchment})`,
-                backgroundSize: 'cover',
-                opacity: 0.15,
-                pointerEvents: 'none',
-                zIndex: 0,
-                mixBlendMode: 'multiply'
-            },
-            // Add subtle glow accent
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: '5%',
-                right: '5%',
-                width: '40%',
-                height: '40%',
-                background: `radial-gradient(circle, ${theme.palette.secondary.main}15 0%, transparent 70%)`,
-                borderRadius: '50%',
-                filter: 'blur(60px)',
-                animation: 'float 25s infinite alternate-reverse',
-                zIndex: 0
-            }
+            touchAction: 'none'
         }}>
             <Box sx={{
                 height: { xs: '44px', sm: '50px', md: '56px' },
                 flexShrink: 0,
                 zIndex: 10,
-                borderBottom: `1px solid ${theme.palette.divider}30`
+                borderBottom: `1px solid ${theme.palette.divider}`
             }}>
                 {/* Empty header for spacing only */}
             </Box>

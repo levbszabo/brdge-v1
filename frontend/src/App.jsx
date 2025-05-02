@@ -8,6 +8,7 @@ import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header'; // Make sure you have this component
 import DotBridgeLandingPage from './pages/DotBridgeLandingPage'; // Import the new landing page
 import BrdgeListPage from './pages/BrdgeListPage';
+import DotBrdgeListPage from './pages/DotBrdgeListPage'; // <-- Import the new page
 import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
 import ViewBrdgePage from './pages/ViewBrdgePage';
@@ -198,7 +199,15 @@ function App() {
                   path="/home"
                   element={
                     <ProtectedRoute>
-                      <BrdgeListPage title="Home" />
+                      <DotBrdgeListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/bridges"
+                  element={
+                    <ProtectedRoute>
+                      <DotBrdgeListPage />
                     </ProtectedRoute>
                   }
                 />

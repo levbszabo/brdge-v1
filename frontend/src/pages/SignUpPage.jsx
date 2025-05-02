@@ -190,7 +190,7 @@ function SignUpPage() {
                             lineHeight: 1.6,
                         }}
                     >
-                        Join Brdge AI and start creating.
+                        Join DotBridge and start creating.
                     </Typography>
 
                     <Box component="form" onSubmit={handleSignUp} sx={{ width: '100%', mt: 1 }}>

@@ -122,31 +122,37 @@ const TierButton = ({ isActive, isPremium, onClick, children, tier }) => {
     let buttonStyles = {};
     if (isActive) {
         buttonStyles = {
-            ...theme.components.MuiButton.styleOverrides.outlinedSecondary,
-            borderColor: theme.palette.sepia.main,
-            backgroundColor: theme.palette.sepia.faded + '30',
-            color: theme.palette.sepia.main,
+            borderColor: theme.palette.primary.main,
+            backgroundColor: alpha(theme.palette.primary.main, 0.1),
+            color: theme.palette.primary.main,
             cursor: 'default',
             '&:hover': {
-                backgroundColor: theme.palette.sepia.faded + '30',
-                borderColor: theme.palette.sepia.main,
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                borderColor: theme.palette.primary.main,
                 boxShadow: 'none',
                 transform: 'none'
             },
             '&.Mui-disabled': {
-                borderColor: theme.palette.sepia.main,
-                backgroundColor: theme.palette.sepia.faded + '30',
-                color: theme.palette.sepia.main,
+                borderColor: theme.palette.primary.main,
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                color: theme.palette.primary.main,
                 opacity: 1
             }
         };
     } else if (tier === 'free') {
-        buttonStyles = theme.components.MuiButton.styleOverrides.outlinedSecondary;
+        buttonStyles = {
+            borderColor: theme.palette.neutral.mid,
+            color: theme.palette.primary.main,
+            '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                borderColor: theme.palette.primary.light,
+            },
+        };
     }
     else if (isPremium) {
         buttonStyles = theme.components.MuiButton.styleOverrides.containedPrimary;
     } else {
-        buttonStyles = theme.components.MuiButton.styleOverrides.outlinedSecondary;
+        buttonStyles = theme.components.MuiButton.styleOverrides.outlinedPrimary;
     }
 
     return (
@@ -225,22 +231,10 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
                     flexDirection: 'column',
                     borderRadius: '16px',
                     border: isActive
-                        ? `2px solid ${theme.palette.sepia.main}`
+                        ? `2px solid ${theme.palette.primary.main}`
                         : `1px solid ${theme.palette.divider}`,
                     position: 'relative',
                     overflow: 'hidden',
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: `url(${theme.textures.darkParchment})`,
-                        backgroundSize: 'cover',
-                        opacity: 0.04,
-                        mixBlendMode: 'multiply',
-                        pointerEvents: 'none',
-                        zIndex: 0,
-                        borderRadius: 'inherit',
-                    },
                     '& > *': {
                         position: 'relative',
                         zIndex: 1,
@@ -249,8 +243,8 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
                     '&:hover': {
                         boxShadow: isActive ? theme.shadows[6] : theme.shadows[4],
                         borderColor: isActive
-                            ? theme.palette.sepia.main
-                            : theme.palette.sepia.light,
+                            ? theme.palette.primary.main
+                            : theme.palette.primary.light,
                     },
                 }}
             >
@@ -379,10 +373,10 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                         onClose={() => setShowCancelSuccess(false)}
                         sx={{
                             mb: 2,
-                            backgroundColor: theme.palette.parchment.light,
+                            backgroundColor: theme.palette.background.paper,
                             color: theme.palette.text.primary,
-                            border: `1px solid ${theme.palette.sepia.light}`,
-                            '& .MuiAlert-icon': { color: theme.palette.secondary.main }
+                            border: `1px solid ${theme.palette.success.main}`,
+                            '& .MuiAlert-icon': { color: theme.palette.success.main }
                         }}
                     >
                         Your subscription has been successfully canceled and will remain active until the end of the current period.
@@ -395,7 +389,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                         onClose={() => setError(null)}
                         sx={{
                             mb: 2,
-                            backgroundColor: theme.palette.parchment.light,
+                            backgroundColor: theme.palette.background.paper,
                             color: theme.palette.error.main,
                             border: `1px solid ${theme.palette.error.main}`,
                             '& .MuiAlert-icon': { color: theme.palette.error.main }
@@ -444,7 +438,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                         label={`•••• ${userProfile?.payment_method_last4 || '****'}`}
                                         size="small"
                                         sx={{
-                                            backgroundColor: theme.palette.parchment.dark,
+                                            backgroundColor: theme.palette.neutral.light,
                                             color: theme.palette.text.primary,
                                             border: `1px solid ${theme.palette.divider}`,
                                             fontSize: '0.8rem',
@@ -464,7 +458,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         borderRadius: '8px',
-                        backgroundColor: theme.palette.parchment.dark + '80',
+                        backgroundColor: theme.palette.neutral.light,
                         border: `1px solid ${theme.palette.divider}`,
                         p: 1.5,
                     }}>
@@ -482,7 +476,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 fontSize: '0.8rem',
                                 mt: 0.5,
                             }}>
-                                $0.12/min for additional engagement minutes
+                                $0.12/min for additional AI minutes
                             </Typography>
                         </Box>
                         <Switch
@@ -499,10 +493,10 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                     backgroundColor: theme.palette.secondary.main,
                                 },
                                 '& .MuiSwitch-switchBase': {
-                                    color: theme.palette.inkFaded,
+                                    color: theme.palette.text.secondary,
                                 },
                                 '& .MuiSwitch-track': {
-                                    backgroundColor: theme.palette.sepiaFaded,
+                                    backgroundColor: theme.palette.neutral.mid,
                                 }
                             }}
                         />
@@ -520,7 +514,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                             color: theme.palette.error.main,
                             mt: 1,
                             '&:hover': {
-                                borderColor: theme.palette.error.dark || theme.palette.error.main,
+                                borderColor: theme.palette.error.main,
                                 backgroundColor: alpha(theme.palette.error.main, 0.08),
                             }
                         }}
@@ -568,22 +562,22 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 {
                                     title: 'Active Until Period End',
                                     description: `Your ${currentPlan} plan remains active until ${formatDate(userProfile?.account?.next_billing_date)}.`,
-                                    icon: <CalendarTodayIcon sx={{ color: theme.palette.secondary.main }} />
+                                    icon: <CalendarTodayIcon sx={{ color: theme.palette.primary.main }} />
                                 },
                                 {
                                     title: 'Preserved Content',
-                                    description: 'Your course modules will be preserved but inactive after the period ends.',
-                                    icon: <SaveIcon sx={{ color: theme.palette.secondary.main }} />
+                                    description: 'Your Bridges and Flows will be preserved but inactive after the period ends.',
+                                    icon: <SaveIcon sx={{ color: theme.palette.primary.main }} />
                                 },
                                 {
                                     title: 'Reactivate Anytime',
                                     description: 'You can easily reactivate your subscription later.',
-                                    icon: <AutorenewIcon sx={{ color: theme.palette.secondary.main }} />
+                                    icon: <AutorenewIcon sx={{ color: theme.palette.primary.main }} />
                                 },
                                 {
                                     title: 'Free Tier Access',
-                                    description: 'Free tier limits apply after cancellation (1 Course/Module, 30 mins/month).',
-                                    icon: <LockOpenIcon sx={{ color: theme.palette.secondary.main }} />
+                                    description: 'Free tier limits apply after cancellation (1 Bridge & 1 Flow, 30 mins/month).',
+                                    icon: <LockOpenIcon sx={{ color: theme.palette.primary.main }} />
                                 }
                             ].map((item, index) => (
                                 <Box
@@ -595,7 +589,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                         mb: 2,
                                         p: 1.5,
                                         borderRadius: '8px',
-                                        backgroundColor: theme.palette.parchment.dark + '60',
+                                        backgroundColor: theme.palette.neutral.light,
                                         border: `1px solid ${theme.palette.divider}`,
                                     }}
                                 >
@@ -759,7 +753,7 @@ function UsageStats({ currentPlan }) {
                             <Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
                                     <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                        Course Modules
+                                        Flows
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                         {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
@@ -771,7 +765,7 @@ function UsageStats({ currentPlan }) {
                                     sx={{
                                         height: 6,
                                         borderRadius: 3,
-                                        backgroundColor: theme.palette.parchment.dark,
+                                        backgroundColor: theme.palette.neutral.light,
                                         '& .MuiLinearProgress-bar': {
                                             backgroundColor: theme.palette.secondary.main
                                         }
@@ -784,7 +778,7 @@ function UsageStats({ currentPlan }) {
                             <Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
                                     <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                        Engagement Minutes
+                                        AI Minutes
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                         {stats.minutes_used} / {stats.minutes_limit}
@@ -796,7 +790,7 @@ function UsageStats({ currentPlan }) {
                                     sx={{
                                         height: 6,
                                         borderRadius: 3,
-                                        backgroundColor: theme.palette.parchment.dark,
+                                        backgroundColor: theme.palette.neutral.light,
                                         '& .MuiLinearProgress-bar': {
                                             backgroundColor: theme.palette.secondary.main
                                         }
@@ -1059,10 +1053,13 @@ function UserProfilePage() {
             title: "Free",
             price: "$0 / month",
             features: [
-                "1 Course & 1 Module Limit",
-                "30 Engagement Minutes / Mo",
-                "Basic AI Interaction",
-                "Community Support",
+                "1 bridge Link",
+                "30 AI Minutes/mo",
+                "Basic AI Q&A",
+                "Voice Clone",
+                "Basic Analytics",
+                "1 Flow Limit",
+                "Watermark"
             ],
             isActive: currentPlan === 'free',
             tier: 'free',
@@ -1071,13 +1068,15 @@ function UserProfilePage() {
         },
         {
             title: "Standard",
-            price: "$99 / month",
+            price: "$49 / month",
             features: [
-                "1 Course & 10 Modules",
-                "300 Engagement Minutes / Mo",
-                "Enhanced AI Interaction",
-                "Overage Option ($0.12/min)",
-                "Email Support",
+                "10 bridge Links",
+                "300 AI Minutes/mo",
+                "Basic AI Q&A",
+                "Voice Clone",
+                "Basic Analytics",
+                "1 Flow Limit",
+                "Watermark"
             ],
             isActive: currentPlan === 'standard',
             tier: 'standard',
@@ -1088,13 +1087,15 @@ function UserProfilePage() {
         },
         {
             title: "Premium",
-            price: "$249 / month",
+            price: "$149 / month",
             features: [
-                "Unlimited Courses & Modules",
-                "1000 Engagement Minutes / Mo",
-                "Advanced AI Interaction",
-                "Overage Option ($0.12/min)",
-                "Priority Support",
+                "Unlimited Links",
+                "1000 AI Minutes/mo",
+                "Unlimited Flows",
+                "Voice Clone",
+                "CRM / Webhooks",
+                "Adv. Analytics",
+                "No Watermark"
             ],
             isActive: currentPlan === 'pro',
             tier: 'premium',
@@ -1121,17 +1122,6 @@ function UserProfilePage() {
             py: { xs: 3, md: 5 },
             position: 'relative',
             overflow: 'hidden',
-            '&::before': {
-                content: '""',
-                position: 'fixed',
-                inset: 0,
-                backgroundImage: `url(${theme.textures.darkParchment})`,
-                backgroundSize: 'cover',
-                opacity: 0.08,
-                mixBlendMode: 'multiply',
-                pointerEvents: 'none',
-                zIndex: -1,
-            }
         }}>
             <Container
                 maxWidth="lg"
@@ -1148,7 +1138,7 @@ function UserProfilePage() {
                             onClose={() => { setShowSuccess(false); setSuccessMessage(''); }}
                             sx={{
                                 mb: 3,
-                                backgroundColor: theme.palette.parchment.light,
+                                backgroundColor: theme.palette.background.paper,
                                 color: theme.palette.text.primary,
                                 border: `1px solid ${theme.palette.secondary.light}`,
                                 '& .MuiAlert-icon': { color: theme.palette.secondary.main }
@@ -1165,7 +1155,7 @@ function UserProfilePage() {
                             onClose={() => setError(null)}
                             sx={{
                                 mb: 3,
-                                backgroundColor: theme.palette.parchment.light,
+                                backgroundColor: theme.palette.background.paper,
                                 color: theme.palette.error.main,
                                 border: `1px solid ${theme.palette.error.main}`,
                                 '& .MuiAlert-icon': { color: theme.palette.error.main }
@@ -1182,7 +1172,7 @@ function UserProfilePage() {
                             onClose={() => setPaymentError(null)}
                             sx={{
                                 mb: 3,
-                                backgroundColor: theme.palette.parchment.light,
+                                backgroundColor: theme.palette.background.paper,
                                 color: theme.palette.error.main,
                                 border: `1px solid ${theme.palette.error.main}`,
                                 '& .MuiAlert-icon': { color: theme.palette.error.main }
@@ -1202,11 +1192,11 @@ function UserProfilePage() {
                                         sx={{
                                             width: { xs: 80, md: 90 },
                                             height: { xs: 80, md: 90 },
-                                            bgcolor: theme.palette.sepia.faded,
-                                            color: theme.palette.sepia.main,
+                                            bgcolor: theme.palette.neutral.light,
+                                            color: theme.palette.primary.main,
                                             margin: '0 auto',
                                             mb: 2,
-                                            border: `2px solid ${theme.palette.sepia.light}`,
+                                            border: `2px solid ${theme.palette.divider}`,
                                             boxShadow: theme.shadows[2]
                                         }}
                                     >
@@ -1225,7 +1215,7 @@ function UserProfilePage() {
                                     display: 'block',
                                     mb: 2
                                 }}>
-                                    Educator since {formatDate(userProfile?.account?.created_at)}
+                                    Member since {formatDate(userProfile?.account?.created_at)}
                                 </Typography>
 
                                 <Button
@@ -1252,15 +1242,6 @@ function UserProfilePage() {
                             p: { xs: 2.5, sm: 3, md: 4 },
                             borderRadius: '16px',
                             position: 'relative',
-                            '&::before': {
-                                content: '""',
-                                position: 'absolute', inset: 0,
-                                backgroundImage: `url(${theme.textures.lightMarble})`,
-                                backgroundSize: 'cover', opacity: 0.05,
-                                mixBlendMode: 'overlay',
-                                pointerEvents: 'none', zIndex: 0, borderRadius: 'inherit',
-                            },
-                            '& > *': { position: 'relative', zIndex: 1 }
                         }}>
                             <Box sx={{
                                 display: 'flex',
@@ -1274,7 +1255,7 @@ function UserProfilePage() {
                                         mb: 0.5,
                                         lineHeight: 1.2,
                                     }}>
-                                        Your Teaching Plan
+                                        Your Plan
                                     </Typography>
                                     <Typography variant="body1" sx={{
                                         color: theme.palette.text.secondary,

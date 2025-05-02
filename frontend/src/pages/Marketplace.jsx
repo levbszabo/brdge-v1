@@ -238,7 +238,7 @@ function MarketplacePage() {
                                 variant="h5"
                                 sx={{ color: 'text.secondary', mb: 4, maxWidth: '700px', mx: 'auto' }}
                             >
-                                Discover interactive AI-powered courses created by experts and the .bridge team.
+                                Discover interactive AI-powered flows created by experts and the DotBridge team.
                             </Typography>
                         </motion.div>
                     </Container>
@@ -262,7 +262,7 @@ function MarketplacePage() {
                             }}
                         >
                             <TextField
-                                placeholder="Search courses..."
+                                placeholder="Search flows..."
                                 fullWidth
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -312,7 +312,7 @@ function MarketplacePage() {
                                 component="h2"
                                 sx={{ color: 'text.primary', fontWeight: 600, mb: 1 }}
                             >
-                                {selectedCategory === 'all' ? 'All Courses' :
+                                {selectedCategory === 'all' ? 'All Flows' :
                                     categories.find(cat => cat.id === selectedCategory)?.name || 'Courses'}
                             </Typography>
 
@@ -345,7 +345,7 @@ function MarketplacePage() {
                                         bgcolor: 'neutral.light'
                                     }}>
                                     <Typography variant="h6" color="text.secondary" gutterBottom>
-                                        No courses found
+                                        No flows found
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
                                         Try adjusting your search or filter criteria.
@@ -379,7 +379,7 @@ function MarketplacePage() {
                                 variant="body1"
                                 sx={{ color: 'text.secondary', mb: 3, maxWidth: '600px', mx: 'auto' }}
                             >
-                                Transform your own expertise into an interactive AI-powered course on the .bridge platform.
+                                Transform your own expertise into an interactive AI-powered flow on the DotBridge platform.
                             </Typography>
                             <Button
                                 variant="contained"

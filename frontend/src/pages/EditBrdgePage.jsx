@@ -227,37 +227,7 @@ function EditBrdgePage() {
             bottom: 0,
             overflow: 'hidden',
             touchAction: 'none',
-            // Apply theme background with parchment texture
-            bgcolor: theme.palette.background.default,
-            // Add parchment texture
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                backgroundImage: `url(${theme.textures.darkParchment})`,
-                backgroundSize: 'cover',
-                opacity: 0.15,
-                pointerEvents: 'none',
-                zIndex: 0,
-                mixBlendMode: 'multiply'
-            },
-            // Add subtle glow effects
-            '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: '5%',
-                right: '5%',
-                width: '500px',
-                height: '500px',
-                background: `radial-gradient(circle, ${theme.palette.secondary.main}15 0%, transparent 70%)`,
-                borderRadius: '50%',
-                filter: 'blur(60px)',
-                animation: 'float 25s infinite alternate-reverse',
-                zIndex: 0
-            }
+            bgcolor: theme.palette.background.default
         }}>
             <Box sx={{
                 height: { xs: '44px', sm: '50px', md: '56px' },
@@ -297,7 +267,7 @@ function EditBrdgePage() {
             >
                 <DialogTitle sx={{
                     borderBottom: `1px solid ${theme.palette.divider}`,
-                    fontFamily: theme.typography.headingFontFamily
+                    fontFamily: theme.typography.h1.fontFamily
                 }}>
                     Premium Access Required
                 </DialogTitle>

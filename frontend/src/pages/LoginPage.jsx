@@ -149,7 +149,7 @@ function LoginPage() {
                             lineHeight: 1.6,
                         }}
                     >
-                        Sign in to continue to Brdge AI
+                        Sign in to continue to DotBridge
                     </Typography>
 
                     <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', mt: 1 }}>

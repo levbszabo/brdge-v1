@@ -167,7 +167,7 @@ function PricingPage() {
                 "Basic AI Q&A",
                 "Voice Clone",
                 "Basic Analytics",
-                "1 Course Limit",
+                "1 Flow Limit",
                 "Watermark"
             ],
         },
@@ -180,7 +180,7 @@ function PricingPage() {
                 "300 AI Minutes/mo",
                 "Voice Clone",
                 "Basic Analytics",
-                "1 Course Limit",
+                "1 Flow Limit",
                 "Watermark"
             ],
         },
@@ -189,9 +189,9 @@ function PricingPage() {
             price: '149',
             description: 'Unlock full power & customization',
             features: [
-                "Unlimited Links",
+                "100 Bridge Links",
                 "1000 AI Minutes/mo",
-                "Unlimited Courses",
+                "100 Flows",
                 "Voice Clone",
                 "CRM / Webhooks",
                 "Adv. Analytics",
