@@ -22,42 +22,16 @@ const Section = ({ children, sx, ...props }) => (
 
 const HeroSection = () => (
     <Box sx={{
-        pt: { xs: 4, md: 4 },
-        pb: { xs: 8, md: 20 },
+        pt: { xs: 6, md: 8 },
+        pb: { xs: 8, md: 16 },
         px: { xs: 2, sm: 3 },
         textAlign: 'center'
     }}>
         <Container maxWidth="md">
             <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                    type: "spring",
-                    stiffness: 150,
-                    damping: 20,
-                    delay: 0.1
-                }}
-                style={{ display: 'inline-block' }}
-            >
-                <Box
-                    component="img"
-                    src="/new-img.png"
-                    alt=".bridge logo element"
-                    sx={{
-                        display: 'block',
-                        mx: 'auto',
-                        width: 'auto',
-                        height: { xs: 75, sm: 140 },
-                        mb: { xs: 3, sm: 4 },
-                        bgcolor: 'transparent',
-                        p: { xs: 0, sm: 2 }
-                    }}
-                />
-            </motion.div>
-            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
             >
                 <DotBridgeTypography
                     variant="h1"
@@ -73,7 +47,7 @@ const HeroSection = () => (
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.25 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
             >
                 <DotBridgeTypography
                     variant="body1"
@@ -86,11 +60,11 @@ const HeroSection = () => (
                         lineHeight: { xs: 1.5, md: 1.6 }
                     }}
                 >
-                    DotBridge is the new interactive "bridge" format that turns any video into an AI agent that captures leads, qualifies buyers and coaches users in your own voice. Launch your first bridge in minutes and watch conversion rates jump.
+                    DotBridge replaces static video with voice-powered flows that sell, teach, and support — while capturing every question, action, and objection in real time
                 </DotBridgeTypography>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2.5, flexWrap: 'wrap' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2.5, flexWrap: 'wrap', mb: { xs: 6, sm: 8 } }}>
                     <DotBridgeButton
                         size="large"
                         color="primary"
@@ -112,6 +86,47 @@ const HeroSection = () => (
                     </DotBridgeButton>
                 </Box>
             </motion.div>
+
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                    type: "spring",
+                    stiffness: 150,
+                    damping: 20,
+                    delay: 0.4
+                }}
+                style={{ display: 'inline-block', marginBottom: '16px' }}
+            >
+                <Box
+                    component="img"
+                    src="/new-img.png"
+                    alt=".bridge logo element"
+                    sx={{
+                        display: 'block',
+                        mx: 'auto',
+                        width: 'auto',
+                        height: { xs: 60, sm: 100 },
+                        mb: 0,
+                        bgcolor: 'transparent',
+                        p: 0
+                    }}
+                />
+            </motion.div>
+
+            <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+            >
+                <DotBridgeTypography
+                    variant="overline"
+                    color="text.secondary"
+                >
+                    The .bridge Format — A New Layer for Interactive Video
+                </DotBridgeTypography>
+            </motion.div>
+
         </Container>
     </Box>
 );
@@ -214,8 +229,6 @@ const WhatIsBridgeSection = () => (
                     p: 0,
                     textAlign: 'center',
                     borderRadius: { xs: 0, sm: theme => theme.shape.borderRadius },
-                    border: { xs: 'none', sm: '1px solid' },
-                    borderColor: 'divider',
                     minHeight: { xs: 'auto', sm: 300 },
                     display: 'flex',
                     flexDirection: 'column',
