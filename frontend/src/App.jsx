@@ -7,7 +7,6 @@ import dotbridgeTheme from './dotbridgeTheme';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header'; // Make sure you have this component
 import DotBridgeLandingPage from './pages/DotBridgeLandingPage'; // Import the new landing page
-import BrdgeListPage from './pages/BrdgeListPage';
 import DotBrdgeListPage from './pages/DotBrdgeListPage'; // <-- Import the new page
 import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
@@ -31,7 +30,6 @@ import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
 import RoomPage from './pages/RoomPage';
 import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
-import darkParchmentTexture from './assets/textures/dark-parchment.png'; // Import the texture
 import MarketplacePage from './pages/Marketplace';
 
 // Create an AuthContext
