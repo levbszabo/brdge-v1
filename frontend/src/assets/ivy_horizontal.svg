@@ -1,9 +1,0 @@
-<svg width="500" height="100" viewBox="0 0 500 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M0 50 C50 30, 100 70, 150 50 C200 30, 250 70, 300 50 C350 30, 400 70, 450 50" 
-        stroke="#2A3A25" stroke-width="2" fill="none" />
-  <circle cx="50" cy="50" r="6" fill="#2A3A25"/>
-  <circle cx="150" cy="50" r="5" fill="#2A3A25"/>
-  <circle cx="250" cy="50" r="6" fill="#2A3A25"/>
-  <circle cx="350" cy="50" r="5" fill="#2A3A25"/>
-  <circle cx="450" cy="50" r="6" fill="#2A3A25"/>
-</svg> 
