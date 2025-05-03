@@ -6,19 +6,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
 import { ArrowRight, Upload, Video, FileText, Clock, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import dotbridgeTheme from '../dotbridgeTheme'; // Import the theme
 import { useTheme } from '@mui/material/styles';
-import { Box, Typography, Button, TextField, CircularProgress, Paper } from '@mui/material';
+import { Box, Typography, Button, TextField, CircularProgress, Paper, Chip, Alert, Container } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
 const MAX_VIDEO_SIZE = 500 * 1024 * 1024;  // 500MB in bytes
 
 const SepiaText = styled('span')(({ theme }) => ({
-    background: `linear-gradient(45deg, ${theme.palette.sepia.main}, ${theme.palette.sepia.light})`,
+    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.light})`,
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
     display: 'inline-block',
-    fontFamily: theme.typography.headingFontFamily,
+    fontFamily: theme.typography.h2.fontFamily,
 }));
 
 const ScholarlyDivider = styled(Box)(({ theme }) => ({
@@ -28,23 +29,23 @@ const ScholarlyDivider = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    margin: '20px 0',
+    margin: theme.spacing(2.5, 0),
     '&::before, &::after': {
         content: '""',
         height: '1px',
-        background: `linear-gradient(90deg, transparent, ${theme.palette.sepia.main}80, transparent)`,
+        background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}80, transparent)`,
         flexGrow: 1,
     },
     '&::before': {
-        marginRight: '20px',
+        marginRight: theme.spacing(2.5),
     },
     '&::after': {
-        marginLeft: '20px',
+        marginLeft: theme.spacing(2.5),
     }
 }));
 
 function CreateBrdgePage() {
-    const theme = useTheme();
+    const theme = dotbridgeTheme;
     const [name, setName] = useState('');
     const [file, setFile] = useState(null);
     const [videoFile, setVideoFile] = useState(null);
@@ -119,21 +120,20 @@ function CreateBrdgePage() {
             if (pollingInterval) {
                 clearInterval(pollingInterval);
             }
-
-            // Wait a moment to let user see "Complete" status, then navigate
+            setLoading(false);
+            showSnackbar('Bridge creation complete!', 'success');
+            // Wait a moment before navigating
             setTimeout(() => {
-                setLoading(false);
-                showSnackbar('AI Module created successfully', 'success');
                 navigate(`/edit/${createdBrdgeId}`);
-            }, 2000);
+            }, 1500); // Shorter delay
         } else if (processingStatus.status === "failed" && createdBrdgeId) {
             // Stop polling on failure
             if (pollingInterval) {
                 clearInterval(pollingInterval);
             }
-
             setLoading(false);
-            setError('Processing failed. Please try again or contact support.');
+            setError('Processing failed. Please review the logs or try again.'); // More specific error
+            showSnackbar('Bridge processing failed', 'error');
         }
     }, [processingStatus.status, createdBrdgeId, pollingInterval, navigate, showSnackbar]);
 
@@ -276,95 +276,81 @@ function CreateBrdgePage() {
 
     // Enhanced Processing display component focused on user-friendly messages
     const ProcessingDisplay = () => {
-        // Get all relevant logs to show to the user
+        // Filter and clean logs for user display
         const displayLogs = processingStatus.logs.filter(log => {
             const message = log.message || '';
-
-            // Exclude anything explicitly mentioning Gemini API
-            if (message.includes('Gemini API') || message.includes('gemini')) {
-                return false;
-            }
-
-            // Include all success messages (but will clean them later)
-            if (log.status === 'success') return true;
-
-            // Include high-level progress messages
-            if (log.status === 'info') {
-                // Include extraction pass headers but not detailed technical ones
-                if (message.includes('EXTRACTION PASS') && !message.includes('TIMING')) {
-                    return true;
-                }
-
-                // Include general processing messages
-                if (message.includes('Processing') ||
-                    message.includes('Analyzing') ||
-                    message.includes('Building') ||
-                    message.includes('Uploading') ||
-                    message.includes('Starting')) {
-                    return true;
-                }
-            }
-
-            // Exclude all other logs
-            return false;
+            // Exclude Gemini API mentions and generic timing/completion messages
+            return !message.includes('Gemini API') &&
+                !message.includes('gemini') &&
+                !message.startsWith('⏱️ TIMING:') &&
+                !/extraction complete|identified/.test(message);
         }).map(log => {
-            // Make a copy of the log
             const cleanedLog = { ...log };
             let message = cleanedLog.message;
-
             // Remove emojis
             message = message.replace(/[^\u0000-\u007F]+/g, '').trim();
-
-            // Remove TIMING prefixes
-            message = message.replace('⏱️ TIMING:', '').trim();
-
-            // Clean up EXTRACTION PASS messages to be more user-friendly
+            // Clean up EXTRACTION PASS messages
             if (message.includes('EXTRACTION PASS')) {
-                message = message.replace(/🔍 EXTRACTION PASS \d+:/, '').trim();
-
-                // Remove too technical details
-                message = message.replace(/parallel content timelines|concept network/g, 'content').trim();
-
-                // Transform technical to user-friendly phrases
+                message = message.replace(/🔍 EXTRACTION PASS \d+:/, 'Analysis Step:').trim();
                 message = message
-                    .replace('Extracting knowledge base', 'Analyzing content knowledge')
-                    .replace('Extracting teaching persona', 'Identifying teaching style')
-                    .replace('Extracting engagement opportunities', 'Finding key learning moments')
-                    .replace('Combining extraction components', 'Finalizing AI module');
+                    .replace('Extracting knowledge base', 'Analyzing Content Knowledge')
+                    .replace('Extracting teaching persona', 'Identifying Teaching Style')
+                    .replace('Extracting engagement opportunities', 'Finding Learning Moments')
+                    .replace('Combining extraction components', 'Finalizing AI Build')
+                    .replace(/parallel content timelines|concept network/g, 'content structure');
             }
+            // General processing steps
+            message = message
+                .replace('Processing video', 'Analyzing Video Input')
+                .replace('Uploading analysis results', 'Saving Analysis')
+                .replace('Starting AI build process', 'Initiating AI Construction')
+                .replace('Building knowledge graph', 'Constructing Knowledge Map');
 
-            // Transform technical completion messages to user-friendly ones
-            if (message.includes('extraction complete')) {
-                message = message.replace(/\d+ .* identified/g, 'completed successfully');
-            }
 
             cleanedLog.message = message;
             return cleanedLog;
-        });
+        }).filter(log => log.message); // Remove logs that became empty after cleaning
+
+        const getIcon = (status) => {
+            switch (status) {
+                case 'success': return <CheckCircle style={{ width: 16, height: 16, marginTop: 2, color: theme.palette.success.main }} />;
+                case 'error': return <AlertTriangle style={{ width: 16, height: 16, marginTop: 2, color: theme.palette.error.main }} />;
+                case 'info':
+                default: return <Info style={{ width: 16, height: 16, marginTop: 2, color: theme.palette.info.main }} />;
+            }
+        };
+
+        const getStatusText = () => {
+            switch (processingStatus.status) {
+                case 'pending': return 'Initializing...';
+                case 'processing': return 'In Progress...';
+                case 'completed': return 'Complete';
+                case 'failed': return 'Failed';
+                default: return 'Processing...';
+            }
+        };
 
         return (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, alignItems: 'center' }}>
-                <Typography variant="h5" sx={{ color: theme.palette.text.primary }}>
-                    Building Your AI Module...
+                <Typography variant="h5" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                    Building Your Bridge...
                 </Typography>
                 <Box sx={{ width: '100%', position: 'relative' }}>
-                    <Box sx={{ height: 8, width: '100%', bgcolor: `${theme.palette.secondary.main}30`, borderRadius: '4px', overflow: 'hidden' }}>
+                    <Box sx={{ height: 10, width: '100%', bgcolor: theme.palette.neutral.light, borderRadius: '5px', overflow: 'hidden' }}>
                         <motion.div
-                            style={{ height: '100%', backgroundColor: theme.palette.secondary.main }}
+                            style={{ height: '100%', backgroundColor: theme.palette.primary.main }}
                             initial={{ width: 0 }}
                             animate={{ width: `${processingStatus.progress}%` }}
                             transition={{ duration: 0.5 }}
                         />
                     </Box>
-                    <Typography variant="caption" sx={{ position: 'absolute', right: 0, top: 10, color: theme.palette.text.secondary }}>
+                    <Typography variant="caption" sx={{ position: 'absolute', right: 5, top: -18, color: theme.palette.text.secondary }}>
                         {Math.round(processingStatus.progress)}%
                     </Typography>
                 </Box>
 
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                    Status: {processingStatus.status === "completed" ? "Complete" :
-                        processingStatus.status === "failed" ? "Failed" :
-                            "Processing..."}
+                    Status: <Chip label={getStatusText()} size="small" color={processingStatus.status === 'completed' ? 'success' : processingStatus.status === 'failed' ? 'error' : 'info'} variant="outlined" sx={{ ml: 0.5 }} />
                 </Typography>
 
                 <Paper
@@ -373,8 +359,8 @@ function CreateBrdgePage() {
                     sx={{
                         maxHeight: '300px',
                         overflowY: 'auto',
-                        bgcolor: 'rgba(0,0,0,0.05)', // Subtle background for logs
-                        borderRadius: '8px',
+                        bgcolor: theme.palette.background.default,
+                        borderRadius: theme.shape.borderRadius,
                         p: 2,
                         width: '100%',
                         border: `1px solid ${theme.palette.divider}`
@@ -385,55 +371,59 @@ function CreateBrdgePage() {
                             displayLogs.map((log, index) => (
                                 <motion.div
                                     key={index}
-                                    style={{ display: 'flex', alignItems: 'flex-start', gap: 1, color: theme.palette.text.secondary }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: theme.spacing(1),
+                                        color: log.status === 'error' ? theme.palette.error.dark : theme.palette.text.secondary,
+                                        fontSize: '0.875rem'
+                                    }}
                                     initial={{ opacity: 0, y: 5 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.3 }}
                                 >
-                                    <CheckCircle style={{ width: 16, height: 16, marginTop: 2, color: theme.palette.secondary.main }} />
-                                    <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{log.message}</Typography>
+                                    {getIcon(log.status)}
+                                    <Typography variant="body2" component="span">{log.message}</Typography>
                                 </motion.div>
                             ))
                         ) : (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.text.secondary, fontStyle: 'italic' }}>
-                                <Clock style={{ width: 16, height: 16, color: theme.palette.secondary.main }} />
-                                <Typography variant="body2">Initializing AI module creation...</Typography>
+                                <Clock style={{ width: 16, height: 16, color: theme.palette.info.main }} />
+                                <Typography variant="body2">Initializing Bridge creation...</Typography>
                             </Box>
                         )}
                     </Box>
                 </Paper>
 
-                <Typography variant="body1" sx={{ color: theme.palette.secondary.light, fontStyle: 'italic' }}>
-                    {processingStatus.status === "completed" ? "Processing complete! Redirecting..." :
-                        "We're analyzing your content and building your AI Module"}
-                </Typography>
+                {processingStatus.status !== "completed" && processingStatus.status !== "failed" && (
+                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic', textAlign: 'center' }}>
+                        Building your Bridge can take a few minutes depending on the video length. <br /> Feel free to navigate away; we'll notify you when it's ready.
+                    </Typography>
+                )}
+
+                {processingStatus.status === "completed" && (
+                    <Typography variant="body1" sx={{ color: theme.palette.success.main, fontWeight: 500 }}>
+                        Processing complete! Redirecting shortly...
+                    </Typography>
+                )}
+                {processingStatus.status === "failed" && (
+                    <Typography variant="body1" sx={{ color: theme.palette.error.main, fontWeight: 500 }}>
+                        Processing failed. Check logs or contact support.
+                    </Typography>
+                )}
             </Box>
         );
     };
 
     return (
         <Box sx={{
-            minHeight: '100vh',
+            minHeight: 'calc(100vh - 64px)',
             bgcolor: theme.palette.background.default,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            py: 6,
+            py: { xs: 4, md: 6 },
             px: 2,
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundImage: `url(${theme.textures.darkParchment})`,
-                backgroundSize: 'cover',
-                backgroundAttachment: 'fixed',
-                opacity: 0.1,
-                pointerEvents: 'none',
-                zIndex: 0,
-                mixBlendMode: 'multiply',
-            }
         }}>
             <Box maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
                 <motion.div
@@ -445,149 +435,73 @@ function CreateBrdgePage() {
                         color: theme.palette.text.primary,
                         textAlign: 'center',
                         mb: 5,
-                        position: 'relative',
-                        fontFamily: theme.typography.headingFontFamily,
+                        fontFamily: theme.typography.h2.fontFamily,
                         '&::after': {
                             content: '""',
                             display: 'block',
-                            width: '60px',
-                            height: '2px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}, transparent)`,
-                            margin: '10px auto 0',
-                            borderRadius: '1px',
-                            opacity: 0.8,
+                            width: '80px',
+                            height: '3px',
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}, transparent)`,
+                            margin: '15px auto 0',
+                            borderRadius: '2px',
                         }
                     }}>
-                        Create New <SepiaText>AI Module</SepiaText>
+                        Create New <SepiaText>Bridge</SepiaText>
                     </Typography>
 
-                    <Paper elevation={0} sx={{
+                    <Paper elevation={2} sx={{
                         p: { xs: 3, sm: 4 },
-                        borderRadius: '12px',
+                        borderRadius: theme.shape.borderRadius * 1.5,
                         backgroundColor: theme.palette.background.paper,
                         border: `1px solid ${theme.palette.divider}`,
                         boxShadow: theme.shadows[2],
                         position: 'relative',
                         overflow: 'hidden',
-                        '&::before': {
-                            content: '""',
-                            position: 'absolute',
-                            inset: 0,
-                            backgroundImage: `url(${theme.textures.darkParchment})`,
-                            backgroundSize: 'cover',
-                            opacity: 0.1,
-                            mixBlendMode: 'multiply',
-                            zIndex: 0,
-                        },
-                        '&::after': {
-                            content: '""',
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            height: '3px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.secondary.main}80, transparent)`,
-                            zIndex: 0,
-                        }
                     }}>
-                        <Box sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: 20,
-                            height: 20,
-                            borderTop: `2px solid ${theme.palette.secondary.main}40`,
-                            borderLeft: `2px solid ${theme.palette.secondary.main}40`,
-                        }} />
-                        <Box sx={{
-                            position: 'absolute',
-                            top: 0,
-                            right: 0,
-                            width: 20,
-                            height: 20,
-                            borderTop: `2px solid ${theme.palette.secondary.main}40`,
-                            borderRight: `2px solid ${theme.palette.secondary.main}40`,
-                        }} />
-                        <Box sx={{
-                            position: 'absolute',
-                            bottom: 0,
-                            left: 0,
-                            width: 20,
-                            height: 20,
-                            borderBottom: `2px solid ${theme.palette.secondary.main}40`,
-                            borderLeft: `2px solid ${theme.palette.secondary.main}40`,
-                        }} />
-                        <Box sx={{
-                            position: 'absolute',
-                            bottom: 0,
-                            right: 0,
-                            width: 20,
-                            height: 20,
-                            borderBottom: `2px solid ${theme.palette.secondary.main}40`,
-                            borderRight: `2px solid ${theme.palette.secondary.main}40`,
-                        }} />
-
                         <Box sx={{ position: 'relative', zIndex: 1 }}>
                             {error && (
-                                <Box sx={{
-                                    mb: 3,
-                                    p: 2,
-                                    borderRadius: '8px',
-                                    bgcolor: `${theme.palette.error.main}20`,
-                                    border: `1px solid ${theme.palette.error.main}40`,
-                                    color: theme.palette.error.main,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1
-                                }}>
-                                    <AlertTriangle size={18} />
-                                    <Typography variant="body2">{error}</Typography>
-                                </Box>
+                                <Alert severity="error" sx={{ mb: 3 }}>
+                                    {error}
+                                </Alert>
                             )}
 
                             {loading && createdBrdgeId ? (
                                 <ProcessingDisplay />
                             ) : (
-                                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                                     <Box>
-                                        <Typography variant="h6" component="label" htmlFor="module-name" sx={{ color: theme.palette.text.primary, mb: 1, display: 'block' }}>
-                                            Module Name
+                                        <Typography variant="subtitle1" component="label" htmlFor="bridge-name" sx={{ color: theme.palette.text.primary, fontWeight: 500, mb: 1, display: 'block' }}>
+                                            Bridge Name
                                         </Typography>
                                         <TextField
-                                            id="module-name"
+                                            id="bridge-name"
                                             type="text"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            placeholder="Enter a name..."
+                                            placeholder="Enter a name for your Bridge..."
                                             required
                                             fullWidth
+                                            variant="outlined"
                                             sx={{
                                                 '& .MuiOutlinedInput-root': {
-                                                    transition: 'all 0.3s ease',
                                                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: `${theme.palette.secondary.main}50`,
+                                                        borderColor: theme.palette.primary.light,
                                                     },
                                                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: theme.palette.secondary.main,
-                                                        boxShadow: `0 0 0 2px ${theme.palette.secondary.main}20`,
+                                                        borderColor: theme.palette.primary.main,
                                                     },
                                                 },
-                                                '& .MuiInputLabel-root.Mui-focused': {
-                                                    color: theme.palette.secondary.main,
-                                                }
                                             }}
                                         />
                                     </Box>
 
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                        <Box>
-                                            <Typography variant="h6" sx={{ color: theme.palette.text.primary }}>
-                                                1. Upload Video (MP4)
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic' }}>
-                                                Upload your presentation or lecture (max 500MB).
-                                            </Typography>
-                                        </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                        <Typography variant="subtitle1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                            1. Upload Video (MP4)
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: -1 }}>
+                                            The core content for your Bridge (MP4 format, max 500MB).
+                                        </Typography>
 
                                         {!videoFile ? (
                                             <Box
@@ -597,35 +511,36 @@ function CreateBrdgePage() {
                                                 sx={{
                                                     position: 'relative',
                                                     transition: 'background-color 0.2s ease',
-                                                    bgcolor: isDragging ? `${theme.palette.secondary.main}15` : 'transparent',
+                                                    bgcolor: isDragging ? theme.palette.action.hover : 'transparent',
                                                 }}
                                             >
-                                                <Box component="label" sx={{
-                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-                                                    minHeight: '160px',
-                                                    border: `2px dashed ${isDragging ? theme.palette.secondary.main : theme.palette.divider}`,
-                                                    borderRadius: '8px',
+                                                <Box component="label" htmlFor="video-upload-input" sx={{
+                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5,
+                                                    minHeight: '200px',
+                                                    border: `2px dashed ${isDragging ? theme.palette.primary.main : theme.palette.divider}`,
+                                                    borderRadius: theme.shape.borderRadius,
                                                     p: 3,
                                                     cursor: 'pointer',
                                                     transition: 'all 0.2s ease',
                                                     '&:hover': {
-                                                        borderColor: theme.palette.secondary.light,
-                                                        bgcolor: `${theme.palette.secondary.main}08`
+                                                        borderColor: theme.palette.primary.light,
+                                                        bgcolor: theme.palette.action.hover
                                                     }
                                                 }}>
                                                     <Box sx={{
                                                         p: 1.5,
                                                         borderRadius: '50%',
-                                                        bgcolor: 'rgba(0,0,0,0.1)',
-                                                        border: `1px solid ${theme.palette.divider}`
+                                                        bgcolor: theme.palette.action.selected,
+                                                        border: `1px solid ${theme.palette.divider}`,
+                                                        display: 'inline-flex'
                                                     }}>
-                                                        <Upload style={{ width: 24, height: 24, color: theme.palette.text.secondary }} />
+                                                        <Upload size={24} color={theme.palette.text.secondary} />
                                                     </Box>
                                                     <Box sx={{ textAlign: 'center' }}>
                                                         <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                                            {isDragging ? 'Drop video here' : 'Drag & drop or click'}
+                                                            {isDragging ? 'Drop video here' : 'Drag & drop video or click to upload'}
                                                         </Typography>
-                                                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                                        <Typography variant="caption" color="text.secondary">
                                                             MP4 format, max 500MB
                                                         </Typography>
                                                     </Box>
@@ -634,27 +549,29 @@ function CreateBrdgePage() {
                                                         onChange={handleVideoFileUpload}
                                                         accept="video/mp4"
                                                         sx={{ display: 'none' }}
-                                                        inputProps={{ id: 'video-upload-input' }}
+                                                        id="video-upload-input"
                                                     />
                                                 </Box>
                                             </Box>
                                         ) : (
                                             <Paper elevation={0} sx={{
-                                                display: 'flex', alignItems: 'center', gap: 2, p: 2, borderRadius: '8px',
-                                                bgcolor: `${theme.palette.secondary.main}15`, border: `1px solid ${theme.palette.secondary.main}30`
+                                                display: 'flex', alignItems: 'center', gap: 2, p: 1.5,
+                                                borderRadius: theme.shape.borderRadius,
+                                                bgcolor: theme.palette.primary.main + '1A',
+                                                border: `1px solid ${theme.palette.primary.main + '30'}`
                                             }}>
-                                                <Box sx={{ p: 1, borderRadius: '4px', bgcolor: `${theme.palette.secondary.main}25` }}>
-                                                    <Video style={{ width: 20, height: 20, color: theme.palette.secondary.main }} />
+                                                <Box sx={{ p: 1, borderRadius: '4px', bgcolor: theme.palette.primary.main + '25' }}>
+                                                    <Video size={20} color={theme.palette.primary.dark} />
                                                 </Box>
                                                 <Box sx={{ flex: 1, minWidth: 0 }}>
                                                     <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                         {videoFile.name}
                                                     </Typography>
-                                                    <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                                    <Typography variant="caption" color="text.secondary">
                                                         {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
                                                     </Typography>
                                                 </Box>
-                                                <Button variant="text" onClick={() => setVideoFile(null)} sx={{ color: theme.palette.error.main, minWidth: 'auto', p: 0.5 }}>
+                                                <Button variant="text" onClick={() => setVideoFile(null)} sx={{ color: theme.palette.error.main, minWidth: 'auto', p: 0.5, '&:hover': { bgcolor: theme.palette.error.main + '1A' } }}>
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                         <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
                                                     </svg>
@@ -663,54 +580,63 @@ function CreateBrdgePage() {
                                         )}
                                     </Box>
 
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                        <Box>
-                                            <Typography variant="h6" sx={{ color: theme.palette.text.primary }}>
-                                                2. (Optional) Upload Presentation (PDF)
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontStyle: 'italic' }}>
-                                                Enhances AI understanding (max 20MB).
-                                            </Typography>
-                                        </Box>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                                        <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                            2. (Optional) Upload Presentation (PDF)
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: -1 }}>
+                                            Enhances Bridge knowledge (PDF format, max 20MB).
+                                        </Typography>
                                         <Button
                                             component="label"
+                                            htmlFor="pdf-upload-input"
                                             variant={file ? "contained" : "outlined"}
                                             color="secondary"
                                             startIcon={<FileText size={16} />}
+                                            size="medium"
                                             sx={{
                                                 justifyContent: 'center',
-                                                py: 1.5,
+                                                py: 1,
+                                                textTransform: 'none',
                                                 borderColor: file ? 'transparent' : theme.palette.secondary.main,
-                                                bgcolor: file ? `${theme.palette.secondary.main}25` : 'transparent',
+                                                bgcolor: file ? theme.palette.secondary.main + '20' : 'transparent',
                                                 color: file ? theme.palette.secondary.dark : theme.palette.secondary.main,
                                                 '&:hover': {
-                                                    bgcolor: file ? `${theme.palette.secondary.main}35` : `${theme.palette.secondary.main}10`,
+                                                    bgcolor: file ? theme.palette.secondary.main + '35' : theme.palette.secondary.main + '10',
                                                     borderColor: theme.palette.secondary.light
                                                 }
                                             }}
                                         >
-                                            {file ? `Selected: ${file.name}` : `Upload PDF`}
+                                            {file ? `Selected: ${file.name}` : `Upload PDF Document`}
                                             <TextField
                                                 type="file"
                                                 accept=".pdf"
                                                 onChange={(e) => setFile(e.target.files[0])}
                                                 sx={{ display: 'none' }}
-                                                inputProps={{ id: 'pdf-upload-input' }}
+                                                id="pdf-upload-input"
                                             />
                                         </Button>
                                     </Box>
 
-                                    <Box sx={{ mt: 2 }}>
+                                    <ScholarlyDivider />
+
+                                    <Box sx={{ mt: 1 }}>
                                         <Button
                                             type="submit"
                                             variant="contained"
                                             color="primary"
-                                            disabled={loading || !videoFile}
+                                            disabled={loading || !videoFile || !name}
                                             fullWidth
-                                            endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight size={16} />}
-                                            sx={{ py: 1.5, fontSize: '1rem' }}
+                                            size="large"
+                                            endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight size={18} />}
+                                            sx={{
+                                                py: 1.5,
+                                                fontSize: '1rem',
+                                                fontWeight: 600,
+                                                borderRadius: theme.shape.borderRadius * 1.5
+                                            }}
                                         >
-                                            {loading ? 'Creating...' : 'Create AI Module'}
+                                            {loading ? (createdBrdgeId ? 'Processing...' : 'Uploading...') : 'Create Bridge'}
                                         </Button>
                                     </Box>
                                 </Box>
