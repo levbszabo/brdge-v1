@@ -58,8 +58,8 @@ function Layout({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  // Determine if header should be shown (e.g., not on view pages?)
-  const showHeader = !location.pathname.startsWith('/viewBridge/') && !location.pathname.startsWith('/b/') && !location.pathname.startsWith('/c/');
+  // Always show header on all pages
+  const showHeader = true;
 
   // Define public routes
   const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace'];

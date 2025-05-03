@@ -263,15 +263,6 @@ function ViewBrdgePage() {
             touchAction: 'none'
         }}>
             <Box sx={{
-                height: { xs: '44px', sm: '50px', md: '56px' },
-                flexShrink: 0,
-                zIndex: 10,
-                borderBottom: `1px solid ${theme.palette.divider}`
-            }}>
-                {/* Empty header for spacing only */}
-            </Box>
-
-            <Box sx={{
                 flex: 1,
                 position: 'relative',
                 overflow: 'hidden',
