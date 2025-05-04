@@ -162,7 +162,7 @@ def extract_video_timeline(video_file, model) -> Dict[str, Any]:
     CONSTRAINTS
     - No timestamp must exceed the video length
     - Use 0 padded time (HH:MM:SS).  
-    - If unsure, ask yourself “Could I cite an exact moment?”  if not, omit.  
+    - If unsure, ask yourself "Could I cite an exact moment?"  if not, omit.  
     - Do NOT invent content that cannot be heard or seen verbatim.
     
     Return ONLY a JSON object with this structure:
@@ -432,7 +432,13 @@ def extract_document_timeline(document_file, model) -> Dict[str, Any]:
 
 
 def extract_knowledge_base(
-    video_file, document_file, timeline_data, model, log_collector=None
+    video_file,
+    document_file,
+    timeline_data,
+    model,
+    log_collector=None,
+    bridge_type="course",
+    additional_instructions="",
 ) -> Dict[str, Any]:
     """
     PASS 2: Extract knowledge base using timeline data as context
@@ -455,8 +461,26 @@ def extract_knowledge_base(
     formatting_duration = time.time() - formatting_start
     print_timing("Knowledge Base - Context Formatting", formatting_duration)
 
+    # Add mode-specific focus instruction
+    focus_instruction = ""
+    if bridge_type == "vsl":
+        focus_instruction = "Focus on extracting product features, benefits addressing specific pain points, unique selling propositions, competitive differentiators, pricing, guarantees, and strong calls-to-action relevant to immediate conversion."
+    elif bridge_type == "webinar":
+        focus_instruction = "Focus on extracting key discussion points, potential audience questions, features relevant to qualification, context/industry insights, and information supporting a meeting/demo booking."
+    elif bridge_type == "onboarding":
+        focus_instruction = "Focus on extracting specific procedural steps, UI element names/locations, troubleshooting tips, task sequences, common user errors, and information directly related to feature adoption."
+    else:  # course (default)
+        focus_instruction = "Focus on extracting core concepts, definitions, theories, conceptual frameworks, examples vs. non-examples, prerequisites, and relationships relevant to learning and understanding."
+
+    # Add additional instructions if provided
+    instruction_context = ""
+    if additional_instructions:
+        instruction_context = f"\n\nAlso consider these specific instructions when extracting knowledge: {additional_instructions}"
+
     knowledge_prompt = f"""
     Analyze this video (and document if provided) to extract a comprehensive knowledge base.
+    
+    {focus_instruction}
     
     Use the following timeline information as context:
     ```
@@ -534,6 +558,8 @@ def extract_knowledge_base(
     Make sure concept IDs are unique and consistently referenced across the knowledge base.
     Ensure each concept is linked to its source location in the timeline.
     Be comprehensive and detailed in extracting ALL significant concepts.
+    
+    {instruction_context}
     """
 
     try:
@@ -584,7 +610,13 @@ def extract_knowledge_base(
 
 
 def extract_teaching_persona(
-    video_file, timeline_data, knowledge_data, model, log_collector=None
+    video_file,
+    timeline_data,
+    knowledge_data,
+    model,
+    log_collector=None,
+    bridge_type="course",
+    additional_instructions="",
 ) -> Dict[str, Any]:
     """
     PASS 3: Extract teaching persona using timeline and knowledge data
@@ -611,8 +643,24 @@ def extract_teaching_persona(
     formatting_duration = time.time() - formatting_start
     print_timing("Teaching Persona - Context Formatting", formatting_duration)
 
+    # Add mode-specific goal injection
+    goal_instruction = ""
+    if bridge_type == "vsl":
+        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating a highly persuasive sales presenter*. Focus specifically on persuasion techniques, benefit-driven language, confidence, authority, handling objections implicitly/explicitly, and driving towards a specific conversion action."
+    elif bridge_type == "webinar":
+        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating an engaging, authoritative host/expert*. Focus on structured delivery, clarity, managing audience interaction (Q&A style), building credibility, and smoothly facilitating transitions, including guiding towards a next step like booking a meeting."
+    elif bridge_type == "onboarding":
+        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating a clear, patient, and practical guide*. Focus on step-by-step instruction clarity, encouraging tone for task completion, anticipating user friction points, and providing concise, actionable help."
+    else:  # course (default)
+        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating an effective, knowledgeable tutor*. Focus on clarity of conceptual explanations, use of analogies, checking for understanding (Socratic method if applicable), patience, and structuring complex information for learning."
+
+    # Add additional instructions if provided
+    instruction_context = ""
+    if additional_instructions:
+        instruction_context = f"\n\nConsider these additional instructions when analyzing the persona and generating simulation guidance: {additional_instructions}"
+
     persona_prompt = f"""
-    Analyze this video to extract the teaching persona and communication style of {instructor_info}.
+    {goal_instruction}
     
     Pay particular attention to:
     1. Speaking style, tone, pacing, and accent characteristics
@@ -813,6 +861,8 @@ def extract_teaching_persona(
     
     Be specific about unique teaching patterns and communication style to enable accurate emulation.
     Provide detailed observations about speech patterns, emotional teaching dynamics, and storytelling approaches.
+    
+    {instruction_context}
     """
 
     try:
@@ -1016,6 +1066,8 @@ def extract_engagement_opportunities(
     doc_data,
     model,
     log_collector=None,
+    bridge_type="course",
+    additional_instructions="",
 ) -> Dict[str, Any]:
     """
     PASS 5: Extract engagement opportunities using all previous data
@@ -1057,9 +1109,245 @@ def extract_engagement_opportunities(
     formatting_duration = time.time() - formatting_start
     print_timing("Engagement Opportunities - Context Formatting", formatting_duration)
 
+    # --- Dynamic Prompt Generation Based on Bridge Type ---
+    output_structure_prompt = ""
+    example_prompt = ""
+    engagement_goal_instruction = ""
+
+    if bridge_type == "vsl":
+        engagement_goal_instruction = "Identify strategic points to proactively engage the user to handle objections, reinforce value/ROI, build urgency, and guide directly towards the conversion CTA (e.g., checkout, demo request)."
+        output_structure_prompt = f"""
+        Return ONLY a JSON object with this structure:
+        {{ 
+          "engagement_opportunities": [
+            {{
+              "id": "engagement-1", 
+              "timestamp": "HH:MM:SS",
+              "section_id": "section-id",
+              "engagement_type": "guided_conversation", // Fixed type for VSL/Webinar
+              "concepts_addressed": ["concept-id"],
+              "rationale": "str (Why engage here? e.g., Address pricing concern)",
+              "conversation_flow": {{ // Specific structure for guided convos
+                "goal": "str (e.g., Build rapport, handle objection)",
+                "agent_initiator": "str (What the agent says first)",
+                "user_responses": [ // Guidance for LLM on how to react
+                  {{"type": "positive_interest", "agent_followup_strategy": "str (e.g., Reinforce value, pivot)"}},
+                  {{"type": "objection", "agent_followup_strategy": "str (e.g., Acknowledge, reframe)"}},
+                  {{"type": "needs_more_info", "agent_followup_strategy": "str (e.g., Ask clarifying questions)"}}
+                ],
+                "fallback": "str (Agent message if user doesn't engage)"
+              }}
+            }}
+          ]
+        }}
+        """
+        example_prompt = f"""
+        Examples of good `guided_conversation` flows:
+
+        1. VSL - Price Objection Handling:
+        {{
+          "id": "engagement-vsl-price",
+          "timestamp": "00:05:30",
+          "section_id": "section-vsl-offer",
+          "engagement_type": "guided_conversation",
+          "concepts_addressed": ["pricing_value"],
+          "rationale": "Proactively address potential price objection after revealing cost.",
+          "conversation_flow": {{
+            "goal": "Acknowledge price, re-emphasize value and ROI.",
+            "agent_initiator": "I know investing in growth is a big decision. When you think about the potential return we discussed regarding [Specific Benefit], how does the pricing feel in that context?",
+            "user_responses": [
+              {{"type": "still_expensive", "agent_followup_strategy": "Validate concern, break down ROI, mention payment options if applicable."}},
+              {{"type": "seems_fair", "agent_followup_strategy": "Reinforce decision, smoothly transition to checkout/next step."}},
+              {{"type": "request_discount", "agent_followup_strategy": "Explain value justifies cost, potentially mention limited-time offers if applicable."}}
+            ],
+            "fallback": "We can definitely circle back to pricing details later. For now, let me show you how the integration works..."
+          }}
+        }}
+
+        2. VSL - Urgency/CTA Push:
+        {{
+          "id": "engagement-vsl-cta",
+          "timestamp": "00:02:05",
+          "section_id": "section-vsl-finalpush",
+          "engagement_type": "guided_conversation",
+          "concepts_addressed": ["call_to_action", "limited_time_offer"],
+          "rationale": "Reinforce the offer and guide towards the CTA button just before the final sign-off.",
+          "conversation_flow": {{
+            "goal": "Encourage immediate action on the CTA.",
+            "agent_initiator": "We've covered a lot, and hopefully, you see the value. This special launch pricing won't last forever – are you ready to lock it in now by clicking the button below?",
+            "user_responses": [
+              {{"type": "positive_intent", "agent_followup_strategy": "Excellent! Click that button and I'll see you on the inside."}},
+              {{"type": "hesitation_cost", "agent_followup_strategy": "I understand, it's an investment. Remember the ROI we calculated earlier? This price makes it even easier to achieve that quickly."}},
+              {{"type": "hesitation_need_more_info", "agent_followup_strategy": "No problem, what specific question is holding you back right now? I can clarify before you decide."}}
+            ],
+            "fallback": "Feel free to explore more, but don't miss out on this offer! The button is right below when you're ready."
+          }}
+        }}
+        """
+    elif bridge_type == "webinar":
+        engagement_goal_instruction = "Identify strategic points to proactively engage the user to check understanding, qualify interest, share relevant resources, facilitate Q&A, and guide towards the next step (e.g., booking a meeting)."
+        output_structure_prompt = f"""
+    Return ONLY a JSON object with this structure:
+    {{
+      "engagement_opportunities": [
+        {{
+          "id": "engagement-1",
+          "timestamp": "HH:MM:SS",
+          "section_id": "section-id",
+              "engagement_type": "guided_conversation", // Fixed type for VSL/Webinar
+          "concepts_addressed": ["concept-id"],
+              "rationale": "str (Why engage here? e.g., Qualify interest, offer resource)",
+              "conversation_flow": {{ // Specific structure for guided convos
+                "goal": "str (e.g., Qualify lead, facilitate Q&A, offer resource)",
+                "agent_initiator": "str (What the agent says first)",
+                "user_responses": [ // Guidance for LLM on how to react
+                  {{"type": "positive_interest", "agent_followup_strategy": "str (e.g., Ask deeper qualifying question, offer related resource)"}},
+                  {{"type": "question", "agent_followup_strategy": "str (e.g., Answer directly, offer to take offline, point to documentation)"}},
+                  {{"type": "needs_clarification", "agent_followup_strategy": "str (e.g., Rephrase, provide simpler explanation)"}}
+                ],
+                "fallback": "str (Agent message if user doesn't engage, e.g., Okay, moving on...)"
+              }}
+            }}
+          ]
+        }}
+        """
+        example_prompt = f"""
+        Examples of good `guided_conversation` flows for Webinar:
+
+        1. Webinar - Qualification & Rapport:
+        {{
+          "id": "engagement-webinar-qualify1",
+          "timestamp": "00:15:10",
+          "section_id": "section-webinar-demo",
+          "engagement_type": "guided_conversation",
+          "concepts_addressed": ["use_case_fit"],
+          "rationale": "Qualify lead interest after showing a key feature.",
+          "conversation_flow": {{
+            "goal": "Understand viewer's context and gauge interest level.",
+            "agent_initiator": "Seeing that [Demoed Feature] in action, how does that align with the challenges you're currently facing with [Related Problem Area]?",
+            "user_responses": [
+              {{"type": "high_relevance", "agent_followup_strategy": "Acknowledge fit, ask follow-up about specific needs, suggest booking a call for personalized demo."}},
+              {{"type": "low_relevance", "agent_followup_strategy": "Thank for feedback, ask what their primary challenge is instead."}},
+              {{"type": "unclear_question", "agent_followup_strategy": "Rephrase the question more simply."}}
+            ],
+            "fallback": "Okay, let's continue with the next feature..."
+          }}
+        }}
+
+        2. Webinar - Resource Sharing & Q&A Prompt:
+        {{
+          "id": "engagement-webinar-resource1",
+          "timestamp": "00:25:00",
+          "section_id": "section-webinar-integration",
+          "engagement_type": "guided_conversation",
+          "concepts_addressed": ["api_integration"],
+          "rationale": "Offer technical documentation and prompt for questions after discussing integrations.",
+          "conversation_flow": {{
+            "goal": "Provide deeper resource and solicit technical questions.",
+            "agent_initiator": "For those interested in the technical details, I've just dropped a link to our API documentation in the chat. Are there any initial integration questions I can answer based on what we've covered?",
+            "user_responses": [
+              {{"type": "specific_question", "agent_followup_strategy": "Answer concisely if possible, offer to connect with tech team via booked call if too complex."}},
+              {{"type": "no_question", "agent_followup_strategy": "Great, glad that was clear. We can always dive deeper in a follow-up session."}},
+              {{"type": "request_case_study", "agent_followup_strategy": "Provide link to relevant case study if available, or offer to send one after the webinar."}}
+            ],
+            "fallback": "Alright, let's move on to the security aspects then."
+          }}
+        }}
+        """
+    else:
+        # Determine specific goal based on course vs onboarding
+        if bridge_type == "onboarding":
+            engagement_goal_instruction = "Identify strategic points to check procedural understanding, offer contextual tips, confirm task completion, or provide links to relevant features/help docs. Generate a mix of short quizzes and helpful guided conversations."
+        else:  # course (default)
+            engagement_goal_instruction = "Identify strategic points where a knowledge check (quiz), discussion prompt, or reflective guided conversation would reinforce conceptual understanding and learning."
+
+        output_structure_prompt = f"""
+        Return ONLY a JSON object with this structure:
+        {{
+          "engagement_opportunities": [
+            {{
+              "id": "engagement-1", 
+              "timestamp": "HH:MM:SS",
+              "section_id": "section-id",
+              "engagement_type": "quiz/discussion/guided_conversation", // Can be quiz, discussion, or guided convo
+              "concepts_addressed": ["concept-id"],
+              "rationale": "str (Why engage here? e.g., Check understanding / Offer tip)",
+              "quiz_items": [ {{ ... structure as before ... }} ], // Include ONLY if engagement_type is quiz/discussion
+              "conversation_flow": {{ ... structure as before ... }} // Include ONLY if engagement_type is guided_conversation
+            }}
+          ]
+        }}
+        """
+        example_prompt = f"""
+        Examples for Course/Onboarding:
+        
+        1. Multiple-choice example (Course):
+    {{
+      "question": "What is the primary advantage of compound interest over simple interest?",
+      "question_type": "multiple_choice",
+      "options": [
+        "Interest is calculated only on the initial principal",
+        "Interest is calculated on both principal and accumulated interest",
+        "Interest rates are always higher",
+        "Banks prefer to use this calculation method"
+      ],
+      "correct_option": "Interest is calculated on both principal and accumulated interest",
+      "explanation": "Compound interest calculates interest on both the initial principal and any interest already earned, creating an exponential growth effect over time.",
+      "follow_up": {{
+        "if_correct": "Exactly! This exponential growth effect is why Einstein allegedly called compound interest 'the eighth wonder of the world.'",
+        "if_incorrect": "Not quite. The key difference is that compound interest calculates interest on both your initial investment AND any interest already earned, leading to exponential growth."
+      }}
+    }}
+    
+        3. Guided Conversation example (Onboarding - Task Tip):
+        {{
+          "id": "engagement-onboarding-tip1",
+          "timestamp": "00:03:45",
+          "section_id": "section-onboarding-step3",
+          "engagement_type": "guided_conversation",
+          "concepts_addressed": ["user_permission_settings"],
+          "rationale": "Offer a proactive tip for a potentially confusing step.",
+          "conversation_flow": {{
+            "goal": "Help user avoid common error with permissions.",
+            "agent_initiator": "Just a quick tip here: when setting permissions, remember that the 'Admin' role grants full access. Double-check you've selected the right role before saving. Did that make sense?",
+            "user_responses": [
+              {{"type": "confirmation_understanding", "agent_followup_strategy": "Great! Let me know if you have other questions as you proceed."}},
+              {{"type": "request_clarification", "agent_followup_strategy": "Sure, the main difference between Admin and Editor is... [brief explanation]."}}
+            ],
+            "fallback": "Okay, continuing to the next step..."
+          }}
+        }}
+
+        4. Guided Conversation example (Course - Socratic Prompt):
+        {{
+          "id": "engagement-course-socratic1",
+          "timestamp": "00:12:20",
+          "section_id": "section-course-concept2",
+          "engagement_type": "guided_conversation",
+          "concepts_addressed": ["concept_tradeoffs"],
+          "rationale": "Prompt deeper reflection on the implications of a concept.",
+          "conversation_flow": {{
+            "goal": "Encourage critical thinking about concept limitations.",
+            "agent_initiator": "We just discussed the benefits of [Concept X]. What potential downsides or limitations do you think might exist with this approach?",
+            "user_responses": [
+              {{"type": "identifies_valid_limitation", "agent_followup_strategy": "That's a great point to consider. How might you mitigate that specific risk?"}},
+              {{"type": "struggles_to_answer", "agent_followup_strategy": "Think about situations where [Condition Y] applies. How might [Concept X] perform then?"}}
+            ],
+            "fallback": "That's something to keep in mind. Let's look at another example..."
+          }}
+        }}
+        """
+
+    # Add additional instructions if provided
+    instruction_context = ""
+    if additional_instructions:
+        instruction_context = f"\n\nAlso consider these specific instructions when designing engagement points: {additional_instructions}"
+
     engagement_prompt = f"""
     Analyze this video to identify ideal moments for student engagement, quizzes, and interactive elements.
     
+    {engagement_goal_instruction}
+
     Consider these key concepts: {concepts_list}
     
     The instructor's teaching approach is:
@@ -1078,97 +1366,27 @@ def extract_engagement_opportunities(
     3. A knowledge check would reinforce learning
     4. A potential confusion point needs clarification
 
-    Important
+    Important CONSTRAINTS:
     -Do not include any points that are not in the video timeline
     -Every engagement opportunity must have only 1 quiz or discussion question
     -Do not include the same engagement opportunity more than once
     -Engagement opportunities should be placed at a point where the instructor would naturally pause
     -Engagement opportunities cannot be at a timestamp that is greater than the video length or before the start of the video.
 
+    Follow the specific JSON structure requested below based on the bridge type.
+    {output_structure_prompt}
     
-    For each point, create varied quiz items including multiple choice, short answer, and discussion questions.
-
-    Return ONLY a JSON object with this structure:
-    {{
-      "engagement_opportunities": [
-        {{
-          "id": "engagement-1",
-          "timestamp": "HH:MM:SS",
-          "section_id": "section-id",
-          "engagement_type": "quiz/discussion/reflection/application",
-          "concepts_addressed": ["concept-id"],
-          "rationale": "str",
-          "quiz_items": [
-            {{
-      "question": "str",
-              "question_type": "multiple_choice/short_answer/discussion",
-              "options": ["option A", "option B", "option C", "option D"],
-              "correct_option": "option A",
-              "explanation": "Explanation of why option A is correct",
-              "expected_answer": "str",
-              "alternative_phrasings": ["str"],
-              "follow_up": {{
-                "if_correct": "str",
-                "if_incorrect": "str"
-              }}
-            }}
-          ]
-        }}
-      ]
-    }}
+    IMPORTANT: For multiple-choice questions (Course/Onboarding), provide 4 options with 1 correct answer and 3 plausible distractors.
     
-    IMPORTANT: For multiple-choice questions, provide 4 options with 1 correct answer and 3 plausible distractors.
-    
-    Examples of good quiz items:
-    
-    1. Multiple-choice example:
-    {{
-      "question": "What is the primary advantage of compound interest over simple interest?",
-      "question_type": "multiple_choice",
-      "options": [
-        "Interest is calculated only on the initial principal",
-        "Interest is calculated on both principal and accumulated interest",
-        "Interest rates are always higher",
-        "Banks prefer to use this calculation method"
-      ],
-      "correct_option": "Interest is calculated on both principal and accumulated interest",
-      "explanation": "Compound interest calculates interest on both the initial principal and any interest already earned, creating an exponential growth effect over time.",
-      "follow_up": {{
-        "if_correct": "Exactly! This exponential growth effect is why Einstein allegedly called compound interest 'the eighth wonder of the world.'",
-        "if_incorrect": "Not quite. The key difference is that compound interest calculates interest on both your initial investment AND any interest already earned, leading to exponential growth."
-      }}
-    }}
-    
-    2. Short-answer example:
-    {{
-      "question": "Explain the concept of 'continuous compounding' in your own words.",
-      "question_type": "short_answer",
-      "expected_answer": "Continuous compounding is when interest is calculated and added to the principal continuously (at every moment) rather than at fixed intervals. It represents the mathematical limit of compounding frequency approaching infinity, and uses the formula A = P*e^(rt).",
-      "alternative_phrasings": [
-        "Continuous compounding means interest is added at every instant.",
-        "It's when the number of compounding periods approaches infinity."
-      ],
-      "follow_up": {{
-        "if_correct": "Excellent explanation! You've captured the key distinction between discrete and continuous compounding.",
-        "if_incorrect": "Let's clarify. Continuous compounding means interest is calculated at every possible moment (infinity times per year), not just at fixed intervals."
-      }}
-    }}
-    
-    3. Discussion example:
-    {{
-      "question": "Consider the ethical implications of compound interest in the context of student loans. How might compounding affect students differently based on their socioeconomic background?",
-      "question_type": "discussion",
-      "expected_answer": "This is an open-ended question, but good responses would address how compound interest on student loans can disproportionately affect students who take longer to repay due to lower starting salaries or less family support. Some may mention how interest capitalization during deferment periods can significantly increase loan balances.",
-      "follow_up": {{
-        "if_correct": "That's a thoughtful analysis. You've identified how compound interest can sometimes amplify existing inequalities in higher education financing.",
-        "if_incorrect": "Consider how the exponential nature of compound interest might affect students differently based on their ability to make payments soon after graduation."
-      }}
-    }}
+    {example_prompt}
     
     Ensure questions match the instructor's style and complexity level.
     Create questions that genuinely test understanding rather than simple recall.
     Provide variations of expected answers to handle different phrasings.
     Design follow-up responses that mimic the instructor's teaching approach.
+    For `guided_conversation`, focus on natural, proactive dialogue starters and strategies.
+
+    {instruction_context}
     """
 
     try:
@@ -1215,6 +1433,7 @@ def integrate_knowledge(
     engagement_data,
     model,
     log_collector=None,
+    bridge_type="course",
 ) -> Dict[str, Any]:
     """
     FINAL PASS: Minimally combine all extracted components preserving their raw structure
@@ -1233,19 +1452,44 @@ def integrate_knowledge(
     pass_start_time = time.time()
     print(f"🔄 FINAL PASS: Combining extraction components...")
 
+    # Define widget mapping based on bridge type
+    WIDGET_MAP = {
+        "webinar": [
+            "chat",
+            "cta-calendar",
+        ],  # Assuming guided_conversation handled by chat
+        "vsl": ["chat", "cta-checkout"],  # Assuming guided_conversation handled by chat
+        "course": [
+            "chat",
+            "quiz",
+            "progress_bar",
+        ],  # Keep quiz widget for explicit course quizzes
+        "onboarding": [
+            "chat",
+            "deep_link",
+            "inline_tip",
+        ],  # Onboarding uses chat for tips/checks
+        "default": ["chat"],  # Fallback
+    }
+    widgets = WIDGET_MAP.get(bridge_type, WIDGET_MAP["default"])
+
     # Simple combination of all extracted data
     unified_data = {
         # Add metadata for identification
         "extraction_metadata": {
             "timestamp": datetime.now().isoformat(),
+            "bridge_type": bridge_type,  # Store the type used for extraction
             "components": [
                 "video_timeline",
                 "knowledge_base",
                 "teaching_persona",
                 "document_knowledge",
                 "engagement_opportunities",
+                "widgets",  # Added widgets component
             ],
         },
+        "bridge_type": bridge_type,  # Add type at top level too
+        "widgets": widgets,  # Add the determined widgets
         # Include all raw components
         "video_timeline": timeline_data.get("video_timeline", {}),
         "document_timeline": timeline_data.get("document_timeline", {}),
@@ -1281,7 +1525,12 @@ def integrate_knowledge(
 
 
 def create_brdge_knowledge(
-    video_path, document_path=None, brdge_id=None, callback=None
+    video_path,
+    document_path=None,
+    brdge_id=None,
+    callback=None,
+    bridge_type="course",
+    additional_instructions="",
 ):
     """
     Create a comprehensive knowledge base through multi-pass extraction
@@ -1301,6 +1550,14 @@ def create_brdge_knowledge(
     log_collector = LogCollector(brdge_id, callback)
 
     log_message = f"\n🚀 Starting multi-pass knowledge extraction: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    print(log_message)
+    log_collector.add_log(log_message, status="info")
+
+    log_message = f"🧬 Bridge Type: {bridge_type}"
+    print(log_message)
+    log_collector.add_log(log_message, status="info")
+    if additional_instructions:
+        log_message = f"📝 Additional Instructions: {additional_instructions[:100]}..."  # Log truncated instructions
     print(log_message)
     log_collector.add_log(log_message, status="info")
 
@@ -1406,7 +1663,13 @@ def create_brdge_knowledge(
         log_collector.add_log(log_message, status="info")
 
         knowledge_data = extract_knowledge_base(
-            video_file, document_file, timelines, model, log_collector
+            video_file,
+            document_file,
+            timelines,
+            model,
+            log_collector,
+            bridge_type,
+            additional_instructions,
         )
         pass2_duration = time.time() - pass2_start
         print_timing(
@@ -1424,7 +1687,13 @@ def create_brdge_knowledge(
         log_collector.add_log(log_message, status="info")
 
         persona_data = extract_teaching_persona(
-            video_file, timelines, knowledge_data, model, log_collector
+            video_file,
+            timelines,
+            knowledge_data,
+            model,
+            log_collector,
+            bridge_type,
+            additional_instructions,
         )
         pass3_duration = time.time() - pass3_start
         print_timing(
@@ -1468,6 +1737,8 @@ def create_brdge_knowledge(
             document_data,
             model,
             log_collector,
+            bridge_type,
+            additional_instructions,
         )
         pass5_duration = time.time() - pass5_start
         print_timing(
@@ -1492,6 +1763,7 @@ def create_brdge_knowledge(
             engagement_data,
             model,
             log_collector,
+            bridge_type,
         )
         final_pass_duration = time.time() - final_pass_start
         print_timing(
@@ -1586,13 +1858,18 @@ def create_brdge_knowledge(
 # If run directly, execute a test extraction
 if __name__ == "__main__":
     # Test the extraction pipeline with sample files
-    sample_video = "module_0.mp4"
-    sample_document = "module_0.pdf"
+    sample_video = "brdge-sales-demo.mp4"
+    sample_document = ""
+    instructions = "Teach the user about the product, in the end ask them a quiz that will make it obvious this is the right product for them."
+    bridge_type = "course"
 
     if os.path.exists(sample_video):
         print(f"Running test extraction on {sample_video}")
         result = create_brdge_knowledge(
-            sample_video, sample_document if os.path.exists(sample_document) else None
+            sample_video,
+            sample_document if os.path.exists(sample_document) else None,
+            bridge_type=bridge_type,
+            additional_instructions="",
         )
 
         # Save results to a file

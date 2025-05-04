@@ -465,7 +465,12 @@ def process_brdge_content(
 
         # Call the Gemini processing with the callback
         knowledge = gemini.create_brdge_knowledge(
-            video_path, pdf_path, brdge_id=brdge_id, callback=update_script_logs
+            video_path,
+            pdf_path,
+            brdge_id=brdge_id,
+            callback=update_script_logs,
+            bridge_type=bridge_type,
+            additional_instructions=additional_instructions,
         )
 
         # Update with final results
