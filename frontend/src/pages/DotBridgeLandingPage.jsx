@@ -123,7 +123,7 @@ const HeroSection = () => (
                     variant="overline"
                     color="text.secondary"
                 >
-                    The .bridge Format — A New Layer for Interactive Video
+                    The .bridge Format — The Interface for the AI-Native Web
                 </DotBridgeTypography>
             </motion.div>
 

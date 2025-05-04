@@ -1407,8 +1407,8 @@ function DotBrdgeListPage() {
                                 <Collapse in={yourCoursesExpanded} timeout="auto" unmountOnExit>
                                     {courses.length === 0 ? (
                                         <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
-                                            <Typography color="text.secondary" sx={{ mb: 2 }}>You haven't created any courses yet.</Typography>
-                                            <Button variant="outlined" onClick={handleCreateCourse}>Create First Course</Button>
+                                            <Typography color="text.secondary" sx={{ mb: 2 }}>You haven't created any flows yet.</Typography>
+                                            <Button variant="outlined" onClick={handleCreateCourse}>Create First Flow</Button>
                                         </Box>
                                     ) : (
                                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -1696,9 +1696,9 @@ function DotBrdgeListPage() {
                     Delete Course
                 </DialogTitle>
                 <DialogContent>
-                    <Typography>Are you sure you want to delete the Course: <strong>"{courseToDelete?.name}"</strong>?</Typography>
+                    <Typography>Are you sure you want to delete the flow: <strong>"{courseToDelete?.name}"</strong>?</Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        This will remove the course structure. Your Bridges within this course will **not** be deleted and remain in your library.
+                        This will remove the flow structure. Your Bridges within this flow will **not** be deleted and remain in your library.
                     </Typography>
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>

@@ -94,7 +94,8 @@ class Brdge(db.Model):
     voice_id = db.Column(
         db.String(255), nullable=True
     )  # Keep as string for Cartesia voice ID
-
+    bridge_type = db.Column(db.String(50), nullable=False, default="course")
+    additional_instructions = db.Column(db.Text, nullable=True)
     # Define recordings relationship with back_populates instead of backref
     recordings = db.relationship(
         "Recording",
@@ -121,6 +122,8 @@ class Brdge(db.Model):
             "public_id": self.public_id,
             "agent_personality": self.agent_personality,
             "voice_id": self.voice_id,  # Ensure voice_id is included
+            "bridge_type": self.bridge_type,
+            "additional_instructions": self.additional_instructions,
         }
 
 

@@ -428,7 +428,14 @@ def upload_image_to_s3(args):
         return False
 
 
-def process_brdge_content(brdge_id, video_path, pdf_path=None, template_type="general"):
+def process_brdge_content(
+    brdge_id,
+    video_path,
+    pdf_path=None,
+    template_type="general",
+    bridge_type="course",
+    additional_instructions="",
+):
     """Process uploaded content using Gemini and create a script"""
     try:
         # Create initial script object with pending status
@@ -507,7 +514,10 @@ def create_brdge(user):
         name = request.form.get("name")
         presentation = request.files.get("presentation")
         recording = request.files.get("screen_recording")
-        template_type = request.form.get("template_type", "general")
+        # Get bridge type and instructions from the form
+        bridge_type = request.form.get("bridge_type", "course")  # Default to course
+        additional_instructions = request.form.get("additional_instructions", "")
+
         async_processing = (
             request.form.get("async", "false").lower() == "true"
         )  # Get async parameter
@@ -590,6 +600,8 @@ def create_brdge(user):
         brdge = Brdge(
             name=name,
             user_id=user.id,
+            bridge_type=bridge_type,  # Use retrieved variable
+            additional_instructions=additional_instructions,  # Use retrieved variable
             presentation_filename="" if not presentation else "temp",
             audio_filename="",
             folder="temp",
@@ -683,11 +695,11 @@ def create_brdge(user):
         # If async processing is requested, process in background thread
         if async_processing:
             # Create a completely independent function that doesn't use any request resources
-            def process_in_background(b_id, v_path, p_path, t_type):
+            def process_in_background(b_id, v_path, p_path, b_type, add_instr):
                 with app.app_context():
                     try:
                         # Process using only paths to saved files
-                        process_brdge_content(b_id, v_path, p_path, t_type)
+                        process_brdge_content(b_id, v_path, p_path, b_type, add_instr)
                     except Exception as e:
                         logger.error(
                             f"Background processing error: {str(e)}", exc_info=True
@@ -730,7 +742,13 @@ def create_brdge(user):
             # Start a background thread with only primitive types (no file objects)
             thread = Thread(
                 target=process_in_background,
-                args=(brdge_id, final_video_path, final_pdf_path, template_type),
+                args=(
+                    brdge_id,
+                    final_video_path,
+                    final_pdf_path,
+                    bridge_type,
+                    additional_instructions,
+                ),
             )
             thread.daemon = True
             thread.start()
@@ -750,7 +768,11 @@ def create_brdge(user):
             try:
                 # Process content using Gemini
                 script_obj = process_brdge_content(
-                    brdge.id, video_local_path, pdf_local_path, template_type
+                    brdge.id,
+                    video_local_path,
+                    pdf_local_path,
+                    bridge_type,
+                    additional_instructions,
                 )
 
                 # Clean up temporary files

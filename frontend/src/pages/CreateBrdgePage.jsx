@@ -5,10 +5,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useSnackbar } from '../utils/snackbar';
-import { ArrowRight, Upload, Video, FileText, Clock, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { ArrowRight, Upload, Video, FileText, Clock, AlertTriangle, CheckCircle, Info, Settings } from 'lucide-react';
 import dotbridgeTheme from '../dotbridgeTheme'; // Import the theme
 import { useTheme } from '@mui/material/styles';
-import { Box, Typography, Button, TextField, CircularProgress, Paper, Chip, Alert, Container } from '@mui/material';
+import { Box, Typography, Button, TextField, CircularProgress, Paper, Chip, Alert, Container, Select, MenuItem, FormControl, InputLabel, Grid } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const MAX_PDF_SIZE = 20 * 1024 * 1024;  // 20MB in bytes
@@ -64,6 +64,18 @@ function CreateBrdgePage() {
     const [isDragging, setIsDragging] = useState(false);
     const [pollingInterval, setPollingInterval] = useState(null);
     const logContainerRef = useRef(null);
+
+    // Add state for new fields
+    const [bridgeType, setBridgeType] = useState('course'); // Default to 'course'
+    const [additionalInstructions, setAdditionalInstructions] = useState('');
+
+    // Define bridge types and placeholders
+    const bridgeTypes = [
+        { value: 'course', label: 'Course Module', placeholder: 'e.g., Focus on beginner concepts, use Socratic questioning...' },
+        { value: 'webinar', label: 'Webinar / Lead Nurture', placeholder: 'e.g., Goal is to book a meeting, ask qualifying questions...' },
+        { value: 'vsl', label: 'Video Sales Letter (VSL)', placeholder: 'e.g., Overcome objections about pricing, build urgency...' },
+        { value: 'onboarding', label: 'Onboarding / Tutorial', placeholder: 'e.g., Guide users through setup, link to specific features...' },
+    ];
 
     useEffect(() => {
         if (id) {
@@ -136,6 +148,13 @@ function CreateBrdgePage() {
             showSnackbar('Bridge processing failed', 'error');
         }
     }, [processingStatus.status, createdBrdgeId, pollingInterval, navigate, showSnackbar]);
+
+    // Update placeholder when bridgeType changes
+    useEffect(() => {
+        const selectedType = bridgeTypes.find(type => type.value === bridgeType);
+        setAdditionalInstructions(''); // Clear instructions when type changes
+        // We'll set the placeholder directly in the TextField below
+    }, [bridgeType]);
 
     const fetchProcessingStatus = async (brdgeId) => {
         try {
@@ -244,6 +263,8 @@ function CreateBrdgePage() {
 
         const formData = new FormData();
         formData.append('name', name);
+        formData.append('bridge_type', bridgeType);
+        formData.append('additional_instructions', additionalInstructions);
 
         // PDF is optional now
         if (file) {
@@ -425,23 +446,23 @@ function CreateBrdgePage() {
             py: { xs: 4, md: 6 },
             px: 2,
         }}>
-            <Box maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
+            <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
                 >
-                    <Typography variant="h2" component="h1" sx={{
+                    <Typography variant="h3" component="h1" sx={{
                         color: theme.palette.text.primary,
                         textAlign: 'center',
                         mb: 5,
-                        fontFamily: theme.typography.h2.fontFamily,
+                        fontFamily: theme.typography.h3.fontFamily,
                         '&::after': {
                             content: '""',
                             display: 'block',
                             width: '80px',
                             height: '3px',
-                            background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}, transparent)`,
+                            background: `linear-gradient(90deg, transparent, ${theme.palette.primary.main}99, transparent)`,
                             margin: '15px auto 0',
                             borderRadius: '2px',
                         }
@@ -449,16 +470,102 @@ function CreateBrdgePage() {
                         Create New <SepiaText>Bridge</SepiaText>
                     </Typography>
 
-                    <Paper elevation={2} sx={{
-                        p: { xs: 3, sm: 4 },
-                        borderRadius: theme.shape.borderRadius * 1.5,
-                        backgroundColor: theme.palette.background.paper,
-                        border: `1px solid ${theme.palette.divider}`,
-                        boxShadow: theme.shadows[2],
-                        position: 'relative',
-                        overflow: 'hidden',
-                    }}>
-                        <Box sx={{ position: 'relative', zIndex: 1 }}>
+                    <Grid container spacing={4} alignItems="flex-start">
+
+                        <Grid item xs={12} md={7}>
+                            <Paper elevation={3} sx={{ p: { xs: 3, sm: 4 }, borderRadius: theme.shape.borderRadius * 1.5, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Video size={22} color={theme.palette.primary.main} />
+                                    1. Upload Video (MP4)
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', mb: 3 }}>
+                                    The core content for your Bridge (MP4 format, max 500MB).
+                                </Typography>
+
+                                {!videoFile ? (
+                                    <Box
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        sx={{
+                                            flexGrow: 1,
+                                            minHeight: '400px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'center',
+                                            position: 'relative',
+                                            transition: 'background-color 0.2s ease',
+                                            bgcolor: isDragging ? theme.palette.action.hover : theme.palette.background.default,
+                                            borderRadius: theme.shape.borderRadius,
+                                            border: `2px dashed ${isDragging ? theme.palette.primary.main : theme.palette.divider}`,
+                                            p: 3,
+                                        }}
+                                    >
+                                        <Box component="label" htmlFor="video-upload-input" sx={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5,
+                                            cursor: 'pointer',
+                                            textAlign: 'center',
+                                            transition: 'all 0.2s ease',
+                                            color: theme.palette.text.secondary,
+                                            '&:hover': {
+                                                color: theme.palette.primary.light,
+                                            }
+                                        }}>
+                                            <Box sx={{
+                                                p: 1.5,
+                                                borderRadius: '50%',
+                                                bgcolor: theme.palette.action.selected,
+                                                border: `1px solid ${theme.palette.divider}`,
+                                                display: 'inline-flex',
+                                                mb: 1,
+                                            }}>
+                                                <Upload size={36} />
+                                            </Box>
+                                            <Typography variant="h5" sx={{ color: theme.palette.text.primary, fontWeight: 500, mb: 0.5 }}>
+                                                {isDragging ? 'Drop video here' : 'Drag & drop video or click'}
+                                            </Typography>
+                                            <Typography variant="caption">
+                                                MP4 format, max 500MB
+                                            </Typography>
+                                            <TextField
+                                                type="file"
+                                                onChange={handleVideoFileUpload}
+                                                accept="video/mp4"
+                                                sx={{ display: 'none' }}
+                                                id="video-upload-input"
+                                            />
+                                        </Box>
+                                    </Box>
+                                ) : (
+                                    <Paper elevation={0} sx={{
+                                        display: 'flex', alignItems: 'center', gap: 2, p: 1.5,
+                                        borderRadius: theme.shape.borderRadius,
+                                        bgcolor: theme.palette.primary.main + '1A',
+                                        border: `1px solid ${theme.palette.primary.main + '30'}`,
+                                        mt: 'auto'
+                                    }}>
+                                        <Box sx={{ p: 1, borderRadius: '4px', bgcolor: theme.palette.primary.main + '25' }}>
+                                            <Video size={20} color={theme.palette.primary.dark} />
+                                        </Box>
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {videoFile.name}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                                            </Typography>
+                                        </Box>
+                                        <Button variant="text" onClick={() => setVideoFile(null)} sx={{ color: theme.palette.error.main, minWidth: 'auto', p: 0.5, '&:hover': { bgcolor: theme.palette.error.main + '1A' } }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
+                                            </svg>
+                                        </Button>
+                                    </Paper>
+                                )}
+                            </Paper>
+                        </Grid>
+
+                        <Grid item xs={12} md={5}>
                             {error && (
                                 <Alert severity="error" sx={{ mb: 3 }}>
                                     {error}
@@ -468,183 +575,147 @@ function CreateBrdgePage() {
                             {loading && createdBrdgeId ? (
                                 <ProcessingDisplay />
                             ) : (
-                                <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                    <Box>
-                                        <Typography variant="subtitle1" component="label" htmlFor="bridge-name" sx={{ color: theme.palette.text.primary, fontWeight: 500, mb: 1, display: 'block' }}>
-                                            Bridge Name
-                                        </Typography>
-                                        <TextField
-                                            id="bridge-name"
-                                            type="text"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            placeholder="Enter a name for your Bridge..."
-                                            required
-                                            fullWidth
-                                            variant="outlined"
-                                            sx={{
-                                                '& .MuiOutlinedInput-root': {
-                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: theme.palette.primary.light,
-                                                    },
-                                                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                                        borderColor: theme.palette.primary.main,
-                                                    },
-                                                },
-                                            }}
-                                        />
-                                    </Box>
+                                <Paper elevation={3} sx={{ p: { xs: 3, sm: 4 }, borderRadius: theme.shape.borderRadius * 1.5, bgcolor: theme.palette.background.paper }}>
+                                    <Typography variant="h6" sx={{ color: theme.palette.text.primary, fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Settings size={22} color={theme.palette.primary.main} />
+                                        2. Configure Bridge
+                                    </Typography>
 
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                        <Typography variant="subtitle1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                            1. Upload Video (MP4)
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: -1 }}>
-                                            The core content for your Bridge (MP4 format, max 500MB).
-                                        </Typography>
+                                    <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                        <Box sx={{ flex: 1 }}>
+                                            <Typography variant="subtitle2" component="label" htmlFor="bridge-name" sx={{ color: theme.palette.text.primary, fontWeight: 500, mb: 1, display: 'block' }}>
+                                                Bridge Name
+                                            </Typography>
+                                            <TextField
+                                                size="small"
+                                                id="bridge-name"
+                                                type="text"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                placeholder="Enter a name for your Bridge..."
+                                                required
+                                                fullWidth
+                                            />
+                                        </Box>
 
-                                        {!videoFile ? (
-                                            <Box
-                                                onDragOver={handleDragOver}
-                                                onDragLeave={handleDragLeave}
-                                                onDrop={handleDrop}
+                                        <Box sx={{ flex: 1 }}>
+                                            <FormControl fullWidth variant="outlined" size="small">
+                                                <InputLabel id="bridge-type-label">Bridge Type</InputLabel>
+                                                <Select
+                                                    labelId="bridge-type-label"
+                                                    id="bridge-type-select"
+                                                    value={bridgeType}
+                                                    onChange={(e) => setBridgeType(e.target.value)}
+                                                    label="Bridge Type"
+                                                >
+                                                    {bridgeTypes.map((type) => (
+                                                        <MenuItem key={type.value} value={type.value}>
+                                                            {type.label}
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', display: 'block', mt: 0.5 }}>
+                                                Select the primary goal for this Bridge.
+                                            </Typography>
+                                        </Box>
+
+                                        <Box>
+                                            <Typography variant="subtitle2" component="label" htmlFor="additional-instructions" sx={{ color: theme.palette.text.primary, fontWeight: 500, mb: 1, display: 'block' }}>
+                                                Additional Instructions (Optional)
+                                            </Typography>
+                                            <TextField
+                                                size="small"
+                                                id="additional-instructions"
+                                                type="text"
+                                                value={additionalInstructions}
+                                                onChange={(e) => setAdditionalInstructions(e.target.value)}
+                                                placeholder={bridgeTypes.find(type => type.value === bridgeType)?.placeholder || 'Provide specific guidance for the AI...'}
+                                                fullWidth
+                                                multiline
+                                                rows={2}
                                                 sx={{
-                                                    position: 'relative',
-                                                    transition: 'background-color 0.2s ease',
-                                                    bgcolor: isDragging ? theme.palette.action.hover : 'transparent',
+                                                    '& .MuiOutlinedInput-root': {
+                                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                            borderColor: theme.palette.primary.light,
+                                                        },
+                                                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                            borderColor: theme.palette.primary.main,
+                                                        },
+                                                    },
+                                                }}
+                                            />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', display: 'block', mt: 0.5 }}>
+                                                Guide the AI on tone, specific points to cover, or key outcomes.
+                                            </Typography>
+                                        </Box>
+
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                            <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                                (Optional) Upload Presentation (PDF)
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: -1 }}>
+                                                Enhances Bridge knowledge (PDF format, max 20MB).
+                                            </Typography>
+                                            <Button
+                                                component="label"
+                                                htmlFor="pdf-upload-input"
+                                                variant={file ? "contained" : "outlined"}
+                                                color="secondary"
+                                                startIcon={<FileText size={16} />}
+                                                size="medium"
+                                                sx={{
+                                                    justifyContent: 'center',
+                                                    py: 1,
+                                                    textTransform: 'none',
+                                                    borderColor: file ? 'transparent' : theme.palette.secondary.main,
+                                                    bgcolor: file ? theme.palette.secondary.main + '20' : 'transparent',
+                                                    color: file ? theme.palette.secondary.dark : theme.palette.secondary.main,
+                                                    fontWeight: 400,
+                                                    '&:hover': {
+                                                        bgcolor: file ? theme.palette.secondary.main + '35' : theme.palette.secondary.main + '10',
+                                                        borderColor: theme.palette.secondary.light
+                                                    }
                                                 }}
                                             >
-                                                <Box component="label" htmlFor="video-upload-input" sx={{
-                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1.5,
-                                                    minHeight: '200px',
-                                                    border: `2px dashed ${isDragging ? theme.palette.primary.main : theme.palette.divider}`,
-                                                    borderRadius: theme.shape.borderRadius,
-                                                    p: 3,
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s ease',
-                                                    '&:hover': {
-                                                        borderColor: theme.palette.primary.light,
-                                                        bgcolor: theme.palette.action.hover
-                                                    }
-                                                }}>
-                                                    <Box sx={{
-                                                        p: 1.5,
-                                                        borderRadius: '50%',
-                                                        bgcolor: theme.palette.action.selected,
-                                                        border: `1px solid ${theme.palette.divider}`,
-                                                        display: 'inline-flex'
-                                                    }}>
-                                                        <Upload size={24} color={theme.palette.text.secondary} />
-                                                    </Box>
-                                                    <Box sx={{ textAlign: 'center' }}>
-                                                        <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                                            {isDragging ? 'Drop video here' : 'Drag & drop video or click to upload'}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            MP4 format, max 500MB
-                                                        </Typography>
-                                                    </Box>
-                                                    <TextField
-                                                        type="file"
-                                                        onChange={handleVideoFileUpload}
-                                                        accept="video/mp4"
-                                                        sx={{ display: 'none' }}
-                                                        id="video-upload-input"
-                                                    />
-                                                </Box>
-                                            </Box>
-                                        ) : (
-                                            <Paper elevation={0} sx={{
-                                                display: 'flex', alignItems: 'center', gap: 2, p: 1.5,
-                                                borderRadius: theme.shape.borderRadius,
-                                                bgcolor: theme.palette.primary.main + '1A',
-                                                border: `1px solid ${theme.palette.primary.main + '30'}`
-                                            }}>
-                                                <Box sx={{ p: 1, borderRadius: '4px', bgcolor: theme.palette.primary.main + '25' }}>
-                                                    <Video size={20} color={theme.palette.primary.dark} />
-                                                </Box>
-                                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                    <Typography variant="body2" sx={{ color: theme.palette.text.primary, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {videoFile.name}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
-                                                    </Typography>
-                                                </Box>
-                                                <Button variant="text" onClick={() => setVideoFile(null)} sx={{ color: theme.palette.error.main, minWidth: 'auto', p: 0.5, '&:hover': { bgcolor: theme.palette.error.main + '1A' } }}>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>
-                                                    </svg>
-                                                </Button>
-                                            </Paper>
-                                        )}
-                                    </Box>
+                                                {file ? `Selected: ${file.name}` : `Upload PDF Document`}
+                                                <TextField
+                                                    type="file"
+                                                    accept=".pdf"
+                                                    onChange={(e) => setFile(e.target.files[0])}
+                                                    sx={{ display: 'none' }}
+                                                    id="pdf-upload-input"
+                                                />
+                                            </Button>
+                                        </Box>
 
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                                        <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                            2. (Optional) Upload Presentation (PDF)
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', mt: -1 }}>
-                                            Enhances Bridge knowledge (PDF format, max 20MB).
-                                        </Typography>
-                                        <Button
-                                            component="label"
-                                            htmlFor="pdf-upload-input"
-                                            variant={file ? "contained" : "outlined"}
-                                            color="secondary"
-                                            startIcon={<FileText size={16} />}
-                                            size="medium"
-                                            sx={{
-                                                justifyContent: 'center',
-                                                py: 1,
-                                                textTransform: 'none',
-                                                borderColor: file ? 'transparent' : theme.palette.secondary.main,
-                                                bgcolor: file ? theme.palette.secondary.main + '20' : 'transparent',
-                                                color: file ? theme.palette.secondary.dark : theme.palette.secondary.main,
-                                                '&:hover': {
-                                                    bgcolor: file ? theme.palette.secondary.main + '35' : theme.palette.secondary.main + '10',
-                                                    borderColor: theme.palette.secondary.light
-                                                }
-                                            }}
-                                        >
-                                            {file ? `Selected: ${file.name}` : `Upload PDF Document`}
-                                            <TextField
-                                                type="file"
-                                                accept=".pdf"
-                                                onChange={(e) => setFile(e.target.files[0])}
-                                                sx={{ display: 'none' }}
-                                                id="pdf-upload-input"
-                                            />
-                                        </Button>
+                                        <Box sx={{ mt: 2 }}>
+                                            <Button
+                                                type="submit"
+                                                variant="contained"
+                                                color="primary"
+                                                disabled={loading || !videoFile || !name || !bridgeType}
+                                                fullWidth
+                                                size="large"
+                                                endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight size={18} />}
+                                                sx={{
+                                                    py: 1.5,
+                                                    fontSize: '1rem',
+                                                    fontWeight: 600,
+                                                    borderRadius: theme.shape.borderRadius * 1.5
+                                                }}
+                                            >
+                                                {loading ? (createdBrdgeId ? 'Processing...' : 'Uploading...') : 'Create Bridge'}
+                                            </Button>
+                                        </Box>
                                     </Box>
-
-                                    <ScholarlyDivider />
-
-                                    <Box sx={{ mt: 1 }}>
-                                        <Button
-                                            type="submit"
-                                            variant="contained"
-                                            color="primary"
-                                            disabled={loading || !videoFile || !name}
-                                            fullWidth
-                                            size="large"
-                                            endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <ArrowRight size={18} />}
-                                            sx={{
-                                                py: 1.5,
-                                                fontSize: '1rem',
-                                                fontWeight: 600,
-                                                borderRadius: theme.shape.borderRadius * 1.5
-                                            }}
-                                        >
-                                            {loading ? (createdBrdgeId ? 'Processing...' : 'Uploading...') : 'Create Bridge'}
-                                        </Button>
-                                    </Box>
-                                </Box>
+                                </Paper>
                             )}
-                        </Box>
-                    </Paper>
+                        </Grid>
+
+                    </Grid>
                 </motion.div>
-            </Box>
+            </Container>
         </Box>
     );
 }
