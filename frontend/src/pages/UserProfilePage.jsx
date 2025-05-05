@@ -753,7 +753,7 @@ function UsageStats({ currentPlan }) {
                             <Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
                                     <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
-                                        Flows
+                                        Bridges
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                                         {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}

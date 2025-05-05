@@ -432,7 +432,6 @@ def process_brdge_content(
     brdge_id,
     video_path,
     pdf_path=None,
-    template_type="general",
     bridge_type="course",
     additional_instructions="",
 ):
