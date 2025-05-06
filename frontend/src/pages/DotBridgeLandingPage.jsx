@@ -41,7 +41,7 @@ const HeroSection = () => (
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
                     }}
                 >
-                    Create AI-Powered Videos That Sell, Teach & Onboard Automatically
+                    Turn Any Video Into an AI That Sells, Teaches, and Closes
                 </DotBridgeTypography>
             </motion.div>
             <motion.div
@@ -60,7 +60,7 @@ const HeroSection = () => (
                         lineHeight: { xs: 1.5, md: 1.6 }
                     }}
                 >
-                    DotBridge replaces static video with voice-powered flows that sell, teach, and support — while capturing every question, action, and objection in real time
+                    Static videos can’t convert. DotBridge wraps them in a smart interface that talks back, qualifies leads, and drives action — all while learning from every click.
                 </DotBridgeTypography>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
@@ -1010,8 +1010,8 @@ function DotBridgeLandingPage() {
             <HeroSection />
             <WhyNowSection />
             <WhatIsBridgeSection />
-            <ComparisonSection />
             <DemoSection />
+            <ComparisonSection />
             <UseCasesSection />
             <TrustedBySection />
             <HowItWorksSection />

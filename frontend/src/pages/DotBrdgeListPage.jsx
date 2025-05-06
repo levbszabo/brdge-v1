@@ -33,9 +33,17 @@ import {
     Collapse,
     FormControlLabel,
     LinearProgress,
+    Paper,
+    useTheme
 } from '@mui/material';
 import dotbridgeTheme from '../dotbridgeTheme';
-import { Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft, ExternalLink, LogOut, Zap } from 'lucide-react';
+import {
+    Search, Plus, Lock, Globe, User, MessageSquare, LineChart, ChevronDown, Copy, Check, Trash2, BookOpen, GraduationCap, ChevronUp, Share, Edit, ChevronRight, ChevronLeft, ExternalLink, LogOut, Zap,
+    HelpCircle, // Icon for Quiz
+    MessageCircle, // Icon for Discussion/Guided Convo
+    Clock, // Icon for timestamp
+    AlertCircle // Icon for interruption
+} from 'lucide-react';
 import { api } from '../api';
 import { getAuthToken } from '../utils/auth';
 import { useSnackbar } from '../utils/snackbar';
@@ -246,71 +254,111 @@ const createSidebarStyles = (theme) => ({
     }
 });
 
+// --- Enhanced InfoSidebar Component ---
 const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate, theme }) => {
     const styles = createSidebarStyles(theme);
+    const totalCourses = courses?.length || 0;
+    const totalBridges = userStats?.brdges_created || 0;
 
     return (
         <>
+            {/* Toggle Button */}
             <Box
                 onClick={onToggle}
                 sx={{
                     ...styles.toggleButton,
-                    right: isOpen ? 295 : 15,
+                    right: isOpen ? 295 : 15, // Adjust position based on sidebar width + padding
+                    transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', // Rotate arrow
                 }}
+                aria-label={isOpen ? "Close Info Panel" : "Open Info Panel"}
             >
-                {isOpen ? <ChevronRight size={20} color={theme.palette.primary.main} /> : <ChevronLeft size={20} color={theme.palette.primary.main} />}
+                {/* Use ChevronRight consistently, rely on rotation */}
+                <ChevronRight size={20} color={theme.palette.primary.main} />
             </Box>
 
-            <Box sx={styles.sidebar}>
+            {/* Sidebar Panel */}
+            <Box sx={{ ...styles.sidebar, transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}>
                 <Box sx={styles.content}>
-                    <Box sx={{ mb: 4 }}>
-                        <Typography variant="h6" sx={{
-                            color: theme.palette.primary.main,
-                            fontWeight: 600, mb: 2
-                        }}>
-                            DotBridge Hub
+                    {/* Welcome Section */}
+                    <Box sx={{ mb: 4, textAlign: 'center' }}>
+                        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 600, mb: 1 }}>
+                            🚀 Welcome to DotBridge!
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                            Manage your interactive Bridges, organize them into Flows, and track their performance.
+                            Your hub for creating interactive AI experiences from your video content. Let's get started!
                         </Typography>
                     </Box>
 
-                    <Box sx={{ mb: 4 }}>
-                        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
-                            Quick Actions
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'neutral.light', border: `1px solid ${theme.palette.divider}` }}>
-                                <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500 }}>
-                                    <Zap size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Create a Bridge
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Turn a video into an interactive AI agent.
-                                </Typography>
-                            </Box>
-                            <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'neutral.light', border: `1px solid ${theme.palette.divider}` }}>
-                                <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500 }}>
-                                    <BookOpen size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Organize with Flows
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Group related Bridges for structured delivery.
-                                </Typography>
-                            </Box>
-                            <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'neutral.light', border: `1px solid ${theme.palette.divider}` }}>
-                                <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500 }}>
-                                    <Globe size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Browse Marketplace
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                    Discover public Flows and Bridge templates.
-                                </Typography>
-                            </Box>
+                    <Divider sx={{ my: 2 }} />
+
+                    {/* Key Sections Explained */}
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
+                        Dashboard Overview
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                        {/* My Flows */}
+                        <Box>
+                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <BookOpen size={16} color={theme.palette.secondary.main} /> My Flows ({totalCourses})
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
+                                Organize your interactive 'Bridges' into logical sequences or learning paths. Think of them as chapters or topics.
+                            </Typography>
+                        </Box>
+                        {/* My Bridges */}
+                        <Box>
+                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Zap size={16} color={theme.palette.secondary.main} /> My Bridges ({totalBridges} / {userStats?.brdges_limit ?? 'N/A'})
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
+                                These are your individual AI agents created from videos. Drag them into 'Flows' above!
+                            </Typography>
+                        </Box>
+                        {/* Marketplace */}
+                        <Box>
+                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Globe size={16} color={theme.palette.secondary.main} /> Marketplace
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
+                                Discover pre-built Flows and Bridge templates shared by the community (coming soon!).
+                            </Typography>
+                        </Box>
+                        {/* Stats */}
+                        <Box>
+                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LineChart size={16} color={theme.palette.secondary.main} /> Usage Stats
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
+                                Keep track of your created Bridges and AI interaction minutes used against your plan limits.
+                            </Typography>
                         </Box>
                     </Box>
-                </Box>
-            </Box>
+
+                    <Divider sx={{ my: 3 }} />
+
+                    {/* Quick Actions */}
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
+                        Quick Actions
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Button
+                            variant="outlined"
+                            startIcon={<Plus size={16} />}
+                            onClick={() => navigate('/create')}
+                            size="small"
+                            sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                        >
+                            Create New Bridge
+                        </Button>
+                        {/* Add "Create Flow" button later if needed */}
+                    </Box>
+
+                </Box> {/* End Content */}
+            </Box> {/* End Sidebar Panel */}
         </>
     );
 };
+// --- End Enhanced InfoSidebar Component ---
 
 const DraggableBridgeItem = ({ bridge, index, courseId, handleEdit, handleView, handleRemoveBridgeFromCourse, moveBridge, theme }) => {
     const ref = React.useRef(null);
@@ -442,7 +490,7 @@ const DraggableBridgeItem = ({ bridge, index, courseId, handleEdit, handleView, 
 };
 
 function DotBrdgeListPage() {
-    const theme = dotbridgeTheme;
+    const theme = useTheme();
     const styles = createStyles(theme);
 
     const [bridges, setBridges] = useState([]);
@@ -487,6 +535,9 @@ function DotBrdgeListPage() {
     const [enrolledCoursesExpanded, setEnrolledCoursesExpanded] = useState(true);
     const [yourCoursesExpanded, setYourCoursesExpanded] = useState(true);
     const [yourBridgesExpanded, setYourBridgesExpanded] = useState(true);
+    const [expandedLogs, setExpandedLogs] = useState({});
+    const [conversationLogs, setConversationLogs] = useState({});
+    const [loadingLogs, setLoadingLogs] = useState({});
 
     const navigate = useNavigate();
     const { showSnackbar } = useSnackbar();
@@ -1185,6 +1236,347 @@ function DotBrdgeListPage() {
         return url;
     };
 
+    const fetchBridgeConversationLogs = async (bridgeId) => {
+        if (conversationLogs[bridgeId]) {
+            setLoadingLogs(prev => ({ ...prev, [bridgeId]: false }));
+            return;
+        }
+        setLoadingLogs(prev => ({ ...prev, [bridgeId]: true }));
+        try {
+            const response = await api.get(`/brdges/${bridgeId}/conversation-logs`);
+            const logs = response.data.conversations || [];
+            const groupedLogs = {};
+
+            logs.forEach(log => {
+                let displayIdentifier = 'Unknown User';
+                let userIdKey = 'unknown_user';
+
+                if (log.viewer_user_id) {
+                    displayIdentifier = `User #${log.viewer_user_id}`;
+                    userIdKey = `user_${log.viewer_user_id}`;
+                } else if (log.anonymous_id) {
+                    displayIdentifier = `Anon ${log.anonymous_id.substring(0, 6)}...`;
+                    userIdKey = `anon_${log.anonymous_id}`;
+                }
+
+                if (!groupedLogs[userIdKey]) {
+                    groupedLogs[userIdKey] = {
+                        userId: log.viewer_user_id || null,
+                        anonymousId: log.anonymous_id || null,
+                        displayId: displayIdentifier,
+                        messages: [],
+                        totalDurationSeconds: 0,
+                        totalMessages: 0,
+                        userMessageCount: 0,
+                        agentMessageCount: 0,
+                        firstActivity: log.timestamp,
+                        lastActivity: log.timestamp
+                    };
+                }
+                const session = groupedLogs[userIdKey];
+                session.messages.push(log);
+                if (log.role === 'agent' && log.duration_seconds) {
+                    session.totalDurationSeconds += log.duration_seconds;
+                }
+                session.totalMessages++;
+                if (log.role === 'user') session.userMessageCount++; else session.agentMessageCount++;
+                const currentTimestamp = new Date(log.timestamp);
+                if (currentTimestamp < new Date(session.firstActivity)) session.firstActivity = log.timestamp;
+                if (currentTimestamp > new Date(session.lastActivity)) session.lastActivity = log.timestamp;
+            });
+
+            const userSessions = Object.values(groupedLogs).sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
+            setConversationLogs(prev => ({ ...prev, [bridgeId]: userSessions }));
+
+        } catch (error) {
+            console.error(`Error fetching logs for bridge ${bridgeId}:`, error);
+            showSnackbar('Failed to fetch conversation data', 'error');
+        } finally {
+            setTimeout(() => setLoadingLogs(prev => ({ ...prev, [bridgeId]: false })), 100);
+        }
+    };
+
+    const toggleLogExpansion = (bridgeId) => {
+        const isExpanded = expandedLogs[bridgeId];
+        setExpandedLogs(prev => ({
+            ...prev,
+            [bridgeId]: !isExpanded
+        }));
+
+        // Fetch logs only if expanding and not already loading or loaded
+        if (!isExpanded && !loadingLogs[bridgeId] && !conversationLogs[bridgeId]) {
+            fetchBridgeConversationLogs(bridgeId);
+        }
+    };
+
+    // --- Updated ChatHistoryDisplay Component ---
+    const ChatHistoryDisplay = ({ messages = [], theme, filterText = "" }) => {
+        const filteredMessages = messages.filter(msg =>
+            msg.message.toLowerCase().includes(filterText.toLowerCase())
+        );
+
+        if (!filteredMessages || filteredMessages.length === 0) {
+            return <Typography sx={{ p: 2, fontStyle: 'italic', color: 'text.disabled', textAlign: 'center' }}>
+                {filterText ? 'No messages match your filter.' : 'No messages in this session.'}
+            </Typography>;
+        }
+
+        // Helper to get engagement icon
+        const getEngagementIcon = (log) => {
+            // Assumes log.engagement_type might exist
+            switch (log.engagement_type) {
+                case 'quiz': return <HelpCircle size={14} style={{ marginLeft: '4px', color: theme.palette.info.main }} />;
+                case 'discussion':
+                case 'guided_conversation': return <MessageCircle size={14} style={{ marginLeft: '4px', color: theme.palette.info.main }} />;
+                default: return null;
+            }
+        };
+
+
+        return (
+            <Box sx={{ maxHeight: '350px', overflowY: 'auto', p: 2, bgcolor: theme.palette.background.default, borderRadius: 1 }}>
+                {filteredMessages.map((msg, index) => {
+                    const isUser = msg.role === 'user';
+                    const engagementIcon = !isUser ? getEngagementIcon(msg) : null;
+                    const tooltipTitle = msg.engagement_id ? `Engagement ID: ${msg.engagement_id}` : (msg.context_used ? `Context: ${msg.context_used}` : '');
+
+                    return (
+                        <Box
+                            key={index}
+                            sx={{
+                                display: 'flex',
+                                justifyContent: isUser ? 'flex-end' : 'flex-start',
+                                mb: 1.5,
+                            }}
+                        >
+                            <Tooltip title={tooltipTitle} placement={isUser ? "left" : "right"} arrow disableHoverListener={!tooltipTitle}>
+                                <Box
+                                    sx={{
+                                        maxWidth: '80%',
+                                        p: 1.5,
+                                        borderRadius: 2,
+                                        // **** Use a lighter blue for user, keep agent light grey ****
+                                        bgcolor: isUser ? theme.palette.primary.light + '30' : theme.palette.neutral.light, // Adding opacity too
+                                        // **** Revert user text color to contrast with light blue ****
+                                        color: isUser ? theme.palette.primary.dark : theme.palette.text.primary, // Use dark text on light blue
+                                        boxShadow: theme.shadows[1],
+                                        position: 'relative',
+                                        border: `1px solid ${isUser ? theme.palette.primary.light : theme.palette.divider}`, // Add light border to user bubble too
+                                    }}
+                                >
+                                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.5 }}>
+                                        {msg.message}
+                                    </Typography>
+                                    <Box sx={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'flex-end', mt: 1, opacity: 0.8,
+                                        // **** Adjust user timestamp color for light blue bg ****
+                                        color: isUser ? theme.palette.primary.dark : 'inherit' // Dark text for timestamp too
+                                    }}>
+                                        {/* Video Timestamp (conditional) */}
+                                        {msg.video_timestamp && (
+                                            <Typography variant="caption" sx={{ mr: 0.5, fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center' }}>
+                                                <Clock size={12} style={{ marginRight: '3px' }} /> {msg.video_timestamp}
+                                            </Typography>
+                                        )}
+                                        {/* Wall Clock Time */}
+                                        <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                        </Typography>
+                                        {/* Agent Duration */}
+                                        {msg.role === 'agent' && msg.duration_seconds > 0 && (
+                                            <Typography variant="caption" sx={{ ml: 0.5, fontSize: '0.7rem' }}>
+                                                ({msg.duration_seconds.toFixed(1)}s)
+                                            </Typography>
+                                        )}
+                                        {/* Interruption Indicator */}
+                                        {msg.was_interrupted && (
+                                            <Tooltip title="Interrupted">
+                                                {/* Adjust interrupt icon color for user messages */}
+                                                <AlertCircle size={14} style={{ marginLeft: '4px', color: isUser ? theme.palette.warning.dark : theme.palette.warning.main }} />
+                                            </Tooltip>
+                                        )}
+                                        {/* Engagement Indicator */}
+                                        {engagementIcon}
+                                    </Box>
+                                </Box>
+                            </Tooltip>
+                        </Box>
+                    );
+                })}
+            </Box>
+        );
+    };
+    // --- End ChatHistoryDisplay Component ---
+
+    // --- Modify BridgeAnalytics Component ---
+    const BridgeAnalytics = ({ bridgeId, theme }) => {
+        const isLoading = loadingLogs[bridgeId];
+        const sessions = conversationLogs[bridgeId] || [];
+        const [expandedSessionId, setExpandedSessionId] = useState(null);
+        const [filterText, setFilterText] = useState(""); // State for filtering
+
+        const handleSessionToggle = (sessionId) => {
+            setExpandedSessionId(prevId => (prevId === sessionId ? null : sessionId));
+        };
+
+        if (isLoading) {
+            return (
+                <Box sx={{ p: 2, textAlign: 'center' }}>
+                    <CircularProgress size={24} sx={{ color: theme.palette.primary.main, my: 1 }} />
+                    <Typography variant="caption" display="block" color="text.secondary">Loading conversation data...</Typography>
+                </Box>
+            );
+        }
+        if (!isLoading && sessions.length === 0) {
+            return (
+                <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary', bgcolor: 'neutral.light', borderRadius: 1, m: 1 }}>
+                    <MessageSquare size={20} style={{ marginBottom: '8px', color: theme.palette.text.disabled }} />
+                    <Typography variant="body2">No conversation data available for this Bridge yet.</Typography>
+                </Box>
+            );
+        }
+
+        const totalSessions = sessions.length;
+        const totalMessages = sessions.reduce((sum, s) => sum + s.totalMessages, 0);
+        const totalAgentMessages = sessions.reduce((sum, s) => sum + s.agentMessageCount, 0);
+        const totalDurationMinutes = sessions.reduce((sum, s) => sum + s.totalDurationSeconds, 0) / 60;
+
+        // Calculate Session Duration (first to last message)
+        const calculateSessionDuration = (sessionMessages) => {
+            if (!sessionMessages || sessionMessages.length < 2) return 'N/A';
+            const firstMsgTime = new Date(sessionMessages[0].timestamp);
+            const lastMsgTime = new Date(sessionMessages[sessionMessages.length - 1].timestamp);
+            const durationMs = lastMsgTime - firstMsgTime;
+            const durationMinutes = durationMs / (1000 * 60);
+            if (durationMinutes < 1) return '< 1 min';
+            return `${Math.round(durationMinutes)} min`;
+        };
+
+        return (
+            <Box sx={{ p: 1.5, borderTop: `1px solid ${theme.palette.divider}`, mt: 1, bgcolor: theme.palette.background.default }}>
+                <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 600, color: 'text.primary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LineChart size={18} /> Session Analytics
+                </Typography>
+
+                {/* Aggregate Stats */}
+                <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                    {/* ... (Stat cards remain the same) ... */}
+                    <Grid item xs={6} sm={3}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'neutral.lightest' }}>
+                            <Typography variant="caption" color="text.secondary" display="block">Total Sessions</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{totalSessions}</Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'neutral.lightest' }}>
+                            <Typography variant="caption" color="text.secondary" display="block">Total Messages</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{totalMessages}</Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'neutral.lightest' }}>
+                            <Typography variant="caption" color="text.secondary" display="block">Agent Messages</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{totalAgentMessages}</Typography>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={6} sm={3}>
+                        <Paper variant="outlined" sx={{ p: 1.5, textAlign: 'center', bgcolor: 'neutral.lightest' }}>
+                            <Typography variant="caption" color="text.secondary" display="block">Talk Time</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{totalDurationMinutes.toFixed(1)} <small>min</small></Typography>
+                        </Paper>
+                    </Grid>
+                </Grid>
+
+                {/* Session Table */}
+                <TableContainer component={Paper} variant="outlined" sx={{ boxShadow: 'none', border: `1px solid ${theme.palette.divider}` }}>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: theme.palette.neutral.light }}>
+                                <TableCell sx={{ fontWeight: 500 }}>User</TableCell>
+                                <TableCell align="center" sx={{ fontWeight: 500 }}>Messages (Agent/User)</TableCell>
+                                <TableCell align="center" sx={{ fontWeight: 500 }}>Talk Time</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 500 }}>Last Active</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {sessions.map((session, index) => {
+                                const sessionId = session.userId || session.anonymousId || index;
+                                const isSessionExpanded = expandedSessionId === sessionId;
+                                return (
+                                    <React.Fragment key={sessionId}>
+                                        {/* Clickable User Session Row */}
+                                        <TableRow
+                                            hover
+                                            onClick={() => handleSessionToggle(sessionId)}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                '&:last-child td, &:last-child th': { border: isSessionExpanded ? 0 : undefined },
+                                                bgcolor: isSessionExpanded ? theme.palette.action.selected : 'inherit', // Highlight expanded row header
+                                            }}
+                                        >
+                                            <TableCell sx={{ py: 0.5 }}>
+                                                <Chip
+                                                    icon={<User size={14} style={{ marginLeft: '4px' }} />}
+                                                    label={session.displayId}
+                                                    size="small"
+                                                    variant={isSessionExpanded ? "filled" : "outlined"} // Change chip style on expand
+                                                    color={isSessionExpanded ? "primary" : "default"}
+                                                    sx={{ bgcolor: isSessionExpanded ? undefined : 'background.paper' }}
+                                                />
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ py: 0.5 }}>
+                                                <Tooltip title={`Agent: ${session.agentMessageCount}, User: ${session.userMessageCount}`}>
+                                                    <span>{session.totalMessages}</span>
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ py: 0.5 }}>
+                                                {(session.totalDurationSeconds / 60).toFixed(1)} min
+                                            </TableCell>
+                                            <TableCell align="right" sx={{ py: 0.5 }}>
+                                                {new Date(session.lastActivity).toLocaleDateString()} {new Date(session.lastActivity).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                            </TableCell>
+                                        </TableRow>
+                                        {/* Collapsible Row for Chat History */}
+                                        <TableRow>
+                                            <TableCell style={{ padding: 0, borderBottom: 'none' }} colSpan={4}>
+                                                <Collapse in={isSessionExpanded} timeout="auto" unmountOnExit sx={{ bgcolor: 'background.paper' }}>
+                                                    {/* Filter Input */}
+                                                    <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            variant="outlined"
+                                                            placeholder="Filter messages..."
+                                                            value={filterText}
+                                                            onChange={(e) => setFilterText(e.target.value)}
+                                                            InputProps={{
+                                                                startAdornment: (
+                                                                    <InputAdornment position="start">
+                                                                        <Search size={16} color={theme.palette.text.secondary} />
+                                                                    </InputAdornment>
+                                                                ),
+                                                            }}
+                                                        />
+                                                    </Box>
+                                                    <ChatHistoryDisplay
+                                                        messages={session.messages}
+                                                        theme={theme}
+                                                        filterText={filterText} // Pass filter text
+                                                    />
+                                                </Collapse>
+                                            </TableCell>
+                                        </TableRow>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+            </Box>
+        );
+    };
+    // --- End BridgeAnalytics Component Modification ---
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
@@ -1568,6 +1960,12 @@ function DotBrdgeListPage() {
                                                 selectedItemsCount={selectedBridges.length}
                                                 onBatchDelete={handleBatchDelete}
                                                 onClearSelection={clearSelection}
+                                                expandedLogs={expandedLogs}
+                                                loadingLogs={loadingLogs}
+                                                conversationLogs={conversationLogs}
+                                                toggleLogExpansion={toggleLogExpansion}
+                                                BridgeAnalyticsComponent={BridgeAnalytics}
+                                                theme={theme}
                                             />
                                             {selectedBridges.length > 0 && (
                                                 <Box sx={styles.bulkActionsBar}>

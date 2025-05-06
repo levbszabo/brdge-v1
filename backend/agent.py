@@ -418,6 +418,9 @@ class ChatAssistant(VoicePipelineAgent):
                     except ValueError:
                         logger.error(f"Invalid user_id format: {self.user_id}")
 
+            # Convert seconds to minutes before sending
+            duration_minutes = duration_seconds / 60.0
+
             response = requests.post(
                 f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
                 json={
@@ -428,7 +431,9 @@ class ChatAssistant(VoicePipelineAgent):
                     "message": message_content,
                     "timestamp": datetime.utcnow().isoformat(),
                     "was_interrupted": interrupted,
-                    "duration_seconds": round(duration_seconds, 2),
+                    "duration_seconds": round(
+                        duration_minutes, 2
+                    ),  # We're sending minutes now, but keeping the field name
                 },
             )
             response.raise_for_status()  # Raise exception for bad status codes
@@ -680,7 +685,6 @@ Generate a natural, conversational follow-up that achieves the goal of the match
         self.chat_ctx.append(role="user", text=text)
 
         # Add current timestamp context BEFORE the LLM call
-        # We still add this for general context, even during engagements
         self.chat_ctx.append(
             role="system", text=f"Current video timestamp: {self.current_timestamp}"
         )
@@ -693,11 +697,11 @@ Generate a natural, conversational follow-up that achieves the goal of the match
         if len(self.chat_ctx.messages) >= 3:
             # The engagement context would be the message before the user's input & the timestamp message
             if self.chat_ctx.messages[-3].role == "system" and (
-                "You are currently in QUIZ mode." in self.chat_ctx.messages[-3].text
+                "You are currently in QUIZ mode." in self.chat_ctx.messages[-3].content
                 or "You are currently in DISCUSSION mode."
-                in self.chat_ctx.messages[-3].text
+                in self.chat_ctx.messages[-3].content
                 or "You are currently in a GUIDED CONVERSATION engagement."
-                in self.chat_ctx.messages[-3].text
+                in self.chat_ctx.messages[-3].content
             ):
                 is_engagement_follow_up = True
                 logger.info("Processing user response to an engagement prompt.")
@@ -726,7 +730,7 @@ Generate a natural, conversational follow-up that achieves the goal of the match
             if (
                 self.chat_ctx.messages
                 and self.chat_ctx.messages[-1].role == "system"
-                and "Current video timestamp:" in self.chat_ctx.messages[-1].text
+                and "Current video timestamp:" in self.chat_ctx.messages[-1].content
             ):
                 self.chat_ctx.messages.pop()
                 logger.debug("Removed temporary timestamp system message.")
@@ -739,11 +743,11 @@ Generate a natural, conversational follow-up that achieves the goal of the match
                     and self.chat_ctx.messages[-1].role == "system"
                     and (
                         "You are currently in QUIZ mode."
-                        in self.chat_ctx.messages[-1].text
+                        in self.chat_ctx.messages[-1].content
                         or "You are currently in DISCUSSION mode."
-                        in self.chat_ctx.messages[-1].text
+                        in self.chat_ctx.messages[-1].content
                         or "You are currently in a GUIDED CONVERSATION engagement."
-                        in self.chat_ctx.messages[-1].text
+                        in self.chat_ctx.messages[-1].content
                     )
                 ):
                     self.chat_ctx.messages.pop()
