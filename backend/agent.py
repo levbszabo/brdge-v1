@@ -140,7 +140,7 @@ class ChatAssistant(VoicePipelineAgent):
         self.engagement_opportunities = []
         self.current_position = 0
         self.user_id = None
-        self.voice_id = "c99d36f3-5ffd-4253-803a-535c1bc9c306"  # Default voice ID
+        self.voice_id = "8c030da1-fcf4-49a5-b20f-9e116156ded4"  # Default voice ID
         self.current_speech = {
             "started_at": None,
             "message": None,
@@ -214,7 +214,7 @@ class ChatAssistant(VoicePipelineAgent):
             )
 
             # Set voice ID based on brdge settings
-            default_voice = "c99d36f3-5ffd-4253-803a-535c1bc9c306"  # Moved default here
+            default_voice = "8c030da1-fcf4-49a5-b20f-9e116156ded4"  # Moved default here
             self.voice_id = self.brdge.get(
                 "voice_id", default_voice
             )  # Use default if not found

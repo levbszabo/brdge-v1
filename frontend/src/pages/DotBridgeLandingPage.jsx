@@ -10,7 +10,7 @@ import DotBridgeIcon from '../components/DotBridgeIcon';
 
 import AgentConnector from '../components/AgentConnector';
 
-const DEMO_BRIDGE_ID = '398';
+const DEMO_BRIDGE_ID = '420';
 
 const Section = ({ children, sx, ...props }) => (
     <Box component="section" sx={{ py: { xs: 8, sm: 10, md: 16 }, px: { xs: 2, sm: 3, md: 4 }, ...sx }} {...props}>
@@ -306,10 +306,10 @@ const DemoSection = () => {
                     <Box sx={{ position: 'relative' }}>
                         <video
                             ref={videoRef}
-                            src="/brdge-demo.mp4"
+                            src="/dotbridge-hero-small.mp4"
                             controls={isVideoPlaying}
                             playsInline
-                            poster="/poster-landing.png"
+                            poster="/dotbridge-hero-cover.jpg"
                             style={{ width: '100%', height: 'auto', display: 'block' }}
                             preload="metadata"
                             onPlay={() => setIsVideoPlaying(true)}
@@ -345,7 +345,7 @@ const DemoSection = () => {
                     <Box sx={{ p: 2, borderTop: `1px solid ${theme.palette.divider}`, textAlign: 'center' }}>
                         <MuiTypography variant="body2">
                             <Link
-                                to={`https://brdge-ai.com/viewBridge/${DEMO_BRIDGE_ID}`}
+                                to={`https://dotbridge.io/viewBridge/${DEMO_BRIDGE_ID}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
