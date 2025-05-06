@@ -832,6 +832,11 @@ function UserProfilePage() {
     const [isSending, setIsSending] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
 
+    // New state for upgrade confirmation modal
+    const [upgradePreview, setUpgradePreview] = useState(null);
+    const [openUpgradeConfirmDialog, setOpenUpgradeConfirmDialog] = useState(false);
+    const [targetUpgradeTier, setTargetUpgradeTier] = useState(null);
+
     const fetchUserProfile = async () => {
         setLoading(true);
         setError(null);
@@ -886,47 +891,140 @@ function UserProfilePage() {
         checkPaymentStatus();
     }, []);
 
-    const handleCheckout = async (tier) => {
+    const executeSubscriptionChange = async (tier) => {
         setIsProcessing(true);
         setPaymentError(null);
         setError(null);
+        // targetUpgradeTier should already be set if this function is called via modal
+        // const currentTierForCheckout = targetUpgradeTier || tier; 
+
         try {
-            localStorage.setItem('selected_tier', tier);
-            const response = await api.post('/create-checkout-session', { tier });
+            // localStorage.setItem('selected_tier', currentTierForCheckout); // Already set when preview was fetched
+            const response = await api.post('/create-checkout-session', { tier: tier });
 
             if (response.data.updated_directly) {
-                // Subscription was updated directly by the backend (e.g., proration)
                 setShowSuccess(true);
                 setSuccessMessage(response.data.message || 'Subscription updated successfully!');
-                fetchUserProfile(); // Refresh profile data
-                setIsProcessing(false);
-
+                fetchUserProfile();
                 if (response.data.requires_action && response.data.payment_intent_client_secret) {
-                    // This is a simplified handling. A full implementation would use Stripe.js elements
-                    // to call stripe.confirmCardPayment(response.data.payment_intent_client_secret).
                     console.warn('Subscription update requires further payment action (e.g., 3DS).');
                     alert('Your subscription update requires an additional confirmation step. Please follow any prompts from Stripe or your bank.');
-                    // Optionally, you could try to guide the user or use Stripe.js to handle this.
-                    setPaymentError('Your subscription change needs an extra confirmation step. Please follow any prompts from Stripe or your bank to complete it.');
+                    setPaymentError('Your subscription change needs an extra confirmation step. Please complete it to activate your new plan.');
                 }
-
             } else if (response.data.url) {
-                // Redirect to Stripe Checkout page for new subscriptions
                 window.location.href = response.data.url;
             } else {
-                // Should not happen if backend is correct, but handle defensively
-                throw new Error(response.data.error || "Couldn't process subscription change. No redirect URL or direct update confirmation received.");
+                throw new Error(response.data.error || "Couldn't process subscription change.");
             }
         } catch (error) {
-            console.error(`Error creating checkout/updating subscription for ${tier}:`, error);
-            setPaymentError(error.response?.data?.error || error.message || `Failed to start ${tier} checkout process or update subscription. Please try again.`);
+            console.error(`Error executing subscription change for ${targetUpgradeTier}:`, error);
+            setPaymentError(error.response?.data?.error || error.message || `Failed to complete ${targetUpgradeTier} subscription. Please try again.`);
             localStorage.removeItem('selected_tier');
+        } finally {
             setIsProcessing(false);
+            setOpenUpgradeConfirmDialog(false); // Close confirmation dialog
+            setTargetUpgradeTier(null); // Reset target tier
+            setUpgradePreview(null); // Reset preview data
         }
     };
 
-    const handleStandardUpgrade = () => handleCheckout('standard');
-    const handlePremiumUpgrade = () => handleCheckout('premium');
+    // New function to handle the initial click on an upgrade button
+    const handleUpgradeIntent = async (tier) => {
+        // If current plan is free, or if it's an upgrade to the same or lower tier (not handled here, simple checkout)
+        // This preview is primarily for active paid sub -> higher paid sub
+        const currentPlan = userProfile?.account?.account_type || 'free';
+        const isActualUpgrade = (currentPlan === 'standard' && tier === 'premium'); // Add more conditions if other upgrade paths exist
+
+        if (currentPlan === 'free' || !isActualUpgrade) {
+            // For free users or non-upgrade scenarios (e.g. choosing 'standard' while on 'free'), proceed to standard checkout
+            // This will be handled by the TierButton's direct onClick to handleCheckout('standard') or handleCheckout('premium')
+            // if they are on free. For now, let's assume handlePremiumUpgrade & handleStandardUpgrade are only for actual upgrades
+            // from a paid plan. We can refine this.
+            // For now, if not a clear upgrade path that needs preview, we could call execute directly,
+            // but the tier buttons are already wired. This function is for preview path.
+
+            // Fallback to direct checkout if it's not a previewable upgrade path
+            // This part needs to be thought out: which TierButton clicks go to preview vs direct?
+            // For now, let's assume only Premium upgrade from Standard goes through preview.
+            // The `SubscriptionTier` component's onClick will call `handlePremiumUpgrade` etc.
+            // So `handlePremiumUpgrade` should now call `handleUpgradeIntent`.
+
+            // If user is on free plan, they always go to Stripe Checkout directly
+            // The `executeSubscriptionChange` will handle the direct checkout via `/create-checkout-session`
+            // when it doesn't find an active subscription to modify.
+            // So, we can set the target tier and call execute.
+            // However, the `handleCheckout` in `SubscriptionTier` needs to be updated.
+
+            // For now, let's make `handleCheckout` the unified function.
+            // `handleUpgradeIntent` will be the new entry point for upgrade buttons on `SubscriptionTier`
+
+            setTargetUpgradeTier(tier); // Set tier for executeSubscriptionChange
+            localStorage.setItem('selected_tier', tier); // Ensure it's set for execute
+            executeSubscriptionChange(tier); // Standard checkout path
+            return;
+        }
+
+        setIsProcessing(true);
+        setPaymentError(null);
+        setError(null);
+        setTargetUpgradeTier(tier); // Store the target tier for confirmation
+        localStorage.setItem('selected_tier', tier); // Store for potential direct checkout if preview fails
+
+        try {
+            const response = await api.post('/preview-subscription-upgrade', { target_tier: tier });
+            if (response.data.already_on_plan) {
+                setShowSuccess(true);
+                setSuccessMessage(response.data.message || "You are already on this plan.");
+                setIsProcessing(false);
+                setTargetUpgradeTier(null);
+                localStorage.removeItem('selected_tier');
+            } else {
+                setUpgradePreview(response.data);
+                setOpenUpgradeConfirmDialog(true);
+                setIsProcessing(false); // Processing done for preview, wait for user confirm
+            }
+        } catch (error) {
+            console.error(`Error fetching upgrade preview for ${tier}:`, error);
+            setPaymentError(error.response?.data?.error || `Failed to get upgrade preview for ${tier}. Please try again.`);
+            setIsProcessing(false);
+            setTargetUpgradeTier(null);
+            localStorage.removeItem('selected_tier');
+        }
+    };
+
+    // Update these to call handleUpgradeIntent if it's a true upgrade from a paid plan
+    const handleStandardUpgrade = () => {
+        // If current plan is 'pro', this is a downgrade - use portal or a different flow.
+        // If current plan is 'free', this is a new subscription.
+        // This preview logic is mainly for 'standard' -> 'premium'.
+        // For 'free' to 'standard', it's a new subscription.
+        if (currentPlan === 'free') {
+            setTargetUpgradeTier('standard');
+            localStorage.setItem('selected_tier', 'standard');
+            executeSubscriptionChange('standard'); // Direct checkout
+        } else {
+            // Potentially a downgrade or other scenario - for now, let's assume portal for this
+            handleManageSubscription();
+            // Or, if you want to allow free -> standard via this button directly:
+            // setTargetUpgradeTier('standard');
+            // executeSubscriptionChange('standard');
+        }
+    };
+
+    const handlePremiumUpgrade = () => {
+        // This is the primary path for the preview feature (e.g., from Standard to Premium)
+        // Or from Free to Premium (which will also go through preview if we want, or direct checkout)
+        const currentPlan = userProfile?.account?.account_type || 'free';
+        if (currentPlan === 'standard' || currentPlan === 'free') {
+            handleUpgradeIntent('premium');
+        } else {
+            // Already on premium or pro, or other case
+            // Potentially show "already on highest plan" or similar
+            setShowSuccess(true);
+            setSuccessMessage("You are already on the Premium plan or higher.");
+        }
+    };
+
 
     const handleManageSubscription = async () => {
         setIsProcessing(true);
@@ -1072,6 +1170,11 @@ function UserProfilePage() {
     }
 
     const currentPlan = userProfile?.account?.account_type || 'free';
+
+    // Format currency utility
+    const formatCurrency = (amountCents, currencyCode = 'USD') => {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(amountCents / 100);
+    };
 
     const subscriptionTiers = [
         {
@@ -1338,6 +1441,78 @@ function UserProfilePage() {
                     </Grid>
                 </Grid>
             </Container>
+
+            {/* Upgrade Confirmation Modal */}
+            {upgradePreview && (
+                <Dialog
+                    open={openUpgradeConfirmDialog}
+                    onClose={() => {
+                        setOpenUpgradeConfirmDialog(false);
+                        setUpgradePreview(null);
+                        setTargetUpgradeTier(null);
+                        localStorage.removeItem('selected_tier');
+                    }}
+                    PaperProps={{ sx: { p: { xs: 2, sm: 3 }, minWidth: { sm: '450px' } } }}
+                >
+                    <DialogTitle sx={{ p: 0, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            Confirm Upgrade to {upgradePreview.target_tier_name}
+                        </Typography>
+                        <IconButton onClick={() => {
+                            setOpenUpgradeConfirmDialog(false);
+                            setUpgradePreview(null);
+                            setTargetUpgradeTier(null);
+                            localStorage.removeItem('selected_tier');
+                        }} size="small">
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ p: 0, mb: 2 }}>
+                        <Typography variant="body1" sx={{ mb: 1 }}>
+                            You are upgrading to the <strong>{upgradePreview.target_tier_name}</strong> plan.
+                        </Typography>
+                        {upgradePreview.prorated_charge_now_cents > 0 && (
+                            <Typography variant="body1" sx={{ mb: 0.5 }}>
+                                An immediate prorated charge of approximately <strong>{formatCurrency(upgradePreview.prorated_charge_now_cents, upgradePreview.currency)}</strong> will be applied today.
+                            </Typography>
+                        )}
+                        {upgradePreview.prorated_charge_now_cents === 0 && (
+                            <Typography variant="body1" sx={{ mb: 0.5 }}>
+                                There is no immediate prorated charge for this upgrade.
+                            </Typography>
+                        )}
+                        <Typography variant="body1" sx={{ mb: 2 }}>
+                            Your next bill on or around <strong>{new Date(upgradePreview.next_billing_date_timestamp * 1000).toLocaleDateString()}</strong> will be for <strong>{formatCurrency(upgradePreview.next_regular_charge_cents, upgradePreview.currency)}</strong>.
+                        </Typography>
+                        <Typography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
+                            By confirming, your subscription will be updated immediately.
+                        </Typography>
+                        {paymentError && openUpgradeConfirmDialog && ( // Show payment error within this dialog if it occurs after confirm
+                            <Alert severity="error" sx={{ mt: 2 }}>{paymentError}</Alert>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 0 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                setOpenUpgradeConfirmDialog(false);
+                                setUpgradePreview(null);
+                                setTargetUpgradeTier(null);
+                                localStorage.removeItem('selected_tier');
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={() => executeSubscriptionChange(targetUpgradeTier)} // targetUpgradeTier is already set
+                            disabled={isProcessing}
+                        >
+                            {isProcessing ? <CircularProgress size={20} color="inherit" /> : `Confirm & Upgrade to ${upgradePreview.target_tier_name}`}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
 
             <Dialog
                 open={openContactDialog}

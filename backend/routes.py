@@ -1202,10 +1202,41 @@ def create_checkout_session(user):
                 f"User {user.id} has active subscription {user_account.stripe_subscription_id}. Attempting to modify."
             )
             try:
-                current_subscription = stripe.Subscription.retrieve(
-                    user_account.stripe_subscription_id
-                )
-                current_price_id = current_subscription.items.data[0].price.id
+                # We retrieve the subscription, but will list items explicitly
+                # current_subscription = stripe.Subscription.retrieve(
+                #     user_account.stripe_subscription_id
+                # )
+
+                # Explicitly list subscription items for the subscription ID
+                try:
+                    subscription_items_list = stripe.SubscriptionItem.list(
+                        subscription=user_account.stripe_subscription_id,
+                        limit=1,  # We typically only expect one primary item for simple subscriptions
+                    )
+                except stripe.error.StripeError as e:
+                    logger.error(
+                        f"Stripe error listing subscription items for sub {user_account.stripe_subscription_id}: {str(e)}"
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "error": f"Could not retrieve subscription items: {str(e)}"
+                            }
+                        ),
+                        500,
+                    )
+
+                if not subscription_items_list or not subscription_items_list.data:
+                    logger.error(
+                        f"Subscription {user_account.stripe_subscription_id} for user {user.id} has no items listed via API."
+                    )
+                    return (
+                        jsonify({"error": "Subscription has no items to modify."}),
+                        500,
+                    )
+
+                first_subscription_item = subscription_items_list.data[0]
+                current_price_id = first_subscription_item.price.id
 
                 if current_price_id == target_price_id:
                     logger.info(f"User {user.id} is already on the target plan {tier}.")
@@ -1224,7 +1255,7 @@ def create_checkout_session(user):
                     user_account.stripe_subscription_id,
                     items=[
                         {
-                            "id": current_subscription.items.data[0].id,
+                            "id": first_subscription_item.id,  # Use the ID of the first subscription item
                             "price": target_price_id,
                         }
                     ],
@@ -3791,3 +3822,185 @@ def process_brdge_content_with_logs(
                 db.session.commit()
         except Exception:
             logger.error("Failed to update script status on error", exc_info=True)
+
+
+@app.route("/api/preview-subscription-upgrade", methods=["POST"])
+@login_required
+def preview_subscription_upgrade(user):
+    try:
+        data = request.get_json()
+        target_frontend_tier = data.get("target_tier")  # e.g., "standard", "premium"
+
+        if not target_frontend_tier:
+            return jsonify({"error": "Target tier is required"}), 400
+
+        logger.info(
+            f"Previewing subscription upgrade to: {target_frontend_tier} for user {user.id}"
+        )
+
+        user_account = UserAccount.query.filter_by(user_id=user.id).first()
+
+        if (
+            not user_account
+            or not user_account.stripe_subscription_id
+            or user_account.subscription_status != "active"
+        ):
+            logger.warning(
+                f"User {user.id} does not have an active subscription to preview an upgrade for."
+            )
+            return jsonify({"error": "No active subscription found to upgrade."}), 400
+
+        # Map frontend tier name to backend SUBSCRIPTION_TIERS key
+        target_account_type_key = (
+            "pro" if target_frontend_tier == "premium" else target_frontend_tier
+        )
+        if target_account_type_key not in SUBSCRIPTION_TIERS or not SUBSCRIPTION_TIERS[
+            target_account_type_key
+        ].get("price_id"):
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid target tier or missing price ID for target tier."
+                    }
+                ),
+                400,
+            )
+
+        new_price_id = SUBSCRIPTION_TIERS[target_account_type_key]["price_id"]
+
+        # Get current subscription's item to replace
+        try:
+            current_sub_items = stripe.SubscriptionItem.list(
+                subscription=user_account.stripe_subscription_id, limit=1
+            )
+            if not current_sub_items or not current_sub_items.data:
+                logger.error(
+                    f"No items found for active subscription {user_account.stripe_subscription_id}"
+                )
+                return (
+                    jsonify({"error": "Could not find items on current subscription."}),
+                    500,
+                )
+            current_item_id = current_sub_items.data[0].id
+            current_price_id = current_sub_items.data[0].price.id
+
+            if current_price_id == new_price_id:
+                return (
+                    jsonify(
+                        {
+                            "message": "You are already on this plan.",
+                            "already_on_plan": True,
+                        }
+                    ),
+                    200,
+                )
+
+        except stripe.error.StripeError as e:
+            logger.error(
+                f"Stripe error fetching current subscription items for preview: {str(e)}"
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "Could not fetch current subscription details for preview."
+                    }
+                ),
+                500,
+            )
+
+        # Preview the invoice for the change
+        try:
+            preview_invoice = stripe.Invoice.upcoming(
+                customer=user_account.stripe_customer_id,
+                subscription=user_account.stripe_subscription_id,
+                subscription_items=[
+                    {
+                        "id": current_item_id,
+                        "price": new_price_id,  # The new price ID to upgrade to
+                    }
+                ],
+                subscription_proration_behavior="create_prorations",
+            )
+
+            # Calculate prorated charge by summing proration line items
+            net_proration_charge_cents = 0
+            for line in preview_invoice.lines.data:
+                if line.proration:
+                    net_proration_charge_cents += line.amount
+
+            # Use the calculated net proration, ensuring it's not negative for display purposes (minimum $0 charge)
+            prorated_charge_now_cents = max(0, net_proration_charge_cents)
+
+            # The subscription's next invoice will have the full amount for the new tier.
+            # The preview_invoice.lines will contain details. The total of the invoice is prorated.
+            # To get the next *regular* charge, we look at the new price.
+            next_regular_charge_cents = SUBSCRIPTION_TIERS[target_account_type_key].get(
+                "price_in_cents"
+            )  # Assumes you add this to SUBSCRIPTION_TIERS
+            if not next_regular_charge_cents:
+                # Fallback by looking up the price object if not stored (less efficient)
+                new_price_obj = stripe.Price.retrieve(new_price_id)
+                next_regular_charge_cents = new_price_obj.unit_amount
+
+            # next_billing_date from the preview invoice subscription details (if available) or current sub's period end
+            # The preview_invoice.subscription_details.current_period_end might reflect the new cycle
+            # For simplicity, we'll state the next regular billing date based on current cycle end transformed by proration.
+            # Stripe handles the exact date, but it will be approx one month from the proration billing.
+            # The actual next_billing_date is better sourced after actual modification.
+            # For preview, the `preview_invoice.period_end` or `preview_invoice.next_payment_attempt` might be useful
+
+            next_billing_date_timestamp = (
+                preview_invoice.next_payment_attempt
+            )  # This is often the most reliable for preview
+            if not next_billing_date_timestamp:
+                # Fallback: if next_payment_attempt is null (e.g. $0 proration), use subscription period end for context
+                # This is more about *when the next full cycle starts* rather than when the prorated amount is due if $0.
+                sub_details = stripe.Subscription.retrieve(
+                    user_account.stripe_subscription_id
+                )
+                next_billing_date_timestamp = sub_details.current_period_end
+
+            response_data = {
+                "prorated_charge_now_cents": prorated_charge_now_cents,
+                "next_regular_charge_cents": next_regular_charge_cents,
+                "currency": preview_invoice.currency,
+                "next_billing_date_timestamp": next_billing_date_timestamp,  # User for display: "Your next bill on [date]"
+                "target_tier_name": target_frontend_tier.capitalize(),
+                "new_price_id_for_confirmation": new_price_id,  # For frontend to pass back if user confirms
+            }
+            logger.info(
+                f"Upgrade preview for user {user.id} to {target_frontend_tier}: {response_data}"
+            )
+            return jsonify(response_data), 200
+
+        except stripe.error.StripeError as e:
+            logger.error(
+                f"Stripe error fetching upcoming invoice for preview: {str(e)}"
+            )
+            return (
+                jsonify({"error": "Could not fetch upgrade preview from Stripe."}),
+                500,
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error during upgrade preview: {str(e)}", exc_info=True
+            )
+            return (
+                jsonify(
+                    {
+                        "error": "An unexpected error occurred while preparing the upgrade preview."
+                    }
+                ),
+                500,
+            )
+
+    except Exception as e:
+        logger.error(
+            f"Overall error in preview_subscription_upgrade for user {user.id if 'user' in locals() and user else 'unknown'}: {e}",
+            exc_info=True,
+        )
+        db.session.rollback()  # Should not be needed as this is a read-mostly endpoint
+        return (
+            jsonify({"error": "An internal error occurred while previewing upgrade."}),
+            500,
+        )
