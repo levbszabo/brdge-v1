@@ -60,7 +60,7 @@ const HeroSection = () => (
                         lineHeight: { xs: 1.5, md: 1.6 }
                     }}
                 >
-                    Static videos can’t convert. DotBridge wraps them in a smart interface that talks back, qualifies leads, and drives action — all while learning from every click.
+                    Static videos can't convert. DotBridge wraps them in a smart interface that talks back, qualifies leads, and drives action — all while learning from every click.
                 </DotBridgeTypography>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
@@ -79,7 +79,8 @@ const HeroSection = () => (
                         size="large"
                         color="primary"
                         variant="outlined"
-                        onClick={() => console.log('Watch Demo Clicked')}
+                        component={Link}
+                        to={`https://dotbridge.io/viewBridge/${DEMO_BRIDGE_ID}`}
                         endIcon={<DotBridgeIcon name="Play" size={18} />}
                     >
                         Watch Live Demo
