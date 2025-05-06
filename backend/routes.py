@@ -105,9 +105,9 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 endpoint_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 # Add these constants at the top of the file with other configurations
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
-STRIPE_PRODUCT_PRICE = 24900  # Price in cents ($249.00) - Premium tier price
+STRIPE_PRODUCT_PRICE = 14900  # Price in cents ($149.00) - Premium tier price
 STRIPE_PRODUCT_CURRENCY = "usd"
-STRIPE_STANDARD_PRICE = 9900  # Price in cents ($99.00) - Standard tier price
+STRIPE_STANDARD_PRICE = 4900  # Price in cents ($49.00) - Standard tier price
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -1171,30 +1171,157 @@ def get_user_stats():
 def create_checkout_session(user):
     try:
         data = request.get_json()
-        tier = data.get("tier")
-        logger.info(f"Creating checkout session for tier: {tier}")
+        tier = data.get("tier")  # e.g., "standard", "premium"
+        logger.info(f"Attempting to set/update tier to: {tier} for user {user.id}")
 
-        # Map frontend tier names to price IDs
-        price_ids = {
-            "standard": SUBSCRIPTION_TIERS["standard"]["price_id"],
-            "premium": SUBSCRIPTION_TIERS["pro"][
-                "price_id"
-            ],  # Premium maps to 'pro' in backend
-        }
+        # Map frontend tier names to backend/Stripe price IDs and account types
+        # 'premium' frontend tier maps to 'pro' in SUBSCRIPTION_TIERS
+        target_account_type = "pro" if tier == "premium" else tier
+        if target_account_type not in SUBSCRIPTION_TIERS or not SUBSCRIPTION_TIERS[
+            target_account_type
+        ].get("price_id"):
+            return jsonify({"error": "Invalid tier or missing price ID for tier"}), 400
 
-        price_id = price_ids.get(tier)
-        if not price_id:
-            return jsonify({"error": "Invalid tier"}), 400
+        target_price_id = SUBSCRIPTION_TIERS[target_account_type]["price_id"]
 
-        # Get user account
         user_account = UserAccount.query.filter_by(user_id=user.id).first()
 
+        if not user_account:
+            # This case should ideally not happen if accounts are created on registration
+            logger.error(f"UserAccount not found for user {user.id}. Creating one.")
+            user_account = UserAccount(user_id=user.id, account_type="free")
+            db.session.add(user_account)
+            # db.session.commit() # Commit later or handle potential flush issues
+
+        # Scenario 1: User has an existing active subscription and wants to change/upgrade it
+        if (
+            user_account.stripe_subscription_id
+            and user_account.subscription_status == "active"
+        ):
+            logger.info(
+                f"User {user.id} has active subscription {user_account.stripe_subscription_id}. Attempting to modify."
+            )
+            try:
+                current_subscription = stripe.Subscription.retrieve(
+                    user_account.stripe_subscription_id
+                )
+                current_price_id = current_subscription.items.data[0].price.id
+
+                if current_price_id == target_price_id:
+                    logger.info(f"User {user.id} is already on the target plan {tier}.")
+                    return (
+                        jsonify(
+                            {
+                                "message": "You are already on this plan.",
+                                "updated_directly": True,
+                            }
+                        ),
+                        200,
+                    )
+
+                # Modify the existing subscription
+                updated_subscription = stripe.Subscription.modify(
+                    user_account.stripe_subscription_id,
+                    items=[
+                        {
+                            "id": current_subscription.items.data[0].id,
+                            "price": target_price_id,
+                        }
+                    ],
+                    proration_behavior="create_prorations",
+                    payment_behavior="default_incomplete",  # Allows for 3DS if needed on proration
+                    expand=["latest_invoice.payment_intent"],
+                )
+
+                logger.info(
+                    f"Successfully modified subscription for user {user.id} to {target_price_id}. New status: {updated_subscription.status}"
+                )
+
+                # Update local UserAccount
+                user_account.account_type = target_account_type
+                user_account.stripe_customer_id = (
+                    updated_subscription.customer
+                )  # Should be same, but good to ensure
+                # stripe_subscription_id remains the same
+                user_account.subscription_status = (
+                    updated_subscription.status
+                )  # Could be 'active' or 'incomplete' if payment needed
+                user_account.next_billing_date = datetime.fromtimestamp(
+                    updated_subscription.current_period_end
+                )
+                user_account.last_activity = datetime.utcnow()
+
+                db.session.commit()
+                logger.info(
+                    f"UserAccount for {user.id} updated in DB. New type: {target_account_type}, next_billing: {user_account.next_billing_date}"
+                )
+
+                if (
+                    updated_subscription.status == "incomplete"
+                    and updated_subscription.latest_invoice
+                    and updated_subscription.latest_invoice.payment_intent
+                ):
+                    # If proration requires payment and 3DS
+                    logger.info(
+                        f"Subscription update for user {user.id} requires further action (e.g. 3DS)."
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "message": "Subscription update requires payment confirmation.",
+                                "requires_action": True,
+                                "payment_intent_client_secret": updated_subscription.latest_invoice.payment_intent.client_secret,
+                                "subscription_id": updated_subscription.id,
+                            }
+                        ),
+                        200,
+                    )  # Or a more specific status code like 202 Accepted
+
+                return (
+                    jsonify(
+                        {
+                            "message": "Subscription updated successfully.",
+                            "updated_directly": True,
+                            "account": user_account.to_dict(),
+                        }
+                    ),
+                    200,
+                )
+
+            except stripe.error.StripeError as e:
+                logger.error(
+                    f"Stripe error modifying subscription for user {user.id}: {str(e)}"
+                )
+                return (
+                    jsonify({"error": f"Could not update your subscription: {str(e)}"}),
+                    400,
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error modifying subscription for user {user.id}: {str(e)}"
+                )
+                db.session.rollback()
+                return (
+                    jsonify(
+                        {
+                            "error": "An unexpected error occurred while updating your subscription."
+                        }
+                    ),
+                    500,
+                )
+
+        # Scenario 2: User is on 'free' plan, or no active subscription, or a 'canceled' (but not yet ended) subscription.
+        # For 'canceled' subs, Stripe policy is usually to create a new one if they re-subscribe before period end.
+        # Or if trying to upgrade a 'free' plan.
+        logger.info(
+            f"User {user.id} does not have an active subscription to modify directly for tier {tier}. Proceeding to Stripe Checkout."
+        )
         try:
             # Create checkout session with metadata
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 mode="subscription",
-                line_items=[{"price": price_id, "quantity": 1}],
+                line_items=[{"price": target_price_id, "quantity": 1}],
                 success_url=f"{request.headers.get('Origin')}/payment-success?session_id={{CHECKOUT_SESSION_ID}}&tier={tier}",
                 cancel_url=f"{request.headers.get('Origin')}/profile",
                 client_reference_id=str(user.id),
@@ -1202,21 +1329,32 @@ def create_checkout_session(user):
                     user_account.stripe_customer_id
                     if user_account and user_account.stripe_customer_id
                     else None
-                ),
+                ),  # Pass customer_id if exists, Stripe will link or create
                 allow_promotion_codes=True,
-                metadata={"user_id": user.id, "tier": tier},
+                metadata={
+                    "user_id": user.id,
+                    "tier": tier,
+                },  # tier here is the original request e.g. 'premium'
             )
 
-            logger.info(f"Checkout session created: {session.id}")
+            logger.info(
+                f"Stripe Checkout session created: {session.id} for user {user.id}, tier {tier}"
+            )
             return jsonify({"url": session.url}), 200
 
         except stripe.error.StripeError as e:
-            logger.error(f"Stripe error: {str(e)}")
+            logger.error(
+                f"Stripe error creating checkout session for user {user.id}: {str(e)}"
+            )
             return jsonify({"error": str(e)}), 400
 
     except Exception as e:
-        logger.error(f"Error creating checkout session: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(
+            f"Error in create_checkout_session for user {user.id if 'user' in locals() and user else 'unknown'}: {e}",
+            exc_info=True,
+        )
+        db.session.rollback()
+        return jsonify({"error": "An internal error occurred."}), 500
 
 
 @app.route("/api/verify-subscription", methods=["POST"])

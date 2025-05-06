@@ -416,6 +416,11 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                             <Typography variant="body1" sx={{ fontWeight: 600, color: theme.palette.secondary.main }}>
                                 {currentPlan === 'pro' ? 'Premium' :
                                     currentPlan === 'standard' ? 'Standard' : 'Free'} Plan
+                                {userProfile?.account?.subscription_status === 'canceled' && currentPlan !== 'free' && (
+                                    <Typography component="span" variant="caption" sx={{ display: 'block', color: theme.palette.warning.main }}>
+                                        Cancels on: {formatDate(userProfile?.account?.next_billing_date)}
+                                    </Typography>
+                                )}
                             </Typography>
                         </Grid>
 
@@ -427,7 +432,8 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 <Grid item xs={5}><Typography variant="body2" color="text.secondary">Next Payment</Typography></Grid>
                                 <Grid item xs={7} textAlign="right">
                                     <Typography variant="body1" color="text.primary">
-                                        {formatDate(userProfile?.account?.next_billing_date)}
+                                        {userProfile?.account?.subscription_status === 'canceled' ? 'N/A' :
+                                            formatDate(userProfile?.account?.next_billing_date)}
                                     </Typography>
                                 </Grid>
 
@@ -503,7 +509,7 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                     </Box>
                 )}
 
-                {currentPlan !== 'free' && (
+                {currentPlan !== 'free' && userProfile?.account?.subscription_status !== 'canceled' && (
                     <Button
                         variant="outlined"
                         startIcon={<CancelIcon />}
@@ -887,14 +893,33 @@ function UserProfilePage() {
         try {
             localStorage.setItem('selected_tier', tier);
             const response = await api.post('/create-checkout-session', { tier });
-            if (response.data.url) {
+
+            if (response.data.updated_directly) {
+                // Subscription was updated directly by the backend (e.g., proration)
+                setShowSuccess(true);
+                setSuccessMessage(response.data.message || 'Subscription updated successfully!');
+                fetchUserProfile(); // Refresh profile data
+                setIsProcessing(false);
+
+                if (response.data.requires_action && response.data.payment_intent_client_secret) {
+                    // This is a simplified handling. A full implementation would use Stripe.js elements
+                    // to call stripe.confirmCardPayment(response.data.payment_intent_client_secret).
+                    console.warn('Subscription update requires further payment action (e.g., 3DS).');
+                    alert('Your subscription update requires an additional confirmation step. Please follow any prompts from Stripe or your bank.');
+                    // Optionally, you could try to guide the user or use Stripe.js to handle this.
+                    setPaymentError('Your subscription change needs an extra confirmation step. Please follow any prompts from Stripe or your bank to complete it.');
+                }
+
+            } else if (response.data.url) {
+                // Redirect to Stripe Checkout page for new subscriptions
                 window.location.href = response.data.url;
             } else {
-                throw new Error("No checkout URL received from server.");
+                // Should not happen if backend is correct, but handle defensively
+                throw new Error(response.data.error || "Couldn't process subscription change. No redirect URL or direct update confirmation received.");
             }
         } catch (error) {
-            console.error(`Error creating checkout for ${tier}:`, error);
-            setPaymentError(error.response?.data?.error || `Failed to start ${tier} checkout process. Please try again.`);
+            console.error(`Error creating checkout/updating subscription for ${tier}:`, error);
+            setPaymentError(error.response?.data?.error || error.message || `Failed to start ${tier} checkout process or update subscription. Please try again.`);
             localStorage.removeItem('selected_tier');
             setIsProcessing(false);
         }
