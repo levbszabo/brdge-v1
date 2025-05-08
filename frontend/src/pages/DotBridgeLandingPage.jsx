@@ -641,6 +641,7 @@ const UseCasesSection = () => {
         }
     ];
 
+    const theme = useTheme();
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
             <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
@@ -656,6 +657,29 @@ const UseCasesSection = () => {
                     Replace passive content with active experiences that drive results.
                 </DotBridgeTypography>
             </Box>
+
+            {/* Add Digital Funnel Diagram HERE */}
+            <Box sx={{ textAlign: 'center', my: { xs: 4, md: 6 } }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, delay: 0.1 }} // Adjust delay as needed
+                >
+                    <Box
+                        component="img"
+                        src="/digital-funnel.png" // Assuming this path in public folder
+                        alt="Digital Video Funnel Stages"
+                        sx={{
+                            maxWidth: { xs: '100%', md: '700px' }, // Responsive max width
+                            height: 'auto',
+                            borderRadius: theme => theme.shape.borderRadius,
+                            boxShadow: theme => theme.shadows[1],
+                            mb: { xs: 3, md: 4 } // Margin below the image
+                        }}
+                    />
+                </motion.div>
+            </Box>
+
             <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
                 {cases.map((item, index) => (
                     <Grid item xs={12} sm={6} md={3} key={index}>

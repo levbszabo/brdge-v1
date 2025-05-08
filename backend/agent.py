@@ -25,37 +25,45 @@ load_dotenv(dotenv_path=".env_local")
 logger = logging.getLogger("voice-agent")
 API_BASE_URL = os.getenv("API_BASE_URL")
 
-# Base prompts for different bridge types
+# Base prompts for different bridge types - ENHANCED FOR GOAL DIRECTION
 BASE_PROMPTS = {
     "course": """
 You are the instructor of this online course, speaking directly to a student. Your goal is to teach the material effectively, answer questions clearly, and guide the student through the content based on the video timeline.
-Use the provided teaching persona, knowledge base, and video timeline context. Keep responses concise, conversational, and encouraging.
+Use the provided teaching persona, knowledge base, and video timeline context. Keep responses concise (ideally 1-3 sentences), conversational, and encouraging. Inject casual remarks like "Alright," "Gotcha," or "Good question!" to sound more human.
 Refer to the video content using the current timestamp. If asked about future topics, indicate they will be covered later. Avoid technical jargon unless necessary and explained.
 Remember your TEACHING_PERSONA from the JSON data and embody it. Use KNOWLEDGE_BASE for deeper explanations as if it's your own expertise.
+A key part of your role is discovery: if the student seems stuck, asks a question you can't fully answer with your current knowledge base, or expresses a specific challenge related to applying the material, make a note of this. Your goal is to identify areas where the creator could provide further clarification or resources. You might say, 'That's a great question. I'll make sure to pass that along as something we can explore further.' Keep this interaction brief and natural.
 """,
     "vsl": """
-You are a persuasive presenter guiding a potential customer through a Video Sales Letter (VSL). Your goal is to highlight the product's benefits, address potential objections, and encourage the customer towards the desired action (e.g., sign up, purchase).
+You are a highly persuasive presenter guiding a potential customer through a Video Sales Letter (VSL). Your unwavering GOAL is to build strong conviction in the product's unique value, effectively address any stated or implied objections, and proactively steer every part of the conversation towards the ultimate call to action (e.g., sign up, purchase, book a demo) as potentially defined in 'specific_goal_or_cta'.
+Before suggesting the next step, try to understand their current challenges or needs related to our solution to ensure they are a good fit. If they seem qualified and are interested, naturally inquire about their availability for a more detailed discussion or demo, and what email or phone number would be best to send details to.
 Use the provided persona (likely a sales or product expert), knowledge base (product details, FAQs, use cases), and video timeline.
-Sound confident, knowledgeable, and benefit-oriented. Keep responses focused and address user questions or objections directly using the KNOWLEDGE_BASE and QA_PAIRS.
-Reference the video content and timestamp naturally. Steer the conversation towards the value proposition and the final call to action.
+Sound confident, knowledgeable, and acutely benefit-oriented. Keep your responses engaging and to the point (1-3 sentences). Use casual, connecting phrases like "Makes sense," "Exactly," or "Let's see..." to build rapport.
+Seamlessly integrate information from the KNOWLEDGE_BASE and QA_PAIRS to support your points and overcome objections.
+Always reference the video content and timestamp naturally. Explicitly look for opportunities to pivot back to the core value proposition and the final CTA. Do not just answer questions; actively guide the prospect in a friendly, conversational way.
 """,
     "onboarding": """
-You are an onboarding specialist guiding a new user through setting up or learning a product/service. Your goal is to provide clear instructions, answer setup questions, and ensure the user understands key features.
+You are an onboarding specialist guiding a new user through setting up or learning a product/service. Your goal is to provide clear instructions, answer setup questions, and ensure the user understands key features, leading them to successful adoption.
 Use the provided persona, knowledge base (feature explanations, troubleshooting steps), and video timeline (which likely demonstrates the setup process).
-Be patient, clear, and helpful. Refer to specific steps shown in the video using the timestamp. Use the KNOWLEDGE_BASE to answer technical questions accurately.
+Be patient, clear, and helpful. Keep responses focused and brief (1-3 sentences). Use phrases like "Okay, so...", "No problem," or "Let's try this..." for a natural flow.
+Refer to specific steps shown in the video using the timestamp. Use the KNOWLEDGE_BASE to answer technical questions accurately.
+Pay close attention to any pain points, areas of confusion, or feature requests the user mentions. Your goal is to gather insights that can improve the onboarding process or the product itself. You could respond with, 'Thanks for sharing that, it's really helpful feedback. I'll note it down for the creator to review.' Keep this acknowledgement short and sweet.
 """,
     "webinar": """
-You are hosting a live webinar session. Your goal is to present the information clearly, engage the audience, and answer questions related to the webinar content.
+You are hosting an engaging live webinar session. Your primary GOALS are to present the information clearly, foster audience participation, and strategically guide attendees towards a specific desired next step or call to action relevant to the webinar's content (e.g., explore a feature, download a resource, register for a follow-up, consider an offer), as potentially defined in 'specific_goal_or_cta'.
 Use the provided presenter persona, knowledge base (background info, related topics), and video timeline (webinar structure/slides).
-Maintain an engaging and professional tone. Answer audience questions concisely using the KNOWLEDGE_BASE. Refer to the webinar content using the timestamp.
+Maintain an engaging, authoritative, and professional tone, but keep your language accessible and conversational. Aim for responses of 1-3 sentences. Use natural interjections like "Great point," "Absolutely," or "Good to know."
+Answer audience questions concisely using the KNOWLEDGE_BASE, always looking for opportunities to link your answers back to the webinar's main objectives and the intended next step.
+If the next step involves a more personalized session (like a booking or demo), and a user expresses keen interest, feel free to ask about their general availability (e.g., 'weekday mornings,' 'afternoons next week') and the best way to send them an invitation (e.g., email). Frame this as making it easier for them, keeping the interaction light and brief.
 """,
     "general": """
 You are an AI assistant presenting information from a video. Your goal is to provide a helpful and informative experience, answering user questions about the content.
-Use the provided persona, knowledge base, and video timeline. Be conversational, clear, and concise.
+Use the provided persona, knowledge base, and video timeline. Be conversational, clear, and concise (1-3 sentences per response). Feel free to use casual remarks to make the interaction smoother.
 Reference the video content using the current timestamp. Use the KNOWLEDGE_BASE to provide context or deeper explanations.
 """,
 }
 
+# SYSTEM_PROMPT_SUFFIX - ENHANCED FOR GOAL ADHERENCE
 SYSTEM_PROMPT_SUFFIX = """
 # HOW TO RESPOND USING THE DATA BELOW
 You have access to the following context in JSON format. Use it to inform your responses:
@@ -64,12 +72,14 @@ You have access to the following context in JSON format. Use it to inform your r
 - `qa_pairs`: Use these to answer common questions directly.
 - `video_timeline`: Understand where you are in the presentation using `current_timestamp`. Refer to past or future segments based on this timeline.
 - `engagement_opportunities`: You may be asked to initiate these based on the timeline.
+- `specific_goal_or_cta`: If this field is present and non-empty in the JSON context, it outlines THE PRIMARY OBJECTIVE or desired user action for this entire interaction. All your responses, while natural and conversational, should subtly and strategically work towards guiding the user to achieve this goal or take this call to action. This objective should be your top priority in shaping your replies, especially if the bridge_type is 'vsl' or 'webinar'.
 
 IMPORTANT:
 - Always be aware of the `current_timestamp` provided below.
 - NEVER explicitly mention the JSON data, knowledge base, or persona by name. Integrate the information naturally.
-- Keep responses conversational, concise, and directly address the user's query or the current context.
+- Keep responses conversational, concise (aim for 1-3 sentences), and directly address the user's query or the current context. Use casual, human-like remarks (e.g., "Got it," "Good question," "Let's see...") where appropriate to enhance the flow.
 - Do NOT act as a generic AI assistant; embody the role defined by the bridge type and persona.
+- Proactively look for opportunities to align with the `specific_goal_or_cta` if provided. Your primary directive is to fulfill the goal of your persona and the specific goal defined.
 
 Current Context JSON:
 ```json
@@ -125,13 +135,13 @@ class ChatAssistant(VoicePipelineAgent):
         self.brdge_id = brdge_id
         self.room = room
         self.api_base_url = API_BASE_URL
-        self.bridge_type = "general"  # Default bridge type
+        self.bridge_type = "general"
         self.personality = ""
         self.knowledge_content = ""
         self.document_knowledge = ""
         self.transcript_read = []
         self.transcript_remaining = []
-        self.script = None  # Initialize script properly
+        self.script = None
         self.agent_personality = {}
         self.teaching_persona = {}
         self.knowledge_base = {}
@@ -140,46 +150,38 @@ class ChatAssistant(VoicePipelineAgent):
         self.engagement_opportunities = []
         self.current_position = 0
         self.user_id = None
-        self.voice_id = "8c030da1-fcf4-49a5-b20f-9e116156ded4"  # Default voice ID
+        self.voice_id = "352af1eb-9cf0-4284-85e0-17f3b29110b9"  # Default voice ID
         self.current_speech = {
             "started_at": None,
             "message": None,
             "was_interrupted": False,
-            "log_id": None,  # Ensure log_id is initialized
+            "log_id": None,
         }
         self.current_timestamp_seconds = 0
         self.current_timestamp = "00:00:00"
         self.triggered_opportunities = set()
-        self.system_prompt = "Initializing..."  # Initial placeholder prompt
+        self.system_prompt = "Initializing..."
+        self.brdge = {}  # Initialize brdge attribute
 
-        # Initialize agent data immediately
-        self.initialize()  # Fetch data and set initial system prompt
+        self.initialize()
 
-        # Now initialize the VoicePipelineAgent with the fetched config
         super().__init__(
             vad=vad,
             stt=deepgram.STT(model="nova-3-general"),
             llm=openai.LLM(model="gpt-4o"),
-            tts=cartesia.TTS(
-                model="sonic-2", voice=self.voice_id
-            ),  # Use fetched voice_id
-            chat_ctx=llm.ChatContext().append(
-                role="system", text=self.system_prompt
-            ),  # Use generated prompt
+            tts=cartesia.TTS(model="sonic-2", voice=self.voice_id),
+            chat_ctx=llm.ChatContext().append(role="system", text=self.system_prompt),
             interrupt_speech_duration=0.2,
-            # No longer need before_llm_cb for simple timestamp update
         )
         logger.info(f"Agent initialized with API base URL: {self.api_base_url}")
         self._setup_event_handlers()
 
     def initialize(self):
-        """Initialize the agent by fetching script data directly"""
         if not self.brdge_id or not self.api_base_url:
             logger.error("Missing brdge_id or API_BASE_URL")
             return False
 
         try:
-            # Fetch script data from the agent-config endpoint
             response = requests.get(
                 f"{self.api_base_url}/brdges/{self.brdge_id}/agent-config"
             )
@@ -187,25 +189,17 @@ class ChatAssistant(VoicePipelineAgent):
             config_data = response.json()
             logger.debug(f"Fetched agent-config: {json.dumps(config_data, indent=2)}")
 
-            # Extract data from the agent-config response
-            self.brdge = config_data.get("brdge", {})
-            # *** Store bridge_type ***
+            self.brdge = config_data.get("brdge", {})  # Store full brdge object
             self.bridge_type = self.brdge.get("bridge_type", "general")
             logger.info(f"Setting bridge_type to: {self.bridge_type}")
 
             self.agent_personality = config_data.get("agentPersonality", {})
             self.teaching_persona = config_data.get("teaching_persona", {})
-            self.knowledge_base = config_data.get(
-                "knowledge_base", {}
-            )  # Changed from knowledge_base
+            self.knowledge_base = config_data.get("knowledge_base", {})
             self.qa_pairs = config_data.get("qa_pairs", [])
-
-            # Get timeline data
             self.video_timeline = config_data.get(
                 "timeline", config_data.get("video_timeline", {})
             )
-
-            # Extract engagement opportunities
             self.engagement_opportunities = config_data.get(
                 "engagement_opportunities", []
             )
@@ -213,19 +207,14 @@ class ChatAssistant(VoicePipelineAgent):
                 f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
             )
 
-            # Set voice ID based on brdge settings
-            default_voice = "8c030da1-fcf4-49a5-b20f-9e116156ded4"  # Moved default here
-            self.voice_id = self.brdge.get(
-                "voice_id", default_voice
-            )  # Use default if not found
-            if not self.voice_id:  # If voice_id was explicitly null/empty
+            default_voice = "352af1eb-9cf0-4284-85e0-17f3b29110b9"
+            self.voice_id = self.brdge.get("voice_id", default_voice)
+            if not self.voice_id:
                 self.voice_id = default_voice
             logger.info(f"Using voice_id: {self.voice_id}")
 
-            # Build the initial system prompt based on fetched data
             self.system_prompt = self._build_enhanced_system_prompt()
 
-            # Update TTS voice if Cartesia TTS plugin is used
             if hasattr(self, "tts") and isinstance(self.tts, cartesia.TTS):
                 self.tts.update_voice(self.voice_id)
                 logger.info(f"Updated Cartesia TTS voice to {self.voice_id}")
@@ -238,21 +227,31 @@ class ChatAssistant(VoicePipelineAgent):
             logger.error(f"Exception details: {traceback.format_exc()}")
             self.system_prompt = BASE_PROMPTS.get(
                 "general", "You are a helpful AI assistant."
-            )  # Fallback prompt
+            )
             return False
 
     def _build_enhanced_system_prompt(self):
-        """Build an enhanced system prompt based on bridge_type and available data."""
         try:
-            # Select base instructions based on bridge type
             base_instructions = BASE_PROMPTS.get(
                 self.bridge_type, BASE_PROMPTS["general"]
             )
 
-            # Prepare the context JSON, ensuring all expected keys exist even if empty
+            # Ensure self.brdge is populated (it should be by initialize method)
+            brdge_data = self.brdge if hasattr(self, "brdge") and self.brdge else {}
+            additional_instructions = brdge_data.get("additional_instructions", "")
+            # Log if additional_instructions are found and used
+            if additional_instructions:
+                logger.info(
+                    f"Using additional_instructions for brdge {self.brdge_id}: {additional_instructions[:100]}..."
+                )  # Log first 100 chars
+            else:
+                logger.info(
+                    f"No additional_instructions found for brdge {self.brdge_id}."
+                )
+
             context_data = {
                 "bridge_type": self.bridge_type,
-                "current_timestamp": self.current_timestamp,  # Use the formatted string
+                "current_timestamp": self.current_timestamp,
                 "teaching_persona": (
                     self.teaching_persona if hasattr(self, "teaching_persona") else {}
                 ),
@@ -266,22 +265,59 @@ class ChatAssistant(VoicePipelineAgent):
                 "video_timeline": (
                     self.video_timeline if hasattr(self, "video_timeline") else {}
                 ),
-                # Engagement opportunities are handled differently, not usually needed in base prompt
+                "specific_goal_or_cta": additional_instructions,  # Use fetched additional_instructions
             }
 
             formatted_json = json.dumps(context_data, indent=2)
-
-            # Combine base instructions and the JSON context suffix
-            final_prompt = f"{base_instructions}\n{SYSTEM_PROMPT_SUFFIX.format(json_context=formatted_json)}"
+            final_prompt = f"{base_instructions}\\n{SYSTEM_PROMPT_SUFFIX.format(json_context=formatted_json)}"
 
             logger.info(f"Generated system prompt for bridge_type '{self.bridge_type}'")
-            # logger.debug(f"System Prompt: {final_prompt}") # Optionally log the full prompt for debugging
+            # logger.debug(f"System Prompt: {final_prompt}")
+
+            # Append type-specific conversational strategies
+            conversational_strategy_prompt = ""
+            if self.bridge_type in ["vsl", "webinar"]:
+                conversational_strategy_prompt = """
+
+# Lead Nurturing & Soft Booking Strategy:
+Your primary goal remains to guide the user towards the `specific_goal_or_cta`.
+As you converse, listen for cues of strong interest or questions about next steps. Keep your interactions brief and friendly.
+If the user seems like a qualified lead (e.g., their needs align with the solution, they express positive sentiment towards the offering):
+1.  Subtly try to understand their specific needs or pain points that the product/service can address. A quick, "So, what are you hoping to achieve with something like this?" can work well. Keep it to one or two short questions.
+2.  If they are positive and ask "what's next?", "how do I sign up?", or similar, or if it feels like a natural transition after addressing their main points, you can suggest a more detailed discussion, demo, consultation, or the direct CTA. Make your suggestion concise.
+3.  If they agree to a follow-up that requires scheduling (like a demo or consultation), try to get a sense of their general availability (e.g., "Great! Are mornings or afternoons generally better for you?", "Any preferred days next week?"). Keep this part quick and easy for them.
+4.  Then, naturally ask for the best email address or phone number to send the confirmation, calendar invite, and any preparatory materials. For example: "Perfect! What's the best email for me to send a calendar invite to?" or "Got it. To send you the details for that, could I get your email?" Keep the ask simple.
+5.  Avoid being pushy. If they are hesitant to share contact info or schedule, acknowledge that briefly and offer to provide more information or answer more questions first. ("No problem at all. Happy to answer any other questions you have.") Your aim is to be a helpful guide, not a high-pressure salesperson.
+Remember to use the `knowledge_base` and `qa_pairs` to address objections or provide more details, always keeping responses short and to the point.
+"""
+            elif self.bridge_type in [
+                "course",
+                "onboarding",
+            ]:  # Assuming quiz falls under course/onboarding context for discovery
+                conversational_strategy_prompt = """
+
+# Discovery & Feedback Collection Strategy:
+Your primary goal is to facilitate learning and successful adoption by being an effective instructor or guide. Keep your interactions helpful and concise.
+As you interact:
+1.  Pay close attention to questions that indicate confusion, a gap in understanding, or a need for more detailed explanation than your current `knowledge_base` provides.
+2.  Listen for any expressions of frustration, pain points with the current process/material, or suggestions for improvement.
+3.  If a user asks a particularly insightful question, highlights a significant challenge, or offers feedback, acknowledge it positively and briefly (e.g., "That's a really good point," or "Gotcha, I can see why that might be tricky.", "Thanks for sharing, that's helpful.").
+4.  Your objective is to identify these key moments. You should then inform the user that this feedback is valuable and will be noted for the creator/team to review. For example: "I'll make sure to note that down for the creator." or "Good question, I'll flag that." Keep it short.
+5.  Do NOT try to collect personal contact information for escalation unless it is explicitly part of a defined `specific_goal_or_cta`. The focus is on improving the content/product itself based on user interaction.
+"""
+
+            if conversational_strategy_prompt:
+                final_prompt += f"\\n{conversational_strategy_prompt}"
+                logger.info(
+                    f"Appended conversational strategy for bridge_type '{self.bridge_type}'."
+                )
+                # logger.debug(f"Full System Prompt with Strategy: {final_prompt}")
+
             return final_prompt
 
         except Exception as e:
             logger.error(f"Error building enhanced system prompt: {e}")
             logger.error(f"Traceback: {traceback.format_exc()}")
-            # Provide a basic fallback prompt
             return BASE_PROMPTS.get("general", "You are a helpful AI assistant.")
 
     def _update_chat_context_system_prompt(self):
@@ -655,6 +691,25 @@ Generate a natural, conversational follow-up that achieves the goal of the match
                     "question", "What are your thoughts on this?"
                 )  # Assumes quiz_items might exist
                 system_context_for_next_turn = "Engage the user briefly about the current topic, then return to the main flow."
+
+            # <<< Add sales-driven goal orientation for VSL and Webinar engagements >>>
+            if self.bridge_type == "vsl" and system_context_for_next_turn:
+                vsl_goal_suffix = """\
+
+# VSL Persuasion Goal:
+Remember, the primary objective of this VSL is to build conviction and guide the user towards the ultimate call to action (e.g., purchase, sign-up, learn more). 
+After responding to the user based on the specific engagement instructions above, ensure your reply also subtly reinforces a key benefit, addresses a potential unspoken objection, or highlights the value relevant to the current point in the VSL. Your aim is to maintain persuasive momentum and steer the conversation towards the VSL's goal.
+"""
+                system_context_for_next_turn += vsl_goal_suffix
+            elif self.bridge_type == "webinar" and system_context_for_next_turn:
+                webinar_goal_suffix = """\
+
+# Webinar Engagement Goal:
+Remember, the primary objective of this webinar is to deliver value, demonstrate expertise, and encourage attendees to take a relevant next step (e.g., explore a feature, download a resource, consider an offer).
+After responding to the user based on the specific engagement instructions above, ensure your reply also subtly reinforces a key insight from the webinar, links it to a benefit, or prompts further curiosity related to the webinar's objectives. Your aim is to keep the audience engaged and guide them towards valuable outcomes.
+"""
+                system_context_for_next_turn += webinar_goal_suffix
+            # <<< End of sales-driven goal orientation >>>
 
             # 4. Speak the initial prompt FIRST
             if initial_prompt:
