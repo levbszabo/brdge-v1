@@ -477,10 +477,29 @@ def extract_knowledge_base(
     if additional_instructions:
         instruction_context = f"\n\nAlso consider these specific instructions when extracting knowledge: {additional_instructions}"
 
+    # Enhanced section for goal-oriented extraction
+    goal_oriented_extraction_instructions = ""
+    if bridge_type in ["vsl", "webinar"]:
+        goal_oriented_extraction_instructions = f"""
+
+    Given the bridge_type is '{bridge_type}', pay SPECIAL ATTENTION to extracting elements crucial for persuasion and achieving the primary sales/engagement goal:
+    - **Persuasion Techniques Observed**: Identify any classical persuasion techniques used (e.g., Cialdini's principles: Reciprocity, Scarcity, Authority, Consistency, Liking, Consensus/Social Proof). For each, describe how it's applied in the content. These can be categorized under 'Persuasion Technique' within `core_concepts`.
+    - **Value Propositions & Benefit Articulation**: How are key benefits of the product/service/idea articulated? How are they linked to solving audience pain points or achieving desires? Capture these as `core_concepts` with a category like 'Value Proposition' or 'Benefit'.
+    - **Objection Handling Strategies**: Does the content preemptively address potential objections or doubts? How? Note these strategies. These can be linked to relevant `core_concepts` or captured as `key_facts` with context.
+    - **Emotional Hooks & Engagement Drivers**: What emotional language, stories, or questions are used to engage the audience and build interest towards the goal?
+    - **Call-to-Action (CTA) Analysis**: If a CTA is present, analyze how the content builds towards it. What are the linguistic cues or triggers? This can inform the 'purpose' or 'attributes' of related `core_concepts`.
+    - **Psychological Sales Methods**: Are there any identifiable psychological sales methods or frameworks implicitly or explicitly used (e.g., AIDA - Attention, Interest, Desire, Action; SPIN selling; Challenger Sale cues)? Describe these. These can be noted as `key_facts` with appropriate context or influence the description of `processes`.
+
+    When extracting these, try to integrate them naturally into the existing JSON structure. For example:
+    - A persuasion technique like "Scarcity (e.g., 'Limited time offer')" could be a `core_concept` with `name: "Limited Time Offer"`, `category: "Persuasion Technique"`, and its `definition_text` explaining how it's used.
+    - A `key_fact` could be `fact: "The presenter uses storytelling to build an emotional connection before introducing the main offer."`, `context: "Engagement Driver"`.
+    """
+
     knowledge_prompt = f"""
     Analyze this video (and document if provided) to extract a comprehensive knowledge base.
     
     {focus_instruction}
+    {goal_oriented_extraction_instructions}
     
     Use the following timeline information as context:
     ```
@@ -646,9 +665,9 @@ def extract_teaching_persona(
     # Add mode-specific goal injection
     goal_instruction = ""
     if bridge_type == "vsl":
-        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating a highly persuasive sales presenter*. Focus specifically on persuasion techniques, benefit-driven language, confidence, authority, handling objections implicitly/explicitly, and driving towards a specific conversion action."
+        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating a highly persuasive sales presenter*. Focus specifically on persuasion techniques (e.g., building rapport, establishing authority, using social proof, creating urgency), benefit-driven language, storytelling for impact, confidence, authority, handling objections implicitly/explicitly, and driving towards a specific conversion action. Identify the overall sales/persuasion strategy or archetype if discernible (e.g., Challenger, Consultative, Storyteller)."
     elif bridge_type == "webinar":
-        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating an engaging, authoritative host/expert*. Focus on structured delivery, clarity, managing audience interaction (Q&A style), building credibility, and smoothly facilitating transitions, including guiding towards a next step like booking a meeting."
+        goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating an engaging, authoritative host/expert who effectively guides attendees towards a desired next step*. Focus on structured delivery, clarity, techniques for managing audience interaction (Q&A style), building credibility, using storytelling to illustrate points, and smoothly facilitating transitions, including guiding towards a next step like booking a meeting or exploring a feature. Note any specific tactics used to maintain engagement and build towards the webinar's objective."
     elif bridge_type == "onboarding":
         goal_instruction = f"Analyze this video to extract the persona of {instructor_info} *with the goal of emulating a clear, patient, and practical guide*. Focus on step-by-step instruction clarity, encouraging tone for task completion, anticipating user friction points, and providing concise, actionable help."
     else:  # course (default)
@@ -665,10 +684,17 @@ def extract_teaching_persona(
     Pay particular attention to:
     1. Speaking style, tone, pacing, and accent characteristics
     2. Explanation techniques and teaching approaches
-    3. How examples are presented and stories are told
-    4. Emotional patterns when teaching different concepts
-    5. Interaction patterns and question handling
-    6. Terminology and vocabulary usage
+    3. How examples are presented and stories are told (especially their persuasive intent if bridge_type is vsl/webinar)
+    4. Emotional patterns when teaching different concepts (and how emotion is used to persuade or engage)
+    5. Interaction patterns and question handling (including how objections or skepticism are addressed)
+    6. Terminology and vocabulary usage (note persuasive or benefit-oriented language)
+    7. **Persuasive and Goal-Oriented Communication Style (for VSL/Webinar primarily)**: 
+        - How is credibility/authority established?
+        - What techniques are used to build rapport or trust?
+        - How is urgency or scarcity leveraged (if at all)?
+        - How are benefits highlighted over features?
+        - How are potential objections preempted or addressed?
+        - How does the communication guide the listener towards a specific outcome or CTA?
     
     Consider how the instructor approaches these concepts:
     ```
@@ -682,7 +708,8 @@ def extract_teaching_persona(
           "name": "str",
           "apparent_expertise_level": "str",
           "teaching_experience_indicators": "str",
-          "communication_clarity": "str"
+          "communication_clarity": "str",
+          "persuasive_archetype": "str (e.g., Challenger, Consultative, Storyteller - relevant for VSL/Webinar)"
         }},
         "speech_characteristics": {{
           "accent": {{
@@ -715,7 +742,8 @@ def extract_teaching_persona(
               "marker": "str",
               "function": "str"
             }}
-          ]
+          ],
+          "goal_oriented_tactics_summary": "str (Describe how language is used to guide towards goals, especially for VSL/Webinar)"
         }},
         "emotional_teaching_patterns": {{
           "enthusiasm_triggers": [
@@ -788,7 +816,10 @@ def extract_teaching_persona(
       "greeting": "str",
             "concept_explanation": "str",
             "addressing_misconceptions": "str",
-            "knowledge_check": "str"
+            "knowledge_check": "str",
+            "handling_hesitation": "str (Template for addressing user doubts - for VSL/Webinar)",
+            "reinforcing_value_proposition": "str (Template for re-emphasizing benefits - for VSL/Webinar)",
+            "guiding_to_cta": "str (Template for encouraging next step - for VSL/Webinar)"
           }}
         }}
       }}
@@ -861,6 +892,7 @@ def extract_teaching_persona(
     
     Be specific about unique teaching patterns and communication style to enable accurate emulation.
     Provide detailed observations about speech patterns, emotional teaching dynamics, and storytelling approaches.
+    If the bridge_type is 'vsl' or 'webinar', ensure you thoroughly analyze and describe the persuasive communication strategies and goal-oriented tactics employed by the presenter.
     
     {instruction_context}
     """
@@ -1115,7 +1147,7 @@ def extract_engagement_opportunities(
     engagement_goal_instruction = ""
 
     if bridge_type == "vsl":
-        engagement_goal_instruction = "Identify strategic points to proactively engage the user to handle objections, reinforce value/ROI, build urgency, and guide directly towards the conversion CTA (e.g., checkout, demo request)."
+        engagement_goal_instruction = "Identify strategic points to proactively engage the user with `guided_conversation`. The GOAL of these engagements is to handle objections (e.g., price, timing, features), reinforce value/ROI, build urgency, uncover needs, qualify leads, and guide directly towards the conversion CTA (e.g., checkout, demo request). Design the `conversation_flow` elements (`goal`, `agent_initiator`, `user_responses`, `agent_followup_strategy`) to reflect specific sales tactics and psychological principles. For example, an `agent_initiator` might use a leading question to uncover a pain point, and an `agent_followup_strategy` might involve reframing an objection or using social proof."
         output_structure_prompt = f"""
         Return ONLY a JSON object with this structure:
         {{ 
@@ -1131,11 +1163,14 @@ def extract_engagement_opportunities(
                 "goal": "str (e.g., Build rapport, handle objection)",
                 "agent_initiator": "str (What the agent says first)",
                 "user_responses": [ // Guidance for LLM on how to react
-                  {{"type": "positive_interest", "agent_followup_strategy": "str (e.g., Reinforce value, pivot)"}},
-                  {{"type": "objection", "agent_followup_strategy": "str (e.g., Acknowledge, reframe)"}},
-                  {{"type": "needs_more_info", "agent_followup_strategy": "str (e.g., Ask clarifying questions)"}}
+                  {{"type": "positive_interest", "agent_followup_strategy": "str (e.g., Reinforce value, ask qualifying question, pivot to CTA)"}},
+                  {{"type": "objection_price", "agent_followup_strategy": "str (e.g., Acknowledge, reframe on value/ROI, mention payment plans)"}},
+                  {{"type": "objection_timing", "agent_followup_strategy": "str (e.g., Explore concerns, create urgency if appropriate, offer to schedule follow-up)"}},
+                  {{"type": "objection_feature_missing", "agent_followup_strategy": "str (e.g., Understand need, explain workaround, note feedback, pivot to existing strengths)"}},
+                  {{"type": "needs_more_info", "agent_followup_strategy": "str (e.g., Ask clarifying questions, provide specific detail, offer resource)"}},
+                  {{"type": "needs_social_proof", "agent_followup_strategy": "str (e.g., Share testimonial snippet, mention credible user numbers)"}}
                 ],
-                "fallback": "str (Agent message if user doesn't engage)"
+                "fallback": "str (Agent message if user doesn't engage, e.g., 'No problem, let me continue...')"
               }}
             }}
           ]
@@ -1156,9 +1191,9 @@ def extract_engagement_opportunities(
             "goal": "Acknowledge price, re-emphasize value and ROI.",
             "agent_initiator": "I know investing in growth is a big decision. When you think about the potential return we discussed regarding [Specific Benefit], how does the pricing feel in that context?",
             "user_responses": [
-              {{"type": "still_expensive", "agent_followup_strategy": "Validate concern, break down ROI, mention payment options if applicable."}},
-              {{"type": "seems_fair", "agent_followup_strategy": "Reinforce decision, smoothly transition to checkout/next step."}},
-              {{"type": "request_discount", "agent_followup_strategy": "Explain value justifies cost, potentially mention limited-time offers if applicable."}}
+              {{"type": "still_expensive", "agent_followup_strategy": "Validate concern (e.g., 'I understand budget is key.'), break down ROI (e.g., 'Consider that this could save you X hours a week, translating to Y dollars a month.'), mention payment options if applicable."}},
+              {{"type": "seems_fair", "agent_followup_strategy": "Reinforce decision (e.g., 'Great, many find it offers significant value.'), smoothly transition to checkout/next step (e.g., 'You can lock that in by clicking below.')."}},
+              {{"type": "request_discount", "agent_followup_strategy": "Explain value justifies cost (e.g., 'We price it to reflect the comprehensive features and support.'), potentially mention limited-time offers if applicable (e.g., 'While we don\'t typically discount, there is a launch bonus active this week.')."}}
             ],
             "fallback": "We can definitely circle back to pricing details later. For now, let me show you how the integration works..."
           }}
@@ -1176,16 +1211,17 @@ def extract_engagement_opportunities(
             "goal": "Encourage immediate action on the CTA.",
             "agent_initiator": "We've covered a lot, and hopefully, you see the value. This special launch pricing won't last forever – are you ready to lock it in now by clicking the button below?",
             "user_responses": [
-              {{"type": "positive_intent", "agent_followup_strategy": "Excellent! Click that button and I'll see you on the inside."}},
-              {{"type": "hesitation_cost", "agent_followup_strategy": "I understand, it's an investment. Remember the ROI we calculated earlier? This price makes it even easier to achieve that quickly."}},
-              {{"type": "hesitation_need_more_info", "agent_followup_strategy": "No problem, what specific question is holding you back right now? I can clarify before you decide."}}
+              {{"type": "positive_intent", "agent_followup_strategy": "Excellent! Click that button and I'll see you on the inside. Any quick questions before you do?"}},
+              {{"type": "hesitation_cost", "agent_followup_strategy": "I understand, it's an investment. Remember the ROI we calculated earlier, or the [Key Differentiator]? This price makes it even easier to achieve that quickly. What specific part of the cost is giving you pause?"}},
+              {{"type": "hesitation_need_more_info", "agent_followup_strategy": "No problem, what specific question is holding you back right now? I can clarify before you decide. Is it about [Feature X] or [Integration Y]?"}},
+              {{"type": "hesitation_timing", "agent_followup_strategy": "I get that timing is important. Is there something specific changing soon, or is it more about needing to discuss with others? Perhaps locking in the current offer while you finalize things is an option?"}}
             ],
             "fallback": "Feel free to explore more, but don't miss out on this offer! The button is right below when you're ready."
           }}
-        }}
+        }} 
         """
     elif bridge_type == "webinar":
-        engagement_goal_instruction = "Identify strategic points to proactively engage the user to check understanding, qualify interest, share relevant resources, facilitate Q&A, and guide towards the next step (e.g., booking a meeting)."
+        engagement_goal_instruction = "Identify strategic points to proactively engage the user with `guided_conversation`. The GOAL is to check understanding, qualify interest, share relevant resources, facilitate Q&A, and guide towards the next step (e.g., booking a meeting, downloading a resource). Design `conversation_flow` elements to support these goals, making interactions feel consultative and value-driven. For example, an `agent_initiator` could ask about specific challenges to tailor information, and `agent_followup_strategy` could involve offering a case study or suggesting a personalized demo."
         output_structure_prompt = f"""
     Return ONLY a JSON object with this structure:
     {{
@@ -1199,13 +1235,15 @@ def extract_engagement_opportunities(
               "rationale": "str (Why engage here? e.g., Qualify interest, offer resource)",
               "conversation_flow": {{ // Specific structure for guided convos
                 "goal": "str (e.g., Qualify lead, facilitate Q&A, offer resource)",
-                "agent_initiator": "str (What the agent says first)",
+                "agent_initiator": "str (What the agent says first, e.g., a qualifying question or resource offer)",
                 "user_responses": [ // Guidance for LLM on how to react
-                  {{"type": "positive_interest", "agent_followup_strategy": "str (e.g., Ask deeper qualifying question, offer related resource)"}},
-                  {{"type": "question", "agent_followup_strategy": "str (e.g., Answer directly, offer to take offline, point to documentation)"}},
-                  {{"type": "needs_clarification", "agent_followup_strategy": "str (e.g., Rephrase, provide simpler explanation)"}}
+                  {{"type": "positive_interest", "agent_followup_strategy": "str (e.g., Ask deeper qualifying question, offer related resource, suggest next step like demo booking)"}},
+                  {{"type": "specific_question", "agent_followup_strategy": "str (e.g., Answer directly, offer to take offline, point to documentation, connect with specialist)"}},
+                  {{"type": "needs_clarification", "agent_followup_strategy": "str (e.g., Rephrase, provide simpler explanation, offer analogy)"}},
+                  {{"type": "shares_challenge", "agent_followup_strategy": "str (e.g., Acknowledge, relate to solution, offer targeted advice or resource)"}},
+                  {{"type": "requests_resource", "agent_followup_strategy": "str (e.g., Provide link/info, offer to email it, confirm receipt)"}}
                 ],
-                "fallback": "str (Agent message if user doesn't engage, e.g., Okay, moving on...)"
+                "fallback": "str (Agent message if user doesn't engage, e.g., 'Okay, let's move on to our next topic...')"
               }}
             }}
           ]
@@ -1224,11 +1262,11 @@ def extract_engagement_opportunities(
           "rationale": "Qualify lead interest after showing a key feature.",
           "conversation_flow": {{
             "goal": "Understand viewer's context and gauge interest level.",
-            "agent_initiator": "Seeing that [Demoed Feature] in action, how does that align with the challenges you're currently facing with [Related Problem Area]?",
+            "agent_initiator": "Seeing that [Demoed Feature] in action, how does that align with the challenges you're currently facing with [Related Problem Area]? Or perhaps, what's the biggest hurdle you see in implementing something like this?",
             "user_responses": [
-              {{"type": "high_relevance", "agent_followup_strategy": "Acknowledge fit, ask follow-up about specific needs, suggest booking a call for personalized demo."}},
-              {{"type": "low_relevance", "agent_followup_strategy": "Thank for feedback, ask what their primary challenge is instead."}},
-              {{"type": "unclear_question", "agent_followup_strategy": "Rephrase the question more simply."}}
+              {{"type": "high_relevance_challenge_stated", "agent_followup_strategy": "Acknowledge fit and challenge (e.g., 'That makes sense, [Challenge] is a common issue.'), ask follow-up about specific needs (e.g., 'Tell me more about how that impacts your workflow.'), suggest booking a call for personalized demo (e.g., 'A quick 15-min chat could clarify how we tackle that specifically.')."}},
+              {{"type": "low_relevance_or_no_challenge", "agent_followup_strategy": "Thank for feedback (e.g., 'Appreciate the insight.'), ask what their primary focus or interest is instead (e.g., 'What aspects are most critical for your evaluation today?')."}},
+              {{"type": "unclear_question_or_unsure", "agent_followup_strategy": "Rephrase the question more simply (e.g., 'In other words, could this feature help with tasks like X or Y for you?'). Offer a different angle (e.g., 'Or is there another area you were hoping to see addressed?')."}}
             ],
             "fallback": "Okay, let's continue with the next feature..."
           }}
@@ -1244,15 +1282,15 @@ def extract_engagement_opportunities(
           "rationale": "Offer technical documentation and prompt for questions after discussing integrations.",
           "conversation_flow": {{
             "goal": "Provide deeper resource and solicit technical questions.",
-            "agent_initiator": "For those interested in the technical details, I've just dropped a link to our API documentation in the chat. Are there any initial integration questions I can answer based on what we've covered?",
+            "agent_initiator": "For those interested in the technical details, I've just dropped a link to our API documentation in the chat. We also have a whitepaper on [Related Topic]. Any initial integration questions, or would the whitepaper be useful for your team?",
             "user_responses": [
-              {{"type": "specific_question", "agent_followup_strategy": "Answer concisely if possible, offer to connect with tech team via booked call if too complex."}},
-              {{"type": "no_question", "agent_followup_strategy": "Great, glad that was clear. We can always dive deeper in a follow-up session."}},
-              {{"type": "request_case_study", "agent_followup_strategy": "Provide link to relevant case study if available, or offer to send one after the webinar."}}
+              {{"type": "specific_technical_question", "agent_followup_strategy": "Answer concisely if possible (e.g., 'Yes, it supports OAuth 2.0.'). Offer to connect with tech team via booked call if too complex (e.g., 'That's a great detailed question, our solutions architect could walk you through that.')."}},
+              {{"type": "no_question_requests_whitepaper", "agent_followup_strategy": "Great, glad that was clear. I can ensure the whitepaper link is sent to you. We can always dive deeper in a follow-up session."}},
+              {{"type": "request_case_study_or_example", "agent_followup_strategy": "Provide link to relevant case study if available (e.g., 'We have a case study with [Similar Company] that touches on that.'), or offer to send one after the webinar (e.g., 'I can follow up with a relevant example.')."}}
             ],
             "fallback": "Alright, let's move on to the security aspects then."
           }}
-        }}
+        }} 
         """
     else:
         # Determine specific goal based on course vs onboarding
@@ -1384,7 +1422,7 @@ def extract_engagement_opportunities(
     Create questions that genuinely test understanding rather than simple recall.
     Provide variations of expected answers to handle different phrasings.
     Design follow-up responses that mimic the instructor's teaching approach.
-    For `guided_conversation`, focus on natural, proactive dialogue starters and strategies.
+    For `guided_conversation`, focus on natural, proactive dialogue starters and strategies that align with the bridge_type's specific goals (e.g., sales conversion for VSL, lead qualification for Webinar, learning reinforcement for Course, task completion for Onboarding).
 
     {instruction_context}
     """
