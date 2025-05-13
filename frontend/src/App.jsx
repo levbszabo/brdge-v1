@@ -31,6 +31,7 @@ import RoomPage from './pages/RoomPage';
 import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
 import MarketplacePage from './pages/Marketplace';
+import DotBridgeBuyerJourneyDemoPage from './pages/DotBridgeBuyerJourneyDemoPage'; // Import the new demo page
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -62,7 +63,7 @@ function Layout({ children }) {
   const showHeader = true;
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace'];
+  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demo'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -193,6 +194,7 @@ function App() {
                 <Route path="/c/:publicId" element={<ViewCoursePage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/services" element={<ServicesPage />} />
+                <Route path="/demo" element={<DotBridgeBuyerJourneyDemoPage />} /> {/* Changed path to /demo */}
                 <Route
                   path="/home"
                   element={
