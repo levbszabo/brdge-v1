@@ -63,7 +63,7 @@ function Layout({ children }) {
   const showHeader = true;
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demo'];
+  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -194,7 +194,7 @@ function App() {
                 <Route path="/c/:publicId" element={<ViewCoursePage />} />
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/services" element={<ServicesPage />} />
-                <Route path="/demo" element={<DotBridgeBuyerJourneyDemoPage />} /> {/* Changed path to /demo */}
+                <Route path="/demos" element={<DotBridgeBuyerJourneyDemoPage />} /> {/* Changed path to /demo */}
                 <Route
                   path="/home"
                   element={

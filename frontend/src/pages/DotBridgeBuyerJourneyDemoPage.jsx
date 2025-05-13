@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
+import { Link as RouterLink } from 'react-router-dom';
 
 import JourneyStep from '../components/JourneyStep';
 
@@ -20,11 +21,12 @@ const journeyStepsData = [
 
 const DotBridgeBuyerJourneyDemoPage = () => {
     const theme = useTheme();
+    const stepMarginBottom = { xs: 8, md: 12 }; // Define it once
 
     return (
         <>
             <CssBaseline />
-            <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 }, color: theme.palette.text.primary }}>
+            <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, color: theme.palette.text.primary }}>
                 {/* Header Section */}
                 <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 8 } }}>
                     <Typography variant="h2" component="h1" sx={{ mb: 1.5, color: theme.palette.text.primary }}>
@@ -32,24 +34,60 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                     </Typography>
                     <Typography variant="subtitle1" sx={{ color: theme.palette.text.secondary, maxWidth: '720px', margin: 'auto' }}>
                         Experience the future of interactive video. Below, explore each stage
-                        of a buyer’s journey – powered by DotBridge AI agents. Each Bridge is
+                        of a buyer's journey – powered by DotBridge AI agents. Each Bridge is
                         a live demo. Click, watch, and interact.
                     </Typography>
                 </Box>
 
-                {/* Journey Steps Section */}
-                <Box sx={{ position: 'relative', maxWidth: '680px', margin: 'auto' }}>
-                    {journeyStepsData.map((step, index) => (
-                        <JourneyStep
-                            key={step.id}
-                            title={step.title}
-                            subtitle={step.subtitle}
-                            videoUrl={step.videoUrl}
-                            alignment={step.alignment}
-                            isLast={step.isLast}
-                        />
-                    ))}
-                </Box>
+                {/* Main content Grid for side text and journey diagram */}
+                <Grid container spacing={4} justifyContent="center" alignItems="stretch">
+                    {/* Left Side Content - Hidden on xs, visible md and up */}
+                    <Grid item md={2} sx={{ display: { xs: 'none', md: 'block' } }}>
+                        <Box sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius, mt: 4 }}>
+                            <Typography variant="h6" gutterBottom>Start Here</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                The beginning of the buyers journey starts with awareness, is this product right for your customers?
+                            </Typography>
+                        </Box>
+                    </Grid>
+
+                    {/* Journey Steps Section - Central Column */}
+                    <Grid item xs={12} md={8} lg={7}>
+                        <Box sx={{ position: 'relative', maxWidth: '680px', margin: 'auto' }}>
+                            {journeyStepsData.map((step) => (
+                                <Box key={step.id} sx={{ mb: stepMarginBottom }}>
+                                    <JourneyStep
+                                        title={step.title}
+                                        subtitle={step.subtitle}
+                                        videoUrl={step.videoUrl}
+                                        alignment={step.alignment}
+                                        isLast={step.isLast}
+                                    />
+                                </Box>
+                            ))}
+                        </Box>
+                    </Grid>
+
+                    {/* Right Side Content - Adjusted for bottom alignment */}
+                    <Grid item md={2} sx={{
+                        display: { xs: 'none', md: 'block' },
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end'
+                    }}>
+                        <Box sx={{
+                            p: 2,
+                            border: `1px solid ${theme.palette.divider}`,
+                            borderRadius: theme.shape.borderRadius,
+                            mb: stepMarginBottom.md // Match last step's bottom margin for alignment
+                        }}>
+                            <Typography variant="h6" gutterBottom>End Here</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                The end of the buyers journey is a happy customer. We extract valuable insigths and feed them back to our system, serving as a self reinforcing value flywheel.
+                            </Typography>
+                        </Box>
+                    </Grid>
+                </Grid>
 
                 {/* Footer CTA Section */}
                 <Box sx={{ textAlign: 'center', mt: { xs: 6, md: 10 }, py: 4 }}>
@@ -58,12 +96,12 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                     </Typography>
                     <Grid container spacing={2} justifyContent="center">
                         <Grid item xs={12} sm="auto">
-                            <Button variant="contained" color="primary" size="large" sx={{ minWidth: '200px' }}>
+                            <Button variant="contained" color="primary" size="large" sx={{ minWidth: '200px' }} component={RouterLink} to="/contact">
                                 Book a Call
                             </Button>
                         </Grid>
                         <Grid item xs={12} sm="auto">
-                            <Button variant="outlined" color="primary" size="large" sx={{ minWidth: '200px' }}>
+                            <Button variant="outlined" color="primary" size="large" sx={{ minWidth: '200px' }} component={RouterLink} to="/signup">
                                 Create Your First Bridge (Free)
                             </Button>
                         </Grid>

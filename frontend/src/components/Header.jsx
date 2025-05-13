@@ -88,13 +88,13 @@ function Header() {
     const menuItems = isAuthenticated
         ? [
             { text: 'Home', link: '/home' },
-            { text: 'Marketplace', link: '/marketplace' },
+            { text: 'Demos', link: '/demos' },
             { text: 'Services', link: '/services' },
             { text: 'Contact', link: '/contact' },
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
-            { text: 'Marketplace', link: '/marketplace' },
+            { text: 'Demos', link: '/demos' },
             { text: 'Services', link: '/services' },
             { text: 'Pricing', link: '/pricing' },
             { text: 'Contact', link: '/contact' },
@@ -220,13 +220,13 @@ function Header() {
                 <ListItem disablePadding>
                     <ListItemButton
                         component={RouterLink}
-                        to="/marketplace"
+                        to="/demos"
                         onClick={() => setDrawerOpen(false)}
                         sx={{
                             ...drawerItemStyle,
                         }}
                     >
-                        <ListItemText primary="Marketplace" />
+                        <ListItemText primary="Demos" />
                     </ListItemButton>
                 </ListItem>
 

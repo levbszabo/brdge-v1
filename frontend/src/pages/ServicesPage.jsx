@@ -179,14 +179,16 @@ const ServicesPage = () => {
                     transition={{ duration: 0.7 }}
                     style={{ textAlign: 'center' }}
                 >
-                    {/* Removed mobile background highlight */}
-
                     <Typography
                         variant="h1" // Use theme H1
                         component="h1"
-                        sx={{ mb: 4, color: 'text.primary' }} // Changed mb to 4
+                        sx={{
+                            mb: 4,
+                            color: 'text.primary',
+                            fontSize: { xs: '2.25rem', sm: '2.75rem', md: theme.typography.h1.fontSize } // Adjusted responsive font size
+                        }}
                     >
-                        Done-For-You AI <PrimaryText>Funnels, Courses & Training</PrimaryText>
+                        AI-Powered Sales Funnels & <PrimaryText>Intelligent Onboarding That Convert</PrimaryText>
                     </Typography>
 
                     <Typography
@@ -198,40 +200,60 @@ const ServicesPage = () => {
                             mb: { xs: 4, md: 6 } // Adjusted bottom margin
                         }}
                     >
-                        We build the entire interactive flow—so your team sells, onboards, and teaches while you sleep.
+                        Stop losing leads and new customers. We build DotBridge AI experiences that <PrimaryText>engage, qualify, and onboard</PrimaryText> users automatically—24/7.
                     </Typography>
 
-                    {/* Demo Section - Simplified */}
+                    {/* Demo Section - Now correctly handles mobile video and desktop AgentConnector */}
                     <Box sx={{ mb: { xs: 4, sm: 6 }, mt: { xs: 2, sm: 0 } }}>
                         {isMobile ? (
-                            // Mobile: Simple Video Placeholder Box
-                            <Card
-                                variant="outlined"
-                                sx={{
-                                    maxWidth: '500px',
-                                    mx: 'auto',
-                                    mb: 4,
-                                    bgcolor: 'neutral.light', // Use light neutral bg
-                                    p: 3,
-                                    textAlign: 'center'
-                                }}
-                            >
-                                <PlayArrow sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
-                                <Typography variant="body1" color="text.secondary">
-                                    (Service Explainer Video)
+                            <Box sx={{
+                                maxWidth: '500px',
+                                mx: 'auto',
+                                textAlign: 'center',
+                                mb: 4,
+                                p: { xs: 1.5, sm: 2, md: 3 }, // Reduced padding for xs
+                                border: `1px solid ${theme.palette.divider}`,
+                                borderRadius: theme.shape.borderRadius,
+                                bgcolor: theme.palette.background.paper // Match card-like appearance
+                            }}>
+                                <Typography variant="h6" component="p" color="text.primary" sx={{ mb: 1.5 }}>
+                                    Watch a Quick Overview
+                                </Typography>
+                                <Box sx={{
+                                    backgroundColor: theme.palette.grey[300],
+                                    borderRadius: theme.shape.borderRadius,
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                    paddingTop: '56.25%', // 16:9 Aspect Ratio
+                                    mb: 1
+                                }}>
+                                    <video
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                        }}
+                                        controls
+                                        poster="poster-services.jpg" // IMPORTANT: Replace with your video poster image URL
+                                    >
+                                        <source src="brdge-services-final.mp4" type="video/mp4" />
+                                        Your browser does not support the video tag. Please update your browser.
+                                    </video>
+                                </Box>
+                                <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1, mb: 1.5 }}>
+                                    (Explainer Video for Mobile)
                                 </Typography>
                                 <Button
                                     component={RouterLink}
                                     to={`/viewBridge/${DEMO_BRIDGE_ID}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    variant="text"
-                                    size="small"
-                                    sx={{ mt: 2 }}
+                                    variant="outlined" // Differentiate from main CTA
+                                    size="medium"
                                 >
-                                    See Live Demo
+                                    Or Try the Interactive Demo
                                 </Button>
-                            </Card>
+                            </Box>
                         ) : (
                             // Desktop: Interactive AgentConnector in a themed card
                             <Card
@@ -240,7 +262,7 @@ const ServicesPage = () => {
                                     maxWidth: { md: '1000px', lg: '1100px' },
                                     mx: 'auto',
                                     position: 'relative',
-                                    aspectRatio: '16 / 9.5', // Adjust aspect ratio slightly
+                                    aspectRatio: '16 / 9.5',
                                     minHeight: '500px',
                                     overflow: 'hidden',
                                     '& .agent-connector-container': {
@@ -252,9 +274,12 @@ const ServicesPage = () => {
                                     },
                                 }}
                             >
+                                <Box sx={{ position: 'absolute', top: 16, left: 24, zIndex: 1, background: 'rgba(0,0,0,0.5)', p: 0.5, borderRadius: 1 }}>
+                                    <Typography variant="caption" sx={{ color: 'white' }}>Live DotBridge Sales Funnel Demo</Typography>
+                                </Box>
                                 <div className="agent-connector-container">
                                     <AgentConnector
-                                        brdgeId={DEMO_BRIDGE_ID}
+                                        brdgeId={DEMO_BRIDGE_ID} // Ensure this DEMO_BRIDGE_ID showcases a sales or onboarding funnel
                                         agentType="view"
                                         token=""
                                     />
@@ -263,7 +288,6 @@ const ServicesPage = () => {
                         )}
                     </Box>
 
-                    {/* CTA Button - Styled with theme */}
                     <Button
                         variant="contained"
                         size="large"
@@ -276,12 +300,12 @@ const ServicesPage = () => {
                             });
                         }}
                     >
-                        Apply for Done-For-You Service
+                        Build My AI-Powered Funnel
                     </Button>
                 </motion.div>
             </Container>
 
-            {/* Unlock Your Expertise Section (Formerly Why This Matters) */}
+            {/* Unlock Your Expertise Section */}
             <Box sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100', py: { xs: 8, md: 12 } }}>
                 <Container maxWidth="md" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
                     <motion.div
@@ -290,10 +314,10 @@ const ServicesPage = () => {
                         transition={{ duration: 0.7, delay: 0.2 }}
                     >
                         <Typography variant="h2" sx={{ color: 'text.primary', mb: 3 }}>
-                            Your Knowledge, <PrimaryText>AI-Powered & Always On.</PrimaryText>
+                            Stop Bottlenecks, <PrimaryText>Start Scaling.</PrimaryText>
                         </Typography>
                         <Typography variant="h5" sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto' }}>
-                            Your team's knowledge is your greatest asset, but packaging it into compelling funnels, courses, or onboarding experiences is a major bottleneck. Filming, editing, and complex integrations devour time and resources. DotBridge's DFY service is your dedicated AI production crew, transforming your expertise into dynamic video journeys that captivate users, provide instant answers, and drive results—24/7.
+                            Your expertise is invaluable, but manual sales calls, repetitive demos, and inconsistent onboarding slow you down. Imagine <PrimaryText>automating qualification, delivering perfect product tours, and guiding new users to success</PrimaryText>—effortlessly. That's the power of DotBridge DFY. We transform your process into an AI-driven machine that works for you, 24/7.
                         </Typography>
                     </motion.div>
                 </Container>
@@ -301,7 +325,7 @@ const ServicesPage = () => {
 
             <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
 
-            {/* What We Deliver Section (Replaces old Service Steps Title/Intro) */}
+            {/* What We Deliver Section */}
             <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 15 }, position: 'relative', zIndex: 1 }} ref={stepsRef}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -313,30 +337,29 @@ const ServicesPage = () => {
                         align="center"
                         sx={{ color: 'text.primary', mb: 3 }}
                     >
-                        What We <PrimaryText>Deliver</PrimaryText>
+                        Your Custom <PrimaryText>AI Growth Engine</PrimaryText>
                     </Typography>
                     <Typography
                         variant="h5"
                         align="center"
                         sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: 8 }}
                     >
-                        Your knowledge transformed into powerful AI-driven experiences that achieve your business goals.
+                        We craft tailored DotBridge experiences to achieve your specific sales and customer success goals.
                     </Typography>
 
-                    {/* Grid for Deliverables */}
                     <Grid container spacing={{ xs: 3, md: 4 }} justifyContent="center" sx={{ maxWidth: '1100px', mx: 'auto' }}>
                         {[{
-                            title: "AI Sales Funnel",
-                            description: "VSL → Webinar → Product Demo, stitched into a single .bridge flow that chats back and books calls.",
+                            title: "AI Sales & Demo Funnels",
+                            description: "Convert more leads by transforming your VSLs, webinars, or product demos into interactive DotBridge flows. Our AI qualifies prospects, answers questions in real-time, and seamlessly books calls with your sales team—only for the most engaged leads.",
                             icon: <TrendingUp sx={{ fontSize: 40, color: 'primary.main' }} />
                         }, {
-                            title: "Interactive Course",
-                            description: "Voice-cloned lessons, auto-generated quizzes, and real-time Q&A that boost completion 65%.",
-                            icon: <School sx={{ fontSize: 40, color: 'primary.main' }} /> // Re-add School icon if not imported
-                        }, {
-                            title: "Smart Onboarding",
-                            description: "Role-based paths and AI assistants that cut support tickets 40%.",
+                            title: "Intelligent Onboarding Flows",
+                            description: "Empower new users from day one. We build role-based, interactive onboarding paths that guide customers through setup, demonstrate key features, and proactively answer common questions, dramatically boosting activation and reducing support load.",
                             icon: <Groups sx={{ fontSize: 40, color: 'primary.main' }} />
+                        }, {
+                            title: "Interactive Content & Training", // Repurposed
+                            description: "Enhance your funnels with engaging, AI-powered content. From interactive product tutorials within onboarding to value-packed lead magnets, we help you educate and build trust at scale. (Supports Sales & Onboarding)",
+                            icon: <School sx={{ fontSize: 40, color: 'secondary.main' }} /> // Consider a different icon or color
                         }].map((item, idx) => (
                             <Grid item xs={12} md={4} key={idx} sx={{ display: 'flex' }}>
                                 <Card
@@ -394,17 +417,16 @@ const ServicesPage = () => {
                             Streamlined for efficiency, designed for impact. We handle the complexity so you can focus on your expertise.
                         </Typography>
 
-                        {/* AI Ingestion Diagram and Description - Two Column Layout */}
                         <Grid container spacing={{ xs: 3, md: 5 }} alignItems="center" sx={{ my: { xs: 4, md: 6 } }}>
                             <Grid item xs={12} md={6}>
                                 <Box sx={{
                                     textAlign: 'center',
-                                    maxWidth: '100%', // Image will take full width of this grid item
+                                    maxWidth: '100%',
                                     mx: 'auto'
                                 }}>
                                     <motion.img
-                                        src="/dotbridge-hero1.jpg"
-                                        alt="DotBridge AI Ingestion Process"
+                                        src="/dotbridge-hero1.jpg" // Consider an image more aligned with funnel/onboarding creation
+                                        alt="DotBridge AI Ingestion Process for Funnels"
                                         initial={{ opacity: 0, x: -30 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ duration: 0.7, delay: 0.2 }}
@@ -425,17 +447,16 @@ const ServicesPage = () => {
                                 >
                                     <Typography variant="h4" component="h3" sx={{ color: 'text.primary', mb: 2, fontWeight: '600' }}>
                                         The DotBridge AI Engine:
-                                        <Box component="span" sx={{ display: 'block', color: 'primary.main' }}>From Video to Interactive Experience</Box>
+                                        <Box component="span" sx={{ display: 'block', color: 'primary.main' }}>Your Content, Intelligently Transformed</Box>
                                     </Typography>
                                     <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.1rem' }}>
-                                        Our sophisticated AI ingestion takes your raw video and instantly gets to work. It performs semantic mapping to understand your content deeply, automatically generating initial questions, identifying key topics, and preparing your material for voice cloning (if chosen) and persona alignment. This intelligent foundation allows us to rapidly build a .bridge that doesn't just play video, but interacts, teaches, and converts.
+                                        Our sophisticated AI ingestion takes your existing sales materials (VSLs, product docs) or onboarding guides. It performs deep semantic mapping to understand your customer journey, <PrimaryText>automatically generating qualifying questions for sales funnels, identifying key milestones for onboarding, and structuring interactive dialogues.</PrimaryText> This intelligent foundation allows us to rapidly build a .bridge that doesn't just present information, but actively guides users to conversion or successful adoption.
                                     </Typography>
                                 </motion.div>
                             </Grid>
                         </Grid>
 
-                        {/* Use Grid for steps layout - This is the existing 5 steps */}
-                        <Box sx={{ maxWidth: '1000px', mx: 'auto', mt: { xs: 4, md: 8 } }}> {/* Added margin top here */}
+                        <Box sx={{ maxWidth: '1000px', mx: 'auto', mt: { xs: 4, md: 8 } }}>
                             <Grid container spacing={{ xs: 4, md: 3 }} justifyContent="center">
                                 {DfyProcessSteps.map((feature, idx) => (
                                     <Grid item xs={12} sm={6} md={4} key={idx} sx={{ display: 'flex' }}>
@@ -473,7 +494,7 @@ const ServicesPage = () => {
                                                 variant="body1"
                                                 sx={{ color: 'text.secondary', flexGrow: 1 }}
                                             >
-                                                {feature.description}
+                                                {feature.description} {/* Ensure DfyProcessSteps descriptions are also aligned if possible */}
                                             </Typography>
                                         </Card>
                                     </Grid>
@@ -486,7 +507,7 @@ const ServicesPage = () => {
 
             <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
 
-            {/* Impact Our Clients See Section (Previously Results Section) */}
+            {/* Impact Our Clients See Section */}
             <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 }, mb: { xs: 8, md: 15 }, position: 'relative', zIndex: 1 }} ref={resultsRef}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -499,16 +520,16 @@ const ServicesPage = () => {
                         align="center"
                         sx={{ color: 'text.primary', mb: 3 }}
                     >
-                        Impact Our <PrimaryText>Clients See</PrimaryText>
+                        Results You Can <PrimaryText>Expect</PrimaryText>
                     </Typography>
                     <Typography
                         variant="h5"
                         sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 8 }}
                     >
-                        Transforming how businesses engage, educate, and sell with AI-driven interactive experiences.
+                        Transform your sales and onboarding with AI-driven experiences that deliver measurable outcomes.
                     </Typography>
                     <Grid container spacing={4} justifyContent="center">
-                        {impactMetrics.map((item, index) => (
+                        {impactMetrics /* Update impactMetrics data source with new values */.map((item, index) => (
                             <Grid item xs={6} sm={6} md={3} key={index}>
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.9 }}
@@ -516,20 +537,20 @@ const ServicesPage = () => {
                                     transition={{ duration: 0.5, delay: index * 0.15 }}
                                 >
                                     <Box sx={{ textAlign: 'center' }}>
-                                        <Box sx={{ color: item.color, mb: 1.5 }}>
+                                        <Box sx={{ color: item.color || 'primary.main', mb: 1.5 }}>
                                             {React.cloneElement(item.icon, { sx: { fontSize: { xs: 32, md: 40 }, mb: 1.5 } })}
                                         </Box>
                                         <Typography
                                             variant={isMobile ? "h4" : "h3"}
                                             sx={{ fontWeight: 600, color: 'primary.main', mb: 1, lineHeight: 1.2 }}
                                         >
-                                            {item.metric}
+                                            {item.metric} {/* e.g., "+40% Sales", "2X Faster Onboarding" */}
                                         </Typography>
                                         <Typography
                                             variant="body1"
                                             sx={{ color: 'text.secondary' }}
                                         >
-                                            {item.description}
+                                            {item.description} {/* e.g., "Increase in qualified leads", "Reduction in time-to-value" */}
                                         </Typography>
                                     </Box>
                                 </motion.div>
@@ -554,17 +575,16 @@ const ServicesPage = () => {
                             align="center"
                             sx={{ color: 'text.primary', mb: 3 }}
                         >
-                            Limited <PrimaryText>Build Slots Open</PrimaryText>
+                            Ready to <PrimaryText>Automate & Scale?</PrimaryText>
                         </Typography>
                         <Typography
                             variant="h5"
                             align="center"
                             sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 6 }}
                         >
-                            We take on a handful of DFY projects each quarter to keep quality white-glove. Tell us about your funnel, course, or onboarding plan—let's see if it's a fit.
+                            Apply for our Done-For-You service. We're accepting a limited number of projects to build high-impact AI sales and onboarding funnels.
                         </Typography>
 
-                        {/* Use standard Paper/Box for form container, styled with theme */}
                         <Paper
                             elevation={0}
                             sx={{
@@ -586,7 +606,7 @@ const ServicesPage = () => {
                                             Application Received!
                                         </Typography>
                                         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                                            Thanks for your interest. We'll review your application and contact you via email within 1-2 business days.
+                                            Thanks for your interest. We'll review your application for an AI Funnel build and contact you via email within 1-2 business days.
                                         </Typography>
                                     </motion.div>
                                 </Box>
@@ -619,17 +639,17 @@ const ServicesPage = () => {
                                         <Grid item xs={12}>
                                             <FormControl component="fieldset" fullWidth>
                                                 <FormLabel component="legend" sx={{ mb: 1, color: 'text.secondary' }}>
-                                                    Do you have an existing course or content?
+                                                    Do you have existing sales or onboarding material?
                                                 </FormLabel>
                                                 <RadioGroup
-                                                    name="hasExistingCourse"
+                                                    name="hasExistingCourse" // Keep name for consistency with state, but label is changed
                                                     value={lead.hasExistingCourse}
                                                     onChange={handleInputChange}
                                                     row
                                                     required
                                                 >
-                                                    <FormControlLabel value="yes" control={<Radio color="primary" />} label="Yes" />
-                                                    <FormControlLabel value="no" control={<Radio color="primary" />} label="No" />
+                                                    <FormControlLabel value="yes" control={<Radio color="primary" />} label="Yes (Videos, Docs, etc.)" />
+                                                    <FormControlLabel value="no" control={<Radio color="primary" />} label="No (We'll strategize)" />
                                                 </RadioGroup>
                                             </FormControl>
                                         </Grid>
@@ -637,8 +657,8 @@ const ServicesPage = () => {
                                             <TextField
                                                 variant="outlined"
                                                 fullWidth
-                                                label="Tell us about your project (funnel, course, or onboarding plan)"
-                                                name="courseTopic"
+                                                label="Describe your desired sales/onboarding funnel & goals"
+                                                name="courseTopic" // Keep name for consistency, but label is changed
                                                 value={lead.courseTopic}
                                                 onChange={handleInputChange}
                                                 multiline
@@ -659,7 +679,7 @@ const ServicesPage = () => {
                                                 {isSubmitting ? (
                                                     <CircularProgress size={24} color="inherit" />
                                                 ) : (
-                                                    'Apply for a Done-For-You Build'
+                                                    'Apply for Your AI Funnel Build'
                                                 )}
                                             </Button>
                                         </Grid>
@@ -680,19 +700,19 @@ const ServicesPage = () => {
 
             <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
 
-            {/* Final CTA Section - Simplified */}
+            {/* Final CTA Section */}
             <Container maxWidth="md" sx={{ textAlign: 'center', py: { xs: 8, md: 10 }, mb: { xs: 6, md: 10 } }}>
                 <Typography
                     variant="h2"
                     sx={{ color: 'text.primary', mb: 3 }}
                 >
-                    Ready to Build Your <PrimaryText>AI-Powered Journey</PrimaryText>?
+                    Stop Selling Manually. <PrimaryText>Start Automating with AI.</PrimaryText>
                 </Typography>
                 <Typography
                     variant="h5"
                     sx={{ color: 'text.secondary', mb: 5, maxWidth: '700px', mx: 'auto' }}
                 >
-                    Let us handle the heavy lifting. Apply now to transform your knowledge into an engaging, interactive experience that drives results.
+                    Let us build your high-performance AI sales funnel or smart onboarding experience. Apply now and let DotBridge transform how you attract, convert, and retain customers.
                 </Typography>
                 <Button
                     variant="contained"
@@ -706,7 +726,7 @@ const ServicesPage = () => {
                         });
                     }}
                 >
-                    Apply for a Done-For-You Build
+                    Get My Custom AI Funnel
                 </Button>
             </Container>
 
