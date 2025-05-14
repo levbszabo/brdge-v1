@@ -147,7 +147,7 @@ class Assistant(Agent):
         self.engagement_opportunities = []
         self.current_position = 0
         self.user_id = None
-        self.voice_id = "352af1eb-9cf0-4284-85e0-17f3b29110b9"  # Default voice ID
+        self.voice_id = "63406bbd-ce1b-4fff-8beb-86d3da9891b9"  # Default voice ID
         self.current_speech = {
             "started_at": None,
             "message": None,
@@ -195,7 +195,7 @@ class Assistant(Agent):
                 f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
             )
 
-            default_voice = "352af1eb-9cf0-4284-85e0-17f3b29110b9"
+            default_voice = "63406bbd-ce1b-4fff-8beb-86d3da9891b9"
             self.voice_id = self.brdge.get("voice_id", default_voice)
             if not self.voice_id:
                 self.voice_id = default_voice
@@ -1335,12 +1335,11 @@ async def entrypoint(ctx: JobContext):
         logger.error(f"Error loading VAD model: {e}")
         return  # Cannot proceed without VAD
     agent = Assistant(brdge_id=brdge_id, room=ctx.room)
-    print(agent.voice_id)
-    # session = AgentSession(
+
     session_a = AgentSession(
         stt=deepgram.STT(),
         llm=openai.LLM(model="gpt-4.1"),
-        tts=cartesia.TTS(voice="63406bbd-ce1b-4fff-8beb-86d3da9891b9"),
+        tts=cartesia.TTS(voice=agent.voice_id),
         vad=silero.VAD.load(),
     )
     session_b = AgentSession(
