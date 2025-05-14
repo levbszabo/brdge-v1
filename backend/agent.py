@@ -533,17 +533,31 @@ After responding to the user based on the specific engagement instructions above
 
             # 4. Speak the initial prompt FIRST
             if initial_prompt:
-                logger.info(f"Speaking engagement initiator: {initial_prompt}")
-                initial_prompt_with_context = f"""
-                First, say to the user:
-                "{initial_prompt}"
+                logger.info(
+                    f"Instructing LLM to generate engagement initiator: {initial_prompt}"
+                )
 
-                Then, use these instructions to guide the interaction:
-                {system_context_for_next_turn}
-                """
-                # await self.session.generate_reply(instructions="")
-                await self.session.say(text=initial_prompt)
-                # Optional brief pause allows user to potentially interrupt or TTS to catch up
+                # Instruct the LLM to say the initial_prompt as its next turn
+                instruction_for_llm = f"System: Please now say the following to the user '{initial_prompt}'"
+
+                current_messages = list(
+                    self.chat_ctx.items
+                )  # Get current messages as a mutable list
+                new_system_message = llm.ChatMessage(
+                    role="system", content=[instruction_for_llm]
+                )
+                current_messages.append(new_system_message)
+
+                new_context = llm.ChatContext(
+                    current_messages
+                )  # Create new context with all messages
+                await self.update_chat_ctx(new_context)  # Update the agent's context
+
+                # Trigger the agent to generate a reply based on the updated context
+                # This will use the LLM (standard or realtime) to generate the speech.
+                await self.session.generate_reply()
+
+                # Optional brief pause - may or may not be needed depending on how quickly generate_reply acts
                 await asyncio.sleep(0.2)
             else:
                 logger.warning("No initial prompt generated for engagement.")
@@ -905,28 +919,6 @@ async def entrypoint(ctx: JobContext):
         except Exception as e:
             logger.error(f"Error processing data packet: {e}\n{traceback.format_exc()}")
 
-    # @chat.on("message_received")
-    # def on_chat_received(msg: rtc.ChatMessage):
-    #     if not agent:
-    #         logger.warning("Agent not initialized, cannot process chat message")
-    #         return
-
-    #     cleaned_message = " ".join(msg.message.split()).strip()
-    #     if not cleaned_message:
-    #         return
-
-    #     logger.info(f"Received chat message: {cleaned_message}")
-    #     agent.interrupt(interrupt_all=True)  # Interrupt agent before processing
-    #     # Log conversation turn
-    #     agent._log_conversation(cleaned_message, role="user", interrupted=False)
-    #     # Process the message using the refactored method
-    #     asyncio.create_task(agent.process_user_input(cleaned_message))
-
-    # # Start the agent pipeline
-    # agent.start(ctx.room, participant)
-    # logger.info(f"Agent started for brdge {brdge_id}, type {agent.bridge_type}")
-
-    # Keep the connection alive
     disconnect_event = asyncio.Event()
 
     @ctx.room.on("disconnected")
