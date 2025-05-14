@@ -929,8 +929,6 @@ async def entrypoint(ctx: JobContext):
     try:
         await disconnect_event.wait()
     finally:
-        if session:
-            await session.aclose()
         logger.info("Cleaning up agent...")
 
 
