@@ -70,7 +70,7 @@ def configure_genai():
 
 
 # Initialize the model
-def get_model(model_name="gemini-2.5-flash-preview-04-17"):
+def get_model(model_name="gemini-2.0-flash"):
     """Get configured Gemini model instance"""
     start_time = time.time()
     model = genai.GenerativeModel(

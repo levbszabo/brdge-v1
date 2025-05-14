@@ -10,12 +10,11 @@ from livekit.agents import (
 )
 import requests
 import asyncio
-from livekit.agents.pipeline import VoicePipelineAgent
-from livekit.plugins import openai, deepgram, silero, cartesia
-from livekit.agents.llm import ChatImage, ChatContext, LLMStream
+from livekit.agents import AgentSession, Agent, llm, RoomInputOptions
+
+# from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from livekit.plugins import openai, deepgram, silero, cartesia, google
 from livekit import rtc
-from livekit.rtc import VideoFrame, DataPacket
-from livekit.rtc._proto import video_frame_pb2
 import json
 from datetime import datetime
 import os
@@ -128,7 +127,459 @@ def prewarm(proc: JobProcess):
         proc.userdata["prewarm_failed"] = True
 
 
-class ChatAssistant(VoicePipelineAgent):
+class Assistant(Agent):
+    def __init__(self, brdge_id: str = None, room: rtc.Room = None) -> None:
+        self.brdge_id = brdge_id
+        self.room = room
+        self.api_base_url = API_BASE_URL
+        self.bridge_type = "general"
+        self.personality = ""
+        self.knowledge_content = ""
+        self.document_knowledge = ""
+        self.transcript_read = []
+        self.transcript_remaining = []
+        self.script = None
+        self.agent_personality = {}
+        self.teaching_persona = {}
+        self.knowledge_base = {}
+        self.qa_pairs = []
+        self.video_timeline = {}
+        self.engagement_opportunities = []
+        self.current_position = 0
+        self.user_id = None
+        self.voice_id = "352af1eb-9cf0-4284-85e0-17f3b29110b9"  # Default voice ID
+        self.current_speech = {
+            "started_at": None,
+            "message": None,
+            "was_interrupted": False,
+            "log_id": None,
+        }
+        self.current_timestamp_seconds = 0
+        self.current_timestamp = "00:00:00"
+        self.triggered_opportunities = set()
+        self.system_prompt = "Initializing..."
+        self.brdge = {}  # Initialize brdge attribute
+
+        self.initialize()
+
+        super().__init__(instructions=self.system_prompt)
+
+    def initialize(self):
+        if not self.brdge_id or not self.api_base_url:
+            logger.error("Missing brdge_id or API_BASE_URL")
+            return False
+
+        try:
+            response = requests.get(
+                f"{self.api_base_url}/brdges/{self.brdge_id}/agent-config"
+            )
+            response.raise_for_status()
+            config_data = response.json()
+            logger.debug(f"Fetched agent-config: {json.dumps(config_data, indent=2)}")
+
+            self.brdge = config_data.get("brdge", {})  # Store full brdge object
+            self.bridge_type = self.brdge.get("bridge_type", "general")
+            logger.info(f"Setting bridge_type to: {self.bridge_type}")
+
+            self.agent_personality = config_data.get("agentPersonality", {})
+            self.teaching_persona = config_data.get("teaching_persona", {})
+            self.knowledge_base = config_data.get("knowledge_base", {})
+            self.qa_pairs = config_data.get("qa_pairs", [])
+            self.video_timeline = config_data.get(
+                "timeline", config_data.get("video_timeline", {})
+            )
+            self.engagement_opportunities = config_data.get(
+                "engagement_opportunities", []
+            )
+            logger.info(
+                f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
+            )
+
+            default_voice = "352af1eb-9cf0-4284-85e0-17f3b29110b9"
+            self.voice_id = self.brdge.get("voice_id", default_voice)
+            if not self.voice_id:
+                self.voice_id = default_voice
+            logger.info(f"Using voice_id: {self.voice_id}")
+
+            self.system_prompt = self._build_enhanced_system_prompt()
+
+            # if hasattr(self, "tts") and isinstance(self.tts, cartesia.TTS):
+            #     self.tts.update_voice(self.voice_id)
+            #     logger.info(f"Updated Cartesia TTS voice to {self.voice_id}")
+
+            logger.info("Agent initialization data fetched successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error initializing agent: {e}")
+            logger.error(f"Exception details: {traceback.format_exc()}")
+            self.system_prompt = BASE_PROMPTS.get(
+                "general", "You are a helpful AI assistant."
+            )
+            return False
+
+    def _build_enhanced_system_prompt(self):
+        try:
+            base_instructions = BASE_PROMPTS.get(
+                self.bridge_type, BASE_PROMPTS["general"]
+            )
+
+            # Ensure self.brdge is populated (it should be by initialize method)
+            brdge_data = self.brdge if hasattr(self, "brdge") and self.brdge else {}
+            additional_instructions = brdge_data.get("additional_instructions", "")
+            # Log if additional_instructions are found and used
+            if additional_instructions:
+                logger.info(
+                    f"Using additional_instructions for brdge {self.brdge_id}: {additional_instructions[:100]}..."
+                )  # Log first 100 chars
+            else:
+                logger.info(
+                    f"No additional_instructions found for brdge {self.brdge_id}."
+                )
+
+            context_data = {
+                "bridge_type": self.bridge_type,
+                "current_timestamp": self.current_timestamp,
+                "teaching_persona": (
+                    self.teaching_persona if hasattr(self, "teaching_persona") else {}
+                ),
+                "agent_personality": (
+                    self.agent_personality if hasattr(self, "agent_personality") else {}
+                ),
+                "knowledge_base": (
+                    self.knowledge_base if hasattr(self, "knowledge_base") else {}
+                ),
+                "qa_pairs": self.qa_pairs if hasattr(self, "qa_pairs") else [],
+                "video_timeline": (
+                    self.video_timeline if hasattr(self, "video_timeline") else {}
+                ),
+                "specific_goal_or_cta": additional_instructions,  # Use fetched additional_instructions
+            }
+
+            formatted_json = json.dumps(context_data, indent=2)
+            final_prompt = f"{base_instructions}\\n{SYSTEM_PROMPT_SUFFIX.format(json_context=formatted_json)}"
+
+            logger.info(f"Generated system prompt for bridge_type '{self.bridge_type}'")
+            # logger.debug(f"System Prompt: {final_prompt}")
+
+            # Append type-specific conversational strategies
+            conversational_strategy_prompt = ""
+            if self.bridge_type in ["vsl", "webinar"]:
+                conversational_strategy_prompt = """
+
+    # Lead Nurturing & Soft Booking Strategy:
+    Your primary goal remains to guide the user towards the `specific_goal_or_cta`.
+    As you converse, listen for cues of strong interest or questions about next steps. Keep your interactions brief and friendly. Actively apply relevant persuasive techniques, communication patterns, or persona archetypes (e.g., 'Consultative Seller', 'Challenger') identified in your KNOWLEDGE_BASE and TEACHING_PERSONA to build rapport and effectively guide the user.
+    If the user seems like a qualified lead (e.g., their needs align with the solution, they express positive sentiment towards the offering):
+    1.  Subtly try to understand their specific needs or pain points that the product/service can address. A quick, "So, what are you hoping to achieve with something like this?" can work well. Keep it to one or two short questions.
+    2.  If they are positive and ask "what's next?", "how do I sign up?", or similar, or if it feels like a natural transition after addressing their main points, you can suggest a more detailed discussion, demo, consultation, or the direct CTA. Make your suggestion concise.
+    3.  If they agree to a follow-up that requires scheduling (like a demo or consultation), try to get a sense of their general availability (e.g., "Great! Are mornings or afternoons generally better for you?", "Any preferred days next week?"). Keep this part quick and easy for them.
+    4.  Then, naturally ask for the best email address or phone number to send the confirmation, calendar invite, and any preparatory materials. For example: "Perfect! What's the best email for me to send a calendar invite to?" or "Got it. To send you the details for that, could I get your email?" Keep the ask simple.
+    5.  Avoid being pushy. If they are hesitant to share contact info or schedule, acknowledge that briefly and offer to provide more information or answer more questions first. ("No problem at all. Happy to answer any other questions you have.") Your aim is to be a helpful guide, not a high-pressure salesperson.
+    Remember to use the `knowledge_base` and `qa_pairs` to address objections or provide more details, always keeping responses short and to the point.
+    """
+            elif self.bridge_type in [
+                "course",
+                "onboarding",
+            ]:  # Assuming quiz falls under course/onboarding context for discovery
+                conversational_strategy_prompt = """
+
+    # Discovery & Feedback Collection Strategy:
+    Your primary goal is to facilitate learning and successful adoption by being an effective instructor or guide. Keep your interactions helpful and concise.
+    As you interact:
+    1.  Pay close attention to questions that indicate confusion, a gap in understanding, or a need for more detailed explanation than your current `knowledge_base` provides.
+    2.  Listen for any expressions of frustration, pain points with the current process/material, or suggestions for improvement.
+    3.  If a user asks a particularly insightful question, highlights a significant challenge, or offers feedback, acknowledge it positively and briefly (e.g., "That's a really good point," or "Gotcha, I can see why that might be tricky.", "Thanks for sharing, that's helpful.").
+    4.  Your objective is to identify these key moments. You should then inform the user that this feedback is valuable and will be noted for the creator/team to review. For example: "I'll make sure to note that down for the creator." or "Good question, I'll flag that." Keep it short.
+    5.  Do NOT try to collect personal contact information for escalation unless it is explicitly part of a defined `specific_goal_or_cta`. The focus is on improving the content/product itself based on user interaction.
+    """
+
+            if conversational_strategy_prompt:
+                final_prompt += f"\\n{conversational_strategy_prompt}"
+                logger.info(
+                    f"Appended conversational strategy for bridge_type '{self.bridge_type}'."
+                )
+                # logger.debug(f"Full System Prompt with Strategy: {final_prompt}")
+
+            return final_prompt
+
+        except Exception as e:
+            logger.error(f"Error building enhanced system prompt: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return BASE_PROMPTS.get("general", "You are a helpful AI assistant.")
+
+    async def check_engagement_opportunities(self, current_time_seconds):
+        """Check if there are any engagement opportunities near the current timestamp"""
+        if (
+            not hasattr(self, "engagement_opportunities")
+            or not self.engagement_opportunities
+        ):
+            # logger.info("No engagement opportunities available to check")
+            return False
+
+        threshold = 1.0  # 1 second proximity
+
+        for opportunity in self.engagement_opportunities:
+            try:
+                opp_timestamp_str = opportunity.get("timestamp", "00:00:00")
+                h, m, s = map(int, opp_timestamp_str.split(":"))
+                opp_time_seconds = h * 3600 + m * 60 + s
+
+                if abs(current_time_seconds - opp_time_seconds) <= threshold:
+                    opp_id = opportunity.get("id")
+                    if opp_id in self.triggered_opportunities:
+                        # logger.info(f"Opportunity {opp_id} already triggered, skipping")
+                        continue  # Check next opportunity
+
+                    logger.info(
+                        f"Found engagement opportunity {opp_id} at {opp_timestamp_str}"
+                    )
+                    await self.trigger_engagement_opportunity(opportunity)
+                    self.triggered_opportunities.add(opp_id)
+                    return True  # Triggered one, stop checking for this timestamp
+            except Exception as e:
+                logger.error(
+                    f"Error checking opportunity {opportunity.get('id', 'N/A')}: {e}"
+                )
+
+        return False
+
+    async def trigger_engagement_opportunity(self, opportunity):
+        """Present an engagement opportunity to the user"""
+        try:
+            engagement_type = opportunity.get("engagement_type", "")
+            concepts = opportunity.get("concepts_addressed", [])
+            logger.info(
+                f"Triggering {engagement_type} engagement about {', '.join(concepts)}"
+            )
+
+            # 1. Pause the video via RPC
+            try:
+                if self.room and self.room.local_participant:
+                    remote_participants = list(
+                        self.room.remote_participants.values()
+                    )  # Get list
+                    logger.info(
+                        f"Found {len(remote_participants)} remote participants to pause"
+                    )
+                    pause_command = json.dumps(
+                        {
+                            "action": "pause",
+                            "reason": "engagement",
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
+                    tasks = []
+                    for participant in remote_participants:
+                        logger.info(f"Sending pause RPC to {participant.identity}")
+                        tasks.append(
+                            self.room.local_participant.perform_rpc(
+                                destination_identity=participant.identity,
+                                method="controlVideoPlayer",
+                                payload=pause_command,
+                                response_timeout=3.0,  # Shorter timeout
+                            )
+                        )
+                    # Wait for all RPC calls to complete (or timeout)
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                    for i, result in enumerate(results):
+                        if isinstance(result, Exception):
+                            logger.error(
+                                f"Error calling RPC for participant {remote_participants[i].identity}: {result}"
+                            )
+                        else:
+                            logger.info(
+                                f"RPC response from {remote_participants[i].identity}: {result}"
+                            )
+                else:
+                    logger.warning(
+                        "Cannot pause video: room or local participant not available"
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Error pausing video via RPC: {e}\n{traceback.format_exc()}"
+                )
+
+            # 2. Interrupt any current agent speech
+            self.session.interrupt()
+            await asyncio.sleep(0.1)  # Small delay
+
+            # 3. Prepare engagement prompt and guiding context
+            initial_prompt = ""
+            system_context_for_next_turn = (
+                ""  # Context to guide processing of user's *next* input
+            )
+
+            if engagement_type == "quiz":
+                quiz_item = opportunity.get("quiz_items", [{}])[0]
+                question = quiz_item.get("question", "What do you think?")
+                options = quiz_item.get("options", [])
+                correct_option = quiz_item.get("correct_option")
+                explanation = quiz_item.get("explanation", "")
+                if_correct = quiz_item.get("follow_up", {}).get(
+                    "if_correct", "That's correct!"
+                )
+                if_incorrect = quiz_item.get("follow_up", {}).get(
+                    "if_incorrect", "Not quite."
+                )
+
+                initial_prompt = f"{question}"
+                if options:
+                    initial_prompt += "\nOptions: " + ", ".join(options)
+
+                # Guide LLM on how to evaluate the *next* user response
+                system_context_for_next_turn = f"""
+You are currently in QUIZ mode. You just asked: "{question}" {'Options: ' + ', '.join(options) if options else ''}
+Listen to the user's upcoming answer.
+- If they choose '{correct_option}' or similar, your response should convey: "{if_correct}"
+- Otherwise, your response should convey: "{if_incorrect}"
+- You can optionally add this explanation: "{explanation}"
+Generate a natural response based on their answer and these instructions, then return to the normal {self.bridge_type} flow.
+"""
+
+            elif engagement_type == "discussion":
+                quiz_item = opportunity.get("quiz_items", [{}])[0]
+                question = quiz_item.get("question", "Let's discuss:")
+                expected_answer = quiz_item.get("expected_answer", "")
+                if_correct = quiz_item.get("follow_up", {}).get(
+                    "if_correct", "Interesting point!"
+                )
+                if_incorrect = quiz_item.get("follow_up", {}).get(
+                    "if_incorrect", "Let's think a bit more about..."
+                )
+
+                initial_prompt = question
+                # Guide LLM on how to evaluate the *next* user response
+                system_context_for_next_turn = f"""
+You are currently in DISCUSSION mode. You just asked: "{question}"
+Listen to the user's upcoming response.
+- If they mention ideas related to '{expected_answer}', your goal is to respond positively, conveying: "{if_correct}"
+- If their response seems brief or off-topic, your goal is to prompt further thought, conveying: "{if_incorrect}"
+Generate a natural response guiding the discussion based on their input. Keep it brief (1 follow-up turn), then return to the normal {self.bridge_type} flow.
+"""
+            elif engagement_type == "guided_conversation":
+                convo_flow = opportunity.get("conversation_flow")
+                if convo_flow:
+                    initial_prompt = convo_flow.get(
+                        "agent_initiator", "Let's talk about something."
+                    )
+                    goal = convo_flow.get("goal", "Have a guided conversation.")
+                    fallback = convo_flow.get("fallback", "Okay, let's move on.")
+                    # *** Rephrase fallback as an instruction/goal ***
+                    fallback_intent = f"Your goal is to gently move the conversation forward, conveying: {fallback}"
+
+                    # *** Rephrase strategies as instructions/goals ***
+                    responses_guide_intent_list = []
+                    for resp in convo_flow.get("user_responses", []):
+                        response_type = resp.get("type", "unknown")
+                        # Use the strategy text as the *instruction* for the LLM's goal
+                        strategy_instruction = resp.get(
+                            "agent_followup_strategy", "Continue the conversation."
+                        )
+                        intent_line = f"- If the user's response indicates '{response_type}', your goal is to: {strategy_instruction}."
+                        responses_guide_intent_list.append(intent_line)
+                    responses_guide_intent = "\n".join(responses_guide_intent_list)
+
+                    # This context guides the LLM on how to process the *next* user input
+                    system_context_for_next_turn = f"""
+You are currently in a GUIDED CONVERSATION engagement. Your overall goal for this interaction is: {goal}.
+You just initiated by asking the user: "{initial_prompt}"
+
+Now, listen carefully to the user's upcoming response. Analyze it based on the following guidelines:
+{responses_guide_intent}
+
+If the response doesn't clearly fit any defined type, use the fallback approach: {fallback_intent}
+
+Generate a natural, conversational follow-up. Your primary task is to execute the specific persuasive or goal-oriented strategy defined in the matched path's instruction (`agent_followup_strategy`). Embody your persona, leveraging any specified `persuasive_archetype` or detailed communication tactics from your TEACHING_PERSONA and relevant insights from your KNOWLEDGE_BASE. After delivering this single follow-up response, you should return to the normal interaction flow.
+"""
+                else:
+                    # Fallback if convo_flow is missing
+                    logger.warning(
+                        f"Guided conversation {opportunity.get('id')} missing 'conversation_flow'."
+                    )
+                    initial_prompt = "Let's discuss this..."
+                    system_context_for_next_turn = (
+                        "Handle the user response briefly and return to the main flow."
+                    )
+            else:
+                # Fallback for unknown types
+                logger.warning(
+                    f"Unknown engagement type: {engagement_type}, using default prompt"
+                )
+                initial_prompt = opportunity.get("quiz_items", [{}])[0].get(
+                    "question", "What are your thoughts on this?"
+                )  # Assumes quiz_items might exist
+                system_context_for_next_turn = "Engage the user briefly about the current topic, then return to the main flow."
+
+            # <<< Add sales-driven goal orientation for VSL and Webinar engagements >>>
+            if self.bridge_type == "vsl" and system_context_for_next_turn:
+                vsl_goal_suffix = """\
+
+# VSL Persuasion Goal:
+Remember, the primary objective of this VSL is to build conviction and guide the user towards the ultimate call to action (e.g., purchase, sign-up, learn more).
+After responding to the user based on the specific engagement instructions above, ensure your reply also subtly reinforces a key benefit, addresses a potential unspoken objection, or highlights the value relevant to the current point in the VSL. Leverage the detailed strategies within the current engagement's `conversation_flow` to effectively achieve this. Your aim is to maintain persuasive momentum and steer the conversation towards the VSL's goal.
+"""
+                system_context_for_next_turn += vsl_goal_suffix
+            elif self.bridge_type == "webinar" and system_context_for_next_turn:
+                webinar_goal_suffix = """\
+
+# Webinar Engagement Goal:
+Remember, the primary objective of this webinar is to deliver value, demonstrate expertise, and encourage attendees to take a relevant next step (e.g., explore a feature, download a resource, consider an offer).
+After responding to the user based on the specific engagement instructions above, ensure your reply also subtly reinforces a key insight from the webinar, links it to a benefit, or prompts further curiosity related to the webinar's objectives. Utilize the specific guidance and strategies provided in the current engagement's `conversation_flow` to shape your response. Your aim is to keep the audience engaged and guide them towards valuable outcomes.
+"""
+                system_context_for_next_turn += webinar_goal_suffix
+            # <<< End of sales-driven goal orientation >>>
+
+            # 4. Speak the initial prompt FIRST
+            if initial_prompt:
+                logger.info(f"Speaking engagement initiator: {initial_prompt}")
+                initial_prompt_with_context = f"""
+                First, say to the user:
+                "{initial_prompt}"
+
+                Then, use these instructions to guide the interaction:
+                {system_context_for_next_turn}
+                """
+                # await self.session.generate_reply(instructions="")
+                await self.session.say(text=initial_prompt)
+                # Optional brief pause allows user to potentially interrupt or TTS to catch up
+                await asyncio.sleep(0.2)
+            else:
+                logger.warning("No initial prompt generated for engagement.")
+
+            # 5. Now, add the system context to guide the processing of the user's *response*
+            if system_context_for_next_turn:
+                # Get the current list of messages
+                current_messages = list(self.chat_ctx.items)  # Make a mutable copy
+
+                # Create the new system message
+                new_system_message = llm.ChatMessage(
+                    type="message",
+                    role="system",
+                    content=[system_context_for_next_turn],
+                )
+
+                # Add the new message to the list
+                current_messages.append(new_system_message)
+
+                # Create a new ChatContext with the updated list of messages
+                new_context = llm.ChatContext(current_messages)
+
+                # Update the agent's internal context with the new one
+                await self.update_chat_ctx(new_context)
+                logger.info(
+                    f"Added engagement context for next user turn (Type: {engagement_type})"
+                )
+
+            # Agent now waits for user input...
+
+        except Exception as e:
+            logger.error(
+                f"Error triggering engagement opportunity: {e}\n{traceback.format_exc()}"
+            )
+
+
+class ChatAssistant(Agent):
     """Enhanced voice assistant that handles chat interactions with personality and knowledge base"""
 
     def __init__(self, vad, brdge_id: str = None, room: rtc.Room = None):
@@ -697,7 +1148,7 @@ Generate a natural, conversational follow-up. Your primary task is to execute th
                 vsl_goal_suffix = """\
 
 # VSL Persuasion Goal:
-Remember, the primary objective of this VSL is to build conviction and guide the user towards the ultimate call to action (e.g., purchase, sign-up, learn more). 
+Remember, the primary objective of this VSL is to build conviction and guide the user towards the ultimate call to action (e.g., purchase, sign-up, learn more).
 After responding to the user based on the specific engagement instructions above, ensure your reply also subtly reinforces a key benefit, addresses a potential unspoken objection, or highlights the value relevant to the current point in the VSL. Leverage the detailed strategies within the current engagement's `conversation_flow` to effectively achieve this. Your aim is to maintain persuasive momentum and steer the conversation towards the VSL's goal.
 """
                 system_context_for_next_turn += vsl_goal_suffix
@@ -722,7 +1173,22 @@ After responding to the user based on the specific engagement instructions above
 
             # 5. Now, add the system context to guide the processing of the user's *response*
             if system_context_for_next_turn:
-                self.chat_ctx.append(role="system", text=system_context_for_next_turn)
+                # Get the current list of messages
+                current_messages = list(self.chat_ctx.items)  # Make a mutable copy
+
+                # Create the new system message
+                new_system_message = llm.ChatMessage(
+                    role="system", text=system_context_for_next_turn
+                )
+
+                # Add the new message to the list
+                current_messages.append(new_system_message)
+
+                # Create a new ChatContext with the updated list of messages
+                new_context = llm.ChatContext(current_messages)
+
+                # Update the agent's internal context with the new one
+                await self.update_chat_ctx(new_context)
                 logger.info(
                     f"Added engagement context for next user turn (Type: {engagement_type})"
                 )
@@ -868,13 +1334,30 @@ async def entrypoint(ctx: JobContext):
     except Exception as e:
         logger.error(f"Error loading VAD model: {e}")
         return  # Cannot proceed without VAD
+    agent = Assistant(brdge_id=brdge_id, room=ctx.room)
+    print(agent.voice_id)
+    # session = AgentSession(
+    session_a = AgentSession(
+        stt=deepgram.STT(),
+        llm=openai.LLM(model="gpt-4.1"),
+        tts=cartesia.TTS(voice="63406bbd-ce1b-4fff-8beb-86d3da9891b9"),
+        vad=silero.VAD.load(),
+    )
+    session_b = AgentSession(
+        llm=openai.realtime.RealtimeModel(voice="echo"),
+    )
+    session = session_a
+    await session.start(
+        room=ctx.room,
+        agent=agent,
+    )
 
     # *** Pass ctx.room to ChatAssistant constructor ***
-    agent = ChatAssistant(vad=vad, brdge_id=brdge_id, room=ctx.room)
-    agent.user_id = user_id
+    # agent = ChatAssistant(vad=vad, brdge_id=brdge_id, room=ctx.room)
+    # agent.user_id = user_id
     logger.info(f"Set agent.user_id to: {user_id}")
 
-    chat = rtc.ChatManager(ctx.room)
+    # chat = rtc.ChatManager(ctx.room)
 
     @ctx.room.on("data_received")
     def on_data_received(data_packet: rtc.DataPacket):
@@ -891,8 +1374,8 @@ async def entrypoint(ctx: JobContext):
 
             if topic == "agent-control" and message.get("type") == "interrupt":
                 logger.info(f"Received interrupt command from {sender}")
-                if agent:
-                    agent.interrupt(interrupt_all=True)
+                if session:
+                    session.interrupt()
 
             elif (
                 topic == "video-timestamp"
@@ -913,7 +1396,12 @@ async def entrypoint(ctx: JobContext):
                         agent.current_timestamp_seconds = raw_seconds
                         agent.current_timestamp = formatted_timestamp
                         # Update the system prompt in the context *only when timestamp changes*
-                        agent._update_chat_context_system_prompt()
+                        # chat_ctx = agent.chat_ctx
+                        # agent.update_chat_ctx(
+                        #     role="system",
+                        #     text=f"Current video timestamp: {formatted_timestamp}",
+                        # )
+
                         # Check for engagements asynchronously
                         asyncio.create_task(
                             agent.check_engagement_opportunities(raw_seconds)
@@ -925,26 +1413,26 @@ async def entrypoint(ctx: JobContext):
         except Exception as e:
             logger.error(f"Error processing data packet: {e}\n{traceback.format_exc()}")
 
-    @chat.on("message_received")
-    def on_chat_received(msg: rtc.ChatMessage):
-        if not agent:
-            logger.warning("Agent not initialized, cannot process chat message")
-            return
+    # @chat.on("message_received")
+    # def on_chat_received(msg: rtc.ChatMessage):
+    #     if not agent:
+    #         logger.warning("Agent not initialized, cannot process chat message")
+    #         return
 
-        cleaned_message = " ".join(msg.message.split()).strip()
-        if not cleaned_message:
-            return
+    #     cleaned_message = " ".join(msg.message.split()).strip()
+    #     if not cleaned_message:
+    #         return
 
-        logger.info(f"Received chat message: {cleaned_message}")
-        agent.interrupt(interrupt_all=True)  # Interrupt agent before processing
-        # Log conversation turn
-        agent._log_conversation(cleaned_message, role="user", interrupted=False)
-        # Process the message using the refactored method
-        asyncio.create_task(agent.process_user_input(cleaned_message))
+    #     logger.info(f"Received chat message: {cleaned_message}")
+    #     agent.interrupt(interrupt_all=True)  # Interrupt agent before processing
+    #     # Log conversation turn
+    #     agent._log_conversation(cleaned_message, role="user", interrupted=False)
+    #     # Process the message using the refactored method
+    #     asyncio.create_task(agent.process_user_input(cleaned_message))
 
-    # Start the agent pipeline
-    agent.start(ctx.room, participant)
-    logger.info(f"Agent started for brdge {brdge_id}, type {agent.bridge_type}")
+    # # Start the agent pipeline
+    # agent.start(ctx.room, participant)
+    # logger.info(f"Agent started for brdge {brdge_id}, type {agent.bridge_type}")
 
     # Keep the connection alive
     disconnect_event = asyncio.Event()
@@ -958,7 +1446,6 @@ async def entrypoint(ctx: JobContext):
         await disconnect_event.wait()
     finally:
         logger.info("Cleaning up agent...")
-        await agent.aclose()  # Ensure agent resources are cleaned up
 
 
 if __name__ == "__main__":
