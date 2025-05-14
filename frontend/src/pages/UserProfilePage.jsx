@@ -1217,9 +1217,9 @@ function UserProfilePage() {
             title: "Premium",
             price: "$149 / month",
             features: [
-                "Unlimited Links",
+                "100 bridge Links",
                 "1000 AI Minutes/mo",
-                "Unlimited Flows",
+                "100 Flows",
                 "Voice Clone",
                 "CRM / Webhooks",
                 "Adv. Analytics",

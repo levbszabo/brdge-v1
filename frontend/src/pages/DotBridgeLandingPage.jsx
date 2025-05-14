@@ -610,96 +610,136 @@ const FAQSection = () => {
 }
 
 const UseCasesSection = () => {
-    const cases = [
+    const theme = useTheme();
+
+    const landingPageJourneySteps = [
         {
-            useCase: "Lead Magnets / Webinars",
-            before: "Passive watch & bounce",
-            after: "Email gate + interactive Q&A",
-            result: "+2× opt-ins",
-            icon: "Magnet"
+            icon: 'Eye',
+            title: '1. Awareness Bridge',
+            subtitle: 'Grab attention with short, punchy videos that speak directly to your audience\'s challenges and spark their curiosity.',
         },
         {
-            useCase: "VSLs / Funnel Pages",
-            before: "One-way pitch",
-            after: "Smart prompts that qualify buyers",
-            result: "Higher AOV",
-            icon: "Target"
+            icon: 'SearchCheck',
+            title: '2. Discovery Bridge',
+            subtitle: 'Ditch boring forms. Have real conversations that uncover what your prospects actually need and care about.',
         },
         {
-            useCase: "Course Modules",
-            before: "~15% completion rate",
-            after: "AI tutor, quizzes, voice answers",
-            result: "35%+ completion",
-            icon: "GraduationCap"
+            icon: 'Presentation',
+            title: '3. Demo Bridge',
+            subtitle: 'Show your product in action with personalized walkthroughs that focus on exactly what matters to each prospect.',
         },
         {
-            useCase: "Product Onboarding",
-            before: "Docs & support tickets",
-            after: "Personalized interactive walkthroughs",
-            result: "Faster Time-to-Value",
-            icon: "Rocket"
-        }
+            icon: 'Target',
+            title: '4. Sales Bridge',
+            subtitle: 'Handle objections, talk pricing, and guide decisions with a smart assistant that never sleeps or goes on vacation.',
+        },
+        {
+            icon: 'Rocket',
+            title: '5. Onboarding Bridge',
+            subtitle: 'Turn new customers into happy power users with guided setup that gets them up and running in record time.',
+        },
     ];
 
-    const theme = useTheme();
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+            <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 6, md: 10 }}>
                 <DotBridgeTypography variant='h2' component="h2" sx={{
                     mb: { xs: 2, md: 3 },
-                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                    fontSize: { xs: '1.85rem', sm: '2.35rem', md: '2.75rem' }
                 }}>
-                    Transform Any Video Interaction
+                    Turn Clicks into Customers with DotBridge
                 </DotBridgeTypography>
                 <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    maxWidth: '800px',
+                    mx: 'auto',
                     fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
                 }}>
-                    Replace passive content with active experiences that drive results.
+                    Stop losing leads to passive videos. Create an interactive journey that captures, qualifies, and converts — even while you sleep.
                 </DotBridgeTypography>
             </Box>
 
-            {/* Add Digital Funnel Diagram HERE */}
-            <Box sx={{ textAlign: 'center', my: { xs: 4, md: 6 } }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, delay: 0.1 }} // Adjust delay as needed
-                >
-                    <Box
-                        component="img"
-                        src="/digital-funnel.png" // Assuming this path in public folder
-                        alt="Digital Video Funnel Stages"
-                        sx={{
-                            maxWidth: { xs: '100%', md: '700px' }, // Responsive max width
-                            height: 'auto',
-                            borderRadius: theme => theme.shape.borderRadius,
-                            boxShadow: theme => theme.shadows[1],
-                            mb: { xs: 3, md: 4 } // Margin below the image
-                        }}
-                    />
-                </motion.div>
-            </Box>
+            <Grid container spacing={{ xs: 4, md: 6 }} alignItems="flex-start">
+                {/* Left Column: Visual Journey Steps */}
+                <Grid item xs={12} md={5}>
+                    <Box sx={{ position: 'relative' }}>
+                        {landingPageJourneySteps.map((step, index) => (
+                            <Box key={step.title} sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                mb: index === landingPageJourneySteps.length - 1 ? 0 : { xs: 3.5, md: 4 },
+                                position: 'relative',
+                            }}>
+                                <DotBridgeIcon
+                                    name={step.icon}
+                                    size={36}
+                                    color="primary.main"
+                                    sx={{ mr: 2.5, mt: 0.5, flexShrink: 0 }}
+                                />
+                                <Box>
+                                    <DotBridgeTypography variant="h6" sx={{ mb: 0.5, fontSize: { xs: '1.1rem', md: '1.2rem' } }}>
+                                        {step.title}
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.9rem', md: '0.95rem' }, lineHeight: 1.6 }}>
+                                        {step.subtitle}
+                                    </DotBridgeTypography>
+                                </Box>
+                                {/* Simple Vertical Connector Line */}
+                                {index < landingPageJourneySteps.length - 1 && (
+                                    <Box sx={{
+                                        position: 'absolute',
+                                        left: '18px', // Align with center of icon (36px / 2)
+                                        top: '48px', // Start below icon and some text
+                                        bottom: { xs: '-28px', md: '-32px' }, // Extend to next item's top margin area
+                                        width: '2px',
+                                        bgcolor: 'primary.light',
+                                        zIndex: -1,
+                                    }} />
+                                )}
+                            </Box>
+                        ))}
+                    </Box>
+                </Grid>
 
-            <Grid container spacing={{ xs: 2, sm: 3, md: 4 }}>
-                {cases.map((item, index) => (
-                    <Grid item xs={12} sm={6} md={3} key={index}>
-                        <Box sx={{ height: '100%', textAlign: 'center', p: { xs: 2, md: 2 } }}>
-                            <DotBridgeIcon name={item.icon} size={40} color="primary.main" sx={{ mb: { xs: 1.5, md: 2.5 } }} />
-                            <DotBridgeTypography variant="h6" sx={{ mb: { xs: 1.5, md: 2.5 } }}>{item.useCase}</DotBridgeTypography>
-                            <Box sx={{ mb: { xs: 1.5, md: 2.5 } }}>
-                                <DotBridgeTypography variant="overline" color="text.secondary">Before</DotBridgeTypography>
-                                <DotBridgeTypography variant="body1" color="text.primary">{item.before}</DotBridgeTypography>
-                            </Box>
-                            <Box sx={{ mb: { xs: 1.5, md: 2.5 } }}>
-                                <DotBridgeTypography variant="overline" color="primary.main">With Bridge</DotBridgeTypography>
-                                <DotBridgeTypography variant="body1" color="text.primary" sx={{ fontWeight: 500 }}>{item.after}</DotBridgeTypography>
-                            </Box>
-                            <DotBridgeTypography variant="subtitle1" color="primary.dark" sx={{ fontWeight: 600 }}>
-                                → {item.result}
-                            </DotBridgeTypography>
-                        </Box>
-                    </Grid>
-                ))}
+                {/* Right Column: Persuasive Text */}
+                <Grid item xs={12} md={7}>
+                    <Paper elevation={0} sx={{
+                        p: { xs: 2.5, sm: 3, md: 4 },
+                        bgcolor: { xs: 'transparent', md: 'neutral.light' },
+                        border: { xs: 'none', md: `1px solid ${theme.palette.divider}` },
+                        borderRadius: { xs: 0, md: theme.shape.borderRadius },
+                        mt: { xs: 3, md: 0 }
+                    }}>
+                        <DotBridgeTypography variant="h4" component="h3" sx={{
+                            mb: 3,
+                            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                            color: 'primary.dark'
+                        }}>
+                            Say Goodbye to One-Way Videos
+                        </DotBridgeTypography>
+                        <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 2, lineHeight: 1.7 }}>
+                            Think of DotBridge as your 24/7 sales and support team. We turn your videos from passive watching into two-way conversations that <DotBridgeTypography component="span" color="primary.main" fontWeight="bold">connect, engage, and convert</DotBridgeTypography> on autopilot.
+                        </DotBridgeTypography>
+                        <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 2, lineHeight: 1.7 }}>
+                            Picture this: A potential customer finds your Awareness Bridge. It catches their interest, answers their questions on the spot, and smoothly moves them to your Discovery Bridge. Here, instead of filling out yet another form, they have a natural conversation that reveals what they really need.
+                        </DotBridgeTypography>
+                        <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 3, lineHeight: 1.7 }}>
+                            When they hit your Demo Bridge, they don't see a generic product tour – they get a walkthrough focused on what matters to them. By the time they reach your Sales Bridge, objections are handled and decisions are easier. And once they're a customer? Your Onboarding Bridge gets them up to speed fast, saving you countless support tickets.
+                        </DotBridgeTypography>
+                        <DotBridgeTypography variant="h6" sx={{ color: 'text.primary', fontSize: { xs: '1.1rem', md: '1.2rem' }, mb: 3 }}>
+                            Why keep losing leads to boring videos? Let's build a journey that converts while you focus on what you do best.
+                        </DotBridgeTypography>
+                        <DotBridgeButton
+                            variant="contained"
+                            color="primary"
+                            size="large"
+                            component={Link}
+                            to="/signup"
+                            endIcon={<DotBridgeIcon name="ArrowRight" />}
+                        >
+                            Create Your First Bridge Free
+                        </DotBridgeButton>
+                    </Paper>
+                </Grid>
             </Grid>
         </Section>
     );
@@ -837,11 +877,11 @@ const PricingSection = () => (
                     <DotBridgeTypography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Forever</DotBridgeTypography>
                     <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4, flexGrow: 1 }}>
                         {[
-                            "1 bridge Link",
-                            "Basic AI Q&A",
+                            "1 Bridge Link",
+                            "30 AI Minutes/mo",
                             "Voice Clone",
                             "Basic Analytics",
-                            "1 Course Limit",
+                            "1 Flow Limit",
                             "Watermark"
                         ].map(feature => (
                             <Box component="li" key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -884,7 +924,7 @@ const PricingSection = () => (
                             "300 AI Minutes/mo",
                             "Voice Clone",
                             "Basic Analytics",
-                            "1 Course Limit",
+                            "1 Flow Limit",
                             "Watermark"
                         ].map(feature => (
                             <Box component="li" key={feature} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>

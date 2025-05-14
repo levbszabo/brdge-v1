@@ -70,7 +70,7 @@ def configure_genai():
 
 
 # Initialize the model
-def get_model(model_name="gemini-2.0-flash"):
+def get_model(model_name="gemini-2.5-flash-preview-04-17"):
     """Get configured Gemini model instance"""
     start_time = time.time()
     model = genai.GenerativeModel(
@@ -1193,7 +1193,7 @@ def extract_engagement_opportunities(
             "user_responses": [
               {{"type": "still_expensive", "agent_followup_strategy": "Validate concern (e.g., 'I understand budget is key.'), break down ROI (e.g., 'Consider that this could save you X hours a week, translating to Y dollars a month.'), mention payment options if applicable."}},
               {{"type": "seems_fair", "agent_followup_strategy": "Reinforce decision (e.g., 'Great, many find it offers significant value.'), smoothly transition to checkout/next step (e.g., 'You can lock that in by clicking below.')."}},
-              {{"type": "request_discount", "agent_followup_strategy": "Explain value justifies cost (e.g., 'We price it to reflect the comprehensive features and support.'), potentially mention limited-time offers if applicable (e.g., 'While we don\'t typically discount, there is a launch bonus active this week.')."}}
+              {{"type": "request_discount", "agent_followup_strategy": "Explain value justifies cost (e.g., 'We price it to reflect the comprehensive features and support.'), potentially mention limited-time offers if applicable (e.g., 'While we don't typically discount, there is a launch bonus active this week.')."}}
             ],
             "fallback": "We can definitely circle back to pricing details later. For now, let me show you how the integration works..."
           }}
@@ -1410,6 +1410,7 @@ def extract_engagement_opportunities(
     -Do not include the same engagement opportunity more than once
     -Engagement opportunities should be placed at a point where the instructor would naturally pause
     -Engagement opportunities cannot be at a timestamp that is greater than the video length or before the start of the video.
+    -CRITICAL: All 'agent_initiator' text MUST ONLY contain standard alphanumeric characters, spaces, and basic punctuation (period, comma, question mark, exclamation point, colon, semicolon, dash, apostrophe). DO NOT include any other special characters, emojis, bullets, or unusual symbols.
 
     Follow the specific JSON structure requested below based on the bridge type.
     {output_structure_prompt}
@@ -1423,6 +1424,7 @@ def extract_engagement_opportunities(
     Provide variations of expected answers to handle different phrasings.
     Design follow-up responses that mimic the instructor's teaching approach.
     For `guided_conversation`, focus on natural, proactive dialogue starters and strategies that align with the bridge_type's specific goals (e.g., sales conversion for VSL, lead qualification for Webinar, learning reinforcement for Course, task completion for Onboarding).
+    Remember to keep all text in 'agent_initiator' clean with only standard characters - no special symbols or emojis.
 
     {instruction_context}
     """

@@ -134,8 +134,8 @@ const ContactPage = () => {
                                             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.25 }}>
                                                 Email Us
                                             </Typography>
-                                            <Link href="mailto:levi@brdge-ai.com" sx={{ color: 'text.primary', fontWeight: 500, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
-                                                levi@brdge-ai.com
+                                            <Link href="mailto:levi@dotbridge.io" sx={{ color: 'text.primary', fontWeight: 500, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
+                                                levi@dotbridge.io
                                             </Link>
                                         </Box>
                                     </Box>

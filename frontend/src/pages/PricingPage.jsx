@@ -164,7 +164,7 @@ function PricingPage() {
             description: 'Get started with the basics',
             features: [
                 "1 bridge Link",
-                "Basic AI Q&A",
+                "30 AI Minutes/mo",
                 "Voice Clone",
                 "Basic Analytics",
                 "1 Flow Limit",

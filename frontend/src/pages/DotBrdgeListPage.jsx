@@ -1987,68 +1987,6 @@ function DotBrdgeListPage() {
                         </Grid>
                     </Grid>
 
-
-                    <Box sx={styles.marketplaceSection}>
-                        <Box sx={styles.marketplaceHeader}>
-                            <Typography variant="h5" sx={{ ...styles.sectionHeader, mb: 0, '&::before': { display: 'none' } }}>
-                                <Globe size={22} style={{ color: theme.palette.primary.main }} />
-                                Marketplace
-                            </Typography>
-                            <Button variant="text" onClick={() => navigate('/marketplace')} sx={{ textTransform: 'none' }}>
-                                Browse All
-                            </Button>
-                        </Box>
-                        <Box sx={{ px: { xs: 0, md: 0 } }}>
-                            {marketplaceCourses.length === 0 ? (
-                                <Typography color="text.secondary" align="center" sx={{ p: 3 }}>
-                                    Marketplace courses will appear here soon.
-                                </Typography>
-                            ) : (
-                                <Box sx={styles.marketplaceGrid}>
-                                    {marketplaceCourses.slice(0, 3).map((course) => (
-                                        <Box
-                                            key={course.id}
-                                            sx={styles.marketplaceCard}
-                                            onClick={() => handleViewCourse(course)}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    position: 'relative', width: '100%', paddingTop: '56.25%',
-                                                    bgcolor: 'neutral.mid',
-                                                    overflow: 'hidden',
-                                                    borderBottom: `1px solid ${theme.palette.divider}`
-                                                }}
-                                            >
-                                                {course.thumbnail_url ? (
-                                                    <Box
-                                                        component="img"
-                                                        src={normalizeThumbnailUrl(course.thumbnail_url)}
-                                                        sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                                                        alt={`${course.name} thumbnail`}
-                                                    />
-                                                ) : (
-                                                    <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <BookOpen size={36} color={theme.palette.text.disabled} />
-                                                    </Box>
-                                                )}
-                                            </Box>
-                                            <Box sx={{ p: 2, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                                <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, flexGrow: 1 }}>{course.name}</Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
-                                                    {course.description ? `${course.description.substring(0, 60)}...` : 'Explore this course'}
-                                                </Typography>
-                                                <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', color: 'text.disabled' }}>
-                                                    <User size={14} style={{ marginRight: '4px' }} />
-                                                    {course.created_by || 'DotBridge Team'}
-                                                </Typography>
-                                            </Box>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
-                    </Box>
-
                 </Container>
             </Box>
 
