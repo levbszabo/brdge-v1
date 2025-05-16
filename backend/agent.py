@@ -8,6 +8,8 @@ from livekit.agents import (
     cli,
     llm,
     ConversationItemAddedEvent,
+    function_tool,
+    RunContext,
 )
 import requests
 import asyncio
@@ -309,6 +311,71 @@ class Assistant(Agent):
             logger.error(f"Traceback: {traceback.format_exc()}")
             return BASE_PROMPTS.get("general", "You are a helpful AI assistant.")
 
+    @function_tool()
+    async def show_link_to_user(
+        self, context: RunContext, url: str, message: str = "Check this out!"
+    ):
+        """Call this tool to display a clickable link popup to the user in the frontend interface.
+        Use this when you need to share an external URL, a reference, or a call to action that involves navigating to a web page.
+
+        Best practices:
+        - Keep the message short and specific (e.g., "Apollo.io" or "Documentation")
+        - The URL will be shown separately, so don't repeat URL details in the message
+        - Use a clear action-oriented message when appropriate
+
+        Args:
+            url: The fully qualified URL to be opened when the user clicks the link.
+            message: An optional short message to display above the link in the popup.
+        """
+        logger.info(
+            f"LLM tool 'show_link_to_user' called with URL: {url}, Message: {message}"
+        )
+        await self.send_link_popup_command(url=url, message=message)
+        # Tools should typically return a string or dict that can be sent back to the LLM
+        # For an action that purely affects the frontend, confirming the action is good practice.
+        return json.dumps(
+            {"status": "success", "message": f"Link popup command sent for URL: {url}"}
+        )
+
+    async def send_link_popup_command(self, url: str, message: str = None):
+        """Sends an RPC command to the frontend to display a link popup."""
+        if not self.room or not self.room.local_participant:
+            logger.warning(
+                "Cannot send link popup command: room or local participant not available."
+            )
+            return
+
+        payload_data = {"action": "show_link", "url": url, "message": message}
+        payload_str = json.dumps(payload_data)
+        remote_participants = list(self.room.remote_participants.values())
+        if not remote_participants:
+            logger.info("No remote participants to send link popup command to.")
+            return
+
+        logger.info(
+            f"Sending triggerLinkPopup RPC to {len(remote_participants)} participant(s) with URL: {url}"
+        )
+        tasks = []
+        for participant in remote_participants:
+            tasks.append(
+                self.room.local_participant.perform_rpc(
+                    destination_identity=participant.identity,
+                    method="triggerLinkPopup",
+                    payload=payload_str,
+                    response_timeout=3.0,
+                )
+            )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                logger.error(
+                    f"Error calling triggerLinkPopup RPC for participant {remote_participants[i].identity}: {result}"
+                )
+            else:
+                logger.info(
+                    f"triggerLinkPopup RPC response from {remote_participants[i].identity}: {result}"
+                )
+
     async def check_engagement_opportunities(self, current_time_seconds):
         """Check if there are any engagement opportunities near the current timestamp"""
         if (
@@ -585,6 +652,13 @@ After responding to the user based on the specific engagement instructions above
                 logger.info(
                     f"Added engagement context for next user turn (Type: {engagement_type})"
                 )
+
+            # Example of how to trigger the link popup from an engagement
+            # You would add specific conditions or data fields to your engagement opportunity structure
+            # if opportunity.get("type") == "custom_link_trigger": # Example condition
+            #     link_url = opportunity.get("link_url", "https://default.example.com")
+            #     link_message = opportunity.get("link_message", "Check this out!")
+            #     await self.send_link_popup_command(url=link_url, message=link_message)
 
             # Agent now waits for user input...
 
