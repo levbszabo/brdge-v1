@@ -33,7 +33,6 @@ import DotBridgeBuyerJourneyDemoPage from './pages/DotBridgeBuyerJourneyDemoPage
 import BlogPage from './pages/BlogPage'; // Import the new Blog page
 import BlogPostDetailPage from './pages/BlogPostDetailPage'; // Import Blog Post Detail Page
 import CareerPage from './pages/CareerPage'; // Import the new Career page
-import ChallengePage from './pages/ChallengePage'; // Import ChallengePage
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -212,7 +211,6 @@ function App() {
                 <Route path="/blog" element={<BlogPage />} /> {/* Added route for BlogPage */}
                 <Route path="/blog/:slug" element={<BlogPostDetailPage />} /> {/* Added route for individual blog posts */}
                 <Route path="/careers" element={<CareerPage />} /> {/* Added route for CareerPage */}
-                <Route path="/careers/apply/:jobId/challenge" element={<ChallengePage />} /> {/* Added Challenge Route */}
                 <Route
                   path="/home"
                   element={
