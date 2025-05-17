@@ -89,14 +89,16 @@ function Header() {
         ? [
             { text: 'Home', link: '/home' },
             { text: 'Demos', link: '/demos' },
-            { text: 'Services', link: '/services' },
+            { text: 'Blog', link: '/blog' },
+            { text: 'Careers', link: '/careers' },
             { text: 'Contact', link: '/contact' },
             { text: 'Logout', onClick: handleLogout }
         ]
         : [
             { text: 'Demos', link: '/demos' },
-            { text: 'Services', link: '/services' },
+            { text: 'Blog', link: '/blog' },
             { text: 'Pricing', link: '/pricing' },
+            { text: 'Careers', link: '/careers' },
             { text: 'Contact', link: '/contact' },
             { text: 'Login', link: '/login' },
             { text: 'Sign Up', link: '/signup', variant: 'button' }
@@ -230,17 +232,31 @@ function Header() {
                     </ListItemButton>
                 </ListItem>
 
-                {/* Services (for all users) */}
+                {/* Blog (for all users) */}
                 <ListItem disablePadding>
                     <ListItemButton
                         component={RouterLink}
-                        to="/services"
+                        to="/blog"
                         onClick={() => setDrawerOpen(false)}
                         sx={{
                             ...drawerItemStyle,
                         }}
                     >
-                        <ListItemText primary="Services" />
+                        <ListItemText primary="Blog" />
+                    </ListItemButton>
+                </ListItem>
+
+                {/* Careers (for all users) */}
+                <ListItem disablePadding>
+                    <ListItemButton
+                        component={RouterLink}
+                        to="/careers"
+                        onClick={() => setDrawerOpen(false)}
+                        sx={{
+                            ...drawerItemStyle,
+                        }}
+                    >
+                        <ListItemText primary="Careers" />
                     </ListItemButton>
                 </ListItem>
 

@@ -68,31 +68,31 @@ const impactMetrics = [
 ];
 
 // Updated service features for the 5-step process
-const DfyProcessSteps = [
+const SoftwareUsageSteps = [
     {
         step: 1,
-        title: "Strategy Call",
-        description: "Map revenue or learning goals in 45 min."
+        title: "Define Your Goal",
+        description: "Clearly outline your sales, onboarding, or learning objectives for your AI Bridge."
     },
     {
         step: 2,
-        title: "Content & Persona Modeling",
-        description: "We script (or refine) and clone your voice + brand tone."
+        title: "Upload Your Content",
+        description: "Easily upload your existing videos (MP4, Loom, Zoom), scripts, or documents."
     },
     {
         step: 3,
-        title: "AI Video Production",
-        description: "DotBridge engine generates pro modules; you approve."
+        title: "Configure Your AI",
+        description: "Customize the AI's persona, voice (optional), and knowledge base using simple controls."
     },
     {
         step: 4,
-        title: "Bridge Assembly",
-        description: "We layer quizzes, CTAs, branching, and analytics—no code on your side."
+        title: "Assemble Your Bridge",
+        description: "Use the intuitive DotBridge editor to add interactive prompts, CTAs, and conditional logic."
     },
     {
         step: 5,
-        title: "Launch & Training",
-        description: "You get live links, source files, and a 30-minute hand-off. Go live the same day."
+        title: "Publish & Optimize",
+        description: "Launch your Bridge with a shareable link or embed, then use analytics to track performance and iterate."
     }
 ];
 
@@ -188,7 +188,7 @@ const ServicesPage = () => {
                             fontSize: { xs: '2.25rem', sm: '2.75rem', md: theme.typography.h1.fontSize } // Adjusted responsive font size
                         }}
                     >
-                        AI-Powered Sales Funnels & <PrimaryText>Intelligent Onboarding That Convert</PrimaryText>
+                        Build AI-Powered Sales Funnels & <PrimaryText>Intelligent Onboarding That Convert</PrimaryText>
                     </Typography>
 
                     <Typography
@@ -200,7 +200,7 @@ const ServicesPage = () => {
                             mb: { xs: 4, md: 6 } // Adjusted bottom margin
                         }}
                     >
-                        Stop losing leads and new customers. We build DotBridge AI experiences that <PrimaryText>engage, qualify, and onboard</PrimaryText> users automatically—24/7.
+                        Stop losing leads and new customers. DotBridge empowers you to build AI experiences that <PrimaryText>engage, qualify, and onboard</PrimaryText> users automatically—24/7.
                     </Typography>
 
                     {/* Demo Section - Now correctly handles mobile video and desktop AgentConnector */}
@@ -300,7 +300,7 @@ const ServicesPage = () => {
                             });
                         }}
                     >
-                        Build My AI-Powered Funnel
+                        Request a Personalized Demo
                     </Button>
                 </motion.div>
             </Container>
@@ -314,10 +314,10 @@ const ServicesPage = () => {
                         transition={{ duration: 0.7, delay: 0.2 }}
                     >
                         <Typography variant="h2" sx={{ color: 'text.primary', mb: 3 }}>
-                            Stop Bottlenecks, <PrimaryText>Start Scaling.</PrimaryText>
+                            Stop Bottlenecks, <PrimaryText>Start Scaling with DotBridge.</PrimaryText>
                         </Typography>
                         <Typography variant="h5" sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto' }}>
-                            Your expertise is invaluable, but manual sales calls, repetitive demos, and inconsistent onboarding slow you down. Imagine <PrimaryText>automating qualification, delivering perfect product tours, and guiding new users to success</PrimaryText>—effortlessly. That's the power of DotBridge DFY. We transform your process into an AI-driven machine that works for you, 24/7.
+                            Your expertise is invaluable, but manual sales calls, repetitive demos, and inconsistent onboarding slow you down. With DotBridge, you can <PrimaryText>automate qualification, deliver perfect product tours, and guide new users to success</PrimaryText>—effortlessly. Transform your process into an AI-driven machine that works for you, 24/7.
                         </Typography>
                     </motion.div>
                 </Container>
@@ -337,29 +337,29 @@ const ServicesPage = () => {
                         align="center"
                         sx={{ color: 'text.primary', mb: 3 }}
                     >
-                        Your Custom <PrimaryText>AI Growth Engine</PrimaryText>
+                        Your Custom <PrimaryText>AI Growth Engine with DotBridge</PrimaryText>
                     </Typography>
                     <Typography
                         variant="h5"
                         align="center"
                         sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: 8 }}
                     >
-                        We craft tailored DotBridge experiences to achieve your specific sales and customer success goals.
+                        Craft tailored DotBridge experiences to achieve your specific sales and customer success goals.
                     </Typography>
 
                     <Grid container spacing={{ xs: 3, md: 4 }} justifyContent="center" sx={{ maxWidth: '1100px', mx: 'auto' }}>
                         {[{
                             title: "AI Sales & Demo Funnels",
-                            description: "Convert more leads by transforming your VSLs, webinars, or product demos into interactive DotBridge flows. Our AI qualifies prospects, answers questions in real-time, and seamlessly books calls with your sales team—only for the most engaged leads.",
+                            description: "Convert more leads by transforming your VSLs, webinars, or product demos into interactive DotBridge flows. The AI qualifies prospects, answers questions in real-time, and can seamlessly direct the most engaged leads to your sales team or booking system.",
                             icon: <TrendingUp sx={{ fontSize: 40, color: 'primary.main' }} />
                         }, {
                             title: "Intelligent Onboarding Flows",
-                            description: "Empower new users from day one. We build role-based, interactive onboarding paths that guide customers through setup, demonstrate key features, and proactively answer common questions, dramatically boosting activation and reducing support load.",
+                            description: "Empower new users from day one. Build role-based, interactive onboarding paths with DotBridge that guide customers through setup, demonstrate key features, and proactively answer common questions, dramatically boosting activation and reducing support load.",
                             icon: <Groups sx={{ fontSize: 40, color: 'primary.main' }} />
                         }, {
-                            title: "Interactive Content & Training", // Repurposed
-                            description: "Enhance your funnels with engaging, AI-powered content. From interactive product tutorials within onboarding to value-packed lead magnets, we help you educate and build trust at scale. (Supports Sales & Onboarding)",
-                            icon: <School sx={{ fontSize: 40, color: 'secondary.main' }} /> // Consider a different icon or color
+                            title: "Interactive Content & Training",
+                            description: "Enhance your funnels with engaging, AI-powered content. Create interactive product tutorials, value-packed lead magnets, or dynamic training modules with DotBridge to educate and build trust at scale.",
+                            icon: <School sx={{ fontSize: 40, color: 'secondary.main' }} />
                         }].map((item, idx) => (
                             <Grid item xs={12} md={4} key={idx} sx={{ display: 'flex' }}>
                                 <Card
@@ -407,14 +407,14 @@ const ServicesPage = () => {
                             align="center"
                             sx={{ color: 'text.primary', mb: 3 }}
                         >
-                            Our 5-Step <PrimaryText>"Hands-Off" Build Process</PrimaryText>
+                            Your 5-Step Journey to <PrimaryText>AI Automation with DotBridge</PrimaryText>
                         </Typography>
                         <Typography
                             variant="h5"
                             align="center"
                             sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: { xs: 4, md: 6 } }}
                         >
-                            Streamlined for efficiency, designed for impact. We handle the complexity so you can focus on your expertise.
+                            Streamlined for efficiency, designed for impact. DotBridge makes it easy to harness the power of AI.
                         </Typography>
 
                         <Grid container spacing={{ xs: 3, md: 5 }} alignItems="center" sx={{ my: { xs: 4, md: 6 } }}>
@@ -450,7 +450,7 @@ const ServicesPage = () => {
                                         <Box component="span" sx={{ display: 'block', color: 'primary.main' }}>Your Content, Intelligently Transformed</Box>
                                     </Typography>
                                     <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.1rem' }}>
-                                        Our sophisticated AI ingestion takes your existing sales materials (VSLs, product docs) or onboarding guides. It performs deep semantic mapping to understand your customer journey, <PrimaryText>automatically generating qualifying questions for sales funnels, identifying key milestones for onboarding, and structuring interactive dialogues.</PrimaryText> This intelligent foundation allows us to rapidly build a .bridge that doesn't just present information, but actively guides users to conversion or successful adoption.
+                                        Our sophisticated AI ingestion takes your existing sales materials (VSLs, product docs) or onboarding guides. It performs deep semantic mapping to understand your customer journey, <PrimaryText>allowing you to automatically generate qualifying questions for sales funnels, identify key milestones for onboarding, and structure interactive dialogues.</PrimaryText> This intelligent foundation in DotBridge allows you to rapidly build a .bridge that doesn't just present information, but actively guides users to conversion or successful adoption.
                                     </Typography>
                                 </motion.div>
                             </Grid>
@@ -458,7 +458,7 @@ const ServicesPage = () => {
 
                         <Box sx={{ maxWidth: '1000px', mx: 'auto', mt: { xs: 4, md: 8 } }}>
                             <Grid container spacing={{ xs: 4, md: 3 }} justifyContent="center">
-                                {DfyProcessSteps.map((feature, idx) => (
+                                {SoftwareUsageSteps.map((feature, idx) => (
                                     <Grid item xs={12} sm={6} md={4} key={idx} sx={{ display: 'flex' }}>
                                         <Card
                                             variant="outlined"
@@ -520,13 +520,13 @@ const ServicesPage = () => {
                         align="center"
                         sx={{ color: 'text.primary', mb: 3 }}
                     >
-                        Results You Can <PrimaryText>Expect</PrimaryText>
+                        Results You Can <PrimaryText>Achieve with DotBridge</PrimaryText>
                     </Typography>
                     <Typography
                         variant="h5"
                         sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 8 }}
                     >
-                        Transform your sales and onboarding with AI-driven experiences that deliver measurable outcomes.
+                        Transform your sales and onboarding by creating AI-driven experiences that deliver measurable outcomes.
                     </Typography>
                     <Grid container spacing={4} justifyContent="center">
                         {impactMetrics /* Update impactMetrics data source with new values */.map((item, index) => (
@@ -575,14 +575,14 @@ const ServicesPage = () => {
                             align="center"
                             sx={{ color: 'text.primary', mb: 3 }}
                         >
-                            Ready to <PrimaryText>Automate & Scale?</PrimaryText>
+                            Ready to <PrimaryText>Automate & Scale with DotBridge?</PrimaryText>
                         </Typography>
                         <Typography
                             variant="h5"
                             align="center"
                             sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 6 }}
                         >
-                            Apply for our Done-For-You service. We're accepting a limited number of projects to build high-impact AI sales and onboarding funnels.
+                            Interested in leveraging DotBridge for advanced sales and onboarding funnels? Fill out the form to discuss your needs or request a personalized demo.
                         </Typography>
 
                         <Paper
@@ -603,10 +603,10 @@ const ServicesPage = () => {
                                     >
                                         <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
                                         <Typography variant="h5" sx={{ color: 'text.primary', mb: 1 }}>
-                                            Application Received!
+                                            Request Submitted!
                                         </Typography>
                                         <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                                            Thanks for your interest. We'll review your application for an AI Funnel build and contact you via email within 1-2 business days.
+                                            Thanks for your interest. We'll review your information and contact you via email within 1-2 business days to discuss your goals or schedule a demo.
                                         </Typography>
                                     </motion.div>
                                 </Box>
@@ -639,17 +639,17 @@ const ServicesPage = () => {
                                         <Grid item xs={12}>
                                             <FormControl component="fieldset" fullWidth>
                                                 <FormLabel component="legend" sx={{ mb: 1, color: 'text.secondary' }}>
-                                                    Do you have existing sales or onboarding material?
+                                                    Do you have existing sales, onboarding, or training material to use with DotBridge?
                                                 </FormLabel>
                                                 <RadioGroup
-                                                    name="hasExistingCourse" // Keep name for consistency with state, but label is changed
+                                                    name="hasExistingCourse"
                                                     value={lead.hasExistingCourse}
                                                     onChange={handleInputChange}
                                                     row
                                                     required
                                                 >
-                                                    <FormControlLabel value="yes" control={<Radio color="primary" />} label="Yes (Videos, Docs, etc.)" />
-                                                    <FormControlLabel value="no" control={<Radio color="primary" />} label="No (We'll strategize)" />
+                                                    <FormControlLabel value="yes" control={<Radio color="primary" />} label="Yes" />
+                                                    <FormControlLabel value="no" control={<Radio color="primary" />} label="No" />
                                                 </RadioGroup>
                                             </FormControl>
                                         </Grid>
@@ -657,8 +657,8 @@ const ServicesPage = () => {
                                             <TextField
                                                 variant="outlined"
                                                 fullWidth
-                                                label="Describe your desired sales/onboarding funnel & goals"
-                                                name="courseTopic" // Keep name for consistency, but label is changed
+                                                label="Describe your desired sales/onboarding funnel & goals with DotBridge"
+                                                name="courseTopic"
                                                 value={lead.courseTopic}
                                                 onChange={handleInputChange}
                                                 multiline
@@ -679,7 +679,7 @@ const ServicesPage = () => {
                                                 {isSubmitting ? (
                                                     <CircularProgress size={24} color="inherit" />
                                                 ) : (
-                                                    'Apply for Your AI Funnel Build'
+                                                    'Request Demo / Consultation'
                                                 )}
                                             </Button>
                                         </Grid>
@@ -712,7 +712,7 @@ const ServicesPage = () => {
                     variant="h5"
                     sx={{ color: 'text.secondary', mb: 5, maxWidth: '700px', mx: 'auto' }}
                 >
-                    Let us build your high-performance AI sales funnel or smart onboarding experience. Apply now and let DotBridge transform how you attract, convert, and retain customers.
+                    Build your high-performance AI sales funnel or smart onboarding experience with DotBridge. Explore our features or request a demo to see how DotBridge can transform how you attract, convert, and retain customers.
                 </Typography>
                 <Button
                     variant="contained"
@@ -726,7 +726,7 @@ const ServicesPage = () => {
                         });
                     }}
                 >
-                    Get My Custom AI Funnel
+                    Request a Demo
                 </Button>
             </Container>
 

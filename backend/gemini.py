@@ -69,15 +69,17 @@ def configure_genai():
     logger.info("Gemini API configured successfully")
 
 
-# Initialize the model
-def get_model(model_name="gemini-2.0-flash"):
+# Initialize the model - ensure it uses the desired flash model
+def get_model(model_name="gemini-2.0-flash"):  # Updated default model name
     """Get configured Gemini model instance"""
     start_time = time.time()
+    # Ensure your generation_config is appropriate for all calls, or adjust per call type.
+    # For challenge generation, text/JSON is fine.
     model = genai.GenerativeModel(
         model_name, generation_config={"response_mime_type": "application/json"}
     )
     duration = time.time() - start_time
-    print_timing("Model Initialization", duration)
+    print_timing(f"Model Initialization ({model_name})", duration)
     return model
 
 
@@ -1895,29 +1897,1632 @@ def create_brdge_knowledge(
         }
 
 
-# If run directly, execute a test extraction
-if __name__ == "__main__":
-    # Test the extraction pipeline with sample files
-    sample_video = "brdge-sales-demo.mp4"
-    sample_document = ""
-    instructions = "Teach the user about the product, in the end ask them a quiz that will make it obvious this is the right product for them."
-    bridge_type = "course"
+def generate_logic_puzzle_challenge(model, job_role: str) -> Optional[Dict[str, Any]]:
+    """Generates an immersive, tech-themed logic puzzle using Gemini."""
+    prompt = f"""
+    Design a visually distinctive and challenging logic puzzle for a {job_role} candidate. 
+    Create a scenario that feels like a high-stakes tech challenge they might face in the real world.
+    Focus on spatial reasoning, pattern recognition, or algorithmic thinking - something that tests how they approach complex problems.
+    
+    Make it VISUALLY INTERESTING - the puzzle should involve a mental image that's easy to visualize (patterns, sequences, diagrams), 
+    with elements that could be rendered graphically on the frontend.
+    
+    The puzzle should be:
+    1. ORIGINAL - not a classic puzzle people would recognize
+    2. CHALLENGING but solvable in 3-5 minutes with careful thought
+    3. RELEVANT to technical thinking (e.g., network topology, distributed systems, algorithmic patterns)
+    4. DISTINCTIVE VISUALLY with clear elements that could be rendered (nodes, connections, patterns)
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "logic-puzzle-visual",
+      "type": "logic_puzzle",
+      "title": "str (Short, intriguing title)",
+      "description": "str (Vivid scenario with clear visual elements that could be rendered)",
+      "visual_elements": "str (Describe what should be visualized: e.g., 'A network with 5 nodes in a specific arrangement')",
+      "question": "str (The precise question to solve)",
+      "expectedOutputType": "multiple_choice",
+      "options": ["str (Option A)", "str (Option B)", "str (Option C)", "str (Option D)"],
+      "validation_criteria": {{
+        "correct_option_index": int,
+        "explanation": "str (Why this is the correct answer, with logical steps)"
+      }}
+    }}
 
-    if os.path.exists(sample_video):
-        print(f"Running test extraction on {sample_video}")
-        result = create_brdge_knowledge(
-            sample_video,
-            sample_document if os.path.exists(sample_document) else None,
-            bridge_type=bridge_type,
-            additional_instructions="",
+    Example:
+    {{
+      "id": "logic-puzzle-visual",
+      "type": "logic_puzzle",
+      "title": "The Quantum Routing Dilemma",
+      "description": "You're debugging a quantum network with 5 entangled nodes (A-E) arranged in a pentagon. Each connection has a stability rating (1-5 stars). The network map shows: A↔B (★★), A↔C (★★★★), A↔E (★), B↔C (★★★), B↔D (★★★★★), C↔D (★★), D↔E (★★★), E↔C (★★★★). A quantum packet must travel from Node A to Node D along the path with the HIGHEST MINIMUM stability rating.",
+      "visual_elements": "A pentagon network where each node is labeled A through E, with connections between them showing star ratings (1-5 stars).",
+      "question": "Which path should the quantum packet take from Node A to Node D?",
+      "expectedOutputType": "multiple_choice",
+      "options": ["A→B→D", "A→C→D", "A→E→D", "A→C→E→D"],
+      "validation_criteria": {{
+        "correct_option_index": 1,
+        "explanation": "Path A→C→D has stability ratings of ★★★★ (A→C) and ★★ (C→D), giving a minimum stability of ★★. Path A→B→D has ★★ and ★★★★★, minimum ★★. Path A→E→D has ★ and ★★★, minimum ★. Path A→C→E→D has ★★★★, ★★★★, and ★★★, minimum ★★★. Therefore A→C→E→D has the highest minimum rating."
+      }}
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Validate required fields
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "description",
+            "visual_elements",
+            "question",
+            "expectedOutputType",
+            "options",
+            "validation_criteria",
+        ]
+
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(f"Generated logic puzzle missing keys: {missing_keys}")
+            return None
+
+        # Ensure validation criteria has correct fields
+        validation_criteria = challenge_data.get("validation_criteria", {})
+        if (
+            "correct_option_index" not in validation_criteria
+            or "explanation" not in validation_criteria
+        ):
+            logger.error("Generated logic puzzle missing validation criteria fields")
+            return None
+
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating visual logic puzzle: {e}")
+        return None
+
+
+def generate_code_snippet_challenge(
+    model, job_role: str, language: str = "python"
+) -> Optional[Dict[str, Any]]:
+    """Generates an engaging code challenge that tests real-world software engineering skills."""
+
+    # Customize focus based on job role
+    if "AI Engineer" in job_role:
+        if language == "python":
+            focus_areas = [
+                "a data preprocessing pipeline that needs optimization",
+                "a feature extraction function with a subtle bug",
+                "a model evaluation routine that has scaling issues",
+                "a training loop with potential memory leaks",
+                "a data augmentation function with unexpected edge cases",
+            ]
+        else:  # JavaScript
+            focus_areas = [
+                "a frontend visualization of model predictions",
+                "an API wrapper for ML model inference",
+                "a realtime data streaming component for an AI application",
+                "a client-side model deployment with performance issues",
+                "a dashboard component that needs to handle large prediction outputs",
+            ]
+    else:  # Software Engineer
+        if language == "python":
+            focus_areas = [
+                "a backend API endpoint with concurrency issues",
+                "a data processing utility that needs better error handling",
+                "a caching implementation with potential race conditions",
+                "a recursive algorithm that's causing stack overflow",
+                "a database access pattern with N+1 query problems",
+            ]
+        else:  # JavaScript
+            focus_areas = [
+                "a React component with performance or state management issues",
+                "an animation system with memory leaks",
+                "an async workflow that needs proper error handling",
+                "a frontend caching strategy with stale data problems",
+                "a WebSocket handler with connection management issues",
+            ]
+
+    # Pick a random focus area for variety
+    import random
+
+    role_focus = random.choice(focus_areas)
+    language_details = "Python" if language == "python" else "JavaScript"
+
+    prompt = f"""
+    Create a realistic, engaging code challenge for a {job_role} candidate that focuses on {role_focus}.
+    
+    This should NOT be an algorithmic puzzle or contrived problem - make it feel like actual code they might encounter 
+    in a production codebase that needs improvement. The starting code should be functional but flawed in some
+    significant way (performance, scalability, maintainability, error handling, etc.).
+
+    Structure the challenge as a specific request they'd get from a senior engineer: "We need to improve this because..."
+    
+    For {language_details} code challenges:
+    - Use idiomatic, modern {language_details} - the code should look realistic (imports, error handling, etc.)
+    - For Python, utilize appropriate libraries like numpy, pandas, requests as needed
+    - For JavaScript, incorporate modern ES6+ features, async/await, and frameworks as appropriate
+    - The code should be 15-30 lines - complex enough to be interesting but digestible in a few minutes
+    - Include realistic variable names and minimal comments that hint at the context
+    
+    Make the challenge require critical thinking about real engineering concerns:
+    - Performance optimizations
+    - Error handling
+    - Scalability 
+    - Memory management
+    - Race conditions/concurrency
+    - API design
+    - Maintainability
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "code-challenge-{language}-production",
+      "type": "code_snippet", 
+      "title": "str (Brief, specific title that hints at the challenge)",
+      "description": "str (A specific request from a senior engineer explaining what needs to be fixed/improved and why - make it feel urgent and real)",
+      "stimulus": {{
+        "language": "{language}",
+        "code": "str (The flawed but working code snippet)"
+      }},
+      "expectedOutputType": "code_and_text",
+      "placeholder_code": "{'# Your improved implementation...' if language == 'python' else '// Your improved implementation...'}",
+      "placeholder_explanation": "Explain your approach, what issues you identified, and how your solution addresses them...",
+      "validation_criteria": {{
+        "evaluation_focus_points": ["list of 4-5 specific technical aspects that a good solution should address"]
+      }}
+    }}
+
+    Example (Python, AI Engineer):
+    {{
+      "id": "code-challenge-python-production",
+      "type": "code_snippet",
+      "title": "Optimize Our Model Feature Cache",
+      "description": "Our production recommendation system is having timeout issues because this feature caching function is too slow with our growing user base. We need to optimize it to handle 10x more users without increasing latency. The bottleneck is in how we're processing and storing the feature vectors. Can you refactor this to be more efficient while maintaining the same functionality?",
+      "stimulus": {{
+        "language": "python",
+        "code": "import time\\n\\ndef cache_user_features(user_data, feature_config):\\n    \"\"\"Cache computed features for faster recommendation lookup\"\"\"\\n    feature_store = {{}}\\n    \\n    for user_id, activities in user_data.items():\\n        # Compute features for each user (expensive operation)\\n        features = []\\n        for activity in activities:\\n            # Extract configured features from each activity\\n            activity_features = []\\n            for feature_name in feature_config['activity_features']:\\n                if feature_name in activity:\\n                    activity_features.append(activity[feature_name])\\n                else:\\n                    activity_features.append(0)  # Default value\\n            features.append(activity_features)\\n        \\n        # Combine all activity features (simple mean for now)\\n        if features:\\n            combined = []\\n            for i in range(len(features[0])):\\n                feature_values = [f[i] for f in features]\\n                combined.append(sum(feature_values) / len(feature_values))\\n        else:\\n            combined = [0] * len(feature_config['activity_features'])\\n        \\n        # Store in feature_store with timestamp\\n        feature_store[user_id] = {{\\n            'features': combined,\\n            'updated_at': time.time(),\\n            'activity_count': len(activities)\\n        }}\\n    \\n    return feature_store"
+      }},
+      "expectedOutputType": "code_and_text",
+      "placeholder_code": "# Your optimized implementation...",
+      "placeholder_explanation": "I identified these performance issues and addressed them by...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "effective use of numpy or other vectorized operations", 
+          "reduction of nested loops", 
+          "proper handling of the same edge cases (empty activities)",
+          "maintaining the same output structure and data integrity", 
+          "clear explanation of performance improvements"
+        ]
+      }}
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Validate required fields
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "description",
+            "stimulus",
+            "expectedOutputType",
+            "placeholder_code",
+            "placeholder_explanation",
+            "validation_criteria",
+        ]
+
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(f"Generated code challenge missing keys: {missing_keys}")
+            return None
+
+        # Check stimulus fields
+        stimulus = challenge_data.get("stimulus", {})
+        if "language" not in stimulus or "code" not in stimulus:
+            logger.error("Generated code challenge missing stimulus fields")
+            return None
+
+        # Ensure validation criteria exists
+        validation_criteria = challenge_data.get("validation_criteria", {})
+        if "evaluation_focus_points" not in validation_criteria:
+            logger.error("Generated code challenge missing evaluation focus points")
+            return None
+
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating production-like code challenge: {e}")
+        return None
+
+
+def generate_system_design_challenge(model, job_role: str) -> Optional[Dict[str, Any]]:
+    """Generate a visual, component-based system design challenge that feels more interactive."""
+
+    # Customize focus based on job role
+    if "AI Engineer" in job_role:
+        design_types = [
+            {
+                "type": "ml_pipeline_realtime",
+                "title_theme": "Real-time ML Inference & Data Pipeline",
+                "component_focus": "AI-specific infrastructure for real-time data ingestion, feature engineering, model serving (e.g., SageMaker, Vertex AI, or custom Kubernetes), monitoring, and feedback loops for continuous training. Emphasize data flow for a specific AI task like fraud detection or recommendation.",
+                "constraint": "high throughput, low latency, model versioning, data drift, and scalability for fluctuating loads",
+            },
+            {
+                "type": "large_scale_training_pipeline",
+                "title_theme": "Scalable Distributed ML Training Architecture",
+                "component_focus": "components for distributed data processing (e.g., Spark, Dask), distributed training frameworks (e.g., Horovod, TensorFlow Distributed), experiment tracking (e.g., MLflow), hyperparameter optimization, and model artifact storage.",
+                "constraint": "massive datasets, computational cost, training time, and reproducibility",
+            },
+            {
+                "type": "data_centric_ai_system",
+                "title_theme": "Data-Centric AI System for Quality Improvement",
+                "component_focus": "components for data ingestion from multiple sources, data validation & cleaning, data labeling & annotation pipelines, data versioning (e.g., DVC), and automated data quality monitoring to improve model performance.",
+                "constraint": "data quality, data governance, annotation efficiency, and integration with model development lifecycle",
+            },
+        ]
+    else:  # Software Engineer
+        design_types = [
+            {
+                "type": "distributed_system",
+                "title_theme": "Globally Distributed Application",
+                "component_focus": "data replication, caching, request routing, and failover components",
+                "constraint": "consistency requirements, latency concerns, and regional regulations",
+            },
+            {
+                "type": "real_time_platform",
+                "title_theme": "Real-time Collaborative Platform",
+                "component_focus": "components for low-latency synchronization, conflict resolution, and presence tracking",
+                "constraint": "scale, network reliability, and user experience",
+            },
+            {
+                "type": "event_streaming",
+                "title_theme": "High-throughput Event Processing System",
+                "component_focus": "event ingestion, routing, processing, and storage components",
+                "constraint": "ordering guarantees, fault tolerance, and processing semantics",
+            },
+        ]
+
+    # Pick a random design type for variety
+    import random
+
+    selected_design = random.choice(design_types)
+
+    prompt = f"""
+    Create a visually-oriented system design challenge for a {job_role} candidate focused on {selected_design["title_theme"]}.
+    
+    The challenge should:
+    1. Present a realistic, complex technical scenario requiring a system design solution
+    2. Focus on {selected_design["component_focus"]}
+    3. Include specific constraints around {selected_design["constraint"]}
+    4. Be structured so the candidate needs to identify and place the right components in the right architecture
+    
+    Make the problem VISUAL in nature - it should involve components, connections, and data flows that could be 
+    represented as a diagram. The challenge should include 6-8 distinct system components that need to be arranged.
+    
+    Add a creative business context that makes the challenge feel real, urgent, and important.
+    
+    The challenge should test:
+    - Component selection (what parts are needed)
+    - Component placement (where in the architecture)
+    - Data flow design (how components communicate)
+    - Trade-off analysis (key decisions with clear pros/cons)
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "system-design-{selected_design["type"]}",
+      "type": "system_design_visual",
+      "title": "str (Brief, specific title that hints at both the technical focus and business context)",
+      "description": "str (Business context + technical requirements + constraints in 3-4 paragraphs)",
+      "component_options": [
+        {{ "name": "str (Component 1)", "description": "str (Brief description of what this component does)", "icon_type": "str (e.g., 'database', 'service', 'api', 'client', 'queue')" }},
+        {{ "name": "str (Component 2)", "description": "str (Brief description)", "icon_type": "str" }},
+        // Include 6-8 components total
+      ],
+      "expected_considerations": [
+        "str (Key consideration 1 the design should address)",
+        "str (Key consideration 2)",
+        // Include 4-5 considerations
+      ],
+      "expectedOutputType": "system_diagram_and_text",
+      "placeholder_diagram": "Use the component options to create your system architecture diagram, showing connections and data flows",
+      "placeholder_explanation": "Explain your design choices, how data flows through the system, and how you've addressed the key requirements and constraints...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "str (Specific technical aspect 1 that a good solution should address)",
+          "str (Specific technical aspect 2)",
+          // Include 4-5 evaluation points
+        ]
+      }}
+    }}
+
+    Example (AI Engineer - ML Pipeline):
+    {{
+      "id": "system-design-ml_pipeline",
+      "type": "system_design_visual",
+      "title": "Real-time Fraud Detection for a Global Payment Network",
+      "description": "NewPay is disrupting the payments industry with its blockchain-based global transfer network. They need to add real-time fraud detection that can handle 100,000+ transactions per second with a latency budget of under 50ms for the ML inference. Their data scientists have developed several models (transaction pattern analysis, graph-based user relationship analysis, and a text analysis model for payment descriptions), but they need an architecture to deploy, monitor, and continuously improve these models in production. Due to regulatory requirements, they need region-specific model variants while maintaining global fraud pattern recognition. The system needs to handle significant daily volume fluctuations and have strong explainability for flagged transactions.",
+      "component_options": [
+        {{ "name": "Feature Store", "description": "Service that stores, manages and serves ML features with low latency", "icon_type": "database" }},
+        {{ "name": "Model Registry", "description": "Service that tracks model versions, metadata, and deployment status", "icon_type": "service" }},
+        {{ "name": "Streaming Inference Service", "description": "Service optimized for high-throughput, low-latency model predictions", "icon_type": "service" }},
+        {{ "name": "Batch Training Pipeline", "description": "Scheduled pipeline for regular model retraining on historical data", "icon_type": "service" }},
+        {{ "name": "Monitoring Service", "description": "System that tracks model drift, performance, and alert on issues", "icon_type": "service" }},
+        {{ "name": "Explainability Service", "description": "Service that generates explanations for model predictions", "icon_type": "service" }},
+        {{ "name": "Transaction Stream Processor", "description": "Real-time processor for incoming payment transactions", "icon_type": "queue" }},
+        {{ "name": "Regional Routing Layer", "description": "Service that directs requests to region-specific resources", "icon_type": "api" }}
+      ],
+      "expected_considerations": [
+        "How to ensure low-latency inference while maintaining model accuracy",
+        "How to handle region-specific models while sharing global fraud signals",
+        "How to maintain and update models without disrupting the live system",
+        "How to handle explainability for complex model decisions",
+        "How to scale for variable transaction volumes"
+      ],
+      "expectedOutputType": "system_diagram_and_text",
+      "placeholder_diagram": "Use the component options to create your ML system architecture, showing connections and data flows between components",
+      "placeholder_explanation": "Explain your design choices, how fraud detection flows from transaction to decision, and how your architecture handles the core requirements...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "Effective separation of real-time vs. batch processes",
+          "Thoughtful handling of region-specific model variants",
+          "Appropriate feature engineering and serving approach",
+          "Scalability and redundancy for high-availability",
+          "Clear explanation of model deployment and updating strategy"
+        ]
+      }}
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Validate required fields
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "description",
+            "component_options",
+            "expected_considerations",
+            "expectedOutputType",
+            "placeholder_diagram",
+            "placeholder_explanation",
+            "validation_criteria",
+        ]
+
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(
+                f"Generated system design challenge missing keys: {missing_keys}"
+            )
+            return None
+
+        # Ensure component options are properly formatted
+        component_options = challenge_data.get("component_options", [])
+        if not component_options or not all(
+            isinstance(c, dict)
+            and "name" in c
+            and "description" in c
+            and "icon_type" in c
+            for c in component_options
+        ):
+            logger.error(
+                "Generated system design challenge has invalid component options"
+            )
+            return None
+
+        # Ensure validation criteria exists
+        validation_criteria = challenge_data.get("validation_criteria", {})
+        if "evaluation_focus_points" not in validation_criteria:
+            logger.error(
+                "Generated system design challenge missing evaluation focus points"
+            )
+            return None
+
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating visual system design challenge: {e}")
+        return None
+
+
+def generate_game_theory_challenge(model, job_role: str) -> Optional[Dict[str, Any]]:
+    """Generate an interactive, scenario-based strategic thinking challenge with visual elements."""
+
+    # Customize scenario for job role
+    if "AI Engineer" in job_role:
+        scenarios = [
+            "AI product launch timing vs competitor",
+            "ML model deployment with incomplete data",
+            "Research resource allocation across competing AI initiatives",
+            "Strategic AI partnership negotiations",
+            "Data acquisition strategy with limited budget",
+        ]
+    else:  # Software Engineer
+        scenarios = [
+            "Product feature prioritization under tight deadlines",
+            "Technology stack selection with long-term implications",
+            "Scaling strategy for unexpected viral growth",
+            "Strategic hiring decisions with limited budget",
+            "Open source strategy vs proprietary development",
+        ]
+
+    # Pick a random scenario for variety
+    import random
+
+    scenario_focus = random.choice(scenarios)
+
+    prompt = f"""
+    Create a highly interactive, visually-rich strategic thinking challenge for a {job_role} based on {scenario_focus}.
+    
+    The challenge should:
+    1. Present a realistic tech business scenario with clear strategic implications
+    2. Include a VISUAL element - something that could be represented with a diagram, chart, or other visual aid
+    3. Have multiple strategic options with different risk/reward profiles
+    4. Require consideration of incomplete information and game-theoretic thinking
+    
+    Make it feel like a real business situation where the candidate must consider:
+    - Competitor actions and reactions
+    - Resource constraints and tradeoffs
+    - Information gaps and uncertainty
+    - Short-term vs. long-term outcomes
+    
+    Design the challenge so it's INTERACTIVE - structure it as a multi-choice question first, but then ask for deeper strategic reasoning.
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "strategic-scenario",
+      "type": "game_theory_interactive",
+      "title": "str (Brief, evocative title suggesting the central dilemma)",
+      "scenario": "str (Vivid business scenario with stakes, constraints, and strategic tension in 2-3 paragraphs)",
+      "description": "str (A concise summary of the scenario, suitable for display on a card. Max 1-2 sentences.)",
+      "visual_element": "str (Description of visual data that would aid decision-making, e.g., 'A competitive positioning map showing 5 companies plotted on axes of price vs features')",
+      "options": [
+        {{ 
+          "id": "A", 
+          "strategy": "str (Brief description of strategy option A)",
+          "pros": ["str (Pro 1)", "str (Pro 2)"],
+          "cons": ["str (Con 1)", "str (Con 2)"]
+        }},
+        {{ 
+          "id": "B", 
+          "strategy": "str (Brief description of strategy option B)",
+          "pros": ["str (Pro 1)", "str (Pro 2)"],
+          "cons": ["str (Con 1)", "str (Con 2)"]
+        }},
+        {{ 
+          "id": "C", 
+          "strategy": "str (Brief description of strategy option C)",
+          "pros": ["str (Pro 1)", "str (Pro 2)"],
+          "cons": ["str (Con 1)", "str (Con 2)"]
+        }}
+      ],
+      "strategic_questions": [
+        "str (Question probing deeper strategic reasoning, e.g., 'What assumption about competitor behavior is most critical to validate?')",
+        "str (Question about risk mitigation, e.g., 'How would you hedge against the biggest risk in your chosen strategy?')",
+        "str (Question about information needs, e.g., 'What specific market data would most influence your decision?')"
+      ],
+      "expectedOutputType": "strategic_analysis",
+      "placeholder": "Begin with your chosen strategy (A/B/C) and why, then address the strategic questions with specific reasoning...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "str (Strategic aspect 1 that a good solution should address)",
+          "str (Strategic aspect 2)",
+          "str (Strategic aspect 3)",
+          "str (Strategic aspect 4)",
+          "str (Strategic aspect 5)"
+        ]
+      }}
+    }}
+
+    Example (Product Launch Strategy):
+    {{
+      "id": "strategic-scenario",
+      "type": "game_theory_interactive",
+      "title": "The Market Timing Dilemma",
+      "scenario": "You're the VP of Product at Horizon Tech, preparing to launch your revolutionary AR glasses. Your team needs 8 more weeks for full polish, but intelligence suggests your biggest competitor, GlassVision, is planning to announce something similar. The AR market has been heating up, with analysts predicting the first compelling product could capture 65% market share. Your investors are pressuring for a faster launch, while your engineers warn about potential quality issues if rushed. Industry buzz suggests that a major tech conference in 4 weeks will be GlassVision's likely announcement venue.",
+      "description": "As VP of Product, you must decide whether to rush your AR glasses launch to beat a competitor to market, stick to the original timeline for a polished product, or pre-announce to control the narrative.",
+      "visual_element": "A gantt chart showing your development timeline with key milestones (basic functionality, beta testing, quality assurance, marketing prep, full launch) alongside a market timing graph showing estimated competitor readiness, conference dates, and projected market interest curve",
+      "options": [
+        {{ 
+          "id": "A", 
+          "strategy": "Rush to launch a 'limited release' version before the conference (3 weeks)",
+          "pros": ["Beat competitor to market", "Capture early market attention", "Can position competitor as a follower"],
+          "cons": ["Product will have known limitations", "Higher customer support needs", "Engineering team burnout risk"]
+        }},
+        {{ 
+          "id": "B", 
+          "strategy": "Stick to original timeline (8 weeks) for full-featured launch",
+          "pros": ["Higher quality product", "Complete feature set", "Well-prepared support and marketing"],
+          "cons": ["Risk being perceived as a follower", "May lose early adopters to competitor", "Longer investor money burn"]
+        }},
+        {{ 
+          "id": "C", 
+          "strategy": "Pre-announce now with bold claims, but launch on original timeline",
+          "pros": ["Control the narrative before competitor", "Buy time for development", "Set market expectations"],
+          "cons": ["Create expectations that must be met", "Give competitor time to adjust strategy", "If delayed further, significant reputation damage"]
+        }}
+      ],
+      "strategic_questions": [
+        "What critical assumption about GlassVision's product readiness most influences your strategy?",
+        "How might you gather better competitive intelligence before committing to your strategy?",
+        "What parallel investments would make your chosen strategy more resilient to competitive response?"
+      ],
+      "expectedOutputType": "strategic_analysis",
+      "placeholder": "I would choose strategy (A/B/C) because... The most critical assumption is... I would gather intelligence by... To make this strategy more resilient, I would...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "Demonstrates understanding of first-mover vs quality trade-offs",
+          "Identifies specific competitive intelligence needs and how to address them",
+          "Shows awareness of second-order effects (competitor responses)",
+          "Proposes concrete risk mitigation approaches",
+          "Balances technical, market, and business considerations"
+        ]
+      }}
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Validate required fields
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "scenario",
+            "visual_element",
+            "options",
+            "strategic_questions",
+            "expectedOutputType",
+            "placeholder",
+            "validation_criteria",
+        ]
+
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(
+                f"Generated game theory challenge missing keys: {missing_keys}"
+            )
+            return None
+
+        # Validate options structure
+        options = challenge_data.get("options", [])
+        if not options or not all(
+            isinstance(o, dict)
+            and "id" in o
+            and "strategy" in o
+            and "pros" in o
+            and "cons" in o
+            for o in options
+        ):
+            logger.error(
+                "Generated game theory challenge has invalid options structure"
+            )
+            return None
+
+        # Ensure validation criteria exists
+        validation_criteria = challenge_data.get("validation_criteria", {})
+        if "evaluation_focus_points" not in validation_criteria:
+            logger.error(
+                "Generated game theory challenge missing evaluation focus points"
+            )
+            return None
+
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating interactive game theory challenge: {e}")
+        return None
+
+
+def generate_connect_the_dots_challenge(
+    model, job_role: str
+) -> Optional[Dict[str, Any]]:
+    prompt = f"""
+    Generate a 'connect the dots' style challenge for a {job_role} focusing on "big picture, frontier of technology" thinking.
+    Provide three genuinely diverse items (e.g., a recent scientific breakthrough, a niche tech startup's mission, a quote from a futurist).
+    These items should subtly point towards a significant, perhaps not immediately obvious, future technological convergence or societal shift.
+    Ask the candidate to articulate this grand theme and justify their interpretation.
+    Provide a title and the items.
+
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "connect-dots-frontier",
+      "type": "connect_the_dots",
+      "title": "str (Title suggesting a grand vision)",
+      "description": "The following three items, though seemingly disparate, point to a profound technological or societal shift on the horizon. What is this overarching 'frontier' theme, and how do these pieces connect to it?",
+      "stimulus": {{
+        "texts": ["str (Item 1 - e.g., a news headline about a deep-tech breakthrough)", "str (Item 2 - e.g., a one-sentence mission of a very niche, futuristic startup)", "str (Item 3 - e.g., a short, impactful quote from a respected futurist or scientist)"]
+      }},
+      "expectedOutputType": "textarea",
+      "placeholder": "The grand connecting theme is... Here's how these items converge...",
+      "validation_criteria": {{
+        "evaluation_focus_points": ["depth of insight", "originality of the connecting theme", "plausibility of the connections made", "articulation of 'big picture' implications"]
+      }}
+    }}
+
+    Example:
+    {{
+      "id": "connect-dots-frontier",
+      "type": "connect_the_dots",
+      "title": "The Next Human-Machine Symbiosis",
+      "description": "The following three items, though seemingly disparate, point to a profound technological or societal shift on the horizon. What is this overarching 'frontier' theme, and how do these pieces connect to it?",
+      "stimulus": {{
+        "texts": [
+          "Headline: 'Researchers demonstrate direct neural interface for controlling complex robotic limbs with thought, achieving near-natural dexterity.'",
+          "Startup Mission: 'To build personalized AI tutors that adapt not just to learning style, but to the student's real-time cognitive and emotional state via non-invasive biofeedback.'",
+          "Futurist Quote: 'The future isn't about humans versus machines, but humans *as* enhanced by machines, forming a new kind of integrated intelligence.'"
+        ]
+      }},
+      "expectedOutputType": "textarea",
+      "placeholder": "The grand theme I see is... The neural interface shows..., the AI tutor aims for..., and the quote ties it together by suggesting...",
+      "validation_criteria": {{
+        "evaluation_focus_points": ["identification of a sophisticated theme like 'cognitive augmentation' or 'seamless human-AI integration'", "ability to link diverse inputs to this theme", "speculation on societal impact"]
+      }}
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+        if not (
+            challenge_data.get("stimulus") and challenge_data["stimulus"].get("texts")
+        ):
+            logger.error("Generated connect the dots challenge missing stimulus texts.")
+            return None
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating frontier connect the dots challenge: {e}")
+        return None
+
+
+def generate_product_sense_challenge(model, job_role: str) -> Optional[Dict[str, Any]]:
+    """Generates a product sense challenge asking candidates to evaluate a product idea or feature."""
+
+    # Customize scenario for job role
+    if "AI Engineer" in job_role:
+        product_focus_areas = [
+            "a new AI-powered feature for an existing enterprise SaaS product",
+            "a developer tool for simplifying MLOps workflows",
+            "a consumer application leveraging a novel generative AI model",
+            "a data product that provides unique insights from large-scale datasets",
+            "an AI ethics & safety tool for assessing model bias",
+        ]
+    else:  # Software Engineer
+        product_focus_areas = [
+            "a new feature for a popular social media application",
+            "a productivity tool aimed at remote development teams",
+            "a mobile application for a niche hobbyist community",
+            "an e-commerce platform enhancement to improve conversion rates",
+            "a platform for connecting local service providers with customers",
+        ]
+
+    import random
+
+    focus_area = random.choice(product_focus_areas)
+
+    prompt = f"""
+    Create a Product Sense challenge for a {job_role} candidate, focusing on "{focus_area}".
+    
+    The challenge should present a brief product concept or a problem statement. 
+    The candidate should then be asked to:
+    1. Identify target users.
+    2. Propose 2-3 key features and justify them.
+    3. Define 1-2 key success metrics.
+    4. Identify a potential risk or challenge.
+
+    The scenario should be concise but provide enough context for thoughtful analysis.
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "product-sense-challenge",
+      "type": "product_sense",
+      "title": "str (Short, engaging title related to the product concept)",
+      "description": "str (Brief overview of the challenge task for the mission board card - 1-2 sentences)",
+      "scenario": "str (The product concept or problem statement presented to the candidate - 2-3 sentences)",
+      "questions": [
+        "str (e.g., Who are the primary target users for this product/feature? Describe them.)",
+        "str (e.g., What are 2-3 essential features you would prioritize for an MVP? Why?)",
+        "str (e.g., How would you measure the success of this product/feature? Define 1-2 key metrics.)",
+        "str (e.g., What is one significant risk or challenge you foresee? How might you mitigate it?)"
+      ],
+      "expectedOutputType": "textarea_multiple", // Indicates multiple text areas or a structured text response
+      "placeholder": "Address each question thoughtfully, providing clear justifications for your product decisions...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "Clarity of target user identification",
+          "Rationale and impact of proposed features",
+          "Relevance and measurability of success metrics",
+          "Insightfulness of risk identification and mitigation strategy",
+          "Overall product thinking and user empathy"
+        ]
+      }}
+    }}
+
+    Example:
+    {{
+      "id": "product-sense-challenge",
+      "type": "product_sense",
+      "title": "AI-Powered Code Review Assistant",
+      "description": "Analyze the concept of an AI assistant for code reviews and outline its core product aspects.",
+      "scenario": "Your team is exploring the idea of an AI-powered assistant that integrates into code review workflows. This assistant would automatically identify potential bugs, suggest improvements, and check for adherence to coding standards.",
+      "questions": [
+        "Who are the primary target users for this AI Code Review Assistant? Describe their key needs.",
+        "What are 2-3 essential features you would prioritize for the MVP of this assistant? Justify your choices.",
+        "How would you measure the success of this assistant? Define 1-2 key metrics.",
+        "What is one significant risk or challenge (e.g., technical, adoption, ethical) you foresee? How might you mitigate it?"
+      ],
+      "expectedOutputType": "textarea_multiple",
+      "placeholder": "1. Target Users: ...\\n2. Key Features: ...\\n3. Success Metrics: ...\\n4. Risks/Challenges: ...",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "Understanding of developer workflows and pain points",
+          "Practicality and impact of feature suggestions",
+          "Actionable and relevant success metrics",
+          "Awareness of potential pitfalls in AI tool adoption",
+          "Clear and concise articulation of product strategy"
+        ]
+      }}
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Basic validation
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "description",
+            "scenario",
+            "questions",
+            "expectedOutputType",
+            "placeholder",
+            "validation_criteria",
+        ]
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(
+                f"Generated product sense challenge missing keys: {{missing_keys}}"
+            )
+            return None
+        if (
+            not isinstance(challenge_data.get("questions"), list)
+            or len(challenge_data.get("questions")) < 3
+        ):
+            logger.error(
+                "Generated product sense challenge has insufficient questions."
+            )
+            return None
+
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating product sense challenge: {{e}}")
+        return None
+
+
+# ... (get_dynamic_challenge_sequence and validate_solution functions remain as previously defined,
+#      they will use these new generator functions. Ensure get_dynamic_challenge_sequence calls the correct new function names.)
+def get_dynamic_challenge_sequence(job_id_str: str) -> List[Dict[str, Any]]:
+    try:
+        # Ensure Gemini is configured (if not done globally)
+        # configure_genai() # Assuming this is called once at app startup or is idempotent
+        model = get_model(
+            model_name="gemini-2.0-flash"
+        )  # Use the specific flash model for challenges
+        if not model:
+            logger.error("Failed to initialize Gemini model for challenge generation")
+            return [{"error": "Model initialization failed. Please try again later."}]
+    except Exception as e:
+        logger.error(f"Error initializing model: {str(e)}")
+        return [{"error": f"Challenge generation failed: {str(e)}"}]
+
+    job_role = "AI Engineer" if job_id_str == "1" else "Software Engineer"
+
+    # Define all available challenge generator functions by type
+    all_challenge_generators = {
+        "game_theory": lambda m: generate_game_theory_challenge(m, job_role),
+        "system_design": lambda m: generate_system_design_challenge(m, job_role),
+        "product_sense": lambda m: generate_product_sense_challenge(m, job_role),
+        # Removed: logic, visual_pattern, http_codes, python_code, javascript_code, connect_the_dots
+    }
+
+    # XP/difficulty weights for gamification
+    challenge_weights = {
+        "game_theory": 150,  # Was 150, user image shows +50XP, but let's keep it a bit higher
+        "system_design": 200,
+        "product_sense": 100,
+    }
+
+    # Define the fixed sequence of challenge types
+    # Order: 1. Game Theory, 2. System Design, 3. Product Sense
+    challenge_type_sequence = [
+        "game_theory",
+        "system_design",
+        "product_sense",
+    ]
+
+    # If job_id_str implies a specific role that needs a different order or types,
+    # this is where that logic would go. For now, it's the same for all.
+
+    generated_challenges = []
+
+    for idx, challenge_type_key in enumerate(challenge_type_sequence):
+        generator_func = all_challenge_generators.get(challenge_type_key)
+
+        if not generator_func:
+            logger.error(
+                f"No generator function found for challenge type: {challenge_type_key}"
+            )
+            # Add a placeholder if a configured type is missing a generator
+            generated_challenges.append(
+                {
+                    "id": f"error-no-generator-{challenge_type_key}-job{job_id_str}",
+                    "type": "error_placeholder",
+                    "title": f"Error: Misconfiguration ({challenge_type_key.replace('_', ' ').title()})",
+                    "description": f"The challenge type '{challenge_type_key}' is not properly configured in the backend.",
+                    "expectedOutputType": "text",
+                    "metadata": {
+                        "skill": challenge_type_key,
+                        "xp_value": 0,
+                        "difficulty": "Unknown",
+                        "order": idx + 1,
+                    },
+                }
+            )
+            continue
+
+        challenge = None
+        for attempt in range(2):  # Try up to twice to generate each challenge
+            try:
+                challenge = generator_func(model)  # Pass the fetched model
+                if challenge and isinstance(challenge, dict):  # Ensure it's a dict
+                    # Add common metadata
+                    challenge["id"] = (
+                        f"{challenge.get('type', 'challenge').replace('_', '-')}-{idx+1}-job{job_id_str}"
+                    )
+                    challenge["metadata"] = {
+                        "skill": challenge_type_key,
+                        "xp_value": challenge_weights.get(challenge_type_key, 100),
+                        "difficulty": (
+                            "Hard"
+                            if challenge_weights.get(challenge_type_key, 100) >= 150
+                            else (
+                                "Medium"
+                                if challenge_weights.get(challenge_type_key, 100) >= 120
+                                else "Easy"
+                            )
+                        ),
+                        "order": idx + 1,
+                    }
+
+                    # Ensure description exists, providing a fallback.
+                    # For game_theory, description is already added to be a summary of scenario.
+                    if not challenge.get("description"):
+                        if challenge_type_key == "game_theory" and challenge.get(
+                            "scenario"
+                        ):
+                            challenge["description"] = (
+                                (challenge["scenario"][:100] + "...")
+                                if len(challenge["scenario"]) > 100
+                                else challenge["scenario"]
+                            )
+                        else:
+                            challenge["description"] = (
+                                f"Solve the {challenge_type_key.replace('_', ' ')} challenge."
+                            )
+
+                    # Ensure title exists
+                    if not challenge.get("title"):
+                        challenge["title"] = (
+                            f"{challenge_type_key.replace('_', ' ').title()} Challenge"
+                        )
+
+                    generated_challenges.append(challenge)
+                    break  # Break from retry loop on success
+                else:
+                    logger.warning(
+                        f"Attempt {attempt+1} for {challenge_type_key} returned invalid data: {challenge}"
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Attempt {attempt+1} to generate {challenge_type_key} challenge failed: {e}",
+                    exc_info=True,
+                )
+                time.sleep(1)  # Wait before retrying
+
+        if not challenge:  # All retries failed or generator returned None consistently
+            logger.error(
+                f"Failed to generate {challenge_type_key} challenge for job {job_id_str} after multiple attempts."
+            )
+            generated_challenges.append(
+                {
+                    "id": f"error-generation-failed-{challenge_type_key}-job{job_id_str}",
+                    "type": "error_placeholder",
+                    "title": f"Challenge Error ({challenge_type_key.replace('_', ' ').title()})",
+                    "description": f"We encountered an issue generating the {challenge_type_key.replace('_', ' ')} challenge. You can skip this or refresh.",
+                    "expectedOutputType": "text",
+                    "metadata": {
+                        "skill": challenge_type_key,
+                        "xp_value": 0,
+                        "difficulty": "Error",
+                        "order": idx + 1,
+                    },
+                }
+            )
+
+    return generated_challenges
+
+
+# ... (validate_solution function should still work as it takes 'model' as an argument)
+# ... (If __name__ == "__main__": block, update to test new generators or remove if not needed for direct script run)
+
+
+def validate_solution(
+    model,
+    challenge_type: str,
+    solution_data: Dict[str, Any],
+    validation_criteria: Dict[str, Any],
+    original_challenge_description: str = "",
+) -> Dict[str, Any]:
+    """
+    Validates a user's solution against the challenge's criteria using Gemini.
+
+    Args:
+        model: Initialized Gemini model instance.
+        challenge_type: The type of challenge (e.g., 'logic_puzzle', 'code_snippet').
+        solution_data: The user's submitted solution (e.g., {"text": "..."} or {"code": "...", "explanation": "..."}).
+        validation_criteria: The criteria defined when the challenge was generated.
+        original_challenge_description: The original text/description of the challenge, useful for context.
+
+    Returns:
+        A dictionary like {"is_correct": True/False, "feedback": "Detailed feedback..."}
+    """
+    logger.info(f"Validating solution for challenge type: {challenge_type}")
+    logger.debug(f"Solution data: {solution_data}")
+    logger.debug(f"Validation criteria: {validation_criteria}")
+
+    try:
+        # LOGIC PUZZLE - Multiple choice version
+        if challenge_type == "logic_puzzle":
+            # For new multiple-choice format
+            if "selected_option" in solution_data:
+                user_selected_option = solution_data.get("selected_option")
+                # Get correct answer from validation criteria
+                correct_option_index = validation_criteria.get("correct_option_index")
+
+                if (
+                    correct_option_index is not None
+                    and user_selected_option == correct_option_index
+                ):
+                    return {
+                        "is_correct": True,
+                        "feedback": "Correct! You identified the right solution to the logic puzzle.",
+                    }
+                else:
+                    # Get explanation from validation criteria
+                    explanation = validation_criteria.get("explanation", "")
+                    return {
+                        "is_correct": False,
+                        "feedback": (
+                            f"That's not the correct answer. Here's a hint: {explanation}"
+                            if explanation
+                            else "That's not the right answer. Try examining the pattern more carefully."
+                        ),
+                    }
+
+            # Legacy format - text input
+            else:
+                expected_answer = (
+                    validation_criteria.get("expected_answer", "").strip().lower()
+                )
+                user_answer = solution_data.get("text", "").strip().lower()
+
+                if expected_answer and user_answer == expected_answer:
+                    return {
+                        "is_correct": True,
+                        "feedback": "Correct! That's the right solution to the logic puzzle.",
+                    }
+                else:
+                    # Use Gemini for more nuanced feedback
+                    prompt = f"""
+                    A user attempted a logic puzzle.
+                    The puzzle description was: "{original_challenge_description}"
+                    The user's answer was: "{user_answer}"
+                    The expected answer was: "{expected_answer}"
+                    
+                    If the user's answer is incorrect, provide brief, encouraging feedback, possibly hinting towards the correct logic without giving away the answer.
+                    If the expected answer is not available or the user's answer is very far off, just say "That's not quite it. Try rethinking the logic."
+
+                    Return ONLY a JSON object: {{"feedback": "str"}}
+                    """
+                    response = model.generate_content(prompt)
+                    feedback_json = json.loads(response.text)
+                    return {
+                        "is_correct": False,
+                        "feedback": feedback_json.get(
+                            "feedback",
+                            "That's not quite right. Try rethinking the logic.",
+                        ),
+                    }
+
+        # VISUAL PATTERN - Multiple choice pattern recognition
+        elif challenge_type == "visual_pattern":
+            user_selected_id = solution_data.get("selected_option_id", "")
+            correct_option_id = validation_criteria.get("correct_option_id", "")
+
+            if user_selected_id == correct_option_id:
+                return {
+                    "is_correct": True,
+                    "feedback": "Correct! You successfully identified the pattern.",
+                }
+            else:
+                # Get pattern rule explanation
+                pattern_rule = validation_criteria.get("pattern_rule", "")
+                return {
+                    "is_correct": False,
+                    "feedback": (
+                        f"Not quite right. The pattern follows this rule: {pattern_rule}"
+                        if pattern_rule
+                        else "That's not the correct pattern. Try looking for a different transformation rule."
+                    ),
+                }
+
+        # HTTP STATUS CODES - Multiple choice questions
+        elif challenge_type == "http_status_codes":
+            question_id = solution_data.get("question_id", "")
+            selected_index = solution_data.get("selected_index")
+
+            # Find the question in the original challenge
+            question_data = None
+            if "questions" in validation_criteria:
+                for question in validation_criteria["questions"]:
+                    if question.get("id") == question_id:
+                        question_data = question
+                        break
+
+            if question_data and selected_index == question_data.get("correct_index"):
+                # Get the correct status code for better feedback
+                correct_option = question_data.get("options", [])[
+                    question_data.get("correct_index", 0)
+                ]
+                code = correct_option.get("code", "")
+                description = correct_option.get("description", "")
+
+                return {
+                    "is_correct": True,
+                    "feedback": f"Correct! {code} ({description}) is the appropriate status code for this scenario.",
+                }
+            else:
+                return {
+                    "is_correct": False,
+                    "feedback": "That's not the right status code for this scenario. Consider the specific requirements in the HTTP specification.",
+                }
+
+        # CODE SNIPPET - Evaluate code and explanation
+        elif challenge_type == "code_snippet":
+            user_code = solution_data.get("code", "")
+            user_explanation = solution_data.get("explanation", "")
+            evaluation_focus_points = validation_criteria.get(
+                "evaluation_focus_points", []
+            )
+
+            prompt = f"""
+            A user submitted a solution for a code snippet challenge.
+            The original problem description was: "{original_challenge_description}"
+            The user's explanation of their approach: "{user_explanation}"
+            The user's submitted code: 
+            ```
+            {user_code}
+            ```
+            Key aspects for a good solution include: {', '.join(evaluation_focus_points)}.
+            
+            Analyze the user's solution against these criteria:
+            1. Does the explanation clearly articulate their reasoning and approach?
+            2. Does the code conceptually address the challenge (implementation of the right approach)? 
+            3. Are there any obvious logical errors or inefficiencies?
+            4. Has the user demonstrated understanding of the core concepts?
+
+            Return ONLY a JSON object: {{"is_correct": true/false, "feedback": "str (Constructive feedback highlighting strengths and potential improvements)"}}
+            """
+            response = model.generate_content(prompt)
+            eval_results = json.loads(response.text)
+
+            is_correct = eval_results.get("is_correct", False)
+            feedback = eval_results.get(
+                "feedback", "Thanks for your submission. We'll review your approach."
+            )
+
+            return {"is_correct": is_correct, "feedback": feedback}
+
+        # SYSTEM DESIGN - Evaluate diagram and explanation
+        elif challenge_type == "system_design_visual":
+            user_explanation = solution_data.get("explanation", "")
+            evaluation_focus_points = validation_criteria.get(
+                "evaluation_focus_points", []
+            )
+
+            prompt = f"""
+            A user submitted a solution for a system design challenge.
+            The original challenge description was: "{original_challenge_description}"
+            The user was expected to create a system diagram and provide an explanation.
+            The user\\'s textual explanation of their design: "{user_explanation}"
+            (The diagram itself is evaluated separately or assumed to be constructed based on the component options provided in the challenge).
+            
+            Key aspects for a good solution include: {', '.join(evaluation_focus_points)}.
+            
+            The primary goal here is to encourage participation and gauge thoughtful engagement. 
+            Evaluate the user\\'s textual explanation:
+            1. Did the user make a reasonable attempt to explain their design choices?
+            2. Does the explanation touch upon some of the key requirements or components mentioned in the challenge?
+            3. Is there evidence of critical thinking, even if the solution isn\\'t perfect?
+
+            Please be lenient. If the user provided a relevant explanation that shows they thought about the problem, 
+            consider the solution as "correct" for the purpose of this validation. 
+            Provide feedback that is encouraging and acknowledges their effort, perhaps offering one constructive suggestion if appropriate.
+
+            Return ONLY a JSON object: {{"is_correct": true/false, "feedback": "str (Balanced, encouraging feedback. Default to 'is_correct': true if a reasonable textual explanation is provided.)"}}
+            """
+            response = model.generate_content(prompt)
+            eval_results = json.loads(response.text)
+            # The prompt guides the LLM to return is_correct: true for reasonable effort.
+            # If LLM fails to provide is_correct, defaulting to True makes it more lenient.
+            is_correct = eval_results.get("is_correct", True)
+            feedback = eval_results.get(
+                "feedback",
+                "Thanks for your thoughtful system design! Your effort is appreciated.",
+            )
+            return {"is_correct": is_correct, "feedback": feedback}
+
+        # GAME THEORY - Evaluate strategic reasoning
+        elif challenge_type == "game_theory_interactive":
+            user_answer_text = solution_data.get("text", "")
+            selected_option_id = solution_data.get(
+                "selected_option_id"
+            )  # Get the selected option
+            evaluation_focus_points = validation_criteria.get(
+                "evaluation_focus_points", []
+            )
+
+            # Enhance the prompt with the selected option
+            prompt = f"""
+            A user submitted a response to a strategic scenario challenge (Game Theory).
+            The original scenario was: "{original_challenge_description}"
+            The user CHOSE strategy option ID: {selected_option_id if selected_option_id else 'Not specified'}.
+            The user's textual explanation and answers to strategic questions: "{user_answer_text}"
+            Key evaluation criteria: {', '.join(evaluation_focus_points)}.
+            
+            Evaluate the user's strategic thinking, focusing on:
+            1. If a strategy option was chosen, does the explanation support that choice well?
+            2. Clear choice of strategy with sound reasoning (if applicable, or overall reasoning if no explicit choice was made or required by the prompt structure).
+            3. Recognition of key assumptions and information gaps.
+            4. Consideration of competitor reactions and second-order effects.
+            5. Identifying and mitigating risks relevant to their chosen strategy or general approach.
+            6. Overall strategic depth and coherence in addressing the specific strategic questions posed in the challenge.
+            
+            The emphasis should be on strategic reasoning. If the user selected an option, their reasoning should align with it.
+            If the reasoning is sound and addresses the questions well, consider it a strong response, even if the chosen option isn't objectively 'best'.
+
+            Return ONLY a JSON object: {{"is_correct": true/false, "feedback": "str (Constructive feedback highlighting strategic insights, alignment of reasoning with chosen option, and areas for deeper consideration)"}}
+            """
+            response = model.generate_content(prompt)
+            eval_results = json.loads(response.text)
+            is_correct = eval_results.get("is_correct", False)
+            feedback = eval_results.get(
+                "feedback",
+                "Thanks for your strategic analysis. We'll review your approach.",
+            )
+            return {"is_correct": is_correct, "feedback": feedback}
+
+        # Handle any remaining legacy types or new types
+        elif challenge_type in ["system_design", "game_theory", "connect_the_dots"]:
+            user_text_response = solution_data.get("text", "")
+            evaluation_focus_points = validation_criteria.get(
+                "evaluation_focus_points", []
+            )
+
+            context_info = (
+                f'The original challenge was: "{original_challenge_description}".'
+            )
+            if evaluation_focus_points:
+                context_info += f" A good answer should touch upon these aspects: {', '.join(evaluation_focus_points)}."
+
+            prompt = f"""
+            A user submitted a response to a '{challenge_type}' challenge.
+            {context_info}
+            The user's response is: 
+            "{user_text_response}"
+
+            Please evaluate this response based on the original challenge and the desired focus points.
+            Is the user's reasoning sound? Does it creatively and effectively address the core aspects of the challenge?
+            Provide constructive feedback.
+
+            Return ONLY a JSON object: {{"is_correct": true/false, "feedback": "str (Constructive feedback on the response, highlighting strengths or areas for improvement based on focus points.)"}}
+            """
+            response = model.generate_content(prompt)
+            eval_results = json.loads(response.text)
+            is_correct = eval_results.get("is_correct", False)
+            feedback = eval_results.get(
+                "feedback", "Your response has been recorded and will be reviewed."
+            )
+            return {"is_correct": is_correct, "feedback": feedback}
+
+        else:
+            logger.warning(
+                f"Unsupported challenge type for validation: {challenge_type}"
+            )
+            return {
+                "is_correct": False,
+                "feedback": "Solution submitted. Validation for this type of challenge is not fully implemented yet.",
+            }
+
+    except json.JSONDecodeError as je:
+        logger.error(
+            f"JSONDecodeError during solution validation for {challenge_type}: {je}. Response text: {response.text if 'response' in locals() else 'N/A'}"
         )
-
-        # Save results to a file
-        with open("extraction_results.json", "w") as f:
-            json.dump(result, f, indent=2)
-
-        print(f"Results saved to extraction_results.json")
-    else:
-        print(
-            f"Sample video {sample_video} not found. Add a video file to test the extraction."
+        return {
+            "is_correct": False,
+            "feedback": "There was an issue processing the AI's evaluation. Your solution is saved.",
+        }
+    except Exception as e:
+        logger.error(
+            f"Error validating solution for {challenge_type}: {e}", exc_info=True
         )
+        return {
+            "is_correct": False,
+            "feedback": "An unexpected error occurred during validation. Your solution has been saved.",
+        }
+
+
+# If run directly, you might want to test individual functions here.
+# Ensure configure_genai() is called before get_model() in such tests.
+# if __name__ == "__main__":
+# configure_genai()
+# test_model = get_model()
+# Example:
+# puzzle = generate_logic_puzzle_challenge(test_model, "AI Engineer")
+# print(json.dumps(puzzle, indent=2))
+
+
+def generate_http_status_challenge(model, job_role: str) -> Optional[Dict[str, Any]]:
+    """Generate a multiple-choice quiz testing knowledge of HTTP status codes."""
+
+    prompt = f"""
+    Create an engaging, practical HTTP status code challenge for a {job_role} candidate.
+    
+    The challenge should test their understanding of HTTP status codes in real-world scenarios that a professional would encounter.
+    Focus on practical situations where understanding the correct status code is important for debugging, API design, or system integration.
+    
+    Make the challenge visually interesting by describing UI mockups, network traffic diagrams, or other visual elements that illustrate the scenarios.
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "http-status-quiz",
+      "type": "http_status_codes",
+      "title": "HTTP Status Code Challenge",
+      "description": "Test your knowledge of HTTP status codes with these real-world scenarios. Select the most appropriate status code for each situation.",
+      "questions": [
+        {{
+          "id": "http-q1",
+          "scenario": "str (Real-world scenario description)",
+          "visual_element": "str (Description of a visual representation - e.g., 'A network diagram showing a client request failing at the authentication layer')",
+          "options": [
+            {{ "code": "XXX", "description": "Brief explanation of this status code" }},
+            {{ "code": "XXX", "description": "Brief explanation of this status code" }},
+            {{ "code": "XXX", "description": "Brief explanation of this status code" }},
+            {{ "code": "XXX", "description": "Brief explanation of this status code" }}
+          ],
+          "correct_index": int (index of correct answer, 0-based)
+        }},
+        // Include 5 total questions covering different categories of status codes
+      ],
+      "expectedOutputType": "multiple_choice",
+      "validation_criteria": {{
+        "evaluation_focus_points": [
+          "Accuracy of HTTP status code selection",
+          "Understanding of semantic meaning behind status codes", 
+          "Ability to apply status codes to practical scenarios",
+          "Knowledge of common status code categories (2XX, 4XX, 5XX)"
+        ]
+      }}
+    }}
+    
+    Rules for creating good questions:
+    1. Include a mix of common and less common but important status codes
+    2. Cover all major categories (2XX success, 3XX redirection, 4XX client errors, 5XX server errors)
+    3. Make scenarios realistic and relevant to modern web/API development
+    4. Ensure visual elements enhance understanding of the scenario
+    5. Include subtle details that differentiate between similar status codes
+    
+    Example question:
+    {{
+      "id": "http-q-example",
+      "scenario": "Your team has built a new API endpoint that processes image uploads. During testing, a client is repeatedly uploading images that exceed your 10MB size limit. Your API needs to respond with the most appropriate status code.",
+      "visual_element": "A network traffic diagram showing a client sending a 25MB file to your API server with a red indicator at the request validation layer",
+      "options": [
+        {{ "code": "400", "description": "Bad Request - The server cannot process the request due to client error" }},
+        {{ "code": "413", "description": "Payload Too Large - The request entity is larger than limits defined by server" }},
+        {{ "code": "415", "description": "Unsupported Media Type - The media format is not supported by the server" }},
+        {{ "code": "422", "description": "Unprocessable Entity - The request was well-formed but contains semantic errors" }}
+      ],
+      "correct_index": 1
+    }}
+    """
+
+    try:
+        # Generate the challenge
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Validate required fields
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "description",
+            "questions",
+            "expectedOutputType",
+            "validation_criteria",
+        ]
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(
+                f"Generated HTTP status challenge missing keys: {missing_keys}"
+            )
+            return None
+
+        # Validate questions structure
+        questions = challenge_data.get("questions", [])
+        if len(questions) < 3:  # At least 3 questions
+            logger.error(
+                f"Generated HTTP status challenge has too few questions: {len(questions)}"
+            )
+            return None
+
+        for i, q in enumerate(questions):
+            if not all(
+                k in q
+                for k in [
+                    "id",
+                    "scenario",
+                    "visual_element",
+                    "options",
+                    "correct_index",
+                ]
+            ):
+                logger.error(f"Question {i+1} has missing required fields")
+                return None
+
+            # Validate options and correct_index
+            options = q.get("options", [])
+            correct_index = q.get("correct_index")
+            if len(options) < 2:
+                logger.error(f"Question {i+1} has too few options: {len(options)}")
+                return None
+            if (
+                not isinstance(correct_index, int)
+                or correct_index < 0
+                or correct_index >= len(options)
+            ):
+                logger.error(
+                    f"Question {i+1} has invalid correct_index: {correct_index}"
+                )
+                return None
+
+        return challenge_data
+
+    except Exception as e:
+        logger.error(f"Error generating HTTP status code challenge: {e}")
+        return None
+
+
+def generate_visual_pattern_challenge(model, job_role: str) -> Optional[Dict[str, Any]]:
+    """Generate a pattern recognition challenge with visual elements."""
+
+    # Customize focus based on job role
+    if "AI Engineer" in job_role:
+        pattern_types = [
+            "sequence completion with a mathematical or algorithmic basis",
+            "node graph pattern recognition",
+            "matrix transformation pattern",
+            "feature extraction from data visualization",
+            "multi-dimensional pattern recognition",
+        ]
+    else:  # Software Engineer
+        pattern_types = [
+            "algorithmic sequence prediction",
+            "data structure pattern matching",
+            "UI/UX pattern recognition",
+            "state machine transition pattern",
+            "system architecture pattern recognition",
+        ]
+
+    # Pick a random pattern type for variety
+    import random
+
+    pattern_focus = random.choice(pattern_types)
+
+    prompt = f"""
+    Create a visually engaging pattern recognition challenge for a {job_role} that focuses on {pattern_focus}.
+    
+    The challenge should:
+    1. Present a visual pattern where the candidate must identify the next element or the rule governing the pattern
+    2. Be described in such detail that it could be rendered visually by the frontend
+    3. Test logical reasoning and pattern recognition skills relevant to the job role
+    4. Have a clear, unambiguous correct answer
+    
+    For visual elements, describe them precisely enough that they could be drawn:
+    - For shapes: specify their type, size, color, position, and any other relevant attributes
+    - For sequences: describe each element in the sequence with all its properties
+    - For grids/matrices: specify the contents of each cell in a well-defined manner
+    
+    Return ONLY a JSON object with this exact structure:
+    {{
+      "id": "pattern-recognition",
+      "type": "visual_pattern",
+      "title": "str (Clear, concise title that hints at the pattern type)",
+      "description": "str (Brief setup and instructions for the challenge)",
+      "pattern_elements": {{
+        "description": "str (Detailed description of the visual pattern, including all elements and their attributes)",
+        "elements": [
+          {{
+            "id": "element-1",
+            "visual_description": "str (Precise description of element 1 that could be visualized)",
+            "position": "str (Position information, e.g., '1st in sequence' or 'grid position (1,1)')"
+          }},
+          {{
+            "id": "element-2",
+            "visual_description": "str (Precise description of element 2 that could be visualized)",
+            "position": "str (Position information for element 2)"
+          }}
+          // Include 4-6 elements that establish the pattern
+        ]
+      }},
+      "options": [
+        {{
+          "id": "option-A",
+          "visual_description": "str (Precise description of option A that could be visualized)"
+        }},
+        {{
+          "id": "option-B",
+          "visual_description": "str (Precise description of option B that could be visualized)"
+        }},
+        {{
+          "id": "option-C",
+          "visual_description": "str (Precise description of option C that could be visualized)"
+        }},
+        {{
+          "id": "option-D",
+          "visual_description": "str (Precise description of option D that could be visualized)"
+        }}
+      ],
+      "correct_option_id": "str (ID of the correct option, e.g., 'option-B')",
+      "explanation": "str (Clear explanation of the pattern and why the correct option follows it)",
+      "expectedOutputType": "visual_selection",
+      "validation_criteria": {{
+        "pattern_rule": "str (The underlying rule or pattern in clear terms)",
+        "evaluation_focus_points": [
+          "str (Aspect 1 of the challenge that tests important skills)",
+          "str (Aspect 2)",
+          "str (Aspect 3)"
+        ]
+      }}
+    }}
+
+    Example (Sequence Pattern):
+    {{
+      "id": "pattern-recognition",
+      "type": "visual_pattern",
+      "title": "Logical Shape Transformation Sequence",
+      "description": "Study the sequence of shapes below. Each element follows a consistent pattern of transformation. Select the shape that correctly continues the sequence.",
+      "pattern_elements": {{
+        "description": "A sequence of geometric shapes that transform according to specific rules for rotation, color, and number of internal elements.",
+        "elements": [
+          {{
+            "id": "element-1",
+            "visual_description": "A blue square containing one small red circle in the top-left corner",
+            "position": "1st in sequence"
+          }},
+          {{
+            "id": "element-2",
+            "visual_description": "A blue square containing two small red circles positioned in the top-left and top-right corners",
+            "position": "2nd in sequence"
+          }},
+          {{
+            "id": "element-3",
+            "visual_description": "A blue square containing three small red circles positioned in the top-left, top-right, and bottom-right corners",
+            "position": "3rd in sequence"
+          }},
+          {{
+            "id": "element-4",
+            "visual_description": "A blue square containing four small red circles positioned in each of the four corners",
+            "position": "4th in sequence"
+          }}
+        ]
+      }},
+      "options": [
+        {{
+          "id": "option-A",
+          "visual_description": "A red square containing one small blue circle in the top-left corner"
+        }},
+        {{
+          "id": "option-B",
+          "visual_description": "A red square containing four small blue circles positioned in each of the four corners"
+        }},
+        {{
+          "id": "option-C",
+          "visual_description": "A blue square containing four small red circles in each corner and one small red circle in the center"
+        }},
+        {{
+          "id": "option-D",
+          "visual_description": "A red square containing no small circles"
+        }}
+      ],
+      "correct_option_id": "option-B",
+      "explanation": "The pattern involves two transformations: (1) The number of small circles increases by one in each step, filling the corners in clockwise order from top-left. (2) After the square is filled with circles in all four corners, the colors invert - the square changes from blue to red, and the circles change from red to blue.",
+      "expectedOutputType": "visual_selection",
+      "validation_criteria": {{
+        "pattern_rule": "Increment circles clockwise + color inversion when corners are filled",
+        "evaluation_focus_points": [
+          "Recognition of the ordered positioning pattern",
+          "Identification of the color inversion rule",
+          "Understanding of pattern completion vs. pattern continuation"
+        ]
+      }}
+    }}
+    """
+
+    try:
+        response = model.generate_content(prompt)
+        challenge_data = json.loads(response.text)
+
+        # Validate required fields
+        required_keys = [
+            "id",
+            "type",
+            "title",
+            "description",
+            "pattern_elements",
+            "options",
+            "correct_option_id",
+            "explanation",
+            "expectedOutputType",
+            "validation_criteria",
+        ]
+
+        if not all(k in challenge_data for k in required_keys):
+            missing_keys = [k for k in required_keys if k not in challenge_data]
+            logger.error(
+                f"Generated visual pattern challenge missing keys: {missing_keys}"
+            )
+            return None
+
+        # Validate pattern elements
+        pattern_elements = challenge_data.get("pattern_elements", {})
+        if "description" not in pattern_elements or "elements" not in pattern_elements:
+            logger.error(
+                "Generated visual pattern challenge missing pattern elements structure"
+            )
+            return None
+
+        # Validate options
+        options = challenge_data.get("options", [])
+        if len(options) < 2:
+            logger.error(
+                f"Generated visual pattern challenge has too few options: {len(options)}"
+            )
+            return None
+
+        # Ensure correct_option_id exists in options
+        correct_option_id = challenge_data.get("correct_option_id")
+        option_ids = [o.get("id") for o in options]
+        if correct_option_id not in option_ids:
+            logger.error(
+                f"Generated visual pattern challenge has invalid correct_option_id: {correct_option_id} not in {option_ids}"
+            )
+            return None
+
+        return challenge_data
+    except Exception as e:
+        logger.error(f"Error generating visual pattern challenge: {e}")
+        return None

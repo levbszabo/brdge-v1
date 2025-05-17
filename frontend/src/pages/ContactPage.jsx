@@ -147,7 +147,7 @@ const ContactPage = () => {
                                             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.25 }}>
                                                 Schedule a Call
                                             </Typography>
-                                            <Link href="https://calendly.com/levi-brdge-ai/30min" target="_blank" rel="noopener noreferrer" sx={{ color: 'text.primary', fontWeight: 500, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
+                                            <Link href="https://calendly.com/levi-dotbridge/30min" target="_blank" rel="noopener noreferrer" sx={{ color: 'text.primary', fontWeight: 500, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
                                                 Book a 30-min Demo/Consult
                                             </Link>
                                         </Box>
@@ -161,7 +161,7 @@ const ContactPage = () => {
                                         size="large"
                                         fullWidth
                                         component="a"
-                                        href="https://calendly.com/levi-brdge-ai/30min"
+                                        href="https://calendly.com/levi-dotbridge/30min"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         startIcon={<Calendar size={18} />}
@@ -190,7 +190,7 @@ const ContactPage = () => {
                             >
                                 <div className="calendly-inline-widget" style={{ height: '700px' }}>
                                     <iframe
-                                        src="https://calendly.com/levi-brdge-ai/30min?hide_gdpr_banner=1&background_color=ffffff&text_color=101017&primary_color=007aff"
+                                        src="https://calendly.com/levi-dotbridge/30min?hide_gdpr_banner=1&background_color=ffffff&text_color=101017&primary_color=007aff"
                                         width="100%"
                                         height="100%"
                                         frameBorder="0"

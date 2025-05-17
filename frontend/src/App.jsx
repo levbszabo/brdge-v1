@@ -32,6 +32,10 @@ import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
 import MarketplacePage from './pages/Marketplace';
 import DotBridgeBuyerJourneyDemoPage from './pages/DotBridgeBuyerJourneyDemoPage'; // Import the new demo page
+import BlogPage from './pages/BlogPage'; // Import the new Blog page
+import BlogPostDetailPage from './pages/BlogPostDetailPage'; // Import Blog Post Detail Page
+import CareerPage from './pages/CareerPage'; // Import the new Career page
+import ChallengePage from './pages/ChallengePage'; // Import ChallengePage
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -63,7 +67,7 @@ function Layout({ children }) {
   const showHeader = true;
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos'];
+  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos', '/blog', '/careers'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -72,6 +76,14 @@ function Layout({ children }) {
 
   const isViewCoursePath = (path) => {
     return path.startsWith('/c/');
+  };
+
+  const isBlogPath = (path) => {
+    return path.startsWith('/blog/');
+  };
+
+  const isCareersApplyPath = (path) => {
+    return path.startsWith('/careers/apply/');
   };
 
   useEffect(() => {
@@ -103,7 +115,9 @@ function Layout({ children }) {
           // If token is invalid, and user is on protected route, redirect to login
           const needsAuth = !publicRoutes.includes(currentPath) &&
             !isViewBrdgePath(currentPath) &&
-            !isViewCoursePath(currentPath);
+            !isViewCoursePath(currentPath) &&
+            !isBlogPath(currentPath) &&
+            !isCareersApplyPath(currentPath);
           if (needsAuth) {
             sessionStorage.setItem('redirectAfterLogin', currentPath); // Store intended path
             navigate('/login', { replace: true });
@@ -113,7 +127,9 @@ function Layout({ children }) {
         // No token: redirect to login if not on a public/view route
         const needsAuth = !publicRoutes.includes(currentPath) &&
           !isViewBrdgePath(currentPath) &&
-          !isViewCoursePath(currentPath);
+          !isViewCoursePath(currentPath) &&
+          !isBlogPath(currentPath) &&
+          !isCareersApplyPath(currentPath);
         if (needsAuth) {
           sessionStorage.setItem('redirectAfterLogin', currentPath); // Store intended path
           navigate('/login', { replace: true });
@@ -195,6 +211,10 @@ function App() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route path="/demos" element={<DotBridgeBuyerJourneyDemoPage />} /> {/* Changed path to /demo */}
+                <Route path="/blog" element={<BlogPage />} /> {/* Added route for BlogPage */}
+                <Route path="/blog/:slug" element={<BlogPostDetailPage />} /> {/* Added route for individual blog posts */}
+                <Route path="/careers" element={<CareerPage />} /> {/* Added route for CareerPage */}
+                <Route path="/careers/apply/:jobId/challenge" element={<ChallengePage />} /> {/* Added Challenge Route */}
                 <Route
                   path="/home"
                   element={

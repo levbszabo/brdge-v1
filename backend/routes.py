@@ -35,6 +35,7 @@ from models import (
     ModulePermissions,
     ConversationLogs,
     ServiceLead,
+    JobApplication,  # Add JobApplication model
 )
 from utils import (
     clone_voice_helper,
@@ -73,7 +74,8 @@ import asyncio
 from botocore.config import Config  # Add this import at the top
 from threading import Thread
 from sqlalchemy.orm import scoped_session, sessionmaker
-import gemini  # Import the full module, not just the function
+
+# Import the full module, not just the function
 from sqlalchemy.orm.attributes import flag_modified
 from dotenv import load_dotenv
 import ffmpeg
@@ -82,6 +84,12 @@ import threading
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import gemini
+from email import encoders
+from email.mime.base import MIMEBase
+
+# If gemini.py is in the same package (e.g. backend folder is a package)
+# Or if gemini.py is at the root and backend is a package: from .. import gemini
 
 # Load environment variables
 load_dotenv()
@@ -3600,14 +3608,21 @@ def submit_service_lead():
         )
 
 
-def send_notification_email(subject, content, template_type="support"):
+def send_notification_email(
+    subject,
+    content,
+    template_type="support",
+    attachment_path=None,
+    attachment_filename=None,
+):
     try:
-        email = os.getenv("SMTP_EMAIL", "levi@brdge-ai.com")
-        password = os.getenv("SMTP_PASSWORD")
+        email_user = os.getenv("SMTP_EMAIL", "levi@brdge-ai.com")  # Renamed for clarity
+        email_password = os.getenv("SMTP_PASSWORD")  # Renamed for clarity
+        recipient_email = "levi@dotbridge.io"  # Target recipient
 
         msg = MIMEMultipart()
-        msg["From"] = f"Brdge AI Notifications <{email}>"
-        msg["To"] = email
+        msg["From"] = f"Brdge AI Careers <{email_user}>"
+        msg["To"] = recipient_email
         msg["Subject"] = subject
 
         if template_type == "support":
@@ -3624,7 +3639,7 @@ def send_notification_email(subject, content, template_type="support"):
                 </body>
             </html>
             """
-        else:  # lead template
+        elif template_type == "lead":
             html_content = f"""
             <html>
                 <body style="font-family: Arial, sans-serif;">
@@ -3637,15 +3652,50 @@ def send_notification_email(subject, content, template_type="support"):
                 </body>
             </html>
             """
+        elif template_type == "job_application":
+            html_content = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif;">
+                    <h2>📄 New Job Application Received</h2>
+                    <p><strong>Applicant Name:</strong> {content['name']}</p>
+                    <p><strong>Applicant Email:</strong> <a href="mailto:{content['email']}">{content['email']}</a></p>
+                    <p><strong>Applying for:</strong> {content['job_title']} (Job ID: {content.get('job_id', 'N/A')})</p>
+                    <p><strong>Application ID (DB):</strong> {content.get('application_id', 'N/A')}</p>
+                    <p><strong>Submitted at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+                    <p>The resume is attached to this email.</p>
+                </body>
+            </html>
+            """
 
         msg.attach(MIMEText(html_content, "html"))
 
+        if attachment_path and attachment_filename:
+            try:
+                with open(attachment_path, "rb") as attachment:
+                    part = MIMEBase("application", "octet-stream")
+                    part.set_payload(attachment.read())
+                encoders.encode_base64(part)
+                part.add_header(
+                    "Content-Disposition",
+                    f"attachment; filename= {attachment_filename}",
+                )
+                msg.attach(part)
+                logger.info(f"Successfully attached {attachment_filename} to email.")
+            except Exception as attach_error:
+                logger.error(
+                    f"Error attaching file {attachment_filename} to email: {attach_error}"
+                )
+                # Optionally, modify email body to indicate attachment failure
+                # For now, we'll let the email send without it if attachment fails
+
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(email, password)
+            server.login(email_user, email_password)  # Use renamed variables
             server.send_message(msg)
 
-        logger.info(f"Notification email sent successfully: {subject}")
+        logger.info(
+            f"Notification email sent successfully: {subject} to {recipient_email}"
+        )
         return True
 
     except Exception as e:
@@ -4004,3 +4054,328 @@ def preview_subscription_upgrade(user):
             jsonify({"error": "An internal error occurred while previewing upgrade."}),
             500,
         )
+
+
+# It's good practice to configure Gemini and get the model once when the app starts,
+# or use a request context to manage it if preferred.
+
+
+@app.route("/api/careers/challenge/<job_id_str>", methods=["GET"])
+@cross_origin()
+def get_job_challenges_route(job_id_str):
+    """
+    API endpoint to fetch a dynamically generated sequence of challenges for a given job ID.
+    Relies on gemini.py to handle model initialization internally.
+    """
+    try:
+        current_app.logger.info(f"Request received for job ID {job_id_str} challenges.")
+
+        # get_dynamic_challenge_sequence now handles getting the model internally
+        challenges = gemini.get_dynamic_challenge_sequence(job_id_str)
+
+        if (
+            not challenges
+            or (
+                len(challenges) == 1
+                and challenges[0].get("type") == "error_placeholder"
+            )
+            or (len(challenges) == 1 and "error" in challenges[0])
+        ):
+            error_message = "Could not generate challenges for this role at the moment."
+            status_code = 500
+            if (
+                challenges and "error" in challenges[0]
+            ):  # Check if the first item is an error dict
+                if challenges[0]["error"] == "Unknown job ID, no challenges defined.":
+                    error_message = (
+                        "Invalid job ID or no challenges defined for this role."
+                    )
+                    status_code = 404
+                # If it's an error_placeholder from generation failure
+                elif challenges[0].get("type") == "error_placeholder":
+                    error_message = challenges[0].get("description", error_message)
+
+            current_app.logger.error(
+                f"Challenge generation failed for job ID {job_id_str}: {error_message}"
+            )
+            return jsonify({"error": error_message}), status_code
+
+        current_app.logger.info(
+            f"Successfully generated {len(challenges)} challenges for job ID {job_id_str}."
+        )
+        return jsonify(challenges), 200
+
+    except Exception as e:
+        current_app.logger.error(
+            f"Error fetching challenges for job ID {job_id_str}: {e}", exc_info=True
+        )
+        return (
+            jsonify(
+                {"error": "An internal error occurred while generating challenges."}
+            ),
+            500,
+        )
+
+
+@app.route("/api/careers/challenge/submit", methods=["POST"])
+@cross_origin()
+def submit_challenge_solution_route():
+    data = request.get_json()
+    current_app.logger.info(
+        f"Received solution submission for challenge type: {data.get('challengeType')}"
+    )
+
+    job_id = data.get("jobId")
+    challenge_id = data.get("challengeId")
+    challenge_type = data.get("challengeType")
+    solution_data = data.get("solution")
+    validation_criteria = data.get("validationCriteria")
+    original_challenge_description = data.get("originalChallengeDescription")
+
+    if not all(
+        [job_id, challenge_id, challenge_type, solution_data, validation_criteria]
+    ):
+        return (
+            jsonify({"error": "Missing required fields for solution submission."}),
+            400,
+        )
+
+    try:
+        # Perform basic validation on the solution data based on challenge type
+        if challenge_type == "logic_puzzle" and "selected_option" not in solution_data:
+            current_app.logger.warning(
+                f"Logic puzzle solution missing selected_option: {solution_data}"
+            )
+            solution_data = {"selected_option": solution_data.get("text", "0")}
+
+        elif (
+            challenge_type == "visual_pattern"
+            and "selected_option_id" not in solution_data
+        ):
+            current_app.logger.warning(
+                f"Visual pattern solution missing selected_option_id: {solution_data}"
+            )
+            return (
+                jsonify(
+                    {"error": "Invalid solution format for visual pattern challenge."}
+                ),
+                400,
+            )
+
+        elif challenge_type == "http_status_codes" and (
+            "question_id" not in solution_data or "selected_index" not in solution_data
+        ):
+            current_app.logger.warning(
+                f"HTTP status code solution missing question_id or selected_index: {solution_data}"
+            )
+            return (
+                jsonify(
+                    {"error": "Invalid solution format for HTTP status code challenge."}
+                ),
+                400,
+            )
+
+        # Get a model instance for validation
+        gemini.configure_genai()  # Ensure Gemini is configured
+        model_instance = gemini.get_model(model_name="gemini-2.0-flash")
+
+        if not model_instance:
+            current_app.logger.error(
+                "Failed to get Gemini model for solution validation."
+            )
+            return (
+                jsonify({"error": "Backend model error, cannot validate solution."}),
+                503,
+            )
+
+        # Update the validation criteria based on challenge type if needed
+        if challenge_type == "http_status_codes" and "questions" in validation_criteria:
+            # Store the full questions data in validation_criteria
+            # so validate_solution can find the correct question by ID
+            pass  # Already in the right format
+
+        # Validate the solution
+        evaluation_result = gemini.validate_solution(
+            model_instance,
+            challenge_type,
+            solution_data,
+            validation_criteria,
+            original_challenge_description,
+        )
+
+        is_correct = evaluation_result.get("is_correct", False)
+        feedback_message = evaluation_result.get(
+            "feedback", "Your solution has been processed."
+        )
+
+        # Add gamification elements to the response
+        xp_earned = 50 if is_correct else 10  # Base XP for attempt, more for correct
+
+        # Return a more enriched response with gamification elements
+        response = {
+            "success": is_correct,
+            "message": feedback_message,
+            "challenge_id": challenge_id,
+            "gamification": {
+                "xp_earned": xp_earned,
+                "level_progress": xp_earned
+                / 100,  # Simple percentage towards next level
+                "badges": [],  # Could add badges based on challenge type and performance
+                "stats": {
+                    "challenge_type": challenge_type,
+                    "time_taken": data.get(
+                        "timeTaken", 0
+                    ),  # If client sends time taken
+                    "attempt_count": data.get(
+                        "attemptCount", 1
+                    ),  # If client tracks attempts
+                },
+            },
+        }
+
+        # Add specific badge for first correct solution of this type
+        if is_correct:
+            badge_name = ""
+            badge_description = ""
+
+            if challenge_type == "logic_puzzle":
+                badge_name = "Logic Master"
+                badge_description = "Successfully solved a complex logic puzzle"
+            elif challenge_type == "visual_pattern":
+                badge_name = "Pattern Recognition"
+                badge_description = "Successfully identified a complex visual pattern"
+            elif challenge_type == "code_snippet":
+                badge_name = "Code Optimizer"
+                badge_description = "Successfully improved a code snippet"
+            elif challenge_type == "system_design_visual":
+                badge_name = "System Architect"
+                badge_description = "Successfully designed a complex system"
+            elif challenge_type == "game_theory_interactive":
+                badge_name = "Strategic Thinker"
+                badge_description = "Successfully navigated a strategic scenario"
+            elif challenge_type == "http_status_codes":
+                badge_name = "HTTP Expert"
+                badge_description = "Successfully mastered HTTP status codes"
+
+            if badge_name:
+                response["gamification"]["badges"].append(
+                    {
+                        "name": badge_name,
+                        "description": badge_description,
+                        "icon": badge_name.lower().replace(" ", "_"),
+                    }
+                )
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        current_app.logger.error(
+            f"Error during solution validation for challenge {challenge_id}: {e}",
+            exc_info=True,
+        )
+        return (
+            jsonify(
+                {
+                    "error": "An internal error occurred while validating your solution.",
+                    "success": False,
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/api/careers/apply/<int:job_id>", methods=["POST"])
+def handle_job_application(job_id):
+    try:
+        if "resume" not in request.files:
+            return jsonify({"error": "Resume file is required"}), 400
+
+        name = request.form.get("name")
+        email = request.form.get("email")
+        job_title = request.form.get("jobTitle")  # Get job title from form
+        resume_file = request.files["resume"]
+
+        if not name or not email or not job_title:
+            return jsonify({"error": "Name, email, and job title are required"}), 400
+
+        # Validate email format
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_regex, email):
+            return jsonify({"error": "Invalid email format"}), 400
+
+        # Secure filename and save resume temporarily
+        resume_filename = secure_filename(f"{uuid.uuid4()}_{resume_file.filename}")
+        temp_resume_dir = "/tmp/resumes"
+        os.makedirs(temp_resume_dir, exist_ok=True)
+        temp_resume_path = os.path.join(temp_resume_dir, resume_filename)
+        resume_file.save(temp_resume_path)
+
+        # Store application in database (optional, but good practice)
+        # This assumes you have a JobApplication model
+        try:
+            application = JobApplication(
+                job_id=job_id,
+                name=name,
+                email=email,
+                job_title=job_title,
+                resume_filename=resume_filename,  # Store filename for reference
+                status="submitted",
+            )
+            db.session.add(application)
+            db.session.commit()
+            application_id = application.id
+        except Exception as db_error:
+            db.session.rollback()
+            logger.error(f"Database error saving job application: {db_error}")
+            # Continue with email sending even if DB save fails for now
+            application_id = None
+
+        # Send email notification with resume attached
+        email_subject = f"New Job Application: {job_title} - {name}"
+        email_content_data = {
+            "name": name,
+            "email": email,
+            "job_id": job_id,
+            "job_title": job_title,
+            "application_id": application_id,
+        }
+
+        email_sent = send_notification_email(
+            subject=email_subject,
+            content=email_content_data,
+            template_type="job_application",  # New template type
+            attachment_path=temp_resume_path,
+            attachment_filename=resume_file.filename,  # Use original filename for attachment
+        )
+
+        if not email_sent:
+            logger.error(f"Failed to send application email for {name} - {job_title}")
+            # Decide if this should be a hard failure for the user
+            # For now, we'll still return success if DB save worked, but log error
+
+        # Clean up temporary resume file
+        if os.path.exists(temp_resume_path):
+            os.remove(temp_resume_path)
+
+        return (
+            jsonify(
+                {
+                    "message": "Application submitted successfully! We will be in touch.",
+                    "application_id": application_id,
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        logger.error(f"Error handling job application: {str(e)}", exc_info=True)
+        # Clean up temp file in case of error during processing after save
+        if "temp_resume_path" in locals() and os.path.exists(temp_resume_path):
+            os.remove(temp_resume_path)
+        return (
+            jsonify({"error": "An error occurred while submitting your application."}),
+            500,
+        )
+
+
+# ... (rest of your routes.py)

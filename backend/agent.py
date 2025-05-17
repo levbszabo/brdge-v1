@@ -874,9 +874,9 @@ async def entrypoint(ctx: JobContext):
         vad=silero.VAD.load(),
     )
     session_b = AgentSession(
-        llm=openai.realtime.RealtimeModel(voice="echo"),
+        llm=openai.realtime.RealtimeModel(voice="alloy"),
     )
-    session = session_a
+    session = session_b
 
     @session.on("speech_created")
     def on_speech_created_sync(

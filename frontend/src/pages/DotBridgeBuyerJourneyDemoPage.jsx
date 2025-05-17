@@ -7,6 +7,8 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import { Link as RouterLink } from 'react-router-dom';
+import { MotionPageHeader, AnimatedPageTitle, AnimatedPageSubtitle } from '../styles/sharedStyles';
+import { useInView } from 'react-intersection-observer';
 
 import JourneyStep from '../components/JourneyStep';
 
@@ -21,22 +23,28 @@ const journeyStepsData = [
 
 const DotBridgeBuyerJourneyDemoPage = () => {
     const theme = useTheme();
-    const stepMarginBottom = { xs: 8, md: 12 }; // Define it once
+    const stepMarginBottom = { xs: 8, md: 12 };
+    const [headerRef, headerInView] = useInView({
+        triggerOnce: true,
+        threshold: 0.1
+    });
 
     return (
         <>
             <CssBaseline />
             <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 }, color: theme.palette.text.primary }}>
-                {/* Header Section */}
-                <Box sx={{ textAlign: 'center', mb: { xs: 4, md: 8 } }}>
-                    <Typography variant="h2" component="h1" sx={{ mb: 1.5, color: theme.palette.text.primary }}>
-                        DotBridge Buyer Journey Demo
-                    </Typography>
-                    <Typography variant="subtitle1" sx={{ color: theme.palette.text.secondary, maxWidth: '720px', margin: 'auto' }}>
-                        Experience the future of interactive video. Below, explore each stage
-                        of a buyer's journey – powered by DotBridge AI agents. Each Bridge is
-                        a live demo. Click, watch, and interact.
-                    </Typography>
+                {/* Header Section - Using new animated components */}
+                <Box ref={headerRef}>
+                    <MotionPageHeader>
+                        <AnimatedPageTitle>
+                            The Buyer Journey
+                        </AnimatedPageTitle>
+                        <AnimatedPageSubtitle>
+                            Experience the future of interactive video. Below, explore each stage
+                            of a buyer's journey – powered by DotBridge AI agents. Each Bridge is
+                            a live demo. Click, watch, and interact.
+                        </AnimatedPageSubtitle>
+                    </MotionPageHeader>
                 </Box>
 
                 {/* Main content Grid for side text and journey diagram */}
@@ -83,7 +91,7 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                         }}>
                             <Typography variant="h6" gutterBottom>End Here</Typography>
                             <Typography variant="body2" color="text.secondary">
-                                The end of the buyers journey is a happy customer. We extract valuable insigths and feed them back to our system, serving as a self reinforcing value flywheel.
+                                The end of the buyers journey is a happy customer. DotBridge extracts valuable insights and feeds them back into the system, creating a self-reinforcing value flywheel.
                             </Typography>
                         </Box>
                     </Grid>
@@ -97,7 +105,7 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                     <Grid container spacing={2} justifyContent="center">
                         <Grid item xs={12} sm="auto">
                             <Button variant="contained" color="primary" size="large" sx={{ minWidth: '200px' }} component={RouterLink} to="/contact">
-                                Book a Call
+                                Request a Demo
                             </Button>
                         </Grid>
                         <Grid item xs={12} sm="auto">

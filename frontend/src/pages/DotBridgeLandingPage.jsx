@@ -41,7 +41,7 @@ const HeroSection = () => (
                         fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
                     }}
                 >
-                    Turn Any Video Into an AI That Sells, Teaches, and Closes
+                    Turn Sales Videos into Conversations That Convert
                 </DotBridgeTypography>
             </motion.div>
             <motion.div
@@ -60,7 +60,7 @@ const HeroSection = () => (
                         lineHeight: { xs: 1.5, md: 1.6 }
                     }}
                 >
-                    Static videos can't convert. DotBridge wraps them in a smart interface that talks back, qualifies leads, and drives action — all while learning from every click.
+                    Your sales videos shouldn't just be watched — they should sell. DotBridge turns them into autonomous selling machines that engage, qualify, and close deals for you.
                 </DotBridgeTypography>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
@@ -172,21 +172,22 @@ const WhyNowSection = () => (
                 mb: 3,
                 fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
             }}>
-                Static Video is Holding You Back.
+                Your Biggest Growth Blocker Isn't Your Product. It's Your Passive Content.
             </DotBridgeTypography>
             <DotBridgeTypography variant="h5" color="text.secondary" sx={{
                 mb: { xs: 4, md: 6 },
                 maxWidth: '700px',
                 mx: 'auto',
-                fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                lineHeight: 1.6
             }}>
-                Attention spans are shrinking. Engagement is plummeting. If your video is just a one-way street, you're leaving leads, sales, and student success on the table.
+                You've built a great offering, but if your videos and demos are just one-way monologues, they're creating a bottleneck that stifles lead flow, burns out your team, and leaves predictable revenue just out of reach.
             </DotBridgeTypography>
             <Grid container spacing={4} justifyContent="center">
                 {[{ icon: 'UsersRound', text: 'Low Engagement' }, { icon: 'TrendingDown', text: 'Poor Conversion' }, { icon: 'Clock', text: 'Wasted Time' }].map((item, i) => (
                     <Grid item key={i} xs={6} sm={4}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-                            <DotBridgeIcon name={item.icon} size={32} color="primary.main" />
+                            <DotBridgeIcon name={item.icon} size={40} color="primary.main" />
                             <DotBridgeTypography variant="body1" >{item.text}</DotBridgeTypography>
                         </Box>
                     </Grid>
@@ -207,18 +208,33 @@ const WhatIsBridgeSection = () => (
                 }}>
                     Video That Talks Back
                 </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
-                    mb: { xs: 3, md: 4 },
-                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
+                <DotBridgeTypography variant="h5" color="text.primary" sx={{
+                    mb: 1.5,
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                    lineHeight: 1.6
                 }}>
-                    Imagine a PDF, but for interactive video. A single "bridge" link or embed contains:
+                    You've got the right pitch but your demo can't deliver it alone. DotBridge gives it a voice, a memory, and a mission:
+                </DotBridgeTypography>
+                <DotBridgeTypography
+                    variant="h5"
+                    component="p"
+                    color="text.primary"
+                    sx={{
+                        mb: { xs: 2.5, md: 3 },
+                        fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                        fontWeight: 500,
+                        fontStyle: 'italic',
+                        lineHeight: 1.6
+                    }}
+                >
+                    To engage every prospect like your best rep, even while you sleep.
                 </DotBridgeTypography>
                 <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
-                    {[{ icon: 'Bot', title: 'AI Agent', text: 'Answers questions 24/7 in your cloned voice.' }, { icon: 'ListChecks', title: 'Dynamic Prompts', text: 'Quizzes, polls & CTAs capture leads & feedback.' }, { icon: 'BarChart3', title: 'Conversion Tracking', text: 'See exactly what drives results.' }].map((item, i) => (
+                    {[{ icon: 'Bot', title: 'AI That Feels Like You', text: 'Your cloned voice. Your message. Automatically on-brand.' }, { icon: 'ListChecks', title: 'Works While You Sleep', text: 'Engage, qualify and close deals 24/7. Letting prospects self-serve.' }, { icon: 'BarChart3', title: 'Knows What Works', text: 'See who watched, what they asked, and what made them convert.' }].map((item, i) => (
                         <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                             <DotBridgeIcon name={item.icon} size={28} color="primary.main" style={{ marginTop: '5px' }} />
                             <Box>
-                                <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>{item.title}</DotBridgeTypography>
+                                <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>{item.title}</DotBridgeTypography>
                                 <DotBridgeTypography variant="body1" color="text.secondary">{item.text}</DotBridgeTypography>
                             </Box>
                         </Box>
@@ -563,13 +579,46 @@ const FAQSection = () => {
     };
 
     const faqs = [
-        { q: "Do I need tech skills?", a: "Absolutely not. If you can upload a video, you can create a bridge. It's designed for creators and marketers, not developers.", id: "panel1" },
-        { q: "Will a bridge replace my existing course platform (Kajabi, Teachable, etc.)?", a: "No, DotBridge complements your existing tools. You host your core course content on your platform and embed bridge links or modules where you want interactive elements, lead capture, or AI tutoring.", id: "panel2" },
-        { q: "Is my content and voice data secure?", a: "Yes. We use enterprise-grade encryption and security practices. Your content, data, and voice models remain private and are only used to power your bridges.", id: "panel3" },
-        { q: "What kind of videos can I use?", a: "You can upload standard MP4 files, or directly import from Loom, Zoom recordings, or even use slide decks (we'll auto-generate audio).", id: "panel4" },
-        { q: "How does the AI Q&A work?", a: "Our AI analyzes your video content (and optional documents) to build a knowledge base. When a viewer asks a question, the AI generates an answer based *only* on that knowledge, delivered instantly in your cloned voice (if enabled) or a natural text-to-speech voice.", id: "panel5" },
-        { q: "What are AI Credits?", a: "Credits are used for AI features like question answering and voice cloning generation. Each plan includes a monthly allowance. Additional credits can be purchased if needed.", id: "panel6" },
-        { q: "Can I customize the look of the bridge player?", a: "Yes, Pro plans offer customization options for player colors, branding, and prompt styling to match your website or course.", id: "panel7" },
+        {
+            q: "How does DotBridge help my sales team close more deals?",
+            a: "DotBridge turns your passive sales videos (demos, VSLs, webinars) into interactive AI agents. These \"Bridges\" can qualify leads 24/7, answer prospect questions instantly, deliver personalized demo content based on their needs, and guide them through the sales process—freeing up your sales team to focus on highly qualified, bottom-of-funnel opportunities.",
+            id: "panel1"
+        },
+        {
+            q: "Can DotBridge integrate with our existing CRM or sales tools?",
+            a: "Yes, our Premium plan offers CRM and webhook integrations, allowing you to seamlessly feed lead data, engagement metrics, and conversation insights from DotBridge into your existing sales and marketing ecosystem.",
+            id: "panel2"
+        },
+        {
+            q: "Is DotBridge suitable for our entire sales team, and can we manage content collaboratively?",
+            a: "DotBridge is designed for ease of use, allowing any team member to create and deploy AI-powered Bridges without technical skills. While direct multi-user collaborative editing on a single Bridge isn\'t explicitly detailed, \"Flows\" allow for organizing multiple Bridges, and different team members can manage different Bridges or Flows based on your internal processes. For specific enterprise team management needs, we recommend discussing a custom solution.",
+            id: "panel3"
+        },
+        {
+            q: "How secure is our sales content and the data collected through DotBridge?",
+            a: "We prioritize security. We use enterprise-grade encryption and security practices. Your sales content, prospect interaction data, and any voice models remain private and are used solely to power your Bridges and provide you with analytics.",
+            id: "panel4"
+        },
+        {
+            q: "Can we customize the Bridge player to match our company branding?",
+            a: "Yes, our Premium plan offers customization options for player colors and branding, ensuring a consistent and professional experience that aligns with your company\'s visual identity.",
+            id: "panel5"
+        },
+        {
+            q: "What kind of sales content works best with DotBridge?",
+            a: "DotBridge is versatile. You can use it to supercharge existing MP4 videos like product demos, VSLs, recorded webinars, or even explainer videos. You can also supplement the AI\'s knowledge with PDF documents (e.g., sales decks, product sheets) to ensure comprehensive and accurate responses.",
+            id: "panel6"
+        },
+        {
+            q: "How can we measure the ROI of using DotBridge?",
+            a: "DotBridge provides analytics on viewer engagement, questions asked, and conversion points within your interactive content. Our Premium plan offers advanced analytics, and with CRM integration, you can directly track how DotBridge interactions contribute to lead generation, qualification, and closed deals, giving you clear insight into its impact on your sales pipeline.",
+            id: "panel7"
+        },
+        {
+            q: "What are \"AI Minutes\" and how many do we need?",
+            a: "AI Minutes are consumed when the AI interacts with a prospect—answering questions or guiding them through content. The number of minutes you\'ll need depends on the volume of traffic to your Bridges and the average interaction length. Our plans offer different tiers of AI Minutes, and you can monitor usage in your dashboard. For high-volume needs, we can discuss custom plans.",
+            id: "panel8"
+        }
     ];
 
     return (
@@ -615,28 +664,28 @@ const UseCasesSection = () => {
     const landingPageJourneySteps = [
         {
             icon: 'Eye',
-            title: '1. Awareness Bridge',
-            subtitle: 'Grab attention with short, punchy videos that speak directly to your audience\'s challenges and spark their curiosity.',
+            title: '1. Spark Interest 24/7',
+            subtitle: 'Your content grabs attention and answers initial questions, day or night, turning passive views into active prospects.',
         },
         {
             icon: 'SearchCheck',
-            title: '2. Discovery Bridge',
-            subtitle: 'Ditch boring forms. Have real conversations that uncover what your prospects actually need and care about.',
+            title: '2. Qualify Leads Automatically',
+            subtitle: 'Ditch forms. Your Bridge has intelligent conversations that pinpoint real needs, so your team only talks to hot leads.',
         },
         {
             icon: 'Presentation',
-            title: '3. Demo Bridge',
-            subtitle: 'Show your product in action with personalized walkthroughs that focus on exactly what matters to each prospect.',
+            title: '3. Deliver Perfect Demos, Scaled',
+            subtitle: 'Showcase your product\'s value with personalized walkthroughs, tailored to each prospect\'s specific interests, anytime.',
         },
         {
             icon: 'Target',
-            title: '4. Sales Bridge',
-            subtitle: 'Handle objections, talk pricing, and guide decisions with a smart assistant that never sleeps or goes on vacation.',
+            title: '4. Overcome Objections & Close',
+            subtitle: 'Your Bridge handles common objections, clarifies pricing, and guides prospects toward a confident buying decision.',
         },
         {
             icon: 'Rocket',
-            title: '5. Onboarding Bridge',
-            subtitle: 'Turn new customers into happy power users with guided setup that gets them up and running in record time.',
+            title: '5. Secure the Win & Ensure Stickiness',
+            subtitle: 'Finalize details, confirm next steps, and ensure a smooth transition for new clients, maximizing retention from day one.',
         },
     ];
 
@@ -710,23 +759,25 @@ const UseCasesSection = () => {
                         mt: { xs: 3, md: 0 }
                     }}>
                         <DotBridgeTypography variant="h4" component="h3" sx={{
-                            mb: 3,
+                            mb: 2,
                             fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
                             color: 'primary.dark'
                         }}>
-                            Say Goodbye to One-Way Videos
+                            Your Sales Team's New Superpower
                         </DotBridgeTypography>
                         <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 2, lineHeight: 1.7 }}>
-                            Think of DotBridge as your 24/7 sales and support team. We turn your videos from passive watching into two-way conversations that <DotBridgeTypography component="span" color="primary.main" fontWeight="bold">connect, engage, and convert</DotBridgeTypography> on autopilot.
+                            You've built a winning product. But your sales videos? They're just talking <em>at</em> people. Imagine if they could talk <em>with</em> them – qualifying, demoing, and closing, just like your best rep.
                         </DotBridgeTypography>
                         <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 2, lineHeight: 1.7 }}>
-                            Picture this: A potential customer finds your Awareness Bridge. It catches their interest, answers their questions on the spot, and smoothly moves them to your Discovery Bridge. Here, instead of filling out yet another form, they have a natural conversation that reveals what they really need.
+                            Picture this: A prospect interacts with your DotBridge. It's not a passive watch; it's an engaging conversation.
+                            Questions are answered instantly. Needs are understood deeply. Personalized demos are delivered on the spot.
+                            Your sales team steps in only when prospects are educated, qualified, and ready to talk terms.
                         </DotBridgeTypography>
                         <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 3, lineHeight: 1.7 }}>
-                            When they hit your Demo Bridge, they don't see a generic product tour – they get a walkthrough focused on what matters to them. By the time they reach your Sales Bridge, objections are handled and decisions are easier. And once they're a customer? Your Onboarding Bridge gets them up to speed fast, saving you countless support tickets.
+                            This is how you stop chasing cold leads and start closing warm deals. It's how you give your team leverage, multiply their impact, and build a predictable revenue engine that never sleeps.
                         </DotBridgeTypography>
-                        <DotBridgeTypography variant="h6" sx={{ color: 'text.primary', fontSize: { xs: '1.1rem', md: '1.2rem' }, mb: 3 }}>
-                            Why keep losing leads to boring videos? Let's build a journey that converts while you focus on what you do best.
+                        <DotBridgeTypography variant="h6" sx={{ color: 'text.primary', fontSize: { xs: '1.1rem', md: '1.2rem' }, mb: 3, fontWeight: 'bold' }}>
+                            Ready to turn your content into your top-performing sales channel?
                         </DotBridgeTypography>
                         <DotBridgeButton
                             variant="contained"
@@ -986,32 +1037,6 @@ const PricingSection = () => (
     </Section>
 );
 
-const DFYSection = () => (
-    <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-        <DotBridgeCard variant="outlined" sx={{ p: { xs: 3, sm: 4, md: 6 }, textAlign: 'center' }}>
-            <DotBridgeTypography variant='h3' component="h3" sx={{
-                mb: { xs: 1.5, md: 2 },
-                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.25rem' }
-            }}>
-                Need It Built For You?
-            </DotBridgeTypography>
-            <DotBridgeTypography variant="body1" color="text.secondary" sx={{ mb: { xs: 3, md: 4 }, maxWidth: '650px', mx: 'auto' }}>
-                Let our expert team build your entire AI Revenue Machine: bridge webinar, VSL, course modules, and marketing campaigns.
-            </DotBridgeTypography>
-            <DotBridgeButton
-                size="large"
-                color="primary"
-                variant="contained"
-                component={Link}
-                to="/services"
-                endIcon={<DotBridgeIcon name="ArrowRight" size={18} />}
-            >
-                Explore Done-For-You Services
-            </DotBridgeButton>
-        </DotBridgeCard>
-    </Section>
-);
-
 const FinalCTASection = () => (
     <Section sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
@@ -1076,13 +1101,9 @@ function DotBridgeLandingPage() {
             <WhyNowSection />
             <WhatIsBridgeSection />
             <DemoSection />
-            <ComparisonSection />
             <UseCasesSection />
-            <TrustedBySection />
             <HowItWorksSection />
-            <ProofSection />
             <PricingSection />
-            <DFYSection />
             <FAQSection />
             <FinalCTASection />
         </Box>

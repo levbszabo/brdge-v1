@@ -673,3 +673,38 @@ class ServiceLead(db.Model):
             ),
             "notes": self.notes,
         }
+
+
+class JobApplication(db.Model):
+    __tablename__ = "job_applications"
+
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(
+        db.String(255), nullable=False
+    )  # Corresponds to job.id in frontend (can be string or int)
+    job_title = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), nullable=False)
+    resume_filename = db.Column(
+        db.String(255), nullable=True
+    )  # Can store temp name or future S3 key
+    status = db.Column(
+        db.String(50), default="submitted"
+    )  # e.g., submitted, under review, rejected, hired
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.Text, nullable=True)  # For internal notes
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "job_id": self.job_id,
+            "job_title": self.job_title,
+            "name": self.name,
+            "email": self.email,
+            "resume_filename": self.resume_filename,
+            "status": self.status,
+            "submitted_at": (
+                self.submitted_at.isoformat() if self.submitted_at else None
+            ),
+            "notes": self.notes,
+        }
