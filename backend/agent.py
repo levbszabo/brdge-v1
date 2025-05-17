@@ -876,7 +876,7 @@ async def entrypoint(ctx: JobContext):
     session_b = AgentSession(
         llm=openai.realtime.RealtimeModel(voice="alloy"),
     )
-    session = session_b
+    session = session_a
 
     @session.on("speech_created")
     def on_speech_created_sync(
