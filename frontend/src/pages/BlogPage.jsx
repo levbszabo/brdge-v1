@@ -5,12 +5,13 @@ import { styled, alpha } from '@mui/material/styles';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { MotionPageHeader, AnimatedPageTitle, AnimatedPageSubtitle } from '../styles/sharedStyles';
 import { useInView } from 'react-intersection-observer';
+import Footer from '../components/Footer';
 
 const BlogPageContainer = styled(Container)(({ theme }) => ({
-    paddingTop: theme.spacing(5),
+    paddingTop: theme.spacing(3),
     paddingBottom: theme.spacing(8),
     [theme.breakpoints.up('md')]: {
-        paddingTop: theme.spacing(8),
+        paddingTop: theme.spacing(4),
         paddingBottom: theme.spacing(10),
     },
 }));
@@ -98,72 +99,75 @@ const BlogPage = () => {
     ];
 
     return (
-        <BlogPageContainer maxWidth="lg">
-            <Box ref={headerRef}>
-                <MotionPageHeader>
-                    <AnimatedPageTitle>
-                        DotBridge Insights
-                    </AnimatedPageTitle>
-                    <AnimatedPageSubtitle>
-                        Stay informed with the latest articles, news, and perspectives from the DotBridge team. We explore the frontiers of AI for business communication.
-                    </AnimatedPageSubtitle>
-                </MotionPageHeader>
-            </Box>
+        <>
+            <BlogPageContainer maxWidth="lg">
+                <Box ref={headerRef}>
+                    <MotionPageHeader>
+                        <AnimatedPageTitle>
+                            DotBridge Insights
+                        </AnimatedPageTitle>
+                        <AnimatedPageSubtitle>
+                            Stay informed with the latest articles, news, and perspectives from the DotBridge team. We explore the frontiers of AI for business communication.
+                        </AnimatedPageSubtitle>
+                    </MotionPageHeader>
+                </Box>
 
-            <Grid container spacing={4}>
-                {posts.map((post) => (
-                    <Grid item xs={12} sm={6} md={4} key={post.id}>
-                        <BlogPostCard>
-                            <CardContent>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                    <Typography variant="caption" display="block" color="text.secondary">
-                                        {post.date}
+                <Grid container spacing={4}>
+                    {posts.map((post) => (
+                        <Grid item xs={12} sm={6} md={4} key={post.id}>
+                            <BlogPostCard>
+                                <CardContent>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                        <Typography variant="caption" display="block" color="text.secondary">
+                                            {post.date}
+                                        </Typography>
+                                        {post.type && (
+                                            <Chip
+                                                label={post.type.charAt(0).toUpperCase() + post.type.slice(1)}
+                                                size="small"
+                                                color={getTypeChipColor(post.type)}
+                                                sx={{ fontWeight: 500, ml: 1 }}
+                                            />
+                                        )}
+                                    </Box>
+                                    <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
+                                        {post.title}
                                     </Typography>
-                                    {post.type && (
-                                        <Chip
-                                            label={post.type.charAt(0).toUpperCase() + post.type.slice(1)}
-                                            size="small"
-                                            color={getTypeChipColor(post.type)}
-                                            sx={{ fontWeight: 500, ml: 1 }}
-                                        />
-                                    )}
+                                    <Typography variant="body1" color="text.secondary" sx={{ mb: 2.5 }}>
+                                        {post.summary}
+                                    </Typography>
+                                </CardContent>
+                                <Box sx={{ mt: 'auto', pt: 1 }}>
+                                    <Button
+                                        variant="text"
+                                        component={RouterLink}
+                                        to={`/blog/${post.slug}`}
+                                        endIcon={<ArrowForwardIcon />}
+                                        sx={(theme) => ({
+                                            color: 'primary.main',
+                                            fontWeight: 500,
+                                            textTransform: 'none',
+                                            '&:hover': {
+                                                backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                            }
+                                        })}
+                                    >
+                                        Read More
+                                    </Button>
                                 </Box>
-                                <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 600, mb: 1.5, color: 'text.primary' }}>
-                                    {post.title}
-                                </Typography>
-                                <Typography variant="body1" color="text.secondary" sx={{ mb: 2.5 }}>
-                                    {post.summary}
-                                </Typography>
-                            </CardContent>
-                            <Box sx={{ mt: 'auto', pt: 1 }}>
-                                <Button
-                                    variant="text"
-                                    component={RouterLink}
-                                    to={`/blog/${post.slug}`}
-                                    endIcon={<ArrowForwardIcon />}
-                                    sx={(theme) => ({
-                                        color: 'primary.main',
-                                        fontWeight: 500,
-                                        textTransform: 'none',
-                                        '&:hover': {
-                                            backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                                        }
-                                    })}
-                                >
-                                    Read More
-                                </Button>
-                            </Box>
-                        </BlogPostCard>
-                    </Grid>
-                ))}
-            </Grid>
+                            </BlogPostCard>
+                        </Grid>
+                    ))}
+                </Grid>
 
-            <Box textAlign="center" mt={{ xs: 6, md: 8 }}>
-                <Typography variant="body1" color="text.secondary">
-                    More articles coming soon. Stay tuned!
-                </Typography>
-            </Box>
-        </BlogPageContainer>
+                <Box textAlign="center" mt={{ xs: 6, md: 8 }}>
+                    <Typography variant="body1" color="text.secondary">
+                        More articles coming soon. Stay tuned!
+                    </Typography>
+                </Box>
+            </BlogPageContainer>
+            <Footer />
+        </>
     );
 };
 

@@ -73,39 +73,39 @@ const typography = {
     h1: {
         fontFamily: fontFamilyHeading,
         fontWeight: 500, // Keep weight or adjust as needed
-        fontSize: '3.8rem', // ~61px
-        lineHeight: 1.2,
-        letterSpacing: '-0.02em',
+        fontSize: '4.2rem', // Increased size for more impact
+        lineHeight: 1.1, // Tighter line height for headlines
+        letterSpacing: '-0.025em', // Slightly tighter tracking
         color: palette.text.primary,
     },
     h2: {
         fontFamily: fontFamilyHeading,
         fontWeight: 500,
-        fontSize: '2.4rem', // ~39px
-        lineHeight: 1.25,
+        fontSize: '2.8rem', // Increased from 2.4rem
+        lineHeight: 1.2,
         letterSpacing: '-0.02em',
         color: palette.text.primary,
     },
     h3: {
-        fontFamily: fontFamilyHeading, // Use Heading font for H3 too? Or Body-Bold? Let's try Heading.
+        fontFamily: fontFamilyHeading,
         fontWeight: 500,
-        fontSize: '1.9rem', // ~31px
-        lineHeight: 1.3,
+        fontSize: '2.1rem', // Increased from 1.9rem
+        lineHeight: 1.25,
         letterSpacing: '-0.02em',
         color: palette.text.primary,
     },
     h4: {
-        fontFamily: fontFamilyBody, // Back to body for smaller headings
+        fontFamily: fontFamilyBody,
         fontWeight: 600,
-        fontSize: '1.5rem', // ~25px
-        lineHeight: 1.35,
-        letterSpacing: '-0.01em', // Less tightening
+        fontSize: '1.6rem', // Increased from 1.5rem
+        lineHeight: 1.3,
+        letterSpacing: '-0.01em',
         color: palette.text.primary,
     },
     h5: {
         fontFamily: fontFamilyBody,
         fontWeight: 600,
-        fontSize: '1.25rem', // 20px
+        fontSize: '1.25rem',
         lineHeight: 1.4,
         letterSpacing: 0,
         color: palette.text.primary,
@@ -113,92 +113,92 @@ const typography = {
     h6: {
         fontFamily: fontFamilyBody,
         fontWeight: 600,
-        fontSize: '1.0rem', // 16px
+        fontSize: '1.0rem',
         lineHeight: 1.4,
         letterSpacing: 0,
         color: palette.text.primary,
     },
     subtitle1: {
         fontFamily: fontFamilyBody,
-        fontWeight: 500, // Medium weight
+        fontWeight: 500,
         fontSize: '1.0rem',
         lineHeight: 1.5,
-        letterSpacing: 0,
-        color: palette.text.primary, // Use primary text for subtitles? Or secondary? Let's try primary.
+        letterSpacing: '0.01em', // Added slight tracking
+        color: palette.text.primary,
     },
     subtitle2: {
         fontFamily: fontFamilyBody,
-        fontWeight: 400, // Regular weight
+        fontWeight: 500, // Increased from 400 for better hierarchy
         fontSize: '0.875rem',
         lineHeight: 1.5,
-        letterSpacing: 0,
-        color: palette.text.secondary, // Secondary text for smaller subtitle
+        letterSpacing: '0.01em', // Added slight tracking
+        color: palette.text.secondary,
     },
     body1: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '1.0rem', // 16px
-        lineHeight: 1.6, // Increased line height
-        letterSpacing: 0,
+        fontSize: '1.0rem',
+        lineHeight: 1.75, // Increased line height for better readability
+        letterSpacing: '0.01em', // Added slight tracking
         color: palette.text.primary,
     },
     body2: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '0.875rem', // 14px
-        lineHeight: 1.5,
-        letterSpacing: 0,
+        fontSize: '0.875rem',
+        lineHeight: 1.7, // Increased line height
+        letterSpacing: '0.01em', // Added slight tracking
         color: palette.text.secondary,
     },
     button: {
         fontFamily: fontFamilyBody,
-        fontWeight: 600, // Bold
+        fontWeight: 600,
         fontSize: '0.9rem',
-        textTransform: 'none', // Keep as is
-        letterSpacing: '0.01em', // Subtle spacing
-        // Default line height is usually fine for buttons
+        textTransform: 'none',
+        letterSpacing: '0.02em', // Increased tracking for buttons
     },
     caption: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '0.75rem', // 12px
+        fontSize: '0.75rem',
         lineHeight: 1.4,
-        letterSpacing: '0.03em', // Wider spacing
+        letterSpacing: '0.03em',
         color: palette.text.secondary,
     },
     overline: {
         fontFamily: fontFamilyBody,
         fontWeight: 600,
-        fontSize: '0.7rem', // Slightly smaller
+        fontSize: '0.7rem',
         textTransform: 'uppercase',
-        letterSpacing: '0.05em', // Keep spacing
+        letterSpacing: '0.07em', // Increased tracking for that premium look
         lineHeight: 1.4,
-        color: palette.text.secondary, // Use secondary text
+        color: palette.text.secondary,
     },
     // Custom variants (keep or remove?)
-    landingH1: { // This should likely be removed, use theme h1/h2
+    landingH1: {
         fontFamily: fontFamilyHeading,
         fontWeight: 500,
-        fontSize: '4.0rem', // Match designer H1?
-        lineHeight: 1.2,
-        letterSpacing: '-0.02em',
+        fontSize: '4.5rem', // Increased size for hero text
+        lineHeight: 1.1,
+        letterSpacing: '-0.025em',
         color: palette.text.primary,
     }
 };
 
 // 4. Shape (Border Radius)
 const shape = {
-    borderRadius: 6, // Further reduced border radius for a sleeker SaaS feel
+    borderRadius: 4, // Reduced from 8 for a more subtle, professional curve
 };
 
 // 5. Shadows (Minimal Set)
 const shadows = [
     'none',
-    '0 4px 12px rgba(16, 16, 23, 0.05)', // Base subtle shadow (using Ink #101017 base)
-    '0 6px 16px rgba(16, 16, 23, 0.07)', // Slightly stronger for hover/emphasis
-    '0 8px 24px rgba(16, 16, 23, 0.09)', // Stronger elevation
+    '0 4px 12px rgba(16, 16, 23, 0.04)', // Lighter base shadow
+    '0 6px 18px rgba(16, 16, 23, 0.06)', // Medium shadow
+    '0 10px 24px rgba(16, 16, 23, 0.08)', // Stronger elevation
+    '0 12px 32px rgba(16, 16, 23, 0.1)', // Prominent shadow (e.g., dropdowns, tooltips)
     // Add more if needed, up to 24
-    'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', // Fill array to 25 elements
+    'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', // Fill array to 25 elements
 ];
 
 // 6. Components Overrides (Refined Styles)
@@ -208,14 +208,15 @@ const components = {
         styleOverrides: {
             body: {
                 backgroundColor: palette.background.default, // Ensure body bg is set
+                scrollBehavior: 'smooth', // Enable smooth scrolling globally
             },
-            // Smooth scroll behavior
-            '@ RscrollBehavior': 'smooth',
             // Basic link styling (can be overridden by MuiLink)
             a: {
                 color: palette.info.main, // Use Link Blue
                 textDecoration: 'none',
+                transition: 'color 0.2s ease, text-decoration 0.2s ease',
                 '&:hover': {
+                    color: palette.primary.dark,
                     textDecoration: 'underline',
                 },
             },
@@ -226,7 +227,10 @@ const components = {
             root: {
                 borderRadius: shape.borderRadius, // Use theme radius
                 padding: '10px 24px', // Adjust padding for new aesthetic
-                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out', // Added transform transition
+                fontWeight: 600,
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden', // For potential ripple effects
                 '&:active': {
                     transform: 'translateY(1px)', // Subtle press effect
                 }
@@ -234,44 +238,90 @@ const components = {
             containedPrimary: {
                 backgroundColor: palette.primary.main,
                 color: palette.primary.contrastText,
-                boxShadow: shadows[1], // Use subtle shadow
+                boxShadow: shadows[1],
                 '&:hover': {
-                    backgroundColor: palette.primary.dark, // Darken on hover
-                    boxShadow: shadows[2], // Increase shadow on hover
-                    transform: 'translateY(-1px)', // Lift effect
+                    backgroundColor: palette.primary.dark,
+                    boxShadow: shadows[2],
+                    transform: 'translateY(-2px)', // More pronounced lift effect
+                },
+                '&:active': {
+                    boxShadow: shadows[1],
+                    transform: 'translateY(1px)',
                 },
             },
             outlinedPrimary: {
                 borderColor: palette.primary.main,
+                borderWidth: '1.5px', // Slightly thicker border
                 color: palette.primary.main,
                 '&:hover': {
-                    backgroundColor: `${palette.primary.main}1A`, // ~10% opacity primary color
+                    backgroundColor: `${palette.primary.main}0D`, // 5% opacity for subtle hover
                     borderColor: palette.primary.dark,
-                    color: palette.primary.dark, // Darken text on hover too
+                    borderWidth: '1.5px',
+                    color: palette.primary.dark,
+                    transform: 'translateY(-1px)',
                 },
             },
             textPrimary: {
                 color: palette.primary.main,
+                position: 'relative',
                 '&:hover': {
-                    backgroundColor: `${palette.primary.main}1A`, // ~10% opacity primary color
+                    backgroundColor: `${palette.primary.main}0D`, // 5% opacity
+                    transform: 'translateY(-1px)',
                 },
+                '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    bottom: '2px',
+                    left: '24px',
+                    right: '24px',
+                    height: '1px',
+                    backgroundColor: 'currentColor',
+                    transformOrigin: 'center',
+                    transform: 'scaleX(0)',
+                    transition: 'transform 0.3s ease',
+                },
+                '&:hover::after': {
+                    transform: 'scaleX(1)',
+                }
             },
-            // Add overrides for Secondary, sizes etc. if needed
+            // Size variants
+            sizeLarge: {
+                padding: '12px 28px',
+                fontSize: '1rem',
+            },
+            sizeSmall: {
+                padding: '6px 16px',
+                fontSize: '0.8rem',
+            },
         },
     },
     MuiCard: {
         styleOverrides: {
             root: {
                 borderRadius: shape.borderRadius,
-                border: `1px solid ${palette.divider}`, // Use new divider color
-                boxShadow: shadows[1], // Use base subtle shadow
+                border: `1px solid ${palette.divider}`,
+                boxShadow: 'none', // Default to no shadow
                 backgroundColor: palette.background.paper,
-                transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
                 '&:hover': {
-                    // Add subtle hover effect if desired (e.g., lift or scale)
-                    // transform: 'scale(1.01)', // Example: slight scale
-                    // boxShadow: shadows[2], // Example: increase shadow
+                    boxShadow: shadows[1], // Add shadow on hover
+                    borderColor: palette.grey[200], // Lighten border on hover
                 }
+            }
+        }
+    },
+    MuiContainer: {
+        styleOverrides: {
+            root: {
+                paddingLeft: { xs: 20, sm: 32 }, // More breathing room on mobile
+                paddingRight: { xs: 20, sm: 32 },
+            }
+        }
+    },
+    MuiDivider: {
+        styleOverrides: {
+            root: {
+                borderColor: palette.grey[200],
             }
         }
     },
@@ -280,21 +330,21 @@ const components = {
             root: {
                 '& .MuiOutlinedInput-root': {
                     borderRadius: shape.borderRadius,
-                    backgroundColor: palette.background.paper, // Ensure background for contrast
+                    backgroundColor: palette.background.paper,
+                    transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
                     '& fieldset': {
-                        borderColor: palette.neutral.mid, // Use mid neutral for border
+                        borderColor: palette.neutral.mid,
+                        borderWidth: '1px',
                         transition: 'border-color 0.2s ease-in-out',
                     },
                     '&:hover fieldset': {
-                        borderColor: palette.neutral.dark, // Use dark neutral on hover
+                        borderColor: palette.neutral.dark,
                     },
                     '&.Mui-focused fieldset': {
                         borderColor: palette.primary.main,
-                        borderWidth: '1px', // Ensure focus doesn't double border width visually if thicker
-                        // Optional focus ring using box-shadow (more modern)
-                        boxShadow: `0 0 0 2px ${palette.primary.main}40`, // ~25% opacity focus ring
+                        borderWidth: '1px',
+                        boxShadow: `0 0 0 3px ${palette.primary.main}20`, // 12% opacity focus ring
                     },
-                    // Style disabled state
                     '&.Mui-disabled': {
                         backgroundColor: palette.neutral.light,
                         '& fieldset': {
@@ -305,18 +355,18 @@ const components = {
                 '& .MuiInputLabel-root': {
                     color: palette.text.secondary,
                     '&.Mui-focused': {
-                        color: palette.primary.main, // Label turns accent color when focused
+                        color: palette.primary.main,
                     },
                     '&.Mui-disabled': {
                         color: palette.text.disabled,
                     }
                 },
                 '& .MuiInputBase-input': {
-                    // Style disabled input text
+                    padding: '14px 16px', // Slightly more padding
                     '&.Mui-disabled': {
                         color: palette.text.disabled,
-                        WebkitTextFillColor: palette.text.disabled, // for Chrome/Safari
-                        opacity: 1, // Prevent browser default opacity
+                        WebkitTextFillColor: palette.text.disabled,
+                        opacity: 1,
                     },
                 },
             },
@@ -325,13 +375,16 @@ const components = {
     MuiLink: {
         styleOverrides: {
             root: {
-                color: palette.info.main, // Link Blue
+                color: palette.info.main,
                 textDecoration: 'none',
-                fontWeight: 500, // Slightly bolder links
+                fontWeight: 500,
+                position: 'relative',
+                transition: 'color 0.2s ease',
                 '&:hover': {
+                    color: palette.primary.dark,
                     textDecoration: 'underline',
-                    textDecorationThickness: '1px', // Thinner underline?
-                    color: palette.primary.dark, // Darken link on hover
+                    textUnderlineOffset: '2px',
+                    textDecorationThickness: '1px',
                 },
             },
         },
@@ -341,29 +394,76 @@ const components = {
             root: {
                 boxShadow: 'none',
                 border: `1px solid ${palette.divider}`,
-                borderRadius: `${shape.borderRadius}px !important`, // Use theme radius
+                borderRadius: `${shape.borderRadius}px !important`,
                 backgroundColor: palette.background.paper,
+                transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
                 '&:before': { display: 'none' },
                 '&.Mui-expanded': {
-                    margin: '0 0 8px 0', // Prevent margin collapse issues sometimes
+                    margin: '0 0 16px 0', // Prevent margin collapse issues
+                    boxShadow: shadows[1], // Add shadow when expanded
+                },
+                '&:hover': {
+                    borderColor: palette.grey[300],
                 }
             },
-            summary: {
-                padding: '0 24px', // Consistent padding
-                minHeight: '64px', // Define min height for consistency
+            rounded: {
+                '&:first-of-type': {
+                    borderTopLeftRadius: shape.borderRadius,
+                    borderTopRightRadius: shape.borderRadius,
+                },
+                '&:last-of-type': {
+                    borderBottomLeftRadius: shape.borderRadius,
+                    borderBottomRightRadius: shape.borderRadius,
+                }
+            },
+        }
+    },
+    MuiAccordionSummary: {
+        styleOverrides: {
+            root: {
+                padding: '0 24px',
+                minHeight: '64px',
+                transition: 'background-color 0.2s ease',
+                '&:hover': {
+                    backgroundColor: palette.grey[50],
+                },
                 '& .MuiAccordionSummary-content': {
-                    margin: '16px 0 !important' // Adjust vertical margin
+                    margin: '16px 0',
                 },
                 '&.Mui-expanded': {
                     minHeight: '64px',
+                    backgroundColor: palette.grey[50],
                 }
             },
-            details: {
-                padding: '0 24px 24px 24px', // Consistent padding
+        }
+    },
+    MuiAccordionDetails: {
+        styleOverrides: {
+            root: {
+                padding: '0 24px 24px 24px',
             }
         }
     },
-    // Add overrides for other components (AppBar, Dialog, Table, etc.) as needed
+    MuiPaper: {
+        styleOverrides: {
+            root: {
+                backgroundImage: 'none', // Remove default background image gradient
+            },
+            elevation1: {
+                boxShadow: shadows[1],
+            },
+            elevation2: {
+                boxShadow: shadows[2],
+            },
+            elevation3: {
+                boxShadow: shadows[3],
+            },
+            elevation4: {
+                boxShadow: shadows[4],
+            },
+        }
+    },
+    // Add overrides for other components as needed
 };
 
 // 7. Create the Theme

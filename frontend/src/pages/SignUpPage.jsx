@@ -156,7 +156,7 @@ function SignUpPage() {
                         alignItems: 'center',
                         p: { xs: 3, sm: 4 },
                         bgcolor: theme.palette.background.paper,
-                        borderRadius: theme.shape.borderRadius * 1.5,
+                        borderRadius: theme.shape.borderRadius,
                         border: `1px solid ${theme.palette.divider}`,
                         boxShadow: theme.shadows[3],
                         width: '100%',

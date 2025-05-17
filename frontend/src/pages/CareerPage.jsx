@@ -6,12 +6,13 @@ import BusinessCenterIcon from '@mui/icons-material/BusinessCenter'; // For job 
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn'; // For salary
 import { MotionPageHeader, AnimatedPageTitle, AnimatedPageSubtitle } from '../styles/sharedStyles';
 import { useInView } from 'react-intersection-observer';
+import Footer from '../components/Footer';
 
 const CareerPageContainer = styled(Container)(({ theme }) => ({
-    paddingTop: theme.spacing(5),
+    paddingTop: theme.spacing(3),
     paddingBottom: theme.spacing(8),
     [theme.breakpoints.up('md')]: {
-        paddingTop: theme.spacing(8),
+        paddingTop: theme.spacing(4),
         paddingBottom: theme.spacing(10),
     },
 }));
@@ -97,72 +98,75 @@ const CareerPage = () => {
     });
 
     return (
-        <CareerPageContainer maxWidth="lg">
-            <Box ref={headerRef}>
-                <MotionPageHeader>
-                    <AnimatedPageTitle>
-                        Join Our Team
-                    </AnimatedPageTitle>
-                    <AnimatedPageSubtitle>
-                        We're building the future of AI-driven communication and looking for passionate, innovative individuals to help us achieve our vision. Be part of a dynamic team in Miami, FL, and make a significant impact.
-                    </AnimatedPageSubtitle>
-                </MotionPageHeader>
-            </Box>
+        <>
+            <CareerPageContainer maxWidth="lg">
+                <Box ref={headerRef}>
+                    <MotionPageHeader>
+                        <AnimatedPageTitle>
+                            Join Our Team
+                        </AnimatedPageTitle>
+                        <AnimatedPageSubtitle>
+                            We're building the future of AI-driven communication and looking for passionate, innovative individuals to help us achieve our vision. Be part of a dynamic team in Miami, FL, and make a significant impact.
+                        </AnimatedPageSubtitle>
+                    </MotionPageHeader>
+                </Box>
 
-            <Grid container spacing={4}>
-                {jobOpenings.map((job) => (
-                    <Grid item xs={12} md={6} key={job.id} sx={{ display: 'flex' }}>
-                        <JobListingCard>
-                            <JobTitle variant="h5" component="h2">
-                                {job.title}
-                            </JobTitle>
-                            <Box sx={{ mb: 2 }}>
-                                <JobMeta>
-                                    <LocationOnIcon fontSize="inherit" /> {job.location}
-                                </JobMeta>
-                                <JobMeta>
-                                    <BusinessCenterIcon fontSize="inherit" /> {job.type}
-                                </JobMeta>
-                                <JobMeta>
-                                    <MonetizationOnIcon fontSize="inherit" /> {job.salaryNote}
-                                </JobMeta>
-                                <JobMeta>
-                                    <BusinessCenterIcon fontSize="inherit" /> {job.equityNote}
-                                </JobMeta>
-                            </Box>
+                <Grid container spacing={4}>
+                    {jobOpenings.map((job) => (
+                        <Grid item xs={12} md={6} key={job.id} sx={{ display: 'flex' }}>
+                            <JobListingCard>
+                                <JobTitle variant="h5" component="h2">
+                                    {job.title}
+                                </JobTitle>
+                                <Box sx={{ mb: 2 }}>
+                                    <JobMeta>
+                                        <LocationOnIcon fontSize="inherit" /> {job.location}
+                                    </JobMeta>
+                                    <JobMeta>
+                                        <BusinessCenterIcon fontSize="inherit" /> {job.type}
+                                    </JobMeta>
+                                    <JobMeta>
+                                        <MonetizationOnIcon fontSize="inherit" /> {job.salaryNote}
+                                    </JobMeta>
+                                    <JobMeta>
+                                        <BusinessCenterIcon fontSize="inherit" /> {job.equityNote}
+                                    </JobMeta>
+                                </Box>
 
-                            <Typography variant="body1" sx={{ mb: 2 }}>
-                                {job.description}
-                            </Typography>
+                                <Typography variant="body1" sx={{ mb: 2 }}>
+                                    {job.description}
+                                </Typography>
 
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 1 }}>Key Responsibilities:</Typography>
-                            <Box component="ul" sx={{ pl: 2.5, mb: 2, listStyleType: 'disc' }}>
-                                {job.responsibilities.map((resp, index) => (
-                                    <Typography component="li" variant="body2" key={index} sx={{ mb: 0.5 }}>{resp}</Typography>
-                                ))}
-                            </Box>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 1 }}>Key Responsibilities:</Typography>
+                                <Box component="ul" sx={{ pl: 2.5, mb: 2, listStyleType: 'disc' }}>
+                                    {job.responsibilities.map((resp, index) => (
+                                        <Typography component="li" variant="body2" key={index} sx={{ mb: 0.5 }}>{resp}</Typography>
+                                    ))}
+                                </Box>
 
-                            <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 1 }}>Skills & Experience:</Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-                                {job.skills.map((skill, index) => (
-                                    <Chip label={skill} key={index} size="small" variant="outlined" />
-                                ))}
-                            </Box>
-                        </JobListingCard>
-                    </Grid>
-                ))}
-            </Grid>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 'medium', mb: 1 }}>Skills & Experience:</Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+                                    {job.skills.map((skill, index) => (
+                                        <Chip label={skill} key={index} size="small" variant="outlined" />
+                                    ))}
+                                </Box>
+                            </JobListingCard>
+                        </Grid>
+                    ))}
+                </Grid>
 
-            <EmailSection>
-                <Typography variant="h6" fontWeight="600" gutterBottom>
-                    Interested in joining our team?
-                </Typography>
-                <Typography variant="body1">
-                    If you're interested in any of these positions or would like to inquire about other opportunities,<br />
-                    please send your resume directly to <a href="mailto:levi@dotbridge.io"><strong>levi@dotbridge.io</strong></a>
-                </Typography>
-            </EmailSection>
-        </CareerPageContainer>
+                <EmailSection>
+                    <Typography variant="h6" fontWeight="600" gutterBottom>
+                        Interested in joining our team?
+                    </Typography>
+                    <Typography variant="body1">
+                        If you're interested in any of these positions or would like to inquire about other opportunities,<br />
+                        please send your resume directly to <a href="mailto:levi@dotbridge.io"><strong>levi@dotbridge.io</strong></a>
+                    </Typography>
+                </EmailSection>
+            </CareerPageContainer>
+            <Footer />
+        </>
     );
 };
 

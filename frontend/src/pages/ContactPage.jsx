@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
+import Footer from '../components/Footer';
 
 const ContactPage = () => {
     const theme = useTheme();
@@ -37,261 +38,378 @@ const ContactPage = () => {
     );
 
     return (
-        <Box
-            sx={{
-                bgcolor: theme.palette.background.default,
-                color: theme.palette.text.primary,
-                minHeight: 'calc(100vh - 64px)',
-                py: { xs: 8, md: 12 }
-            }}
-        >
-            <style>{`
-                .calendly-inline-widget {
-                    min-width: 320px;
-                    height: 700px;
-                    border-radius: ${theme.shape.borderRadius}px;
-                    overflow: hidden;
-                    box-shadow: ${theme.shadows[1]};
-                }
-                
-                @media (max-width: 600px) {
-                    .calendly-inline-widget {
-                        height: 580px;
-                    }
-                }
-            `}</style>
-
-            <Container
-                maxWidth="md"
+        <>
+            <Box
                 sx={{
-                    textAlign: 'center',
-                    mb: { xs: 8, md: 10 }
+                    bgcolor: theme.palette.background.default,
+                    color: theme.palette.text.primary,
+                    minHeight: 'calc(100vh - 64px)',
+                    py: { xs: 4, md: 6 },
+                    pt: { xs: 1, md: 2 }
                 }}
             >
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7 }}
-                >
-                    <Typography
-                        variant="h1"
-                        component="h1"
-                        sx={{ mb: 2, color: 'text.primary' }}
-                    >
-                        Get In Touch
-                    </Typography>
+                <style>{`
+                    .calendly-inline-widget {
+                        min-width: 320px;
+                        height: 700px;
+                        border-radius: ${theme.shape.borderRadius}px;
+                        overflow: hidden;
+                        box-shadow: ${theme.shadows[1]};
+                    }
+                    
+                    @media (max-width: 600px) {
+                        .calendly-inline-widget {
+                            height: 580px;
+                        }
+                    }
+                `}</style>
 
-                    <Typography
-                        variant="h5"
-                        sx={{ color: 'text.secondary', maxWidth: '750px', mx: 'auto' }}
-                    >
-                        Have questions about creating your AI-powered course, need a custom solution, or want to see a demo? Reach out below or schedule a time to chat.
-                    </Typography>
-                </motion.div>
-            </Container>
-
-            <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 12 } }}>
-                <Grid container spacing={{ xs: 4, md: 6 }}>
-                    <Grid item xs={12} md={5} ref={contactRef}>
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={contactInView ? { opacity: 1, x: 0 } : {}}
-                            transition={{ duration: 0.6 }}
-                            style={{ height: '100%' }}
-                        >
-                            <Paper
-                                variant="outlined"
-                                sx={{
-                                    p: { xs: 3, sm: 4 },
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    bgcolor: 'background.paper'
-                                }}
-                            >
-                                <Typography
-                                    variant="h4"
-                                    sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}
-                                >
-                                    Contact Information
-                                </Typography>
-
-                                <Box sx={{ mb: 3 }}>
-                                    <Typography
-                                        variant="body1"
-                                        sx={{ color: 'text.secondary', lineHeight: 1.6 }}
-                                    >
-                                        Reach out directly via email or schedule a quick call.
-                                    </Typography>
-                                </Box>
-
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 4 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <Box sx={{ width: 40, height: 40, borderRadius: '8px', background: `${theme.palette.primary.main}1A`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main' }}>
-                                            <Mail size={20} />
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.25 }}>
-                                                Email Us
-                                            </Typography>
-                                            <Link href="mailto:levi@dotbridge.io" sx={{ color: 'text.primary', fontWeight: 500, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
-                                                levi@dotbridge.io
-                                            </Link>
-                                        </Box>
-                                    </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <Box sx={{ width: 40, height: 40, borderRadius: '8px', background: `${theme.palette.primary.main}1A`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main' }}>
-                                            <Calendar size={20} />
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.25 }}>
-                                                Schedule a Call
-                                            </Typography>
-                                            <Link href="https://calendly.com/levi-dotbridge/30min" target="_blank" rel="noopener noreferrer" sx={{ color: 'text.primary', fontWeight: 500, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
-                                                Book a 30-min Demo/Consult
-                                            </Link>
-                                        </Box>
-                                    </Box>
-                                </Box>
-
-                                <Box sx={{ mt: 'auto' }}>
-                                    <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="large"
-                                        fullWidth
-                                        component="a"
-                                        href="https://calendly.com/levi-dotbridge/30min"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        startIcon={<Calendar size={18} />}
-                                    >
-                                        Schedule Now
-                                    </Button>
-                                </Box>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-
-                    <Grid item xs={12} md={7}>
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={contactInView ? { opacity: 1, x: 0 } : {}}
-                            transition={{ duration: 0.6, delay: 0.1 }}
-                        >
-                            <Paper
-                                variant="outlined"
-                                sx={{
-                                    p: { xs: 0, sm: 0.5 },
-                                    height: '100%',
-                                    overflow: 'hidden',
-                                    bgcolor: 'background.paper'
-                                }}
-                            >
-                                <div className="calendly-inline-widget" style={{ height: '700px' }}>
-                                    <iframe
-                                        src="https://calendly.com/levi-dotbridge/30min?hide_gdpr_banner=1&background_color=ffffff&text_color=101017&primary_color=007aff"
-                                        width="100%"
-                                        height="100%"
-                                        frameBorder="0"
-                                        title="Schedule a meeting with Brdge AI"
-                                        style={{ border: 'none', borderRadius: `${theme.shape.borderRadius}px` }}
-                                    ></iframe>
-                                </div>
-                            </Paper>
-                        </motion.div>
-                    </Grid>
-                </Grid>
-            </Container>
-
-            <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 12 } }}>
-                <Box
-                    ref={customSolutionsRef}
+                <Container
+                    maxWidth="md"
                     sx={{
-                        mt: { xs: 6, md: 10 },
-                        p: { xs: 3, sm: 4, md: 5 },
-                        borderRadius: theme.shape.borderRadius,
-                        bgcolor: 'neutral.light',
-                        border: `1px solid ${theme.palette.divider}`
+                        textAlign: 'center',
+                        mb: { xs: 4, md: 6 },
+                        pt: { xs: 0, md: 1 }
                     }}
                 >
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
-                        animate={customSolutionsInView ? { opacity: 1, y: 0 } : {}}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.7 }}
                     >
                         <Typography
                             variant="h2"
-                            align="center"
-                            sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}
+                            component="h1"
+                            sx={{
+                                mb: 2,
+                                color: 'text.primary',
+                                fontSize: { xs: '2rem', sm: '2.3rem', md: '2.6rem' }
+                            }}
                         >
-                            Custom AI Solutions
+                            Let's Build Your AI Revenue Engine
                         </Typography>
 
                         <Typography
                             variant="h5"
-                            align="center"
-                            sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: 6 }}
+                            sx={{ color: 'text.secondary', maxWidth: '750px', mx: 'auto' }}
                         >
-                            Need something more specific? We offer tailored solutions including content transformation, platform integration, and dedicated support for larger projects.
+                            Looking to scale sales with AI? Whether you're exploring autonomous funnels, interactive demos, or full-funnel automation — we'll help you design a system that closes deals while you sleep.
                         </Typography>
+                    </motion.div>
+                </Container>
 
-                        <Grid container spacing={4}>
-                            {[
-                                {
-                                    icon: <MessageSquare size={28} />,
-                                    title: "Custom AI Agents",
-                                    description: "Develop AI assistants trained specifically on your unique knowledge base and brand voice."
-                                },
-                                {
-                                    icon: <Users size={28} />,
-                                    title: "Enterprise Deployments",
-                                    description: "Solutions for teams and organizations, including advanced analytics and user management."
-                                },
-                                {
-                                    icon: <ThumbsUp size={28} />,
-                                    title: "Integration Services",
-                                    description: "Connect .bridge with your existing CRM, LMS, or other platforms for seamless workflows."
-                                }
-                            ].map((item, index) => (
-                                <Grid item xs={12} md={4} key={index}>
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={customSolutionsInView ? { opacity: 1, y: 0 } : {}}
-                                        transition={{ duration: 0.5, delay: 0.1 + (index * 0.1) }}
-                                        style={{ height: '100%' }}
+                <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 12 } }}>
+                    <Grid container spacing={{ xs: 4, md: 6 }}>
+                        <Grid item xs={12} md={5} ref={contactRef}>
+                            <motion.div
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={contactInView ? { opacity: 1, x: 0 } : {}}
+                                transition={{ duration: 0.6 }}
+                                style={{ height: '100%' }}
+                            >
+                                <Paper
+                                    variant="outlined"
+                                    sx={{
+                                        p: { xs: 3, sm: 4 },
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        bgcolor: 'background.paper',
+                                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                                        borderRadius: '16px',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            boxShadow: '0 12px 48px rgba(0, 0, 0, 0.12)'
+                                        }
+                                    }}
+                                >
+                                    <Typography
+                                        variant="h4"
+                                        sx={{ fontWeight: 600, mb: 3, color: 'text.primary' }}
                                     >
-                                        <Box sx={{ textAlign: 'center', p: 2 }}>
-                                            <Box sx={{ color: 'primary.main', mb: 2 }}>{item.icon}</Box>
-                                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
-                                                {item.title}
-                                            </Typography>
-                                            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                                                {item.description}
-                                            </Typography>
+                                        Talk to a Specialist
+                                    </Typography>
+
+                                    <Box sx={{ mb: 3 }}>
+                                        <Typography
+                                            variant="body1"
+                                            sx={{ color: 'text.secondary', lineHeight: 1.6 }}
+                                        >
+                                            Want to see a demo, scope a custom solution, or discuss integration with your sales stack?
+                                        </Typography>
+                                    </Box>
+
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 4 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Box sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: '12px',
+                                                background: `${theme.palette.primary.main}20`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: 'primary.main',
+                                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
+                                                    background: `${theme.palette.primary.main}30`,
+                                                }
+                                            }}>
+                                                <Mail size={22} />
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.25, fontWeight: 500 }}>
+                                                    Email Us
+                                                </Typography>
+                                                <Link href="mailto:levi@dotbridge.io" sx={{ color: 'text.primary', fontWeight: 600, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
+                                                    levi@dotbridge.io
+                                                </Link>
+                                            </Box>
                                         </Box>
-                                    </motion.div>
-                                </Grid>
-                            ))}
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Box sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: '12px',
+                                                background: `${theme.palette.primary.main}20`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: 'primary.main',
+                                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
+                                                    background: `${theme.palette.primary.main}30`,
+                                                }
+                                            }}>
+                                                <Calendar size={22} />
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.25, fontWeight: 500 }}>
+                                                    Schedule a Call
+                                                </Typography>
+                                                <Link href="https://calendly.com/levi-dotbridge/30min" target="_blank" rel="noopener noreferrer" sx={{ color: 'text.primary', fontWeight: 600, textDecoration: 'none', '&:hover': { color: 'primary.main' } }}>
+                                                    Book a 30-min Demo/Consult
+                                                </Link>
+                                            </Box>
+                                        </Box>
+                                    </Box>
+
+                                    <Box sx={{ mt: 'auto' }}>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            size="large"
+                                            fullWidth
+                                            component="a"
+                                            href="https://calendly.com/levi-dotbridge/30min"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            startIcon={<Calendar size={18} />}
+                                            sx={{
+                                                py: 1.5,
+                                                borderRadius: '10px',
+                                                fontWeight: 600,
+                                                boxShadow: theme.shadows[3],
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: theme.shadows[6]
+                                                }
+                                            }}
+                                        >
+                                            Schedule Now
+                                        </Button>
+                                    </Box>
+                                </Paper>
+                            </motion.div>
                         </Grid>
 
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
-                            <Button
-                                variant="outlined"
-                                color="primary"
-                                size="large"
-                                component={RouterLink}
-                                to="/contact"
-                                sx={{}}
-                                endIcon={<ChevronRight size={18} />}
+                        <Grid item xs={12} md={7}>
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={contactInView ? { opacity: 1, x: 0 } : {}}
+                                transition={{ duration: 0.6, delay: 0.1 }}
                             >
-                                Discuss Custom Solutions
-                            </Button>
-                        </Box>
-                    </motion.div>
-                </Box>
-            </Container>
-        </Box>
+                                <Paper
+                                    variant="outlined"
+                                    id="calendar-section"
+                                    sx={{
+                                        p: { xs: 0, sm: 0.5 },
+                                        height: '100%',
+                                        overflow: 'hidden',
+                                        bgcolor: 'background.paper',
+                                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+                                        borderRadius: '16px',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            boxShadow: '0 12px 48px rgba(0, 0, 0, 0.12)'
+                                        }
+                                    }}
+                                >
+                                    <div className="calendly-inline-widget" style={{ height: '700px' }}>
+                                        <iframe
+                                            src="https://calendly.com/levi-dotbridge/30min?hide_gdpr_banner=1&background_color=ffffff&text_color=101017&primary_color=007aff"
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            title="Schedule a meeting with Brdge AI"
+                                            style={{ border: 'none', borderRadius: `${theme.shape.borderRadius}px` }}
+                                        ></iframe>
+                                    </div>
+                                </Paper>
+                            </motion.div>
+                        </Grid>
+                    </Grid>
+                </Container>
+
+                <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 12 } }}>
+                    <Box
+                        ref={customSolutionsRef}
+                        sx={{
+                            mt: { xs: 6, md: 10 },
+                            p: { xs: 3, sm: 4, md: 5 },
+                            borderRadius: theme.shape.borderRadius,
+                            bgcolor: 'neutral.light',
+                            border: `1px solid ${theme.palette.divider}`
+                        }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={customSolutionsInView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ duration: 0.7 }}
+                        >
+                            <Typography
+                                variant="h2"
+                                align="center"
+                                sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}
+                            >
+                                Custom AI Sales Solutions
+                            </Typography>
+
+                            <Typography
+                                variant="h5"
+                                align="center"
+                                sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: 6 }}
+                            >
+                                Not sure where to start? Let's map out the smartest way to plug AI into your sales engine. We'll help you launch fast — and scale even faster.
+                            </Typography>
+
+                            <Grid container spacing={4}>
+                                {[
+                                    {
+                                        icon: <MessageSquare size={28} />,
+                                        title: "AI-Powered Funnels",
+                                        description: "Build a self-serve demo funnel that engages, qualifies, and converts leads 24/7 — no reps required."
+                                    },
+                                    {
+                                        icon: <Users size={28} />,
+                                        title: "Custom AI Agents",
+                                        description: "Deploy AI assistants trained on your product, your tone, and your sales motion."
+                                    },
+                                    {
+                                        icon: <ThumbsUp size={28} />,
+                                        title: "Enterprise-Ready Deployments",
+                                        description: "Multi-user access, analytics, permissions, and white-labeled experiences for scaling teams."
+                                    },
+                                    {
+                                        icon: <Calendar size={28} />,
+                                        title: "Seamless Integrations",
+                                        description: "Sync with your CRM, LMS, or onboarding flow to turn .bridge into your revenue command center."
+                                    }
+                                ].map((item, index) => (
+                                    <Grid item xs={12} sm={6} md={3} key={index}>
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={customSolutionsInView ? { opacity: 1, y: 0 } : {}}
+                                            transition={{ duration: 0.5, delay: 0.1 + (index * 0.1) }}
+                                            style={{ height: '100%' }}
+                                            whileHover={{ y: -5 }}
+                                        >
+                                            <Box sx={{
+                                                textAlign: 'center',
+                                                p: 3,
+                                                backgroundColor: 'background.paper',
+                                                borderRadius: '16px',
+                                                height: '100%',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.06)',
+                                                border: `1px solid ${theme.palette.divider}`,
+                                                transition: 'all 0.3s ease',
+                                                '&:hover': {
+                                                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.1)',
+                                                    borderColor: theme.palette.primary.light
+                                                }
+                                            }}>
+                                                <Box sx={{
+                                                    color: 'primary.main',
+                                                    mb: 2.5,
+                                                    width: 64,
+                                                    height: 64,
+                                                    borderRadius: '16px',
+                                                    backgroundColor: `${theme.palette.primary.main}15`,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)'
+                                                }}>
+                                                    {item.icon}
+                                                </Box>
+                                                <Typography variant="h6" sx={{ fontWeight: 600, color: 'text.primary', mb: 1.5 }}>
+                                                    {item.title}
+                                                </Typography>
+                                                <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                                                    {item.description}
+                                                </Typography>
+                                            </Box>
+                                        </motion.div>
+                                    </Grid>
+                                ))}
+                            </Grid>
+
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+                                <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    size="large"
+                                    component="button"
+                                    sx={{
+                                        px: 4,
+                                        py: 1.25,
+                                        borderRadius: '10px',
+                                        borderWidth: '2px',
+                                        fontWeight: 600,
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            borderWidth: '2px',
+                                            transform: 'translateY(-2px)',
+                                            boxShadow: '0 6px 16px rgba(0, 122, 255, 0.15)'
+                                        }
+                                    }}
+                                    endIcon={<ChevronRight size={18} />}
+                                    onClick={() => {
+                                        const calendarSection = document.getElementById('calendar-section');
+                                        if (calendarSection) {
+                                            calendarSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }
+                                    }}
+                                >
+                                    Discuss Sales Solutions
+                                </Button>
+                            </Box>
+                        </motion.div>
+                    </Box>
+                </Container>
+            </Box>
+            <Footer />
+        </>
     );
 };
 

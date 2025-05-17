@@ -13,6 +13,7 @@ import {
 // Removed motion import as it's not used in the new theme
 // import { motion } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 // PolicyPage Component
 function PolicyPage() {
@@ -68,314 +69,411 @@ function PolicyPage() {
     );
 
     return (
-        <Box sx={{
-            minHeight: 'calc(100vh - 64px)',
-            bgcolor: 'background.default',
-            py: { xs: 8, md: 12 },
-        }}>
-            <Container maxWidth="md">
-                <Typography
-                    variant="h1"
-                    component="h1"
-                    align="center"
-                    sx={{
-                        color: 'text.primary',
-                        mb: { xs: 6, md: 8 }
-                    }}
-                >
-                    Policies
-                </Typography>
-
-                <Paper
-                    variant="outlined"
-                    sx={{
-                        p: { xs: 3, sm: 4, md: 5 },
-                        mb: 4,
-                        bgcolor: 'background.paper',
-                        '& p, & li': {
-                            color: 'text.secondary',
-                            lineHeight: 1.7,
-                            fontSize: '1rem',
-                            mb: 2
-                        },
-                        '& strong': {
+        <>
+            <Box sx={{
+                minHeight: 'calc(100vh - 64px)',
+                bgcolor: 'background.default',
+                py: { xs: 8, md: 12 },
+            }}>
+                <Container maxWidth="md">
+                    <Typography
+                        variant="h1"
+                        component="h1"
+                        align="center"
+                        sx={{
                             color: 'text.primary',
-                            fontWeight: 500
-                        },
-                        '& ul, & ol': {
-                            pl: 3,
-                            mb: 2,
-                        },
-                        '& li': {
-                            mb: 1,
-                            pl: 1,
-                            listStyleType: 'disc',
-                            paddingInlineStart: 0
-                        }
-                    }}
-                >
-                    <Box id="privacy">
-                        <Typography variant="h2" sx={{ color: 'text.primary', mb: 1 }}>
-                            Privacy Policy
-                        </Typography>
-                        <Typography variant="body2" sx={{ mb: 4, color: 'text.secondary' }}>
-                            Last Updated: January 19, 2025
-                        </Typography>
+                            mb: { xs: 6, md: 8 }
+                        }}
+                    >
+                        Policies
+                    </Typography>
 
-                        <SectionTitle id="privacy-intro">1. Introduction</SectionTitle>
-                        <Typography paragraph>
-                            .bridge ("we," "us," or "our") is operated by Journeyman AI LLC. We are committed to protecting your privacy and safeguarding your personal information. This Privacy Policy outlines how we collect, use, disclose, and protect your data when you use our services. By accessing or using .bridge, you agree to the practices described in this policy.
-                        </Typography>
-
-                        <SectionTitle id="privacy-info">2. Information We Collect</SectionTitle>
-                        <SubSection title="a. Account Details">
-                            <Typography paragraph>
-                                Personal Information: Email address, display name, and basic profile information required to create and maintain your account.
+                    <Paper
+                        variant="outlined"
+                        sx={{
+                            p: { xs: 3, sm: 4, md: 5 },
+                            mb: 4,
+                            bgcolor: 'background.paper',
+                            '& p, & li': {
+                                color: 'text.secondary',
+                                lineHeight: 1.7,
+                                fontSize: '1rem',
+                                mb: 2
+                            },
+                            '& strong': {
+                                color: 'text.primary',
+                                fontWeight: 500
+                            },
+                            '& ul, & ol': {
+                                pl: 3,
+                                mb: 2,
+                            },
+                            '& li': {
+                                mb: 1,
+                                pl: 1,
+                                listStyleType: 'disc',
+                                paddingInlineStart: 0
+                            }
+                        }}
+                    >
+                        <Box id="privacy">
+                            <Typography variant="h2" sx={{ color: 'text.primary', mb: 1 }}>
+                                Privacy Policy
                             </Typography>
-                        </SubSection>
-                        <SubSection title="b. Usage Data">
-                            <Typography paragraph>
-                                Analytics: Logs of feature usage (e.g., AI minutes used, chat queries), browser type, IP address, and device information to analyze and improve our services.
+                            <Typography variant="body2" sx={{ mb: 4, color: 'text.secondary' }}>
+                                Last Updated: May 17, 2025
                             </Typography>
-                        </SubSection>
-                        <SubSection title="c. Content">
+
+                            <SectionTitle id="privacy-who">1. Who We Are</SectionTitle>
                             <Typography paragraph>
-                                User-Uploaded Materials: Videos, presentations, PDFs, audio recordings, and any other materials you upload for AI processing.
+                                DotBridge is a service provided by Journeyman AI LLC, 382 NE 191st St #931764, Miami FL 33179, USA.
+                                Contact us any time at <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
                             </Typography>
-                        </SubSection>
-                        <SubSection title="d. Payment Information">
+
+                            <SectionTitle id="privacy-scope">2. Scope</SectionTitle>
                             <Typography paragraph>
-                                Financial Data: We utilize secure third-party payment processors (e.g., Stripe). We do not store full payment card details on our servers.
+                                This policy covers personal information we handle when you:
                             </Typography>
-                        </SubSection>
-                        <SubSection title="e. Cookies and Tracking Technologies">
-                            <Typography paragraph>
-                                Cookies: We use essential cookies for site functionality and session management. We may use analytics cookies to understand usage patterns. You can manage cookie preferences through your browser settings.
-                            </Typography>
-                        </SubSection>
-
-                        <SectionTitle id="privacy-use">3. How We Use Your Data</SectionTitle>
-                        <Typography paragraph>We use the collected data to:</Typography>
-                        <List>
-                            <ListItem>Provide, maintain, and enhance our services.</ListItem>
-                            <ListItem>Process payments and manage billing.</ListItem>
-                            <ListItem>Analyze usage patterns to improve user experience and service performance.</ListItem>
-                            <ListItem>Communicate with you regarding your account, updates, offers, and support requests.</ListItem>
-                            <ListItem>Ensure the security and integrity of our platform and prevent fraudulent activity.</ListItem>
-                        </List>
-
-                        <SectionTitle id="privacy-protection">4. Data Protection</SectionTitle>
-                        <Typography paragraph>
-                            We implement industry-standard security measures, including encryption and secure infrastructure practices, to protect your data. However, no internet transmission or electronic storage method is 100% secure. We strive to protect your personal information but cannot guarantee its absolute security.
-                        </Typography>
-
-                        <SectionTitle id="privacy-rights">5. Your Rights</SectionTitle>
-                        <Typography paragraph>Depending on your jurisdiction, you may have the following rights regarding your personal data:</Typography>
-                        <List>
-                            <ListItem>Access: Request access to the personal information we hold about you.</ListItem>
-                            <ListItem>Correction: Request correction of inaccurate personal data.</ListItem>
-                            <ListItem>Deletion: Request deletion of your personal data, subject to legal and contractual restrictions.</ListItem>
-                            <ListItem>Opt-Out: Opt out of non-essential communications.</ListItem>
-                            <ListItem>Data Portability: Request a copy of your data in a machine-readable format.</ListItem>
-                        </List>
-                        <Typography paragraph>
-                            To exercise these rights, please contact us at levi@brdge-ai.com.
-                        </Typography>
-
-                        <SectionTitle id="privacy-children">6. Children's Privacy</SectionTitle>
-                        <Typography paragraph>
-                            .bridge is not directed to individuals under the age of 18. We do not knowingly collect personal information from minors. If you believe we have inadvertently collected such information, please contact us to request its deletion.
-                        </Typography>
-
-                        <SectionTitle id="privacy-retention">7. Data Retention Policy</SectionTitle>
-                        <Typography paragraph>
-                            We retain your personal data for as long as your account is active or as needed to provide you services, comply with our legal obligations, resolve disputes, and enforce our agreements. Uploaded content is retained according to your plan level and actions (e.g., deletion by user).
-                        </Typography>
-
-                        <SectionTitle id="privacy-sharing">8. Third-Party Sharing</SectionTitle>
-                        <Typography paragraph>
-                            We share your information only with trusted third-party service providers essential for delivering our services (e.g., cloud hosting, AI processing, analytics, payment processing). These providers are contractually bound to maintain data security and confidentiality. We do not sell your personal information.
-                        </Typography>
-
-                        <SectionTitle id="privacy-breach">9. Data Breach Notification</SectionTitle>
-                        <Typography paragraph>
-                            In the unlikely event of a data breach impacting your personal information, we will notify you promptly in accordance with applicable laws.
-                        </Typography>
-
-                        <SectionTitle id="privacy-ai">10. Use of Third-Party AI Services</SectionTitle>
-                        <SubSection title="a. AI Service Providers">
-                            <Typography paragraph>
-                                .bridge utilizes third-party AI models (e.g., OpenAI, Anthropic, Google) to power features like voice cloning, transcription, and question answering. These providers process data you submit through the service.
-                            </Typography>
-                        </SubSection>
-                        <SubSection title="b. Data Processing">
-                            <Typography paragraph>
-                                When you upload content or interact with AI features, relevant data is securely transmitted to these providers for processing necessary to deliver the requested functionality.
-                            </Typography>
-                        </SubSection>
-                        <SubSection title="c. Provider Policies">
-                            <Typography paragraph>
-                                Our AI providers adhere to strict data privacy and security standards. We select providers committed to not using customer data for training their models without explicit consent, where such options are available.
-                            </Typography>
-                        </SubSection>
-
-                        <SectionTitle id="privacy-transfers">11. International Data Transfers</SectionTitle>
-                        <Typography paragraph>
-                            Your data may be processed by service providers located outside your jurisdiction. We ensure such transfers comply with applicable data protection laws, utilizing standard contractual clauses or other appropriate safeguards.
-                        </Typography>
-
-                        <SectionTitle id="privacy-jurisdictions">12. Prohibited Jurisdictions</SectionTitle>
-                        <Typography paragraph>
-                            Use of .bridge may be restricted in certain jurisdictions due to local laws or regulations. You are responsible for ensuring compliance with your local laws.
-                        </Typography>
-
-                        <SectionTitle id="privacy-changes">13. Changes to This Privacy Policy</SectionTitle>
-                        <Typography paragraph>
-                            We may update this policy periodically. We will notify you of significant changes via email or through the platform. Your continued use of the service after updates constitutes acceptance.
-                        </Typography>
-
-                        <SectionTitle id="privacy-contact">14. Contact Us</SectionTitle>
-                        <Typography paragraph>
-                            If you have questions about this Privacy Policy, please contact us at:
-                        </Typography>
-                        <Typography paragraph>Email: levi@brdge-ai.com</Typography>
-                        <Typography paragraph>Address: 382 NE 191ST St #931764, Miami, FL, 33179</Typography>
-                    </Box>
-
-                    <Divider sx={{ my: 8 }} />
-
-                    <Box id="terms">
-                        <Typography variant="h2" sx={{ color: 'text.primary', mb: 1 }}>
-                            Terms of Service
-                        </Typography>
-                        <Typography variant="body2" sx={{ mb: 4, color: 'text.secondary' }}>
-                            Last Updated: January 19, 2025
-                        </Typography>
-
-                        <SectionTitle id="terms-acceptance">1. Acceptance of Terms</SectionTitle>
-                        <Typography paragraph>
-                            By accessing or using .bridge ("Service"), provided by Journeyman AI LLC, you agree to be bound by these Terms of Service ("Terms"). If you disagree with any part of the terms, you may not access the Service.
-                        </Typography>
-
-                        <SectionTitle id="terms-accounts">2. User Accounts</SectionTitle>
-                        <SubSection title="a. Eligibility">
-                            <Typography paragraph>
-                                You must be at least 18 years old and capable of entering into a binding contract to use the Service.
-                            </Typography>
-                        </SubSection>
-                        <SubSection title="b. Account Security">
-                            <Typography paragraph>
-                                You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. Notify us immediately of any unauthorized use.
-                            </Typography>
-                        </SubSection>
-                        <SubSection title="c. Account Termination">
-                            <Typography paragraph>
-                                We reserve the right to suspend or terminate accounts for violations of these Terms, illegal activities, or actions harmful to the Service or other users.
-                            </Typography>
-                        </SubSection>
-
-                        <SectionTitle id="terms-use">3. Use of the Service</SectionTitle>
-                        <SubSection title="a. License">
-                            <Typography paragraph>
-                                Subject to these Terms, we grant you a limited, non-exclusive, non-transferable, revocable license to use the Service for your personal or internal business purposes according to your subscription plan.
-                            </Typography>
-                        </SubSection>
-                        <SubSection title="b. User Content">
-                            <Typography paragraph>
-                                You retain ownership of the content you upload ("User Content"). You grant us a worldwide, royalty-free license to use, reproduce, modify, and process User Content solely to provide and improve the Service.
-                            </Typography>
-                        </SubSection>
-                        <SubSection title="c. Prohibited Conduct">
-                            <Typography paragraph>You agree not to:</Typography>
                             <List>
-                                <ListItem>Use the Service for any illegal or unauthorized purpose.</ListItem>
-                                <ListItem>Infringe upon intellectual property rights (copyright, trademark, etc.).</ListItem>
-                                <ListItem>Upload malicious code, viruses, or harmful content.</ListItem>
-                                <ListItem>Reverse engineer, decompile, or attempt to extract the source code of the Service.</ListItem>
-                                <ListItem>Harass, abuse, or harm other users.</ListItem>
-                                <ListItem>Use the service to generate content that is defamatory, obscene, pornographic, or promotes hatred or discrimination.</ListItem>
+                                <ListItem>visit any DotBridge website or app,</ListItem>
+                                <ListItem>open an account, or</ListItem>
+                                <ListItem>interact with our sales or support teams.</ListItem>
                             </List>
-                        </SubSection>
-
-                        <SectionTitle id="terms-fees">4. Fees & Billing</SectionTitle>
-                        <SubSection title="a. Subscription Plans">
                             <Typography paragraph>
-                                Access to certain features requires a paid subscription. Fees are based on the selected plan and are billed in advance on a recurring basis (e.g., monthly or annually).
+                                It does not cover third-party sites you may reach from our platform.
                             </Typography>
-                        </SubSection>
-                        <SubSection title="b. AI Usage Billing">
+
+                            <SectionTitle id="privacy-info">3. Information We Collect</SectionTitle>
                             <Typography paragraph>
-                                Plans include a specified amount of AI processing minutes (e.g., for Q&A, voice cloning). Overage may be billed separately or require upgrading your plan, as detailed on our Pricing page.
+                                <strong>Account</strong>: name, work-email, password hash - create & secure your login
                             </Typography>
-                        </SubSection>
-                        <SubSection title="c. Payment Terms">
                             <Typography paragraph>
-                                You agree to provide accurate payment information and authorize recurring charges. Payments are processed via a secure third-party provider (Stripe). Failure to pay may result in suspension or termination.
+                                <strong>Billing</strong>: last-4 card digits, billing address (processed by our payment provider) - process subscription fees & refunds
                             </Typography>
-                        </SubSection>
-                        <SubSection title="d. Refund Policy">
                             <Typography paragraph>
-                                Subscription fees are generally non-refundable except as required by law or explicitly stated in a specific offer. Contact support for billing inquiries.
+                                <strong>Content</strong>: videos, decks, PDFs, audio, chat prompts - deliver the AI features you request
                             </Typography>
-                        </SubSection>
-
-                        <SectionTitle id="terms-ip">5. Intellectual Property</SectionTitle>
-                        <SubSection title="a. Service Ownership">
                             <Typography paragraph>
-                                The Service, including its software, design, branding, and underlying technology (excluding User Content), is the exclusive property of Journeyman AI LLC and its licensors.
+                                <strong>Usage</strong>: pages visited, feature clicks, device/browser type, IP - improve performance & detect abuse
                             </Typography>
-                        </SubSection>
-                        <SubSection title="b. AI Outputs">
                             <Typography paragraph>
-                                Subject to your rights in the underlying User Content and compliance with these Terms, you generally own the specific outputs (e.g., generated video, transcripts, AI responses) created from your User Content using the Service. Note that similar inputs may produce similar outputs for different users.
+                                <strong>Cookies</strong>: session ID, analytics tags - keep you logged in & understand traffic
                             </Typography>
-                        </SubSection>
-                        <SubSection title="c. Feedback">
                             <Typography paragraph>
-                                Any feedback or suggestions you provide regarding the Service become our property, and we may use them without obligation to you.
+                                We only collect what we reasonably need to run DotBridge.
                             </Typography>
-                        </SubSection>
 
-                        <SectionTitle id="terms-disclaimers">6. Disclaimers</SectionTitle>
-                        <Typography paragraph>
-                            THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, SECURE, OR ERROR-FREE, OR THAT AI OUTPUTS WILL BE ACCURATE OR RELIABLE.
-                        </Typography>
+                            <SectionTitle id="privacy-use">4. How We Use Your Data</SectionTitle>
+                            <List>
+                                <ListItem><strong>Provide the Service</strong> – host your content, generate AI responses, personalise your workspace.</ListItem>
+                                <ListItem><strong>Operate the Business</strong> – bill you, send invoices, handle support tickets.</ListItem>
+                                <ListItem><strong>Improve Product</strong> – analyse aggregated, pseudonymised usage to spot bugs and plan new features.</ListItem>
+                                <ListItem><strong>Security & Fraud Prevention</strong> – monitor for unusual activity or misuse.</ListItem>
+                                <ListItem><strong>Marketing (Optional)</strong> – if you opt in, send product news or offers. You can opt out any time.</ListItem>
+                            </List>
+                            <Typography paragraph>
+                                Our legal bases are: performance of our contract with you, our legitimate interest in running and securing the service,
+                                compliance with laws, and consent (for optional emails/cookies).
+                            </Typography>
 
-                        <SectionTitle id="terms-liability">7. Limitation of Liability</SectionTitle>
-                        <Typography paragraph>
-                            TO THE FULLEST EXTENT PERMITTED BY LAW, JOURNEYMAN AI LLC SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR REVENUES, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM (A) YOUR ACCESS TO OR USE OF OR INABILITY TO ACCESS OR USE THE SERVICE; (B) ANY CONDUCT OR CONTENT OF ANY THIRD PARTY ON THE SERVICE; (C) ANY CONTENT OBTAINED FROM THE SERVICE; OR (D) UNAUTHORIZED ACCESS, USE, OR ALTERATION OF YOUR TRANSMISSIONS OR CONTENT.
-                        </Typography>
+                            <SectionTitle id="privacy-ai">5. AI & Third-Party Providers</SectionTitle>
+                            <Typography paragraph>
+                                DotBridge uses external AI APIs (e.g. large-language-model or speech services) to process the prompts or files you submit.
+                                We send only the minimum data needed for the requested feature and instruct providers not to use it for model training unless you expressly opt in.
+                                We also rely on trusted cloud hosts, email tools, and analytics platforms.
+                                A current list is available on request at <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                            </Typography>
 
-                        <SectionTitle id="terms-indemnification">8. Indemnification</SectionTitle>
-                        <Typography paragraph>
-                            You agree to defend, indemnify, and hold harmless Journeyman AI LLC and its affiliates, officers, directors, employees, and agents from and against any claims, damages, obligations, losses, liabilities, costs, or debt, and expenses (including but not limited to attorney's fees) arising from your use of the Service or your violation of these Terms.
-                        </Typography>
+                            <SectionTitle id="privacy-sharing">6. Sharing</SectionTitle>
+                            <Typography paragraph>
+                                We never sell your personal information. We share it only with service partners who help us operate DotBridge
+                                (hosting, payments, AI processing, analytics) under strict confidentiality and data-protection terms, or if required by law.
+                            </Typography>
 
-                        <SectionTitle id="terms-modifications">9. Modifications to Terms</SectionTitle>
-                        <Typography paragraph>
-                            We reserve the right to modify these Terms at any time. We will provide notice of material changes (e.g., via email or in-app notification). Your continued use of the Service after changes constitutes acceptance.
-                        </Typography>
+                            <SectionTitle id="privacy-security">7. Security</SectionTitle>
+                            <Typography paragraph>
+                                We apply reasonable administrative, technical, and physical safeguards such as:
+                            </Typography>
+                            <List>
+                                <ListItem>encrypted connections (HTTPS/TLS)</ListItem>
+                                <ListItem>encryption of stored files</ListItem>
+                                <ListItem>role-based access for staff</ListItem>
+                                <ListItem>periodic security reviews</ListItem>
+                            </List>
+                            <Typography paragraph>
+                                No online service is 100% secure, so we cannot guarantee absolute protection.
+                            </Typography>
 
-                        <SectionTitle id="terms-governing-law">10. Governing Law & Dispute Resolution</SectionTitle>
-                        <Typography paragraph>
-                            These Terms are governed by the laws of the State of Florida, USA, without regard to conflict of law principles. Any disputes arising shall be resolved through binding arbitration in Miami, Florida, according to the rules of the American Arbitration Association, or in small claims court where applicable.
-                        </Typography>
+                            <SectionTitle id="privacy-retention">8. Retention</SectionTitle>
+                            <Typography paragraph>
+                                <strong>Account & Billing</strong> – kept while your subscription is active and for up to 7 years to meet tax or audit rules.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Uploaded Content</strong> – stored until you delete it or your plan's retention limit expires.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Analytics Logs</strong> – typically deleted or anonymised after 24 months.
+                            </Typography>
 
-                        <SectionTitle id="terms-general">11. General Provisions</SectionTitle>
-                        <Typography paragraph>
-                            These Terms constitute the entire agreement between you and Journeyman AI LLC regarding the Service. If any provision is held invalid, the remaining provisions remain in effect. Our failure to enforce any right does not constitute a waiver.
-                        </Typography>
+                            <SectionTitle id="privacy-rights">9. Your Choices & Rights</SectionTitle>
+                            <Typography paragraph>
+                                Subject to local law, you can:
+                            </Typography>
+                            <List>
+                                <ListItem>access or export your data,</ListItem>
+                                <ListItem>correct inaccurate info,</ListItem>
+                                <ListItem>delete content or close your account,</ListItem>
+                                <ListItem>object to or restrict certain processing,</ListItem>
+                                <ListItem>opt out of marketing emails or analytics cookies.</ListItem>
+                            </List>
+                            <Typography paragraph>
+                                Email <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link> and we'll respond within 30 days.
+                            </Typography>
 
-                    </Box>
+                            <SectionTitle id="privacy-transfers">10. International Transfers</SectionTitle>
+                            <Typography paragraph>
+                                We and many of our providers are based in the United States. When data moves across borders, we rely on
+                                standard contractual clauses or similar safeguards recognised by applicable regulations.
+                                Questions about transfers? Write to <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                            </Typography>
 
-                    <Box sx={{ mt: 6, textAlign: 'center' }}>
-                        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                            For questions about these policies, contact us at <Link href="mailto:levi@brdge-ai.com" sx={{ fontWeight: 500 }}>levi@brdge-ai.com</Link>.
-                        </Typography>
-                    </Box>
-                </Paper>
-            </Container>
-        </Box>
+                            <SectionTitle id="privacy-children">11. Children</SectionTitle>
+                            <Typography paragraph>
+                                DotBridge is for users 18 or older. We do not knowingly collect data from minors.
+                                If you believe a minor has provided data, contact <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link> and we'll delete it.
+                            </Typography>
+
+                            <SectionTitle id="privacy-changes">12. Changes</SectionTitle>
+                            <Typography paragraph>
+                                If we make material changes, we'll post the updated policy here and notify account owners
+                                (e.g. email or in-app banner) at least 15 days before it takes effect.
+                                For clarifications, email <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                            </Typography>
+
+                            <SectionTitle id="privacy-contact">13. Contact</SectionTitle>
+                            <Typography paragraph>
+                                Questions, requests, or concerns? Email <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link> – we're here to help.
+                            </Typography>
+                        </Box>
+
+                        <Divider sx={{ my: 8 }} />
+
+                        <Box id="terms">
+                            <Typography variant="h2" sx={{ color: 'text.primary', mb: 1 }}>
+                                Terms of Service
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 4, color: 'text.secondary' }}>
+                                Last Updated: May 17, 2025
+                            </Typography>
+
+                            <Typography paragraph>
+                                These Terms of Service ("Terms") form a binding contract between Journeyman AI LLC ("DotBridge, we, our, us")
+                                and you or the entity you represent ("Customer, you, your"). By accessing or using any DotBridge website,
+                                application, or related services (collectively, the "Service"), you agree to these Terms.
+                                If you do not accept them, do not use the Service.
+                            </Typography>
+
+                            <Typography paragraph>
+                                Need help? Email <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                            </Typography>
+
+                            <SectionTitle id="terms-accounts">1. Eligibility & Accounts</SectionTitle>
+                            <Typography paragraph>
+                                You must be 18 years or older and able to enter a contract.
+                            </Typography>
+                            <Typography paragraph>
+                                Keep credentials confidential and notify <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link> of any unauthorised use.
+                            </Typography>
+                            <Typography paragraph>
+                                We may suspend or terminate accounts that violate these Terms or the law.
+                            </Typography>
+
+                            <SectionTitle id="terms-license">2. Licence to Use the Service</SectionTitle>
+                            <Typography paragraph>
+                                We grant you a limited, non-exclusive, revocable, non-transferable licence to access and use the Service
+                                for your own business purposes during your subscription term, subject to these Terms and any plan limits.
+                            </Typography>
+
+                            <SectionTitle id="terms-content">3. Your Content & Data</SectionTitle>
+                            <Typography paragraph>
+                                <strong>Ownership.</strong> You keep all rights in videos, decks, PDFs, lead lists, prompts, and other materials you upload ("User Content").
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Permission to Operate.</strong> You grant us and our subprocessors a worldwide right to host, process,
+                                transcribe, transform, and stream User Content solely to provide and improve the Service.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Responsibility.</strong> You must have all necessary rights and lawful bases to upload or share User Content
+                                (including prospect data) and to send any automated messages generated through the Service.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Removal.</strong> Delete content any time via the dashboard or by emailing <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                            </Typography>
+
+                            <SectionTitle id="terms-acceptableuse">4. Acceptable Use</SectionTitle>
+                            <Typography paragraph>
+                                You agree not to:
+                            </Typography>
+                            <List>
+                                <ListItem>break any law or third-party right;</ListItem>
+                                <ListItem>upload malware or attempt to hack, scrape, or reverse-engineer the Service;</ListItem>
+                                <ListItem>use DotBridge to generate or distribute content that is defamatory, hateful, or illegal;</ListItem>
+                                <ListItem>infringe any copyright, trademark, or privacy right;</ListItem>
+                                <ListItem>interfere with another user's access or abuse our infrastructure.</ListItem>
+                            </List>
+                            <Typography paragraph>
+                                We reserve the right to investigate and remove content or accounts that breach this section.
+                            </Typography>
+
+                            <SectionTitle id="terms-plans">5. Plans, Fees & Payment</SectionTitle>
+                            <Typography paragraph>
+                                Plans, usage allowances, and current prices are listed on dotbridge.io/pricing.
+                            </Typography>
+                            <Typography paragraph>
+                                Fees are charged in advance (monthly or annually) via our payment provider.
+                            </Typography>
+                            <Typography paragraph>
+                                Overage (extra AI minutes, storage, or seats) may be billed automatically at the rates shown in your account.
+                            </Typography>
+                            <Typography paragraph>
+                                All fees are non-refundable except where required by law. Write to <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link> for billing issues.
+                            </Typography>
+
+                            <SectionTitle id="terms-ai">6. AI Outputs & Disclaimers</SectionTitle>
+                            <Typography paragraph>
+                                The Service relies on machine-learning models (internal and third-party) that may generate inaccurate or incomplete results.
+                            </Typography>
+                            <Typography paragraph>
+                                You assume all risk for how you use any AI output, transcripts, or recommendations.
+                            </Typography>
+                            <Typography paragraph>
+                                We do not guarantee the accuracy, legality, or effectiveness of outputs. Always verify critical information.
+                            </Typography>
+
+                            <SectionTitle id="terms-ip">7. Intellectual Property</SectionTitle>
+                            <Typography paragraph>
+                                DotBridge retains all rights in the Service, software, design, and branding.
+                            </Typography>
+                            <Typography paragraph>
+                                You may display, download, or export AI outputs created from your own User Content,
+                                subject to these Terms and applicable law.
+                            </Typography>
+                            <Typography paragraph>
+                                Suggestions or feedback you provide may be used by us without obligation.
+                            </Typography>
+
+                            <SectionTitle id="terms-confidentiality">8. Confidentiality</SectionTitle>
+                            <Typography paragraph>
+                                Each party agrees to protect the other's non-public information with reasonable care and to use it
+                                only for purposes of the relationship. This duty survives termination.
+                            </Typography>
+
+                            <SectionTitle id="terms-disclaimers">9. No Warranties</SectionTitle>
+                            <Typography paragraph>
+                                The Service is provided "as is" and "as available." We expressly disclaim all warranties,
+                                including merchantability, fitness for a particular purpose, and non-infringement.
+                                We do not promise that the Service will be uninterrupted, secure, or error-free.
+                            </Typography>
+
+                            <SectionTitle id="terms-liability">10. Limitation of Liability</SectionTitle>
+                            <Typography paragraph>
+                                To the fullest extent permitted by law:
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Indirect damages excluded.</strong> We are not liable for any indirect, incidental,
+                                consequential, or special damages, even if advised of the possibility.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Liability cap.</strong> Our total liability for any claim arising out of the Service is limited to
+                                the fees you paid us in the 12 months preceding the event giving rise to the claim.
+                            </Typography>
+                            <Typography paragraph>
+                                Some jurisdictions do not allow certain exclusions; those limits apply only up to the maximum permitted by law.
+                            </Typography>
+
+                            <SectionTitle id="terms-indemnification">11. Indemnification</SectionTitle>
+                            <Typography paragraph>
+                                You will defend and indemnify DotBridge, its affiliates, and personnel against any third-party claim arising from:
+                            </Typography>
+                            <List>
+                                <ListItem>your breach of these Terms,</ListItem>
+                                <ListItem>your User Content or prospect data, or</ListItem>
+                                <ListItem>your use of AI outputs in violation of law.</ListItem>
+                            </List>
+                            <Typography paragraph>
+                                We will promptly notify you of any claim and cooperate in your defence at your expense.
+                            </Typography>
+
+                            <SectionTitle id="terms-termination">12. Term & Termination</SectionTitle>
+                            <Typography paragraph>
+                                Your subscription renews automatically until cancelled in your account settings or by
+                                emailing <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                            </Typography>
+                            <Typography paragraph>
+                                We may suspend or terminate the Service (or any part) if you materially breach these Terms
+                                and fail to cure within 10 days after notice.
+                            </Typography>
+                            <Typography paragraph>
+                                Upon termination, your licence ends and access ceases. Sections 3, 7, 8, 9, 10, 11, 13 survive.
+                            </Typography>
+
+                            <SectionTitle id="terms-governing-law">13. Governing Law & Disputes</SectionTitle>
+                            <Typography paragraph>
+                                <strong>Law.</strong> Florida, USA law governs these Terms (without conflicts-of-law rules).
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Resolution.</strong> Any dispute we cannot resolve informally within 30 days will be settled by
+                                binding arbitration in Miami, Florida, under the Commercial Arbitration Rules of the American Arbitration Association.
+                                Either party may seek relief in small-claims court if eligible.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Opt-out.</strong> You may opt out of arbitration by emailing <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>
+                                within 30 days of first accepting these Terms.
+                            </Typography>
+
+                            <SectionTitle id="terms-changes">14. Changes to These Terms</SectionTitle>
+                            <Typography paragraph>
+                                We may update these Terms to reflect new features or legal requirements. We will:
+                            </Typography>
+                            <List>
+                                <ListItem>post the revised version on dotbridge.io/policy, and</ListItem>
+                                <ListItem>notify account owners by email or in-app at least 15 days before changes take effect.</ListItem>
+                            </List>
+                            <Typography paragraph>
+                                Continued use after the effective date means you accept the revision.
+                            </Typography>
+
+                            <SectionTitle id="terms-misc">15. Miscellaneous</SectionTitle>
+                            <Typography paragraph>
+                                <strong>Entire Agreement.</strong> These Terms plus any order form are the entire agreement between us.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Severability.</strong> If any clause is unenforceable, the rest remains in effect.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Assignment.</strong> You may not assign these Terms without our written consent; we may assign as part of a merger or sale.
+                            </Typography>
+                            <Typography paragraph>
+                                <strong>Force Majeure.</strong> Neither party is liable for delays caused by events beyond reasonable control.
+                            </Typography>
+
+                            <SectionTitle id="terms-contact">16. Contact</SectionTitle>
+                            <Typography paragraph>
+                                All legal notices, questions, or feedback: <Link href="mailto:levi@dotbridge.io">levi@dotbridge.io</Link>.
+                                We aim to reply within two business days.
+                            </Typography>
+                        </Box>
+
+                        <Box sx={{ mt: 6, textAlign: 'center' }}>
+                            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                                For questions about these policies, contact us at <Link href="mailto:levi@dotbridge.io" sx={{ fontWeight: 500 }}>levi@dotbridge.io</Link>.
+                            </Typography>
+                        </Box>
+                    </Paper>
+                </Container>
+            </Box>
+            <Footer />
+        </>
     );
 }
 

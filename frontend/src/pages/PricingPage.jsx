@@ -5,6 +5,7 @@ import { useInView } from 'react-intersection-observer';
 import { Check, Star } from '@mui/icons-material';
 import { Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
+import Footer from '../components/Footer';
 
 const PricingTier = ({ tier, isPopular, delay }) => {
     const theme = useTheme();
@@ -174,7 +175,7 @@ function PricingPage() {
         {
             name: 'Standard',
             price: '49',
-            description: 'For creators scaling their content',
+            description: 'For small sales teams looking to scale',
             features: [
                 "10 bridge Links",
                 "300 AI Minutes/mo",
@@ -201,101 +202,106 @@ function PricingPage() {
     ];
 
     return (
-        <Box
-            sx={{
-                minHeight: 'calc(100vh - 64px)',
-                bgcolor: theme.palette.background.default,
-                py: { xs: 6, md: 10 },
-                overflow: 'hidden'
-            }}
-        >
-            <Container maxWidth="lg" ref={ref} sx={{ position: 'relative', zIndex: 1 }}>
-                <motion.div
-                    initial={{ opacity: 0, y: -30 }}
-                    animate={inView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.6 }}
-                >
-                    <Typography
-                        variant="h1"
-                        component="h1"
-                        align="center"
-                        sx={{
-                            mb: 2,
-                            color: theme.palette.text.primary,
-                        }}
+        <>
+            <Box
+                sx={{
+                    minHeight: 'calc(100vh - 64px)',
+                    bgcolor: theme.palette.background.default,
+                    py: { xs: 4, md: 6 },
+                    pt: { xs: 2, md: 4 },
+                    overflow: 'hidden'
+                }}
+            >
+                <Container maxWidth="lg" ref={ref} sx={{ position: 'relative', zIndex: 1 }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: -30 }}
+                        animate={inView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.6 }}
                     >
-                        Simple Pricing for Growth
-                    </Typography>
-                    <Typography
-                        variant="h5"
-                        align="center"
-                        sx={{
-                            mb: 6,
-                            color: theme.palette.text.secondary,
-                            maxWidth: '700px',
-                            mx: 'auto',
-                        }}
-                    >
-                        Choose the plan that fits your needs. Start free or unlock powerful features to engage your audience and drive results.
-                    </Typography>
-                </motion.div>
+                        <Typography
+                            variant="h2"
+                            component="h1"
+                            align="center"
+                            sx={{
+                                mb: 2,
+                                color: theme.palette.text.primary,
+                                fontSize: { xs: '2rem', sm: '2.3rem', md: '2.6rem' }
+                            }}
+                        >
+                            Simple Pricing for Growth
+                        </Typography>
+                        <Typography
+                            variant="h5"
+                            align="center"
+                            sx={{
+                                mb: 6,
+                                color: theme.palette.text.secondary,
+                                maxWidth: '700px',
+                                mx: 'auto',
+                            }}
+                        >
+                            Choose the plan that fits your needs. Start free or unlock powerful features to engage your audience and drive results.
+                        </Typography>
+                    </motion.div>
 
-                <Grid container spacing={4} sx={{ position: 'relative', zIndex: 2 }} alignItems="stretch">
-                    {tiers.map((tier, index) => (
-                        <Grid item xs={12} md={4} key={tier.name}>
-                            <PricingTier
-                                tier={tier}
-                                isPopular={index === 1}
-                                delay={index * 0.15}
-                            />
-                        </Grid>
-                    ))}
-                </Grid>
+                    <Grid container spacing={4} sx={{ position: 'relative', zIndex: 2 }} alignItems="stretch">
+                        {tiers.map((tier, index) => (
+                            <Grid item xs={12} md={4} key={tier.name}>
+                                <PricingTier
+                                    tier={tier}
+                                    isPopular={index === 1}
+                                    delay={index * 0.15}
+                                />
+                            </Grid>
+                        ))}
+                    </Grid>
 
-                <Box
-                    sx={{
-                        textAlign: 'center',
-                        mt: 8,
-                        mb: 4,
-                        py: 4,
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                    }}
-                >
-                    <Typography
-                        variant="h4"
+                    <Box
                         sx={{
-                            color: theme.palette.text.primary,
-                            fontWeight: 600,
-                            mb: 2
+                            textAlign: 'center',
+                            mt: 8,
+                            mb: 4,
+                            py: 4,
+                            borderTop: `1px solid ${theme.palette.divider}`,
                         }}
                     >
-                        Need a Custom Solution?
-                    </Typography>
-                    <Typography
-                        variant="body1"
-                        sx={{
-                            color: theme.palette.text.secondary,
-                            maxWidth: '650px',
-                            mx: 'auto',
-                            mb: 3,
-                            lineHeight: 1.6,
-                        }}
-                    >
-                        For enterprise needs, high-volume usage, or specific integrations, contact our sales team for tailored solutions and dedicated support.
-                    </Typography>
-                    <Button
-                        component={RouterLink}
-                        to="/contact"
-                        variant="contained"
-                        color="primary"
-                        size="large"
-                        sx={{ mt: 1.5 }}
-                    >
-                        Contact Sales
-                    </Button>
-                </Box>
-            </Container>
-        </Box>
+                        <Typography
+                            variant="h4"
+                            sx={{
+                                color: theme.palette.text.primary,
+                                fontWeight: 600,
+                                mb: 2
+                            }}
+                        >
+                            Need a Custom Solution?
+                        </Typography>
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                color: theme.palette.text.secondary,
+                                maxWidth: '650px',
+                                mx: 'auto',
+                                mb: 3,
+                                lineHeight: 1.6,
+                            }}
+                        >
+                            For enterprise needs, high-volume usage, or specific integrations, contact our sales team for tailored solutions and dedicated support.
+                        </Typography>
+                        <Button
+                            component={RouterLink}
+                            to="/contact"
+                            variant="contained"
+                            color="primary"
+                            size="large"
+                            sx={{ mt: 1.5 }}
+                        >
+                            Contact Sales
+                        </Button>
+                    </Box>
+                </Container>
+            </Box>
+            <Footer />
+        </>
     );
 }
 

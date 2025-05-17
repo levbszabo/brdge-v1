@@ -1,136 +1,256 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Container, Grid, Typography as MuiTypography, Paper, Accordion, AccordionSummary, AccordionDetails, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Container, Grid, Typography as MuiTypography, Paper, Accordion, AccordionSummary, AccordionDetails, useTheme, useMediaQuery, Divider } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
 import DotBridgeButton from '../components/DotBridgeButton';
 import DotBridgeTypography from '../components/DotBridgeTypography';
 import DotBridgeCard, { CardContent, CardHeader } from '../components/DotBridgeCard';
 import DotBridgeIcon from '../components/DotBridgeIcon';
+import Footer from '../components/Footer';
 
 import AgentConnector from '../components/AgentConnector';
 
 const DEMO_BRIDGE_ID = '420';
 
-const Section = ({ children, sx, ...props }) => (
-    <Box component="section" sx={{ py: { xs: 8, sm: 10, md: 16 }, px: { xs: 2, sm: 3, md: 4 }, ...sx }} {...props}>
-        <Container maxWidth="lg">
-            {children}
-        </Container>
-    </Box>
-);
+const Section = ({ children, sx, variant = "default", ...props }) => {
+    const theme = useTheme();
+    const sectionVariants = {
+        default: {},
+        light: {
+            bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+        },
+        dark: {
+            bgcolor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+        },
+        accent: {
+            bgcolor: theme.palette.primary.lighter,
+        }
+    };
 
-const HeroSection = () => (
-    <Box sx={{
-        pt: { xs: 6, md: 8 },
-        pb: { xs: 8, md: 16 },
-        px: { xs: 2, sm: 3 },
-        textAlign: 'center'
-    }}>
-        <Container maxWidth="md">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-            >
-                <DotBridgeTypography
-                    variant="h1"
-                    component="h1"
-                    sx={{
-                        mb: { xs: 2, sm: 2 },
-                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
-                    }}
-                >
-                    Turn Sales Videos into Conversations That Convert
-                </DotBridgeTypography>
-            </motion.div>
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-            >
-                <DotBridgeTypography
-                    variant="body1"
-                    color="text.secondary"
-                    sx={{
-                        mb: 6,
-                        maxWidth: '700px',
-                        mx: 'auto',
-                        fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-                        lineHeight: { xs: 1.5, md: 1.6 }
-                    }}
-                >
-                    Your sales videos shouldn't just be watched — they should sell. DotBridge turns them into autonomous selling machines that engage, qualify, and close deals for you.
-                </DotBridgeTypography>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2.5, flexWrap: 'wrap', mb: { xs: 6, sm: 8 } }}>
-                    <DotBridgeButton
-                        size="large"
-                        color="primary"
-                        variant="contained"
-                        component={Link}
-                        to="/signup"
-                        endIcon={<DotBridgeIcon name="ArrowRight" size={18} />}
-                    >
-                        Launch Your First Bridge (Free)
-                    </DotBridgeButton>
-                    <DotBridgeButton
-                        size="large"
-                        color="primary"
-                        variant="outlined"
-                        component={Link}
-                        to={`https://dotbridge.io/viewBridge/${DEMO_BRIDGE_ID}`}
-                        endIcon={<DotBridgeIcon name="Play" size={18} />}
-                    >
-                        Watch Live Demo
-                    </DotBridgeButton>
-                </Box>
-            </motion.div>
+    return (
+        <Box
+            component="section"
+            sx={{
+                py: { xs: 10, sm: 12, md: 16 },
+                px: { xs: 2, sm: 3, md: 4 },
+                position: 'relative',
+                ...sectionVariants[variant],
+                ...sx
+            }}
+            {...props}
+        >
+            <Container maxWidth="lg">
+                {children}
+            </Container>
+        </Box>
+    );
+};
 
-            <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{
-                    type: "spring",
-                    stiffness: 150,
-                    damping: 20,
-                    delay: 0.4
+// Animation variants
+const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.7 } }
+};
+
+const fadeIn = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.7 } }
+};
+
+const staggerChildren = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.15,
+            delayChildren: 0.2
+        }
+    }
+};
+
+const HeroSection = () => {
+    const [logoRef, logoInView] = useInView({
+        triggerOnce: true,
+        threshold: 0.1
+    });
+
+    const theme = useTheme();
+
+    return (
+        <Box sx={{
+            pt: { xs: 8, md: 10 },
+            pb: { xs: 10, md: 16 },
+            px: { xs: 2, sm: 3 },
+            textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            <Container maxWidth="md">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                >
+                    <DotBridgeTypography
+                        variant="h1"
+                        component="h1"
+                        sx={{
+                            mb: { xs: 2, sm: 2 },
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
+                        }}
+                    >
+                        Turn Sales Videos into Conversations That Convert
+                    </DotBridgeTypography>
+                </motion.div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                >
+                    <DotBridgeTypography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{
+                            mb: 6,
+                            maxWidth: '700px',
+                            mx: 'auto',
+                            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                            lineHeight: { xs: 1.5, md: 1.6 }
+                        }}
+                    >
+                        Your sales videos shouldn't just be watched — they should sell. DotBridge turns them into autonomous selling machines that engage, qualify, and close deals for you.
+                    </DotBridgeTypography>
+                </motion.div>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2.5, flexWrap: 'wrap', mb: { xs: 6, sm: 8 } }}>
+                        <DotBridgeButton
+                            size="large"
+                            color="primary"
+                            variant="contained"
+                            component={Link}
+                            to="/signup"
+                            endIcon={<DotBridgeIcon name="ArrowRight" size={18} />}
+                        >
+                            Launch Your First Bridge (Free)
+                        </DotBridgeButton>
+                        <DotBridgeButton
+                            size="large"
+                            color="primary"
+                            variant="outlined"
+                            component={Link}
+                            to={`https://dotbridge.io/viewBridge/${DEMO_BRIDGE_ID}`}
+                            endIcon={<DotBridgeIcon name="Play" size={18} />}
+                        >
+                            Watch Live Demo
+                        </DotBridgeButton>
+                    </Box>
+                </motion.div>
+
+                <motion.div
+                    ref={logoRef}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={logoInView ? {
+                        opacity: 1,
+                        scale: 1,
+                        y: [0, -5, 0],
+                        transition: {
+                            type: "spring",
+                            stiffness: 100,
+                            damping: 15,
+                            y: {
+                                repeat: Infinity,
+                                repeatType: "mirror",
+                                duration: 3,
+                                ease: "easeInOut"
+                            }
+                        }
+                    } : {}}
+                    style={{ display: 'inline-block', marginBottom: '16px' }}
+                >
+                    <Box
+                        component="img"
+                        src="/new-img.png"
+                        alt=".bridge logo element"
+                        sx={{
+                            display: 'block',
+                            mx: 'auto',
+                            width: 'auto',
+                            height: { xs: 60, sm: 100 },
+                            mb: 0,
+                            bgcolor: 'transparent',
+                            p: 0,
+                        }}
+                    />
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                    <DotBridgeTypography
+                        variant="overline"
+                        color="text.secondary"
+                    >
+                        The .bridge Format — The Interface for the AI-Native Web
+                    </DotBridgeTypography>
+                </motion.div>
+            </Container>
+
+            {/* Enhanced background elements with subtle animations */}
+            <Box
+                component={motion.div}
+                animate={{
+                    opacity: [0.3, 0.5, 0.3],
+                    scale: [1, 1.03, 1],
+                    transition: {
+                        duration: 10,
+                        repeat: Infinity,
+                        repeatType: "mirror"
+                    }
                 }}
-                style={{ display: 'inline-block', marginBottom: '16px' }}
-            >
-                <Box
-                    component="img"
-                    src="/new-img.png"
-                    alt=".bridge logo element"
-                    sx={{
-                        display: 'block',
-                        mx: 'auto',
-                        width: 'auto',
-                        height: { xs: 60, sm: 100 },
-                        mb: 0,
-                        bgcolor: 'transparent',
-                        p: 0
-                    }}
-                />
-            </motion.div>
-
-            <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-            >
-                <DotBridgeTypography
-                    variant="overline"
-                    color="text.secondary"
-                >
-                    The .bridge Format — The Interface for the AI-Native Web
-                </DotBridgeTypography>
-            </motion.div>
-
-        </Container>
-    </Box>
-);
+                sx={{
+                    position: 'absolute',
+                    top: -120,
+                    right: -120,
+                    width: 350,
+                    height: 350,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0,122,255,0.03) 0%, rgba(0,122,255,0) 70%)',
+                    zIndex: -1,
+                    filter: 'blur(30px)'
+                }}
+            />
+            <Box
+                component={motion.div}
+                animate={{
+                    opacity: [0.3, 0.4, 0.3],
+                    scale: [1, 1.02, 1],
+                    transition: {
+                        duration: 8,
+                        repeat: Infinity,
+                        repeatType: "mirror",
+                        delay: 2
+                    }
+                }}
+                sx={{
+                    position: 'absolute',
+                    bottom: -180,
+                    left: -180,
+                    width: 450,
+                    height: 450,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0,122,255,0.02) 0%, rgba(0,122,255,0) 60%)',
+                    zIndex: -1,
+                    filter: 'blur(40px)'
+                }}
+            />
+        </Box>
+    );
+};
 
 const TrustedBySection = () => (
     <Section sx={{
@@ -166,114 +286,256 @@ const TrustedBySection = () => (
 );
 
 const WhyNowSection = () => (
-    <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+    <Section variant="light" sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
         <Box maxWidth="md" mx="auto" textAlign="center">
-            <DotBridgeTypography variant='h2' component="h2" sx={{
-                mb: 3,
-                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-            }}>
-                Your Biggest Growth Blocker Isn't Your Product. It's Your Passive Content.
-            </DotBridgeTypography>
-            <DotBridgeTypography variant="h5" color="text.secondary" sx={{
-                mb: { xs: 4, md: 6 },
-                maxWidth: '700px',
-                mx: 'auto',
-                fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
-                lineHeight: 1.6
-            }}>
-                You've built a great offering, but if your videos and demos are just one-way monologues, they're creating a bottleneck that stifles lead flow, burns out your team, and leaves predictable revenue just out of reach.
-            </DotBridgeTypography>
+            <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                variants={fadeInUp}
+            >
+                <DotBridgeTypography variant='h2' component="h2" sx={{
+                    mb: 3,
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                }}>
+                    Your Biggest Growth Blocker Isn't Your Product. It's Your Passive Content.
+                </DotBridgeTypography>
+            </motion.div>
+            <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.2 }}
+                variants={fadeInUp}
+            >
+                <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                    mb: { xs: 6, md: 8 },
+                    maxWidth: '700px',
+                    mx: 'auto',
+                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                    lineHeight: 1.6
+                }}>
+                    You've built a great offering, but if your videos and demos are just one-way monologues, they're creating a bottleneck that stifles lead flow, burns out your team, and leaves predictable revenue just out of reach.
+                </DotBridgeTypography>
+            </motion.div>
             <Grid container spacing={4} justifyContent="center">
-                {[{ icon: 'UsersRound', text: 'Low Engagement' }, { icon: 'TrendingDown', text: 'Poor Conversion' }, { icon: 'Clock', text: 'Wasted Time' }].map((item, i) => (
-                    <Grid item key={i} xs={6} sm={4}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-                            <DotBridgeIcon name={item.icon} size={40} color="primary.main" />
-                            <DotBridgeTypography variant="body1" >{item.text}</DotBridgeTypography>
-                        </Box>
+                <motion.div
+                    variants={staggerChildren}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.2 }}
+                    style={{ width: '100%' }}
+                >
+                    <Grid container spacing={4} justifyContent="center">
+                        {[{ icon: 'UsersRound', text: 'Low Engagement' }, { icon: 'TrendingDown', text: 'Poor Conversion' }, { icon: 'Clock', text: 'Wasted Time' }].map((item, i) => (
+                            <Grid item key={i} xs={6} sm={4}>
+                                <motion.div variants={fadeInUp}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
+                                        <DotBridgeIcon name={item.icon} size={40} color="primary.main" />
+                                        <DotBridgeTypography variant="body1" >{item.text}</DotBridgeTypography>
+                                    </Box>
+                                </motion.div>
+                            </Grid>
+                        ))}
                     </Grid>
-                ))}
+                </motion.div>
             </Grid>
         </Box>
     </Section>
 );
 
-const WhatIsBridgeSection = () => (
-    <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-        <Grid container spacing={{ xs: 4, sm: 5, md: 10 }} alignItems="center">
-            <Grid item xs={12} md={6}>
-                <DotBridgeTypography variant='overline' color="primary.main" sx={{ mb: 1 }}>The Bridge Format</DotBridgeTypography>
-                <DotBridgeTypography variant='h2' component="h2" sx={{
-                    mb: 3,
-                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-                }}>
-                    Video That Talks Back
-                </DotBridgeTypography>
-                <DotBridgeTypography variant="h5" color="text.primary" sx={{
-                    mb: 1.5,
-                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
-                    lineHeight: 1.6
-                }}>
-                    You've got the right pitch but your demo can't deliver it alone. DotBridge gives it a voice, a memory, and a mission:
-                </DotBridgeTypography>
-                <DotBridgeTypography
-                    variant="h5"
-                    component="p"
-                    color="text.primary"
-                    sx={{
-                        mb: { xs: 2.5, md: 3 },
-                        fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
-                        fontWeight: 500,
-                        fontStyle: 'italic',
-                        lineHeight: 1.6
-                    }}
-                >
-                    To engage every prospect like your best rep, even while you sleep.
-                </DotBridgeTypography>
-                <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
-                    {[{ icon: 'Bot', title: 'AI That Feels Like You', text: 'Your cloned voice. Your message. Automatically on-brand.' }, { icon: 'ListChecks', title: 'Works While You Sleep', text: 'Engage, qualify and close deals 24/7. Letting prospects self-serve.' }, { icon: 'BarChart3', title: 'Knows What Works', text: 'See who watched, what they asked, and what made them convert.' }].map((item, i) => (
-                        <Box component="li" key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                            <DotBridgeIcon name={item.icon} size={28} color="primary.main" style={{ marginTop: '5px' }} />
-                            <Box>
-                                <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>{item.title}</DotBridgeTypography>
-                                <DotBridgeTypography variant="body1" color="text.secondary">{item.text}</DotBridgeTypography>
-                            </Box>
-                        </Box>
-                    ))}
-                </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-                <Box sx={{
-                    p: 0,
-                    textAlign: 'center',
-                    borderRadius: { xs: 0, sm: theme => theme.shape.borderRadius },
-                    minHeight: { xs: 'auto', sm: 300 },
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    bgcolor: { xs: 'transparent', sm: 'neutral.light' },
-                    overflow: 'hidden',
-                    mb: { xs: 0, sm: 0 }
-                }}>
-                    <Box
-                        component="img"
-                        src="/dotbridge-hero1.jpg"
-                        alt="How Bridge Works"
-                        sx={{
-                            width: '100%',
-                            height: 'auto',
-                            display: 'block',
-                            objectFit: 'cover',
-                            borderRadius: { xs: 0, sm: 0 },
-                            p: 0,
-                            m: 0
+const WhatIsBridgeSection = () => {
+    const [sectionRef, inView] = useInView({
+        triggerOnce: true,
+        threshold: 0.1
+    });
+
+    return (
+        <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+            <Grid container spacing={{ xs: 4, sm: 5, md: 10 }} alignItems="center">
+                <Grid item xs={12} md={6}>
+                    <motion.div
+                        initial="hidden"
+                        animate={inView ? "visible" : "hidden"}
+                        variants={{
+                            hidden: { opacity: 0, y: 30 },
+                            visible: {
+                                opacity: 1,
+                                y: 0,
+                                transition: {
+                                    duration: 0.7,
+                                    staggerChildren: 0.2
+                                }
+                            }
                         }}
-                    />
-                </Box>
+                    >
+                        <DotBridgeTypography
+                            variant='overline'
+                            color="primary.main"
+                            sx={{
+                                mb: 1,
+                                display: 'inline-block',
+                                position: 'relative',
+                                pl: '15px',
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    left: 0,
+                                    top: '50%',
+                                    width: '10px',
+                                    height: '2px',
+                                    backgroundColor: 'primary.main',
+                                    transform: 'translateY(-50%)'
+                                }
+                            }}
+                        >
+                            The Bridge Format
+                        </DotBridgeTypography>
+
+                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                            <DotBridgeTypography variant='h2' component="h2" sx={{
+                                mb: 3,
+                                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                            }}>
+                                Video That <Box component="span" sx={{ color: 'primary.main' }}>Talks Back</Box>
+                            </DotBridgeTypography>
+                        </motion.div>
+
+                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                            <DotBridgeTypography variant="h5" color="text.primary" sx={{
+                                mb: 1.5,
+                                fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                                lineHeight: 1.6
+                            }}>
+                                You've got the right pitch but your demo can't deliver it alone. DotBridge gives it a voice, a memory, and a mission:
+                            </DotBridgeTypography>
+                        </motion.div>
+
+                        <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+                            <DotBridgeTypography
+                                variant="h5"
+                                component="p"
+                                color="text.primary"
+                                sx={{
+                                    mb: { xs: 2.5, md: 3 },
+                                    fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
+                                    fontWeight: 500,
+                                    fontStyle: 'italic',
+                                    lineHeight: 1.6,
+                                    position: 'relative',
+                                    pl: 2,
+                                    borderLeft: '3px solid',
+                                    borderColor: 'primary.main',
+                                }}
+                            >
+                                To engage every prospect like your best rep, even while you sleep.
+                            </DotBridgeTypography>
+                        </motion.div>
+
+                        <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 3 } }}>
+                            {[{ icon: 'Bot', title: 'AI That Feels Like You', text: 'Your cloned voice. Your message. Automatically on-brand.' },
+                            { icon: 'ListChecks', title: 'Works While You Sleep', text: 'Engage, qualify and close deals 24/7. Letting prospects self-serve.' },
+                            { icon: 'BarChart3', title: 'Knows What Works', text: 'See who watched, what they asked, and what made them convert.' }].map((item, i) => (
+                                <motion.li
+                                    key={i}
+                                    variants={{
+                                        hidden: { opacity: 0, x: -20 },
+                                        visible: {
+                                            opacity: 1,
+                                            x: 0,
+                                            transition: {
+                                                delay: 0.3 + (i * 0.15),
+                                                duration: 0.5
+                                            }
+                                        }
+                                    }}
+                                >
+                                    <Box sx={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 2,
+                                        transition: 'transform 0.3s ease',
+                                        '&:hover': {
+                                            transform: 'translateX(5px)'
+                                        }
+                                    }}>
+                                        <Box sx={{
+                                            width: 36,
+                                            height: 36,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: '8px',
+                                            backgroundColor: 'primary.lighter',
+                                            flexShrink: 0
+                                        }}>
+                                            <DotBridgeIcon name={item.icon} size={20} color="primary.main" />
+                                        </Box>
+                                        <Box>
+                                            <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' }, mb: 0.5 }}>{item.title}</DotBridgeTypography>
+                                            <DotBridgeTypography variant="body1" color="text.secondary">{item.text}</DotBridgeTypography>
+                                        </Box>
+                                    </Box>
+                                </motion.li>
+                            ))}
+                        </Box>
+                    </motion.div>
+                </Grid>
+                <Grid item xs={12} md={6} ref={sectionRef}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={inView ? { opacity: 1, scale: 1 } : {}}
+                        transition={{ duration: 0.7, delay: 0.4 }}
+                    >
+                        <Box sx={{
+                            p: 0,
+                            textAlign: 'center',
+                            borderRadius: { xs: 0, sm: theme => theme.shape.borderRadius * 1.5 },
+                            minHeight: { xs: 'auto', sm: 300 },
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            bgcolor: { xs: 'transparent', sm: 'neutral.light' },
+                            overflow: 'hidden',
+                            mb: { xs: 0, sm: 0 },
+                            position: 'relative',
+                            boxShadow: '0 15px 35px rgba(0,0,0,0.05)',
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                background: 'linear-gradient(180deg, rgba(0,122,255,0.03) 0%, rgba(0,0,0,0) 100%)',
+                                zIndex: 1
+                            }
+                        }}>
+                            <Box
+                                component="img"
+                                src="/dotbridge-hero1.jpg"
+                                alt="How Bridge Works"
+                                sx={{
+                                    width: '100%',
+                                    height: 'auto',
+                                    display: 'block',
+                                    objectFit: 'cover',
+                                    borderRadius: { xs: 0, sm: theme => theme.shape.borderRadius * 1.5 },
+                                    p: 0,
+                                    m: 0,
+                                    transition: 'transform 0.5s ease',
+                                    '&:hover': {
+                                        transform: 'scale(1.02)'
+                                    }
+                                }}
+                            />
+                        </Box>
+                    </motion.div>
+                </Grid>
             </Grid>
-        </Grid>
-    </Section>
-);
+        </Section>
+    );
+};
 
 const DemoSection = () => {
     const theme = useTheme();
@@ -411,10 +673,10 @@ const DemoSection = () => {
 
 const ComparisonSection = () => {
     const comparisons = [
-        { useCase: "Lead Magnets / Webinars", before: "Passive watch & bounce", after: "Email gate + interactive Q&A → <strong>+2× opt-ins</strong>" },
-        { useCase: "VSLs / Funnel Pages", before: "One-way pitch", after: "Smart prompts that qualify + route hot buyers → <strong>Higher AOV</strong>" },
-        { useCase: "Course Modules", before: "Low completion (~15%)", after: "AI tutor, quizzes, voice answers → <strong>35%+ completion</strong>" },
-        { useCase: "Product Onboarding", before: "Docs & support tickets", after: "Personalized walkthroughs → <strong>Faster Time-to-Value</strong>" }
+        { useCase: "Product Demos / Sales Presentations", before: "Static videos with no follow-up mechanism", after: "Interactive demos that qualify & capture leads → <strong>3× more SQLs</strong>" },
+        { useCase: "Sales Enablement Materials", before: "One-size-fits-all decks & PDFs", after: "Self-adapting content paths based on prospect's role & needs → <strong>32% faster deal cycles</strong>" },
+        { useCase: "RFP/Procurement Responses", before: "Lengthy documents requiring sales support", after: "Instant answers to technical/pricing questions → <strong>5× higher response rate</strong>" },
+        { useCase: "Customer/Prospect Training", before: "Live webinars with low attendance rates", after: "24/7 on-demand interactive training → <strong>47% reduced support tickets</strong>" }
     ];
 
     const theme = useTheme();
@@ -427,12 +689,12 @@ const ComparisonSection = () => {
                     mb: { xs: 2, md: 3 },
                     fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                 }}>
-                    Static Video vs. Interactive Bridge
+                    Transform Your B2B Sales Assets
                 </DotBridgeTypography>
                 <DotBridgeTypography variant="h5" color="text.secondary" sx={{
                     fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
                 }}>
-                    Stop talking <em>at</em> your audience. Start interacting <em>with</em> them.
+                    Stop losing momentum between touchpoints. Turn every asset into a revenue-driving conversation.
                 </DotBridgeTypography>
             </Box>
 
@@ -473,7 +735,7 @@ const ComparisonSection = () => {
                                     <DotBridgeIcon name="Video" size={16} color="text.secondary" />
                                     <Box>
                                         <DotBridgeTypography variant="caption" color="text.secondary" fontWeight="bold">
-                                            Static Video
+                                            Traditional Approach
                                         </DotBridgeTypography>
                                         <DotBridgeTypography variant="body2" color="text.secondary">
                                             {item.before}
@@ -491,7 +753,7 @@ const ComparisonSection = () => {
                                     <DotBridgeIcon name="Zap" size={16} color="primary.main" style={{ marginTop: '3px' }} />
                                     <Box>
                                         <DotBridgeTypography variant="caption" color="primary.main" fontWeight="bold">
-                                            With Bridge
+                                            With DotBridge
                                         </DotBridgeTypography>
                                         <DotBridgeTypography
                                             variant="body2"
@@ -510,18 +772,18 @@ const ComparisonSection = () => {
                         {/* Table Header */}
                         <Box sx={{ display: 'table-row', bgcolor: 'neutral.light' }}>
                             <Box sx={{ display: 'table-cell', p: 3, borderBottom: '1px solid', borderColor: 'divider', width: '30%' }}>
-                                <DotBridgeTypography variant="subtitle1" fontWeight="bold">Use Case</DotBridgeTypography>
+                                <DotBridgeTypography variant="subtitle1" fontWeight="bold">Sales Asset</DotBridgeTypography>
                             </Box>
                             <Box sx={{ display: 'table-cell', p: 3, borderBottom: '1px solid', borderColor: 'divider', width: '35%' }}>
                                 <DotBridgeTypography variant="subtitle1" fontWeight="bold" color="text.secondary">
                                     <DotBridgeIcon name="Video" size={16} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} />
-                                    Static Video
+                                    Traditional Approach
                                 </DotBridgeTypography>
                             </Box>
                             <Box sx={{ display: 'table-cell', p: 3, borderBottom: '1px solid', borderColor: 'divider', width: '35%' }}>
                                 <DotBridgeTypography variant="subtitle1" fontWeight="bold" color="primary.main">
                                     <DotBridgeIcon name="Zap" size={16} style={{ marginRight: '8px', verticalAlign: 'text-bottom' }} />
-                                    With Bridge
+                                    With DotBridge
                                 </DotBridgeTypography>
                             </Box>
                         </Box>
@@ -571,8 +833,38 @@ const ComparisonSection = () => {
     );
 };
 
+const SectionDivider = ({ variant = "light" }) => {
+    const theme = useTheme();
+
+    const styles = {
+        light: {
+            bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.100',
+        },
+        accent: {
+            bgcolor: theme.palette.primary.lighter,
+        },
+        none: {
+            display: 'none'
+        }
+    };
+
+    return (
+        <Box
+            sx={{
+                py: 0,
+                ...styles[variant]
+            }}
+        >
+            <Container maxWidth="lg">
+                <Divider sx={{ borderColor: theme.palette.divider }} />
+            </Container>
+        </Box>
+    );
+};
+
 const FAQSection = () => {
     const [expanded, setExpanded] = useState(false);
+    const theme = useTheme();
 
     const handleChange = (panel) => (event, isExpanded) => {
         setExpanded(isExpanded ? panel : false);
@@ -622,37 +914,73 @@ const FAQSection = () => {
     ];
 
     return (
-        <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+        <Section>
             <Box maxWidth="md" mx="auto">
-                <DotBridgeTypography variant='h2' component="h2" sx={{
-                    mb: { xs: 4, md: 8 },
-                    textAlign: 'center',
-                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
-                }}>
-                    Frequently Asked Questions
-                </DotBridgeTypography>
-                {faqs.map((faq) => (
-                    <Accordion
-                        key={faq.id}
-                        expanded={expanded === faq.id}
-                        onChange={handleChange(faq.id)}
-                        sx={{ mb: 1 }}
-                    >
-                        <AccordionSummary
-                            expandIcon={<DotBridgeIcon name={expanded === faq.id ? "Minus" : "Plus"} size={20} color="primary.main" />}
-                            aria-controls={`${faq.id}-content`}
-                            id={`${faq.id}-header`}
-                            sx={{ py: { xs: 1.5, md: 2 }, px: { xs: 2, md: 3 } }}
-                        >
-                            <DotBridgeTypography variant="h6" sx={{ fontSize: { xs: '1rem', md: '1.25rem' } }}>{faq.q}</DotBridgeTypography>
-                        </AccordionSummary>
-                        <AccordionDetails sx={{ py: { xs: 1.5, md: 2 }, px: { xs: 2, md: 3 } }}>
-                            <DotBridgeTypography variant="body1" color="text.secondary">
-                                {faq.a}
-                            </DotBridgeTypography>
-                        </AccordionDetails>
-                    </Accordion>
-                ))}
+                <motion.div
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.2 }}
+                    variants={fadeInUp}
+                >
+                    <DotBridgeTypography variant='h2' component="h2" sx={{
+                        mb: { xs: 6, md: 8 },
+                        textAlign: 'center',
+                        fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                    }}>
+                        Frequently Asked Questions
+                    </DotBridgeTypography>
+                </motion.div>
+
+                <motion.div
+                    variants={staggerChildren}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.1 }}
+                >
+                    {faqs.map((faq, index) => (
+                        <motion.div key={faq.id} variants={fadeInUp} custom={index}>
+                            <Accordion
+                                expanded={expanded === faq.id}
+                                onChange={handleChange(faq.id)}
+                                sx={{
+                                    mb: 1.5,
+                                    boxShadow: expanded === faq.id ? theme.shadows[1] : 'none',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        backgroundColor: expanded === faq.id ? '' : theme.palette.grey[50]
+                                    }
+                                }}
+                            >
+                                <AccordionSummary
+                                    expandIcon={<DotBridgeIcon name={expanded === faq.id ? "Minus" : "Plus"} size={20} color="primary.main" />}
+                                    aria-controls={`${faq.id}-content`}
+                                    id={`${faq.id}-header`}
+                                    sx={{
+                                        py: { xs: 1.5, md: 2 },
+                                        px: { xs: 2, md: 3 },
+                                    }}
+                                >
+                                    <DotBridgeTypography
+                                        variant="h6"
+                                        sx={{
+                                            fontSize: { xs: '1rem', md: '1.25rem' },
+                                            fontWeight: expanded === faq.id ? 600 : 500,
+                                            color: expanded === faq.id ? 'primary.main' : 'text.primary',
+                                            transition: 'color 0.2s ease, font-weight 0.2s ease'
+                                        }}
+                                    >
+                                        {faq.q}
+                                    </DotBridgeTypography>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ py: { xs: 2, md: 2.5 }, px: { xs: 2, md: 3 } }}>
+                                    <DotBridgeTypography variant="body1" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                                        {faq.a}
+                                    </DotBridgeTypography>
+                                </AccordionDetails>
+                            </Accordion>
+                        </motion.div>
+                    ))}
+                </motion.div>
             </Box>
         </Section>
     );
@@ -849,10 +1177,10 @@ const HowItWorksSection = () => {
 
 const ProofSection = () => {
     const metrics = [
-        { value: "+124%", label: "Email Capture Increase", sub: "(Webinar Funnels)" },
-        { value: "2.1x", label: "Paid Course Sales", sub: "(VSL Conversion)" },
-        { value: "-57%", label: "Support Tickets", sub: "(Onboarding Flows)" },
-        { value: "+40%", label: "Course Completion", sub: "(AI Tutor Modules)" }
+        { value: "+42%", label: "Lead-to-SQL Conversion", sub: "(Enterprise SaaS)" },
+        { value: "-38%", label: "Sales Cycle Duration", sub: "(Average Reduction)" },
+        { value: "4.7x", label: "Pipeline Generated", sub: "(Per Sales Rep)" },
+        { value: "$2.6M", label: "ARR Influenced", sub: "(Early Customers)" }
     ];
     return (
         <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
@@ -861,21 +1189,31 @@ const ProofSection = () => {
                     mb: { xs: 2, md: 3 },
                     fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                 }}>
-                    Proof in the Numbers
+                    Enterprise-Grade Results
                 </DotBridgeTypography>
                 <DotBridgeTypography variant="h5" color="text.secondary" sx={{
                     fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' }
                 }}>
-                    Early results from creators using DotBridge.
+                    How B2B companies are transforming their sales pipeline with DotBridge
                 </DotBridgeTypography>
             </Box>
             <Grid container spacing={{ xs: 2, sm: 3, md: 4 }} justifyContent="center">
                 {metrics.map((metric, index) => (
                     <Grid item xs={6} sm={6} md={3} key={index}>
-                        <DotBridgeCard variant="outlined" sx={{ height: '100%', textAlign: 'center', p: { xs: 2, sm: 3, md: 4 } }}>
+                        <DotBridgeCard variant="outlined" sx={{
+                            height: '100%',
+                            textAlign: 'center',
+                            p: { xs: 2, sm: 3, md: 4 },
+                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)'
+                            }
+                        }}>
                             <DotBridgeTypography variant="h3" color="primary.main" sx={{
                                 mb: 1,
-                                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.25rem' }
+                                fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.25rem' },
+                                fontWeight: 700
                             }}>
                                 {metric.value}
                             </DotBridgeTypography>
@@ -883,14 +1221,17 @@ const ProofSection = () => {
                                 mb: 0.5,
                                 fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
                             }}>{metric.label}</DotBridgeTypography>
-                            <DotBridgeTypography variant="caption" color="text.secondary">{metric.sub}</DotBridgeTypography>
+                            <DotBridgeTypography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>{metric.sub}</DotBridgeTypography>
                         </DotBridgeCard>
                     </Grid>
                 ))}
             </Grid>
-            <Box textAlign="center" mt={{ xs: 3, md: 5 }}>
+            <Box textAlign="center" mt={{ xs: 4, md: 6 }}>
+                <DotBridgeTypography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                    "DotBridge has completely changed how we engage with enterprise prospects."
+                </DotBridgeTypography>
                 <DotBridgeTypography variant="body2" color="text.secondary">
-                    (Detailed case studies coming soon - join the waitlist inside the app.)
+                    — VP of Sales, Leading Enterprise SaaS Platform
                 </DotBridgeTypography>
             </Box>
         </Section>
@@ -1095,17 +1436,37 @@ const FinalCTASection = () => (
 
 function DotBridgeLandingPage() {
     const theme = useTheme();
+    const { scrollY } = useScroll();
+
     return (
         <Box sx={{ backgroundColor: theme.palette.background.default }}>
             <HeroSection />
+
             <WhyNowSection />
+
             <WhatIsBridgeSection />
-            <DemoSection />
-            <UseCasesSection />
+
+            <Section variant="light">
+                <DemoSection />
+            </Section>
+
+            <ComparisonSection />
+
+            <Section variant="light">
+                <UseCasesSection />
+            </Section>
+
             <HowItWorksSection />
+
             <PricingSection />
-            <FAQSection />
+
+            <Section variant="light">
+                <FAQSection />
+            </Section>
+
             <FinalCTASection />
+
+            <Footer />
         </Box>
     );
 }

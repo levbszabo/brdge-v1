@@ -37,62 +37,45 @@ import { useInView } from 'react-intersection-observer';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import Link from '@mui/material/Link';
 import AgentConnector from '../components/AgentConnector';
+import JourneyStep from '../components/JourneyStep';
 import { api } from '../api';
+import Footer from '../components/Footer';
+
+// Buyer Journey Steps Data
+const journeyStepsData = [
+    { id: 'awareness', title: 'Awareness Bridge', subtitle: 'Capture attention with an engaging, short-form explainer', videoUrl: '#awareness_video', alignment: 'left' },
+    { id: 'discovery', title: 'Discovery Bridge', subtitle: 'Qualify the lead and gather requirements', videoUrl: '#discovery_video', alignment: 'right' },
+    { id: 'demo', title: 'Demo Bridge', subtitle: 'Tailored walkthrough of DotBridge based on Discovery answers', videoUrl: '#demo_video', alignment: 'left' },
+    { id: 'sales', title: 'Sales Bridge', subtitle: 'Answer objections, show pricing, and close', videoUrl: '#sales_video', alignment: 'right' },
+    { id: 'onboarding', title: 'Onboarding Bridge', subtitle: 'Help new users get set up', videoUrl: '#onboarding_video', alignment: 'left' },
+    { id: 'success', title: 'Customer Success', subtitle: 'Post-purchase support and upsell', videoUrl: '#success_video', alignment: 'right', isLast: true },
+];
 
 // Renamed and updated for "Impact Our Clients See"
 const impactMetrics = [
     {
-        metric: "+28%",
-        description: "Demo Bookings from Interactive Funnels",
+        metric: "+42%",
+        description: "Lead-to-SQL Conversion",
         icon: <RateReview sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     },
     {
-        metric: "3x",
-        description: "Learner Engagement vs. Passive Video",
+        metric: "3.5x",
+        description: "Pipeline Generated Per Rep",
         icon: <TouchApp sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     },
     {
-        metric: "15+ Hrs",
-        description: "Saved Weekly Per Subject-Matter Expert",
+        metric: "-38%",
+        description: "Sales Cycle Duration",
         icon: <AccessTime sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     },
     {
-        metric: "Full", // Keep it short, description explains
-        description: "Analytics on Every Click & Question",
+        metric: "$2.6M",
+        description: "ARR Influenced",
         icon: <QueryStats sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
-    }
-];
-
-// Updated service features for the 5-step process
-const SoftwareUsageSteps = [
-    {
-        step: 1,
-        title: "Define Your Goal",
-        description: "Clearly outline your sales, onboarding, or learning objectives for your AI Bridge."
-    },
-    {
-        step: 2,
-        title: "Upload Your Content",
-        description: "Easily upload your existing videos (MP4, Loom, Zoom), scripts, or documents."
-    },
-    {
-        step: 3,
-        title: "Configure Your AI",
-        description: "Customize the AI's persona, voice (optional), and knowledge base using simple controls."
-    },
-    {
-        step: 4,
-        title: "Assemble Your Bridge",
-        description: "Use the intuitive DotBridge editor to add interactive prompts, CTAs, and conditional logic."
-    },
-    {
-        step: 5,
-        title: "Publish & Optimize",
-        description: "Launch your Bridge with a shareable link or embed, then use analytics to track performance and iterate."
     }
 ];
 
@@ -167,12 +150,11 @@ const ServicesPage = () => {
             sx={{
                 minHeight: 'calc(100vh - 64px)', // Adjust for header
                 bgcolor: theme.palette.background.default, // Use theme default background
-                py: { xs: 8, md: 12 }, // Use theme spacing
                 overflow: 'hidden' // Prevent animation overflows
             }}
         >
             {/* Hero Section */}
-            <Container maxWidth="lg" ref={heroRef} sx={{ position: 'relative', zIndex: 1 }}>
+            <Container maxWidth="lg" ref={heroRef} sx={{ position: 'relative', zIndex: 1, pt: { xs: 8, md: 12 } }}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={heroInView ? { opacity: 1, y: 0 } : {}}
@@ -188,7 +170,7 @@ const ServicesPage = () => {
                             fontSize: { xs: '2.25rem', sm: '2.75rem', md: theme.typography.h1.fontSize } // Adjusted responsive font size
                         }}
                     >
-                        Build AI-Powered Sales Funnels & <PrimaryText>Intelligent Onboarding That Convert</PrimaryText>
+                        <PrimaryText>Your Videos Should Be Closing Deals, Not Just Getting Views.</PrimaryText>
                     </Typography>
 
                     <Typography
@@ -197,10 +179,28 @@ const ServicesPage = () => {
                             color: 'text.secondary',
                             maxWidth: '750px',
                             mx: 'auto',
-                            mb: { xs: 4, md: 6 } // Adjusted bottom margin
+                            mb: { xs: 4, md: 6 },
+                            lineHeight: 1.7,
+                            '& .highlight': {
+                                position: 'relative',
+                                color: 'primary.main',
+                                fontWeight: 500,
+                                '&::after': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '4px',
+                                    background: 'rgba(0, 122, 255, 0.15)',
+                                    borderRadius: '4px',
+                                    transform: 'translateY(2px)',
+                                    zIndex: -1
+                                }
+                            }
                         }}
                     >
-                        Stop losing leads and new customers. DotBridge empowers you to build AI experiences that <PrimaryText>engage, qualify, and onboard</PrimaryText> users automatically—24/7.
+                        Tired of sales videos that just sit there? DotBridge transforms your passive content into <span className="highlight">AI-powered agents that engage, qualify, and close deals 24/7</span>, turning views into revenue automatically.
                     </Typography>
 
                     {/* Demo Section - Now correctly handles mobile video and desktop AgentConnector */}
@@ -288,6 +288,81 @@ const ServicesPage = () => {
                         )}
                     </Box>
 
+                    {/* Buyer Journey Visualization Section */}
+                    <Box sx={{ mt: 10, mb: 8 }}>
+                        <Typography
+                            variant="h3"
+                            align="center"
+                            sx={{
+                                mb: { xs: 2, md: 3 },
+                                color: 'text.primary'
+                            }}
+                        >
+                            From Prospect to <PrimaryText>Paying Customer, Automatically</PrimaryText>
+                        </Typography>
+                        <Typography
+                            variant="h5"
+                            align="center"
+                            sx={{
+                                color: 'text.secondary',
+                                maxWidth: '850px',
+                                mx: 'auto',
+                                mb: { xs: 6, md: 8 }
+                            }}
+                        >
+                            Stop losing prospects at each step. DotBridge creates a seamless journey where your videos don't just inform—they actively qualify, demo, handle objections, and drive conversions, 24/7.
+                        </Typography>
+
+                        {/* Main content Grid for side text and journey diagram */}
+                        <Grid container spacing={4} justifyContent="center" alignItems="stretch">
+                            {/* Left Side Content - Hidden on xs, visible md and up */}
+                            <Grid item md={2} sx={{ display: { xs: 'none', md: 'block' } }}>
+                                <Box sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius, mt: 4 }}>
+                                    <Typography variant="h6" gutterBottom>Start Here</Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Your prospect's journey begins with awareness. DotBridge captures attention and qualifies in real-time.
+                                    </Typography>
+                                </Box>
+                            </Grid>
+
+                            {/* Journey Steps Section - Central Column */}
+                            <Grid item xs={12} md={8} lg={7}>
+                                <Box sx={{ position: 'relative', maxWidth: '680px', margin: 'auto' }}>
+                                    {journeyStepsData.map((step) => (
+                                        <Box key={step.id} sx={{ mb: 5 }}>
+                                            <JourneyStep
+                                                title={step.title}
+                                                subtitle={step.subtitle}
+                                                videoUrl={step.videoUrl}
+                                                alignment={step.alignment}
+                                                isLast={step.isLast}
+                                            />
+                                        </Box>
+                                    ))}
+                                </Box>
+                            </Grid>
+
+                            {/* Right Side Content - Adjusted for bottom alignment */}
+                            <Grid item md={2} sx={{
+                                display: { xs: 'none', md: 'flex' },
+                                flexDirection: 'column',
+                                justifyContent: 'flex-end'
+                            }}>
+                                <Box sx={{
+                                    p: 2,
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    borderRadius: theme.shape.borderRadius,
+                                    mb: 5 // Match last step's bottom margin for alignment
+                                }}>
+                                    <Typography variant="h6" gutterBottom>Revenue Growth</Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                        The journey culminates in closed deals and satisfied customers. DotBridge extracts valuable insights that feed directly into your sales flywheel.
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </Box>
+
                     <Button
                         variant="contained"
                         size="large"
@@ -300,7 +375,7 @@ const ServicesPage = () => {
                             });
                         }}
                     >
-                        Request a Personalized Demo
+                        Get Your Custom AI Sales Engine
                     </Button>
                 </motion.div>
             </Container>
@@ -314,10 +389,10 @@ const ServicesPage = () => {
                         transition={{ duration: 0.7, delay: 0.2 }}
                     >
                         <Typography variant="h2" sx={{ color: 'text.primary', mb: 3 }}>
-                            Stop Bottlenecks, <PrimaryText>Start Scaling with DotBridge.</PrimaryText>
+                            Your Best Sales Rep Can't Be Everywhere. <PrimaryText>Your Bridge Can.</PrimaryText>
                         </Typography>
                         <Typography variant="h5" sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto' }}>
-                            Your expertise is invaluable, but manual sales calls, repetitive demos, and inconsistent onboarding slow you down. With DotBridge, you can <PrimaryText>automate qualification, deliver perfect product tours, and guide new users to success</PrimaryText>—effortlessly. Transform your process into an AI-driven machine that works for you, 24/7.
+                            Even your top talent has limits. DotBridge empowers you to <PrimaryText>clone your best sales conversations into AI agents that work tirelessly</PrimaryText>, delivering perfect, personalized interactions every time. Scale your reach, not your payroll.
                         </Typography>
                     </motion.div>
                 </Container>
@@ -337,30 +412,35 @@ const ServicesPage = () => {
                         align="center"
                         sx={{ color: 'text.primary', mb: 3 }}
                     >
-                        Your Custom <PrimaryText>AI Growth Engine with DotBridge</PrimaryText>
+                        Build Your <PrimaryText>Automated Sales & Onboarding Machine</PrimaryText>
                     </Typography>
                     <Typography
                         variant="h5"
                         align="center"
                         sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: 8 }}
                     >
-                        Craft tailored DotBridge experiences to achieve your specific sales and customer success goals.
+                        Leverage DotBridge to create AI-driven experiences that address your specific sales bottlenecks and customer success challenges, turning potential into profit.
                     </Typography>
 
                     <Grid container spacing={{ xs: 3, md: 4 }} justifyContent="center" sx={{ maxWidth: '1100px', mx: 'auto' }}>
-                        {[{
-                            title: "AI Sales & Demo Funnels",
-                            description: "Convert more leads by transforming your VSLs, webinars, or product demos into interactive DotBridge flows. The AI qualifies prospects, answers questions in real-time, and can seamlessly direct the most engaged leads to your sales team or booking system.",
-                            icon: <TrendingUp sx={{ fontSize: 40, color: 'primary.main' }} />
-                        }, {
-                            title: "Intelligent Onboarding Flows",
-                            description: "Empower new users from day one. Build role-based, interactive onboarding paths with DotBridge that guide customers through setup, demonstrate key features, and proactively answer common questions, dramatically boosting activation and reducing support load.",
-                            icon: <Groups sx={{ fontSize: 40, color: 'primary.main' }} />
-                        }, {
-                            title: "Interactive Content & Training",
-                            description: "Enhance your funnels with engaging, AI-powered content. Create interactive product tutorials, value-packed lead magnets, or dynamic training modules with DotBridge to educate and build trust at scale.",
-                            icon: <School sx={{ fontSize: 40, color: 'secondary.main' }} />
-                        }].map((item, idx) => (
+                        {[
+                            {
+                                title: "AI Sales & Demo Funnels",
+                                description: "Slash sales cycles and boost pipeline quality. DotBridge transforms static demos and VSLs into interactive AI experiences that qualify leads 24/7, answer complex questions, and route high-intent prospects directly to your sales team's calendar.",
+                                icon: <TrendingUp sx={{ fontSize: 40, color: 'primary.main' }} />,
+                                gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)'
+                            }, {
+                                title: "Intelligent Onboarding Flows",
+                                description: "Maximize customer lifetime value and reduce churn. DotBridge automates personalized onboarding, guiding new clients to success with your product faster. Free up your CSMs from repetitive questions and cut support overheads.",
+                                icon: <Groups sx={{ fontSize: 40, color: 'primary.main' }} />,
+                                gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)'
+                            }, {
+                                title: "Dynamic Lead Gen & Nurturing",
+                                description: "Supercharge your content ROI. Turn ebooks, webinars, and case studies into interactive lead magnets that don't just capture emails, but actively qualify, educate, and nurture prospects down the funnel, delivering sales-ready leads.",
+                                icon: <QueryStats sx={{ fontSize: 40, color: 'primary.main' }} />,
+                                gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)'
+                            }
+                        ].map((item, idx) => (
                             <Grid item xs={12} md={4} key={idx} sx={{ display: 'flex' }}>
                                 <Card
                                     variant="outlined"
@@ -369,191 +449,54 @@ const ServicesPage = () => {
                                         display: 'flex',
                                         flexDirection: 'column',
                                         width: '100%',
-                                        textAlign: 'center'
+                                        textAlign: 'center',
+                                        backgroundImage: item.gradient,
+                                        backgroundPosition: 'top right',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundSize: '70% 70%',
+                                        transition: 'all 0.3s ease',
+                                        '&:hover': {
+                                            transform: 'translateY(-6px)',
+                                            boxShadow: theme.shadows[2],
+                                            '& .icon-wrapper': {
+                                                transform: 'scale(1.1)',
+                                            }
+                                        }
                                     }}
                                 >
-                                    <Box sx={{ mb: 2 }}>{item.icon}</Box>
+                                    <Box
+                                        className="icon-wrapper"
+                                        sx={{
+                                            mb: 2,
+                                            transition: 'transform 0.3s ease',
+                                            display: 'flex',
+                                            justifyContent: 'center'
+                                        }}
+                                    >
+                                        {item.icon}
+                                    </Box>
                                     <Typography
                                         variant="h6"
-                                        sx={{ color: 'text.primary', fontWeight: 600, mb: 1.5 }}
+                                        sx={{
+                                            color: 'text.primary',
+                                            fontWeight: 600,
+                                            mb: 1.5,
+                                            fontSize: { xs: '1.1rem', md: '1.25rem' }
+                                        }}
                                     >
                                         {item.title}
                                     </Typography>
                                     <Typography
-                                        variant="body1"
-                                        sx={{ color: 'text.secondary', flexGrow: 1 }}
+                                        variant="body2"
+                                        sx={{
+                                            color: 'text.secondary',
+                                            flexGrow: 1,
+                                            lineHeight: 1.6
+                                        }}
                                     >
                                         {item.description}
                                     </Typography>
                                 </Card>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </motion.div>
-            </Container>
-
-            <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
-
-            {/* Our 5-Step Build Process Section */}
-            <Box sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100', py: { xs: 8, md: 12 } }}>
-                <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7 }}
-                    >
-                        <Typography
-                            variant="h2"
-                            align="center"
-                            sx={{ color: 'text.primary', mb: 3 }}
-                        >
-                            Your 5-Step Journey to <PrimaryText>AI Automation with DotBridge</PrimaryText>
-                        </Typography>
-                        <Typography
-                            variant="h5"
-                            align="center"
-                            sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: { xs: 4, md: 6 } }}
-                        >
-                            Streamlined for efficiency, designed for impact. DotBridge makes it easy to harness the power of AI.
-                        </Typography>
-
-                        <Grid container spacing={{ xs: 3, md: 5 }} alignItems="center" sx={{ my: { xs: 4, md: 6 } }}>
-                            <Grid item xs={12} md={6}>
-                                <Box sx={{
-                                    textAlign: 'center',
-                                    maxWidth: '100%',
-                                    mx: 'auto'
-                                }}>
-                                    <motion.img
-                                        src="/dotbridge-hero1.jpg" // Consider an image more aligned with funnel/onboarding creation
-                                        alt="DotBridge AI Ingestion Process for Funnels"
-                                        initial={{ opacity: 0, x: -30 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ duration: 0.7, delay: 0.2 }}
-                                        style={{
-                                            maxWidth: '100%',
-                                            height: 'auto',
-                                            borderRadius: theme.shape.borderRadius,
-                                            boxShadow: theme.shadows[1]
-                                        }}
-                                    />
-                                </Box>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <motion.div
-                                    initial={{ opacity: 0, x: 30 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.7, delay: 0.4 }}
-                                >
-                                    <Typography variant="h4" component="h3" sx={{ color: 'text.primary', mb: 2, fontWeight: '600' }}>
-                                        The DotBridge AI Engine:
-                                        <Box component="span" sx={{ display: 'block', color: 'primary.main' }}>Your Content, Intelligently Transformed</Box>
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.1rem' }}>
-                                        Our sophisticated AI ingestion takes your existing sales materials (VSLs, product docs) or onboarding guides. It performs deep semantic mapping to understand your customer journey, <PrimaryText>allowing you to automatically generate qualifying questions for sales funnels, identify key milestones for onboarding, and structure interactive dialogues.</PrimaryText> This intelligent foundation in DotBridge allows you to rapidly build a .bridge that doesn't just present information, but actively guides users to conversion or successful adoption.
-                                    </Typography>
-                                </motion.div>
-                            </Grid>
-                        </Grid>
-
-                        <Box sx={{ maxWidth: '1000px', mx: 'auto', mt: { xs: 4, md: 8 } }}>
-                            <Grid container spacing={{ xs: 4, md: 3 }} justifyContent="center">
-                                {SoftwareUsageSteps.map((feature, idx) => (
-                                    <Grid item xs={12} sm={6} md={4} key={idx} sx={{ display: 'flex' }}>
-                                        <Card
-                                            variant="outlined"
-                                            sx={{
-                                                p: 3,
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                width: '100%'
-                                            }}
-                                        >
-                                            <Box sx={{ display: 'flex', alignItems: 'baseline', mb: 1 }}>
-                                                <Typography
-                                                    variant="h1"
-                                                    component="div"
-                                                    sx={{
-                                                        color: 'primary.main',
-                                                        fontWeight: 'bold',
-                                                        opacity: 0.2,
-                                                        lineHeight: 0.8,
-                                                        mr: 1.5
-                                                    }}
-                                                >
-                                                    {`0${feature.step}`}
-                                                </Typography>
-                                                <Typography
-                                                    variant="h6"
-                                                    sx={{ color: 'text.primary', fontWeight: 600 }}
-                                                >
-                                                    {feature.title}
-                                                </Typography>
-                                            </Box>
-                                            <Typography
-                                                variant="body1"
-                                                sx={{ color: 'text.secondary', flexGrow: 1 }}
-                                            >
-                                                {feature.description} {/* Ensure DfyProcessSteps descriptions are also aligned if possible */}
-                                            </Typography>
-                                        </Card>
-                                    </Grid>
-                                ))}
-                            </Grid>
-                        </Box>
-                    </motion.div>
-                </Container>
-            </Box>
-
-            <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
-
-            {/* Impact Our Clients See Section */}
-            <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 }, mb: { xs: 8, md: 15 }, position: 'relative', zIndex: 1 }} ref={resultsRef}>
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={resultsInView ? { opacity: 1, y: 0 } : {}}
-                    transition={{ duration: 0.7 }}
-                    style={{ textAlign: 'center' }}
-                >
-                    <Typography
-                        variant="h2"
-                        align="center"
-                        sx={{ color: 'text.primary', mb: 3 }}
-                    >
-                        Results You Can <PrimaryText>Achieve with DotBridge</PrimaryText>
-                    </Typography>
-                    <Typography
-                        variant="h5"
-                        sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 8 }}
-                    >
-                        Transform your sales and onboarding by creating AI-driven experiences that deliver measurable outcomes.
-                    </Typography>
-                    <Grid container spacing={4} justifyContent="center">
-                        {impactMetrics /* Update impactMetrics data source with new values */.map((item, index) => (
-                            <Grid item xs={6} sm={6} md={3} key={index}>
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={resultsInView ? { opacity: 1, scale: 1 } : {}}
-                                    transition={{ duration: 0.5, delay: index * 0.15 }}
-                                >
-                                    <Box sx={{ textAlign: 'center' }}>
-                                        <Box sx={{ color: item.color || 'primary.main', mb: 1.5 }}>
-                                            {React.cloneElement(item.icon, { sx: { fontSize: { xs: 32, md: 40 }, mb: 1.5 } })}
-                                        </Box>
-                                        <Typography
-                                            variant={isMobile ? "h4" : "h3"}
-                                            sx={{ fontWeight: 600, color: 'primary.main', mb: 1, lineHeight: 1.2 }}
-                                        >
-                                            {item.metric} {/* e.g., "+40% Sales", "2X Faster Onboarding" */}
-                                        </Typography>
-                                        <Typography
-                                            variant="body1"
-                                            sx={{ color: 'text.secondary' }}
-                                        >
-                                            {item.description} {/* e.g., "Increase in qualified leads", "Reduction in time-to-value" */}
-                                        </Typography>
-                                    </Box>
-                                </motion.div>
                             </Grid>
                         ))}
                     </Grid>
@@ -575,14 +518,14 @@ const ServicesPage = () => {
                             align="center"
                             sx={{ color: 'text.primary', mb: 3 }}
                         >
-                            Ready to <PrimaryText>Automate & Scale with DotBridge?</PrimaryText>
+                            Ready to Stop Losing Leads and <PrimaryText>Start Closing More Deals?</PrimaryText>
                         </Typography>
                         <Typography
                             variant="h5"
                             align="center"
                             sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 6 }}
                         >
-                            Interested in leveraging DotBridge for advanced sales and onboarding funnels? Fill out the form to discuss your needs or request a personalized demo.
+                            Fill out the form to discover how DotBridge can automate your sales and onboarding, or request a personalized demo to see it in action. Let's turn your video views into valuable conversions.
                         </Typography>
 
                         <Paper
@@ -706,19 +649,19 @@ const ServicesPage = () => {
                     variant="h2"
                     sx={{ color: 'text.primary', mb: 3 }}
                 >
-                    Stop Selling Manually. <PrimaryText>Start Automating with AI.</PrimaryText>
+                    Don't Let Another Lead Slip Away. <PrimaryText>Automate Your Conversions Now.</PrimaryText>
                 </Typography>
                 <Typography
                     variant="h5"
                     sx={{ color: 'text.secondary', mb: 5, maxWidth: '700px', mx: 'auto' }}
                 >
-                    Build your high-performance AI sales funnel or smart onboarding experience with DotBridge. Explore our features or request a demo to see how DotBridge can transform how you attract, convert, and retain customers.
+                    Your prospects demand a better experience. DotBridge delivers it: personalized, interactive, 24/7, and ready to turn interest into action. Stop leaving money on the table.
                 </Typography>
                 <Button
                     variant="contained"
                     color="primary"
                     size="large"
-                    sx={{}}
+                    sx={{ px: 4, py: 1.2 }}
                     onClick={() => {
                         document.getElementById('lead-form-section')?.scrollIntoView({
                             behavior: 'smooth',
@@ -726,16 +669,36 @@ const ServicesPage = () => {
                         });
                     }}
                 >
-                    Request a Demo
+                    Get Started Today
                 </Button>
             </Container>
 
-            {/* Powered by DotBridge Footer */}
-            <Container maxWidth="lg" sx={{ textAlign: 'center', py: 3, mt: 5 }}>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Powered by DotBridge: the interface layer of the AI-native web.
-                </Typography>
-            </Container>
+            {/* Add Footer */}
+            <Footer />
+
+            {/* Background Elements */}
+            <Box sx={{
+                position: 'absolute',
+                top: -120,
+                right: -80,
+                width: 300,
+                height: 300,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(0,122,255,0.05) 0%, rgba(0,122,255,0) 70%)',
+                zIndex: 0,
+                pointerEvents: 'none'
+            }} />
+            <Box sx={{
+                position: 'absolute',
+                bottom: -150,
+                left: -100,
+                width: 350,
+                height: 350,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(0,122,255,0.03) 0%, rgba(0,122,255,0) 60%)',
+                zIndex: 0,
+                pointerEvents: 'none'
+            }} />
 
         </Box>
     );

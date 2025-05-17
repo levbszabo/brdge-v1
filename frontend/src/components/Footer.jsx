@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material/styles';
 
 const Footer = () => {
     const theme = useTheme();
+    const currentYear = new Date().getFullYear();
 
     return (
         <Box
@@ -43,7 +44,7 @@ const Footer = () => {
                 >
                     <Mail size={14} style={{ color: theme.palette.secondary.main }} />
                     <Link
-                        href="mailto:levi@brdge-ai.com"
+                        href="mailto:levi@dotbridge.io"
                         sx={{
                             color: 'inherit',
                             textDecoration: 'none',
@@ -55,7 +56,7 @@ const Footer = () => {
                             }
                         }}
                     >
-                        levi@brdge-ai.com
+                        levi@dotbridge.io
                     </Link>
                 </Box>
 
@@ -120,7 +121,7 @@ const Footer = () => {
                     textAlign: { xs: 'center', sm: 'right' }
                 }}
             >
-                © {new Date().getFullYear()} All Rights Reserved • Journeyman AI LLC
+                © {currentYear} All Rights Reserved • Journeyman AI LLC
             </Typography>
         </Box>
     );

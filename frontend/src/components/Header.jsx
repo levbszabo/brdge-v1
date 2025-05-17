@@ -13,25 +13,43 @@ import {
     ListItemText,
     Avatar,
     useScrollTrigger,
-    Divider
+    Divider,
+    Menu,
+    MenuItem,
+    Container,
+    Slide,
+    useMediaQuery
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { logout } from '../utils/auth';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
+import { motion, AnimatePresence } from 'framer-motion';
+
+function HideOnScroll(props) {
+    const { children } = props;
+    const trigger = useScrollTrigger();
+
+    return (
+        <Slide appear={false} direction="down" in={!trigger}>
+            {children}
+        </Slide>
+    );
+}
 
 function Header() {
     const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
     const navigate = useNavigate();
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
     const location = useLocation();
+    const [anchorElNav, setAnchorElNav] = useState(null);
 
     // Determine if we're on the landing page
     const isLandingPage = location.pathname === '/';
@@ -41,6 +59,19 @@ function Header() {
         disableHysteresis: true,
         threshold: 20,
     });
+
+    // State for scroll position to handle transparency
+    const [scrollPosition, setScrollPosition] = useState(0);
+
+    // Track scroll position
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrollPosition(window.scrollY);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Header background should be more visible when scrolled
     const headerBackground = isLandingPage
@@ -84,24 +115,28 @@ function Header() {
         if (isMobile) setDrawerOpen(false);
     }, [navigate, isMobile]);
 
-    // Different menu items based on authentication status
+    const handleOpenNavMenu = (event) => {
+        setAnchorElNav(event.currentTarget);
+    };
+
+    const handleCloseNavMenu = () => {
+        setAnchorElNav(null);
+    };
+
+    // Update menuItems to not include login/logout options that will be handled separately
     const menuItems = isAuthenticated
         ? [
             { text: 'Home', link: '/home' },
             { text: 'Demos', link: '/demos' },
             { text: 'Blog', link: '/blog' },
-            { text: 'Careers', link: '/careers' },
-            { text: 'Contact', link: '/contact' },
-            { text: 'Logout', onClick: handleLogout }
+            { text: 'Contact', link: '/contact' }
         ]
         : [
             { text: 'Demos', link: '/demos' },
             { text: 'Blog', link: '/blog' },
             { text: 'Pricing', link: '/pricing' },
             { text: 'Careers', link: '/careers' },
-            { text: 'Contact', link: '/contact' },
-            { text: 'Login', link: '/login' },
-            { text: 'Sign Up', link: '/signup', variant: 'button' }
+            { text: 'Contact', link: '/contact' }
         ];
 
     // Common styles for menu buttons/links
@@ -348,20 +383,31 @@ function Header() {
                             }}
                             sx={{
                                 ...drawerItemStyle,
+                                py: 1.5,
                             }}
                         >
                             <Avatar
                                 sx={{
-                                    width: 24,
-                                    height: 24,
-                                    mr: 1.5,
+                                    width: 32,
+                                    height: 32,
+                                    mr: 2,
                                     bgcolor: theme.palette.primary.light,
-                                    color: theme.palette.primary.main
+                                    color: theme.palette.primary.main,
+                                    border: `2px solid ${theme.palette.primary.main}`,
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem',
                                 }}
                             >
-                                <PersonIcon sx={{ fontSize: 16 }} />
+                                {avatarLetter}
                             </Avatar>
-                            <ListItemText primary="Profile" />
+                            <ListItemText
+                                primary="Profile"
+                                primaryTypographyProps={{
+                                    fontWeight: 500,
+                                    fontSize: '1rem',
+                                }}
+                            />
                         </ListItemButton>
                     </ListItem>
                 </>
@@ -369,106 +415,417 @@ function Header() {
         </Box>
     );
 
+    // Check if we're on a transparent header page like landing or demo
+    const isTransparentHeaderPage = () => {
+        return location.pathname === '/' || location.pathname === '/demos';
+    };
+
+    // Calculate header appearance based on scroll and page
+    const transparentMode = isTransparentHeaderPage() && scrollPosition < 60;
+
+    // Animation variants
+    const logoVariants = {
+        initial: { opacity: 0, x: -20 },
+        animate: { opacity: 1, x: 0, transition: { duration: 0.5 } },
+    };
+
+    const menuItemVariants = {
+        initial: { opacity: 0, y: -10 },
+        animate: (custom) => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.3,
+                delay: 0.1 + (custom * 0.05)
+            }
+        }),
+        exit: { opacity: 0, y: -10, transition: { duration: 0.2 } }
+    };
+
     return (
-        <>
+        <HideOnScroll>
             <AppBar
                 position="fixed"
-                elevation={scrollTrigger ? 3 : 1}
                 sx={{
-                    background: headerBackground,
-                    backdropFilter: 'blur(10px)',
-                    borderBottom: `1px solid ${theme.palette.divider}`,
-                    zIndex: theme.zIndex.drawer + 1,
-                    transition: theme.transitions.create(['background-color', 'box-shadow', 'border-color'], {
-                        duration: theme.transitions.duration.short,
-                    }),
+                    backgroundColor: transparentMode ? 'transparent' : theme.palette.background.paper,
+                    boxShadow: transparentMode ? 'none' : theme.shadows[1],
+                    color: transparentMode ? (theme.palette.mode === 'dark' ? '#fff' : '#101017') : theme.palette.text.primary,
+                    transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+                    backdropFilter: !transparentMode ? 'blur(10px)' : 'none',
+                    borderBottom: !transparentMode ? `1px solid ${theme.palette.divider}` : 'none',
                 }}
             >
-                <Toolbar sx={{
-                    minHeight: { xs: '44px', sm: '50px', md: '56px' },
-                    height: { xs: '44px', sm: '50px', md: '56px' },
-                    px: { xs: 1, sm: 2, md: 3 },
-                    py: 0,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                        <RouterLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+                <Container maxWidth="lg">
+                    <Toolbar disableGutters sx={{ height: { xs: 56, sm: 64 } }}>
+                        {/* Logo/brand for larger screens */}
+                        <motion.div
+                            initial="initial"
+                            animate="animate"
+                            variants={logoVariants}
+                        >
                             <Typography
                                 variant="h6"
-                                component="div"
+                                noWrap
+                                component={RouterLink}
+                                to="/"
                                 sx={{
-                                    color: textColor,
-                                    fontFamily: theme.typography.h1.fontFamily,
-                                    fontSize: { xs: '1.1rem', sm: '1.3rem', md: '1.5rem' },
-                                    fontWeight: 600,
-                                    letterSpacing: '0.01em',
-                                    lineHeight: 1,
-                                    transition: 'color 0.2s ease-in-out',
+                                    mr: 4,
+                                    display: { xs: 'none', md: 'flex' },
+                                    fontWeight: 700,
+                                    letterSpacing: '.01rem',
+                                    color: 'inherit',
+                                    textDecoration: 'none',
+                                    fontSize: '1.5rem',
                                     '&:hover': {
-                                        color: theme.palette.secondary.main,
+                                        opacity: 0.85,
                                     },
                                 }}
                             >
                                 .bridge
                             </Typography>
-                        </RouterLink>
-                    </Box>
+                        </motion.div>
 
-                    {!isMobile && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {renderMenuItems()}
-                            {isAuthenticated && (
-                                <IconButton
-                                    onClick={handleProfileClick}
-                                    size="small"
-                                    sx={{
-                                        ml: 1,
-                                        bgcolor: theme.palette.action.hover,
-                                        '&:hover': { bgcolor: theme.palette.action.selected }
-                                    }}
-                                >
-                                    <Avatar
-                                        sx={{
-                                            width: 32,
-                                            height: 32,
-                                            bgcolor: theme.palette.primary.main,
-                                            color: theme.palette.background.default
-                                        }}
+                        {/* Mobile menu */}
+                        <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+                            <IconButton
+                                size="large"
+                                aria-label="menu"
+                                aria-controls="menu-appbar"
+                                aria-haspopup="true"
+                                onClick={handleOpenNavMenu}
+                                color="inherit"
+                                sx={{
+                                    transition: 'all 0.2s',
+                                    '&:hover': {
+                                        transform: 'scale(1.05)'
+                                    }
+                                }}
+                            >
+                                {anchorElNav ? <CloseIcon /> : <MenuIcon />}
+                            </IconButton>
+                            <Menu
+                                id="menu-appbar"
+                                anchorEl={anchorElNav}
+                                anchorOrigin={{
+                                    vertical: 'bottom',
+                                    horizontal: 'left',
+                                }}
+                                keepMounted
+                                transformOrigin={{
+                                    vertical: 'top',
+                                    horizontal: 'left',
+                                }}
+                                open={Boolean(anchorElNav)}
+                                onClose={handleCloseNavMenu}
+                                PaperProps={{
+                                    sx: {
+                                        mt: 1.5,
+                                        width: '100%',
+                                        maxWidth: '300px',
+                                        borderRadius: theme.shape.borderRadius,
+                                        boxShadow: theme.shadows[3],
+                                        border: `1px solid ${theme.palette.divider}`,
+                                        '& .MuiMenu-list': {
+                                            padding: '8px 0',
+                                        },
+                                    },
+                                }}
+                                sx={{
+                                    display: { xs: 'block', md: 'none' },
+                                }}
+                            >
+                                <AnimatePresence>
+                                    {menuItems.map((item, index) => (
+                                        <motion.div
+                                            key={item.text}
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                            variants={menuItemVariants}
+                                            custom={index}
+                                        >
+                                            <MenuItem
+                                                onClick={handleCloseNavMenu}
+                                                component={RouterLink}
+                                                to={item.link}
+                                                sx={{
+                                                    my: 0.5,
+                                                    mx: 1,
+                                                    borderRadius: '6px',
+                                                    color: location.pathname === item.link ? 'primary.main' : 'text.primary',
+                                                    fontWeight: location.pathname === item.link ? 600 : 400,
+                                                    transition: 'background-color 0.2s, color 0.2s, font-weight 0.2s',
+                                                    '&:hover': {
+                                                        backgroundColor: theme.palette.action.hover,
+                                                    },
+                                                }}
+                                            >
+                                                <Typography textAlign="center">{item.text}</Typography>
+                                            </MenuItem>
+                                        </motion.div>
+                                    ))}
+
+                                    {isAuthenticated ? (
+                                        <motion.div
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                            variants={menuItemVariants}
+                                            custom={menuItems.length + 1}
+                                        >
+                                            <MenuItem
+                                                onClick={() => {
+                                                    handleCloseNavMenu();
+                                                    handleLogout();
+                                                }}
+                                                sx={{
+                                                    my: 0.5,
+                                                    mx: 1,
+                                                    borderRadius: '6px',
+                                                    color: 'text.primary',
+                                                    transition: 'background-color 0.2s',
+                                                    '&:hover': {
+                                                        backgroundColor: theme.palette.action.hover,
+                                                    },
+                                                }}
+                                            >
+                                                <Typography textAlign="center">Logout</Typography>
+                                            </MenuItem>
+                                        </motion.div>
+                                    ) : (
+                                        <>
+                                            <Divider sx={{ my: 1 }} />
+                                            <Box sx={{ px: 2, py: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                                <motion.div
+                                                    initial="initial"
+                                                    animate="animate"
+                                                    exit="exit"
+                                                    variants={menuItemVariants}
+                                                    custom={menuItems.length + 1}
+                                                >
+                                                    <Button
+                                                        component={RouterLink}
+                                                        to="/login"
+                                                        variant="outlined"
+                                                        color="primary"
+                                                        fullWidth
+                                                        sx={{ mb: 1 }}
+                                                    >
+                                                        Login
+                                                    </Button>
+                                                </motion.div>
+                                                <motion.div
+                                                    initial="initial"
+                                                    animate="animate"
+                                                    exit="exit"
+                                                    variants={menuItemVariants}
+                                                    custom={menuItems.length + 2}
+                                                >
+                                                    <Button
+                                                        component={RouterLink}
+                                                        to="/signup"
+                                                        variant="contained"
+                                                        color="primary"
+                                                        fullWidth
+                                                    >
+                                                        Sign Up
+                                                    </Button>
+                                                </motion.div>
+                                            </Box>
+                                        </>
+                                    )}
+                                </AnimatePresence>
+                            </Menu>
+                        </Box>
+
+                        {/* Logo/brand for mobile screens */}
+                        <Typography
+                            variant="h6"
+                            noWrap
+                            component={RouterLink}
+                            to="/"
+                            sx={{
+                                display: { xs: 'flex', md: 'none' },
+                                flexGrow: 1,
+                                fontWeight: 700,
+                                letterSpacing: '.01rem',
+                                color: 'inherit',
+                                textDecoration: 'none',
+                                fontSize: '1.25rem',
+                            }}
+                        >
+                            .bridge
+                        </Typography>
+
+                        {/* Desktop navigation */}
+                        <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
+                            <AnimatePresence>
+                                {menuItems.map((item, index) => (
+                                    <motion.div
+                                        key={item.text}
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                        variants={menuItemVariants}
+                                        custom={index}
                                     >
-                                        <PersonIcon sx={{ fontSize: 20 }} />
-                                    </Avatar>
-                                </IconButton>
+                                        <Button
+                                            component={RouterLink}
+                                            to={item.link}
+                                            onClick={handleCloseNavMenu}
+                                            sx={{
+                                                my: 2,
+                                                mx: 1,
+                                                color: location.pathname === item.link ? 'primary.main' : 'inherit',
+                                                display: 'block',
+                                                fontWeight: location.pathname === item.link ? 600 : 500,
+                                                fontSize: '0.95rem',
+                                                textTransform: 'none',
+                                                position: 'relative',
+                                                '&::after': {
+                                                    content: '""',
+                                                    position: 'absolute',
+                                                    width: location.pathname === item.link ? '100%' : '0%',
+                                                    height: '2px',
+                                                    bottom: 0,
+                                                    left: 0,
+                                                    backgroundColor: 'primary.main',
+                                                    transition: 'width 0.3s ease-in-out',
+                                                    borderRadius: '2px',
+                                                    opacity: location.pathname === item.link ? 1 : 0,
+                                                },
+                                                '&:hover': {
+                                                    backgroundColor: 'transparent',
+                                                    '&::after': {
+                                                        width: '100%',
+                                                        opacity: 0.7,
+                                                    },
+                                                },
+                                            }}
+                                        >
+                                            {item.text}
+                                        </Button>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </Box>
+
+                        {/* Login/Signup or Logout for desktop */}
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: 2, gap: 1, alignItems: 'center' }}>
+                            {isAuthenticated ? (
+                                <>
+                                    <motion.div
+                                        initial="initial"
+                                        animate="animate"
+                                        variants={menuItemVariants}
+                                        custom={menuItems.length + 1}
+                                    >
+                                        <Button
+                                            onClick={handleLogout}
+                                            variant="outlined"
+                                            sx={{
+                                                color: 'inherit',
+                                                borderColor: transparentMode ? 'rgba(16, 16, 23, 0.2)' : theme.palette.divider,
+                                                '&:hover': {
+                                                    borderColor: transparentMode ? 'rgba(16, 16, 23, 0.5)' : theme.palette.text.primary,
+                                                    backgroundColor: 'transparent',
+                                                },
+                                            }}
+                                        >
+                                            Logout
+                                        </Button>
+                                    </motion.div>
+                                    <motion.div
+                                        initial="initial"
+                                        animate="animate"
+                                        variants={menuItemVariants}
+                                        custom={menuItems.length + 2}
+                                    >
+                                        <IconButton
+                                            onClick={handleProfileClick}
+                                            sx={{
+                                                p: 0.5,
+                                                ml: 0.5,
+                                                transition: 'all 0.2s ease',
+                                                '&:hover': {
+                                                    backgroundColor: 'transparent',
+                                                    transform: 'scale(1.08)',
+                                                },
+                                            }}
+                                        >
+                                            <Avatar
+                                                sx={{
+                                                    width: 36,
+                                                    height: 36,
+                                                    bgcolor: transparentMode ? 'rgba(255, 255, 255, 0.9)' : theme.palette.primary.light,
+                                                    color: theme.palette.primary.main,
+                                                    fontWeight: 'bold',
+                                                    fontSize: '1rem',
+                                                    border: `2px solid ${theme.palette.primary.main}`,
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                                    transition: 'all 0.2s ease',
+                                                    '&:hover': {
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                                                    }
+                                                }}
+                                            >
+                                                {avatarLetter}
+                                            </Avatar>
+                                        </IconButton>
+                                    </motion.div>
+                                </>
+                            ) : (
+                                <>
+                                    <motion.div
+                                        initial="initial"
+                                        animate="animate"
+                                        variants={menuItemVariants}
+                                        custom={menuItems.length + 1}
+                                    >
+                                        <Button
+                                            component={RouterLink}
+                                            to="/login"
+                                            variant="text"
+                                            sx={{
+                                                color: 'inherit',
+                                                fontWeight: 500,
+                                                '&:hover': {
+                                                    backgroundColor: 'transparent',
+                                                    opacity: 0.8,
+                                                },
+                                            }}
+                                        >
+                                            Login
+                                        </Button>
+                                    </motion.div>
+                                    <motion.div
+                                        initial="initial"
+                                        animate="animate"
+                                        variants={menuItemVariants}
+                                        custom={menuItems.length + 2}
+                                    >
+                                        <Button
+                                            component={RouterLink}
+                                            to="/signup"
+                                            variant="contained"
+                                            color="primary"
+                                            sx={{
+                                                fontWeight: 500,
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                },
+                                            }}
+                                        >
+                                            Sign Up
+                                        </Button>
+                                    </motion.div>
+                                </>
                             )}
                         </Box>
-                    )}
-
-                    {isMobile && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <IconButton
-                                edge="end"
-                                aria-label="menu"
-                                onClick={() => setDrawerOpen(true)}
-                                sx={{ color: textColor }}
-                            >
-                                <MenuIcon />
-                            </IconButton>
-                        </Box>
-                    )}
-                </Toolbar>
+                    </Toolbar>
+                </Container>
             </AppBar>
-
-            <Drawer
-                anchor="right"
-                open={drawerOpen}
-                onClose={() => setDrawerOpen(false)}
-                PaperProps={{ sx: drawerPaperStyle }}
-                ModalProps={{ keepMounted: true }}
-            >
-                {renderMobileMenu()}
-            </Drawer>
-        </>
+        </HideOnScroll>
     );
 }
 

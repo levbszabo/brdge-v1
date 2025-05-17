@@ -18,7 +18,7 @@ export const SectionTitle = styled(Typography)(({ theme }) => ({
 export const StyledPaper = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(4),
     marginBottom: theme.spacing(4),
-    borderRadius: '12px',
+    borderRadius: theme.shape.borderRadius,
     boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
 }));
 
@@ -60,7 +60,7 @@ export const MotionPageHeader = ({ children, delay = 0 }) => (
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay }}
-        style={{ textAlign: 'center', marginBottom: '3rem' }}
+        style={{ textAlign: 'center', marginBottom: '2rem' }}
     >
         {children}
     </motion.div>
@@ -68,12 +68,13 @@ export const MotionPageHeader = ({ children, delay = 0 }) => (
 
 export const AnimatedPageTitle = ({ children, ...props }) => (
     <Typography
-        variant="h1"
+        variant="h2"
         component="h1"
         sx={{
             mb: 2,
             color: 'text.primary',
             fontWeight: 500,
+            fontSize: { xs: '2rem', sm: '2.3rem', md: '2.6rem' },
             fontFamily: '"Canela Text", "Tiempos Headline", Georgia, serif'
         }}
         {...props}

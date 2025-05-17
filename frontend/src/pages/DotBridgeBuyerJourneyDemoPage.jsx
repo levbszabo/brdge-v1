@@ -9,6 +9,7 @@ import Grid from '@mui/material/Grid';
 import { Link as RouterLink } from 'react-router-dom';
 import { MotionPageHeader, AnimatedPageTitle, AnimatedPageSubtitle } from '../styles/sharedStyles';
 import { useInView } from 'react-intersection-observer';
+import Footer from '../components/Footer';
 
 import JourneyStep from '../components/JourneyStep';
 
@@ -36,11 +37,14 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                 {/* Header Section - Using new animated components */}
                 <Box ref={headerRef}>
                     <MotionPageHeader>
-                        <AnimatedPageTitle>
+                        <AnimatedPageTitle sx={{
+                            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+                            fontWeight: 500
+                        }}>
                             The Buyer Journey
                         </AnimatedPageTitle>
                         <AnimatedPageSubtitle>
-                            Experience the future of interactive video. Below, explore each stage
+                            Experience the future of the digital sales funnel. Below, explore each stage
                             of a buyer's journey – powered by DotBridge AI agents. Each Bridge is
                             a live demo. Click, watch, and interact.
                         </AnimatedPageSubtitle>
@@ -116,6 +120,7 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                     </Grid>
                 </Box>
             </Container>
+            <Footer />
         </>
     );
 };

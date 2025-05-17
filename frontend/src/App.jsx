@@ -27,10 +27,8 @@ import PolicyPage from './pages/PolicyPage';
 import UserProfilePage from './pages/UserProfilePage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
-import RoomPage from './pages/RoomPage';
 import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
-import MarketplacePage from './pages/Marketplace';
 import DotBridgeBuyerJourneyDemoPage from './pages/DotBridgeBuyerJourneyDemoPage'; // Import the new demo page
 import BlogPage from './pages/BlogPage'; // Import the new Blog page
 import BlogPostDetailPage from './pages/BlogPostDetailPage'; // Import Blog Post Detail Page
@@ -266,8 +264,6 @@ function App() {
                   }
                 />
                 <Route path="/payment-success" element={<PaymentSuccessPage />} />
-                <Route path="/room" element={<RoomPage />} />
-                <Route path="/marketplace" element={<MarketplacePage />} />
                 {/* Add a catch-all or 404 route if desired */}
                 {/* <Route path="*" element={<NotFoundPage />} /> */}
               </Routes>
