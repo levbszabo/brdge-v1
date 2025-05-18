@@ -1584,7 +1584,7 @@ def clone_voice_for_brdge(brdge_id):
         name = request.form.get("name", brdge.name)
         description = request.form.get("description", f"Voice clone for {brdge.name}")
         language = request.form.get("language", "en")
-        mode = request.form.get("mode", "stability")
+        mode = request.form.get("mode", "similarity")
         enhance = request.form.get("enhance", "true").lower() == "true"
         transcript = request.form.get("transcript", "")
 

@@ -42,7 +42,7 @@ const Section = ({ children, sx, variant = "default", ...props }) => {
             }}
             {...props}
         >
-            <Container maxWidth="lg">
+            <Container maxWidth={props.fullWidth ? false : "xl"}>
                 {children}
             </Container>
         </Box>
@@ -98,8 +98,8 @@ const HeroSection = () => {
                         variant="h1"
                         component="h1"
                         sx={{
-                            mb: { xs: 2, sm: 2 },
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' }
+                            mb: { xs: 1, sm: 2 },
+                            fontSize: { xs: '2.5rem', sm: '3rem', md: '4rem' }
                         }}
                     >
                         Turn Sales Videos into Conversations That Convert
@@ -350,7 +350,14 @@ const WhatIsBridgeSection = () => {
     });
 
     return (
-        <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+        <Section
+            sx={{
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                py: { xs: 12, sm: 14, md: 18 }, // Increased vertical padding
+                px: { xs: 3, sm: 4, md: 5 }  // Increased horizontal padding, especially on mobile
+            }}
+        >
             <Grid container spacing={{ xs: 4, sm: 5, md: 10 }} alignItems="center">
                 <Grid item xs={12} md={6}>
                     <motion.div
@@ -552,8 +559,15 @@ const DemoSection = () => {
     };
 
     return (
-        <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
+        <Section
+            fullWidth
+            sx={{
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                px: { xs: 1, sm: 2, md: 3 } // Reduced horizontal padding for mobile
+            }}
+        >
+            <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 3, md: 8 }}> {/* Reduced bottom margin on mobile */}
                 <DotBridgeTypography variant='h2' component="h2" sx={{
                     mb: { xs: 2, md: 3 },
                     fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
@@ -572,7 +586,8 @@ const DemoSection = () => {
             {isMobile ? (
                 <Box
                     sx={{
-                        maxWidth: '600px',
+                        maxWidth: '100%', // Use full width instead of 600px
+                        width: '100%',
                         mx: 'auto',
                         position: 'relative',
                         borderRadius: theme.shape.borderRadius,
@@ -638,11 +653,11 @@ const DemoSection = () => {
                 <DotBridgeCard
                     variant="outlined"
                     sx={{
-                        maxWidth: { md: '1100px', lg: '1200px' },
+                        maxWidth: { md: '100%', lg: '100%' }, // Use full width instead of fixed pixels
                         mx: 'auto',
                         position: 'relative',
                         aspectRatio: '16 / 9',
-                        minHeight: '500px',
+                        minHeight: { xs: '400px', md: '600px' }, // Increased minimum height
                         overflow: 'hidden',
                         '& .agent-connector-container': {
                             position: 'absolute',
@@ -1018,11 +1033,18 @@ const UseCasesSection = () => {
     ];
 
     return (
-        <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-            <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 6, md: 10 }}>
+        <Section
+            sx={{
+                borderTop: '1px solid',
+                borderColor: 'divider',
+                py: { xs: 8, sm: 10, md: 16 }, // Reduced vertical padding on mobile
+                px: { xs: 1, sm: 1, md: 5 }  // Reduced horizontal padding on mobile
+            }}
+        >
+            <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 5, md: 10 }}> {/* Reduced bottom margin on mobile */}
                 <DotBridgeTypography variant='h2' component="h2" sx={{
-                    mb: { xs: 2, md: 3 },
-                    fontSize: { xs: '1.85rem', sm: '2.35rem', md: '2.75rem' }
+                    mb: { xs: 2, md: 4 }, // Reduced bottom margin on mobile
+                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem' }
                 }}>
                     Turn Clicks into Customers with DotBridge
                 </DotBridgeTypography>
@@ -1035,7 +1057,7 @@ const UseCasesSection = () => {
                 </DotBridgeTypography>
             </Box>
 
-            <Grid container spacing={{ xs: 4, md: 6 }} alignItems="flex-start">
+            <Grid container spacing={{ xs: 4, md: 8 }} alignItems="flex-start"> {/* Reduced spacing on mobile */}
                 {/* Left Column: Visual Journey Steps */}
                 <Grid item xs={12} md={5}>
                     <Box sx={{ position: 'relative' }}>
@@ -1043,20 +1065,20 @@ const UseCasesSection = () => {
                             <Box key={step.title} sx={{
                                 display: 'flex',
                                 alignItems: 'flex-start',
-                                mb: index === landingPageJourneySteps.length - 1 ? 0 : { xs: 3.5, md: 4 },
+                                mb: index === landingPageJourneySteps.length - 1 ? 0 : { xs: 3, md: 5 }, // Reduced spacing between steps on mobile
                                 position: 'relative',
                             }}>
                                 <DotBridgeIcon
                                     name={step.icon}
-                                    size={36}
+                                    size={36} // Smaller icon for mobile
                                     color="primary.main"
-                                    sx={{ mr: 2.5, mt: 0.5, flexShrink: 0 }}
+                                    sx={{ mr: 2, mt: 0.5, flexShrink: 0 }} // Reduced right margin
                                 />
                                 <Box>
-                                    <DotBridgeTypography variant="h6" sx={{ mb: 0.5, fontSize: { xs: '1.1rem', md: '1.2rem' } }}>
+                                    <DotBridgeTypography variant="h6" sx={{ mb: 0.5, fontSize: { xs: '1.1rem', md: '1.25rem' } }}> {/* Reduced margin and font size on mobile */}
                                         {step.title}
                                     </DotBridgeTypography>
-                                    <DotBridgeTypography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.9rem', md: '0.95rem' }, lineHeight: 1.6 }}>
+                                    <DotBridgeTypography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.9rem', md: '1rem' }, lineHeight: { xs: 1.5, md: 1.8 } }}> {/* Reduced line height on mobile */}
                                         {step.subtitle}
                                     </DotBridgeTypography>
                                 </Box>
@@ -1064,9 +1086,9 @@ const UseCasesSection = () => {
                                 {index < landingPageJourneySteps.length - 1 && (
                                     <Box sx={{
                                         position: 'absolute',
-                                        left: '18px', // Align with center of icon (36px / 2)
-                                        top: '48px', // Start below icon and some text
-                                        bottom: { xs: '-28px', md: '-32px' }, // Extend to next item's top margin area
+                                        left: '18px', // Centered with the icon
+                                        top: '40px', // Adjusted position
+                                        bottom: { xs: '-24px', md: '-40px' }, // Reduced length on mobile
                                         width: '2px',
                                         bgcolor: 'primary.light',
                                         zIndex: -1,
@@ -1080,43 +1102,179 @@ const UseCasesSection = () => {
                 {/* Right Column: Persuasive Text */}
                 <Grid item xs={12} md={7}>
                     <Paper elevation={0} sx={{
-                        p: { xs: 2.5, sm: 3, md: 4 },
+                        p: { xs: 3, sm: 4, md: 6 }, // Reduced padding on mobile
                         bgcolor: { xs: 'transparent', md: 'neutral.light' },
                         border: { xs: 'none', md: `1px solid ${theme.palette.divider}` },
-                        borderRadius: { xs: 0, md: theme.shape.borderRadius },
-                        mt: { xs: 3, md: 0 }
+                        borderRadius: { xs: 0, md: theme.shape.borderRadius * 1.5 },
+                        mt: { xs: 2, md: 0 } // Reduced top margin on mobile
                     }}>
                         <DotBridgeTypography variant="h4" component="h3" sx={{
-                            mb: 2,
-                            fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' },
+                            mb: 2, // Reduced margin
+                            fontSize: { xs: '1.4rem', sm: '1.6rem', md: '2rem' }, // Smaller on mobile
                             color: 'primary.dark'
                         }}>
                             Your Sales Team's New Superpower
                         </DotBridgeTypography>
-                        <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 2, lineHeight: 1.7 }}>
-                            You've built a winning product. But your sales videos? They're just talking <em>at</em> people. Imagine if they could talk <em>with</em> them – qualifying, demoing, and closing, just like your best rep.
-                        </DotBridgeTypography>
-                        <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 2, lineHeight: 1.7 }}>
-                            Picture this: A prospect interacts with your DotBridge. It's not a passive watch; it's an engaging conversation.
-                            Questions are answered instantly. Needs are understood deeply. Personalized demos are delivered on the spot.
-                            Your sales team steps in only when prospects are educated, qualified, and ready to talk terms.
-                        </DotBridgeTypography>
-                        <DotBridgeTypography variant="body1" color="text.primary" sx={{ mb: 3, lineHeight: 1.7 }}>
-                            This is how you stop chasing cold leads and start closing warm deals. It's how you give your team leverage, multiply their impact, and build a predictable revenue engine that never sleeps.
-                        </DotBridgeTypography>
-                        <DotBridgeTypography variant="h6" sx={{ color: 'text.primary', fontSize: { xs: '1.1rem', md: '1.2rem' }, mb: 3, fontWeight: 'bold' }}>
+
+                        {/* Visual paragraph 1 with icon */}
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            mb: 2.5,
+                            backgroundColor: 'rgba(0, 122, 255, 0.03)',
+                            borderRadius: 1,
+                            p: 1.5
+                        }}>
+                            <Box sx={{
+                                mr: 1.5,
+                                mt: 0.3,
+                                bgcolor: 'primary.lighter',
+                                borderRadius: '50%',
+                                p: 0.8,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                flexShrink: 0
+                            }}>
+                                <DotBridgeIcon name="AlertTriangle" size={16} color="primary.main" />
+                            </Box>
+                            <DotBridgeTypography variant="body1" color="text.primary" sx={{
+                                lineHeight: { xs: 1.6, md: 1.8 },
+                                fontSize: { xs: '0.95rem', md: '1.1rem' }
+                            }}>
+                                You've built a winning product. But your sales videos? They're just talking <em>at</em> people.
+                            </DotBridgeTypography>
+                        </Box>
+
+                        {/* Visual paragraph 2 with icon */}
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            mb: 2.5
+                        }}>
+                            <Box sx={{
+                                mr: 1.5,
+                                mt: 0.3,
+                                bgcolor: 'primary.lighter',
+                                borderRadius: '50%',
+                                p: 0.8,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                flexShrink: 0
+                            }}>
+                                <DotBridgeIcon name="Sparkles" size={16} color="primary.main" />
+                            </Box>
+                            <DotBridgeTypography variant="body1" color="text.primary" sx={{
+                                lineHeight: { xs: 1.6, md: 1.8 },
+                                fontSize: { xs: '0.95rem', md: '1.1rem' }
+                            }}>
+                                Imagine if they could talk <Box component="span" sx={{ color: 'primary.main', fontWeight: 'medium' }}>with</Box> them – qualifying, demoing, and closing, just like your best rep.
+                            </DotBridgeTypography>
+                        </Box>
+
+                        {/* Centered visual separator */}
+                        <Box sx={{
+                            my: 3,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Box sx={{ height: '1px', bgcolor: 'divider', width: '25%' }} />
+                            <DotBridgeIcon name="ArrowDown" size={20} color="primary.main" sx={{ mx: 1.5 }} />
+                            <Box sx={{ height: '1px', bgcolor: 'divider', width: '25%' }} />
+                        </Box>
+
+                        {/* Visual paragraph 3 with icon and quoted style */}
+                        <Box sx={{
+                            mb: 3,
+                            position: 'relative',
+                            pl: { xs: 3, md: 4 },
+                            borderLeft: '2px solid',
+                            borderColor: 'primary.main',
+                        }}>
+                            <Box sx={{
+                                position: 'absolute',
+                                left: -12,
+                                top: -6,
+                                bgcolor: 'background.paper',
+                                borderRadius: '50%',
+                                border: '1px solid',
+                                borderColor: 'primary.main',
+                                p: 0.5,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                            }}>
+                                <DotBridgeIcon name="MessageSquare" size={16} color="primary.main" />
+                            </Box>
+                            <DotBridgeTypography variant="body1" color="text.primary" sx={{
+                                lineHeight: { xs: 1.6, md: 1.8 },
+                                fontSize: { xs: '0.95rem', md: '1.1rem' },
+                                fontStyle: 'italic'
+                            }}>
+                                A prospect interacts with your bridge. It's not a passive watch; it's an engaging conversation. Questions are answered instantly. Needs are understood deeply.
+                            </DotBridgeTypography>
+                        </Box>
+
+
+                        {/* Visual final paragraph with result icon */}
+                        <Box sx={{
+                            display: 'flex',
+                            mb: 3.5,
+                            p: 2,
+                            borderRadius: 1,
+                            backgroundColor: 'primary.lighter',
+                        }}>
+                            <Box sx={{
+                                mr: 2,
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                flexShrink: 0
+                            }}>
+                                <DotBridgeIcon name="Zap" size={22} color="primary.dark" />
+                            </Box>
+                            <Box>
+                                <DotBridgeTypography variant="subtitle1" sx={{
+                                    mb: 0.5,
+                                    fontWeight: 600,
+                                    color: 'primary.dark'
+                                }}>
+                                    The Result:
+                                </DotBridgeTypography>
+                                <DotBridgeTypography variant="body1" sx={{
+                                    lineHeight: { xs: 1.6, md: 1.8 },
+                                    fontSize: { xs: '0.95rem', md: '1.1rem' }
+                                }}>
+                                    A predictable and automated revenue engine that never sleeps.
+                                </DotBridgeTypography>
+                            </Box>
+                        </Box>
+
+                        <DotBridgeTypography variant="h6" sx={{
+                            color: 'text.primary',
+                            fontSize: { xs: '1.1rem', md: '1.25rem' },
+                            mb: 3,
+                            fontWeight: 'bold',
+                            textAlign: 'center'
+                        }}>
                             Ready to turn your content into your top-performing sales channel?
                         </DotBridgeTypography>
-                        <DotBridgeButton
-                            variant="contained"
-                            color="primary"
-                            size="large"
-                            component={Link}
-                            to="/signup"
-                            endIcon={<DotBridgeIcon name="ArrowRight" />}
-                        >
-                            Create Your First Bridge Free
-                        </DotBridgeButton>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                            <DotBridgeButton
+                                variant="contained"
+                                color="primary"
+                                size="large"
+                                component={Link}
+                                to="/signup"
+                                endIcon={<DotBridgeIcon name="ArrowRight" />}
+                                sx={{ py: { xs: 1, md: 1.5 }, px: { xs: 2, md: 3 } }} // Smaller padding on mobile
+                            >
+                                Create Your First Bridge Free
+                            </DotBridgeButton>
+                        </Box>
                     </Paper>
                 </Grid>
             </Grid>
@@ -1242,7 +1400,7 @@ const PricingSection = () => (
     <Section sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
         <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 4, md: 8 }}>
             <DotBridgeTypography variant='h2' component="h2" sx={{
-                mb: { xs: 2, md: 3 },
+                mb: { xs: 1, md: 2 },
                 fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
             }}>
                 Simple Pricing for Growth
@@ -1267,7 +1425,7 @@ const PricingSection = () => (
                         fontSize: { xs: '2rem', md: '2.5rem' }
                     }}>$0</DotBridgeTypography>
                     <DotBridgeTypography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Forever</DotBridgeTypography>
-                    <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4, flexGrow: 1 }}>
+                    <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4, flexGrow: 1 }}>
                         {[
                             "1 Bridge Link",
                             "30 AI Minutes/mo",

@@ -496,7 +496,15 @@ const PostTitle = styled(Typography)(({ theme }) => ({
     marginBottom: theme.spacing(2),
     lineHeight: 1.2,
     letterSpacing: '-0.02em',
-    fontSize: { xs: '2.4rem', md: '3.5rem' },
+    [theme.breakpoints.up('xs')]: {
+        fontSize: '2rem',
+    },
+    [theme.breakpoints.up('sm')]: {
+        fontSize: '2.4rem',
+    },
+    [theme.breakpoints.up('md')]: {
+        fontSize: '3.5rem',
+    },
 }));
 
 const PostMeta = styled(Box)(({ theme }) => ({

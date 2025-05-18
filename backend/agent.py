@@ -162,6 +162,9 @@ class Assistant(Agent):
         self.triggered_opportunities = set()
         self.system_prompt = "Initializing..."
         self.brdge = {}  # Initialize brdge attribute
+        self.active_quizzes = (
+            {}
+        )  # For storing context of active multiple-choice quizzes
 
         self.initialize()
 
@@ -477,10 +480,13 @@ class Assistant(Agent):
             system_context_for_next_turn = (
                 ""  # Context to guide processing of user's *next* input
             )
+            quiz_id = opportunity.get(
+                "id", f"quiz_{datetime.utcnow().timestamp()}"
+            )  # Ensure a unique ID for all quiz types
 
             if engagement_type == "quiz":
                 quiz_item = opportunity.get("quiz_items", [{}])[0]
-                question = quiz_item.get("question", "What do you think?")
+                question_text = quiz_item.get("question", "What do you think?")
                 options = quiz_item.get("options", [])
                 correct_option = quiz_item.get("correct_option")
                 explanation = quiz_item.get("explanation", "")
@@ -490,14 +496,85 @@ class Assistant(Agent):
                 if_incorrect = quiz_item.get("follow_up", {}).get(
                     "if_incorrect", "Not quite."
                 )
+                question_type = quiz_item.get(
+                    "question_type", "discussion"
+                )  # Default to discussion if not specified
 
-                initial_prompt = f"{question}"
-                if options:
-                    initial_prompt += "\nOptions: " + ", ".join(options)
+                if question_type == "multiple_choice" and options:
+                    logger.info(
+                        f"Preparing multiple-choice quiz: {quiz_id} - {question_text}"
+                    )
+                    # Agent speaks only the question or a lead-in
+                    initial_prompt = (
+                        f"{question_text}"  # Or "Let's try a question: {question_text}"
+                    )
 
-                # Guide LLM on how to evaluate the *next* user response
-                system_context_for_next_turn = f"""
-You are currently in QUIZ mode. You just asked: "{question}" {'Options: ' + ', '.join(options) if options else ''}
+                    # Store context for evaluation
+                    self.active_quizzes[quiz_id] = {
+                        "correct_option": correct_option,
+                        "explanation": explanation,
+                        "if_correct": if_correct,
+                        "if_incorrect": if_incorrect,
+                        "original_question": question_text,
+                        "options": options,  # Store options for context if needed later
+                    }
+
+                    # Send RPC to frontend to display options
+                    rpc_payload = {
+                        "action": "show_multiple_choice_quiz",
+                        "quiz_id": quiz_id,
+                        "question": question_text,
+                        "options": options,
+                        "message": f"Quiz: {question_text}",  # Message for the popup title/header
+                    }
+                    if self.room and self.room.local_participant:
+                        remote_participants = list(
+                            self.room.remote_participants.values()
+                        )
+                        if remote_participants:
+                            tasks = []
+                            for participant in remote_participants:
+                                logger.info(
+                                    f"Sending displayMultipleChoiceQuiz RPC to {participant.identity} for quiz {quiz_id}"
+                                )
+                                tasks.append(
+                                    self.room.local_participant.perform_rpc(
+                                        destination_identity=participant.identity,
+                                        method="displayMultipleChoiceQuiz",  # New RPC method name
+                                        payload=json.dumps(rpc_payload),
+                                        response_timeout=3.0,
+                                    )
+                                )
+                            await asyncio.gather(
+                                *tasks, return_exceptions=True
+                            )  # Consider logging results/errors
+                            logger.info(
+                                f"Sent displayMultipleChoiceQuiz RPCs for quiz_id: {quiz_id}"
+                            )
+                        else:
+                            logger.warning(
+                                f"No remote participants to send displayMultipleChoiceQuiz RPC for quiz {quiz_id}"
+                            )
+                    else:
+                        logger.warning(
+                            f"Room or local_participant not available for displayMultipleChoiceQuiz RPC for quiz {quiz_id}"
+                        )
+
+                    # LLM waits for data channel message with the answer
+                    system_context_for_next_turn = f"""
+A multiple-choice question ('{question_text}') has been presented to the user with clickable options.
+Wait for their selection to come via a data channel message. Do not attempt to answer or evaluate based on their speech right now.
+Once their selection is processed, you will be given specific instructions on how to respond with feedback.
+"""
+                else:  # Existing logic for spoken quizzes/discussion questions
+                    initial_prompt = f"{question_text}"
+                    if (
+                        options and question_type != "multiple_choice"
+                    ):  # Only list options if not handled by UI
+                        initial_prompt += "\nOptions: " + ", ".join(options)
+
+                    system_context_for_next_turn = f"""
+You are currently in QUIZ mode. You just asked: "{question_text}" {'Options: ' + ', '.join(options) if options and question_type != "multiple_choice" else ''}
 Listen to the user's upcoming answer.
 - If they choose '{correct_option}' or similar, your response should convey: "{if_correct}"
 - Otherwise, your response should convey: "{if_incorrect}"
@@ -946,52 +1023,122 @@ async def entrypoint(ctx: JobContext):
             data_packet.participant.identity if data_packet.participant else "server"
         )
         topic = getattr(data_packet, "topic", "unknown")
-        # logger.debug(f"Received data packet from {sender} on topic: {topic}") # Less verbose logging
+        message_str = data_packet.data.decode("utf-8")  # Moved decode up for logging
 
         try:
-            message_str = data_packet.data.decode("utf-8")
-            message = json.loads(message_str)
+            # logger.debug(f"Received data packet from {sender} on topic: {topic}, data: {message_str[:200]}") # More context in log
 
-            if topic == "agent-control" and message.get("type") == "interrupt":
-                logger.info(f"Received interrupt command from {sender}")
-                if session:
-                    session.interrupt()
+            if topic == "agent-control":
+                message = json.loads(message_str)  # Parse message for agent-control
+                if message.get("type") == "interrupt":
+                    logger.info(f"Received interrupt command from {sender}")
+                    if session:
+                        session.interrupt()
 
-            elif (
-                topic == "video-timestamp"
-                and message.get("type") == "timestamp"
-                and "time" in message
-            ):
-                raw_seconds = message["time"]
-                hours = int(raw_seconds // 3600)
-                minutes = int((raw_seconds % 3600) // 60)
-                seconds = int(raw_seconds % 60)
-                formatted_timestamp = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+            elif topic == "video-timestamp":
+                message = json.loads(message_str)  # Parse only if this topic
+                if message.get("type") == "timestamp" and "time" in message:
+                    raw_seconds = message["time"]
+                    hours = int(raw_seconds // 3600)
+                    minutes = int((raw_seconds % 3600) // 60)
+                    seconds = int(raw_seconds % 60)
+                    formatted_timestamp = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-                # logger.debug(f"Received timestamp: {raw_seconds}s -> {formatted_timestamp}") # Less verbose
+                    if agent:
+                        if abs(agent.current_timestamp_seconds - raw_seconds) > 0.1:
+                            agent.current_timestamp_seconds = raw_seconds
+                            agent.current_timestamp = formatted_timestamp
+                            # System prompt is rebuilt dynamically if needed or context is added.
+                            # No direct update here unless specifically required.
 
-                if agent:
-                    # Only update if the timestamp has actually changed significantly
-                    if abs(agent.current_timestamp_seconds - raw_seconds) > 0.1:
-                        agent.current_timestamp_seconds = raw_seconds
-                        agent.current_timestamp = formatted_timestamp
-                        # Update the system prompt in the context *only when timestamp changes*
-                        # chat_ctx = agent.chat_ctx
-                        # agent.update_chat_ctx(
-                        #     role="system",
-                        #     text=f"Current video timestamp: {formatted_timestamp}",
-                        # )
+                            asyncio.create_task(
+                                agent.check_engagement_opportunities(raw_seconds)
+                            )
 
-                        # Check for engagements asynchronously
-                        asyncio.create_task(
-                            agent.check_engagement_opportunities(raw_seconds)
+            elif topic == "quiz_answer":
+                logger.info(f"Received data on 'quiz_answer' topic from {sender}")
+                try:
+                    answer_data = json.loads(message_str)
+                    quiz_id_received = answer_data.get("quiz_id")
+                    selected_option = answer_data.get("selected_option")
+                    logger.info(
+                        f"Quiz answer for ID {quiz_id_received}: '{selected_option}'"
+                    )
+
+                    if agent and quiz_id_received in agent.active_quizzes:
+                        quiz_context = agent.active_quizzes.pop(
+                            quiz_id_received
+                        )  # Retrieve and remove
+                        is_correct = selected_option == quiz_context["correct_option"]
+
+                        feedback_intro = ""
+                        if is_correct:
+                            feedback_intro = quiz_context["if_correct"]
+                        else:
+                            feedback_intro = quiz_context["if_incorrect"]
+
+                        explanation_text = quiz_context.get("explanation", "")
+                        full_feedback_message = feedback_intro
+                        if explanation_text:
+                            full_feedback_message += (
+                                f" Here's a bit more information: {explanation_text}"
+                            )
+
+                        # Instruct LLM to deliver this feedback
+                        instruction_for_llm = (
+                            f"System: The user was asked: '{quiz_context['original_question']}'. "
+                            f"They selected the option: '{selected_option}'. "
+                            f"This selection was {'correct' if is_correct else 'incorrect'}. "
+                            f"Please now respond to the user with the following feedback, naturally incorporating it into your persona: '{full_feedback_message}' "
+                            f"After providing this feedback, resume the normal {agent.bridge_type} interaction flow."
                         )
 
-            # else: logger.info(f"Received other data from {sender} on {topic}: {message}")
+                        logger.info(
+                            f"Instruction for LLM after quiz answer: {instruction_for_llm}"
+                        )
+
+                        # Add this instruction to the chat context for the LLM to process
+                        async def update_llm_for_feedback():
+                            current_messages = list(agent.chat_ctx.items)
+                            new_system_message = llm.ChatMessage(
+                                role="system", content=[instruction_for_llm]
+                            )
+                            current_messages.append(new_system_message)
+                            await agent.update_chat_ctx(
+                                llm.ChatContext(current_messages)
+                            )
+                            await session.generate_reply()  # Agent speaks the feedback
+
+                        asyncio.create_task(update_llm_for_feedback())
+
+                    elif agent:
+                        logger.warning(
+                            f"Received answer for unknown or expired quiz_id: {quiz_id_received}. Active quizzes: {list(agent.active_quizzes.keys())}"
+                        )
+                    else:
+                        logger.warning("Agent not available to process quiz_answer.")
+
+                except json.JSONDecodeError:
+                    logger.error(
+                        f"Failed to decode JSON from quiz_answer: {message_str}"
+                    )
+                except Exception as e_quiz:
+                    logger.error(
+                        f"Error processing quiz_answer: {e_quiz}\n{traceback.format_exc()}"
+                    )
+
+            # else: logger.info(f"Received other data from {sender} on {topic}: {message_str[:200]}") # Log other messages
         except json.JSONDecodeError:
-            logger.error(f"Failed to decode JSON from data packet: {message_str}")
+            # This general except block is now less likely to be hit for quiz_answer or video-timestamp
+            # as they parse their JSON inside their specific blocks.
+            # It would catch errors if a message on another topic was expected to be JSON but wasn't.
+            logger.error(
+                f"Failed to decode JSON from data packet (topic: {topic}): {message_str}"
+            )
         except Exception as e:
-            logger.error(f"Error processing data packet: {e}\n{traceback.format_exc()}")
+            logger.error(
+                f"Error processing data packet (topic: {topic}): {e}\n{traceback.format_exc()}"
+            )
 
     disconnect_event = asyncio.Event()
 
