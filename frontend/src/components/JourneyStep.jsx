@@ -1,17 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import PlayCircle from './PlayCircle';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 
-const JourneyStep = ({ title, subtitle, videoUrl, alignment, isLast }) => {
+const JourneyStep = ({ title, subtitle, videoUrl, alignment, isLast, isComingSoonProp }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const isLeftAligned = alignment === 'left';
+    const [showComingSoon, setShowComingSoon] = useState(false);
 
     const handlePlayClick = () => {
-        console.log(`Playing video for ${title}: ${videoUrl}`);
+        if (isComingSoonProp) {
+            setShowComingSoon(true);
+            setTimeout(() => {
+                setShowComingSoon(false);
+            }, 2000);
+        } else if (videoUrl && videoUrl.startsWith('http')) {
+            window.open(videoUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            console.log(`Action for ${title}: ${videoUrl || 'No URL / Coming Soon'}`);
+        }
     };
 
     const iconContainerBaseWidth = 80;
@@ -107,6 +117,24 @@ const JourneyStep = ({ title, subtitle, videoUrl, alignment, isLast }) => {
                 }}
             >
                 <PlayCircle onClick={handlePlayClick} />
+                {showComingSoon && (
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            position: 'absolute',
+                            bottom: '-20px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            backgroundColor: theme.palette.grey[700],
+                            color: 'white',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            zIndex: 2,
+                        }}
+                    >
+                        Coming Soon
+                    </Typography>
+                )}
             </Box>
 
             {/* Text Content Area */}

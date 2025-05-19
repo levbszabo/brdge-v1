@@ -236,9 +236,9 @@ const ServicesPage = () => {
                                             height: '100%',
                                         }}
                                         controls
-                                        poster="poster-services.jpg" // IMPORTANT: Replace with your video poster image URL
+                                        poster="dotbridge-hero-cover.jpg" // IMPORTANT: Replace with your video poster image URL
                                     >
-                                        <source src="brdge-services-final.mp4" type="video/mp4" />
+                                        <source src="dotbridge-hero-small.mp4" type="video/mp4" />
                                         Your browser does not support the video tag. Please update your browser.
                                     </video>
                                 </Box>

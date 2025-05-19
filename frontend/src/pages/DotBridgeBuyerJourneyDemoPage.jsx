@@ -14,7 +14,7 @@ import Footer from '../components/Footer';
 import JourneyStep from '../components/JourneyStep';
 
 const journeyStepsData = [
-    { id: 'awareness', title: 'Awareness Bridge', subtitle: 'Capture attention with an engaging, short-form explainer', videoUrl: '#awareness_video', alignment: 'left' },
+    { id: 'awareness', title: 'Awareness Bridge', subtitle: 'Capture attention with an engaging, short-form explainer', videoUrl: 'https://dotbridge.io/viewBridge/431-b9759d', alignment: 'left' },
     { id: 'discovery', title: 'Discovery Bridge', subtitle: 'Qualify the lead and gather requirements', videoUrl: '#discovery_video', alignment: 'right' },
     { id: 'demo', title: 'Demo Bridge', subtitle: 'Tailored walkthrough of DotBridge based on Discovery answers', videoUrl: '#demo_video', alignment: 'left' },
     { id: 'sales', title: 'Sales Bridge', subtitle: 'Answer objections, show pricing, and close', videoUrl: '#sales_video', alignment: 'right' },
@@ -74,6 +74,7 @@ const DotBridgeBuyerJourneyDemoPage = () => {
                                         videoUrl={step.videoUrl}
                                         alignment={step.alignment}
                                         isLast={step.isLast}
+                                        isComingSoonProp={step.id !== 'awareness'}
                                     />
                                 </Box>
                             ))}

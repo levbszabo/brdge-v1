@@ -12,7 +12,7 @@ import Footer from '../components/Footer';
 
 import AgentConnector from '../components/AgentConnector';
 
-const DEMO_BRIDGE_ID = '420';
+const DEMO_BRIDGE_ID = '431';
 
 const Section = ({ children, sx, variant = "default", ...props }) => {
     const theme = useTheme();
@@ -605,7 +605,7 @@ const DemoSection = () => {
                             playsInline
                             poster="/dotbridge-hero-cover.jpg"
                             style={{ width: '100%', height: 'auto', display: 'block' }}
-                            preload="metadata"
+                            preload="auto"
                             onPlay={() => setIsVideoPlaying(true)}
                             onEnded={() => setIsVideoPlaying(false)}
                             onPause={() => setIsVideoPlaying(false)}
@@ -1575,7 +1575,8 @@ const FinalCTASection = () => (
                 <DotBridgeButton
                     size="large"
                     variant="outlined"
-                    onClick={() => console.log('See It Live Clicked')}
+                    component={Link}
+                    to={`https://dotbridge.io/viewBridge/${DEMO_BRIDGE_ID}`}
                     sx={{
                         color: 'common.white',
                         borderColor: 'rgba(255,255,255,0.6)',
