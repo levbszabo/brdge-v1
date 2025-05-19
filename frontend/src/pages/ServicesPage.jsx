@@ -80,7 +80,7 @@ const impactMetrics = [
 ];
 
 // Use the same DEMO_BRIDGE_ID as landing page for consistency
-const DEMO_BRIDGE_ID = '398';
+const DEMO_BRIDGE_ID = '431';
 
 const ServicesPage = () => {
     const theme = useTheme();
