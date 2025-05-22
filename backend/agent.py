@@ -150,7 +150,7 @@ class Assistant(Agent):
         self.engagement_opportunities = []
         self.current_position = 0
         self.user_id = None
-        self.voice_id = "63406bbd-ce1b-4fff-8beb-86d3da9891b9"  # Default voice ID
+        self.voice_id = "95f07ec4-376e-40bc-a9f6-074beefb2f15"  # Default voice ID
         self.current_speech = {
             "started_at": None,
             "message": None,
@@ -201,7 +201,7 @@ class Assistant(Agent):
                 f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
             )
 
-            default_voice = "63406bbd-ce1b-4fff-8beb-86d3da9891b9"
+            default_voice = "95f07ec4-376e-40bc-a9f6-074beefb2f15"
             self.voice_id = self.brdge.get("voice_id", default_voice)
             if not self.voice_id:
                 self.voice_id = default_voice
