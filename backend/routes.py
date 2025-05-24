@@ -2072,6 +2072,10 @@ def get_agent_config(brdge_id):
             if "qa_pairs" in script.content:
                 response["qa_pairs"] = script.content.get("qa_pairs")
 
+            # Add model_config to the response if available
+            if "model_config" in script.content:
+                response["model_config"] = script.content.get("model_config")
+
             # Add brdge data for completeness
             response["brdge"] = brdge.to_dict()
 
@@ -2507,6 +2511,126 @@ def update_brdge_voice(brdge_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating brdge voice: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/model-config", methods=["GET"])
+@cross_origin()
+def get_model_config(brdge_id):
+    """Get the model configuration for a specific brdge"""
+    try:
+        # Check if brdge exists and is accessible
+        brdge = Brdge.query.filter_by(id=brdge_id).first()
+        if not brdge:
+            return jsonify({"error": "Brdge not found"}), 404
+
+        # Get the latest script to check for model configuration
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if script and script.content and isinstance(script.content, dict):
+            model_config = script.content.get("model_config", {})
+            if model_config:
+                return jsonify(model_config), 200
+
+        # Return default configuration if none exists
+        default_config = {
+            "mode": "standard",
+            "standard_model": "gpt-4.1",
+            "realtime_model": "gemini-2.0-flash-live-001",
+            "voice_id": brdge.voice_id,
+        }
+
+        return jsonify(default_config), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching model config: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/model-config", methods=["PUT"])
+@cross_origin()
+@jwt_required()
+def update_model_config(brdge_id):
+    """Update the model configuration for a specific brdge"""
+    try:
+        # Get the current user
+        current_user = get_current_user()
+
+        # Get the brdge and verify ownership
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first()
+        if not brdge:
+            return jsonify({"error": "Brdge not found or unauthorized"}), 404
+
+        # Get model config from request body
+        data = request.get_json()
+        mode = data.get("mode", "standard")
+        standard_model = data.get("standard_model", "gpt-4.1")
+        realtime_model = data.get("realtime_model", "gemini-2.0-flash-live-001")
+        voice_id = data.get("voice_id")
+
+        # Get or create the latest script for this brdge
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if not script:
+            # If no script exists, create one with just model config
+            script = BrdgeScript(
+                brdge_id=brdge_id, content={"model_config": {}}, status="pending"
+            )
+            db.session.add(script)
+            db.session.flush()  # Ensure we get the ID
+
+        # Ensure content is a dictionary
+        if not script.content:
+            script.content = {}
+
+        # Update model configuration in script content
+        script.content["model_config"] = {
+            "mode": mode,
+            "standard_model": standard_model,
+            "realtime_model": realtime_model,
+            "voice_id": voice_id,
+        }
+
+        # Mark the content as modified for SQLAlchemy
+        flag_modified(script, "content")
+
+        # Also update the brdge voice_id if provided
+        if voice_id is not None:
+            brdge.voice_id = voice_id
+
+        db.session.commit()
+
+        logger.info(
+            f"Updated model config for brdge {brdge_id}: mode={mode}, standard_model={standard_model}, realtime_model={realtime_model}"
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Model configuration updated successfully",
+                    "config": {
+                        "mode": mode,
+                        "standard_model": standard_model,
+                        "realtime_model": realtime_model,
+                        "voice_id": voice_id,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating model config: {str(e)}")
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 
