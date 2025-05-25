@@ -75,7 +75,7 @@ IMPORTANT: Your responses will be spoken aloud via text-to-speech. Use natural, 
 """,
 }
 
-# SYSTEM_PROMPT_SUFFIX - ENHANCED FOR GOAL ADHERENCE
+# SYSTEM_PROMPT_SUFFIX - ENHANCED FOR GOAL ADHERENCE AND PERSONALIZATION
 SYSTEM_PROMPT_SUFFIX = """
 # HOW TO RESPOND USING THE DATA BELOW
 You have access to the following context in JSON format. Use it to inform your responses:
@@ -85,6 +85,14 @@ You have access to the following context in JSON format. Use it to inform your r
 - `video_timeline`: Understand where you are in the presentation using `current_timestamp`. Refer to past or future segments based on this timeline.
 - `engagement_opportunities`: You may be asked to initiate these based on the timeline.
 - `specific_goal_or_cta`: If this field is present and non-empty in the JSON context, it outlines THE PRIMARY OBJECTIVE or desired user action for this entire interaction. All your responses, while natural and conversational, should subtly and strategically work towards guiding the user to achieve this goal or take this call to action. This objective should be your top priority in shaping your replies, especially if the bridge_type is 'vsl' or 'webinar'.
+- `viewer_personalization`: If present, this contains specific information about the viewer. USE THIS DATA TO CREATE A HIGHLY PERSONALIZED EXPERIENCE:
+  - Address them by name naturally (but not excessively - use their name 1-2 times max in a conversation)
+  - Reference their company, role, or industry when giving examples or explanations
+  - Tailor analogies and use cases to their specific context
+  - Address their specific challenges or interests directly
+  - Make recommendations that align with their goals or budget
+  - Adjust your language complexity based on their experience level
+  - Create a feeling that this content was specifically crafted for them
 
 # SPEECH OUTPUT FORMATTING RULES
 CRITICAL: Your responses will be converted to speech using Text-to-Speech technology. Follow these formatting rules strictly:
@@ -151,10 +159,16 @@ def prewarm(proc: JobProcess):
 
 
 class Assistant(Agent):
-    def __init__(self, brdge_id: str = None, room: rtc.Room = None) -> None:
+    def __init__(
+        self,
+        brdge_id: str = None,
+        room: rtc.Room = None,
+        personalization_id: str = None,
+    ) -> None:
         self.brdge_id = brdge_id
         self.room = room
         self.api_base_url = API_BASE_URL
+        self.personalization_id = personalization_id
         self.bridge_type = "general"
         self.personality = ""
         self.knowledge_content = ""
@@ -196,9 +210,11 @@ class Assistant(Agent):
             return False
 
         try:
-            response = requests.get(
-                f"{self.api_base_url}/brdges/{self.brdge_id}/agent-config"
-            )
+            # Check if we have a personalization ID to include
+            url = f"{self.api_base_url}/brdges/{self.brdge_id}/agent-config"
+            if hasattr(self, "personalization_id") and self.personalization_id:
+                url += f"?personalization_id={self.personalization_id}"
+            response = requests.get(url)
             response.raise_for_status()
             config_data = response.json()
             logger.debug(f"Fetched agent-config: {json.dumps(config_data, indent=2)}")
@@ -219,6 +235,12 @@ class Assistant(Agent):
             )
             logger.info(
                 f"Retrieved {len(self.engagement_opportunities)} engagement opportunities"
+            )
+
+            # Store personalization data if available
+            self.personalization_data = config_data.get("personalization_data")
+            self.personalization_record_id = config_data.get(
+                "personalization_record_id"
             )
 
             default_voice = "95f07ec4-376e-40bc-a9f6-074beefb2f15"
@@ -247,11 +269,159 @@ class Assistant(Agent):
             )
             return False
 
+    def build_personalized_context(self):
+        """Build a rich, natural personalization context from viewer data"""
+        if not self.personalization_data:
+            return None
+
+        # Get metadata if available
+        metadata = self.personalization_data.get("_metadata", {})
+        columns_info = metadata.get("columns", [])
+
+        # Create a mapping of field names to their usage notes
+        field_context = {}
+        for col_info in columns_info:
+            field_context[col_info["name"]] = {
+                "usage_note": col_info.get("usage_note", ""),
+                "example": col_info.get("example", ""),
+            }
+
+        # Build natural language context
+        context_parts = []
+
+        # Priority fields for natural introduction
+        priority_fields = [
+            "name",
+            "first_name",
+            "full_name",
+            "company",
+            "role",
+            "title",
+            "industry",
+        ]
+
+        # Handle name variations
+        viewer_name = None
+        for name_field in ["name", "first_name", "full_name"]:
+            if (
+                name_field in self.personalization_data
+                and self.personalization_data[name_field]
+            ):
+                viewer_name = self.personalization_data[name_field]
+                break
+
+        if viewer_name:
+            context_parts.append(f"The viewer's name is {viewer_name}")
+
+        # Handle company and role
+        company = self.personalization_data.get(
+            "company"
+        ) or self.personalization_data.get("organization")
+        role = (
+            self.personalization_data.get("role")
+            or self.personalization_data.get("title")
+            or self.personalization_data.get("position")
+        )
+
+        if company and role:
+            context_parts.append(f"They work as {role} at {company}")
+        elif company:
+            context_parts.append(f"They work at {company}")
+        elif role:
+            context_parts.append(f"They work as {role}")
+
+        # Handle industry
+        industry = self.personalization_data.get(
+            "industry"
+        ) or self.personalization_data.get("sector")
+        if industry:
+            context_parts.append(f"in the {industry} industry")
+
+        # Handle location
+        location = (
+            self.personalization_data.get("location")
+            or self.personalization_data.get("city")
+            or self.personalization_data.get("country")
+        )
+        if location:
+            context_parts.append(f"They are based in {location}")
+
+        # Process remaining fields intelligently
+        processed_fields = set(
+            priority_fields
+            + [
+                "company",
+                "organization",
+                "title",
+                "position",
+                "industry",
+                "sector",
+                "location",
+                "city",
+                "country",
+                "email",
+                "_metadata",
+            ]
+        )
+
+        for field, value in self.personalization_data.items():
+            if field not in processed_fields and value:
+                # Get the usage note for this field
+                field_info = field_context.get(field, {})
+                usage_note = field_info.get("usage_note", "")
+
+                # Create contextual sentences based on field type and usage note
+                if "interest" in field.lower() or "interested" in usage_note.lower():
+                    context_parts.append(f"They are interested in {value}")
+                elif "challenge" in field.lower() or "pain" in field.lower():
+                    context_parts.append(f"They face challenges with {value}")
+                elif "goal" in field.lower() or "objective" in field.lower():
+                    context_parts.append(f"Their goal is {value}")
+                elif "experience" in field.lower() or "years" in field.lower():
+                    context_parts.append(f"They have {value} of experience")
+                elif "size" in field.lower() or "employees" in field.lower():
+                    context_parts.append(f"Their organization has {value}")
+                elif "budget" in field.lower():
+                    context_parts.append(f"They have a budget of {value}")
+                elif usage_note:
+                    # Use the usage note to create context
+                    context_parts.append(f"{usage_note}: {value}")
+                else:
+                    # Generic handling
+                    context_parts.append(f"{field.replace('_', ' ').title()}: {value}")
+
+        # Join all parts into a coherent context
+        if context_parts:
+            personalized_context = (
+                "VIEWER PERSONALIZATION DATA:\n" + ". ".join(context_parts) + "."
+            )
+
+            # Add instructions for using the personalization data
+            personalized_context += """
+
+PERSONALIZATION INSTRUCTIONS:
+- Use this information naturally throughout the conversation
+- Reference their specific context when relevant
+- Tailor examples and analogies to their industry/role
+- Address their specific challenges or interests when appropriate
+- Make the conversation feel personally crafted for them
+- Don't force personalization - use it where it flows naturally
+- Remember you're speaking to a specific person, not a generic audience"""
+
+            return personalized_context
+
+        return None
+
     def _build_enhanced_system_prompt(self):
         try:
             base_instructions = BASE_PROMPTS.get(
                 self.bridge_type, BASE_PROMPTS["general"]
             )
+
+            # Add personalization context if available
+            personalized_context = self.build_personalized_context()
+            if personalized_context:
+                base_instructions = personalized_context + "\n\n" + base_instructions
 
             # Ensure self.brdge is populated (it should be by initialize method)
             brdge_data = self.brdge if hasattr(self, "brdge") and self.brdge else {}
@@ -285,6 +455,16 @@ class Assistant(Agent):
                 "specific_goal_or_cta": additional_instructions,  # Use fetched additional_instructions
             }
 
+            # Add personalization data to context if available
+            if hasattr(self, "personalization_data") and self.personalization_data:
+                # Remove metadata before including in context
+                clean_personalization = {
+                    k: v
+                    for k, v in self.personalization_data.items()
+                    if k != "_metadata"
+                }
+                context_data["viewer_personalization"] = clean_personalization
+
             formatted_json = json.dumps(context_data, indent=2)
             final_prompt = f"{base_instructions}\\n{SYSTEM_PROMPT_SUFFIX.format(json_context=formatted_json)}"
 
@@ -294,11 +474,29 @@ class Assistant(Agent):
             # Append type-specific conversational strategies
             conversational_strategy_prompt = ""
             if self.bridge_type in ["vsl", "webinar"]:
-                conversational_strategy_prompt = """
+                # Enhanced VSL/Webinar strategy with personalization
+                personalized_sales_strategy = """
 
     # Lead Nurturing & Soft Booking Strategy:
     Your primary goal remains to guide the user towards the `specific_goal_or_cta`.
     As you converse, listen for cues of strong interest or questions about next steps. Keep your interactions brief and friendly. Actively apply relevant persuasive techniques, communication patterns, or persona archetypes (e.g., 'Consultative Seller', 'Challenger') identified in your KNOWLEDGE_BASE and TEACHING_PERSONA to build rapport and effectively guide the user.
+    """
+
+                # Add personalization-specific strategies for sales contexts
+                if hasattr(self, "personalization_data") and self.personalization_data:
+                    personalized_sales_strategy += """
+    
+    # PERSONALIZED SALES APPROACH:
+    You have specific information about this viewer. Use it strategically:
+    - If you know their company size or budget, tailor your value proposition accordingly
+    - If you know their industry, use industry-specific examples and terminology
+    - If you know their role, speak to the specific challenges and metrics they care about
+    - If you know their pain points or goals, address them directly in your responses
+    - Create urgency by referencing their specific situation (e.g., "For a company in [industry] like yours...")
+    - Make the conversation feel like a 1-on-1 consultation, not a generic pitch
+    """
+
+                personalized_sales_strategy += """
     If the user seems like a qualified lead (e.g., their needs align with the solution, they express positive sentiment towards the offering):
     1.  Subtly try to understand their specific needs or pain points that the product/service can address. A quick, "So, what are you hoping to achieve with something like this?" can work well. Keep it to one or two short questions.
     2.  If they are positive and ask "what's next?", "how do I sign up?", or similar, or if it feels like a natural transition after addressing their main points, you can suggest a more detailed discussion, demo, consultation, or the direct CTA. Make your suggestion concise.
@@ -307,14 +505,33 @@ class Assistant(Agent):
     5.  Avoid being pushy. If they are hesitant to share contact info or schedule, acknowledge that briefly and offer to provide more information or answer more questions first. ("No problem at all. Happy to answer any other questions you have.") Your aim is to be a helpful guide, not a high-pressure salesperson.
     Remember to use the `knowledge_base` and `qa_pairs` to address objections or provide more details, always keeping responses short and to the point.
     """
+                conversational_strategy_prompt = personalized_sales_strategy
             elif self.bridge_type in [
                 "course",
                 "onboarding",
             ]:  # Assuming quiz falls under course/onboarding context for discovery
-                conversational_strategy_prompt = """
+                # Enhanced learning strategy with personalization
+                personalized_learning_strategy = """
 
     # Discovery & Feedback Collection Strategy:
     Your primary goal is to facilitate learning and successful adoption by being an effective instructor or guide. Keep your interactions helpful and concise.
+    """
+
+                # Add personalization-specific strategies for educational contexts
+                if hasattr(self, "personalization_data") and self.personalization_data:
+                    personalized_learning_strategy += """
+    
+    # PERSONALIZED LEARNING APPROACH:
+    You have specific information about this learner. Use it to enhance their experience:
+    - If you know their experience level, adjust your explanations accordingly (beginner vs advanced)
+    - If you know their role or industry, use relevant examples from their field
+    - If you know their learning goals, connect the material to those specific objectives
+    - If you know their company or use case, relate concepts to their actual work scenarios
+    - Reference their background when introducing new concepts (e.g., "Since you work in [industry]...")
+    - Acknowledge their specific context to build rapport (e.g., "As someone in [role], you'll find this particularly useful...")
+    """
+
+                personalized_learning_strategy += """
     As you interact:
     1.  Pay close attention to questions that indicate confusion, a gap in understanding, or a need for more detailed explanation than your current `knowledge_base` provides.
     2.  Listen for any expressions of frustration, pain points with the current process/material, or suggestions for improvement.
@@ -322,6 +539,7 @@ class Assistant(Agent):
     4.  Your objective is to identify these key moments. You should then inform the user that this feedback is valuable and will be noted for the creator/team to review. For example: "I'll make sure to note that down for the creator." or "Good question, I'll flag that." Keep it short.
     5.  Do NOT try to collect personal contact information for escalation unless it is explicitly part of a defined `specific_goal_or_cta`. The focus is on improving the content/product itself based on user interaction.
     """
+                conversational_strategy_prompt = personalized_learning_strategy
 
             if conversational_strategy_prompt:
                 final_prompt += f"\\n{conversational_strategy_prompt}"
@@ -446,7 +664,6 @@ class Assistant(Agent):
             logger.info(
                 f"Triggering {engagement_type} engagement about {', '.join(concepts)}"
             )
-            logger.info(f"DEBUG: Full engagement opportunity data: {opportunity}")
 
             # Check if we're in realtime mode
             is_realtime_mode = (
@@ -567,11 +784,13 @@ Context for the discussion:
 - If user needs guidance: {if_incorrect}
 - Additional context: {explanation}
 
+PERSONALIZATION: If you have viewer personalization data, use it naturally in your question or discussion. For example, reference their company, role, or specific context when asking the question or discussing the concept.
+
 Remember: This is a CONVERSATION PAUSE, not a continuation of the video narration.
 
 YOUR IMMEDIATE TASK:
 1. Say something like "Actually, let me pause here for a moment..."
-2. Then ASK THE QUESTION: "{question}"
+2. Then ASK THE QUESTION: "{question}" (personalize if possible)
 3. WAIT for the user to respond (do not continue speaking)
 4. Only after they respond, have a natural discussion
 
@@ -752,12 +971,10 @@ Generate a natural response guiding the discussion based on their input. Keep it
 
         elif engagement_type == "guided_conversation":
             convo_flow = opportunity.get("conversation_flow")
-            logger.info(f"DEBUG: Guided conversation flow data: {convo_flow}")
             if convo_flow:
                 initial_prompt = convo_flow.get(
                     "agent_initiator", "Let's talk about something."
                 )
-                logger.info(f"DEBUG: Extracted initial_prompt: '{initial_prompt}'")
                 goal = convo_flow.get("goal", "Have a guided conversation.")
                 fallback = convo_flow.get("fallback", "Okay, let's move on.")
                 # *** Rephrase fallback as an instruction/goal ***
@@ -785,7 +1002,11 @@ Now, listen carefully to the user's upcoming response. Analyze it based on the f
 
 If the response doesn't clearly fit any defined type, use the fallback approach: {fallback_intent}
 
-Generate a natural, conversational follow-up. Your primary task is to execute the specific persuasive or goal-oriented strategy defined in the matched path's instruction (`agent_followup_strategy`). Embody your persona, leveraging any specified `persuasive_archetype` or detailed communication tactics from your TEACHING_PERSONA and relevant insights from your KNOWLEDGE_BASE. After delivering this single follow-up response, you should return to the normal interaction flow.
+Generate a natural, conversational follow-up. Your primary task is to execute the specific persuasive or goal-oriented strategy defined in the matched path's instruction (`agent_followup_strategy`). Embody your persona, leveraging any specified `persuasive_archetype` or detailed communication tactics from your TEACHING_PERSONA and relevant insights from your KNOWLEDGE_BASE. 
+
+PERSONALIZATION: If you have viewer personalization data available, incorporate it naturally into your response where relevant. Reference their specific context, company, role, or challenges to make the conversation feel tailored to them personally.
+
+After delivering this single follow-up response, you should return to the normal interaction flow.
 """
             else:
                 # Fallback if convo_flow is missing
@@ -829,11 +1050,13 @@ After responding to the user based on the specific engagement instructions above
         if initial_prompt:
             # Standard mode - existing approach that works well
             logger.info(f"Standard mode: Agent will ask the engagement question")
-            logger.info(f"DEBUG: About to speak initial_prompt: '{initial_prompt}'")
-            instruction_for_llm = (
-                f"System: Please now say the following to the user '{initial_prompt}'"
-            )
-            logger.info(f"DEBUG: LLM instruction: '{instruction_for_llm}'")
+
+            # Add personalization hint if we have personalization data
+            personalization_hint = ""
+            if hasattr(self, "personalization_data") and self.personalization_data:
+                personalization_hint = " If possible, naturally personalize this based on what you know about the viewer."
+
+            instruction_for_llm = f"System: Please now say the following to the user '{initial_prompt}'{personalization_hint}"
 
             current_messages = list(self.chat_ctx.items)
             new_system_message = llm.ChatMessage(
@@ -884,9 +1107,6 @@ After responding to the user based on the specific engagement instructions above
 
     async def _finalize_usage_log(self, message_content: str, interrupted: bool):
         """Helper to update the usage log."""
-        logger.info(
-            f"AGENT_LOG: Attempting to finalize usage log. Log ID: {self.current_speech.get('log_id')}, Message: '{message_content[:50]}...'"
-        )  # Added for debugging
         if self.current_speech.get("started_at") and self.current_speech.get("log_id"):
             ended_at = datetime.utcnow()
             duration_seconds = (
@@ -949,20 +1169,27 @@ After responding to the user based on the specific engagement instructions above
 
             duration_minutes = duration_seconds / 60.0
 
+            # Include personalization ID if available
+            conversation_data = {
+                "brdge_id": self.brdge_id,
+                "viewer_user_id": viewer_user_id,
+                "anonymous_id": anonymous_id,
+                "role": role,
+                "message": message_content,
+                "timestamp": datetime.utcnow().isoformat(),
+                "was_interrupted": interrupted,
+                "duration_seconds": round(duration_minutes, 2),
+            }
+
+            # Add personalization ID if we have it
+            if hasattr(self, "personalization_id") and self.personalization_id:
+                conversation_data["personalization_id"] = self.personalization_id
+
             # CORRECTED: Use await asyncio.to_thread
             response = await asyncio.to_thread(
                 requests.post,
                 f"{self.api_base_url}/brdges/{self.brdge_id}/conversation-logs",
-                json={
-                    "brdge_id": self.brdge_id,
-                    "viewer_user_id": viewer_user_id,
-                    "anonymous_id": anonymous_id,
-                    "role": role,
-                    "message": message_content,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "was_interrupted": interrupted,
-                    "duration_seconds": round(duration_minutes, 2),
-                },
+                json=conversation_data,
             )
             response.raise_for_status()
             logger.info(
@@ -1055,15 +1282,19 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"Starting assistant for participant {participant.identity}")
     logger.info(f"Full participant identity: {participant.identity}")
 
-    # Extract user_id and brdge_id
+    # Extract user_id, brdge_id, and personalization_id
     user_id = None
     brdge_id = None
+    personalization_id = None
     try:
         identity_parts = participant.identity.split("-")
         logger.info(f"Identity parts: {identity_parts}")
         if len(identity_parts) >= 3:
             brdge_id = identity_parts[1]
             user_id = identity_parts[2]
+            # Check if there's a personalization ID in the identity
+            if len(identity_parts) >= 4:
+                personalization_id = identity_parts[3]
             logger.info(f"Extracted brdge_id: {brdge_id}, user_id: {user_id}")
         elif len(identity_parts) >= 2:
             brdge_id = identity_parts[1]
@@ -1072,11 +1303,16 @@ async def entrypoint(ctx: JobContext):
             logger.warning(
                 f"Could not parse brdge_id from identity: {participant.identity}"
             )
-            # Attempt to get brdge_id from room metadata if available
+            # Attempt to get brdge_id and personalization_id from room metadata if available
             try:
                 metadata = json.loads(ctx.room.metadata or "{}")
                 brdge_id = metadata.get("brdge_id")
+                personalization_id = metadata.get("personalization_id")
                 logger.info(f"Extracted brdge_id from room metadata: {brdge_id}")
+                if personalization_id:
+                    logger.info(
+                        f"Extracted personalization_id from room metadata: {personalization_id}"
+                    )
             except Exception as meta_e:
                 logger.error(f"Could not get brdge_id from metadata: {meta_e}")
 
@@ -1101,7 +1337,9 @@ async def entrypoint(ctx: JobContext):
     except Exception as e:
         logger.error(f"Error loading VAD model: {e}")
         return  # Cannot proceed without VAD
-    agent = Assistant(brdge_id=brdge_id, room=ctx.room)
+    agent = Assistant(
+        brdge_id=brdge_id, room=ctx.room, personalization_id=personalization_id
+    )
     agent.user_id = user_id
 
     # Fetch model configuration from agent config

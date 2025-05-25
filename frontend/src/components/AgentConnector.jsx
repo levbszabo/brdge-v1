@@ -9,6 +9,17 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
     const [isMobile, setIsMobile] = useState(false);
     const iframeRef = useRef(null);
     const [isIframeLoaded, setIsIframeLoaded] = useState(false);
+    const [personalizationId, setPersonalizationId] = useState(null);
+
+    // Extract personalization ID from URL
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+        if (id) {
+            setPersonalizationId(id);
+            console.log('Extracted personalization ID from URL:', id);
+        }
+    }, []);
 
     // Add a CSS class to hide iframe controls
     useEffect(() => {
@@ -92,6 +103,12 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
                     userId: userId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
                 });
 
+                // Add personalization ID if available
+                if (personalizationId) {
+                    params.append('id', personalizationId);
+                    console.log('Adding personalization ID to iframe URL:', personalizationId);
+                }
+
                 const url = `${baseUrl}?${params.toString()}`;
                 console.log('Connector URL (token removed):', url);
                 setConnectorUrl(url);
@@ -105,7 +122,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
         };
 
         initConnection();
-    }, [brdgeId, agentType, isMobile, userId]);
+    }, [brdgeId, agentType, isMobile, userId, personalizationId]);
 
     useEffect(() => {
         if (isIframeLoaded && token && iframeRef.current && iframeRef.current.contentWindow) {
@@ -197,7 +214,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId }) {
                     src={connectorUrl}
                     title="Agent Connector"
                     allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-downloads"
                     referrerPolicy="origin"
                     onLoad={() => setIsIframeLoaded(true)}
                     style={{
