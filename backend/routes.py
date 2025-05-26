@@ -36,6 +36,8 @@ from models import (
     ConversationLogs,
     ServiceLead,
     JobApplication,  # Add JobApplication model
+    PersonalizationTemplate,  # Add PersonalizationTemplate model
+    PersonalizationRecord,  # Add PersonalizationRecord model
 )
 from utils import (
     clone_voice_helper,
@@ -177,6 +179,18 @@ def get_current_user():
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Handle OPTIONS requests for CORS preflight
+        if request.method == "OPTIONS":
+            response = make_response()
+            response.headers.add(
+                "Access-Control-Allow-Headers", "Authorization, Content-Type"
+            )
+            response.headers.add(
+                "Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"
+            )
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            return response
+
         user = get_current_user()
         if not user:
             return jsonify({"error": "Authentication required"}), 401
@@ -1995,6 +2009,37 @@ def get_agent_config(brdge_id):
         # Get the brdge to check permissions
         brdge = Brdge.query.get_or_404(brdge_id)
 
+        # Check for personalization ID in query params
+        personalization_id = request.args.get("personalization_id")
+        personalization_data = None
+        personalization_record = None
+
+        if personalization_id:
+            # Look up the personalization record
+            record = PersonalizationRecord.query.filter_by(
+                unique_id=personalization_id
+            ).first()
+
+            if record:
+                # Update access metrics
+                record.last_accessed = datetime.utcnow()
+                record.access_count += 1
+                db.session.commit()
+
+                personalization_data = record.data
+                personalization_record = record
+
+                # Get template info for context
+                template = record.template
+                if template:
+                    # Add column metadata to help agent understand the data
+                    personalization_data["_metadata"] = {
+                        "template_name": template.name,
+                        "columns": template.columns,
+                        "personalization_id": personalization_id,
+                        "record_id": record.id,
+                    }
+
         # Get the latest script to extract data
         script = (
             BrdgeScript.query.filter_by(brdge_id=brdge_id)
@@ -2033,6 +2078,10 @@ def get_agent_config(brdge_id):
             "personality": brdge.agent_personality or "friendly AI assistant",
             "agentPersonality": simplified_agent_personality,
             "knowledgeBase": [],
+            "personalization_data": personalization_data,  # Add personalization data
+            "personalization_record_id": (
+                personalization_record.id if personalization_record else None
+            ),
         }
 
         # Add presentation document to knowledge base if it exists
@@ -2071,6 +2120,10 @@ def get_agent_config(brdge_id):
             # Add qa_pairs to the response if available
             if "qa_pairs" in script.content:
                 response["qa_pairs"] = script.content.get("qa_pairs")
+
+            # Add model_config to the response if available
+            if "model_config" in script.content:
+                response["model_config"] = script.content.get("model_config")
 
             # Add brdge data for completeness
             response["brdge"] = brdge.to_dict()
@@ -2507,6 +2560,126 @@ def update_brdge_voice(brdge_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error updating brdge voice: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/model-config", methods=["GET"])
+@cross_origin()
+def get_model_config(brdge_id):
+    """Get the model configuration for a specific brdge"""
+    try:
+        # Check if brdge exists and is accessible
+        brdge = Brdge.query.filter_by(id=brdge_id).first()
+        if not brdge:
+            return jsonify({"error": "Brdge not found"}), 404
+
+        # Get the latest script to check for model configuration
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if script and script.content and isinstance(script.content, dict):
+            model_config = script.content.get("model_config", {})
+            if model_config:
+                return jsonify(model_config), 200
+
+        # Return default configuration if none exists
+        default_config = {
+            "mode": "standard",
+            "standard_model": "gpt-4.1",
+            "realtime_model": "gemini-2.0-flash-live-001",
+            "voice_id": brdge.voice_id,
+        }
+
+        return jsonify(default_config), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching model config: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/model-config", methods=["PUT"])
+@cross_origin()
+@jwt_required()
+def update_model_config(brdge_id):
+    """Update the model configuration for a specific brdge"""
+    try:
+        # Get the current user
+        current_user = get_current_user()
+
+        # Get the brdge and verify ownership
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=current_user.id).first()
+        if not brdge:
+            return jsonify({"error": "Brdge not found or unauthorized"}), 404
+
+        # Get model config from request body
+        data = request.get_json()
+        mode = data.get("mode", "standard")
+        standard_model = data.get("standard_model", "gpt-4.1")
+        realtime_model = data.get("realtime_model", "gemini-2.0-flash-live-001")
+        voice_id = data.get("voice_id")
+
+        # Get or create the latest script for this brdge
+        script = (
+            BrdgeScript.query.filter_by(brdge_id=brdge_id)
+            .order_by(BrdgeScript.id.desc())
+            .first()
+        )
+
+        if not script:
+            # If no script exists, create one with just model config
+            script = BrdgeScript(
+                brdge_id=brdge_id, content={"model_config": {}}, status="pending"
+            )
+            db.session.add(script)
+            db.session.flush()  # Ensure we get the ID
+
+        # Ensure content is a dictionary
+        if not script.content:
+            script.content = {}
+
+        # Update model configuration in script content
+        script.content["model_config"] = {
+            "mode": mode,
+            "standard_model": standard_model,
+            "realtime_model": realtime_model,
+            "voice_id": voice_id,
+        }
+
+        # Mark the content as modified for SQLAlchemy
+        flag_modified(script, "content")
+
+        # Also update the brdge voice_id if provided
+        if voice_id is not None:
+            brdge.voice_id = voice_id
+
+        db.session.commit()
+
+        logger.info(
+            f"Updated model config for brdge {brdge_id}: mode={mode}, standard_model={standard_model}, realtime_model={realtime_model}"
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Model configuration updated successfully",
+                    "config": {
+                        "mode": mode,
+                        "standard_model": standard_model,
+                        "realtime_model": realtime_model,
+                        "voice_id": voice_id,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating model config: {str(e)}")
+        db.session.rollback()
         return jsonify({"error": str(e)}), 500
 
 
@@ -3396,6 +3569,18 @@ def add_conversation_log(brdge_id):
         else:
             timestamp = datetime.utcnow()
 
+        # Check for personalization ID
+        personalization_id = data.get("personalization_id")
+        personalization_record_id = None
+
+        if personalization_id:
+            # Look up the personalization record
+            record = PersonalizationRecord.query.filter_by(
+                unique_id=personalization_id
+            ).first()
+            if record:
+                personalization_record_id = record.id
+
         # Create conversation log
         conversation_log = ConversationLogs(
             brdge_id=brdge_id,
@@ -3407,6 +3592,7 @@ def add_conversation_log(brdge_id):
             timestamp=timestamp,
             was_interrupted=was_interrupted,
             duration_seconds=duration_seconds,
+            personalization_record_id=personalization_record_id,
         )
 
         db.session.add(conversation_log)
@@ -3464,10 +3650,19 @@ def get_conversation_logs(brdge_id):
         # Get conversations with most recent first
         conversations = query.order_by(ConversationLogs.timestamp.desc()).all()
 
+        # Enhance conversation data with personalization info
+        enhanced_conversations = []
+        for conv in conversations:
+            conv_dict = conv.to_dict()
+            if conv.personalization_record_id and conv.personalization_record:
+                conv_dict["personalization_data"] = conv.personalization_record.data
+                conv_dict["personalization_email"] = conv.personalization_record.email
+            enhanced_conversations.append(conv_dict)
+
         return (
             jsonify(
                 {
-                    "conversations": [conv.to_dict() for conv in conversations],
+                    "conversations": enhanced_conversations,
                     "count": len(conversations),
                 }
             ),
@@ -4378,4 +4573,668 @@ def handle_job_application(job_id):
         )
 
 
-# ... (rest of your routes.py)
+# ===== PERSONALIZATION ENDPOINTS =====
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/templates", methods=["GET"])
+@login_required
+def get_personalization_templates(user, brdge_id):
+    """Get all personalization templates for a bridge"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    templates = PersonalizationTemplate.query.filter_by(
+        brdge_id=brdge_id, is_active=True
+    ).all()
+
+    # Include record count for each template
+    result = []
+    for template in templates:
+        template_dict = template.to_dict()
+        template_dict["record_count"] = PersonalizationRecord.query.filter_by(
+            template_id=template.id
+        ).count()
+        result.append(template_dict)
+
+    return jsonify({"templates": result}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/templates", methods=["POST"])
+@login_required
+def create_personalization_template(user, brdge_id):
+    """Create a new personalization template"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    # Validate required fields
+    if not data.get("name"):
+        return jsonify({"error": "Template name is required"}), 400
+
+    if not data.get("columns") or not isinstance(data.get("columns"), list):
+        return jsonify({"error": "Columns must be a non-empty list"}), 400
+
+    # Create the template
+    template = PersonalizationTemplate(
+        brdge_id=brdge_id, name=data["name"], columns=data["columns"]
+    )
+
+    db.session.add(template)
+    db.session.commit()
+
+    return jsonify({"template": template.to_dict()}), 201
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/upload-csv", methods=["POST"])
+@login_required
+def upload_personalization_csv(user, brdge_id):
+    """Upload CSV and create personalization records"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Check for file
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
+
+    # Check file extension
+    if not file.filename.lower().endswith(".csv"):
+        return jsonify({"error": "File must be a CSV"}), 400
+
+    template_id = request.form.get("template_id")
+    if not template_id:
+        return jsonify({"error": "Template ID is required"}), 400
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    try:
+        # Import csv_processor here to avoid circular imports
+        from personalization_utils.csv_processor import process_csv_upload
+
+        # Process the CSV
+        records = process_csv_upload(file, template)
+
+        return (
+            jsonify(
+                {
+                    "message": f"Successfully created {len(records)} personalization records",
+                    "records": [
+                        r.to_dict() for r in records[:10]
+                    ],  # Return first 10 as preview
+                    "total": len(records),
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error processing CSV upload: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/templates/<int:template_id>/records",
+    methods=["GET"],
+)
+@login_required
+def get_personalization_records(user, brdge_id, template_id):
+    """Get all personalization records for a template"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    # Get all records for this template
+    records = PersonalizationRecord.query.filter_by(template_id=template_id).all()
+
+    return (
+        jsonify({"records": [r.to_dict() for r in records], "total": len(records)}),
+        200,
+    )
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/templates/<int:template_id>/records",
+    methods=["POST"],
+)
+@login_required
+def create_personalization_record(user, brdge_id, template_id):
+    """Create a single personalization record manually"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    data = request.get_json()
+    if not data or not data.get("data"):
+        return jsonify({"error": "Record data is required"}), 400
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    try:
+        # Import unique ID generator
+        from personalization_utils.unique_id import generate_unique_id
+
+        # Generate unique ID
+        unique_id = generate_unique_id()
+
+        # Extract email if present
+        record_data = data["data"]
+        email = record_data.get("email", "")
+
+        # Create record
+        record = PersonalizationRecord(
+            template_id=template_id,
+            unique_id=unique_id,
+            data=record_data,
+            email=email,
+        )
+
+        db.session.add(record)
+        db.session.commit()
+
+        return (
+            jsonify(
+                {"message": "Record created successfully", "record": record.to_dict()}
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating personalization record: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/records/<int:record_id>",
+    methods=["DELETE"],
+)
+@login_required
+def delete_personalization_record(user, brdge_id, record_id):
+    """Delete a personalization record"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Get the record and verify it belongs to a template for this bridge
+    record = PersonalizationRecord.query.get_or_404(record_id)
+    template = record.template
+
+    if template.brdge_id != brdge_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    db.session.delete(record)
+    db.session.commit()
+
+    return jsonify({"message": "Record deleted successfully"}), 200
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/records/bulk-delete",
+    methods=["DELETE"],
+)
+@login_required
+def bulk_delete_personalization_records(user, brdge_id):
+    """Delete multiple personalization records"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    data = request.get_json()
+    if not data or not data.get("record_ids"):
+        return jsonify({"error": "Record IDs are required"}), 400
+
+    record_ids = data.get("record_ids")
+    if not isinstance(record_ids, list):
+        return jsonify({"error": "Record IDs must be a list"}), 400
+
+    try:
+        # Get all records and verify they belong to templates for this bridge
+        records = PersonalizationRecord.query.filter(
+            PersonalizationRecord.id.in_(record_ids)
+        ).all()
+
+        if not records:
+            return jsonify({"error": "No records found"}), 404
+
+        # Verify all records belong to templates for this bridge
+        deleted_count = 0
+        for record in records:
+            if record.template.brdge_id == brdge_id:
+                db.session.delete(record)
+                deleted_count += 1
+
+        if deleted_count == 0:
+            return jsonify({"error": "No authorized records to delete"}), 403
+
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": f"Successfully deleted {deleted_count} records",
+                    "deleted_count": deleted_count,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error bulk deleting personalization records: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/records", methods=["POST"])
+@login_required
+def create_personalization_records(user, brdge_id):
+    """Create personalization records manually"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    template_id = data.get("template_id")
+    records_data = data.get("records", [])
+
+    if not template_id:
+        return jsonify({"error": "Template ID is required"}), 400
+
+    if not records_data or not isinstance(records_data, list):
+        return jsonify({"error": "Records must be a non-empty list"}), 400
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    try:
+        # Import unique ID generator
+        from personalization_utils.unique_id import generate_unique_id
+
+        created_records = []
+
+        for record_data in records_data:
+            # Generate unique ID
+            unique_id = generate_unique_id()
+
+            # Extract email if present
+            email = record_data.get("email", "")
+
+            # Create record
+            record = PersonalizationRecord(
+                template_id=template_id,
+                unique_id=unique_id,
+                data=record_data,
+                email=email,
+            )
+
+            db.session.add(record)
+            created_records.append(record)
+
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": f"Successfully created {len(created_records)} records",
+                    "records": [r.to_dict() for r in created_records],
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating personalization records: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route("/api/personalization/<string:unique_id>", methods=["GET"])
+def get_personalization_data(unique_id):
+    """Get personalization data for a unique ID (public endpoint)"""
+    record = PersonalizationRecord.query.filter_by(unique_id=unique_id).first()
+
+    if not record:
+        # Return empty data instead of 404 to avoid revealing valid IDs
+        return jsonify({"data": {}}), 200
+
+    # Update access metrics
+    record.last_accessed = datetime.utcnow()
+    record.access_count += 1
+    db.session.commit()
+
+    # Get the associated bridge info
+    template = record.template
+    brdge = template.brdge
+
+    return (
+        jsonify(
+            {
+                "data": record.data,
+                "brdge_id": brdge.id,
+                "template_columns": template.columns,
+            }
+        ),
+        200,
+    )
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/export", methods=["GET"])
+@login_required
+def export_personalization_links(user, brdge_id):
+    """Export all personalization links as CSV"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    template_id = request.args.get("template_id")
+    if not template_id:
+        return jsonify({"error": "Template ID is required"}), 400
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    # Get all records for this template
+    records = PersonalizationRecord.query.filter_by(template_id=template_id).all()
+
+    if not records:
+        return jsonify({"error": "No records found for this template"}), 404
+
+    # Create CSV
+    import csv
+    from io import StringIO
+
+    output = StringIO()
+
+    # Get column names from first record
+    first_record_data = records[0].data
+    fieldnames = (
+        ["personalized_link"]
+        + list(first_record_data.keys())
+        + ["access_count", "last_accessed"]
+    )
+
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+
+    # Get base URL from request
+    base_url = request.host_url.rstrip("/")
+
+    for record in records:
+        row = {
+            "personalized_link": f"{base_url}/viewBridge/{brdge.public_id}?pid={record.unique_id}",
+            "access_count": record.access_count,
+            "last_accessed": (
+                record.last_accessed.isoformat() if record.last_accessed else "Never"
+            ),
+        }
+        # Add all data fields
+        row.update(record.data)
+        writer.writerow(row)
+
+    # Prepare response
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename=personalization_links_{template.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    )
+    response.headers["Content-Type"] = "text/csv"
+
+    return response
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/templates/<int:template_id>",
+    methods=["PUT"],
+)
+@login_required
+def update_personalization_template(user, brdge_id, template_id):
+    """Update a personalization template's columns and metadata"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    try:
+        # Update template fields
+        if "name" in data:
+            template.name = data["name"]
+
+        if "columns" in data:
+            # Validate columns structure
+            columns = data["columns"]
+            if not isinstance(columns, list):
+                return jsonify({"error": "Columns must be a list"}), 400
+
+            for col in columns:
+                required_fields = ["name", "usage_note"]
+                if not all(field in col for field in required_fields):
+                    return (
+                        jsonify(
+                            {
+                                "error": f"Column missing required fields: {required_fields}"
+                            }
+                        ),
+                        400,
+                    )
+
+            template.columns = columns
+
+        template.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Template updated successfully",
+                    "template": template.to_dict(),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error updating template: {str(e)}")
+        return jsonify({"error": str(e)}), 400
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/templates/<int:template_id>",
+    methods=["DELETE"],
+)
+@login_required
+def delete_personalization_template(user, brdge_id, template_id):
+    """Delete a personalization template (soft delete)"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    # Soft delete by marking as inactive
+    template.is_active = False
+    db.session.commit()
+
+    return jsonify({"message": "Template deleted successfully"}), 200
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/analyze-csv", methods=["POST"])
+@login_required
+def analyze_csv_for_template_creation(user, brdge_id):
+    """Analyze uploaded CSV and suggest template structure using AI"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Check for file
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    if file.filename == "" or not file.filename.lower().endswith(".csv"):
+        return jsonify({"error": "Please upload a valid CSV file"}), 400
+
+    try:
+        # Save file temporarily for analysis
+        temp_filename = secure_filename(f"temp_analysis_{uuid.uuid4()}_{file.filename}")
+        temp_path = os.path.join("/tmp", temp_filename)
+        os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+        file.save(temp_path)
+
+        # Analyze using Gemini
+        analysis = gemini.analyze_csv_for_personalization(temp_path)
+
+        # Clean up temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return jsonify(analysis), 200
+
+    except Exception as e:
+        # Clean up temp file on error
+        if "temp_path" in locals() and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        logger.error(f"Error analyzing CSV: {str(e)}")
+        return jsonify({"error": f"Failed to analyze CSV: {str(e)}"}), 400
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/create-from-csv", methods=["POST"]
+)
+@login_required
+def create_template_and_records_from_csv(user, brdge_id):
+    """One-shot: create template and import records from CSV with AI analysis"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Check for file and data
+    if "file" not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files["file"]
+    template_name = request.form.get("template_name")
+    columns_json = request.form.get("columns")
+
+    if not template_name or not columns_json:
+        return jsonify({"error": "Template name and columns are required"}), 400
+
+    try:
+        # Parse columns
+        columns = json.loads(columns_json)
+
+        # Create the template
+        template = PersonalizationTemplate(
+            brdge_id=brdge_id, name=template_name, columns=columns
+        )
+        db.session.add(template)
+        db.session.flush()  # Get template ID
+
+        # Process CSV and create records
+        from personalization_utils.csv_processor import process_csv_upload
+
+        # Reset file pointer and process
+        file.seek(0)
+        records = process_csv_upload(file, template)
+
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": f"Successfully created template '{template_name}' with {len(records)} records",
+                    "template": template.to_dict(),
+                    "records_created": len(records),
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating template from CSV: {str(e)}")
+        return jsonify({"error": f"Failed to create template: {str(e)}"}), 400
+
+
+@app.route(
+    "/api/brdges/<int:brdge_id>/personalization/templates/<int:template_id>/improve",
+    methods=["POST"],
+)
+@login_required
+def improve_template_descriptions(user, brdge_id, template_id):
+    """Use AI to improve template field descriptions based on usage feedback"""
+    # Verify the user owns the bridge
+    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
+
+    # Verify template exists and belongs to this bridge
+    template = PersonalizationTemplate.query.filter_by(
+        id=template_id, brdge_id=brdge_id
+    ).first_or_404()
+
+    data = request.get_json()
+    usage_feedback = data.get("feedback") if data else None
+
+    try:
+        # Get AI improvements
+        improvements = gemini.update_personalization_template_descriptions(
+            template.columns, usage_feedback
+        )
+
+        # Update template with improved descriptions
+        improved_columns = improvements["improved_columns"]
+        updated_columns = template.columns.copy()
+
+        for improved_col in improved_columns:
+            # Find and update the matching column
+            for i, col in enumerate(updated_columns):
+                if col["name"] == improved_col["name"]:
+                    updated_columns[i]["usage_note"] = improved_col["usage_note"]
+                    if "example" in improved_col:
+                        updated_columns[i]["example"] = improved_col["example"]
+                    break
+
+        template.columns = updated_columns
+        template.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return (
+            jsonify(
+                {
+                    "message": "Template descriptions improved successfully",
+                    "improvements": improvements,
+                    "template": template.to_dict(),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error improving template descriptions: {str(e)}")
+        return jsonify({"error": f"Failed to improve descriptions: {str(e)}"}), 400

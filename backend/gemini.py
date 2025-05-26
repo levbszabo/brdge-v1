@@ -3526,3 +3526,178 @@ def generate_visual_pattern_challenge(model, job_role: str) -> Optional[Dict[str
     except Exception as e:
         logger.error(f"Error generating visual pattern challenge: {e}")
         return None
+
+
+def analyze_csv_for_personalization(csv_file_path, sample_rows=5):
+    """
+    Analyze CSV headers and sample data to generate intelligent field descriptions for personalization
+
+    Args:
+        csv_file_path: Path to the CSV file to analyze
+        sample_rows: Number of sample rows to analyze (default 5)
+
+    Returns:
+        Dictionary with suggested template structure and AI-generated field descriptions
+    """
+    try:
+        import pandas as pd
+        import re
+
+        # Read CSV and get sample data
+        df = pd.read_csv(csv_file_path)
+
+        if df.empty:
+            raise ValueError("CSV file is empty")
+
+        # Get column headers, sample data, and row count
+        headers = df.columns.tolist()
+        row_count = len(df)
+        sample_data = df.head(sample_rows).to_dict("records")
+
+        # Configure Gemini if not already done
+        configure_genai()
+        model = get_model()
+
+        # Create analysis prompt
+        prompt = f"""
+        Analyze this CSV data to create an intelligent personalization template for an AI assistant.
+        
+        CSV Headers: {headers}
+        Total Records: {row_count}
+        
+        Sample Data (first {sample_rows} rows):
+        {json.dumps(sample_data, indent=2)}
+        
+        For each column, generate:
+        1. A clear "usage_note" explaining HOW the AI should use this data to personalize conversations
+        2. A realistic "example" value from the actual data
+        3. Confidence level (0-1) in your analysis
+        4. Suggested data type (text, email, categorical, numeric, url, etc.)
+        
+        Also suggest a descriptive template name based on the data pattern. 
+        The template name should be 1-2 words, lowercase, connected with hyphens (e.g., "sales-leads", "customer-data", "prospect-list").
+        
+        Focus on these personalization strategies:
+        - Address recipients by name appropriately 
+        - Tailor examples and case studies to their context (company size, industry, role)
+        - Reference specific challenges or goals relevant to their situation
+        - Adjust communication tone based on seniority/role
+        - Mention relevant features/benefits for their use case
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "suggested_template_name": "Descriptive name based on data pattern",
+            "analysis_summary": "Brief description of what this data enables for personalization",
+            "row_count": {row_count},
+            "columns": [
+                {{
+                    "name": "column_name",
+                    "usage_note": "Specific instructions for how AI should use this field in conversations",
+                    "example": "Actual example from the data",
+                    "data_type": "text|email|categorical|numeric|url|phone|date",
+                    "confidence": 0.95,
+                    "personalization_potential": "high|medium|low"
+                }}
+            ],
+            "suggested_improvements": [
+                "Optional suggestions for additional data that would improve personalization"
+            ]
+        }}
+        
+        Example of good usage notes:
+        - "Use to address recipient personally in greetings and throughout conversation"
+        - "Tailor product examples and case studies to match their industry challenges" 
+        - "Adjust complexity of explanations based on technical vs business role"
+        - "Reference company size when discussing scalability and implementation"
+        """
+
+        # Get analysis from Gemini
+        response = model.generate_content(prompt)
+        analysis = json.loads(response.text)
+
+        # Validate the response structure
+        required_keys = ["suggested_template_name", "columns", "row_count"]
+        if not all(key in analysis for key in required_keys):
+            raise ValueError("Invalid analysis response structure")
+
+        # Validate columns structure
+        for col in analysis["columns"]:
+            required_col_keys = [
+                "name",
+                "usage_note",
+                "example",
+                "data_type",
+                "confidence",
+            ]
+            if not all(key in col for key in required_col_keys):
+                raise ValueError(
+                    f"Invalid column structure for {col.get('name', 'unknown')}"
+                )
+
+        logger.info(f"Successfully analyzed CSV with {len(headers)} columns")
+        return analysis
+
+    except Exception as e:
+        logger.error(f"Error analyzing CSV for personalization: {str(e)}")
+        raise
+
+
+def update_personalization_template_descriptions(template_columns, usage_feedback=None):
+    """
+    Re-analyze and improve template field descriptions based on usage feedback
+
+    Args:
+        template_columns: Current template column definitions
+        usage_feedback: Optional feedback about how well current descriptions work
+
+    Returns:
+        Updated column definitions with improved usage notes
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        feedback_context = ""
+        if usage_feedback:
+            feedback_context = (
+                f"\nUser feedback on current descriptions: {usage_feedback}"
+            )
+
+        prompt = f"""
+        Improve these personalization field descriptions based on usage analysis.
+        
+        Current Template Columns:
+        {json.dumps(template_columns, indent=2)}
+        {feedback_context}
+        
+        For each field, provide an enhanced "usage_note" that:
+        1. Is more specific about personalization techniques
+        2. Includes concrete examples of what the AI should say/do
+        3. Considers advanced personalization strategies
+        4. Addresses common pitfalls or edge cases
+        
+        Return ONLY a JSON object with this structure:
+        {{
+            "improved_columns": [
+                {{
+                    "name": "field_name",
+                    "usage_note": "Enhanced, specific instructions for AI personalization",
+                    "example": "Updated example if needed",
+                    "improvement_reason": "Why this is better than the original"
+                }}
+            ],
+            "overall_improvements": "Summary of key enhancements made"
+        }}
+        """
+
+        response = model.generate_content(prompt)
+        improvements = json.loads(response.text)
+
+        logger.info(
+            f"Generated improved descriptions for {len(template_columns)} columns"
+        )
+        return improvements
+
+    except Exception as e:
+        logger.error(f"Error improving template descriptions: {str(e)}")
+        raise

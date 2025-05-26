@@ -611,6 +611,10 @@ class ConversationLogs(db.Model):
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     was_interrupted = db.Column(db.Boolean, default=False)
     duration_seconds = db.Column(db.Float, nullable=True)
+    # Add personalization record reference
+    personalization_record_id = db.Column(
+        db.Integer, db.ForeignKey("personalization_record.id"), nullable=True
+    )
 
     # Relationships (adjust backref names as needed to avoid conflicts)
     brdge = db.relationship(
@@ -626,6 +630,10 @@ class ConversationLogs(db.Model):
         foreign_keys=[viewer_user_id],
         backref=db.backref("viewed_conversation_logs", lazy="dynamic"),
     )
+    # Add new relationship
+    personalization_record = db.relationship(
+        "PersonalizationRecord", backref="conversation_logs"
+    )
 
     def to_dict(self):
         return {
@@ -639,6 +647,73 @@ class ConversationLogs(db.Model):
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "was_interrupted": self.was_interrupted,
             "duration_seconds": self.duration_seconds,
+            "personalization_record_id": self.personalization_record_id,
+        }
+
+
+class PersonalizationTemplate(db.Model):
+    """Stores personalization schema for a bridge"""
+
+    __tablename__ = "personalization_template"
+
+    id = db.Column(db.Integer, primary_key=True)
+    brdge_id = db.Column(db.Integer, db.ForeignKey("brdge.id"), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    columns = db.Column(db.JSON, nullable=False)  # Column definitions with usage notes
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Relationships
+    brdge = db.relationship("Brdge", backref="personalization_templates")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "brdge_id": self.brdge_id,
+            "name": self.name,
+            "columns": self.columns,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "is_active": self.is_active,
+        }
+
+
+class PersonalizationRecord(db.Model):
+    """Stores individual personalization data"""
+
+    __tablename__ = "personalization_record"
+
+    id = db.Column(db.Integer, primary_key=True)
+    template_id = db.Column(
+        db.Integer, db.ForeignKey("personalization_template.id"), nullable=False
+    )
+    unique_id = db.Column(
+        db.String(12), unique=True, nullable=False, index=True
+    )  # Short unique ID for URL
+    data = db.Column(db.JSON, nullable=False)  # Actual personalization data
+    email = db.Column(db.String(255), index=True)  # For quick lookup
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_accessed = db.Column(db.DateTime)
+    access_count = db.Column(db.Integer, default=0)
+
+    # Relationships
+    template = db.relationship("PersonalizationTemplate", backref="records")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "template_id": self.template_id,
+            "unique_id": self.unique_id,
+            "data": self.data,
+            "email": self.email,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_accessed": (
+                self.last_accessed.isoformat() if self.last_accessed else None
+            ),
+            "access_count": self.access_count,
         }
 
 
