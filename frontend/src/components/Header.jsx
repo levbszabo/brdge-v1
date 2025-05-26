@@ -73,15 +73,17 @@ function Header() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Header background should be more visible when scrolled
+    // Header background with improved design
     const headerBackground = isLandingPage
         ? scrollTrigger
-            ? theme.palette.background.paper + 'e6'
-            : theme.palette.background.paper + 'cc'
-        : theme.palette.background.paper + 'cc';
+            ? theme.palette.background.paper + 'F5'
+            : 'transparent'
+        : theme.palette.background.paper;
 
-    // Text colors based on landing page
-    const textColor = isLandingPage ? theme.palette.text.primary : theme.palette.text.primary;
+    // Text colors based on landing page and scroll state
+    const textColor = isLandingPage && !scrollTrigger
+        ? theme.palette.text.primary
+        : theme.palette.text.primary;
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -123,44 +125,42 @@ function Header() {
         setAnchorElNav(null);
     };
 
-    // Update menuItems to not include login/logout options that will be handled separately
+    // Updated menu items with better structure
     const menuItems = isAuthenticated
         ? [
-            { text: 'Home', link: '/home' },
-            { text: 'Demos', link: '/demos' },
-            { text: 'Blog', link: '/blog' },
+            { text: 'Dashboard', link: '/home' },
             { text: 'Contact', link: '/contact' }
         ]
         : [
-            { text: 'Demos', link: '/demos' },
-            { text: 'Blog', link: '/blog' },
+            { text: 'Product', link: '/demos' },
             { text: 'Pricing', link: '/pricing' },
-            { text: 'Careers', link: '/careers' },
+            { text: 'Resources', link: '/blog' },
             { text: 'Contact', link: '/contact' }
         ];
 
-    // Common styles for menu buttons/links
+    // Improved menu button styles
     const menuItemStyle = {
         color: theme.palette.text.secondary,
-        fontWeight: 400,
+        fontWeight: 500,
         fontFamily: theme.typography.fontFamily,
         textTransform: 'none',
-        fontSize: '0.95rem',
-        padding: '6px 12px',
+        fontSize: '0.9375rem',
+        padding: '6px 16px',
         borderRadius: theme.shape.borderRadius,
+        transition: 'all 0.2s ease',
         '&:hover': {
             color: theme.palette.primary.main,
             backgroundColor: theme.palette.action.hover
         }
     };
 
-    // Styles specific for the Sign Up button
+    // Enhanced Sign Up button style
     const signUpButtonStyle = {
         backgroundColor: theme.palette.primary.main,
         color: theme.palette.primary.contrastText,
-        padding: '8px 20px',
+        padding: '8px 24px',
         fontSize: '0.875rem',
-        fontWeight: 500,
+        fontWeight: 600,
         marginLeft: '8px',
         borderRadius: theme.shape.borderRadius,
         textTransform: 'none',
@@ -168,7 +168,7 @@ function Header() {
         transition: 'all 0.2s ease',
         '&:hover': {
             backgroundColor: theme.palette.primary.dark,
-            boxShadow: theme.shadows[2],
+            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.25)',
             transform: 'translateY(-1px)',
         },
         '&:active': {
@@ -472,26 +472,33 @@ function Header() {
                             animate="animate"
                             variants={logoVariants}
                         >
-                            <Typography
-                                variant="h6"
-                                noWrap
+                            <Box
                                 component={RouterLink}
                                 to="/"
                                 sx={{
                                     mr: 4,
                                     display: { xs: 'none', md: 'flex' },
-                                    fontWeight: 700,
-                                    letterSpacing: '.01rem',
-                                    color: 'inherit',
+                                    alignItems: 'center',
                                     textDecoration: 'none',
-                                    fontSize: '1.5rem',
-                                    '&:hover': {
-                                        opacity: 0.85,
-                                    },
                                 }}
                             >
-                                .bridge
-                            </Typography>
+
+                                <Typography
+                                    variant="h6"
+                                    noWrap
+                                    sx={{
+                                        fontWeight: 700,
+                                        letterSpacing: '-0.02em',
+                                        color: 'inherit',
+                                        fontSize: '1.25rem',
+                                        '&:hover': {
+                                            opacity: 0.85,
+                                        },
+                                    }}
+                                >
+                                    DotBridge
+                                </Typography>
+                            </Box>
                         </motion.div>
 
                         {/* Mobile menu */}

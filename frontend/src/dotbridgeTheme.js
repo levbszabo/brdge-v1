@@ -1,65 +1,85 @@
 import { createTheme } from '@mui/material/styles';
 
-// 1. Font Declarations (Import desired fonts in your main index.css or App.jsx)
-// Using Inter for both body and headings for a clean, modern SaaS look
+// 1. Font Declarations - Using Inter for a clean, modern SaaS look
 const fontFamilyBody = '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const fontFamilyHeading = '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
-// 2. Enhanced Color Palette based on redesign
+// 2. Enhanced Color Palette - Modern SaaS design
 const palette = {
-    // Ink & Text - Refined for better contrast
-    ink: '#0A0D1C', // Darker ink for better contrast
+    // Ink & Text - Optimized for readability
+    ink: '#0A0D1C', // Rich black for high contrast
     inkLight: '#4A5568', // Refined gray
     inkFaded: '#8892A0', // Softer gray
     text: {
-        primary: '#0A0D1C', // Darker for better readability
-        secondary: '#64748B', // Slightly darker secondary text
-        disabled: '#CBD5E0', // Light gray
+        primary: '#0A0D1C', // Rich black for main text
+        secondary: '#64748B', // Balanced secondary text
+        disabled: '#CBD5E0', // Light gray for disabled states
     },
 
-    // Brand Accent (Azure) - Enhanced with redesign colors
+    // Brand Accent - Vibrant Azure Blue
     primary: {
-        main: '#0066FF', // Bright Azure (from redesign)
+        main: '#0066FF', // Bright Azure
         light: '#3384FF', // Lighter shade
         lighter: '#E6F0FF', // Very light blue for backgrounds
         dark: '#0052CC', // Darker shade
-        darker: '#003D7A', // Even darker
+        darker: '#003D99', // Even darker
         contrastText: '#FFFFFF',
     },
 
-    // Neutrals - Refined for modern SaaS aesthetic
-    grey: { // Keep the grey object for MUI compatibility
-        50: '#F7FAFC',   // Whisper gray
+    // Neutrals - Clean grayscale
+    grey: {
+        50: '#FAFBFC',   // Almost white
         100: '#F1F5F9',  // Light gray
         200: '#E2E8F0',  // Border gray
         300: '#CBD5E0',  // Light mid gray
-        400: '#A0AEB9',  // Mid gray
+        400: '#94A3B8',  // Mid gray
         500: '#64748B',  // True mid gray
         600: '#475569',  // Dark gray
         700: '#334155',  // Darker gray
         800: '#1E293B',  // Very dark
         900: '#0F172A',  // Near black
     },
-    neutral: { // Explicit neutral names from redesign
-        light: '#F7FAFC',
+    neutral: {
+        lightest: '#FAFBFC',
+        light: '#F1F5F9',
         mid: '#CBD5E0',
-        dark: '#4A5568',
+        dark: '#475569',
     },
 
     // Backgrounds - Clean and modern
     background: {
-        default: '#FFFFFF', // Pure White
-        paper: '#FFFFFF', // Pure White
+        default: '#FFFFFF', // Pure white
+        paper: '#FFFFFF', // Pure white
         subtle: '#FAFBFC', // Very subtle gray for sections
     },
 
-    // Feedback Colors - Refined for consistency
-    success: { main: '#00C781', light: '#E6FFFA', contrastText: '#FFFFFF' },
-    error: { main: '#FF3B30', light: '#FFE5E5', contrastText: '#FFFFFF' },
-    warning: { main: '#FF9500', light: '#FFF4E5', contrastText: '#FFFFFF' },
-    info: { main: '#0066FF', light: '#E6F0FF', contrastText: '#FFFFFF' },
+    // Feedback Colors - Clear and accessible
+    success: {
+        main: '#00C781',
+        light: '#E6FFFA',
+        dark: '#00A368',
+        contrastText: '#FFFFFF'
+    },
+    error: {
+        main: '#FF3B30',
+        light: '#FFE5E5',
+        dark: '#DC2626',
+        contrastText: '#FFFFFF'
+    },
+    warning: {
+        main: '#FF9500',
+        light: '#FFF4E5',
+        dark: '#F97316',
+        contrastText: '#FFFFFF'
+    },
+    info: {
+        main: '#0066FF',
+        light: '#E6F0FF',
+        dark: '#0052CC',
+        contrastText: '#FFFFFF'
+    },
 
-    // Secondary - Using refined gray
+    // Secondary - Refined gray
     secondary: {
         main: '#64748B',
         light: '#94A3B8',
@@ -71,35 +91,41 @@ const palette = {
     divider: '#E2E8F0', // Clean border color
 };
 
-// 3. Typography System - Modern SaaS design from redesign
+// 3. Typography System - Modern and clean
 const typography = {
     fontFamily: fontFamilyBody,
     h1: {
         fontFamily: fontFamilyHeading,
-        fontWeight: 700, // Bolder for impact
-        fontSize: '4rem', // 64px on desktop (slightly smaller for elegance)
+        fontWeight: 700,
+        fontSize: '3.5rem', // 56px - slightly smaller for elegance
         lineHeight: 1.1,
-        letterSpacing: '-0.04em', // Tighter for modern look
+        letterSpacing: '-0.04em',
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '2.75rem', // 44px on mobile
+            fontSize: '3.5rem', // 56px on mobile - much larger for hero impact
+        },
+        '@media (max-width: 640px)': {
+            fontSize: '3rem', // 48px on smaller mobile
         }
     },
     h2: {
         fontFamily: fontFamilyHeading,
         fontWeight: 600,
-        fontSize: '2.5rem', // 40px
+        fontSize: '2.25rem', // 36px
         lineHeight: 1.2,
         letterSpacing: '-0.03em',
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '1.875rem', // 30px on mobile
+            fontSize: '2.25rem', // 36px on mobile - larger than before
+        },
+        '@media (max-width: 640px)': {
+            fontSize: '2rem', // 32px on smaller mobile
         }
     },
     h3: {
         fontFamily: fontFamilyHeading,
         fontWeight: 600,
-        fontSize: '1.875rem', // 30px
+        fontSize: '1.75rem', // 28px
         lineHeight: 1.3,
         letterSpacing: '-0.02em',
         color: palette.text.primary,
@@ -114,6 +140,9 @@ const typography = {
         lineHeight: 1.4,
         letterSpacing: '-0.01em',
         color: palette.text.primary,
+        '@media (max-width: 768px)': {
+            fontSize: '1.25rem', // 20px on mobile
+        }
     },
     h5: {
         fontFamily: fontFamilyBody,
@@ -122,6 +151,9 @@ const typography = {
         lineHeight: 1.5,
         letterSpacing: '-0.005em',
         color: palette.text.primary,
+        '@media (max-width: 768px)': {
+            fontSize: '1.125rem', // Keep same size on mobile
+        }
     },
     h6: {
         fontFamily: fontFamilyBody,
@@ -130,6 +162,9 @@ const typography = {
         lineHeight: 1.5,
         letterSpacing: 0,
         color: palette.text.primary,
+        '@media (max-width: 768px)': {
+            fontSize: '1rem', // Keep same size on mobile
+        }
     },
     subtitle1: {
         fontFamily: fontFamilyBody,
@@ -138,6 +173,9 @@ const typography = {
         lineHeight: 1.6,
         letterSpacing: 0,
         color: palette.text.primary,
+        '@media (max-width: 768px)': {
+            fontSize: '1rem', // 16px on mobile
+        }
     },
     subtitle2: {
         fontFamily: fontFamilyBody,
@@ -146,14 +184,20 @@ const typography = {
         lineHeight: 1.6,
         letterSpacing: 0,
         color: palette.text.secondary,
+        '@media (max-width: 768px)': {
+            fontSize: '0.875rem', // 14px on mobile
+        }
     },
     body1: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '1rem', // 16px (cleaner)
+        fontSize: '1rem', // 16px
         lineHeight: 1.65,
         letterSpacing: 0,
         color: palette.text.primary,
+        '@media (max-width: 768px)': {
+            fontSize: '0.9375rem', // 15px on mobile for better readability
+        }
     },
     body2: {
         fontFamily: fontFamilyBody,
@@ -162,13 +206,19 @@ const typography = {
         lineHeight: 1.6,
         letterSpacing: 0,
         color: palette.text.secondary,
+        '@media (max-width: 768px)': {
+            fontSize: '0.8125rem', // 13px on mobile
+        }
     },
     button: {
         fontFamily: fontFamilyBody,
-        fontWeight: 500, // Slightly lighter for elegance
+        fontWeight: 500,
         fontSize: '0.875rem', // 14px
         textTransform: 'none',
         letterSpacing: '0.01em',
+        '@media (max-width: 768px)': {
+            fontSize: '0.9375rem', // 15px on mobile for better touch targets
+        }
     },
     caption: {
         fontFamily: fontFamilyBody,
@@ -177,24 +227,30 @@ const typography = {
         lineHeight: 1.5,
         letterSpacing: '0.01em',
         color: palette.text.secondary,
+        '@media (max-width: 768px)': {
+            fontSize: '0.6875rem', // 11px on mobile
+        }
     },
     overline: {
         fontFamily: fontFamilyBody,
         fontWeight: 600,
         fontSize: '0.75rem', // 12px
         textTransform: 'uppercase',
-        letterSpacing: '0.08em', // Slightly tighter
+        letterSpacing: '0.08em',
         lineHeight: 1.5,
         color: palette.text.secondary,
+        '@media (max-width: 768px)': {
+            fontSize: '0.6875rem', // 11px on mobile
+        }
     }
 };
 
 // 4. Shape (Border Radius)
 const shape = {
-    borderRadius: 8, // Reduced from 12 for more sophisticated look
+    borderRadius: 6, // Clean, modern radius (reduced from 8)
 };
 
-// 5. Shadows - More refined and subtle
+// 5. Shadows - Subtle and elegant
 const shadows = [
     'none',
     '0 1px 2px rgba(0, 0, 0, 0.05)', // xs
@@ -336,8 +392,12 @@ const components = {
     MuiContainer: {
         styleOverrides: {
             root: {
-                paddingLeft: 20,
-                paddingRight: 20,
+                paddingLeft: 16,
+                paddingRight: 16,
+                '@media (min-width: 640px)': {
+                    paddingLeft: 24,
+                    paddingRight: 24,
+                },
                 '@media (min-width: 768px)': {
                     paddingLeft: 32,
                     paddingRight: 32,
@@ -534,34 +594,44 @@ const dotbridgeTheme = createTheme({
     },
 });
 
-// Apply responsive typography
+// Apply responsive typography - Enhanced for premium mobile experience
 dotbridgeTheme.typography.h1 = {
     ...dotbridgeTheme.typography.h1,
     [dotbridgeTheme.breakpoints.down('md')]: {
-        fontSize: '3rem',
+        fontSize: '3.5rem', // Keep large on tablet
+        lineHeight: 1.1,
+        letterSpacing: '-0.04em',
     },
     [dotbridgeTheme.breakpoints.down('sm')]: {
-        fontSize: '2.5rem',
+        fontSize: '3rem', // Large and impactful on mobile
+        lineHeight: 1.1,
+        letterSpacing: '-0.03em',
     },
 };
 
 dotbridgeTheme.typography.h2 = {
     ...dotbridgeTheme.typography.h2,
     [dotbridgeTheme.breakpoints.down('md')]: {
-        fontSize: '2rem',
+        fontSize: '2.25rem', // Larger on tablet
+        lineHeight: 1.2,
+        letterSpacing: '-0.03em',
     },
     [dotbridgeTheme.breakpoints.down('sm')]: {
-        fontSize: '1.75rem',
+        fontSize: '2rem', // Larger on mobile
+        lineHeight: 1.2,
+        letterSpacing: '-0.02em',
     },
 };
 
 dotbridgeTheme.typography.h3 = {
     ...dotbridgeTheme.typography.h3,
     [dotbridgeTheme.breakpoints.down('md')]: {
-        fontSize: '1.5rem',
+        fontSize: '1.75rem',
+        lineHeight: 1.3,
     },
     [dotbridgeTheme.breakpoints.down('sm')]: {
-        fontSize: '1.25rem',
+        fontSize: '1.5rem',
+        lineHeight: 1.3,
     },
 };
 

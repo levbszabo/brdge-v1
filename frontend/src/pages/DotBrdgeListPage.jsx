@@ -34,7 +34,9 @@ import {
     FormControlLabel,
     LinearProgress,
     Paper,
-    useTheme
+    useTheme,
+    Tabs,
+    Tab
 } from '@mui/material';
 import dotbridgeTheme from '../dotbridgeTheme';
 import {
@@ -519,6 +521,7 @@ function DotBrdgeListPage() {
     const [linkCopied, setLinkCopied] = useState(false);
     const [selectedBridges, setSelectedBridges] = useState([]);
     const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
     const [marketplaceExpanded, setMarketplaceExpanded] = useState(true);
     const [bridgeSelectionDialogOpen, setBridgeSelectionDialogOpen] = useState(false);
     const [selectedCourse, setSelectedCourse] = useState(null);
@@ -1590,7 +1593,7 @@ function DotBrdgeListPage() {
             <Box sx={styles.pageContainer}>
                 <Container maxWidth="xl">
                     <Typography variant="h3" sx={styles.header}>
-                        Your Dashboard
+                        My Dashboard
                     </Typography>
 
                     <Box sx={{ mb: 5 }}>
@@ -1605,7 +1608,7 @@ function DotBrdgeListPage() {
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
-                                            Flows
+                                            Total Flows
                                         </Typography>
                                         <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.5, color: theme.palette.text.primary }}>
                                             {courses.length}
@@ -1623,12 +1626,12 @@ function DotBrdgeListPage() {
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
-                                            Bridges
+                                            Active Bridges
                                         </Typography>
                                         <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.5, color: theme.palette.text.primary }}>
                                             {userStats.brdges_created}
                                             <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-                                                / {userStats.brdges_limit === 'Unlimited' ? '∞' : userStats.brdges_limit}
+                                                of {userStats.brdges_limit === 'Unlimited' ? '∞' : userStats.brdges_limit}
                                             </Typography>
                                         </Typography>
                                     </Box>
@@ -1644,12 +1647,12 @@ function DotBrdgeListPage() {
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
-                                            AI Minutes
+                                            AI Minutes Used
                                         </Typography>
                                         <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.5, color: theme.palette.text.primary }}>
                                             {userStats.minutes_used}
                                             <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
-                                                / {userStats.minutes_limit}
+                                                of {userStats.minutes_limit}
                                             </Typography>
                                         </Typography>
                                     </Box>
@@ -1658,10 +1661,31 @@ function DotBrdgeListPage() {
                         </Grid>
 
                         {isOverLimit() && (
-                            <Alert severity="warning" sx={{ mt: 2 }} action={
-                                <Button color="inherit" size="small" onClick={() => navigate('/profile')}>Upgrade</Button>
-                            }>
-                                You've reached your {getLimitExceededType()} limit. Upgrade your plan for more.
+                            <Alert
+                                severity="warning"
+                                sx={{
+                                    mt: 3,
+                                    borderRadius: theme.shape.borderRadius,
+                                    '& .MuiAlert-message': {
+                                        width: '100%'
+                                    }
+                                }}
+                                action={
+                                    <Button
+                                        color="inherit"
+                                        size="small"
+                                        onClick={() => navigate('/profile')}
+                                        sx={{ fontWeight: 600 }}
+                                    >
+                                        Upgrade Now
+                                    </Button>
+                                }
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                                    <Typography variant="body2">
+                                        You've reached your {getLimitExceededType()} limit. Upgrade to unlock more features and scale your sales.
+                                    </Typography>
+                                </Box>
                             </Alert>
                         )}
                     </Box>
@@ -1716,289 +1740,361 @@ function DotBrdgeListPage() {
                         </Box>
                     </Box>
 
-                    <Grid container spacing={4}>
-                        <Grid item xs={12} md={6}>
-                            <Box sx={styles.sectionContainer}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h5" sx={styles.sectionHeader}>
-                                        <BookOpen size={22} style={{ color: theme.palette.primary.main }} />
-                                        Enrolled Flows
-                                    </Typography>
-                                    <IconButton onClick={() => setEnrolledCoursesExpanded(!enrolledCoursesExpanded)} size="small">
-                                        {enrolledCoursesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                    </IconButton>
-                                </Box>
-                                <Collapse in={enrolledCoursesExpanded} timeout="auto" unmountOnExit>
-                                    {enrolledCourses.length === 0 ? (
-                                        <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
-                                            <Typography color="text.secondary" sx={{ mb: 2 }}>You haven't enrolled in any flows yet.</Typography>
-                                            <Button variant="outlined" onClick={() => navigate('/marketplace')}>Browse Marketplace</Button>
-                                        </Box>
-                                    ) : (
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                            {enrolledCourses.map(course => (
-                                                <Box key={course.id} sx={{ ...styles.courseCard, p: 2 }}>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                                                        <Box>
-                                                            <Typography variant="h6" sx={{ fontWeight: 500 }}>{course.name}</Typography>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, mb: 1 }}>
-                                                                <LinearProgress
-                                                                    variant="determinate"
-                                                                    value={course.enrollment?.progress || 0}
-                                                                    sx={{ flexGrow: 1, height: 6, borderRadius: 1 }}
-                                                                    color="primary"
-                                                                />
-                                                                <Typography variant="caption" color="text.secondary">
-                                                                    {Math.round(course.enrollment?.progress || 0)}%
-                                                                </Typography>
-                                                            </Box>
-                                                            <Typography variant="caption" color="text.disabled">
-                                                                By: {course.created_by || 'Unknown Creator'}
-                                                            </Typography>
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                                            <Tooltip title="View Flow">
-                                                                <IconButton size="small" onClick={() => navigate(`/c/${course.public_id}`)} sx={{ '&:hover': { color: 'primary.main' } }}>
-                                                                    <ExternalLink size={18} />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                            <Tooltip title="Unenroll">
-                                                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleUnenrollClick(course); }} sx={{ '&:hover': { color: 'error.main' } }}>
-                                                                    <LogOut size={18} />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        </Box>
-                                                    </Box>
-                                                    {course.modules && course.modules.length > 0 && (
-                                                        <Box sx={{ pl: 1, mt: 1, borderTop: `1px solid ${theme.palette.divider}`, pt: 1 }}>
-                                                            {[...course.modules]
-                                                                .sort((a, b) => a.position - b.position)
-                                                                .slice(0, 3)
-                                                                .map((module) => (
-                                                                    <Typography
-                                                                        key={module.id}
-                                                                        variant="body2"
-                                                                        onClick={() => navigate(`/viewBridge/${module.brdge_id}-${module.public_id?.substring(0, 6) || ''}`)}
-                                                                        sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-                                                                    >
-                                                                        <Zap size={14} color="text.secondary" />
-                                                                        {module.name}
-                                                                    </Typography>
-                                                                ))}
-                                                            {course.modules.length > 3 && (
-                                                                <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
-                                                                    ...and {course.modules.length - 3} more
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    )}
-                                </Collapse>
-                            </Box>
+                    {/* Tabs for organizing content */}
+                    <Box sx={{ width: '100%', mb: 3 }}>
+                        <Tabs
+                            value={activeTab}
+                            onChange={(e, newValue) => setActiveTab(newValue)}
+                            sx={{
+                                borderBottom: 1,
+                                borderColor: 'divider',
+                                mb: 3,
+                                '& .MuiTab-root': {
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    fontSize: '1rem',
+                                    minHeight: 48,
+                                    '&.Mui-selected': {
+                                        color: theme.palette.primary.main,
+                                    }
+                                }
+                            }}
+                        >
+                            <Tab
+                                label={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Zap size={18} />
+                                        Bridges ({bridges.length})
+                                    </Box>
+                                }
+                            />
+                            <Tab
+                                label={
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <BookOpen size={18} />
+                                        Flows ({courses.length})
+                                    </Box>
+                                }
+                            />
+                        </Tabs>
 
-                            <Box sx={styles.sectionContainer}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h5" sx={styles.sectionHeader}>
-                                        <BookOpen size={22} style={{ color: theme.palette.primary.main }} />
-                                        My Flows
-                                    </Typography>
-                                    <IconButton onClick={() => setYourCoursesExpanded(!yourCoursesExpanded)} size="small">
-                                        {yourCoursesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                    </IconButton>
-                                </Box>
-                                <Collapse in={yourCoursesExpanded} timeout="auto" unmountOnExit>
-                                    {courses.length === 0 ? (
-                                        <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
-                                            <Typography color="text.secondary" sx={{ mb: 2 }}>You haven't created any flows yet.</Typography>
-                                            <Button variant="outlined" onClick={handleCreateCourse}>Create First Flow</Button>
-                                        </Box>
-                                    ) : (
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                            {courses.map(course => (
-                                                <Box
-                                                    key={course.id}
-                                                    id={`course-${course.id}`}
-                                                    sx={{
-                                                        ...styles.courseCard,
-                                                        p: 2,
-                                                        borderColor: dropTargetCourseId === course.id ? theme.palette.primary.main : theme.palette.divider,
-                                                        borderWidth: dropTargetCourseId === course.id ? '2px' : '1px',
-                                                        boxShadow: dropTargetCourseId === course.id ? theme.shadows[3] : theme.shadows[1],
-                                                    }}
-                                                    onDragOver={(e) => handleDragOverCourse(e, course.id)}
-                                                    onDrop={(e) => handleDropOnCourse(e, course.id)}
-                                                    onDragLeave={() => setDropTargetCourseId(null)}
-                                                >
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                                                        <Box sx={{ flexGrow: 1, mr: 1 }}>
-                                                            {editingCourseId === course.id ? (
-                                                                <Box component="form" onSubmit={(e) => handleSaveCourseName(e, course.id)} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                                    <TextField
-                                                                        value={editedCourseName}
-                                                                        onChange={handleCourseNameChange}
-                                                                        autoFocus
-                                                                        size="small"
-                                                                        variant="outlined"
-                                                                        fullWidth
-                                                                        sx={{ '.MuiInputBase-root': { bgcolor: 'background.default' } }}
-                                                                    />
-                                                                    <IconButton type="submit" size="small" sx={{ color: 'success.main' }}><Check size={16} /></IconButton>
-                                                                    <IconButton onClick={handleCancelEditingCourse} size="small" sx={{ color: 'text.disabled' }}><Trash2 size={16} /></IconButton>
-                                                                </Box>
-                                                            ) : (
-                                                                <Typography
-                                                                    variant="h6"
-                                                                    onClick={(e) => handleStartEditingCourse(e, course)}
-                                                                    sx={{ fontWeight: 500, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-                                                                >
-                                                                    {course.name}
-                                                                </Typography>
-                                                            )}
-                                                            <Typography variant="caption" color="text.disabled">
-                                                                {course.modules?.length || 0} bridge{course.modules?.length !== 1 ? 's' : ''} | Last updated: {new Date(course.updated_at || Date.now()).toLocaleDateString()}
-                                                            </Typography>
-                                                        </Box>
-                                                        <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
-                                                            <Tooltip title="View Flow">
-                                                                <IconButton size="small" onClick={() => handleViewCourse(course)} sx={{ '&:hover': { color: 'primary.main' } }}><ExternalLink size={16} /></IconButton>
-                                                            </Tooltip>
-                                                            <Tooltip title="Edit Flow Details">
-                                                                <IconButton size="small" onClick={() => handleEditCourse(course)} sx={{ '&:hover': { color: 'primary.main' } }}><Edit size={16} /></IconButton>
-                                                            </Tooltip>
-                                                            <Tooltip title={course.shareable ? "Public Flow - Manage Sharing" : "Private Flow - Manage Sharing"}>
-                                                                <IconButton size="small" onClick={() => handleShareCourse(course)} sx={{ color: course.shareable ? 'success.main' : 'text.disabled', '&:hover': { color: 'primary.main' } }}>
-                                                                    {course.shareable ? <Globe size={16} /> : <Lock size={16} />}
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                            <Tooltip title="Delete Flow">
-                                                                <IconButton size="small" onClick={() => handleDeleteCourse(course)} sx={{ '&:hover': { color: 'error.main' } }}><Trash2 size={16} /></IconButton>
-                                                            </Tooltip>
-                                                        </Box>
-                                                    </Box>
-
+                        {/* Tab Panels */}
+                        {activeTab === 0 && (
+                            <Box>
+                                <Grid container spacing={4}>
+                                    <Grid item xs={12}>
+                                        <Box sx={styles.sectionContainer}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                <Typography variant="h5" sx={styles.sectionHeader}>
+                                                    <Zap size={22} style={{ color: theme.palette.primary.main }} />
+                                                    My Bridges
+                                                </Typography>
+                                            </Box>
+                                            {bridges.length === 0 ? (
+                                                <Box sx={{
+                                                    p: 4,
+                                                    textAlign: 'center',
+                                                    bgcolor: theme.palette.background.subtle,
+                                                    borderRadius: theme.shape.borderRadius * 1.5,
+                                                    border: '1px dashed',
+                                                    borderColor: theme.palette.grey[300]
+                                                }}>
                                                     <Box sx={{
-                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                        mb: 1.5, mt: 1, borderTop: `1px solid ${theme.palette.divider}`, pt: 1.5
+                                                        width: 80,
+                                                        height: 80,
+                                                        borderRadius: '50%',
+                                                        bgcolor: theme.palette.primary.lighter,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        mx: 'auto',
+                                                        mb: 3
                                                     }}>
-                                                        <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <Zap size={16} /> Bridges in Flow
-                                                        </Typography>
-                                                        <Button
-                                                            variant="outlined"
-                                                            size="small"
-                                                            startIcon={<Plus size={14} />}
-                                                            onClick={() => handleOpenBridgeSelection(course)}
-                                                            sx={{ py: 0.5, px: 1, fontSize: '0.75rem' }}
-                                                        >
-                                                            Add Bridge
-                                                        </Button>
+                                                        <Zap size={40} color={theme.palette.primary.main} />
                                                     </Box>
-
-                                                    {course.modules && course.modules.length > 0 ? (
-                                                        <Box sx={{ pl: 0 }}>
-                                                            {course.modules.map((module, index) => (
-                                                                <DraggableBridgeItem
-                                                                    key={module.id}
-                                                                    bridge={module}
-                                                                    index={index}
-                                                                    courseId={course.id}
-                                                                    handleEdit={handleEdit}
-                                                                    handleView={handleView}
-                                                                    handleRemoveBridgeFromCourse={handleRemoveBridgeFromCourse}
-                                                                    moveBridge={moveBridge}
-                                                                    theme={theme}
-                                                                />
-                                                            ))}
-                                                        </Box>
-                                                    ) : (
-                                                        <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
+                                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                                                        Create Your First Bridge
+                                                    </Typography>
+                                                    <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 400, mx: 'auto' }}>
+                                                        Transform your sales videos into interactive AI experiences that qualify leads and book meetings 24/7.
+                                                    </Typography>
+                                                    <Button
+                                                        variant="contained"
+                                                        startIcon={<Plus size={18} />}
+                                                        onClick={handleCreateClick}
+                                                        disabled={!canCreateBridge()}
+                                                        size="large"
+                                                    >
+                                                        Create Your First Bridge
+                                                    </Button>
+                                                </Box>
+                                            ) : (
+                                                <Box sx={styles.listContainer}>
+                                                    <BrdgeList
+                                                        brdges={sortedBridges}
+                                                        onView={handleView}
+                                                        onEdit={handleEdit}
+                                                        onShare={handleShare}
+                                                        onDelete={handleDelete}
+                                                        orderBy={orderBy}
+                                                        orderDirection={orderDirection}
+                                                        onSort={handleSort}
+                                                        selectedModules={selectedBridges}
+                                                        onModuleSelect={handleBridgeSelect}
+                                                        onSelectAll={handleSelectAll}
+                                                        draggable={true}
+                                                        onDragStart={handleBridgeDragStart}
+                                                        onDragEnd={handleBridgeDragEnd}
+                                                        selectedBridges={selectedBridges}
+                                                        onBridgeSelect={handleBridgeSelect}
+                                                        selectedItemsCount={selectedBridges.length}
+                                                        onBatchDelete={handleBatchDelete}
+                                                        onClearSelection={clearSelection}
+                                                        expandedLogs={expandedLogs}
+                                                        loadingLogs={loadingLogs}
+                                                        conversationLogs={conversationLogs}
+                                                        toggleLogExpansion={toggleLogExpansion}
+                                                        BridgeAnalyticsComponent={BridgeAnalytics}
+                                                        theme={theme}
+                                                    />
+                                                    {selectedBridges.length > 0 && (
+                                                        <Box sx={styles.bulkActionsBar}>
                                                             <Typography variant="body2" color="text.secondary">
-                                                                No Bridges added yet. Drag Bridges here or click "Add Bridge".
+                                                                {selectedBridges.length} Bridge{selectedBridges.length !== 1 ? 's' : ''} selected
                                                             </Typography>
+                                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                                <Button size="small" onClick={clearSelection}>Clear</Button>
+                                                                <Button size="small" color="error" onClick={handleBatchDelete} startIcon={<Trash2 size={14} />}>
+                                                                    Delete
+                                                                </Button>
+                                                            </Box>
                                                         </Box>
                                                     )}
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    )}
-                                </Collapse>
-                            </Box>
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            <Box sx={styles.sectionContainer}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h5" sx={styles.sectionHeader}>
-                                        <Zap size={22} style={{ color: theme.palette.primary.main }} />
-                                        My Bridges
-                                    </Typography>
-                                    <IconButton onClick={() => setYourBridgesExpanded(!yourBridgesExpanded)} size="small">
-                                        {yourBridgesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                                    </IconButton>
-                                </Box>
-                                <Collapse in={yourBridgesExpanded} timeout="auto" unmountOnExit>
-                                    {bridges.length === 0 ? (
-                                        <Box sx={{ p: 4, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
-                                            <Zap size={32} color="primary.light" style={{ marginBottom: '16px' }} />
-                                            <Typography variant="h6" sx={{ mb: 1 }}>Create Your First Bridge</Typography>
-                                            <Typography color="text.secondary" sx={{ mb: 2 }}>
-                                                Turn videos into interactive AI agents that sell, teach, or onboard.
-                                            </Typography>
-                                            <Button variant="contained" startIcon={<Plus size={18} />} onClick={handleCreateClick} disabled={!canCreateBridge()}>
-                                                Create Bridge
-                                            </Button>
-                                        </Box>
-                                    ) : (
-                                        <Box sx={styles.listContainer}>
-                                            <BrdgeList
-                                                brdges={sortedBridges}
-                                                onView={handleView}
-                                                onEdit={handleEdit}
-                                                onShare={handleShare}
-                                                onDelete={handleDelete}
-                                                orderBy={orderBy}
-                                                orderDirection={orderDirection}
-                                                onSort={handleSort}
-                                                selectedModules={selectedBridges}
-                                                onModuleSelect={handleBridgeSelect}
-                                                onSelectAll={handleSelectAll}
-                                                draggable={true}
-                                                onDragStart={handleBridgeDragStart}
-                                                onDragEnd={handleBridgeDragEnd}
-                                                selectedBridges={selectedBridges}
-                                                onBridgeSelect={handleBridgeSelect}
-                                                selectedItemsCount={selectedBridges.length}
-                                                onBatchDelete={handleBatchDelete}
-                                                onClearSelection={clearSelection}
-                                                expandedLogs={expandedLogs}
-                                                loadingLogs={loadingLogs}
-                                                conversationLogs={conversationLogs}
-                                                toggleLogExpansion={toggleLogExpansion}
-                                                BridgeAnalyticsComponent={BridgeAnalytics}
-                                                theme={theme}
-                                            />
-                                            {selectedBridges.length > 0 && (
-                                                <Box sx={styles.bulkActionsBar}>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {selectedBridges.length} Bridge{selectedBridges.length !== 1 ? 's' : ''} selected
-                                                    </Typography>
-                                                    <Box sx={{ display: 'flex', gap: 1 }}>
-                                                        <Button size="small" onClick={clearSelection}>Clear</Button>
-                                                        <Button size="small" color="error" onClick={handleBatchDelete} startIcon={<Trash2 size={14} />}>
-                                                            Delete
-                                                        </Button>
-                                                    </Box>
                                                 </Box>
                                             )}
                                         </Box>
-                                    )}
-                                </Collapse>
+                                    </Grid>
+                                </Grid>
                             </Box>
-                        </Grid>
-                    </Grid>
+                        )}
+
+                        {activeTab === 1 && (
+                            <Box>
+                                <Grid container spacing={4}>
+                                    <Grid item xs={12} md={6}>
+                                        <Box sx={styles.sectionContainer}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                <Typography variant="h5" sx={styles.sectionHeader}>
+                                                    <BookOpen size={22} style={{ color: theme.palette.primary.main }} />
+                                                    Enrolled Flows
+                                                </Typography>
+                                                <IconButton onClick={() => setEnrolledCoursesExpanded(!enrolledCoursesExpanded)} size="small">
+                                                    {enrolledCoursesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                                </IconButton>
+                                            </Box>
+                                            <Collapse in={enrolledCoursesExpanded} timeout="auto" unmountOnExit>
+                                                {enrolledCourses.length === 0 ? (
+                                                    <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
+                                                        <Typography color="text.secondary" sx={{ mb: 2 }}>You haven't enrolled in any flows yet.</Typography>
+                                                        <Button variant="outlined" onClick={() => navigate('/marketplace')}>Browse Marketplace</Button>
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                        {enrolledCourses.map(course => (
+                                                            <Box key={course.id} sx={{ ...styles.courseCard, p: 2 }}>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                                                    <Box>
+                                                                        <Typography variant="h6" sx={{ fontWeight: 500 }}>{course.name}</Typography>
+                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5, mb: 1 }}>
+                                                                            <LinearProgress
+                                                                                variant="determinate"
+                                                                                value={course.enrollment?.progress || 0}
+                                                                                sx={{ flexGrow: 1, height: 6, borderRadius: 1 }}
+                                                                                color="primary"
+                                                                            />
+                                                                            <Typography variant="caption" color="text.secondary">
+                                                                                {Math.round(course.enrollment?.progress || 0)}%
+                                                                            </Typography>
+                                                                        </Box>
+                                                                        <Typography variant="caption" color="text.disabled">
+                                                                            By: {course.created_by || 'Unknown Creator'}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                                        <Tooltip title="View Flow">
+                                                                            <IconButton size="small" onClick={() => navigate(`/c/${course.public_id}`)} sx={{ '&:hover': { color: 'primary.main' } }}>
+                                                                                <ExternalLink size={18} />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title="Unenroll">
+                                                                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleUnenrollClick(course); }} sx={{ '&:hover': { color: 'error.main' } }}>
+                                                                                <LogOut size={18} />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
+                                                                </Box>
+                                                                {course.modules && course.modules.length > 0 && (
+                                                                    <Box sx={{ pl: 1, mt: 1, borderTop: `1px solid ${theme.palette.divider}`, pt: 1 }}>
+                                                                        {[...course.modules]
+                                                                            .sort((a, b) => a.position - b.position)
+                                                                            .slice(0, 3)
+                                                                            .map((module) => (
+                                                                                <Typography
+                                                                                    key={module.id}
+                                                                                    variant="body2"
+                                                                                    onClick={() => navigate(`/viewBridge/${module.brdge_id}-${module.public_id?.substring(0, 6) || ''}`)}
+                                                                                    sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+                                                                                >
+                                                                                    <Zap size={14} color="text.secondary" />
+                                                                                    {module.name}
+                                                                                </Typography>
+                                                                            ))}
+                                                                        {course.modules.length > 3 && (
+                                                                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
+                                                                                ...and {course.modules.length - 3} more
+                                                                            </Typography>
+                                                                        )}
+                                                                    </Box>
+                                                                )}
+                                                            </Box>
+                                                        ))}
+                                                    </Box>
+                                                )}
+                                            </Collapse>
+                                        </Box>
+
+                                        <Box sx={styles.sectionContainer}>
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                <Typography variant="h5" sx={styles.sectionHeader}>
+                                                    <BookOpen size={22} style={{ color: theme.palette.primary.main }} />
+                                                    My Flows
+                                                </Typography>
+                                                <IconButton onClick={() => setYourCoursesExpanded(!yourCoursesExpanded)} size="small">
+                                                    {yourCoursesExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                                </IconButton>
+                                            </Box>
+                                            <Collapse in={yourCoursesExpanded} timeout="auto" unmountOnExit>
+                                                {courses.length === 0 ? (
+                                                    <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
+                                                        <Typography color="text.secondary" sx={{ mb: 2 }}>You haven't created any flows yet.</Typography>
+                                                        <Button variant="outlined" onClick={handleCreateCourse}>Create First Flow</Button>
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                        {courses.map(course => (
+                                                            <Box
+                                                                key={course.id}
+                                                                id={`course-${course.id}`}
+                                                                sx={{
+                                                                    ...styles.courseCard,
+                                                                    p: 2,
+                                                                    borderColor: dropTargetCourseId === course.id ? theme.palette.primary.main : theme.palette.divider,
+                                                                    borderWidth: dropTargetCourseId === course.id ? '2px' : '1px',
+                                                                    boxShadow: dropTargetCourseId === course.id ? theme.shadows[3] : theme.shadows[1],
+                                                                }}
+                                                                onDragOver={(e) => handleDragOverCourse(e, course.id)}
+                                                                onDrop={(e) => handleDropOnCourse(e, course.id)}
+                                                                onDragLeave={() => setDropTargetCourseId(null)}
+                                                            >
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                                                                    <Box sx={{ flexGrow: 1, mr: 1 }}>
+                                                                        {editingCourseId === course.id ? (
+                                                                            <Box component="form" onSubmit={(e) => handleSaveCourseName(e, course.id)} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                <TextField
+                                                                                    value={editedCourseName}
+                                                                                    onChange={handleCourseNameChange}
+                                                                                    autoFocus
+                                                                                    size="small"
+                                                                                    variant="outlined"
+                                                                                    fullWidth
+                                                                                    sx={{ '.MuiInputBase-root': { bgcolor: 'background.default' } }}
+                                                                                />
+                                                                                <IconButton type="submit" size="small" sx={{ color: 'success.main' }}><Check size={16} /></IconButton>
+                                                                                <IconButton onClick={handleCancelEditingCourse} size="small" sx={{ color: 'text.disabled' }}><Trash2 size={16} /></IconButton>
+                                                                            </Box>
+                                                                        ) : (
+                                                                            <Typography
+                                                                                variant="h6"
+                                                                                onClick={(e) => handleStartEditingCourse(e, course)}
+                                                                                sx={{ fontWeight: 500, cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
+                                                                            >
+                                                                                {course.name}
+                                                                            </Typography>
+                                                                        )}
+                                                                        <Typography variant="caption" color="text.disabled">
+                                                                            {course.modules?.length || 0} bridge{course.modules?.length !== 1 ? 's' : ''} | Last updated: {new Date(course.updated_at || Date.now()).toLocaleDateString()}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                    <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                                                                        <Tooltip title="View Flow">
+                                                                            <IconButton size="small" onClick={() => handleViewCourse(course)} sx={{ '&:hover': { color: 'primary.main' } }}><ExternalLink size={16} /></IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title="Edit Flow Details">
+                                                                            <IconButton size="small" onClick={() => handleEditCourse(course)} sx={{ '&:hover': { color: 'primary.main' } }}><Edit size={16} /></IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title={course.shareable ? "Public Flow - Manage Sharing" : "Private Flow - Manage Sharing"}>
+                                                                            <IconButton size="small" onClick={() => handleShareCourse(course)} sx={{ color: course.shareable ? 'success.main' : 'text.disabled', '&:hover': { color: 'primary.main' } }}>
+                                                                                {course.shareable ? <Globe size={16} /> : <Lock size={16} />}
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title="Delete Flow">
+                                                                            <IconButton size="small" onClick={() => handleDeleteCourse(course)} sx={{ '&:hover': { color: 'error.main' } }}><Trash2 size={16} /></IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
+                                                                </Box>
+
+                                                                <Box sx={{
+                                                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                                    mb: 1.5, mt: 1, borderTop: `1px solid ${theme.palette.divider}`, pt: 1.5
+                                                                }}>
+                                                                    <Typography variant="body2" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Zap size={16} /> Bridges in Flow
+                                                                    </Typography>
+                                                                    <Button
+                                                                        variant="outlined"
+                                                                        size="small"
+                                                                        startIcon={<Plus size={14} />}
+                                                                        onClick={() => handleOpenBridgeSelection(course)}
+                                                                        sx={{ py: 0.5, px: 1, fontSize: '0.75rem' }}
+                                                                    >
+                                                                        Add Bridge
+                                                                    </Button>
+                                                                </Box>
+
+                                                                {course.modules && course.modules.length > 0 ? (
+                                                                    <Box sx={{ pl: 0 }}>
+                                                                        {course.modules.map((module, index) => (
+                                                                            <DraggableBridgeItem
+                                                                                key={module.id}
+                                                                                bridge={module}
+                                                                                index={index}
+                                                                                courseId={course.id}
+                                                                                handleEdit={handleEdit}
+                                                                                handleView={handleView}
+                                                                                handleRemoveBridgeFromCourse={handleRemoveBridgeFromCourse}
+                                                                                moveBridge={moveBridge}
+                                                                                theme={theme}
+                                                                            />
+                                                                        ))}
+                                                                    </Box>
+                                                                ) : (
+                                                                    <Box sx={{ p: 2, textAlign: 'center', bgcolor: 'neutral.light', borderRadius: 1 }}>
+                                                                        <Typography variant="body2" color="text.secondary">
+                                                                            No Bridges added yet. Drag Bridges here or click "Add Bridge".
+                                                                        </Typography>
+                                                                    </Box>
+                                                                )}
+                                                            </Box>
+                                                        ))}
+                                                    </Box>
+                                                )}
+                                            </Collapse>
+                                        </Box>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        )}
+                    </Box>
 
                 </Container>
             </Box>
