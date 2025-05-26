@@ -1,0 +1,231 @@
+/* Import Inter font from Google Fonts with more weights */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* Global CSS Reset and Base Styles */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    color: #0A0D1C;
+    background-color: #FFFFFF;
+    overflow-x: hidden;
+    letter-spacing: -0.011em;
+}
+
+/* Typography enhancements */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin: 0;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Improved focus styles */
+*:focus-visible {
+    outline: 2px solid #0066FF;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Remove default button styles */
+button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    font-weight: inherit;
+}
+
+/* Smooth transitions for interactive elements */
+a,
+button,
+input,
+textarea,
+select {
+    transition: all 0.2s ease;
+}
+
+/* Better link styles */
+a {
+    color: #0066FF;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a:hover {
+    color: #0052CC;
+}
+
+/* Selection styles */
+::selection {
+    background-color: #E6F0FF;
+    color: #0052CC;
+}
+
+/* Scrollbar styles for Webkit browsers */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #FAFBFC;
+    border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E0;
+    border-radius: 100px;
+    border: 3px solid #FAFBFC;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #A0AEB9;
+}
+
+/* Utility classes for common patterns */
+.gradient-text {
+    background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-fill-color: transparent;
+}
+
+.gradient-primary {
+    background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+}
+
+/* Updated shadow utilities with more subtle effects */
+.shadow-xs {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-sm {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-md {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-lg {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.shadow-xl {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Premium hover effects */
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+    animation: slideIn 0.5s ease-out forwards;
+}
+
+/* Premium input styles */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+    font-family: inherit;
+    font-size: 0.9375rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+}
+
+/* Better image rendering */
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    -webkit-user-drag: none;
+    user-select: none;
+}
+
+/* Premium divider */
+.divider {
+    height: 1px;
+    background: #E2E8F0;
+    border: none;
+    margin: 2rem 0;
+}

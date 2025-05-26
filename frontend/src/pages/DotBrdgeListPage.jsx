@@ -55,16 +55,16 @@ import AutoStoriesIcon from '@mui/icons-material/AutoStories';
 const createStyles = (theme) => ({
     pageContainer: {
         background: theme.palette.background.default,
-        py: 4,
-        px: { xs: 2, md: 4 },
+        py: { xs: 3, md: 5 },
+        px: { xs: 2, md: 3 },
         position: 'relative',
         overflow: 'visible',
         minHeight: 'calc(100vh - 64px)',
     },
     header: {
         color: theme.palette.text.primary,
-        mb: 4,
-        fontWeight: 600,
+        mb: 5,
+        fontWeight: 500,
         textAlign: 'center',
         fontFamily: theme.typography.h4.fontFamily,
     },
@@ -73,7 +73,7 @@ const createStyles = (theme) => ({
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        fontWeight: 600,
+        fontWeight: 500,
         mb: 3,
         fontFamily: theme.typography.h5.fontFamily,
     },
@@ -85,17 +85,16 @@ const createStyles = (theme) => ({
     },
     courseCard: {
         p: 3,
-        borderRadius: theme.shape.borderRadius,
+        borderRadius: theme.shape.borderRadius * 1.5,
         backgroundColor: theme.palette.background.paper,
         border: `1px solid ${theme.palette.divider}`,
         mb: 2,
         transition: 'all 0.2s ease',
         position: 'relative',
-        boxShadow: theme.shadows[1],
+        boxShadow: 'none',
         '&:hover': {
-            boxShadow: theme.shadows[3],
-            borderColor: theme.palette.primary.light,
-            transform: 'translateY(-2px)',
+            boxShadow: theme.shadows[2],
+            borderColor: theme.palette.grey[300],
         },
     },
     bridgeUsageBadge: {
@@ -103,17 +102,18 @@ const createStyles = (theme) => ({
         alignItems: 'center',
         fontSize: '0.75rem',
         py: 0.5,
-        px: 1,
-        borderRadius: theme.shape.borderRadius / 1.5,
-        backgroundColor: theme.palette.primary.main + '1A',
+        px: 1.5,
+        borderRadius: theme.shape.borderRadius,
+        backgroundColor: theme.palette.primary.lighter,
         color: theme.palette.primary.dark,
         ml: 1,
+        fontWeight: 500,
     },
     marketplaceSection: {
-        py: 5,
-        px: { xs: 2, md: 4 },
+        py: 4,
+        px: { xs: 2, md: 3 },
         borderRadius: theme.shape.borderRadius * 2,
-        backgroundColor: theme.palette.neutral.light,
+        backgroundColor: theme.palette.background.subtle,
         border: `1px solid ${theme.palette.divider}`,
         boxShadow: 'none',
         mt: 4,
@@ -134,7 +134,7 @@ const createStyles = (theme) => ({
     },
     marketplaceCard: {
         p: 0,
-        borderRadius: theme.shape.borderRadius,
+        borderRadius: theme.shape.borderRadius * 1.5,
         backgroundColor: theme.palette.background.paper,
         border: `1px solid ${theme.palette.divider}`,
         height: '100%',
@@ -144,53 +144,53 @@ const createStyles = (theme) => ({
         cursor: 'pointer',
         overflow: 'hidden',
         '&:hover': {
-            transform: 'translateY(-3px)',
-            boxShadow: theme.shadows[3],
-            borderColor: theme.palette.primary.light,
+            transform: 'translateY(-2px)',
+            boxShadow: theme.shadows[2],
+            borderColor: theme.palette.grey[300],
         },
     },
     bulkActionsBar: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        p: 1.5,
+        p: 2,
         borderRadius: theme.shape.borderRadius,
-        backgroundColor: theme.palette.neutral.light,
+        backgroundColor: theme.palette.grey[50],
         mb: 2,
-        border: `1px solid ${theme.palette.divider}`,
+        border: 'none',
     },
     actionButton: {
         borderRadius: theme.shape.borderRadius,
         textTransform: 'none',
-        fontWeight: 600,
+        fontWeight: 500,
     },
     statsCard: {
-        p: 2,
-        borderRadius: theme.shape.borderRadius,
-        backgroundColor: theme.palette.background.paper,
-        border: `1px solid ${theme.palette.divider}`,
-        boxShadow: theme.shadows[1],
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-        height: '100%',
-        transition: 'all 0.2s ease',
-        '&:hover': {
-            borderColor: theme.palette.primary.light,
-            boxShadow: theme.shadows[2],
-        }
-    },
-    sectionContainer: {
-        mb: 5,
-        p: { xs: 2, sm: 3 },
+        p: 3,
         borderRadius: theme.shape.borderRadius * 1.5,
         backgroundColor: theme.palette.background.paper,
         border: `1px solid ${theme.palette.divider}`,
-        boxShadow: theme.shadows[1],
+        boxShadow: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2.5,
+        height: '100%',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+            borderColor: theme.palette.grey[300],
+            boxShadow: theme.shadows[1],
+        }
+    },
+    sectionContainer: {
+        mb: 4,
+        p: { xs: 0, sm: 0 },
+        borderRadius: theme.shape.borderRadius * 2,
+        backgroundColor: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
         position: 'relative',
     },
     listContainer: {
-        p: { xs: 1, sm: 2 },
+        p: { xs: 0, sm: 0 },
     },
 });
 
@@ -1589,70 +1589,71 @@ function DotBrdgeListPage() {
         <DndProvider backend={HTML5Backend}>
             <Box sx={styles.pageContainer}>
                 <Container maxWidth="xl">
-                    <Typography variant="h4" sx={styles.header}>
-                        Your DotBridge Hub
+                    <Typography variant="h3" sx={styles.header}>
+                        Your Dashboard
                     </Typography>
 
-                    <Box sx={{ mb: 4, pb: 3 }}>
-                        <Grid container spacing={2}>
+                    <Box sx={{ mb: 5 }}>
+                        <Grid container spacing={3}>
                             <Grid item xs={12} sm={4}>
-                                <Tooltip title="Flows group your Bridges for structured delivery.">
-                                    <Box sx={styles.statsCard}>
-                                        <Box sx={{
-                                            height: 40, width: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            bgcolor: theme.palette.primary.main + '1A', borderRadius: '50%',
-                                        }}>
-                                            <BookOpen size={20} color={theme.palette.primary.main} />
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" color="text.secondary">Flows Created</Typography>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                                                {courses.length}
-                                                <Typography variant="caption" color="text.disabled" sx={{ ml: 0.5 }}>total</Typography>
-                                            </Typography>
-                                        </Box>
+                                <Box sx={styles.statsCard}>
+                                    <Box sx={{
+                                        height: 44, width: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        bgcolor: theme.palette.primary.lighter, borderRadius: theme.shape.borderRadius,
+                                    }}>
+                                        <BookOpen size={22} color={theme.palette.primary.main} />
                                     </Box>
-                                </Tooltip>
+                                    <Box sx={{ flex: 1 }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+                                            Flows
+                                        </Typography>
+                                        <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.5, color: theme.palette.text.primary }}>
+                                            {courses.length}
+                                        </Typography>
+                                    </Box>
+                                </Box>
                             </Grid>
                             <Grid item xs={12} sm={4}>
-                                <Tooltip title="Interactive video agents you've created.">
-                                    <Box sx={styles.statsCard}>
-                                        <Box sx={{
-                                            height: 40, width: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            bgcolor: theme.palette.primary.main + '1A', borderRadius: '50%',
-                                        }}>
-                                            <Zap size={20} color={theme.palette.primary.main} />
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" color="text.secondary">Bridges Created</Typography>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                                                {userStats.brdges_created}
-                                                <Typography variant="caption" color="text.disabled" sx={{ ml: 0.5 }}>
-                                                    {userStats.brdges_limit === 'Unlimited' ? '/ ∞' : `/ ${userStats.brdges_limit}`}
-                                                </Typography>
-                                            </Typography>
-                                        </Box>
+                                <Box sx={styles.statsCard}>
+                                    <Box sx={{
+                                        height: 44, width: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        bgcolor: theme.palette.primary.lighter, borderRadius: theme.shape.borderRadius,
+                                    }}>
+                                        <Zap size={22} color={theme.palette.primary.main} />
                                     </Box>
-                                </Tooltip>
+                                    <Box sx={{ flex: 1 }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+                                            Bridges
+                                        </Typography>
+                                        <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.5, color: theme.palette.text.primary }}>
+                                            {userStats.brdges_created}
+                                            <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+                                                / {userStats.brdges_limit === 'Unlimited' ? '∞' : userStats.brdges_limit}
+                                            </Typography>
+                                        </Typography>
+                                    </Box>
+                                </Box>
                             </Grid>
                             <Grid item xs={12} sm={4}>
-                                <Tooltip title="AI interaction minutes used across your Bridges.">
-                                    <Box sx={styles.statsCard}>
-                                        <Box sx={{
-                                            height: 40, width: 40, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            bgcolor: theme.palette.primary.main + '1A', borderRadius: '50%',
-                                        }}>
-                                            <MessageSquare size={20} color={theme.palette.primary.main} />
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="body2" color="text.secondary">AI Minutes Used</Typography>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 0.5 }}>
-                                                {userStats.minutes_used}
-                                                <Typography variant="caption" color="text.disabled" sx={{ ml: 0.5 }}>/ {userStats.minutes_limit}</Typography>
-                                            </Typography>
-                                        </Box>
+                                <Box sx={styles.statsCard}>
+                                    <Box sx={{
+                                        height: 44, width: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        bgcolor: theme.palette.primary.lighter, borderRadius: theme.shape.borderRadius,
+                                    }}>
+                                        <MessageSquare size={22} color={theme.palette.primary.main} />
                                     </Box>
-                                </Tooltip>
+                                    <Box sx={{ flex: 1 }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.7rem' }}>
+                                            AI Minutes
+                                        </Typography>
+                                        <Typography variant="h4" sx={{ fontWeight: 500, mt: 0.5, color: theme.palette.text.primary }}>
+                                            {userStats.minutes_used}
+                                            <Typography variant="body2" component="span" color="text.secondary" sx={{ ml: 1, fontWeight: 400 }}>
+                                                / {userStats.minutes_limit}
+                                            </Typography>
+                                        </Typography>
+                                    </Box>
+                                </Box>
                             </Grid>
                         </Grid>
 
@@ -1665,14 +1666,26 @@ function DotBrdgeListPage() {
                         )}
                     </Box>
 
-                    <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 5, flexWrap: 'wrap', alignItems: 'center' }}>
                         <TextField
-                            placeholder="Search Bridges & Flows..."
+                            placeholder="Search..."
                             value={searchTerm}
                             onChange={handleSearch}
                             variant="outlined"
                             size="small"
-                            sx={{ flexGrow: 1, minWidth: { xs: '100%', sm: 300 } }}
+                            sx={{
+                                flexGrow: 1,
+                                maxWidth: { xs: '100%', sm: 400 },
+                                '& .MuiOutlinedInput-root': {
+                                    backgroundColor: theme.palette.grey[50],
+                                    '&:hover': {
+                                        backgroundColor: theme.palette.background.paper,
+                                    },
+                                    '&.Mui-focused': {
+                                        backgroundColor: theme.palette.background.paper,
+                                    }
+                                }
+                            }}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -1681,19 +1694,19 @@ function DotBrdgeListPage() {
                                 ),
                             }}
                         />
-                        <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', gap: 1.5, marginLeft: 'auto' }}>
                             <Button
                                 variant="contained"
-                                startIcon={<Plus size={18} />}
+                                startIcon={<Plus size={16} />}
                                 onClick={handleCreateClick}
                                 disabled={!canCreateBridge() || savingState}
                                 sx={styles.actionButton}
                             >
-                                {isOverLimit() ? 'Upgrade Plan' : 'Create Bridge'}
+                                Create Bridge
                             </Button>
                             <Button
                                 variant="outlined"
-                                startIcon={<BookOpen size={18} />}
+                                startIcon={<BookOpen size={16} />}
                                 onClick={handleCreateCourse}
                                 disabled={savingState}
                                 sx={styles.actionButton}

@@ -1,6 +1,19 @@
 import React from 'react';
 import { Typography as MuiTypography } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import PropTypes from 'prop-types';
+
+// Enhanced Typography with better line height and letter spacing
+const StyledTypography = styled(MuiTypography)(({ theme, gradient }) => ({
+    // Apply gradient text effect if specified
+    ...(gradient && {
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
+        textFillColor: 'transparent',
+    }),
+}));
 
 /**
  * DotBridgeTypography component.
@@ -19,10 +32,11 @@ import PropTypes from 'prop-types';
  * @param {string} [props.component] - The HTML element to render (e.g., 'h1', 'p', 'span'). Optional, MUI often infers this from variant.
  * @param {string} [props.color] - Text color, can use theme palette keys (e.g., 'primary.main', 'text.secondary').
  * @param {object} [props.sx] - Allows for custom styling via the sx prop.
+ * @param {boolean} props.gradient - Apply gradient text effect
  * // ...other standard MuiTypography props
  */
 const DotBridgeTypography = React.forwardRef((
-    { variant = 'body1', component, color, sx, ...otherProps },
+    { variant = 'body1', component, color, sx, gradient, ...otherProps },
     ref
 ) => {
 
@@ -40,12 +54,13 @@ const DotBridgeTypography = React.forwardRef((
     const renderComponent = component || defaultComponent;
 
     return (
-        <MuiTypography
+        <StyledTypography
             ref={ref}
             variant={variant} // Use the variant name directly, theme handles the style
             component={renderComponent}
             color={color} // Pass color prop directly, theme handles palette keys
             sx={sx}
+            gradient={gradient}
             {...otherProps}
         />
     );
@@ -57,6 +72,7 @@ DotBridgeTypography.propTypes = {
     component: PropTypes.elementType,
     color: PropTypes.string,
     sx: PropTypes.object,
+    gradient: PropTypes.bool,
 };
 
 DotBridgeTypography.displayName = 'DotBridgeTypography';

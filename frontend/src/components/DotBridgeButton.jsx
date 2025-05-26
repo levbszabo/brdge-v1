@@ -1,16 +1,31 @@
 import React from 'react';
 import { Button as MuiButton, CircularProgress, styled } from '@mui/material';
 
-// Example of potentially styling the button further if theme overrides aren't enough,
-// or for specific DotBridge variants. For now, we rely mostly on theme overrides.
-// const StyledButton = styled(MuiButton)(({ theme, ownerState }) => ({
-//     // Example: Add custom transition
-//     transition: theme.transitions.create([
-//         'background-color', 'box-shadow', 'border-color', 'color'], {
-//         duration: theme.transitions.duration.short,
-//     }),
-//     // Add other custom styles based on props like ownerState.variant, ownerState.color
-// }));
+// Enhanced button with hover animations and modern styling
+const StyledButton = styled(MuiButton)(({ theme, variant }) => ({
+    // Add subtle animation
+    transition: 'all 0.2s ease',
+    position: 'relative',
+    overflow: 'hidden',
+
+    // Enhanced hover effects based on variant
+    ...(variant === 'contained' && {
+        '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%)',
+            opacity: 0,
+            transition: 'opacity 0.2s ease',
+        },
+        '&:hover::before': {
+            opacity: 1,
+        },
+    }),
+}));
 
 /**
  * DotBridgeButton component.
@@ -43,19 +58,20 @@ const DotBridgeButton = React.forwardRef((
     const loadingIconSize = size === 'small' ? 16 : size === 'large' ? 24 : 20;
 
     return (
-        <MuiButton
+        <StyledButton
             ref={ref}
             variant={variant}
             color={color}
             size={size}
             disabled={isDisabled}
-            startIcon={loading ? <CircularProgress size={loadingIconSize} color="inherit" /> : startIcon}
+            startIcon={loading ? <CircularProgress size={loadingIconSize} color="inherit" thickness={2.5} /> : startIcon}
             endIcon={loading ? undefined : endIcon} // Don't show endIcon when loading
+            disableRipple={false}
             {...otherProps}
         >
             {/* Don't render children when loading to prevent layout shifts */}
             {!loading && children}
-        </MuiButton>
+        </StyledButton>
     );
 });
 

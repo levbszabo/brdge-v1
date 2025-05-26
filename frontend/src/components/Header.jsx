@@ -156,15 +156,24 @@ function Header() {
 
     // Styles specific for the Sign Up button
     const signUpButtonStyle = {
-        ...theme.components.MuiButton.styleOverrides.contained,
         backgroundColor: theme.palette.primary.main,
         color: theme.palette.primary.contrastText,
-        padding: '6px 18px',
-        fontSize: '0.95rem',
-        marginLeft: '10px',
+        padding: '8px 20px',
+        fontSize: '0.875rem',
+        fontWeight: 500,
+        marginLeft: '8px',
+        borderRadius: theme.shape.borderRadius,
+        textTransform: 'none',
+        boxShadow: 'none',
+        transition: 'all 0.2s ease',
         '&:hover': {
-            backgroundColor: theme.palette.primary.light,
+            backgroundColor: theme.palette.primary.dark,
             boxShadow: theme.shadows[2],
+            transform: 'translateY(-1px)',
+        },
+        '&:active': {
+            transform: 'translateY(0)',
+            boxShadow: 'none',
         }
     };
 

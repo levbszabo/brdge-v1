@@ -20,7 +20,7 @@ import SignUpPage from './pages/SignUpPage';
 import { api } from './api';
 import { getAuthToken, logout } from './utils/auth';
 import { SnackbarProvider } from './utils/snackbar';
-import '@fontsource/poppins';
+import './globalStyles.css'; // Import global styles with Inter font
 import PricingPage from './pages/PricingPage';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import PolicyPage from './pages/PolicyPage';

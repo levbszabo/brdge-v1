@@ -1,14 +1,50 @@
 import React from 'react';
 import { Card as MuiCard, CardContent, CardHeader, CardActions } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import PropTypes from 'prop-types';
+
+// Enhanced Card with modern hover effects and animations
+const StyledCard = styled(MuiCard)(({ theme, interactive, featured }) => ({
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: theme.shape.borderRadius,
+    border: `1px solid ${theme.palette.grey[200]}`,
+    boxShadow: 'none',
+    position: 'relative',
+    overflow: 'hidden',
+
+    ...(interactive && {
+        cursor: 'pointer',
+        '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: theme.shadows[2],
+            borderColor: theme.palette.grey[300],
+        },
+        '&:active': {
+            transform: 'translateY(-1px)',
+            boxShadow: theme.shadows[1],
+        },
+    }),
+
+    ...(featured && {
+        borderColor: theme.palette.primary.main,
+        borderWidth: '1px',
+        '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '3px',
+            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+        },
+    }),
+}));
 
 /**
  * DotBridgeCard component.
  *
- * A styled wrapper around Material UI Card components, using the defaults
- * defined in the dotbridgeTheme (background.paper, standard border radius, border, shadow).
- *
- * Use CardHeader, CardContent, CardActions as children for structured content.
+ * Enhanced Card component with modern styling, hover effects, and featured state.
  *
  * @param {object} props - The properties passed to the component.
  * @param {React.ReactNode} props.children - Content of the card, typically CardHeader, CardContent, CardActions.
@@ -16,38 +52,24 @@ import PropTypes from 'prop-types';
  * @param {number} [props.elevation] - Override theme default shadow elevation (0-24).
  * @param {boolean} [props.square=false] - If true, card will have square corners.
  * @param {string} [props.variant="elevation"] - Card variant ('elevation' or 'outlined').
+ * @param {boolean} [props.interactive=false] - Enable interactive hover effects.
+ * @param {boolean} [props.featured=false] - Apply featured styling with accent border.
  * // ...other standard MuiCard props
  */
 const DotBridgeCard = React.forwardRef((
-    { children, sx, ...otherProps },
+    { children, sx, interactive = false, featured = false, ...otherProps },
     ref
 ) => {
-    // The main styling (bg, border, shadow, radius) is handled by
-    // the MuiCard component override in dotbridgeTheme.js.
-    // We just pass the props through.
     return (
-        <MuiCard
+        <StyledCard
             ref={ref}
             sx={sx}
+            interactive={interactive}
+            featured={featured}
             {...otherProps}
         >
-            {/*
-             It's generally recommended to use CardContent, CardHeader, CardActions
-             as direct children for proper padding and structure, but passing
-             children directly is also supported.
-             Example:
-             <DotBridgeCard>
-                <CardHeader title="Card Title" />
-                <CardContent>
-                    <p>Card body content...</p>
-                </CardContent>
-                <CardActions>
-                    <DotBridgeButton size="small">Action</DotBridgeButton>
-                </CardActions>
-             </DotBridgeCard>
-            */}
             {children}
-        </MuiCard>
+        </StyledCard>
     );
 });
 
@@ -57,6 +79,8 @@ DotBridgeCard.propTypes = {
     elevation: PropTypes.number,
     square: PropTypes.bool,
     variant: PropTypes.oneOf(['elevation', 'outlined']),
+    interactive: PropTypes.bool,
+    featured: PropTypes.bool,
 };
 
 DotBridgeCard.displayName = 'DotBridgeCard';

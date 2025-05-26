@@ -19,7 +19,7 @@ const Section = ({ children, sx, variant = "default", ...props }) => {
     const sectionVariants = {
         default: {},
         light: {
-            bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+            bgcolor: theme.palette.background.subtle,
         },
         dark: {
             bgcolor: theme.palette.primary.main,
@@ -34,7 +34,7 @@ const Section = ({ children, sx, variant = "default", ...props }) => {
         <Box
             component="section"
             sx={{
-                py: { xs: 10, sm: 12, md: 16 },
+                py: { xs: 8, sm: 10, md: 12 },
                 px: { xs: 2, sm: 3, md: 4 },
                 position: 'relative',
                 ...sectionVariants[variant],
@@ -200,52 +200,16 @@ const HeroSection = () => {
                 </motion.div>
             </Container>
 
-            {/* Enhanced background elements with subtle animations */}
+            {/* Subtle background gradient */}
             <Box
-                component={motion.div}
-                animate={{
-                    opacity: [0.3, 0.5, 0.3],
-                    scale: [1, 1.03, 1],
-                    transition: {
-                        duration: 10,
-                        repeat: Infinity,
-                        repeatType: "mirror"
-                    }
-                }}
                 sx={{
                     position: 'absolute',
-                    top: -120,
-                    right: -120,
-                    width: 350,
-                    height: 350,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(0,122,255,0.03) 0%, rgba(0,122,255,0) 70%)',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(180deg, rgba(0,122,255,0.02) 0%, rgba(255,255,255,0) 50%)',
                     zIndex: -1,
-                    filter: 'blur(30px)'
-                }}
-            />
-            <Box
-                component={motion.div}
-                animate={{
-                    opacity: [0.3, 0.4, 0.3],
-                    scale: [1, 1.02, 1],
-                    transition: {
-                        duration: 8,
-                        repeat: Infinity,
-                        repeatType: "mirror",
-                        delay: 2
-                    }
-                }}
-                sx={{
-                    position: 'absolute',
-                    bottom: -180,
-                    left: -180,
-                    width: 450,
-                    height: 450,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(0,122,255,0.02) 0%, rgba(0,122,255,0) 60%)',
-                    zIndex: -1,
-                    filter: 'blur(40px)'
                 }}
             />
         </Box>
@@ -1413,10 +1377,13 @@ const PricingSection = () => (
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    boxShadow: 'none',
+                    transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                        transform: 'translateY(-3px)',
-                        boxShadow: (theme) => theme.shadows[2]
+                        borderColor: 'grey.300',
+                        boxShadow: (theme) => theme.shadows[1]
                     }
                 }}>
                     <DotBridgeTypography variant="h4" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>Free</DotBridgeTypography>
@@ -1455,10 +1422,9 @@ const PricingSection = () => (
                     position: 'relative',
                     display: 'flex',
                     flexDirection: 'column',
-                    transform: { md: 'scale(1.05)' },
-                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                    boxShadow: (theme) => theme.shadows[2],
+                    transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                        transform: { md: 'scale(1.05) translateY(-3px)' },
                         boxShadow: (theme) => theme.shadows[3]
                     }
                 }}>
