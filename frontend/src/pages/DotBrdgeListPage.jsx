@@ -1253,9 +1253,30 @@ function DotBrdgeListPage() {
             logs.forEach(log => {
                 let displayIdentifier = 'Unknown User';
                 let userIdKey = 'unknown_user';
+                let isPersonalized = false;
+                let personalizationData = null;
 
-                if (log.viewer_user_id) {
-                    displayIdentifier = `User #${log.viewer_user_id}`;
+                // Check if this is a personalized lead
+                if (log.personalization_data) {
+                    isPersonalized = true;
+                    personalizationData = log.personalization_data;
+
+                    // Create a lead identifier from personalization data
+                    const leadName = personalizationData.name || personalizationData.full_name || personalizationData.first_name || '';
+                    const leadCompany = personalizationData.company || personalizationData.organization || '';
+                    const leadEmail = personalizationData.email || '';
+
+                    if (leadName || leadCompany) {
+                        displayIdentifier = `🎯 ${leadName}${leadCompany ? ` (${leadCompany})` : ''}`;
+                    } else if (leadEmail) {
+                        displayIdentifier = `🎯 ${leadEmail}`;
+                    } else {
+                        displayIdentifier = `🎯 Lead #${log.personalization_record_id}`;
+                    }
+                    userIdKey = `lead_${log.personalization_record_id}`;
+                } else if (log.viewer_user_id) {
+                    // Check if we have viewer_email in the log data
+                    displayIdentifier = log.viewer_email || `User #${log.viewer_user_id}`;
                     userIdKey = `user_${log.viewer_user_id}`;
                 } else if (log.anonymous_id) {
                     displayIdentifier = `Anon ${log.anonymous_id.substring(0, 6)}...`;
@@ -1273,13 +1294,17 @@ function DotBrdgeListPage() {
                         userMessageCount: 0,
                         agentMessageCount: 0,
                         firstActivity: log.timestamp,
-                        lastActivity: log.timestamp
+                        lastActivity: log.timestamp,
+                        isPersonalized: isPersonalized,
+                        personalizationData: personalizationData,
+                        personalizationRecordId: log.personalization_record_id
                     };
                 }
                 const session = groupedLogs[userIdKey];
                 session.messages.push(log);
-                if (log.role === 'agent' && log.duration_seconds) {
-                    session.totalDurationSeconds += log.duration_seconds;
+                if (log.role === 'agent' && log.duration_minutes) {
+                    // Convert minutes to seconds for internal calculations
+                    session.totalDurationSeconds += (log.duration_minutes * 60);
                 }
                 session.totalMessages++;
                 if (log.role === 'user') session.userMessageCount++; else session.agentMessageCount++;
@@ -1313,7 +1338,7 @@ function DotBrdgeListPage() {
     };
 
     // --- Updated ChatHistoryDisplay Component ---
-    const ChatHistoryDisplay = ({ messages = [], theme, filterText = "" }) => {
+    const ChatHistoryDisplay = ({ messages = [], theme, filterText = "", sessionData = {} }) => {
         const filteredMessages = messages.filter(msg =>
             msg.message.toLowerCase().includes(filterText.toLowerCase())
         );
@@ -1386,9 +1411,9 @@ function DotBrdgeListPage() {
                                             {new Date(msg.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                                         </Typography>
                                         {/* Agent Duration */}
-                                        {msg.role === 'agent' && msg.duration_seconds > 0 && (
+                                        {msg.role === 'agent' && msg.duration_minutes > 0 && (
                                             <Typography variant="caption" sx={{ ml: 0.5, fontSize: '0.7rem' }}>
-                                                ({msg.duration_seconds.toFixed(1)}s)
+                                                ({(msg.duration_minutes * 60).toFixed(1)}s)
                                             </Typography>
                                         )}
                                         {/* Interruption Indicator */}
@@ -1518,14 +1543,38 @@ function DotBrdgeListPage() {
                                             }}
                                         >
                                             <TableCell sx={{ py: 0.5 }}>
-                                                <Chip
-                                                    icon={<User size={14} style={{ marginLeft: '4px' }} />}
-                                                    label={session.displayId}
-                                                    size="small"
-                                                    variant={isSessionExpanded ? "filled" : "outlined"} // Change chip style on expand
-                                                    color={isSessionExpanded ? "primary" : "default"}
-                                                    sx={{ bgcolor: isSessionExpanded ? undefined : 'background.paper' }}
-                                                />
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Chip
+                                                        icon={<User size={14} style={{ marginLeft: '4px' }} />}
+                                                        label={session.displayId}
+                                                        size="small"
+                                                        variant={isSessionExpanded ? "filled" : "outlined"} // Change chip style on expand
+                                                        color={session.isPersonalized ? "secondary" : (isSessionExpanded ? "primary" : "default")}
+                                                        sx={{
+                                                            bgcolor: isSessionExpanded ? undefined : 'background.paper',
+                                                            ...(session.isPersonalized && {
+                                                                borderColor: theme.palette.secondary.main,
+                                                                '& .MuiChip-icon': { color: theme.palette.secondary.main }
+                                                            })
+                                                        }}
+                                                    />
+                                                    {session.isPersonalized && (
+                                                        <Tooltip title="Personalized Lead">
+                                                            <Box sx={{
+                                                                display: 'inline-flex',
+                                                                color: theme.palette.secondary.main,
+                                                                animation: 'pulse 2s infinite',
+                                                                '@keyframes pulse': {
+                                                                    '0%': { opacity: 1 },
+                                                                    '50%': { opacity: 0.6 },
+                                                                    '100%': { opacity: 1 }
+                                                                }
+                                                            }}>
+                                                                <Zap size={16} />
+                                                            </Box>
+                                                        </Tooltip>
+                                                    )}
+                                                </Box>
                                             </TableCell>
                                             <TableCell align="center" sx={{ py: 0.5 }}>
                                                 <Tooltip title={`Agent: ${session.agentMessageCount}, User: ${session.userMessageCount}`}>
@@ -1543,6 +1592,34 @@ function DotBrdgeListPage() {
                                         <TableRow>
                                             <TableCell style={{ padding: 0, borderBottom: 'none' }} colSpan={4}>
                                                 <Collapse in={isSessionExpanded} timeout="auto" unmountOnExit sx={{ bgcolor: 'background.paper' }}>
+                                                    {/* Personalization Details (if applicable) */}
+                                                    {session.isPersonalized && session.personalizationData && (
+                                                        <Box sx={{
+                                                            p: 2,
+                                                            bgcolor: theme.palette.secondary.light + '20',
+                                                            borderBottom: `1px solid ${theme.palette.divider}`
+                                                        }}>
+                                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: theme.palette.secondary.dark }}>
+                                                                🎯 Personalized Lead Details
+                                                            </Typography>
+                                                            <Grid container spacing={2}>
+                                                                {Object.entries(session.personalizationData).map(([key, value]) => {
+                                                                    if (key === '_metadata' || !value) return null;
+                                                                    return (
+                                                                        <Grid item xs={6} sm={4} key={key}>
+                                                                            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                                                                                {key.replace(/_/g, ' ')}
+                                                                            </Typography>
+                                                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                                                {String(value)}
+                                                                            </Typography>
+                                                                        </Grid>
+                                                                    );
+                                                                })}
+                                                            </Grid>
+                                                        </Box>
+                                                    )}
+
                                                     {/* Filter Input */}
                                                     <Box sx={{ p: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
                                                         <TextField
@@ -1565,6 +1642,7 @@ function DotBrdgeListPage() {
                                                         messages={session.messages}
                                                         theme={theme}
                                                         filterText={filterText} // Pass filter text
+                                                        sessionData={session} // Pass session data for context
                                                     />
                                                 </Collapse>
                                             </TableCell>

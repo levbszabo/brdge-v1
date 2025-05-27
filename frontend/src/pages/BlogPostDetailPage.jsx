@@ -1,8 +1,27 @@
 import React from 'react';
-import { useParams, Navigate } from 'react-router-dom';
-import { Container, Typography, Box, Paper, Divider, Chip, Button } from '@mui/material';
-import { styled, alpha } from '@mui/material/styles';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import { useParams, Navigate, Link as RouterLink } from 'react-router-dom';
+import { Container, Box, Paper, useTheme, useMediaQuery } from '@mui/material';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import DotBridgeTypography from '../components/DotBridgeTypography';
+import DotBridgeButton from '../components/DotBridgeButton';
+import DotBridgeIcon from '../components/DotBridgeIcon';
+import Footer from '../components/Footer';
+
+// Animation variants
+const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+};
+
+const staggerChildren = {
+    animate: {
+        transition: {
+            staggerChildren: 0.1
+        }
+    }
+};
 
 // Sample posts data - In a real app, this would come from a CMS, API, or a shared data store.
 // For now, we'll include the article you provided here.
@@ -330,310 +349,486 @@ const postsData = [
     // ... other posts can be added here
 ];
 
-
-const StyledPostContainer = styled(Paper)(({ theme }) => ({
-    padding: theme.spacing(4, 6),
-    marginTop: theme.spacing(6),
-    marginBottom: theme.spacing(8),
-    backgroundColor: theme.palette.background.default,
-    borderRadius: theme.shape.borderRadius * 2,
-    border: `1px solid ${theme.palette.divider}`,
-    boxShadow: theme.shadows[1],
-    [theme.breakpoints.down('md')]: {
-        padding: theme.spacing(3, 4),
-    },
-    [theme.breakpoints.down('sm')]: {
-        padding: theme.spacing(3, 2.5),
-        marginTop: theme.spacing(4),
-        marginBottom: theme.spacing(6),
-    },
-
-    '& .post-content h2': {
-        ...theme.typography.h3,
-        fontWeight: 700,
-        color: theme.palette.text.primary,
-        marginTop: theme.spacing(6),
-        marginBottom: theme.spacing(3),
-        lineHeight: 1.2,
-        borderBottom: `3px solid ${theme.palette.primary.main}`,
-        paddingBottom: theme.spacing(1.5),
-        display: 'inline-block',
-        letterSpacing: '-0.01em',
-    },
-    '& .post-content h3': {
-        ...theme.typography.h4,
-        fontWeight: 700,
-        color: theme.palette.text.primary,
-        marginTop: theme.spacing(5),
-        marginBottom: theme.spacing(2.5),
-        lineHeight: 1.3,
-        position: 'relative',
-        paddingLeft: theme.spacing(2),
-        '&::before': {
-            content: '""',
-            position: 'absolute',
-            left: 0,
-            top: '15%',
-            bottom: '15%',
-            width: '6px',
-            backgroundColor: theme.palette.primary.main,
-            borderRadius: theme.shape.borderRadius,
-        }
-    },
-    '& .post-content p': {
-        ...theme.typography.body1,
-        fontSize: '1.125rem',
-        lineHeight: 1.8,
-        marginBottom: theme.spacing(2.5),
-        color: theme.palette.text.primary,
-        maxWidth: '800px',
-    },
-    '& .post-content ul': {
-        listStyleType: 'disc',
-        paddingLeft: theme.spacing(3.5),
-        marginBottom: theme.spacing(3),
-        color: theme.palette.text.primary,
-    },
-    '& .post-content li': {
-        marginBottom: theme.spacing(1.5),
-        lineHeight: 1.8,
-        fontSize: '1.125rem',
-        paddingLeft: theme.spacing(0.5),
-    },
-    '& .post-content li::marker': {
-        color: theme.palette.primary.main,
-        fontSize: '1.2em',
-    },
-    '& .post-content a': {
-        color: theme.palette.primary.main,
-        textDecoration: 'underline',
-        textDecorationColor: alpha(theme.palette.primary.main, 0.4),
-        textDecorationThickness: '2px',
-        fontWeight: 600,
-        transition: theme.transitions.create(['color', 'text-decoration-color'], {
-            duration: theme.transitions.duration.short,
-        }),
-        '&:hover': {
-            color: theme.palette.primary.dark,
-            textDecorationColor: theme.palette.primary.main,
-        },
-    },
-    '& .post-content strong': {
-        fontWeight: 700,
-        color: theme.palette.text.primary,
-    },
-    '& .post-content em': {
-        fontStyle: 'italic',
-        color: theme.palette.text.primary,
-    },
-    '& .post-content blockquote': {
-        margin: theme.spacing(4, 0, 4, 0),
-        padding: theme.spacing(2.5, 3),
-        borderLeft: `6px solid ${theme.palette.primary.main}`,
-        backgroundColor: alpha(theme.palette.primary.main, 0.08),
-        borderRadius: `0 ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0`,
-        boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.05)}`,
-        '& p': {
-            marginBottom: theme.spacing(1),
-            fontSize: '1.125rem',
-            fontStyle: 'italic',
-            color: theme.palette.text.primary,
-            fontWeight: 500,
-        }
-    },
-    '& .post-content table': {
-        width: '100%',
-        borderCollapse: 'collapse',
-        marginBottom: theme.spacing(3.5),
-        marginTop: theme.spacing(2.5),
-        fontSize: '1rem',
-        boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.05)}`,
-        borderRadius: theme.shape.borderRadius,
-        overflow: 'hidden',
-    },
-    '& .post-content th, & .post-content td': {
-        border: `1px solid ${alpha(theme.palette.divider, 0.8)}`,
-        padding: theme.spacing(1.5, 2),
-        textAlign: 'left',
-        verticalAlign: 'top',
-    },
-    '& .post-content th': {
-        backgroundColor: alpha(theme.palette.primary.main, 0.1),
-        fontWeight: 700,
-        color: theme.palette.text.primary,
-    },
-    '& .post-content td': {
-        backgroundColor: theme.palette.background.paper,
-    },
-    '& .post-content caption': {
-        captionSide: 'bottom',
-        padding: theme.spacing(1),
-        fontSize: '0.9rem',
-        color: theme.palette.text.secondary,
-        fontStyle: 'italic',
-    },
-    '& .download-pdf-container': {
-        marginTop: theme.spacing(4),
-        marginBottom: theme.spacing(4),
-        padding: theme.spacing(3),
-        backgroundColor: alpha(theme.palette.primary.main, 0.08),
-        border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-        borderRadius: theme.shape.borderRadius * 1.5,
-        textAlign: 'center',
-        boxShadow: `0 3px 10px ${alpha(theme.palette.primary.main, 0.1)}`,
-    }
-}));
-
-const PostHeader = styled(Box)(({ theme }) => ({
-    marginBottom: theme.spacing(4),
-    textAlign: 'center',
-}));
-
-const PostTitle = styled(Typography)(({ theme }) => ({
-    ...theme.typography.h1,
-    fontWeight: 700,
-    color: theme.palette.text.primary,
-    marginBottom: theme.spacing(2),
-    lineHeight: 1.2,
-    letterSpacing: '-0.02em',
-    [theme.breakpoints.up('xs')]: {
-        fontSize: '2rem',
-    },
-    [theme.breakpoints.up('sm')]: {
-        fontSize: '2.4rem',
-    },
-    [theme.breakpoints.up('md')]: {
-        fontSize: '3.5rem',
-    },
-}));
-
-const PostMeta = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing(3),
-    color: theme.palette.text.secondary,
-    marginBottom: theme.spacing(5),
-}));
-
-const MetaItem = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing(1),
-    fontSize: '0.95rem',
-    fontWeight: 500,
-}));
-
 const BlogPostDetailPage = () => {
     const { slug } = useParams();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+    const [contentRef, contentInView] = useInView({
+        triggerOnce: true,
+        threshold: 0.1
+    });
+
     const post = postsData.find(p => p.slug === slug);
 
     if (!post) {
         return <Navigate to="/blog" replace />;
     }
 
+    // Get type chip styles
+    const getTypeChipStyles = (type) => {
+        switch (type ? type.toLowerCase() : '') {
+            case 'article':
+                return {
+                    background: `${theme.palette.primary.main}15`,
+                    color: theme.palette.primary.main,
+                    borderColor: `${theme.palette.primary.main}30`
+                };
+            case 'demo':
+                return {
+                    background: `${theme.palette.secondary.main}15`,
+                    color: theme.palette.secondary.main,
+                    borderColor: `${theme.palette.secondary.main}30`
+                };
+            case 'whitepaper':
+                return {
+                    background: `${theme.palette.success.main}15`,
+                    color: theme.palette.success.main,
+                    borderColor: `${theme.palette.success.main}30`
+                };
+            default:
+                return {
+                    background: theme.palette.grey[100],
+                    color: theme.palette.text.secondary,
+                    borderColor: theme.palette.divider
+                };
+        }
+    };
+
     return (
-        <Container maxWidth="lg">
-            <StyledPostContainer elevation={0}>
-                <PostHeader>
-                    {post.category && (
-                        <Chip
-                            label={post.category}
-                            color="primary"
-                            size="medium"
+        <>
+            <Box
+                sx={{
+                    minHeight: '100vh',
+                    background: theme.palette.mode === 'dark'
+                        ? theme.palette.background.default
+                        : `linear-gradient(to bottom, ${theme.palette.grey[50]}, ${theme.palette.background.default})`,
+                    position: 'relative',
+                    overflow: 'hidden'
+                }}
+            >
+                {/* Background decoration */}
+                {!isMobile && (
+                    <>
+                        <Box
                             sx={{
-                                mb: 2.5,
-                                fontWeight: 600,
-                                letterSpacing: '0.5px',
-                                fontSize: '0.85rem',
-                                px: 1.5,
-                                py: 2.5,
-                                borderRadius: '99px',
-                                background: theme => alpha(theme.palette.primary.main, 0.1),
-                                color: theme => theme.palette.primary.main,
-                                border: theme => `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
+                                position: 'absolute',
+                                top: -200,
+                                right: -200,
+                                width: 400,
+                                height: 400,
+                                borderRadius: '50%',
+                                background: `radial-gradient(circle, ${theme.palette.primary.main}08 0%, transparent 70%)`,
+                                filter: 'blur(40px)',
+                                pointerEvents: 'none'
                             }}
                         />
-                    )}
-                    <PostTitle variant="h1" component="h1">
-                        {post.title}
-                    </PostTitle>
-                    <PostMeta>
-                        <MetaItem>
-                            <CalendarTodayIcon sx={{ fontSize: '1.2rem', color: theme => theme.palette.primary.main }} />
-                            <Typography variant="body2" component="span" sx={{ fontWeight: 500 }}>
-                                Published on {post.date}
-                            </Typography>
-                        </MetaItem>
-                        {post.type && (
-                            <MetaItem>
-                                <Chip
-                                    label={post.type.charAt(0).toUpperCase() + post.type.slice(1)}
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 600,
-                                        px: 1.5,
-                                        backgroundColor: theme =>
-                                            post.type === 'whitepaper'
-                                                ? alpha(theme.palette.success.main, 0.1)
-                                                : post.type === 'demo'
-                                                    ? alpha(theme.palette.secondary.main, 0.1)
-                                                    : alpha(theme.palette.primary.main, 0.1),
-                                        color: theme =>
-                                            post.type === 'whitepaper'
-                                                ? theme.palette.success.main
-                                                : post.type === 'demo'
-                                                    ? theme.palette.secondary.main
-                                                    : theme.palette.primary.main,
-                                        border: theme =>
-                                            post.type === 'whitepaper'
-                                                ? `1px solid ${alpha(theme.palette.success.main, 0.3)}`
-                                                : post.type === 'demo'
-                                                    ? `1px solid ${alpha(theme.palette.secondary.main, 0.3)}`
-                                                    : `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
-                                    }}
-                                />
-                            </MetaItem>
-                        )}
-                    </PostMeta>
-                </PostHeader>
-                <Divider sx={{ mb: { xs: 4, md: 5 } }} />
-
-                {post.type === 'whitepaper' && post.pdfUrl && (
-                    <Box className="download-pdf-container">
-                        <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary', mb: 1.5 }}>
-                            Full Whitepaper Available
-                        </Typography>
-                        <Typography variant="body1" sx={{ mb: 2, maxWidth: '700px', mx: 'auto' }}>
-                            Get the complete details and insights in our downloadable whitepaper document
-                        </Typography>
-                        <Button
-                            variant="contained"
-                            href={post.pdfUrl}
-                            download={`${post.slug || 'whitepaper'}.pdf`}
-                            size="large"
+                        <Box
                             sx={{
-                                mt: 1,
-                                mb: 2,
-                                px: 3,
-                                py: 1.2,
-                                fontWeight: 600,
-                                borderRadius: '50px',
-                                boxShadow: theme => `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`
+                                position: 'absolute',
+                                bottom: -150,
+                                left: -150,
+                                width: 300,
+                                height: 300,
+                                borderRadius: '50%',
+                                background: `radial-gradient(circle, ${theme.palette.primary.light}08 0%, transparent 70%)`,
+                                filter: 'blur(40px)',
+                                pointerEvents: 'none'
                             }}
-                        >
-                            Download PDF: {post.title}
-                        </Button>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                            The key highlights and abstract are presented below. For the complete details, please download the full PDF document.
-                        </Typography>
-                    </Box>
+                        />
+                    </>
                 )}
 
-                <Box className="post-content" dangerouslySetInnerHTML={{ __html: post.content }} />
+                <Container maxWidth="md" sx={{ py: { xs: 6, md: 10 }, position: 'relative' }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        {/* Back to Blog Button */}
+                        <Box sx={{ mb: 4 }}>
+                            <DotBridgeButton
+                                variant="text"
+                                component={RouterLink}
+                                to="/blog"
+                                startIcon={<DotBridgeIcon name="ArrowLeft" size={18} />}
+                                sx={{
+                                    color: 'text.secondary',
+                                    '&:hover': {
+                                        color: 'primary.main',
+                                        background: `${theme.palette.primary.main}08`
+                                    }
+                                }}
+                            >
+                                Back to Blog
+                            </DotBridgeButton>
+                        </Box>
 
-            </StyledPostContainer>
-        </Container>
+                        {/* Article Container */}
+                        <Paper
+                            ref={contentRef}
+                            elevation={0}
+                            sx={{
+                                p: { xs: 4, sm: 6, md: 8 },
+                                borderRadius: theme.shape.borderRadius * 3,
+                                background: theme.palette.background.paper,
+                                border: `1px solid ${theme.palette.divider}`,
+                                boxShadow: theme.shadows[2],
+                                mb: 8
+                            }}
+                        >
+                            {/* Header */}
+                            <Box sx={{ textAlign: 'center', mb: 6 }}>
+                                {post.category && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={contentInView ? { opacity: 1, scale: 1 } : {}}
+                                        transition={{ duration: 0.3 }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                display: 'inline-block',
+                                                px: 2,
+                                                py: 0.75,
+                                                mb: 3,
+                                                borderRadius: 3,
+                                                border: '1px solid',
+                                                ...getTypeChipStyles(post.type),
+                                                fontSize: '0.875rem',
+                                                fontWeight: 600,
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em'
+                                            }}
+                                        >
+                                            {post.category}
+                                        </Box>
+                                    </motion.div>
+                                )}
+
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={contentInView ? { opacity: 1, y: 0 } : {}}
+                                    transition={{ duration: 0.5, delay: 0.1 }}
+                                >
+                                    <DotBridgeTypography
+                                        variant="h1"
+                                        sx={{
+                                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3.5rem' },
+                                            fontWeight: 700,
+                                            mb: 3,
+                                            letterSpacing: '-0.02em',
+                                            lineHeight: 1.2
+                                        }}
+                                    >
+                                        {post.title}
+                                    </DotBridgeTypography>
+                                </motion.div>
+
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={contentInView ? { opacity: 1 } : {}}
+                                    transition={{ duration: 0.5, delay: 0.2 }}
+                                >
+                                    <Box sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 3,
+                                        color: 'text.secondary',
+                                        flexWrap: 'wrap'
+                                    }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <DotBridgeIcon name="Calendar" size={18} color="primary.main" />
+                                            <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
+                                                {post.date}
+                                            </DotBridgeTypography>
+                                        </Box>
+                                        {post.type && (
+                                            <Box
+                                                sx={{
+                                                    px: 1.5,
+                                                    py: 0.5,
+                                                    borderRadius: 2,
+                                                    border: '1px solid',
+                                                    ...getTypeChipStyles(post.type),
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 600,
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em'
+                                                }}
+                                            >
+                                                {post.type}
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </motion.div>
+                            </Box>
+
+                            <Box sx={{
+                                height: 1,
+                                background: theme.palette.divider,
+                                mb: 6
+                            }} />
+
+                            {/* Whitepaper Download Section */}
+                            {post.type === 'whitepaper' && post.pdfUrl && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={contentInView ? { opacity: 1, y: 0 } : {}}
+                                    transition={{ duration: 0.5, delay: 0.3 }}
+                                >
+                                    <Box sx={{
+                                        p: 4,
+                                        mb: 6,
+                                        borderRadius: 2,
+                                        background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.light}08 100%)`,
+                                        border: `1px solid ${theme.palette.primary.main}20`,
+                                        textAlign: 'center'
+                                    }}>
+                                        <DotBridgeIcon name="FileText" size={48} color="primary.main" sx={{ mb: 2 }} />
+                                        <DotBridgeTypography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+                                            Full Whitepaper Available
+                                        </DotBridgeTypography>
+                                        <DotBridgeTypography
+                                            variant="body1"
+                                            color="text.secondary"
+                                            sx={{ mb: 3, maxWidth: '600px', mx: 'auto' }}
+                                        >
+                                            Get the complete details and insights in our downloadable whitepaper document
+                                        </DotBridgeTypography>
+                                        <DotBridgeButton
+                                            variant="contained"
+                                            href={post.pdfUrl}
+                                            download
+                                            size="large"
+                                            startIcon={<DotBridgeIcon name="Download" size={20} />}
+                                            sx={{
+                                                px: 4,
+                                                py: 1.5,
+                                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                                boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
+                                                }
+                                            }}
+                                        >
+                                            Download PDF
+                                        </DotBridgeButton>
+                                    </Box>
+                                </motion.div>
+                            )}
+
+                            {/* Content */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={contentInView ? { opacity: 1 } : {}}
+                                transition={{ duration: 0.5, delay: 0.4 }}
+                            >
+                                <Box
+                                    className="post-content"
+                                    dangerouslySetInnerHTML={{ __html: post.content }}
+                                    sx={{
+                                        '& h2': {
+                                            ...theme.typography.h3,
+                                            fontWeight: 700,
+                                            color: theme.palette.text.primary,
+                                            mt: 6,
+                                            mb: 3,
+                                            position: 'relative',
+                                            display: 'inline-block',
+                                            '&:after': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                bottom: -8,
+                                                left: 0,
+                                                width: '100%',
+                                                height: 3,
+                                                background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+                                                borderRadius: 2
+                                            }
+                                        },
+                                        '& h3': {
+                                            ...theme.typography.h4,
+                                            fontWeight: 600,
+                                            color: theme.palette.text.primary,
+                                            mt: 4,
+                                            mb: 2,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 2,
+                                            '&:before': {
+                                                content: '""',
+                                                width: 24,
+                                                height: 24,
+                                                borderRadius: '50%',
+                                                background: `${theme.palette.primary.main}15`,
+                                                border: `2px solid ${theme.palette.primary.main}`,
+                                                flexShrink: 0
+                                            }
+                                        },
+                                        '& p': {
+                                            ...theme.typography.body1,
+                                            fontSize: '1.125rem',
+                                            lineHeight: 1.8,
+                                            mb: 2.5,
+                                            color: theme.palette.text.primary
+                                        },
+                                        '& ul': {
+                                            pl: 0,
+                                            mb: 3,
+                                            listStyle: 'none'
+                                        },
+                                        '& li': {
+                                            ...theme.typography.body1,
+                                            fontSize: '1.125rem',
+                                            lineHeight: 1.8,
+                                            mb: 1.5,
+                                            pl: 4,
+                                            position: 'relative',
+                                            '&:before': {
+                                                content: '"→"',
+                                                position: 'absolute',
+                                                left: 0,
+                                                color: theme.palette.primary.main,
+                                                fontWeight: 700,
+                                                fontSize: '1.25rem'
+                                            }
+                                        },
+                                        '& strong': {
+                                            fontWeight: 700,
+                                            color: theme.palette.primary.main
+                                        },
+                                        '& a': {
+                                            color: theme.palette.primary.main,
+                                            textDecoration: 'none',
+                                            fontWeight: 600,
+                                            borderBottom: `2px solid ${theme.palette.primary.main}30`,
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                borderBottomColor: theme.palette.primary.main
+                                            }
+                                        },
+                                        '& table': {
+                                            width: '100%',
+                                            borderCollapse: 'collapse',
+                                            mb: 3,
+                                            mt: 2,
+                                            overflow: 'hidden',
+                                            borderRadius: theme.shape.borderRadius,
+                                            boxShadow: theme.shadows[1]
+                                        },
+                                        '& th, & td': {
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            p: 2,
+                                            textAlign: 'left'
+                                        },
+                                        '& th': {
+                                            background: `${theme.palette.primary.main}10`,
+                                            fontWeight: 700,
+                                            color: theme.palette.text.primary
+                                        },
+                                        '& td': {
+                                            background: theme.palette.background.paper
+                                        }
+                                    }}
+                                />
+                            </motion.div>
+
+                            {/* CTA Section */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={contentInView ? { opacity: 1, y: 0 } : {}}
+                                transition={{ duration: 0.5, delay: 0.5 }}
+                            >
+                                <Box sx={{
+                                    mt: 8,
+                                    p: 4,
+                                    borderRadius: 2,
+                                    background: `linear-gradient(135deg, ${theme.palette.primary.main}05 0%, ${theme.palette.primary.light}05 100%)`,
+                                    border: `1px solid ${theme.palette.primary.main}15`,
+                                    textAlign: 'center'
+                                }}>
+                                    <DotBridgeTypography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
+                                        Ready to Transform Your Business Communication?
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography
+                                        variant="body1"
+                                        color="text.secondary"
+                                        sx={{ mb: 3 }}
+                                    >
+                                        See how DotBridge can help you create interactive AI experiences that convert.
+                                    </DotBridgeTypography>
+                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+                                        <DotBridgeButton
+                                            variant="contained"
+                                            component={RouterLink}
+                                            to="/signup"
+                                            size="large"
+                                            sx={{
+                                                px: 4,
+                                                py: 1.5,
+                                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                                boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
+                                                '&:hover': {
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
+                                                }
+                                            }}
+                                        >
+                                            Start Free Trial
+                                        </DotBridgeButton>
+                                        <DotBridgeButton
+                                            variant="outlined"
+                                            component={RouterLink}
+                                            to="/contact"
+                                            size="large"
+                                            sx={{
+                                                px: 4,
+                                                py: 1.5,
+                                                borderWidth: 2,
+                                                '&:hover': {
+                                                    borderWidth: 2,
+                                                    transform: 'translateY(-2px)'
+                                                }
+                                            }}
+                                        >
+                                            Book a Demo
+                                        </DotBridgeButton>
+                                    </Box>
+                                </Box>
+                            </motion.div>
+                        </Paper>
+
+                        {/* More Articles Button */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={contentInView ? { opacity: 1 } : {}}
+                            transition={{ duration: 0.5, delay: 0.6 }}
+                        >
+                            <Box sx={{ textAlign: 'center' }}>
+                                <DotBridgeButton
+                                    variant="text"
+                                    component={RouterLink}
+                                    to="/blog"
+                                    endIcon={<DotBridgeIcon name="ArrowRight" size={18} />}
+                                    sx={{
+                                        fontSize: '1.125rem',
+                                        fontWeight: 600,
+                                        '&:hover': {
+                                            background: `${theme.palette.primary.main}08`
+                                        }
+                                    }}
+                                >
+                                    View More Articles
+                                </DotBridgeButton>
+                            </Box>
+                        </motion.div>
+                    </motion.div>
+                </Container>
+            </Box>
+            <Footer />
+        </>
     );
 };
 

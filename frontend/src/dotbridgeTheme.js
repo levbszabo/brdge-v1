@@ -247,7 +247,7 @@ const typography = {
 
 // 4. Shape (Border Radius)
 const shape = {
-    borderRadius: 6, // Clean, modern radius (reduced from 8)
+    borderRadius: 4, // Subtle, modern radius for cleaner look
 };
 
 // 5. Shadows - Subtle and elegant

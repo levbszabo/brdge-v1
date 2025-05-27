@@ -200,6 +200,11 @@ class Assistant(Agent):
             {}
         )  # For storing context of active multiple-choice quizzes
 
+        # Add idle timeout tracking
+        self.last_interaction_time = asyncio.get_event_loop().time()
+        self.idle_timeout_seconds = 5 * 60  # 5 minutes
+        self.idle_check_task = None
+
         self.initialize()
 
         super().__init__(instructions=self.system_prompt)
@@ -1178,7 +1183,7 @@ After responding to the user based on the specific engagement instructions above
                 "message": message_content,
                 "timestamp": datetime.utcnow().isoformat(),
                 "was_interrupted": interrupted,
-                "duration_seconds": round(duration_minutes, 2),
+                "duration_minutes": round(duration_minutes, 2),
             }
 
             # Add personalization ID if we have it
@@ -1251,6 +1256,52 @@ After responding to the user based on the specific engagement instructions above
             "was_interrupted": False,
             "log_id": None,
         }
+
+    def update_activity_time(self):
+        """Update the last interaction time"""
+        self.last_interaction_time = asyncio.get_event_loop().time()
+        logger.debug(f"Updated activity time for user {self.user_id}")
+
+    async def check_idle_timeout(self):
+        """Check if the user has been idle and disconnect if necessary"""
+        while True:
+            try:
+                current_time = asyncio.get_event_loop().time()
+                time_since_last_activity = current_time - self.last_interaction_time
+
+                if time_since_last_activity >= self.idle_timeout_seconds:
+                    logger.info(
+                        f"User {self.user_id} has been idle for {time_since_last_activity:.0f} seconds, disconnecting"
+                    )
+                    # Gracefully disconnect - the room will handle cleanup
+                    if self.room:
+                        await self.room.disconnect()
+                    break
+
+                # Check every 30 seconds
+                await asyncio.sleep(30)
+
+            except asyncio.CancelledError:
+                logger.info("Idle timeout check cancelled")
+                break
+            except Exception as e:
+                logger.error(f"Error in idle timeout check: {e}")
+                await asyncio.sleep(30)  # Continue checking even if there's an error
+
+    def start_idle_monitoring(self):
+        """Start the idle timeout monitoring task"""
+        if self.idle_check_task is None:
+            self.idle_check_task = asyncio.create_task(self.check_idle_timeout())
+            logger.info(
+                f"Started idle monitoring for user {self.user_id} with {self.idle_timeout_seconds}s timeout"
+            )
+
+    def stop_idle_monitoring(self):
+        """Stop the idle timeout monitoring task"""
+        if self.idle_check_task:
+            self.idle_check_task.cancel()
+            self.idle_check_task = None
+            logger.info(f"Stopped idle monitoring for user {self.user_id}")
 
 
 async def get_model_config(agent, brdge_id):
@@ -1413,6 +1464,9 @@ async def entrypoint(ctx: JobContext):
             f"Conversation item added from {item.role}: {item.text_content}, interrupted: {item.interrupted}"
         )
 
+        # Update activity time on any conversation item
+        agent.update_activity_time()
+
         # Define an async inner function to handle the async logic
         async def handle_async_logging():
             if item.role == "user":
@@ -1436,10 +1490,19 @@ async def entrypoint(ctx: JobContext):
         # Create a task to run the async inner function
         asyncio.create_task(handle_async_logging())
 
-    await session.start(
-        room=ctx.room,
-        agent=agent,
+    # Start the session and idle monitoring
+    session_task = asyncio.create_task(
+        session.start(
+            room=ctx.room,
+            agent=agent,
+        )
     )
+
+    # Start idle monitoring
+    agent.start_idle_monitoring()
+
+    # Wait for session to complete
+    await session_task
 
     # *** Pass ctx.room to ChatAssistant constructor ***
     # agent = ChatAssistant(vad=vad, brdge_id=brdge_id, room=ctx.room)
@@ -1456,6 +1519,9 @@ async def entrypoint(ctx: JobContext):
         )
         topic = getattr(data_packet, "topic", "unknown")
         message_str = data_packet.data.decode("utf-8")  # Moved decode up for logging
+
+        # Update activity time on any data received
+        agent.update_activity_time()
 
         try:
             # logger.debug(f"Received data packet from {sender} on topic: {topic}, data: {message_str[:200]}") # More context in log
@@ -1591,6 +1657,8 @@ async def entrypoint(ctx: JobContext):
     @ctx.room.on("disconnected")
     def on_disconnect(*args):
         logger.info("Room disconnected")
+        # Stop idle monitoring when disconnecting
+        agent.stop_idle_monitoring()
         disconnect_event.set()
 
     try:

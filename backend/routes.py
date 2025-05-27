@@ -1552,32 +1552,28 @@ def create_portal_session(user):
             return jsonify({"error": "No active subscription found"}), 400
 
         try:
-            # Create portal session directly with proration settings
+            # Create portal session with simple configuration
+            # The portal configuration is managed in your Stripe Dashboard under
+            # Settings > Billing > Customer portal
+            # Make sure to enable the following in your Stripe Dashboard:
+            # 1. Customer can update payment methods
+            # 2. Customer can update subscriptions
+            # 3. Customer can cancel subscriptions
+            # 4. Customer can switch plans
             session = stripe.billing_portal.Session.create(
                 customer=user_account.stripe_customer_id,
                 return_url=f"{request.headers.get('Origin')}/profile",
-                flow_data={
-                    "type": "subscription_update",
-                    "subscription_update": {
-                        "subscription": user_account.stripe_subscription_id,
-                        "features": {
-                            "proration_behavior": "create_prorations",
-                            "upgrade_downgrade_enabled": True,
-                            "payment_method_update_enabled": True,
-                            "cancellation_enabled": True,
-                        },
-                    },
-                },
             )
 
+            logger.info(f"Created portal session for user {user.id}: {session.id}")
             return jsonify({"url": session.url}), 200
 
         except stripe.error.StripeError as e:
-            print(f"Stripe error: {str(e)}")
+            logger.error(f"Stripe error creating portal session: {str(e)}")
             return jsonify({"error": str(e)}), 400
 
     except Exception as e:
-        print(f"Error creating portal session: {str(e)}")
+        logger.error(f"Error creating portal session: {str(e)}")
         return jsonify({"error": "Failed to create portal session"}), 500
 
 
@@ -3546,7 +3542,7 @@ def add_conversation_log(brdge_id):
         role = data.get("role")
         timestamp_str = data.get("timestamp")
         was_interrupted = data.get("was_interrupted", False)
-        duration_seconds = data.get("duration_seconds", 0.0)
+        duration_minutes = data.get("duration_minutes", 0.0)
 
         # Get ownership/viewer info
         viewer_user_id = data.get("viewer_user_id")
@@ -3591,7 +3587,7 @@ def add_conversation_log(brdge_id):
             message=message,
             timestamp=timestamp,
             was_interrupted=was_interrupted,
-            duration_seconds=duration_seconds,
+            duration_minutes=duration_minutes,
             personalization_record_id=personalization_record_id,
         )
 
@@ -3647,16 +3643,29 @@ def get_conversation_logs(brdge_id):
                     400,
                 )
 
-        # Get conversations with most recent first
-        conversations = query.order_by(ConversationLogs.timestamp.desc()).all()
+        # Get conversations with most recent first, eager load personalization records
+        from sqlalchemy.orm import joinedload
 
-        # Enhance conversation data with personalization info
+        conversations = (
+            query.options(joinedload(ConversationLogs.personalization_record))
+            .order_by(ConversationLogs.timestamp.desc())
+            .all()
+        )
+
+        # Enhance conversation data with personalization info and viewer email
         enhanced_conversations = []
         for conv in conversations:
             conv_dict = conv.to_dict()
             if conv.personalization_record_id and conv.personalization_record:
                 conv_dict["personalization_data"] = conv.personalization_record.data
                 conv_dict["personalization_email"] = conv.personalization_record.email
+
+            # Add viewer email if viewer_user_id exists
+            if conv.viewer_user_id:
+                viewer = User.query.get(conv.viewer_user_id)
+                if viewer:
+                    conv_dict["viewer_email"] = viewer.email
+
             enhanced_conversations.append(conv_dict)
 
         return (

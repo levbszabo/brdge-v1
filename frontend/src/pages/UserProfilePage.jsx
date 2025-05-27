@@ -23,193 +23,120 @@ import {
     TextField,
     DialogTitle,
     DialogActions,
-    IconButton
+    IconButton,
+    useMediaQuery,
+    Tabs,
+    Tab
 } from '@mui/material';
 import { api } from '../api';
-import PersonIcon from '@mui/icons-material/Person';
-import CheckIcon from '@mui/icons-material/Check';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import PaymentIcon from '@mui/icons-material/Payment';
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import AutorenewIcon from '@mui/icons-material/Autorenew';
-import StarIcon from '@mui/icons-material/Star';
-import CancelIcon from '@mui/icons-material/Cancel';
-import SaveIcon from '@mui/icons-material/Save';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
-import CloseIcon from '@mui/icons-material/Close';
-import MailOutlineIcon from '@mui/icons-material/MailOutline';
-import { motion } from 'framer-motion';
+import {
+    User,
+    Check,
+    Calendar,
+    Crown,
+    CreditCard,
+    Receipt,
+    RefreshCw,
+    Star,
+    X,
+    Save,
+    Unlock,
+    Mail,
+    Zap,
+    TrendingUp,
+    Shield,
+    AlertCircle
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link as RouterLink } from 'react-router-dom';
+import DotBridgeButton from '../components/DotBridgeButton';
+import DotBridgeTypography from '../components/DotBridgeTypography';
+import DotBridgeIcon from '../components/DotBridgeIcon';
 
-const typography = {
-    heading: {
-        fontSize: { xs: '1.25rem', sm: '1.5rem' },
-        fontWeight: 700,
-        letterSpacing: '-0.02em',
-        lineHeight: 1.2,
-        color: 'white',
-        fontFamily: 'Satoshi',
-        background: 'linear-gradient(to right, #FFFFFF 30%, rgba(255, 255, 255, 0.8))',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-    },
-    subheading: {
-        fontSize: { xs: '1rem', sm: '1.1rem' },
-        fontWeight: 600,
-        letterSpacing: '-0.01em',
-        color: 'rgba(255, 255, 255, 0.9)',
-        fontFamily: 'Satoshi'
-    },
-    body: {
-        fontSize: { xs: '0.875rem', sm: '0.9rem' },
-        letterSpacing: '0.01em',
-        lineHeight: 1.5,
-        color: 'rgba(255, 255, 255, 0.7)',
-        fontFamily: 'Satoshi'
-    },
-    caption: {
-        fontSize: { xs: '0.75rem', sm: '0.8rem' },
-        letterSpacing: '0.02em',
-        color: 'rgba(255, 255, 255, 0.5)',
-        fontFamily: 'Satoshi'
+// Animation variants
+const fadeInUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.5,
+            ease: "easeOut"
+        }
     }
 };
 
-const cardStyles = {
-    background: 'linear-gradient(135deg, rgba(2, 6, 23, 0.9), rgba(7, 11, 35, 0.9))',
-    backdropFilter: 'blur(20px)',
-    borderRadius: '24px',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-    transition: 'all 0.3s ease',
-    '&:hover': {
-        transform: 'translateY(-3px)',
-        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.5)',
-        border: '1px solid rgba(255, 255, 255, 0.12)'
+const staggerChildren = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.2
+        }
     }
 };
-
-const tierCardStyles = (isActive, isPremium) => ({
-    background: isPremium
-        ? 'linear-gradient(135deg, rgba(0, 82, 204, 0.15), rgba(7, 71, 166, 0.15))'
-        : 'rgba(255, 255, 255, 0.02)',
-    backdropFilter: 'blur(20px)',
-    borderRadius: '28px',
-    border: isActive
-        ? '1px solid rgba(34, 211, 238, 0.3)'
-        : '1px solid rgba(255, 255, 255, 0.08)',
-    transition: 'all 0.4s ease',
-    position: 'relative',
-    overflow: 'hidden',
-    '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '1px',
-        background: isPremium
-            ? 'linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.3), transparent)'
-            : 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent)',
-    }
-});
 
 const TierButton = ({ isActive, isPremium, onClick, children, tier }) => {
     const theme = useTheme();
 
-    let buttonStyles = {};
-    if (isActive) {
-        buttonStyles = {
-            borderColor: theme.palette.primary.main,
-            backgroundColor: alpha(theme.palette.primary.main, 0.1),
-            color: theme.palette.primary.main,
-            cursor: 'default',
-            '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                borderColor: theme.palette.primary.main,
-                boxShadow: 'none',
-                transform: 'none'
-            },
-            '&.Mui-disabled': {
-                borderColor: theme.palette.primary.main,
-                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                color: theme.palette.primary.main,
-                opacity: 1
-            }
-        };
-    } else if (tier === 'free') {
-        buttonStyles = {
-            borderColor: theme.palette.neutral.mid,
-            color: theme.palette.primary.main,
-            '&:hover': {
-                backgroundColor: alpha(theme.palette.primary.main, 0.05),
-                borderColor: theme.palette.primary.light,
-            },
-        };
-    }
-    else if (isPremium) {
-        buttonStyles = theme.components.MuiButton.styleOverrides.containedPrimary;
-    } else {
-        buttonStyles = theme.components.MuiButton.styleOverrides.outlinedPrimary;
-    }
-
     return (
-        <Button
+        <DotBridgeButton
             variant={isActive ? "outlined" : (isPremium && tier !== 'free') ? "contained" : "outlined"}
             disabled={isActive}
             onClick={onClick}
             sx={{
-                ...buttonStyles,
                 minWidth: '120px',
-                height: '40px',
-                borderRadius: '8px',
+                height: '44px',
+                borderRadius: 2,
                 fontSize: '0.9rem',
                 fontWeight: 600,
-                padding: '0 16px',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
-                margin: '0 auto',
-                display: 'block',
-                transition: 'all 0.2s ease-out',
-
-                '&:hover': {
-                    ...buttonStyles['&:hover'],
-                    ...(isActive ? {} : { transform: 'translateY(-1px)', boxShadow: `0 4px 12px ${theme.palette.primary.main}30` }),
-                },
-
-                '&:active': {
-                    ...(isActive ? {} : { transform: 'translateY(0px)', boxShadow: 'none' }),
-                },
+                width: '100%',
+                transition: 'all 0.2s ease',
+                ...(isActive && {
+                    borderColor: theme.palette.primary.main,
+                    backgroundColor: `${theme.palette.primary.main}10`,
+                    color: theme.palette.primary.main,
+                    '&.Mui-disabled': {
+                        borderColor: theme.palette.primary.main,
+                        backgroundColor: `${theme.palette.primary.main}10`,
+                        color: theme.palette.primary.main,
+                        opacity: 1
+                    }
+                }),
+                ...(isPremium && !isActive && {
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    boxShadow: `0 4px 12px ${theme.palette.primary.main}30`
+                })
             }}
+            startIcon={isActive ? <Check size={16} /> : (isPremium && <Star size={16} />)}
         >
-            <Box sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                justifyContent: 'center',
-                width: '100%'
-            }}>
-                {isActive ? (
-                    <>
-                        <CheckIcon sx={{ fontSize: '18px', color: 'inherit' }} />
-                        <span>Current Plan</span>
-                    </>
-                ) : (
-                    <>
-                        {isPremium && (
-                            <StarIcon sx={{ fontSize: '18px', color: 'inherit' }} />
-                        )}
-                        <span>{children}</span>
-                    </>
-                )}
-            </Box>
-        </Button>
+            {isActive ? 'Current Plan' : children}
+        </DotBridgeButton>
     );
 };
 
-const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium, tier }) => {
+// Add custom tab panel component
+function TabPanel({ children, value, index, ...other }) {
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`profile-tabpanel-${index}`}
+            aria-labelledby={`profile-tab-${index}`}
+            {...other}
+        >
+            {value === index && (
+                <Box sx={{ pt: 3 }}>
+                    {children}
+                </Box>
+            )}
+        </div>
+    );
+}
+
+// Simplified subscription tier component
+const SubscriptionTierCompact = ({ title, price, features, isActive, onClick, isPremium, tier }) => {
     const theme = useTheme();
     const handleClick = () => {
         localStorage.setItem('selected_tier', tier);
@@ -218,102 +145,118 @@ const SubscriptionTier = ({ title, price, features, isActive, onClick, isPremium
 
     return (
         <motion.div
-            whileHover={{ y: -3 }}
+            whileHover={{ y: -2 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
             style={{ height: '100%' }}
         >
             <Paper
-                elevation={isActive ? 4 : 1}
+                elevation={0}
                 sx={{
-                    p: { xs: 2.5, sm: 3 },
+                    p: 2.5,
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    borderRadius: '16px',
-                    border: isActive
-                        ? `2px solid ${theme.palette.primary.main}`
-                        : `1px solid ${theme.palette.divider}`,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: isActive
+                        ? theme.palette.primary.main
+                        : theme.palette.divider,
                     position: 'relative',
                     overflow: 'hidden',
-                    '& > *': {
-                        position: 'relative',
-                        zIndex: 1,
-                    },
-                    transition: 'all 0.3s ease',
+                    background: theme.palette.background.paper,
+                    transition: 'all 0.2s ease',
+                    ...(isPremium && !isActive && {
+                        borderColor: theme.palette.primary.light,
+                    }),
                     '&:hover': {
-                        boxShadow: isActive ? theme.shadows[6] : theme.shadows[4],
+                        boxShadow: theme.shadows[2],
                         borderColor: isActive
                             ? theme.palette.primary.main
                             : theme.palette.primary.light,
                     },
                 }}
             >
-                <Box sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 3,
-                    flexWrap: 'wrap',
-                    gap: 1,
-                }}>
-                    <Box>
-                        <Typography variant="h4" sx={{
-                            fontWeight: 600,
-                            color: theme.palette.text.primary,
-                            mb: 0.5,
-                            lineHeight: 1.2,
-                        }}>
-                            {title}
-                        </Typography>
-                        <Typography variant="h5" sx={{
-                            fontWeight: 500,
-                            color: theme.palette.secondary.main,
-                            mb: 1,
-                            lineHeight: 1.2,
-                        }}>
-                            {price}
-                        </Typography>
-                    </Box>
-                    <Box sx={{ mt: 0.5, width: { xs: '100%', sm: 'auto' } }}>
-                        <TierButton
-                            isActive={isActive}
-                            isPremium={isPremium}
-                            tier={tier}
-                            onClick={handleClick}
-                        >
-                            {isActive ? 'Current Plan' :
-                                (tier === 'free' && !isActive) ? 'Select Plan' :
-                                    (isPremium) ? 'Upgrade Plan' :
-                                        'Select Plan'}
-                        </TierButton>
-                    </Box>
+                {isPremium && (
+                    <Chip
+                        size="small"
+                        label="RECOMMENDED"
+                        sx={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            bgcolor: 'primary.main',
+                            color: 'white'
+                        }}
+                    />
+                )}
+
+                <Box sx={{ mb: 2 }}>
+                    <DotBridgeTypography variant="h6" sx={{
+                        fontWeight: 600,
+                        color: theme.palette.text.primary,
+                        mb: 0.5,
+                        fontSize: '1.1rem'
+                    }}>
+                        {title}
+                    </DotBridgeTypography>
+                    <DotBridgeTypography variant="h5" sx={{
+                        fontWeight: 700,
+                        color: theme.palette.primary.main,
+                        fontSize: '1.5rem'
+                    }}>
+                        {price}
+                    </DotBridgeTypography>
                 </Box>
 
-                <Box sx={{ flexGrow: 1, mb: 3 }}>
-                    {features.map((feature, index) => (
+                <Box sx={{ flexGrow: 1, mb: 2 }}>
+                    {features.slice(0, 4).map((feature, index) => (
                         <Box key={index} sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            mb: 1.5,
-                            color: theme.palette.text.secondary,
+                            mb: 0.75,
+                            gap: 1
                         }}>
-                            <CheckIcon sx={{
-                                mr: 1.5,
-                                color: theme.palette.secondary.main,
-                                fontSize: '1.1rem'
-                            }} />
-                            <Typography sx={{
-                                fontFamily: theme.typography.fontFamily,
-                                fontSize: '0.95rem',
-                                lineHeight: 1.5,
-                                color: theme.palette.text.primary,
-                                fontWeight: 400,
+                            <Check size={14} color={theme.palette.primary.main} />
+                            <DotBridgeTypography sx={{
+                                fontSize: '0.8rem',
+                                color: theme.palette.text.secondary,
                             }}>
                                 {feature}
-                            </Typography>
+                            </DotBridgeTypography>
                         </Box>
                     ))}
+                    {features.length > 4 && (
+                        <DotBridgeTypography sx={{
+                            fontSize: '0.75rem',
+                            color: theme.palette.text.secondary,
+                            fontStyle: 'italic',
+                            mt: 0.5
+                        }}>
+                            +{features.length - 4} more features
+                        </DotBridgeTypography>
+                    )}
                 </Box>
+
+                <DotBridgeButton
+                    variant={isActive ? "outlined" : isPremium ? "contained" : "text"}
+                    fullWidth
+                    size="small"
+                    onClick={handleClick}
+                    disabled={isActive}
+                    sx={{
+                        py: 0.75,
+                        fontSize: '0.8rem',
+                        ...(isActive && {
+                            borderColor: theme.palette.primary.main,
+                            color: theme.palette.primary.main,
+                        })
+                    }}
+                >
+                    {isActive ? 'Current Plan' : 'Select'}
+                </DotBridgeButton>
             </Paper>
         </motion.div>
     );
@@ -365,90 +308,154 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
     }, [userProfile]);
 
     return (
-        <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-            <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
-                {showCancelSuccess && (
-                    <Alert
-                        severity="success"
-                        onClose={() => setShowCancelSuccess(false)}
-                        sx={{
-                            mb: 2,
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                            border: `1px solid ${theme.palette.success.main}`,
-                            '& .MuiAlert-icon': { color: theme.palette.success.main }
-                        }}
-                    >
-                        Your subscription has been successfully canceled and will remain active until the end of the current period.
-                    </Alert>
-                )}
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUp}
+        >
+            <Paper elevation={0} sx={{
+                p: 3,
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: theme.palette.divider,
+                background: theme.palette.background.paper
+            }}>
+                <AnimatePresence>
+                    {showCancelSuccess && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                        >
+                            <Alert
+                                severity="success"
+                                onClose={() => setShowCancelSuccess(false)}
+                                sx={{
+                                    mb: 2,
+                                    borderRadius: 2,
+                                    '& .MuiAlert-icon': {
+                                        color: theme.palette.success.main
+                                    }
+                                }}
+                            >
+                                Your subscription has been successfully canceled and will remain active until the end of the current period.
+                            </Alert>
+                        </motion.div>
+                    )}
 
-                {error && (
-                    <Alert
-                        severity="error"
-                        onClose={() => setError(null)}
-                        sx={{
-                            mb: 2,
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.error.main,
-                            border: `1px solid ${theme.palette.error.main}`,
-                            '& .MuiAlert-icon': { color: theme.palette.error.main }
-                        }}
-                    >
-                        {error}
-                    </Alert>
-                )}
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                        >
+                            <Alert
+                                severity="error"
+                                onClose={() => setError(null)}
+                                sx={{
+                                    mb: 2,
+                                    borderRadius: 2
+                                }}
+                            >
+                                {error}
+                            </Alert>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                        <ReceiptIcon sx={{ color: theme.palette.secondary.main }} />
-                        <Typography variant="h6" sx={{
-                            color: theme.palette.text.primary,
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                        <Box sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 2,
+                            bgcolor: 'primary.lighter',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <Receipt size={20} color={theme.palette.primary.main} />
+                        </Box>
+                        <DotBridgeTypography variant="h6" sx={{
                             fontWeight: 600,
+                            color: theme.palette.text.primary
                         }}>
                             Billing Information
-                        </Typography>
+                        </DotBridgeTypography>
                     </Box>
 
-                    <Grid container spacing={1.5}>
-                        <Grid item xs={5}><Typography variant="body2" color="text.secondary">Plan</Typography></Grid>
-                        <Grid item xs={7} textAlign="right">
-                            <Typography variant="body1" sx={{ fontWeight: 600, color: theme.palette.secondary.main }}>
-                                {currentPlan === 'pro' ? 'Premium' :
-                                    currentPlan === 'standard' ? 'Standard' : 'Free'} Plan
-                                {userProfile?.account?.subscription_status === 'canceled' && currentPlan !== 'free' && (
-                                    <Typography component="span" variant="caption" sx={{ display: 'block', color: theme.palette.warning.main }}>
-                                        Cancels on: {formatDate(userProfile?.account?.next_billing_date)}
-                                    </Typography>
-                                )}
-                            </Typography>
+                    <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                            <DotBridgeTypography variant="body2" color="text.secondary">Plan</DotBridgeTypography>
+                        </Grid>
+                        <Grid item xs={6} textAlign="right">
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
+                                <DotBridgeTypography variant="body1" sx={{ fontWeight: 600 }}>
+                                    {currentPlan === 'pro' ? 'Premium' :
+                                        currentPlan === 'standard' ? 'Standard' : 'Free'}
+                                </DotBridgeTypography>
+                                <Chip
+                                    size="small"
+                                    label={currentPlan === 'pro' ? 'PRO' : currentPlan.toUpperCase()}
+                                    sx={{
+                                        height: 22,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        bgcolor: currentPlan === 'pro' ? 'primary.main' :
+                                            currentPlan === 'standard' ? 'success.main' :
+                                                'grey.500',
+                                        color: 'white'
+                                    }}
+                                />
+                            </Box>
+                            {userProfile?.account?.subscription_status === 'canceled' && currentPlan !== 'free' && (
+                                <DotBridgeTypography variant="caption" sx={{
+                                    display: 'block',
+                                    color: theme.palette.warning.main,
+                                    mt: 0.5
+                                }}>
+                                    Cancels on: {formatDate(userProfile?.account?.next_billing_date)}
+                                </DotBridgeTypography>
+                            )}
                         </Grid>
 
-                        <Grid item xs={5}><Typography variant="body2" color="text.secondary">Billing Period</Typography></Grid>
-                        <Grid item xs={7} textAlign="right"><Typography variant="body1" color="text.primary">Monthly</Typography></Grid>
+                        <Grid item xs={6}>
+                            <DotBridgeTypography variant="body2" color="text.secondary">Billing Period</DotBridgeTypography>
+                        </Grid>
+                        <Grid item xs={6} textAlign="right">
+                            <DotBridgeTypography variant="body1">Monthly</DotBridgeTypography>
+                        </Grid>
 
                         {currentPlan !== 'free' && (
                             <>
-                                <Grid item xs={5}><Typography variant="body2" color="text.secondary">Next Payment</Typography></Grid>
-                                <Grid item xs={7} textAlign="right">
-                                    <Typography variant="body1" color="text.primary">
+                                <Grid item xs={6}>
+                                    <DotBridgeTypography variant="body2" color="text.secondary">Next Payment</DotBridgeTypography>
+                                </Grid>
+                                <Grid item xs={6} textAlign="right">
+                                    <DotBridgeTypography variant="body1">
                                         {userProfile?.account?.subscription_status === 'canceled' ? 'N/A' :
                                             formatDate(userProfile?.account?.next_billing_date)}
-                                    </Typography>
+                                    </DotBridgeTypography>
                                 </Grid>
 
-                                <Grid item xs={5}><Typography variant="body2" color="text.secondary">Payment Method</Typography></Grid>
-                                <Grid item xs={7} textAlign="right">
+                                <Grid item xs={6}>
+                                    <DotBridgeTypography variant="body2" color="text.secondary">Payment Method</DotBridgeTypography>
+                                </Grid>
+                                <Grid item xs={6} textAlign="right">
                                     <Chip
-                                        icon={<PaymentIcon sx={{ color: theme.palette.text.secondary }} />}
+                                        icon={<CreditCard size={14} />}
                                         label={`•••• ${userProfile?.payment_method_last4 || '****'}`}
                                         size="small"
                                         sx={{
-                                            backgroundColor: theme.palette.neutral.light,
-                                            color: theme.palette.text.primary,
-                                            border: `1px solid ${theme.palette.divider}`,
+                                            bgcolor: 'grey.100',
+                                            color: 'text.primary',
                                             fontSize: '0.8rem',
-                                            height: '26px'
+                                            height: '26px',
+                                            '& .MuiChip-icon': {
+                                                color: 'text.secondary',
+                                                ml: 0.5
+                                            }
                                         }}
                                     />
                                 </Grid>
@@ -459,50 +466,42 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
 
                 {(currentPlan === 'standard' || currentPlan === 'pro') && (
                     <Box sx={{
-                        mt: 2, mb: 3,
+                        mt: 2,
+                        mb: 3,
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: 'grey.50',
+                        border: '1px solid',
+                        borderColor: 'grey.200',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderRadius: '8px',
-                        backgroundColor: theme.palette.neutral.light,
-                        border: `1px solid ${theme.palette.divider}`,
-                        p: 1.5,
+                        justifyContent: 'space-between'
                     }}>
                         <Box>
-                            <Typography sx={{
-                                color: theme.palette.text.primary,
-                                fontSize: '0.95rem',
+                            <DotBridgeTypography sx={{
                                 fontWeight: 500,
-                                lineHeight: 1.3,
+                                fontSize: '0.95rem',
+                                color: 'text.primary'
                             }}>
                                 Allow Overage Usage
-                            </Typography>
-                            <Typography sx={{
-                                color: theme.palette.text.secondary,
+                            </DotBridgeTypography>
+                            <DotBridgeTypography sx={{
                                 fontSize: '0.8rem',
-                                mt: 0.5,
+                                color: 'text.secondary',
+                                mt: 0.5
                             }}>
                                 $0.12/min for additional AI minutes
-                            </Typography>
+                            </DotBridgeTypography>
                         </Box>
                         <Switch
                             checked={allowOverage}
                             onChange={handleOverageToggle}
                             sx={{
                                 '& .MuiSwitch-switchBase.Mui-checked': {
-                                    color: theme.palette.secondary.main,
-                                    '&:hover': {
-                                        backgroundColor: alpha(theme.palette.secondary.main, 0.1),
-                                    },
+                                    color: theme.palette.primary.main,
                                 },
                                 '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                    backgroundColor: theme.palette.secondary.main,
-                                },
-                                '& .MuiSwitch-switchBase': {
-                                    color: theme.palette.text.secondary,
-                                },
-                                '& .MuiSwitch-track': {
-                                    backgroundColor: theme.palette.neutral.mid,
+                                    backgroundColor: theme.palette.primary.main,
                                 }
                             }}
                         />
@@ -510,9 +509,9 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                 )}
 
                 {currentPlan !== 'free' && userProfile?.account?.subscription_status !== 'canceled' && (
-                    <Button
+                    <DotBridgeButton
                         variant="outlined"
-                        startIcon={<CancelIcon />}
+                        startIcon={<X size={16} />}
                         fullWidth
                         onClick={() => setOpenConfirmDialog(true)}
                         sx={{
@@ -521,12 +520,12 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                             mt: 1,
                             '&:hover': {
                                 borderColor: theme.palette.error.main,
-                                backgroundColor: alpha(theme.palette.error.main, 0.08),
+                                backgroundColor: `${theme.palette.error.main}08`
                             }
                         }}
                     >
                         Cancel Plan
-                    </Button>
+                    </DotBridgeButton>
                 )}
 
                 <Dialog
@@ -534,56 +533,50 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                     onClose={() => setOpenConfirmDialog(false)}
                     PaperProps={{
                         sx: {
+                            borderRadius: 3,
                             maxWidth: '500px',
                             width: '100%',
-                            p: { xs: 2, sm: 3 },
+                            p: { xs: 2, sm: 3 }
                         }
                     }}
                 >
-                    <DialogTitle sx={{ p: 0, mb: 2, textAlign: 'center' }}>
-                        <Typography
-                            variant="h5"
-                            sx={{
-                                fontWeight: 600,
-                                color: theme.palette.error.main,
-                                mb: 1,
-                            }}
-                        >
-                            Cancel Subscription?
-                        </Typography>
-                        <Typography
-                            sx={{
-                                color: theme.palette.text.secondary,
-                                fontSize: '1rem',
-                                fontWeight: 400,
-                            }}
-                        >
-                            Your access remains until the current period ends.
-                        </Typography>
+                    <DialogTitle sx={{ p: 0, mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <DotBridgeTypography variant="h5" sx={{ fontWeight: 600 }}>
+                                Cancel Subscription?
+                            </DotBridgeTypography>
+                            <IconButton onClick={() => setOpenConfirmDialog(false)} size="small">
+                                <X size={20} />
+                            </IconButton>
+                        </Box>
                     </DialogTitle>
 
                     <DialogContent sx={{ p: 0 }}>
-                        <Box sx={{ mb: 3 }}>
+                        <DotBridgeTypography variant="body1" sx={{ mb: 3, color: 'text.secondary' }}>
+                            Your access remains until the current period ends.
+                        </DotBridgeTypography>
+
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             {[
                                 {
+                                    icon: <Calendar size={20} />,
                                     title: 'Active Until Period End',
-                                    description: `Your ${currentPlan} plan remains active until ${formatDate(userProfile?.account?.next_billing_date)}.`,
-                                    icon: <CalendarTodayIcon sx={{ color: theme.palette.primary.main }} />
+                                    description: `Your ${currentPlan} plan remains active until ${formatDate(userProfile?.account?.next_billing_date)}.`
                                 },
                                 {
+                                    icon: <Save size={20} />,
                                     title: 'Preserved Content',
-                                    description: 'Your Bridges and Flows will be preserved but inactive after the period ends.',
-                                    icon: <SaveIcon sx={{ color: theme.palette.primary.main }} />
+                                    description: 'Your Bridges and Flows will be preserved but inactive after the period ends.'
                                 },
                                 {
+                                    icon: <RefreshCw size={20} />,
                                     title: 'Reactivate Anytime',
-                                    description: 'You can easily reactivate your subscription later.',
-                                    icon: <AutorenewIcon sx={{ color: theme.palette.primary.main }} />
+                                    description: 'You can easily reactivate your subscription later.'
                                 },
                                 {
+                                    icon: <Unlock size={20} />,
                                     title: 'Free Tier Access',
-                                    description: 'Free tier limits apply after cancellation (1 Bridge & 1 Flow, 30 mins/month).',
-                                    icon: <LockOpenIcon sx={{ color: theme.palette.primary.main }} />
+                                    description: 'Free tier limits apply after cancellation (1 Bridge & 1 Flow, 30 mins/month).'
                                 }
                             ].map((item, index) => (
                                 <Box
@@ -592,44 +585,55 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                         display: 'flex',
                                         alignItems: 'flex-start',
                                         gap: 2,
-                                        mb: 2,
-                                        p: 1.5,
-                                        borderRadius: '8px',
-                                        backgroundColor: theme.palette.neutral.light,
-                                        border: `1px solid ${theme.palette.divider}`,
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: 'grey.50',
+                                        border: '1px solid',
+                                        borderColor: 'grey.200'
                                     }}
                                 >
-                                    <Box sx={{ pt: 0.5 }}>{item.icon}</Box>
+                                    <Box sx={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: 1.5,
+                                        bgcolor: 'primary.lighter',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                        color: 'primary.main'
+                                    }}>
+                                        {item.icon}
+                                    </Box>
                                     <Box>
-                                        <Typography sx={{
+                                        <DotBridgeTypography sx={{
                                             fontWeight: 600,
                                             mb: 0.5,
-                                            color: theme.palette.text.primary,
                                             fontSize: '0.95rem'
                                         }}>
                                             {item.title}
-                                        </Typography>
-                                        <Typography sx={{
+                                        </DotBridgeTypography>
+                                        <DotBridgeTypography sx={{
                                             fontSize: '0.85rem',
-                                            color: theme.palette.text.secondary,
-                                            lineHeight: 1.4,
+                                            color: 'text.secondary',
+                                            lineHeight: 1.5
                                         }}>
                                             {item.description}
-                                        </Typography>
+                                        </DotBridgeTypography>
                                     </Box>
                                 </Box>
                             ))}
                         </Box>
                     </DialogContent>
 
-                    <DialogActions sx={{ p: 0, pt: 1 }}>
-                        <Button
+                    <DialogActions sx={{ p: 0, pt: 3 }}>
+                        <DotBridgeButton
                             variant="outlined"
                             onClick={() => setOpenConfirmDialog(false)}
                         >
                             Keep Subscription
-                        </Button>
-                        <Button
+                        </DotBridgeButton>
+                        <DotBridgeButton
                             variant="contained"
                             onClick={async () => {
                                 setError(null);
@@ -648,15 +652,14 @@ function BillingCard({ userProfile, currentPlan, onSubscriptionChange }) {
                                 }
                             }}
                             sx={{
-                                backgroundColor: theme.palette.error.main,
-                                color: theme.palette.error.contrastText || '#fff',
+                                bgcolor: theme.palette.error.main,
                                 '&:hover': {
-                                    backgroundColor: theme.palette.error.dark || '#a30000',
+                                    bgcolor: theme.palette.error.dark
                                 }
                             }}
                         >
                             Confirm Cancellation
-                        </Button>
+                        </DotBridgeButton>
                     </DialogActions>
                 </Dialog>
             </Paper>
@@ -726,79 +729,100 @@ function UsageStats({ currentPlan }) {
         return Math.min(percentage, 100);
     };
 
-    const getUsageDescription = (currentStats) => {
-        if (!currentStats) return '';
-
-        const brdgesUsed = currentStats.brdges_created;
-        const brdgesLimit = currentStats.brdges_limit;
-        const minutesUsed = Math.round(currentStats.minutes_used);
-        const minutesLimit = currentStats.minutes_limit;
-
-        return `Using ${brdgesUsed}/${brdgesLimit === 'Unlimited' ? '∞' : brdgesLimit} Courses/Modules and ${minutesUsed}/${minutesLimit} engagement minutes this period.`;
-    };
-
     return (
-        <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-            <Paper elevation={1} sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={fadeInUp}
+        >
+            <Paper elevation={0} sx={{
+                p: 3,
+                mb: 3,
+                borderRadius: 3,
+                border: '1px solid',
+                borderColor: theme.palette.divider,
+                background: theme.palette.background.paper
+            }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                    <StarIcon sx={{ color: theme.palette.secondary.main }} />
-                    <Typography variant="h6" sx={{
-                        color: theme.palette.text.primary,
+                    <Box sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        bgcolor: 'primary.lighter',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <TrendingUp size={20} color={theme.palette.primary.main} />
+                    </Box>
+                    <DotBridgeTypography variant="h6" sx={{
                         fontWeight: 600,
+                        color: theme.palette.text.primary
                     }}>
                         Usage Statistics
-                    </Typography>
+                    </DotBridgeTypography>
                 </Box>
 
-                {loadingStats && <CircularProgress size={24} sx={{ display: 'block', margin: '20px auto' }} />}
-                {statsError && <Alert severity="error" sx={{ mb: 2 }}>{statsError}</Alert>}
+                {loadingStats && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <CircularProgress size={24} />
+                    </Box>
+                )}
+
+                {statsError && (
+                    <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{statsError}</Alert>
+                )}
 
                 {!loadingStats && !statsError && (
                     <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12}>
                             <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
-                                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
+                                    <DotBridgeTypography variant="body1" sx={{ fontWeight: 500 }}>
                                         Bridges
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography variant="body2" color="text.secondary">
                                         {stats.brdges_created} / {stats.brdges_limit === 'Unlimited' ? '∞' : stats.brdges_limit}
-                                    </Typography>
+                                    </DotBridgeTypography>
                                 </Box>
                                 <LinearProgress
                                     variant="determinate"
                                     value={getBrdgeUsagePercentage()}
                                     sx={{
-                                        height: 6,
-                                        borderRadius: 3,
-                                        backgroundColor: theme.palette.neutral.light,
+                                        height: 8,
+                                        borderRadius: 4,
+                                        backgroundColor: theme.palette.grey[200],
                                         '& .MuiLinearProgress-bar': {
-                                            backgroundColor: theme.palette.secondary.main
+                                            borderRadius: 4,
+                                            background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`
                                         }
                                     }}
                                 />
                             </Box>
                         </Grid>
 
-                        <Grid item xs={12} sm={6}>
+                        <Grid item xs={12}>
                             <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
-                                    <Typography variant="body1" sx={{ color: theme.palette.text.primary, fontWeight: 500 }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
+                                    <DotBridgeTypography variant="body1" sx={{ fontWeight: 500 }}>
                                         AI Minutes
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography variant="body2" color="text.secondary">
                                         {stats.minutes_used} / {stats.minutes_limit}
-                                    </Typography>
+                                    </DotBridgeTypography>
                                 </Box>
                                 <LinearProgress
                                     variant="determinate"
                                     value={getMinutesUsagePercentage()}
                                     sx={{
-                                        height: 6,
-                                        borderRadius: 3,
-                                        backgroundColor: theme.palette.neutral.light,
+                                        height: 8,
+                                        borderRadius: 4,
+                                        backgroundColor: theme.palette.grey[200],
                                         '& .MuiLinearProgress-bar': {
-                                            backgroundColor: theme.palette.secondary.main
+                                            borderRadius: 4,
+                                            background: getMinutesUsagePercentage() > 90
+                                                ? `linear-gradient(90deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.light} 100%)`
+                                                : `linear-gradient(90deg, ${theme.palette.success.main} 0%, ${theme.palette.success.light} 100%)`
                                         }
                                     }}
                                 />
@@ -807,9 +831,24 @@ function UsageStats({ currentPlan }) {
 
                         {(currentPlan === 'standard' || currentPlan === 'pro') && stats.minutes_used > stats.minutes_limit && (
                             <Grid item xs={12}>
-                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary, textAlign: 'center', display: 'block', mt: 1 }}>
-                                    Overage minutes are billed at $0.12/min.
-                                </Typography>
+                                <Box sx={{
+                                    p: 1.5,
+                                    borderRadius: 2,
+                                    bgcolor: 'warning.lighter',
+                                    border: '1px solid',
+                                    borderColor: 'warning.light',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1
+                                }}>
+                                    <AlertCircle size={16} color={theme.palette.warning.main} />
+                                    <DotBridgeTypography variant="caption" sx={{
+                                        color: theme.palette.warning.dark,
+                                        fontWeight: 500
+                                    }}>
+                                        Overage minutes are billed at $0.12/min
+                                    </DotBridgeTypography>
+                                </Box>
                             </Grid>
                         )}
                     </Grid>
@@ -821,6 +860,7 @@ function UsageStats({ currentPlan }) {
 
 function UserProfilePage() {
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -831,6 +871,7 @@ function UserProfilePage() {
     const [contactMessage, setContactMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [tabValue, setTabValue] = useState(0);
 
     // New state for upgrade confirmation modal
     const [upgradePreview, setUpgradePreview] = useState(null);
@@ -1143,10 +1184,14 @@ function UserProfilePage() {
         }
     };
 
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
+    };
+
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="calc(100vh - 64px)">
-                <CircularProgress sx={{ color: theme.palette.secondary.main }} />
+                <CircularProgress sx={{ color: theme.palette.primary.main }} />
             </Box>
         );
     }
@@ -1154,8 +1199,8 @@ function UserProfilePage() {
     if (error && !userProfile) {
         return (
             <Container maxWidth="md" sx={{ py: 5, textAlign: 'center' }}>
-                <Alert severity="error" sx={{}}>{error}</Alert>
-                <Button onClick={fetchUserProfile} sx={{ mt: 2 }}>Try Again</Button>
+                <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
+                <DotBridgeButton onClick={fetchUserProfile} sx={{ mt: 2 }}>Try Again</DotBridgeButton>
             </Container>
         );
     }
@@ -1163,8 +1208,8 @@ function UserProfilePage() {
     if (!userProfile) {
         return (
             <Container maxWidth="md" sx={{ py: 5, textAlign: 'center' }}>
-                <Typography>Could not load user profile.</Typography>
-                <Button onClick={fetchUserProfile} sx={{ mt: 2 }}>Try Again</Button>
+                <DotBridgeTypography variant="h6">Could not load user profile.</DotBridgeTypography>
+                <DotBridgeButton onClick={fetchUserProfile} sx={{ mt: 2 }}>Try Again</DotBridgeButton>
             </Container>
         );
     }
@@ -1181,13 +1226,12 @@ function UserProfilePage() {
             title: "Free",
             price: "$0 / month",
             features: [
-                "1 bridge Link",
+                "1 Bridge Link",
                 "30 AI Minutes/mo",
-                "Basic AI Q&A",
                 "Voice Clone",
                 "Basic Analytics",
                 "1 Flow Limit",
-                "Watermark"
+                "Community Support"
             ],
             isActive: currentPlan === 'free',
             tier: 'free',
@@ -1198,13 +1242,12 @@ function UserProfilePage() {
             title: "Standard",
             price: "$49 / month",
             features: [
-                "10 bridge Links",
+                "10 Bridge Links",
                 "300 AI Minutes/mo",
-                "Basic AI Q&A",
                 "Voice Clone",
                 "Basic Analytics",
                 "1 Flow Limit",
-                "Watermark"
+                "Email Support"
             ],
             isActive: currentPlan === 'standard',
             tier: 'standard',
@@ -1217,13 +1260,14 @@ function UserProfilePage() {
             title: "Premium",
             price: "$149 / month",
             features: [
-                "100 bridge Links",
+                "100 Bridge Links",
                 "1000 AI Minutes/mo",
                 "100 Flows",
                 "Voice Clone",
                 "CRM / Webhooks",
-                "Adv. Analytics",
-                "No Watermark"
+                "Advanced Analytics",
+                "No Watermark",
+                "Priority Support"
             ],
             isActive: currentPlan === 'pro',
             tier: 'premium',
@@ -1247,10 +1291,38 @@ function UserProfilePage() {
         <Box sx={{
             backgroundColor: theme.palette.background.default,
             minHeight: 'calc(100vh - 64px)',
-            py: { xs: 3, md: 5 },
+            py: { xs: 4, md: 6 },
             position: 'relative',
             overflow: 'hidden',
         }}>
+            {/* Background decoration */}
+            {!isMobile && (
+                <>
+                    <Box sx={{
+                        position: 'absolute',
+                        top: '20%',
+                        left: '-10%',
+                        width: '400px',
+                        height: '400px',
+                        borderRadius: '50%',
+                        background: `radial-gradient(circle, ${theme.palette.primary.main}10 0%, transparent 70%)`,
+                        filter: 'blur(60px)',
+                        pointerEvents: 'none'
+                    }} />
+                    <Box sx={{
+                        position: 'absolute',
+                        bottom: '10%',
+                        right: '-10%',
+                        width: '500px',
+                        height: '500px',
+                        borderRadius: '50%',
+                        background: `radial-gradient(circle, ${theme.palette.primary.light}08 0%, transparent 70%)`,
+                        filter: 'blur(80px)',
+                        pointerEvents: 'none'
+                    }} />
+                </>
+            )}
+
             <Container
                 maxWidth="lg"
                 sx={{
@@ -1259,260 +1331,354 @@ function UserProfilePage() {
                     px: { xs: 2, sm: 3 }
                 }}
             >
-                {(showSuccess && successMessage) && (
-                    <motion.div>
-                        <Alert
-                            severity="success"
-                            onClose={() => { setShowSuccess(false); setSuccessMessage(''); }}
-                            sx={{
-                                mb: 3,
-                                backgroundColor: theme.palette.background.paper,
-                                color: theme.palette.text.primary,
-                                border: `1px solid ${theme.palette.secondary.light}`,
-                                '& .MuiAlert-icon': { color: theme.palette.secondary.main }
-                            }}
+                <AnimatePresence>
+                    {(showSuccess && successMessage) && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
                         >
-                            {successMessage}
-                        </Alert>
-                    </motion.div>
-                )}
-                {(error && !paymentError) && (
-                    <motion.div>
-                        <Alert
-                            severity="error"
-                            onClose={() => setError(null)}
-                            sx={{
-                                mb: 3,
-                                backgroundColor: theme.palette.background.paper,
-                                color: theme.palette.error.main,
-                                border: `1px solid ${theme.palette.error.main}`,
-                                '& .MuiAlert-icon': { color: theme.palette.error.main }
-                            }}
+                            <Alert
+                                severity="success"
+                                onClose={() => { setShowSuccess(false); setSuccessMessage(''); }}
+                                sx={{
+                                    mb: 3,
+                                    borderRadius: 2,
+                                    boxShadow: theme.shadows[2]
+                                }}
+                            >
+                                {successMessage}
+                            </Alert>
+                        </motion.div>
+                    )}
+                    {(error && !paymentError) && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
                         >
-                            {error}
-                        </Alert>
-                    </motion.div>
-                )}
-                {paymentError && (
-                    <motion.div>
-                        <Alert
-                            severity="error"
-                            onClose={() => setPaymentError(null)}
-                            sx={{
-                                mb: 3,
-                                backgroundColor: theme.palette.background.paper,
-                                color: theme.palette.error.main,
-                                border: `1px solid ${theme.palette.error.main}`,
-                                '& .MuiAlert-icon': { color: theme.palette.error.main }
-                            }}
+                            <Alert
+                                severity="error"
+                                onClose={() => setError(null)}
+                                sx={{
+                                    mb: 3,
+                                    borderRadius: 2,
+                                    boxShadow: theme.shadows[2]
+                                }}
+                            >
+                                {error}
+                            </Alert>
+                        </motion.div>
+                    )}
+                    {paymentError && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
                         >
-                            {paymentError}
-                        </Alert>
-                    </motion.div>
-                )}
+                            <Alert
+                                severity="error"
+                                onClose={() => setPaymentError(null)}
+                                sx={{
+                                    mb: 3,
+                                    borderRadius: 2,
+                                    boxShadow: theme.shadows[2]
+                                }}
+                            >
+                                {paymentError}
+                            </Alert>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                <Grid container spacing={{ xs: 3, md: 4 }}>
-                    <Grid item xs={12} md={4}>
-                        <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-                            <Paper elevation={1} sx={{ p: 3, mb: 3, textAlign: 'center', borderRadius: '16px' }}>
-                                <motion.div whileHover={{ scale: 1.03 }}>
+                {/* Profile Header Card */}
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={fadeInUp}
+                >
+                    <Paper elevation={0} sx={{
+                        p: { xs: 3, md: 4 },
+                        mb: 4,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: theme.palette.divider,
+                        background: theme.palette.background.paper
+                    }}>
+                        <Grid container spacing={3} alignItems="center">
+                            <Grid item xs={12} md="auto">
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                     <Avatar
                                         sx={{
-                                            width: { xs: 80, md: 90 },
-                                            height: { xs: 80, md: 90 },
-                                            bgcolor: theme.palette.neutral.light,
-                                            color: theme.palette.primary.main,
-                                            margin: '0 auto',
-                                            mb: 2,
-                                            border: `2px solid ${theme.palette.divider}`,
-                                            boxShadow: theme.shadows[2]
+                                            width: { xs: 64, md: 80 },
+                                            height: { xs: 64, md: 80 },
+                                            bgcolor: 'primary.lighter',
+                                            color: 'primary.main',
+                                            border: '2px solid',
+                                            borderColor: 'primary.light',
                                         }}
                                     >
-                                        <PersonIcon sx={{ fontSize: { xs: 35, md: 40 } }} />
+                                        <User size={isMobile ? 32 : 40} />
                                     </Avatar>
-                                </motion.div>
-                                <Typography variant="h6" sx={{
-                                    color: theme.palette.text.primary,
-                                    fontWeight: 600,
-                                    mb: 0.5,
-                                    wordBreak: 'break-all'
-                                }}>
-                                    {userProfile?.email}
-                                </Typography>
-                                <Typography variant="caption" sx={{
-                                    display: 'block',
-                                    mb: 2
-                                }}>
-                                    Member since {formatDate(userProfile?.account?.created_at)}
-                                </Typography>
-
-                                <Button
-                                    variant="outlined"
-                                    startIcon={<MailOutlineIcon />}
-                                    onClick={() => setOpenContactDialog(true)}
-                                >
-                                    Contact Support
-                                </Button>
-                            </Paper>
-                        </motion.div>
-
-                        <BillingCard
-                            userProfile={userProfile}
-                            currentPlan={currentPlan}
-                            onSubscriptionChange={handleSubscriptionChange}
-                        />
-
-                        <UsageStats currentPlan={currentPlan} />
-                    </Grid>
-
-                    <Grid item xs={12} md={8}>
-                        <Paper elevation={1} sx={{
-                            p: { xs: 2.5, sm: 3, md: 4 },
-                            borderRadius: '16px',
-                            position: 'relative',
-                        }}>
-                            <Box sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 2,
-                                mb: { xs: 4, md: 5 }
-                            }}>
-                                <Box>
-                                    <Typography variant="h3" sx={{
-                                        fontWeight: 500,
-                                        mb: 0.5,
-                                        lineHeight: 1.2,
-                                    }}>
-                                        Your Plan
-                                    </Typography>
-                                    <Typography variant="body1" sx={{
-                                        color: theme.palette.text.secondary,
-                                    }}>
-                                        {getSubscriptionDescription(currentPlan)}
-                                    </Typography>
+                                    <Box>
+                                        <DotBridgeTypography variant="h5" sx={{
+                                            fontWeight: 600,
+                                            mb: 0.5,
+                                            color: theme.palette.text.primary
+                                        }}>
+                                            {userProfile?.email}
+                                        </DotBridgeTypography>
+                                        <DotBridgeTypography variant="body2" sx={{
+                                            color: 'text.secondary'
+                                        }}>
+                                            Member since {formatDate(userProfile?.account?.created_at)}
+                                        </DotBridgeTypography>
+                                    </Box>
                                 </Box>
+                            </Grid>
+                            <Grid item xs={12} md>
+                                <Box sx={{
+                                    display: 'flex',
+                                    gap: 2,
+                                    justifyContent: { xs: 'stretch', md: 'flex-end' },
+                                    flexDirection: { xs: 'column', sm: 'row' }
+                                }}>
+                                    <DotBridgeButton
+                                        variant="outlined"
+                                        startIcon={<Mail size={16} />}
+                                        onClick={() => setOpenContactDialog(true)}
+                                        sx={{ flex: { xs: 1, sm: 'initial' } }}
+                                    >
+                                        Contact Support
+                                    </DotBridgeButton>
+                                    {currentPlan !== 'free' && (
+                                        <DotBridgeButton
+                                            variant="contained"
+                                            onClick={handleManageSubscription}
+                                            disabled={isProcessing}
+                                            sx={{ flex: { xs: 1, sm: 'initial' } }}
+                                        >
+                                            Manage Subscription
+                                        </DotBridgeButton>
+                                    )}
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    </Paper>
+                </motion.div>
+
+                {/* Main Content with Tabs */}
+                <Paper elevation={0} sx={{
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: theme.palette.divider,
+                    background: theme.palette.background.paper,
+                    overflow: 'hidden'
+                }}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <Tabs
+                            value={tabValue}
+                            onChange={handleTabChange}
+                            sx={{
+                                '& .MuiTab-root': {
+                                    textTransform: 'none',
+                                    fontWeight: 500,
+                                    fontSize: '0.95rem',
+                                    minHeight: 48,
+                                },
+                            }}
+                        >
+                            <Tab label="Subscription" />
+                            <Tab label="Billing & Usage" />
+                            <Tab label="Account Settings" />
+                        </Tabs>
+                    </Box>
+
+                    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+                        {/* Subscription Tab */}
+                        <TabPanel value={tabValue} index={0}>
+                            <Box sx={{ mb: 3 }}>
+                                <DotBridgeTypography variant="h4" sx={{
+                                    fontWeight: 600,
+                                    mb: 1
+                                }}>
+                                    Choose Your Plan
+                                </DotBridgeTypography>
+                                <DotBridgeTypography variant="body1" color="text.secondary">
+                                    {getSubscriptionDescription(currentPlan)}
+                                </DotBridgeTypography>
                             </Box>
 
-                            <Grid container spacing={3}>
+                            <Grid container spacing={{ xs: 2, md: 3 }}>
                                 {subscriptionTiers.map((tier, index) => (
                                     <Grid item xs={12} md={4} key={index} sx={{ display: 'flex' }}>
-                                        <SubscriptionTier {...tier} />
+                                        <SubscriptionTierCompact {...tier} />
                                     </Grid>
                                 ))}
                             </Grid>
 
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    mt: 4,
-                                    textAlign: 'center',
-                                    color: theme.palette.text.secondary,
-                                    '& span': {
-                                        color: theme.palette.text.primary,
-                                        fontWeight: 500,
-                                    }
-                                }}
-                            >
-                                Standard and Premium plans include an option for overage at <span>$0.12 per minute</span> for engagement beyond the monthly allowance. Manage this in Billing Information.
-                            </Typography>
-
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    mt: 2,
-                                    textAlign: 'center',
-                                    display: 'block',
-                                    color: theme.palette.text.secondary,
-                                }}
-                            >
-                                Need a custom solution?{' '}
-                                <RouterLink
-                                    to="/contact"
-                                    style={{
-                                        color: theme.palette.secondary.main,
-                                        textDecoration: 'underline',
-                                        textDecorationColor: theme.palette.secondary.light,
-                                    }}
+                            <Box sx={{
+                                mt: 4,
+                                p: 2,
+                                borderRadius: 1,
+                                bgcolor: 'grey.50',
+                                border: '1px solid',
+                                borderColor: 'grey.200'
+                            }}>
+                                <DotBridgeTypography
+                                    variant="caption"
+                                    sx={{ color: theme.palette.text.secondary }}
                                 >
-                                    Contact Us
-                                </RouterLink>
-                            </Typography>
-                        </Paper>
-                    </Grid>
-                </Grid>
+                                    Standard and Premium plans include overage at <strong>$0.12/min</strong> for additional usage.
+                                    Need a custom solution?{' '}
+                                    <RouterLink to="/contact" style={{ color: theme.palette.primary.main }}>
+                                        Contact Us
+                                    </RouterLink>
+                                </DotBridgeTypography>
+                            </Box>
+                        </TabPanel>
+
+                        {/* Billing & Usage Tab */}
+                        <TabPanel value={tabValue} index={1}>
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={6}>
+                                    <BillingCard
+                                        userProfile={userProfile}
+                                        currentPlan={currentPlan}
+                                        onSubscriptionChange={handleSubscriptionChange}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} md={6}>
+                                    <UsageStats currentPlan={currentPlan} />
+                                </Grid>
+                            </Grid>
+                        </TabPanel>
+
+                        {/* Account Settings Tab */}
+                        <TabPanel value={tabValue} index={2}>
+                            <Box sx={{ maxWidth: 600 }}>
+                                <DotBridgeTypography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+                                    Account Settings
+                                </DotBridgeTypography>
+                                <Box sx={{
+                                    p: 3,
+                                    borderRadius: 2,
+                                    border: '1px solid',
+                                    borderColor: theme.palette.divider,
+                                    bgcolor: theme.palette.background.paper
+                                }}>
+                                    <DotBridgeTypography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        Email
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography variant="body1" sx={{ mb: 3 }}>
+                                        {userProfile?.email}
+                                    </DotBridgeTypography>
+
+                                    <DotBridgeTypography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                        Member Since
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography variant="body1">
+                                        {formatDate(userProfile?.account?.created_at)}
+                                    </DotBridgeTypography>
+                                </Box>
+                            </Box>
+                        </TabPanel>
+                    </Box>
+                </Paper>
             </Container>
 
             {/* Upgrade Confirmation Modal */}
-            {upgradePreview && (
-                <Dialog
-                    open={openUpgradeConfirmDialog}
-                    onClose={() => {
-                        setOpenUpgradeConfirmDialog(false);
-                        setUpgradePreview(null);
-                        setTargetUpgradeTier(null);
-                        localStorage.removeItem('selected_tier');
-                    }}
-                    PaperProps={{ sx: { p: { xs: 2, sm: 3 }, minWidth: { sm: '450px' } } }}
-                >
-                    <DialogTitle sx={{ p: 0, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            Confirm Upgrade to {upgradePreview.target_tier_name}
-                        </Typography>
-                        <IconButton onClick={() => {
+            {
+                upgradePreview && (
+                    <Dialog
+                        open={openUpgradeConfirmDialog}
+                        onClose={() => {
                             setOpenUpgradeConfirmDialog(false);
                             setUpgradePreview(null);
                             setTargetUpgradeTier(null);
                             localStorage.removeItem('selected_tier');
-                        }} size="small">
-                            <CloseIcon />
-                        </IconButton>
-                    </DialogTitle>
-                    <DialogContent sx={{ p: 0, mb: 2 }}>
-                        <Typography variant="body1" sx={{ mb: 1 }}>
-                            You are upgrading to the <strong>{upgradePreview.target_tier_name}</strong> plan.
-                        </Typography>
-                        {upgradePreview.prorated_charge_now_cents > 0 && (
-                            <Typography variant="body1" sx={{ mb: 0.5 }}>
-                                An immediate prorated charge of approximately <strong>{formatCurrency(upgradePreview.prorated_charge_now_cents, upgradePreview.currency)}</strong> will be applied today.
-                            </Typography>
-                        )}
-                        {upgradePreview.prorated_charge_now_cents === 0 && (
-                            <Typography variant="body1" sx={{ mb: 0.5 }}>
-                                There is no immediate prorated charge for this upgrade.
-                            </Typography>
-                        )}
-                        <Typography variant="body1" sx={{ mb: 2 }}>
-                            Your next bill on or around <strong>{new Date(upgradePreview.next_billing_date_timestamp * 1000).toLocaleDateString()}</strong> will be for <strong>{formatCurrency(upgradePreview.next_regular_charge_cents, upgradePreview.currency)}</strong>.
-                        </Typography>
-                        <Typography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
-                            By confirming, your subscription will be updated immediately.
-                        </Typography>
-                        {paymentError && openUpgradeConfirmDialog && ( // Show payment error within this dialog if it occurs after confirm
-                            <Alert severity="error" sx={{ mt: 2 }}>{paymentError}</Alert>
-                        )}
-                    </DialogContent>
-                    <DialogActions sx={{ p: 0 }}>
-                        <Button
-                            variant="outlined"
-                            onClick={() => {
+                        }}
+                        PaperProps={{
+                            sx: {
+                                p: { xs: 2, sm: 3 },
+                                minWidth: { sm: '450px' },
+                                borderRadius: 3
+                            }
+                        }}
+                    >
+                        <DialogTitle sx={{ p: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <DotBridgeTypography variant="h5" sx={{ fontWeight: 600 }}>
+                                Confirm Upgrade to {upgradePreview.target_tier_name}
+                            </DotBridgeTypography>
+                            <IconButton onClick={() => {
                                 setOpenUpgradeConfirmDialog(false);
                                 setUpgradePreview(null);
                                 setTargetUpgradeTier(null);
                                 localStorage.removeItem('selected_tier');
-                            }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            onClick={() => executeSubscriptionChange(targetUpgradeTier)} // targetUpgradeTier is already set
-                            disabled={isProcessing}
-                        >
-                            {isProcessing ? <CircularProgress size={20} color="inherit" /> : `Confirm & Upgrade to ${upgradePreview.target_tier_name}`}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            )}
+                            }} size="small">
+                                <X size={20} />
+                            </IconButton>
+                        </DialogTitle>
+                        <DialogContent sx={{ p: 0, mb: 2 }}>
+                            <DotBridgeTypography variant="body1" sx={{ mb: 2 }}>
+                                You are upgrading to the <strong>{upgradePreview.target_tier_name}</strong> plan.
+                            </DotBridgeTypography>
+
+                            <Box sx={{
+                                p: 2.5,
+                                borderRadius: 2,
+                                bgcolor: 'primary.lighter',
+                                border: '1px solid',
+                                borderColor: 'primary.light',
+                                mb: 2
+                            }}>
+                                {upgradePreview.prorated_charge_now_cents > 0 ? (
+                                    <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
+                                        Immediate prorated charge: <strong>{formatCurrency(upgradePreview.prorated_charge_now_cents, upgradePreview.currency)}</strong>
+                                    </DotBridgeTypography>
+                                ) : (
+                                    <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
+                                        No immediate prorated charge for this upgrade.
+                                    </DotBridgeTypography>
+                                )}
+                            </Box>
+
+                            <DotBridgeTypography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                                Your next bill on <strong>{new Date(upgradePreview.next_billing_date_timestamp * 1000).toLocaleDateString()}</strong> will be <strong>{formatCurrency(upgradePreview.next_regular_charge_cents, upgradePreview.currency)}</strong>.
+                            </DotBridgeTypography>
+
+                            <DotBridgeTypography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
+                                By confirming, your subscription will be updated immediately.
+                            </DotBridgeTypography>
+
+                            {paymentError && openUpgradeConfirmDialog && (
+                                <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>{paymentError}</Alert>
+                            )}
+                        </DialogContent>
+                        <DialogActions sx={{ p: 0, gap: 1 }}>
+                            <DotBridgeButton
+                                variant="outlined"
+                                onClick={() => {
+                                    setOpenUpgradeConfirmDialog(false);
+                                    setUpgradePreview(null);
+                                    setTargetUpgradeTier(null);
+                                    localStorage.removeItem('selected_tier');
+                                }}
+                            >
+                                Cancel
+                            </DotBridgeButton>
+                            <DotBridgeButton
+                                variant="contained"
+                                onClick={() => executeSubscriptionChange(targetUpgradeTier)}
+                                disabled={isProcessing}
+                                loading={isProcessing}
+                            >
+                                Confirm & Upgrade
+                            </DotBridgeButton>
+                        </DialogActions>
+                    </Dialog>
+                )
+            }
 
             <Dialog
                 open={openContactDialog}
@@ -1520,24 +1686,24 @@ function UserProfilePage() {
                 maxWidth="sm"
                 fullWidth
                 PaperProps={{
-                    sx: { p: { xs: 2, sm: 3 } }
+                    sx: {
+                        p: { xs: 2, sm: 3 },
+                        borderRadius: 3
+                    }
                 }}
             >
-                <DialogTitle sx={{ p: 0, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography
-                        variant="h6"
-                        sx={{ fontWeight: 600, color: theme.palette.text.primary }}
-                    >
+                <DialogTitle sx={{ p: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <DotBridgeTypography variant="h5" sx={{ fontWeight: 600 }}>
                         Contact Support
-                    </Typography>
+                    </DotBridgeTypography>
                     <IconButton onClick={() => setOpenContactDialog(false)} size="small">
-                        <CloseIcon sx={{ color: theme.palette.text.secondary }} />
+                        <X size={20} />
                     </IconButton>
                 </DialogTitle>
                 <DialogContent sx={{ p: 0, mb: 2 }}>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                    <DotBridgeTypography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
                         Have questions or need assistance? Send us a message.
-                    </Typography>
+                    </DotBridgeTypography>
                     <TextField
                         multiline
                         rows={4}
@@ -1545,41 +1711,35 @@ function UserProfilePage() {
                         placeholder="Type your message here..."
                         value={contactMessage}
                         onChange={(e) => setContactMessage(e.target.value)}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2
+                            }
+                        }}
                     />
                     {error && openContactDialog && (
-                        <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>
+                        <Alert severity="error" sx={{ mt: 1, borderRadius: 2 }}>{error}</Alert>
                     )}
                 </DialogContent>
-                <DialogActions sx={{ p: 0 }}>
-                    <Button
+                <DialogActions sx={{ p: 0, gap: 1 }}>
+                    <DotBridgeButton
                         variant="outlined"
                         onClick={() => { setOpenContactDialog(false); setError(null); }}
                     >
                         Cancel
-                    </Button>
-                    <Button
+                    </DotBridgeButton>
+                    <DotBridgeButton
                         variant="contained"
                         onClick={handleContactSubmit}
                         disabled={!contactMessage.trim() || isSending}
+                        loading={isSending}
                     >
-                        {isSending ? <CircularProgress size={20} color="inherit" /> : 'Send Message'}
-                    </Button>
+                        Send Message
+                    </DotBridgeButton>
                 </DialogActions>
             </Dialog>
         </Box>
     );
-}
-
-function alpha(color, opacity) {
-    if (!color.startsWith('#')) {
-        console.warn("Basic alpha function requires hex color format");
-        return color;
-    }
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
 export default UserProfilePage;

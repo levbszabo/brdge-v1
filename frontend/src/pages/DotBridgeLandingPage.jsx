@@ -458,6 +458,8 @@ const HeroSection = () => {
                                         brdgeId={DEMO_BRIDGE_ID}
                                         agentType="view"
                                         token=""
+                                        userId={null}
+                                        isEmbed={false}
                                     />
                                 </div>
                             </Box>
@@ -1194,6 +1196,8 @@ const DemoSection = () => {
                             brdgeId={DEMO_BRIDGE_ID}
                             agentType="view"
                             token=""
+                            userId={null}
+                            isEmbed={false}
                         />
                     </div>
                 </DotBridgeCard>
@@ -1419,16 +1423,28 @@ const PersonalizedOutboundSection = () => {
     const [hoveredCard, setHoveredCard] = useState(null);
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [statsInView, setStatsInView] = useState(false);
-    const [processStep, setProcessStep] = useState(0);
+    const [processStep, setProcessStep] = useState(null);
 
     // Auto-advance process steps
     useEffect(() => {
-        if (!isMobile) return;
+        // Start with a delay so no card is highlighted initially
+        const initialDelay = setTimeout(() => {
+            setProcessStep(0);
+        }, 1000);
+
+        // Then cycle through steps
         const interval = setInterval(() => {
-            setProcessStep((prev) => (prev + 1) % 3);
+            setProcessStep((prev) => {
+                if (prev === null) return 0;
+                return (prev + 1) % 3;
+            });
         }, 2500);
-        return () => clearInterval(interval);
-    }, [isMobile]);
+
+        return () => {
+            clearTimeout(initialDelay);
+            clearInterval(interval);
+        };
+    }, []);
 
     // Animated counter component
     const AnimatedNumber = ({ value, suffix = '', prefix = '' }) => {
@@ -1707,22 +1723,31 @@ const PersonalizedOutboundSection = () => {
                                     }
                                 ].map((step, index) => (
                                     <motion.div key={index} variants={fadeInUp}>
-                                        <Box sx={{
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            mb: { xs: 3, md: 4 },
-                                            p: { xs: 2.5, md: 3 },
-                                            borderRadius: 2,
-                                            border: '2px solid',
-                                            borderColor: `${step.color}.light`,
-                                            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette[step.color].lighter}30 100%)`,
-                                            transition: 'all 0.3s ease',
-                                            '&:hover': {
-                                                transform: 'translateY(-4px)',
-                                                boxShadow: theme.shadows[3],
-                                                borderColor: `${step.color}.main`
-                                            }
-                                        }}>
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                mb: { xs: 3, md: 4 },
+                                                p: { xs: 2.5, md: 3 },
+                                                borderRadius: 2,
+                                                border: '2px solid',
+                                                borderColor: processStep === index
+                                                    ? `${step.color}.main`
+                                                    : `${step.color}.light`,
+                                                background: processStep === index
+                                                    ? `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette[step.color].lighter}60 100%)`
+                                                    : `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette[step.color].lighter}30 100%)`,
+                                                transition: 'all 0.3s ease',
+                                                transform: processStep === index ? 'translateY(-8px)' : 'none',
+                                                boxShadow: processStep === index ? theme.shadows[4] : 'none',
+                                                '&:hover': {
+                                                    transform: processStep === index ? 'translateY(-8px)' : 'translateY(-4px)',
+                                                    boxShadow: processStep === index ? theme.shadows[4] : theme.shadows[3],
+                                                    borderColor: `${step.color}.main`
+                                                }
+                                            }}
+                                            onClick={() => setProcessStep(index)}
+                                        >
                                             <Box sx={{
                                                 width: 48,
                                                 height: 48,
@@ -1735,9 +1760,14 @@ const PersonalizedOutboundSection = () => {
                                                 mr: 2.5,
                                                 fontSize: '1.25rem',
                                                 fontWeight: 700,
-                                                boxShadow: `0 4px 12px ${theme.palette[step.color].main}40`,
+                                                boxShadow: processStep === index
+                                                    ? `0 8px 16px ${theme.palette[step.color].main}60`
+                                                    : `0 4px 12px ${theme.palette[step.color].main}40`,
                                                 flexShrink: 0,
                                                 position: 'relative',
+                                                animation: processStep === index
+                                                    ? 'pulse 2s infinite'
+                                                    : 'none',
                                                 '&::after': {
                                                     content: `"${index + 1}"`,
                                                     position: 'absolute',
@@ -1940,6 +1970,7 @@ const PersonalizedOutboundSection = () => {
 const FlowsSection = () => {
     const theme = useTheme();
     const [activeFlow, setActiveFlow] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
 
     const flows = [
         {
@@ -1962,191 +1993,444 @@ const FlowsSection = () => {
         }
     ];
 
-    return (
-        <Container maxWidth="xl">
-            <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 6, md: 10 }}>
-                <motion.div
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.2 }}
-                    variants={fadeInUp}
-                >
-                    <Box sx={{ mb: 2 }}>
-                        <Chip
-                            label="INTRODUCING FLOWS"
-                            color="secondary"
-                            size="small"
-                            sx={{
-                                fontWeight: 600,
-                                fontSize: '0.75rem',
-                                letterSpacing: '0.05em',
-                                mb: 2
-                            }}
-                        />
-                    </Box>
-                    <DotBridgeTypography variant='h2' component="h2" sx={{
-                        mb: { xs: 2, md: 3 },
-                        fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
-                    }}>
-                        The Digital Sales Room
-                        <Box component="span" sx={{ color: theme.palette.primary.main, display: 'block' }}>
-                            That Actually Sells
-                        </Box>
-                    </DotBridgeTypography>
-                </motion.div>
-                <motion.div
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.2 }}
-                    variants={fadeInUp}
-                >
-                    <DotBridgeTypography variant="h5" color="text.secondary" sx={{
-                        fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.4rem' },
-                        maxWidth: '800px',
-                        mx: 'auto',
-                        lineHeight: 1.6
-                    }}>
-                        Combine multiple Bridges into adaptive buyer journeys. Each stakeholder gets
-                        their own personalized path, while you get unified insights.
-                    </DotBridgeTypography>
-                </motion.div>
-            </Box>
+    // Auto-cycle through flows with pause functionality
+    useEffect(() => {
+        if (isPaused) return;
 
-            <Grid container spacing={4} alignItems="center">
-                <Grid item xs={12} md={6}>
+        const interval = setInterval(() => {
+            setActiveFlow((prev) => (prev + 1) % flows.length);
+        }, 4000); // 4 seconds per flow
+
+        return () => clearInterval(interval);
+    }, [flows.length, isPaused]);
+
+    return (
+        <Section>
+            <Container maxWidth="xl">
+                <Box maxWidth="md" mx="auto" textAlign="center" mb={{ xs: 6, md: 10 }}>
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
-                        viewport={{ once: true }}
-                        variants={staggerChildren}
+                        viewport={{ once: true, amount: 0.2 }}
+                        variants={fadeInUp}
                     >
-                        {flows.map((flow, index) => (
-                            <motion.div key={index} variants={fadeInUp}>
-                                <Box
-                                    onClick={() => setActiveFlow(index)}
-                                    sx={{
-                                        p: 3,
-                                        mb: 2,
-                                        borderRadius: 2,
-                                        border: '2px solid',
-                                        borderColor: activeFlow === index ? 'primary.main' : 'divider',
-                                        bgcolor: activeFlow === index ? 'primary.lighter' : 'background.paper',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            borderColor: 'primary.light',
-                                            transform: 'translateX(8px)'
-                                        }
+                        <Box sx={{ mb: 2 }}>
+                            <Chip
+                                label="INTRODUCING FLOWS"
+                                color="secondary"
+                                size="small"
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.75rem',
+                                    letterSpacing: '0.05em',
+                                    mb: 2
+                                }}
+                            />
+                        </Box>
+                        <DotBridgeTypography variant='h2' component="h2" sx={{
+                            mb: { xs: 2, md: 3 },
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
+                        }}>
+                            The Digital Sales Room
+                            <Box component="span" sx={{ color: theme.palette.primary.main, display: 'block' }}>
+                                That Actually Sells
+                            </Box>
+                        </DotBridgeTypography>
+                    </motion.div>
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, amount: 0.2 }}
+                        variants={fadeInUp}
+                    >
+                        <DotBridgeTypography variant="h5" color="text.secondary" sx={{
+                            fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.4rem' },
+                            maxWidth: '800px',
+                            mx: 'auto',
+                            lineHeight: 1.6
+                        }}>
+                            Combine multiple Bridges into adaptive buyer journeys. Each stakeholder gets
+                            their own personalized path, while you get unified insights.
+                        </DotBridgeTypography>
+                    </motion.div>
+                </Box>
+
+                {/* Flow progress indicator */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        mb: 4,
+                        gap: 1
+                    }}
+                    onMouseEnter={() => setIsPaused(true)}
+                    onMouseLeave={() => setIsPaused(false)}
+                >
+                    {flows.map((_, index) => (
+                        <Box
+                            key={index}
+                            onClick={() => {
+                                setActiveFlow(index);
+                                setIsPaused(true);
+                                setTimeout(() => setIsPaused(false), 2000); // Resume after 2 seconds
+                            }}
+                            sx={{
+                                width: 60,
+                                height: 4,
+                                borderRadius: 2,
+                                bgcolor: activeFlow === index ? 'primary.main' : 'grey.300',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                '&:hover': {
+                                    bgcolor: activeFlow === index ? 'primary.dark' : 'grey.400',
+                                    transform: 'scaleY(1.5)'
+                                }
+                            }}
+                        >
+                            {activeFlow === index && !isPaused && (
+                                <Box sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    height: '100%',
+                                    width: '100%',
+                                    bgcolor: 'primary.light',
+                                    animation: 'flowProgress 4s linear infinite',
+                                    transformOrigin: 'left'
+                                }} />
+                            )}
+                        </Box>
+                    ))}
+                </Box>
+
+                <Grid container spacing={4} alignItems="center">
+                    <Grid item xs={12} md={6}>
+                        <motion.div
+                            initial="hidden"
+                            whileInView="visible"
+                            viewport={{ once: true }}
+                            variants={staggerChildren}
+                            onMouseEnter={() => setIsPaused(true)}
+                            onMouseLeave={() => setIsPaused(false)}
+                        >
+                            {flows.map((flow, index) => (
+                                <motion.div
+                                    key={index}
+                                    variants={fadeInUp}
+                                    animate={{
+                                        scale: activeFlow === index ? 1.02 : 1,
+                                        transition: { duration: 0.3, ease: "easeInOut" }
                                     }}
                                 >
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                                        <Box sx={{
-                                            width: 48,
-                                            height: 48,
-                                            borderRadius: 2,
-                                            bgcolor: activeFlow === index ? 'primary.main' : 'grey.100',
-                                            color: activeFlow === index ? 'white' : 'text.secondary',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center'
-                                        }}>
-                                            <DotBridgeIcon name={flow.icon} size={24} />
-                                        </Box>
-                                        <Box sx={{ flex: 1, textAlign: 'left' }}>
-                                            <Typography variant="h6" sx={{ mb: 0.5 }}>
-                                                {flow.title}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {flow.description}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                </Box>
-                            </motion.div>
-                        ))}
-                    </motion.div>
-                </Grid>
-
-                <Grid item xs={12} md={6}>
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.7 }}
-                    >
-                        <Box sx={{
-                            p: 4,
-                            borderRadius: 3,
-                            bgcolor: 'background.paper',
-                            boxShadow: theme.shadows[4],
-                            border: '1px solid',
-                            borderColor: 'divider'
-                        }}>
-                            <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
-                                {flows[activeFlow].title} Flow
-                            </Typography>
-
-                            <Box sx={{ mb: 3 }}>
-                                {flows[activeFlow].bridges.map((bridge, index) => (
                                     <Box
-                                        key={index}
+                                        onClick={() => {
+                                            setActiveFlow(index);
+                                            setIsPaused(true);
+                                            setTimeout(() => setIsPaused(false), 3000); // Resume after 3 seconds
+                                        }}
                                         sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            p: 2,
-                                            mb: 1.5,
-                                            borderRadius: 1.5,
-                                            border: '1px solid',
-                                            borderColor: 'grey.200',
-                                            bgcolor: 'grey.50'
+                                            p: 3,
+                                            mb: 2,
+                                            borderRadius: 2,
+                                            border: '2px solid',
+                                            borderColor: activeFlow === index ? 'primary.main' : 'divider',
+                                            bgcolor: activeFlow === index ? 'primary.lighter' : 'background.paper',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            transform: activeFlow === index ? 'translateX(8px)' : 'translateX(0px)',
+                                            boxShadow: activeFlow === index
+                                                ? `0 8px 24px ${theme.palette.primary.main}20`
+                                                : '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            '&::before': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                left: 0,
+                                                top: 0,
+                                                height: '100%',
+                                                width: activeFlow === index ? '4px' : '0px',
+                                                bgcolor: 'primary.main',
+                                                transition: 'width 0.4s ease',
+                                                borderRadius: '0 2px 2px 0'
+                                            },
+                                            '&:hover': {
+                                                borderColor: 'primary.light',
+                                                transform: 'translateX(12px)',
+                                                boxShadow: `0 12px 32px ${theme.palette.primary.main}15`
+                                            }
                                         }}
                                     >
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Box sx={{
+                                                width: 48,
+                                                height: 48,
+                                                borderRadius: 2,
+                                                bgcolor: activeFlow === index ? 'primary.main' : 'grey.100',
+                                                color: activeFlow === index ? 'white' : 'text.secondary',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                transition: 'all 0.4s ease',
+                                                transform: activeFlow === index ? 'rotate(5deg) scale(1.1)' : 'rotate(0deg) scale(1)',
+                                                boxShadow: activeFlow === index
+                                                    ? `0 4px 12px ${theme.palette.primary.main}40`
+                                                    : 'none'
+                                            }}>
+                                                <DotBridgeIcon name={flow.icon} size={24} />
+                                            </Box>
+                                            <Box sx={{ flex: 1, textAlign: 'left' }}>
+                                                <Typography variant="h6" sx={{
+                                                    mb: 0.5,
+                                                    color: activeFlow === index ? 'primary.dark' : 'text.primary',
+                                                    fontWeight: activeFlow === index ? 700 : 600,
+                                                    transition: 'all 0.3s ease'
+                                                }}>
+                                                    {flow.title}
+                                                </Typography>
+                                                <Typography variant="body2" sx={{
+                                                    color: activeFlow === index ? 'primary.dark' : 'text.secondary',
+                                                    transition: 'color 0.3s ease'
+                                                }}>
+                                                    {flow.description}
+                                                </Typography>
+                                            </Box>
+                                            {/* Active flow indicator */}
+                                            {activeFlow === index && (
+                                                <motion.div
+                                                    initial={{ scale: 0, opacity: 0 }}
+                                                    animate={{ scale: 1, opacity: 1 }}
+                                                    exit={{ scale: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3 }}
+                                                >
+                                                    <Box sx={{
+                                                        width: 12,
+                                                        height: 12,
+                                                        borderRadius: '50%',
+                                                        bgcolor: 'primary.main',
+                                                        boxShadow: `0 0 8px ${theme.palette.primary.main}60`,
+                                                        animation: 'pulse 2s infinite'
+                                                    }} />
+                                                </motion.div>
+                                            )}
+                                        </Box>
+                                    </Box>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </Grid>
+
+                    <Grid item xs={12} md={6}>
+                        <motion.div
+                            initial={{ opacity: 0, x: 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.7 }}
+                            onMouseEnter={() => setIsPaused(true)}
+                            onMouseLeave={() => setIsPaused(false)}
+                        >
+                            <Box sx={{
+                                p: 4,
+                                borderRadius: 3,
+                                bgcolor: 'background.paper',
+                                boxShadow: theme.shadows[4],
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                position: 'relative',
+                                overflow: 'hidden'
+                            }}>
+                                {/* Animated background gradient based on active flow */}
+                                <Box sx={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '4px',
+                                    background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+                                    transform: `translateX(${(activeFlow / flows.length) * 100 - 100}%)`,
+                                    transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    opacity: isPaused ? 0.6 : 1,
+                                    '&::after': isPaused ? {
+                                        content: '"⏸"',
+                                        position: 'absolute',
+                                        right: 8,
+                                        top: -20,
+                                        fontSize: '12px',
+                                        color: 'primary.main'
+                                    } : {}
+                                }} />
+
+                                <motion.div
+                                    key={activeFlow}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                                >
+                                    <Typography variant="h5" sx={{
+                                        mb: 3,
+                                        fontWeight: 600,
+                                        color: 'primary.main',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1.5
+                                    }}>
                                         <Box sx={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: '50%',
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 2,
                                             bgcolor: 'primary.main',
                                             color: 'white',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            mr: 2,
-                                            fontSize: '0.875rem',
-                                            fontWeight: 600
+                                            boxShadow: `0 4px 12px ${theme.palette.primary.main}40`
                                         }}>
-                                            {index + 1}
+                                            <DotBridgeIcon name={flows[activeFlow].icon} size={20} />
                                         </Box>
-                                        <Typography variant="body1" sx={{ flex: 1 }}>
-                                            {bridge}
-                                        </Typography>
-                                        <DotBridgeIcon name="Play" size={20} color="primary.main" />
-                                    </Box>
-                                ))}
-                            </Box>
-
-                            <Box sx={{
-                                p: 2.5,
-                                borderRadius: 1.5,
-                                bgcolor: 'primary.lighter',
-                                border: '1px solid',
-                                borderColor: 'primary.light'
-                            }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                    <DotBridgeIcon name="Sparkles" size={20} color="primary.main" />
-                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.dark' }}>
-                                        Unified Deal Summary
+                                        {flows[activeFlow].title} Flow
                                     </Typography>
-                                </Box>
-                                <Typography variant="body2" color="text.secondary">
-                                    AI automatically generates a comprehensive summary of all stakeholder
-                                    interactions, objections, and next steps for your sales team.
-                                </Typography>
+
+                                    <Box sx={{ mb: 3 }}>
+                                        {flows[activeFlow].bridges.map((bridge, index) => (
+                                            <motion.div
+                                                key={`${activeFlow}-${index}`}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{
+                                                    duration: 0.4,
+                                                    delay: index * 0.1,
+                                                    ease: "easeOut"
+                                                }}
+                                            >
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        p: 2,
+                                                        mb: 1.5,
+                                                        borderRadius: 1.5,
+                                                        border: '1px solid',
+                                                        borderColor: 'grey.200',
+                                                        bgcolor: 'grey.50',
+                                                        transition: 'all 0.3s ease',
+                                                        cursor: 'pointer',
+                                                        '&:hover': {
+                                                            borderColor: 'primary.light',
+                                                            bgcolor: 'primary.lighter',
+                                                            transform: 'translateX(4px)',
+                                                            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.15)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Box sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: '50%',
+                                                        bgcolor: 'primary.main',
+                                                        color: 'white',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        mr: 2,
+                                                        fontSize: '0.875rem',
+                                                        fontWeight: 600,
+                                                        boxShadow: `0 2px 8px ${theme.palette.primary.main}40`,
+                                                        transition: 'all 0.3s ease'
+                                                    }}>
+                                                        {index + 1}
+                                                    </Box>
+                                                    <Typography variant="body1" sx={{
+                                                        flex: 1,
+                                                        fontWeight: 500,
+                                                        transition: 'color 0.3s ease'
+                                                    }}>
+                                                        {bridge}
+                                                    </Typography>
+                                                    <Box sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: '50%',
+                                                        bgcolor: 'primary.lighter',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        transition: 'all 0.3s ease'
+                                                    }}>
+                                                        <DotBridgeIcon name="Play" size={16} color="primary.main" />
+                                                    </Box>
+                                                </Box>
+                                            </motion.div>
+                                        ))}
+                                    </Box>
+
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.4, delay: 0.3 }}
+                                    >
+                                        <Box sx={{
+                                            p: 2.5,
+                                            borderRadius: 1.5,
+                                            bgcolor: 'primary.lighter',
+                                            border: '1px solid',
+                                            borderColor: 'primary.light',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            '&::before': {
+                                                content: '""',
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                height: '2px',
+                                                background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`
+                                            }
+                                        }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                <Box sx={{
+                                                    width: 24,
+                                                    height: 24,
+                                                    borderRadius: '50%',
+                                                    bgcolor: 'primary.main',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <DotBridgeIcon name="Sparkles" size={14} color="white" />
+                                                </Box>
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'primary.dark' }}>
+                                                    Unified Deal Summary
+                                                </Typography>
+                                            </Box>
+                                            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                                                AI automatically generates a comprehensive summary of all stakeholder
+                                                interactions, objections, and next steps for your sales team.
+                                            </Typography>
+                                        </Box>
+                                    </motion.div>
+                                </motion.div>
                             </Box>
-                        </Box>
-                    </motion.div>
+                        </motion.div>
+                    </Grid>
                 </Grid>
-            </Grid>
-        </Container>
+            </Container>
+
+            {/* CSS Animations */}
+            <style jsx>{`
+            @keyframes flowProgress {
+                0% { transform: scaleX(0); }
+                100% { transform: scaleX(1); }
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.7; transform: scale(1.1); }
+            }
+        `}</style>
+        </Section >
     );
 };
 
@@ -2310,6 +2594,7 @@ const UseCasesSection = () => {
     const scrollContainerRef = useRef(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
+    const [isPaused, setIsPaused] = useState(false);
 
     // Define primary blue colors
     const primaryBlue = theme.palette.primary.main;
@@ -2365,20 +2650,22 @@ const UseCasesSection = () => {
         }
     ];
 
-    // Auto-advance timer for mobile
+    // Auto-advance timer for both mobile and desktop
     useEffect(() => {
-        if (!isMobile || !scrollContainerRef.current) return;
+        if (isPaused) return;
 
         const interval = setInterval(() => {
             setActiveStep((prev) => {
                 const next = (prev + 1) % buyerJourneySteps.length;
-                scrollToStep(next);
+                if (isMobile && scrollContainerRef.current) {
+                    scrollToStep(next);
+                }
                 return next;
             });
-        }, 4000);
+        }, 1500); // 1.5 seconds per step
 
         return () => clearInterval(interval);
-    }, [isMobile, buyerJourneySteps.length]);
+    }, [isMobile, buyerJourneySteps.length, isPaused]);
 
     // Check scroll position for indicators
     const checkScrollPosition = () => {
@@ -2653,12 +2940,54 @@ const UseCasesSection = () => {
                     </Box>
                 ) : (
                     // Desktop grid layout
-                    <Box sx={{
-                        display: 'flex',
-                        overflowX: 'visible',
-                        gap: 2,
-                        pb: 0
-                    }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            overflowX: 'visible',
+                            gap: 2,
+                            pb: 0
+                        }}
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                    >
+                        {/* Progress indicator for desktop */}
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            gap: 1,
+                            mb: 3,
+                            position: 'absolute',
+                            top: -40,
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            zIndex: 10
+                        }}>
+                            {buyerJourneySteps.map((_, index) => (
+                                <Box
+                                    key={index}
+                                    onClick={() => {
+                                        setActiveStep(index);
+                                        setIsPaused(true);
+                                        setTimeout(() => setIsPaused(false), 3000); // Resume after 3 seconds
+                                    }}
+                                    sx={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: '50%',
+                                        bgcolor: activeStep === index ? primaryBlue : 'grey.300',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s ease',
+                                        transform: activeStep === index ? 'scale(1.3)' : 'scale(1)',
+                                        boxShadow: activeStep === index ? `0 2px 8px ${primaryBlue}40` : 'none',
+                                        '&:hover': {
+                                            bgcolor: activeStep === index ? primaryBlue : 'grey.400',
+                                            transform: 'scale(1.2)'
+                                        }
+                                    }}
+                                />
+                            ))}
+                        </Box>
+
                         <Grid container spacing={2} justifyContent="center">
                             {buyerJourneySteps.map((step, index) => (
                                 <Grid item xs={6} sm={6} md={2.4} key={index}>
@@ -2670,7 +2999,11 @@ const UseCasesSection = () => {
                                         style={{ height: '100%' }}
                                     >
                                         <Box
-                                            onClick={() => setActiveStep(index)}
+                                            onClick={() => {
+                                                setActiveStep(index);
+                                                setIsPaused(true);
+                                                setTimeout(() => setIsPaused(false), 3000); // Resume after 3 seconds
+                                            }}
                                             sx={{
                                                 height: '100%',
                                                 minHeight: 320,
@@ -2682,18 +3015,20 @@ const UseCasesSection = () => {
                                                     ? `linear-gradient(135deg, white 0%, ${theme.palette.primary.lighter} 100%)`
                                                     : 'background.paper',
                                                 cursor: 'pointer',
-                                                transition: 'all 0.3s ease',
-                                                transform: activeStep === index ? 'scale(1.05)' : 'scale(1)',
+                                                transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                transform: activeStep === index ? 'scale(1.05) translateY(-8px)' : 'scale(1)',
                                                 boxShadow: activeStep === index
-                                                    ? `0 12px 24px ${primaryBlue}30`
+                                                    ? `0 16px 32px ${primaryBlue}25, 0 0 0 1px ${primaryBlue}40`
                                                     : theme.shadows[1],
                                                 position: 'relative',
                                                 overflow: 'hidden',
                                                 display: 'flex',
                                                 flexDirection: 'column',
                                                 '&:hover': {
-                                                    transform: 'scale(1.02)',
-                                                    boxShadow: theme.shadows[4],
+                                                    transform: activeStep === index ? 'scale(1.05) translateY(-8px)' : 'scale(1.02) translateY(-4px)',
+                                                    boxShadow: activeStep === index
+                                                        ? `0 20px 40px ${primaryBlue}30, 0 0 0 1px ${primaryBlue}50`
+                                                        : `0 8px 24px ${primaryBlue}20`,
                                                     borderColor: primaryBlue
                                                 },
                                                 '&::before': {
@@ -2704,7 +3039,17 @@ const UseCasesSection = () => {
                                                     right: 0,
                                                     height: 4,
                                                     background: activeStep === index ? blueGradient : 'transparent',
-                                                    transition: 'all 0.3s ease'
+                                                    transition: 'all 0.6s ease'
+                                                },
+                                                // Add a subtle pulse animation for active step
+                                                animation: activeStep === index ? 'subtle-pulse 2s ease-in-out infinite' : 'none',
+                                                '@keyframes subtle-pulse': {
+                                                    '0%, 100%': {
+                                                        boxShadow: `0 16px 32px ${primaryBlue}25, 0 0 0 1px ${primaryBlue}40`
+                                                    },
+                                                    '50%': {
+                                                        boxShadow: `0 20px 40px ${primaryBlue}35, 0 0 0 1px ${primaryBlue}60`
+                                                    }
                                                 }
                                             }}
                                         >
@@ -2908,8 +3253,8 @@ const HowItWorksSection = () => {
             icon: "UploadCloud",
             emoji: "☁️",
             title: "Upload",
-            text: "Drop your video, Loom, or slide deck",
-            detail: "Supports MP4, MOV, Loom links, and PowerPoint files",
+            text: "Drop your video and select a use case",
+            detail: "Supports MP4 files, optionally upload pdf as supporting data",
             color: 'primary',
             gradient: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`
         },
@@ -2917,8 +3262,8 @@ const HowItWorksSection = () => {
             icon: "UserCog",
             emoji: "🎯",
             title: "Configure",
-            text: "Set AI personality and goals in 60 seconds",
-            detail: "Define tone, expertise level, and conversation objectives",
+            text: "Finalize AI personality and engagement points in 60 seconds",
+            detail: "Define tone and conversation objectives",
             color: 'success',
             gradient: `linear-gradient(135deg, ${theme.palette.success.light} 0%, ${theme.palette.success.main} 100%)`
         },
@@ -2926,7 +3271,7 @@ const HowItWorksSection = () => {
             icon: "MicVocal",
             emoji: "🎤",
             title: "Personalize",
-            text: "Clone your voice for authentic responses",
+            text: "Clone your voice for authentic responses and add prospect data",
             detail: "Optional: Add your voice for truly personal AI interactions",
             color: 'warning',
             gradient: `linear-gradient(135deg, ${theme.palette.warning.light} 0%, ${theme.palette.warning.main} 100%)`
@@ -2944,8 +3289,7 @@ const HowItWorksSection = () => {
 
     // Simulate progress for demo purposes
     useEffect(() => {
-        if (!isMobile) return;
-        const timer = setInterval(() => {
+        const interval = setInterval(() => {
             setStepProgress(prev => {
                 if (prev >= 100) {
                     setExpandedStep(current => (current + 1) % steps.length);
@@ -2955,8 +3299,8 @@ const HowItWorksSection = () => {
                 return prev + 2;
             });
         }, 100);
-        return () => clearInterval(timer);
-    }, [isMobile, steps.length]);
+        return () => clearInterval(interval);
+    }, [steps.length]);
 
     const handleStepClick = (index) => {
         if (isMobile) {

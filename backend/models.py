@@ -610,7 +610,7 @@ class ConversationLogs(db.Model):
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     was_interrupted = db.Column(db.Boolean, default=False)
-    duration_seconds = db.Column(db.Float, nullable=True)
+    duration_minutes = db.Column(db.Float, nullable=True)
     # Add personalization record reference
     personalization_record_id = db.Column(
         db.Integer, db.ForeignKey("personalization_record.id"), nullable=True
@@ -646,7 +646,7 @@ class ConversationLogs(db.Model):
             "message": self.message,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
             "was_interrupted": self.was_interrupted,
-            "duration_seconds": self.duration_seconds,
+            "duration_minutes": self.duration_minutes,
             "personalization_record_id": self.personalization_record_id,
         }
 
