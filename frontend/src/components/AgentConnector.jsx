@@ -90,6 +90,22 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             .iframe-container iframe:focus {
                 outline: none;
             }
+            /* Safari-specific iframe wrapper to prevent scroll propagation */
+            .safari-iframe-wrapper {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                -webkit-overflow-scrolling: touch;
+                transform: translateZ(0);
+                will-change: transform;
+            }
+            /* Prevent iframe from being focusable in Safari during load */
+            .safari-iframe-wrapper.loading iframe {
+                pointer-events: none;
+            }
         `;
         document.head.appendChild(style);
 
@@ -237,12 +253,52 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
 
         // Prevent auto-focus in Safari only for embeds
         if (isEmbed && (isSafari() || isIOS()) && iframeRef.current) {
+            // Immediate blur
             iframeRef.current.blur();
 
             // Remove focus from any active element
             if (document.activeElement) {
                 document.activeElement.blur();
             }
+
+            // Set a focus trap to prevent Safari from focusing the iframe
+            const preventFocus = (e) => {
+                if (e.target === iframeRef.current) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    iframeRef.current.blur();
+                }
+            };
+
+            // Use capture phase to intercept focus early
+            iframeRef.current.addEventListener('focus', preventFocus, true);
+            iframeRef.current.addEventListener('focusin', preventFocus, true);
+
+            // Prevent scroll into view behavior
+            const preventScroll = (e) => {
+                if (e.target === iframeRef.current || iframeRef.current?.contains(e.target)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            };
+
+            window.addEventListener('scroll', preventScroll, true);
+            document.addEventListener('scroll', preventScroll, true);
+
+            // Re-enable pointer events after a delay
+            setTimeout(() => {
+                if (iframeRef.current) {
+                    iframeRef.current.style.pointerEvents = 'auto';
+                }
+            }, 500);
+
+            // Cleanup after a longer delay
+            setTimeout(() => {
+                iframeRef.current?.removeEventListener('focus', preventFocus, true);
+                iframeRef.current?.removeEventListener('focusin', preventFocus, true);
+                window.removeEventListener('scroll', preventScroll, true);
+                document.removeEventListener('scroll', preventScroll, true);
+            }, 2000);
         }
     };
 
@@ -290,21 +346,25 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             }}
         >
             {connectorUrl && (
-                <iframe
-                    ref={iframeRef}
-                    src={connectorUrl}
-                    title="Agent Connector"
-                    allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-downloads"
-                    referrerPolicy="origin"
-                    onLoad={handleIframeLoad}
-                    style={{
-                        WebkitAppearance: 'none',
-                        backgroundColor: 'transparent'
-                    }}
-                    scrolling="no"
-                    loading="eager"
-                />
+                <div className={`safari-iframe-wrapper ${!isIframeLoaded ? 'loading' : ''}`}>
+                    <iframe
+                        ref={iframeRef}
+                        src={connectorUrl}
+                        title="Agent Connector"
+                        allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-downloads"
+                        referrerPolicy="origin"
+                        onLoad={handleIframeLoad}
+                        style={{
+                            WebkitAppearance: 'none',
+                            backgroundColor: 'transparent',
+                            pointerEvents: isIframeLoaded ? 'auto' : 'none'
+                        }}
+                        scrolling="no"
+                        loading="eager"
+                        tabIndex={isEmbed ? -1 : 0}
+                    />
+                </div>
             )}
         </Box>
     );

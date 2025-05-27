@@ -74,6 +74,27 @@ class ScrollLockManager {
             document.body.style.position = 'relative';
             document.body.style.paddingRight = `${scrollBarWidth}px`;
 
+            // Safari-specific: Aggressive scroll prevention
+            if (isSafari() || isIOS()) {
+                // Override scrollIntoView for all elements
+                const originalScrollIntoView = Element.prototype.scrollIntoView;
+                Element.prototype.scrollIntoView = function () {
+                    // Do nothing - prevent all scrollIntoView calls
+                    console.log('ScrollIntoView blocked by ScrollLockManager');
+                };
+                this.originalScrollIntoView = originalScrollIntoView;
+
+                // Prevent focus-triggered scrolling
+                const preventFocusScroll = (e) => {
+                    const savedScroll = { x: window.pageXOffset, y: window.pageYOffset };
+                    requestAnimationFrame(() => {
+                        window.scrollTo(savedScroll.x, savedScroll.y);
+                    });
+                };
+                document.addEventListener('focusin', preventFocusScroll, true);
+                this.preventFocusScroll = preventFocusScroll;
+            }
+
             // Add event listeners - especially important for Safari
             const options = { passive: false, capture: true };
 
@@ -123,6 +144,18 @@ class ScrollLockManager {
                 document.removeEventListener('touchmove', this.preventTouchMoveHandler, options);
                 document.removeEventListener('touchstart', this.preventTouchMoveHandler, options);
                 document.body.removeEventListener('touchmove', this.preventTouchMoveHandler, options);
+
+                // Restore original scrollIntoView
+                if (this.originalScrollIntoView) {
+                    Element.prototype.scrollIntoView = this.originalScrollIntoView;
+                    delete this.originalScrollIntoView;
+                }
+
+                // Remove focus scroll prevention
+                if (this.preventFocusScroll) {
+                    document.removeEventListener('focusin', this.preventFocusScroll, true);
+                    delete this.preventFocusScroll;
+                }
             }
 
             // Restore scroll position

@@ -65,6 +65,31 @@ class BrdgeEmbed {
         user-select: none;
       `;
             container.appendChild(overlay);
+
+            // Prevent Safari from auto-scrolling to iframe on load
+            let scrollTimeout;
+            const preventAutoScroll = () => {
+                const currentScroll = { x: window.pageXOffset, y: window.pageYOffset };
+
+                const scrollHandler = () => {
+                    clearTimeout(scrollTimeout);
+                    window.scrollTo(currentScroll.x, currentScroll.y);
+
+                    scrollTimeout = setTimeout(() => {
+                        window.removeEventListener('scroll', scrollHandler);
+                    }, 100);
+                };
+
+                window.addEventListener('scroll', scrollHandler, { passive: false, capture: true });
+
+                // Clean up after 2 seconds
+                setTimeout(() => {
+                    window.removeEventListener('scroll', scrollHandler);
+                }, 2000);
+            };
+
+            // Start preventing auto-scroll immediately
+            preventAutoScroll();
         }
 
         // Create iframe wrapper
@@ -108,6 +133,19 @@ class BrdgeEmbed {
         iframe.setAttribute('allowfullscreen', 'true');
         iframe.setAttribute('scrolling', 'no');
         iframe.setAttribute('loading', 'eager');
+
+        // Safari-specific: prevent focus on load
+        if (isSafari() || isIOS()) {
+            iframe.setAttribute('tabindex', '-1');
+            iframe.style.pointerEvents = 'none';
+
+            // Re-enable pointer events after load
+            iframe.addEventListener('load', () => {
+                setTimeout(() => {
+                    iframe.style.pointerEvents = 'auto';
+                }, 500);
+            }, { once: true });
+        }
 
         // Handle load/error events
         iframe.onload = () => {
