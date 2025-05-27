@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { api } from '../api';
 import { isSafari, isIOS } from '../utils/browserDetection';
-import scrollLockManager from '../utils/ScrollLockManager';
 
 function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = false, preventSafariScroll = false }) {
     const [connectorUrl, setConnectorUrl] = useState('');
@@ -28,31 +27,38 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
 
     // Apply embed-specific styles and scroll prevention
     useEffect(() => {
-        // Only apply scroll lock when explicitly requested or for external embeds
-        const shouldPreventScroll = preventSafariScroll || (isEmbed && window.self !== window.top);
+        // Only prevent focus-based auto-scrolling, never lock parent scroll
+        if (containerRef.current) {
+            // Prevent the iframe container from participating in scroll events
+            containerRef.current.style.overflow = 'hidden';
+            containerRef.current.style.position = 'relative';
 
-        if (shouldPreventScroll && (isSafari() || isIOS())) {
-            // Lock scrolling only when needed in Safari
-            scrollLockManager.lock(`agent-connector-${brdgeId}`);
+            // Prevent focus from triggering scroll
+            const preventFocusScroll = (e) => {
+                if (e.target === iframeRef.current || containerRef.current?.contains(e.target)) {
+                    // Save current scroll position
+                    const scrollX = window.pageXOffset;
+                    const scrollY = window.pageYOffset;
 
-            // Apply additional Safari-specific fixes
-            if (containerRef.current) {
-                containerRef.current.style.WebkitOverflowScrolling = 'touch';
-                containerRef.current.style.touchAction = 'none';
+                    // Restore scroll position on next frame if it changed
+                    requestAnimationFrame(() => {
+                        if (window.pageXOffset !== scrollX || window.pageYOffset !== scrollY) {
+                            window.scrollTo(scrollX, scrollY);
+                        }
+                    });
+                }
+            };
 
-                // Prevent Safari bounce scrolling
-                const preventTouch = (e) => {
-                    e.preventDefault();
-                };
-                containerRef.current.addEventListener('touchmove', preventTouch, { passive: false });
+            // Only add focus scroll prevention
+            window.addEventListener('focus', preventFocusScroll, true);
+            window.addEventListener('focusin', preventFocusScroll, true);
 
-                return () => {
-                    scrollLockManager.unlock(`agent-connector-${brdgeId}`);
-                    containerRef.current?.removeEventListener('touchmove', preventTouch);
-                };
-            }
+            return () => {
+                window.removeEventListener('focus', preventFocusScroll, true);
+                window.removeEventListener('focusin', preventFocusScroll, true);
+            };
         }
-    }, [isEmbed, brdgeId, preventSafariScroll]);
+    }, [isEmbed, brdgeId]);
 
     // Add CSS to prevent iframe controls
     useEffect(() => {
@@ -63,10 +69,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
-            }
-            .iframe-container.safari-embed {
-                -webkit-overflow-scrolling: touch;
-                touch-action: none;
+                -webkit-overflow-scrolling: auto;
             }
             .iframe-container iframe {
                 position: absolute;
@@ -89,22 +92,6 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             /* Prevent focus outline that might trigger scrolling */
             .iframe-container iframe:focus {
                 outline: none;
-            }
-            /* Safari-specific iframe wrapper to prevent scroll propagation */
-            .safari-iframe-wrapper {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                -webkit-overflow-scrolling: touch;
-                transform: translateZ(0);
-                will-change: transform;
-            }
-            /* Prevent iframe from being focusable in Safari during load */
-            .safari-iframe-wrapper.loading iframe {
-                pointer-events: none;
             }
         `;
         document.head.appendChild(style);
@@ -251,54 +238,15 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
     const handleIframeLoad = () => {
         setIsIframeLoaded(true);
 
-        // Prevent auto-focus in Safari only for embeds
-        if (isEmbed && (isSafari() || isIOS()) && iframeRef.current) {
-            // Immediate blur
+        // Only prevent auto-focus, don't interfere with scrolling
+        if (iframeRef.current) {
+            // Prevent iframe from stealing focus on load
             iframeRef.current.blur();
 
-            // Remove focus from any active element
-            if (document.activeElement) {
+            // If something inside the iframe has focus, blur it
+            if (document.activeElement === iframeRef.current || iframeRef.current.contains(document.activeElement)) {
                 document.activeElement.blur();
             }
-
-            // Set a focus trap to prevent Safari from focusing the iframe
-            const preventFocus = (e) => {
-                if (e.target === iframeRef.current) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    iframeRef.current.blur();
-                }
-            };
-
-            // Use capture phase to intercept focus early
-            iframeRef.current.addEventListener('focus', preventFocus, true);
-            iframeRef.current.addEventListener('focusin', preventFocus, true);
-
-            // Prevent scroll into view behavior
-            const preventScroll = (e) => {
-                if (e.target === iframeRef.current || iframeRef.current?.contains(e.target)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            };
-
-            window.addEventListener('scroll', preventScroll, true);
-            document.addEventListener('scroll', preventScroll, true);
-
-            // Re-enable pointer events after a delay
-            setTimeout(() => {
-                if (iframeRef.current) {
-                    iframeRef.current.style.pointerEvents = 'auto';
-                }
-            }, 500);
-
-            // Cleanup after a longer delay
-            setTimeout(() => {
-                iframeRef.current?.removeEventListener('focus', preventFocus, true);
-                iframeRef.current?.removeEventListener('focusin', preventFocus, true);
-                window.removeEventListener('scroll', preventScroll, true);
-                document.removeEventListener('scroll', preventScroll, true);
-            }, 2000);
         }
     };
 
@@ -337,7 +285,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
     return (
         <Box
             ref={containerRef}
-            className={`iframe-container ${(preventSafariScroll || isEmbed) && (isSafari() || isIOS()) ? 'safari-embed' : ''}`}
+            className="iframe-container"
             sx={{
                 width: '100%',
                 height: '100%',
@@ -346,25 +294,27 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             }}
         >
             {connectorUrl && (
-                <div className={`safari-iframe-wrapper ${!isIframeLoaded ? 'loading' : ''}`}>
-                    <iframe
-                        ref={iframeRef}
-                        src={connectorUrl}
-                        title="Agent Connector"
-                        allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-downloads"
-                        referrerPolicy="origin"
-                        onLoad={handleIframeLoad}
-                        style={{
-                            WebkitAppearance: 'none',
-                            backgroundColor: 'transparent',
-                            pointerEvents: isIframeLoaded ? 'auto' : 'none'
-                        }}
-                        scrolling="no"
-                        loading="eager"
-                        tabIndex={isEmbed ? -1 : 0}
-                    />
-                </div>
+                <iframe
+                    ref={iframeRef}
+                    src={connectorUrl}
+                    title="Agent Connector"
+                    allow="camera; microphone; display-capture; fullscreen; autoplay; encrypted-media"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-top-navigation-by-user-activation allow-downloads"
+                    referrerPolicy="origin"
+                    onLoad={handleIframeLoad}
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0
+                    }}
+                    scrolling="no"
+                    loading="eager"
+                    tabIndex={-1}
+                />
             )}
         </Box>
     );

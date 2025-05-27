@@ -1,4 +1,4 @@
-import { isSafari, isIOS } from './browserDetection';
+import { isSafari, isIOS, isChromeMobile, isMobileWithScrollIssues } from './browserDetection';
 
 // Scroll Lock Manager for preventing unwanted scrolling in embeds
 class ScrollLockManager {
@@ -6,16 +6,22 @@ class ScrollLockManager {
         this.locks = new Set();
         this.scrollPosition = { x: 0, y: 0 };
         this.originalStyles = {};
+        this.preventDefaultPassive = null;
 
         // Bind handlers
         this.preventScrollHandler = this.preventScrollHandler.bind(this);
         this.preventTouchMoveHandler = this.preventTouchMoveHandler.bind(this);
+        this.preventWheelHandler = this.preventWheelHandler.bind(this);
     }
 
     preventScrollHandler(e) {
         if (this.locks.size > 0) {
             e.preventDefault();
             e.stopPropagation();
+            // For mobile Chrome, we need to prevent the default passive behavior
+            if (isChromeMobile() && e.cancelable) {
+                e.preventDefault();
+            }
             return false;
         }
     }
@@ -27,6 +33,15 @@ class ScrollLockManager {
                 return;
             }
             e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }
+
+    preventWheelHandler(e) {
+        if (this.locks.size > 0) {
+            e.preventDefault();
+            e.stopPropagation();
             return false;
         }
     }
@@ -74,15 +89,33 @@ class ScrollLockManager {
             document.body.style.position = 'relative';
             document.body.style.paddingRight = `${scrollBarWidth}px`;
 
-            // Safari-specific: Aggressive scroll prevention
-            if (isSafari() || isIOS()) {
+            // Enhanced scroll prevention for all problematic browsers
+            if (isSafari() || isIOS() || isMobileWithScrollIssues()) {
+                // Add overscroll-behavior to prevent bounce
+                document.documentElement.style.overscrollBehavior = 'none';
+                document.body.style.overscrollBehavior = 'none';
+
                 // Override scrollIntoView for all elements
                 const originalScrollIntoView = Element.prototype.scrollIntoView;
+                const originalScrollTo = window.scrollTo;
+                const originalScroll = window.scroll;
+
                 Element.prototype.scrollIntoView = function () {
                     // Do nothing - prevent all scrollIntoView calls
                     console.log('ScrollIntoView blocked by ScrollLockManager');
                 };
+
+                window.scrollTo = function () {
+                    console.log('ScrollTo blocked by ScrollLockManager');
+                };
+
+                window.scroll = function () {
+                    console.log('Scroll blocked by ScrollLockManager');
+                };
+
                 this.originalScrollIntoView = originalScrollIntoView;
+                this.originalScrollTo = originalScrollTo;
+                this.originalScroll = originalScroll;
 
                 // Prevent focus-triggered scrolling
                 const preventFocusScroll = (e) => {
@@ -95,19 +128,21 @@ class ScrollLockManager {
                 this.preventFocusScroll = preventFocusScroll;
             }
 
-            // Add event listeners - especially important for Safari
+            // Add event listeners - especially important for Safari and mobile browsers
             const options = { passive: false, capture: true };
 
             // Prevent wheel scrolling
-            window.addEventListener('wheel', this.preventScrollHandler, options);
+            window.addEventListener('wheel', this.preventWheelHandler, options);
             window.addEventListener('scroll', this.preventScrollHandler, options);
+            document.addEventListener('scroll', this.preventScrollHandler, options);
 
             // Prevent touch scrolling on mobile
-            if (isSafari() || isIOS()) {
+            if (isMobileWithScrollIssues()) {
                 document.addEventListener('touchmove', this.preventTouchMoveHandler, options);
                 document.addEventListener('touchstart', this.preventTouchMoveHandler, options);
+                document.addEventListener('touchend', this.preventTouchMoveHandler, options);
 
-                // Safari-specific: Prevent bounce scrolling
+                // Prevent bounce scrolling on body
                 document.body.addEventListener('touchmove', this.preventTouchMoveHandler, options);
             }
 
@@ -137,18 +172,35 @@ class ScrollLockManager {
 
             // Remove event listeners
             const options = { passive: false, capture: true };
-            window.removeEventListener('wheel', this.preventScrollHandler, options);
+            window.removeEventListener('wheel', this.preventWheelHandler, options);
             window.removeEventListener('scroll', this.preventScrollHandler, options);
+            document.removeEventListener('scroll', this.preventScrollHandler, options);
 
-            if (isSafari() || isIOS()) {
+            if (isSafari() || isIOS() || isMobileWithScrollIssues()) {
                 document.removeEventListener('touchmove', this.preventTouchMoveHandler, options);
                 document.removeEventListener('touchstart', this.preventTouchMoveHandler, options);
+                document.removeEventListener('touchend', this.preventTouchMoveHandler, options);
                 document.body.removeEventListener('touchmove', this.preventTouchMoveHandler, options);
+
+                // Restore overscroll-behavior
+                document.documentElement.style.overscrollBehavior = '';
+                document.body.style.overscrollBehavior = '';
 
                 // Restore original scrollIntoView
                 if (this.originalScrollIntoView) {
                     Element.prototype.scrollIntoView = this.originalScrollIntoView;
                     delete this.originalScrollIntoView;
+                }
+
+                // Restore original scroll functions
+                if (this.originalScrollTo) {
+                    window.scrollTo = this.originalScrollTo;
+                    delete this.originalScrollTo;
+                }
+
+                if (this.originalScroll) {
+                    window.scroll = this.originalScroll;
+                    delete this.originalScroll;
                 }
 
                 // Remove focus scroll prevention
