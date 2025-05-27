@@ -293,25 +293,27 @@ const ServicesPage = () => {
                             >
                                 <Box sx={{
                                     maxWidth: { xs: '100%', sm: '600px', md: '900px' },
-                                    mx: { xs: 1, sm: 'auto' },
+                                    mx: { xs: 0.5, sm: 'auto' },
                                     position: 'relative',
-                                    borderRadius: 3,
+                                    borderRadius: { xs: 2, sm: 3 },
                                     overflow: 'hidden',
-                                    boxShadow: '0 30px 80px rgba(0, 102, 255, 0.15)',
-                                    border: '2px solid',
-                                    borderImage: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1`,
+                                    boxShadow: { xs: '0 8px 24px rgba(0, 102, 255, 0.1)', sm: '0 30px 80px rgba(0, 102, 255, 0.15)' },
+                                    border: { xs: '1px solid', sm: '2px solid' },
+                                    borderColor: { xs: 'divider', sm: 'transparent' },
+                                    borderImage: { xs: 'none', sm: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1` },
                                     bgcolor: 'background.paper',
-                                    aspectRatio: { xs: '9 / 16', sm: '16 / 10', md: '16 / 10' },
+                                    aspectRatio: { xs: '16 / 9', sm: '16 / 10', md: '16 / 10' },
                                     transform: 'translateZ(0)',
                                     backfaceVisibility: 'hidden',
                                     willChange: 'transform'
                                 }}>
+                                    {/* Top bar - only show on desktop */}
                                     <Box sx={{
                                         p: 1,
                                         borderBottom: '1px solid',
                                         borderColor: 'divider',
                                         background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.grey[100]} 100%)`,
-                                        display: 'flex',
+                                        display: { xs: 'none', sm: 'flex' },
                                         alignItems: 'center',
                                         gap: 1
                                     }}>
@@ -326,7 +328,7 @@ const ServicesPage = () => {
                                     </Box>
                                     <Box sx={{
                                         position: 'relative',
-                                        height: 'calc(100% - 40px)',
+                                        height: { xs: '100%', sm: 'calc(100% - 40px)' },
                                         '& .agent-connector-container': {
                                             position: 'absolute',
                                             top: 0,
@@ -335,15 +337,33 @@ const ServicesPage = () => {
                                             height: '100%',
                                         }
                                     }}>
-                                        <div className="agent-connector-container">
-                                            <AgentConnector
-                                                brdgeId={DEMO_BRIDGE_ID}
-                                                agentType="view"
-                                                token=""
-                                                userId={null}
-                                                isEmbed={false}
+                                        {isMobile ? (
+                                            // Show video on mobile/Safari with proper 16:9 aspect ratio
+                                            <video
+                                                src="/dotbridge-hero-small.mp4"
+                                                poster="/dotbridge-hero-cover.jpg"
+                                                controls
+                                                playsInline
+                                                preload="metadata"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '0'
+                                                }}
                                             />
-                                        </div>
+                                        ) : (
+                                            // Show AgentConnector on desktop
+                                            <div className="agent-connector-container">
+                                                <AgentConnector
+                                                    brdgeId={DEMO_BRIDGE_ID}
+                                                    agentType="view"
+                                                    token=""
+                                                    userId={null}
+                                                    isEmbed={false}
+                                                />
+                                            </div>
+                                        )}
                                     </Box>
                                 </Box>
                             </motion.div>
