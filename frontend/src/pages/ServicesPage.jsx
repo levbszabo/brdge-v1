@@ -1,91 +1,122 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Container,
-    Typography,
     Grid,
-    Button,
     Box,
     useTheme,
     useMediaQuery,
     Paper,
     TextField,
     FormControl,
-    InputLabel,
     Radio,
     RadioGroup,
     FormControlLabel,
     FormLabel,
-    Card,
-    CardContent,
-    Divider,
     CircularProgress,
+    Chip,
 } from '@mui/material';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import {
-    TouchApp,
     CheckCircle,
-    PlayArrow,
-    AccessTime,
-    RateReview,
-    QueryStats,
     TrendingUp,
     Groups,
-    Build,
-    School,
+    QueryStats,
+    Bolt as Zap,
+    People as Users,
+    CalendarMonth as Calendar,
+    AccessTime as Clock,
+    Visibility as Eye,
+    AutoAwesome as Sparkles,
+    ArrowForward as ArrowRight,
 } from '@mui/icons-material';
 import { useInView } from 'react-intersection-observer';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import Link from '@mui/material/Link';
 import AgentConnector from '../components/AgentConnector';
-import JourneyStep from '../components/JourneyStep';
 import { api } from '../api';
 import Footer from '../components/Footer';
+import DotBridgeButton from '../components/DotBridgeButton';
+import DotBridgeCard, { CardContent } from '../components/DotBridgeCard';
+import DotBridgeTypography from '../components/DotBridgeTypography';
 
-// Buyer Journey Steps Data
-const journeyStepsData = [
-    { id: 'awareness', title: 'Awareness Bridge', subtitle: 'Capture attention with an engaging, short-form explainer', videoUrl: '#awareness_video', alignment: 'left' },
-    { id: 'discovery', title: 'Discovery Bridge', subtitle: 'Qualify the lead and gather requirements', videoUrl: '#discovery_video', alignment: 'right' },
-    { id: 'demo', title: 'Demo Bridge', subtitle: 'Tailored walkthrough of DotBridge based on Discovery answers', videoUrl: '#demo_video', alignment: 'left' },
-    { id: 'sales', title: 'Sales Bridge', subtitle: 'Answer objections, show pricing, and close', videoUrl: '#sales_video', alignment: 'right' },
-    { id: 'onboarding', title: 'Onboarding Bridge', subtitle: 'Help new users get set up', videoUrl: '#onboarding_video', alignment: 'left' },
-    { id: 'success', title: 'Customer Success', subtitle: 'Post-purchase support and upsell', videoUrl: '#success_video', alignment: 'right', isLast: true },
-];
+// Use the same DEMO_BRIDGE_ID as landing page for consistency
+const DEMO_BRIDGE_ID = '431';
 
-// Renamed and updated for "Impact Our Clients See"
+// Performance optimization: Check for reduced motion preference
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Animation variants
+const fadeInUp = {
+    hidden: { opacity: 0, y: prefersReducedMotion ? 0 : 30 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: prefersReducedMotion ? 0.01 : 0.7,
+            ease: "easeOut"
+        }
+    }
+};
+
+const staggerChildren = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: prefersReducedMotion ? 0 : 0.15,
+            delayChildren: prefersReducedMotion ? 0 : 0.2
+        }
+    }
+};
+
+
+
+// Impact metrics with updated copy
 const impactMetrics = [
     {
-        metric: "+42%",
-        description: "Lead-to-SQL Conversion",
-        icon: <RateReview sx={{ fontSize: 36, mb: 1.5 }} />,
+        metric: "+73%",
+        description: "Higher Engagement",
+        subtitle: "vs static videos",
+        icon: <Eye sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     },
     {
-        metric: "3.5x",
-        description: "Pipeline Generated Per Rep",
-        icon: <TouchApp sx={{ fontSize: 36, mb: 1.5 }} />,
+        metric: "5x",
+        description: "More Qualified Leads",
+        subtitle: "through AI conversations",
+        icon: <TrendingUp sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     },
     {
         metric: "-38%",
-        description: "Sales Cycle Duration",
-        icon: <AccessTime sx={{ fontSize: 36, mb: 1.5 }} />,
+        description: "Shorter Sales Cycles",
+        subtitle: "with pre-qualified prospects",
+        icon: <Clock sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     },
     {
-        metric: "$2.6M",
-        description: "ARR Influenced",
-        icon: <QueryStats sx={{ fontSize: 36, mb: 1.5 }} />,
+        metric: "24/7",
+        description: "Sales Coverage",
+        subtitle: "never miss a prospect",
+        icon: <Zap sx={{ fontSize: 36, mb: 1.5 }} />,
         color: "primary.main"
     }
 ];
-
-// Use the same DEMO_BRIDGE_ID as landing page for consistency
-const DEMO_BRIDGE_ID = '431';
 
 const ServicesPage = () => {
     const theme = useTheme();
     const navigate = useNavigate();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+    // Add scroll animation hook for demo tilt effect
+    const demoRef = useRef(null);
+    const { scrollYProgress } = useScroll({
+        target: demoRef,
+        offset: ["start end", "end start"]
+    });
+
+    // Transform scroll progress to rotation values - reduced for mobile
+    const rotateX = useTransform(scrollYProgress, [0, 0.5], isMobile ? [12, 0] : [20, 0]);
+    const scale = useTransform(scrollYProgress, [0, 0.5], isMobile ? [0.98, 1] : [0.97, 1]);
 
     // Simplified inView refs
     const [heroRef, heroInView] = useInView({ threshold: 0.1, triggerOnce: true });
@@ -93,7 +124,7 @@ const ServicesPage = () => {
     const [resultsRef, resultsInView] = useInView({ threshold: 0.1, triggerOnce: true });
     const [formRef, formInView] = useInView({ threshold: 0.1, triggerOnce: true });
 
-    // Lead form state - unchanged
+    // Lead form state
     const [lead, setLead] = useState({
         name: '',
         email: '',
@@ -109,7 +140,6 @@ const ServicesPage = () => {
         setLead(prev => ({ ...prev, [name]: value }));
     };
 
-    // handleLeadSubmit function - unchanged
     const handleLeadSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -138,314 +168,514 @@ const ServicesPage = () => {
         }
     };
 
-    // Primary Color Text Span Helper
-    const PrimaryText = ({ children }) => (
-        <Box component="span" sx={{ color: 'primary.main', fontWeight: 'inherit' }}>
-            {children}
-        </Box>
-    );
-
     return (
         <Box
             sx={{
-                minHeight: 'calc(100vh - 64px)', // Adjust for header
-                bgcolor: theme.palette.background.default, // Use theme default background
-                overflow: 'hidden' // Prevent animation overflows
+                minHeight: 'calc(100vh - 64px)',
+                bgcolor: 'background.default',
+                overflow: 'hidden'
             }}
         >
             {/* Hero Section */}
-            <Container maxWidth="lg" ref={heroRef} sx={{ position: 'relative', zIndex: 1, pt: { xs: 8, md: 12 } }}>
+            <Container maxWidth="lg" ref={heroRef} sx={{
+                position: 'relative',
+                zIndex: 1,
+                pt: { xs: 4, md: 10 },
+                px: { xs: 2, sm: 3, md: 3 }
+            }}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={heroInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.7 }}
                     style={{ textAlign: 'center' }}
                 >
-                    <Typography
-                        variant="h1" // Use theme H1
+                    <Box sx={{ mb: 3 }}>
+                        <Chip
+                            label="🚀 TRANSFORM YOUR SALES PROCESS"
+                            sx={{
+                                background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.primary.light}50 100%)`,
+                                color: theme.palette.primary.dark,
+                                fontWeight: 600,
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                                letterSpacing: '0.05em',
+                                px: 2,
+                                py: 0.5,
+                                border: '1px solid',
+                                borderColor: theme.palette.primary.light,
+                                boxShadow: '0 2px 8px rgba(0, 102, 255, 0.2)',
+                                mb: 2
+                            }}
+                        />
+                    </Box>
+
+                    <DotBridgeTypography
+                        variant="h1"
                         component="h1"
                         sx={{
-                            mb: 4,
-                            color: 'text.primary',
-                            fontSize: { xs: '2.25rem', sm: '2.75rem', md: theme.typography.h1.fontSize } // Adjusted responsive font size
+                            mb: { xs: 3, md: 4 },
+                            fontSize: { xs: '2.5rem', sm: '3.25rem', md: '4rem' },
+                            fontWeight: 800,
+                            lineHeight: { xs: 1.1, md: 1.05 },
+                            textAlign: 'center',
+                            letterSpacing: { xs: '-0.02em', md: '-0.03em' },
+                            px: { xs: 1, md: 0 }
                         }}
                     >
-                        <PrimaryText>Your Videos Should Be Closing Deals, Not Just Getting Views.</PrimaryText>
-                    </Typography>
+                        <Box component="span" sx={{
+                            background: `linear-gradient(135deg, ${theme.palette.text.primary} 0%, ${theme.palette.primary.main} 100%)`,
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
+                        }}>
+                            Turn Your Sales Videos Into
+                        </Box>
+                        <Box component="span" sx={{
+                            display: 'block',
+                            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            mt: { xs: 0.25, md: 0.15 }
+                        }}>
+                            Revenue-Generating Machines
+                        </Box>
+                    </DotBridgeTypography>
 
-                    <Typography
+                    <DotBridgeTypography
                         variant="h5"
                         sx={{
                             color: 'text.secondary',
-                            maxWidth: '750px',
+                            maxWidth: '900px',
                             mx: 'auto',
-                            mb: { xs: 4, md: 6 },
-                            lineHeight: 1.7,
-                            '& .highlight': {
-                                position: 'relative',
-                                color: 'primary.main',
-                                fontWeight: 500,
-                                '&::after': {
-                                    content: '""',
-                                    position: 'absolute',
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: '4px',
-                                    background: 'rgba(0, 122, 255, 0.15)',
-                                    borderRadius: '4px',
-                                    transform: 'translateY(2px)',
-                                    zIndex: -1
-                                }
-                            }
+                            mb: { xs: 5, md: 6 },
+                            lineHeight: { xs: 1.5, md: 1.6 },
+                            fontSize: { xs: '1.25rem', sm: '1.375rem', md: '1.5rem' },
+                            px: { xs: 3, md: 0 },
+                            textAlign: 'center',
+                            fontWeight: 400
                         }}
                     >
-                        Tired of sales videos that just sit there? DotBridge transforms your passive content into <span className="highlight">AI-powered agents that engage, qualify, and close deals 24/7</span>, turning views into revenue automatically.
-                    </Typography>
+                        Transform static demos into intelligent conversations that
+                        <Box component="span" sx={{
+                            fontWeight: 600,
+                            color: 'primary.main'
+                        }}> qualify prospects, answer objections, and book meetings</Box> while you sleep.
+                        <Box component="span" sx={{
+                            display: 'block',
+                            mt: 1,
+                            fontSize: '0.9em',
+                            color: 'text.secondary',
+                            fontStyle: 'italic'
+                        }}>
+                            No more chasing unqualified leads. Let AI do the heavy lifting.
+                        </Box>
+                    </DotBridgeTypography>
 
-                    {/* Demo Section - Now correctly handles mobile video and desktop AgentConnector */}
-                    <Box sx={{ mb: { xs: 4, sm: 6 }, mt: { xs: 2, sm: 0 } }}>
-                        {isMobile ? (
-                            <Box sx={{
-                                maxWidth: '500px',
-                                mx: 'auto',
-                                textAlign: 'center',
-                                mb: 4,
-                                p: { xs: 1.5, sm: 2, md: 3 }, // Reduced padding for xs
-                                border: `1px solid ${theme.palette.divider}`,
-                                borderRadius: theme.shape.borderRadius,
-                                bgcolor: theme.palette.background.paper // Match card-like appearance
-                            }}>
-                                <Typography variant="h6" component="p" color="text.primary" sx={{ mb: 1.5 }}>
-                                    Watch a Quick Overview
-                                </Typography>
+                    {/* Demo Section - Clean styling with proper mobile aspect ratio and 3D tilt */}
+                    <Box sx={{ mb: { xs: 6, sm: 8 }, mt: { xs: 2, sm: 0 } }}>
+                        <motion.div
+                            ref={demoRef}
+                            initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: prefersReducedMotion ? 0.01 : 0.8, delay: 0.6 }}
+                            style={{
+                                perspective: isMobile ? '1000px' : '1500px',
+                                perspectiveOrigin: '50% 30%'
+                            }}
+                        >
+                            <motion.div
+                                style={{
+                                    rotateX: prefersReducedMotion ? 0 : rotateX,
+                                    scale: prefersReducedMotion ? 1 : scale,
+                                    transformStyle: 'preserve-3d',
+                                    transformOrigin: '50% 100%'
+                                }}
+                            >
                                 <Box sx={{
-                                    backgroundColor: theme.palette.grey[300],
-                                    borderRadius: theme.shape.borderRadius,
-                                    overflow: 'hidden',
+                                    maxWidth: { xs: '100%', sm: '600px', md: '900px' },
+                                    mx: { xs: 1, sm: 'auto' },
                                     position: 'relative',
-                                    paddingTop: '56.25%', // 16:9 Aspect Ratio
-                                    mb: 1
+                                    borderRadius: 3,
+                                    overflow: 'hidden',
+                                    boxShadow: '0 30px 80px rgba(0, 102, 255, 0.15)',
+                                    border: '2px solid',
+                                    borderImage: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1`,
+                                    bgcolor: 'background.paper',
+                                    aspectRatio: { xs: '9 / 16', sm: '16 / 10', md: '16 / 10' },
+                                    transform: 'translateZ(0)',
+                                    backfaceVisibility: 'hidden',
+                                    willChange: 'transform'
                                 }}>
-                                    <video
-                                        style={{
+                                    <Box sx={{
+                                        p: 1,
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
+                                        background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.grey[100]} 100%)`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1
+                                    }}>
+                                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'error.main' }} />
+                                            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'warning.main' }} />
+                                            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main' }} />
+                                        </Box>
+                                        <DotBridgeTypography variant="caption" color="text.secondary" sx={{ flex: 1, textAlign: 'center' }}>
+                                            Live DotBridge Sales Demo
+                                        </DotBridgeTypography>
+                                    </Box>
+                                    <Box sx={{
+                                        position: 'relative',
+                                        height: 'calc(100% - 40px)',
+                                        '& .agent-connector-container': {
                                             position: 'absolute',
                                             top: 0,
                                             left: 0,
                                             width: '100%',
                                             height: '100%',
-                                        }}
-                                        controls
-                                        poster="dotbridge-hero-cover.jpg" // IMPORTANT: Replace with your video poster image URL
-                                    >
-                                        <source src="dotbridge-hero-small.mp4" type="video/mp4" />
-                                        Your browser does not support the video tag. Please update your browser.
-                                    </video>
+                                        }
+                                    }}>
+                                        <div className="agent-connector-container">
+                                            <AgentConnector
+                                                brdgeId={DEMO_BRIDGE_ID}
+                                                agentType="view"
+                                                token=""
+                                                userId={null}
+                                                isEmbed={false}
+                                            />
+                                        </div>
+                                    </Box>
                                 </Box>
-                                <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 1, mb: 1.5 }}>
-                                    (Explainer Video for Mobile)
-                                </Typography>
-                                <Button
-                                    component={RouterLink}
-                                    to={`/viewBridge/${DEMO_BRIDGE_ID}`}
-                                    variant="outlined" // Differentiate from main CTA
-                                    size="medium"
-                                >
-                                    Or Try the Interactive Demo
-                                </Button>
-                            </Box>
-                        ) : (
-                            // Desktop: Interactive AgentConnector in a themed card
-                            <Card
-                                variant="outlined"
+                            </motion.div>
+                        </motion.div>
+                    </Box>
+
+                    {/* Lead Form Section - Moved up */}
+                    <Container maxWidth="sm" sx={{ py: { xs: 6, md: 8 }, position: 'relative', zIndex: 1 }} ref={formRef} id="lead-form-section">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={formInView ? { opacity: 1, y: 0 } : {}}
+                            transition={{ duration: 0.7 }}
+                        >
+                            <DotBridgeTypography
+                                variant="h2"
+                                align="center"
                                 sx={{
-                                    maxWidth: { md: '1000px', lg: '1100px' },
-                                    mx: 'auto',
-                                    position: 'relative',
-                                    aspectRatio: '16 / 9.5',
-                                    minHeight: '500px',
-                                    overflow: 'hidden',
-                                    '& .agent-connector-container': {
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        height: '100%',
-                                    },
+                                    mb: 2,
+                                    fontSize: { xs: '1.875rem', sm: '2.25rem', md: '2.5rem' },
+                                    fontWeight: 700,
+                                    lineHeight: { xs: 1.2, md: 1.1 },
+                                    px: { xs: 2, md: 0 }
                                 }}
                             >
-                                <Box sx={{ position: 'absolute', top: 16, left: 24, zIndex: 1, background: 'rgba(0,0,0,0.5)', p: 0.5, borderRadius: 1 }}>
-                                    <Typography variant="caption" sx={{ color: 'white' }}>Live DotBridge Sales Funnel Demo</Typography>
-                                </Box>
-                                <div className="agent-connector-container">
-                                    <AgentConnector
-                                        brdgeId={DEMO_BRIDGE_ID} // Ensure this DEMO_BRIDGE_ID showcases a sales or onboarding funnel
-                                        agentType="view"
-                                        token=""
-                                    />
-                                </div>
-                            </Card>
-                        )}
-                    </Box>
-
-                    {/* Buyer Journey Visualization Section */}
-                    <Box sx={{ mt: 10, mb: 8 }}>
-                        <Typography
-                            variant="h3"
-                            align="center"
-                            sx={{
-                                mb: { xs: 2, md: 3 },
-                                color: 'text.primary'
-                            }}
-                        >
-                            From Prospect to <PrimaryText>Paying Customer, Automatically</PrimaryText>
-                        </Typography>
-                        <Typography
-                            variant="h5"
-                            align="center"
-                            sx={{
-                                color: 'text.secondary',
-                                maxWidth: '850px',
-                                mx: 'auto',
-                                mb: { xs: 6, md: 8 }
-                            }}
-                        >
-                            Stop losing prospects at each step. DotBridge creates a seamless journey where your videos don't just inform—they actively qualify, demo, handle objections, and drive conversions, 24/7.
-                        </Typography>
-
-                        {/* Main content Grid for side text and journey diagram */}
-                        <Grid container spacing={4} justifyContent="center" alignItems="stretch">
-                            {/* Left Side Content - Hidden on xs, visible md and up */}
-                            <Grid item md={2} sx={{ display: { xs: 'none', md: 'block' } }}>
-                                <Box sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius, mt: 4 }}>
-                                    <Typography variant="h6" gutterBottom>Start Here</Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Your prospect's journey begins with awareness. DotBridge captures attention and qualifies in real-time.
-                                    </Typography>
-                                </Box>
-                            </Grid>
-
-                            {/* Journey Steps Section - Central Column */}
-                            <Grid item xs={12} md={8} lg={7}>
-                                <Box sx={{ position: 'relative', maxWidth: '680px', margin: 'auto' }}>
-                                    {journeyStepsData.map((step) => (
-                                        <Box key={step.id} sx={{ mb: 5 }}>
-                                            <JourneyStep
-                                                title={step.title}
-                                                subtitle={step.subtitle}
-                                                videoUrl={step.videoUrl}
-                                                alignment={step.alignment}
-                                                isLast={step.isLast}
-                                            />
-                                        </Box>
-                                    ))}
-                                </Box>
-                            </Grid>
-
-                            {/* Right Side Content - Adjusted for bottom alignment */}
-                            <Grid item md={2} sx={{
-                                display: { xs: 'none', md: 'flex' },
-                                flexDirection: 'column',
-                                justifyContent: 'flex-end'
-                            }}>
-                                <Box sx={{
-                                    p: 2,
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    borderRadius: theme.shape.borderRadius,
-                                    mb: 5 // Match last step's bottom margin for alignment
+                                Ready to Transform Your Sales?
+                                <Box component="span" sx={{
+                                    color: 'primary.main',
+                                    display: 'block',
+                                    mt: { xs: 0.25, md: 0.15 }
                                 }}>
-                                    <Typography variant="h6" gutterBottom>Revenue Growth</Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        The journey culminates in closed deals and satisfied customers. DotBridge extracts valuable insights that feed directly into your sales flywheel.
-                                    </Typography>
+                                    Get Your Custom Demo
                                 </Box>
-                            </Grid>
-                        </Grid>
-                    </Box>
+                            </DotBridgeTypography>
 
-                    <Button
-                        variant="contained"
-                        size="large"
-                        color="primary"
-                        sx={{ mb: { xs: 6, sm: 8, md: 10 } }}
-                        onClick={() => {
-                            document.getElementById('lead-form-section')?.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'start'
-                            });
-                        }}
-                    >
-                        Get Your Custom AI Sales Engine
-                    </Button>
+                            <DotBridgeTypography
+                                variant="h6"
+                                align="center"
+                                sx={{
+                                    color: 'text.secondary',
+                                    maxWidth: '600px',
+                                    mx: 'auto',
+                                    mb: 4,
+                                    fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
+                                    px: { xs: 2, md: 0 },
+                                    fontWeight: 400
+                                }}
+                            >
+                                See how DotBridge can automate your sales process and turn your content into a revenue-generating machine.
+                            </DotBridgeTypography>
+
+                            <DotBridgeCard
+                                sx={{
+                                    p: { xs: 3, sm: 4, md: 4 },
+                                    background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.lighter}10 100%)`,
+                                    border: '2px solid',
+                                    borderColor: 'primary.light',
+                                    boxShadow: '0 8px 32px rgba(0, 102, 255, 0.1)'
+                                }}
+                            >
+                                {submitted ? (
+                                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                                        <motion.div
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ duration: 0.5 }}
+                                        >
+                                            <CheckCircle sx={{ fontSize: 56, color: 'success.main', mb: 2 }} />
+                                            <DotBridgeTypography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
+                                                Request Submitted!
+                                            </DotBridgeTypography>
+                                            <DotBridgeTypography variant="body1" color="text.secondary">
+                                                We'll contact you within 1-2 business days to schedule your personalized demo.
+                                            </DotBridgeTypography>
+                                        </motion.div>
+                                    </Box>
+                                ) : (
+                                    <form onSubmit={handleLeadSubmit}>
+                                        <Grid container spacing={3}>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    label="Your Name"
+                                                    name="name"
+                                                    value={lead.name}
+                                                    onChange={handleInputChange}
+                                                    required
+                                                    sx={{
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2
+                                                        }
+                                                    }}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                                <TextField
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    label="Your Email"
+                                                    name="email"
+                                                    type="email"
+                                                    required
+                                                    value={lead.email}
+                                                    onChange={handleInputChange}
+                                                    sx={{
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2
+                                                        }
+                                                    }}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <FormControl component="fieldset" fullWidth>
+                                                    <FormLabel component="legend" sx={{ mb: 1.5, color: 'text.primary', fontWeight: 500 }}>
+                                                        Do you have existing sales content to transform?
+                                                    </FormLabel>
+                                                    <RadioGroup
+                                                        name="hasExistingCourse"
+                                                        value={lead.hasExistingCourse}
+                                                        onChange={handleInputChange}
+                                                        row
+                                                        required
+                                                        sx={{ gap: 2 }}
+                                                    >
+                                                        <FormControlLabel
+                                                            value="yes"
+                                                            control={<Radio color="primary" />}
+                                                            label="Yes, I have content"
+                                                            sx={{
+                                                                '& .MuiFormControlLabel-label': {
+                                                                    fontSize: '0.95rem'
+                                                                }
+                                                            }}
+                                                        />
+                                                        <FormControlLabel
+                                                            value="no"
+                                                            control={<Radio color="primary" />}
+                                                            label="No, I need help creating it"
+                                                            sx={{
+                                                                '& .MuiFormControlLabel-label': {
+                                                                    fontSize: '0.95rem'
+                                                                }
+                                                            }}
+                                                        />
+                                                    </RadioGroup>
+                                                </FormControl>
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    label="Tell us about your sales goals & current challenges"
+                                                    name="courseTopic"
+                                                    value={lead.courseTopic}
+                                                    onChange={handleInputChange}
+                                                    multiline
+                                                    rows={3}
+                                                    required
+                                                    placeholder="e.g., We need to qualify leads better, reduce sales cycle time, scale our demo process..."
+                                                    sx={{
+                                                        '& .MuiOutlinedInput-root': {
+                                                            borderRadius: 2
+                                                        }
+                                                    }}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <DotBridgeButton
+                                                    type="submit"
+                                                    variant="contained"
+                                                    color="primary"
+                                                    size="large"
+                                                    fullWidth
+                                                    disabled={isSubmitting}
+                                                    sx={{
+                                                        py: 1.75,
+                                                        fontSize: { xs: '1.125rem', md: '1.25rem' },
+                                                        fontWeight: 600,
+                                                        borderRadius: 2,
+                                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                                        boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
+                                                        '&:hover': {
+                                                            transform: 'translateY(-2px)',
+                                                            boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
+                                                        }
+                                                    }}
+                                                >
+                                                    {isSubmitting ? (
+                                                        <CircularProgress size={24} color="inherit" />
+                                                    ) : (
+                                                        'Get Your Custom Demo →'
+                                                    )}
+                                                </DotBridgeButton>
+                                            </Grid>
+                                            {error && (
+                                                <Grid item xs={12}>
+                                                    <DotBridgeTypography color="error" variant="body2" align="center" sx={{ mt: 1 }}>
+                                                        {error}
+                                                    </DotBridgeTypography>
+                                                </Grid>
+                                            )}
+                                        </Grid>
+                                    </form>
+                                )}
+                            </DotBridgeCard>
+                        </motion.div>
+                    </Container>
+
+
                 </motion.div>
             </Container>
 
-            {/* Unlock Your Expertise Section */}
-            <Box sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100', py: { xs: 8, md: 12 } }}>
-                <Container maxWidth="md" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+            {/* Value Proposition Section */}
+            <Box sx={{
+                bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+                py: { xs: 8, md: 12 },
+                borderTop: '1px solid',
+                borderColor: 'divider'
+            }}>
+                <Container maxWidth="lg" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
                         animate={heroInView ? { opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.7, delay: 0.2 }}
                     >
-                        <Typography variant="h2" sx={{ color: 'text.primary', mb: 3 }}>
-                            Your Best Sales Rep Can't Be Everywhere. <PrimaryText>Your Bridge Can.</PrimaryText>
-                        </Typography>
-                        <Typography variant="h5" sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto' }}>
-                            Even your top talent has limits. DotBridge empowers you to <PrimaryText>clone your best sales conversations into AI agents that work tirelessly</PrimaryText>, delivering perfect, personalized interactions every time. Scale your reach, not your payroll.
-                        </Typography>
+                        <DotBridgeTypography
+                            variant="h2"
+                            sx={{
+                                mb: 3,
+                                fontSize: { xs: '1.875rem', sm: '2.5rem', md: '2.75rem' },
+                                fontWeight: 600,
+                                lineHeight: { xs: 1.2, md: 1.1 },
+                                px: { xs: 2, md: 0 }
+                            }}
+                        >
+                            Your Best Sales Rep Can't Be Everywhere.
+                            <Box component="span" sx={{
+                                color: 'primary.main',
+                                display: 'block',
+                                mt: { xs: 0.5, md: 0 }
+                            }}>
+                                Your Bridge Can.
+                            </Box>
+                        </DotBridgeTypography>
+
+                        <DotBridgeTypography
+                            variant="h5"
+                            sx={{
+                                color: 'text.secondary',
+                                maxWidth: '800px',
+                                mx: 'auto',
+                                fontSize: { xs: '1.125rem', sm: '1.25rem', md: '1.375rem' },
+                                px: { xs: 2, md: 0 }
+                            }}
+                        >
+                            Even your top talent has limits. DotBridge empowers you to
+                            <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                                {' '}clone your best sales conversations into AI agents that work tirelessly
+                            </Box>,
+                            delivering perfect, personalized interactions every time.
+                        </DotBridgeTypography>
                     </motion.div>
                 </Container>
             </Box>
 
-            <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
-
             {/* What We Deliver Section */}
-            <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 15 }, position: 'relative', zIndex: 1 }} ref={stepsRef}>
+            <Container maxWidth="lg" sx={{ mb: { xs: 8, md: 15 }, position: 'relative', zIndex: 1, py: { xs: 8, md: 12 } }} ref={stepsRef}>
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={stepsInView ? { opacity: 1, y: 0 } : {}}
                     transition={{ duration: 0.7 }}
                 >
-                    <Typography
+                    <DotBridgeTypography
                         variant="h2"
                         align="center"
-                        sx={{ color: 'text.primary', mb: 3 }}
+                        sx={{
+                            mb: 3,
+                            fontSize: { xs: '1.875rem', sm: '2.5rem', md: '2.75rem' },
+                            fontWeight: 600,
+                            lineHeight: { xs: 1.2, md: 1.1 },
+                            px: { xs: 2, md: 0 }
+                        }}
                     >
-                        Build Your <PrimaryText>Automated Sales & Onboarding Machine</PrimaryText>
-                    </Typography>
-                    <Typography
+                        Build Your
+                        <Box component="span" sx={{
+                            color: 'primary.main',
+                            display: { xs: 'block', sm: 'inline' }
+                        }}> Automated Sales Machine</Box>
+                    </DotBridgeTypography>
+
+                    <DotBridgeTypography
                         variant="h5"
                         align="center"
-                        sx={{ color: 'text.secondary', maxWidth: '800px', mx: 'auto', mb: 8 }}
+                        sx={{
+                            color: 'text.secondary',
+                            maxWidth: '800px',
+                            mx: 'auto',
+                            mb: { xs: 6, md: 8 },
+                            fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
+                            px: { xs: 2, md: 0 }
+                        }}
                     >
-                        Leverage DotBridge to create AI-driven experiences that address your specific sales bottlenecks and customer success challenges, turning potential into profit.
-                    </Typography>
+                        Transform your sales bottlenecks into automated revenue engines.
+                        DotBridge turns potential into profit, 24/7.
+                    </DotBridgeTypography>
 
                     <Grid container spacing={{ xs: 3, md: 4 }} justifyContent="center" sx={{ maxWidth: '1100px', mx: 'auto' }}>
                         {[
                             {
                                 title: "AI Sales & Demo Funnels",
-                                description: "Slash sales cycles and boost pipeline quality. DotBridge transforms static demos and VSLs into interactive AI experiences that qualify leads 24/7, answer complex questions, and route high-intent prospects directly to your sales team's calendar.",
+                                description: "Transform static demos into interactive AI experiences that qualify leads, answer questions, and route high-intent prospects directly to your calendar—cutting sales cycles and boosting pipeline quality.",
                                 icon: <TrendingUp sx={{ fontSize: 40, color: 'primary.main' }} />,
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)'
-                            }, {
+                            },
+                            {
                                 title: "Intelligent Onboarding Flows",
-                                description: "Maximize customer lifetime value and reduce churn. DotBridge automates personalized onboarding, guiding new clients to success with your product faster. Free up your CSMs from repetitive questions and cut support overheads.",
+                                description: "Automate personalized customer onboarding with AI-guided experiences that reduce churn, accelerate time-to-value, and free up your success team from repetitive tasks.",
                                 icon: <Groups sx={{ fontSize: 40, color: 'primary.main' }} />,
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)'
-                            }, {
-                                title: "Dynamic Lead Gen & Nurturing",
-                                description: "Supercharge your content ROI. Turn ebooks, webinars, and case studies into interactive lead magnets that don't just capture emails, but actively qualify, educate, and nurture prospects down the funnel, delivering sales-ready leads.",
+                            },
+                            {
+                                title: "Dynamic Lead Generation",
+                                description: "Turn content into conversion machines. Transform ebooks, webinars, and case studies into interactive experiences that capture, qualify, and nurture prospects automatically.",
                                 icon: <QueryStats sx={{ fontSize: 40, color: 'primary.main' }} />,
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)'
                             }
                         ].map((item, idx) => (
                             <Grid item xs={12} md={4} key={idx} sx={{ display: 'flex' }}>
-                                <Card
-                                    variant="outlined"
+                                <DotBridgeCard
+                                    interactive
                                     sx={{
-                                        p: { xs: 2.5, md: 3.5 },
+                                        p: { xs: 3, md: 4 },
                                         display: 'flex',
                                         flexDirection: 'column',
                                         width: '100%',
@@ -454,224 +684,273 @@ const ServicesPage = () => {
                                         backgroundPosition: 'top right',
                                         backgroundRepeat: 'no-repeat',
                                         backgroundSize: '70% 70%',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            transform: 'translateY(-6px)',
-                                            boxShadow: theme.shadows[2],
-                                            '& .icon-wrapper': {
-                                                transform: 'scale(1.1)',
-                                            }
-                                        }
+                                        minHeight: { xs: 'auto', md: '320px' }
                                     }}
                                 >
-                                    <Box
-                                        className="icon-wrapper"
-                                        sx={{
-                                            mb: 2,
-                                            transition: 'transform 0.3s ease',
-                                            display: 'flex',
-                                            justifyContent: 'center'
-                                        }}
-                                    >
+                                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
                                         {item.icon}
                                     </Box>
-                                    <Typography
+
+                                    <DotBridgeTypography
                                         variant="h6"
                                         sx={{
-                                            color: 'text.primary',
                                             fontWeight: 600,
-                                            mb: 1.5,
-                                            fontSize: { xs: '1.1rem', md: '1.25rem' }
+                                            mb: 2,
+                                            fontSize: { xs: '1.125rem', md: '1.25rem' }
                                         }}
                                     >
                                         {item.title}
-                                    </Typography>
-                                    <Typography
+                                    </DotBridgeTypography>
+
+                                    <DotBridgeTypography
                                         variant="body2"
                                         sx={{
                                             color: 'text.secondary',
                                             flexGrow: 1,
-                                            lineHeight: 1.6
+                                            lineHeight: 1.6,
+                                            fontSize: { xs: '0.875rem', md: '0.9375rem' }
                                         }}
                                     >
                                         {item.description}
-                                    </Typography>
-                                </Card>
+                                    </DotBridgeTypography>
+                                </DotBridgeCard>
                             </Grid>
                         ))}
                     </Grid>
                 </motion.div>
             </Container>
 
-            <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
-
-            {/* Lead Form Section */}
-            <Box sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100', py: { xs: 8, md: 12 } }}>
-                <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }} ref={formRef} id="lead-form-section">
+            {/* Results Section */}
+            <Box sx={{
+                bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+                py: { xs: 8, md: 12 },
+                borderTop: '1px solid',
+                borderColor: 'divider'
+            }} ref={resultsRef}>
+                <Container maxWidth="lg">
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
-                        animate={formInView ? { opacity: 1, y: 0 } : {}}
+                        animate={resultsInView ? { opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.7 }}
                     >
-                        <Typography
+                        <DotBridgeTypography
                             variant="h2"
                             align="center"
-                            sx={{ color: 'text.primary', mb: 3 }}
-                        >
-                            Ready to Stop Losing Leads and <PrimaryText>Start Closing More Deals?</PrimaryText>
-                        </Typography>
-                        <Typography
-                            variant="h5"
-                            align="center"
-                            sx={{ color: 'text.secondary', maxWidth: '700px', mx: 'auto', mb: 6 }}
-                        >
-                            Fill out the form to discover how DotBridge can automate your sales and onboarding, or request a personalized demo to see it in action. Let's turn your video views into valuable conversions.
-                        </Typography>
-
-                        <Paper
-                            elevation={0}
                             sx={{
-                                p: { xs: 3, sm: 4, md: 5 },
-                                borderRadius: theme.shape.borderRadius,
-                                border: `1px solid ${theme.palette.divider}`,
-                                bgcolor: 'background.paper'
+                                mb: { xs: 2, md: 3 },
+                                fontSize: { xs: '1.875rem', sm: '2.5rem', md: '2.75rem' },
+                                fontWeight: 600,
+                                lineHeight: { xs: 1.2, md: 1.1 },
+                                px: { xs: 2, md: 0 }
                             }}
                         >
-                            {submitted ? (
-                                <Box sx={{ textAlign: 'center', py: 4 }}>
+                            Real Results from
+                            <Box component="span" sx={{
+                                color: 'primary.main',
+                                display: { xs: 'block', sm: 'inline' }
+                            }}> Forward-Thinking Teams</Box>
+                        </DotBridgeTypography>
+
+                        <DotBridgeTypography
+                            variant="h5"
+                            align="center"
+                            sx={{
+                                color: 'text.secondary',
+                                maxWidth: '700px',
+                                mx: 'auto',
+                                mb: { xs: 6, md: 8 },
+                                fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
+                                px: { xs: 2, md: 0 }
+                            }}
+                        >
+                            See how B2B companies are transforming their sales pipeline with DotBridge
+                        </DotBridgeTypography>
+
+                        <Grid container spacing={{ xs: 2, md: 4 }} justifyContent="center">
+                            {impactMetrics.map((metric, index) => (
+                                <Grid item xs={6} sm={3} key={index}>
                                     <motion.div
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ duration: 0.5 }}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={resultsInView ? { opacity: 1, y: 0 } : {}}
+                                        transition={{ delay: index * 0.1, duration: 0.6 }}
                                     >
-                                        <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
-                                        <Typography variant="h5" sx={{ color: 'text.primary', mb: 1 }}>
-                                            Request Submitted!
-                                        </Typography>
-                                        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                                            Thanks for your interest. We'll review your information and contact you via email within 1-2 business days to discuss your goals or schedule a demo.
-                                        </Typography>
-                                    </motion.div>
-                                </Box>
-                            ) : (
-                                <form onSubmit={handleLeadSubmit}>
-                                    <Grid container spacing={3}>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                variant="outlined"
-                                                fullWidth
-                                                label="Your Name"
-                                                name="name"
-                                                value={lead.name}
-                                                onChange={handleInputChange}
-                                                required
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                variant="outlined"
-                                                fullWidth
-                                                label="Your Email"
-                                                name="email"
-                                                type="email"
-                                                required
-                                                value={lead.email}
-                                                onChange={handleInputChange}
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <FormControl component="fieldset" fullWidth>
-                                                <FormLabel component="legend" sx={{ mb: 1, color: 'text.secondary' }}>
-                                                    Do you have existing sales, onboarding, or training material to use with DotBridge?
-                                                </FormLabel>
-                                                <RadioGroup
-                                                    name="hasExistingCourse"
-                                                    value={lead.hasExistingCourse}
-                                                    onChange={handleInputChange}
-                                                    row
-                                                    required
-                                                >
-                                                    <FormControlLabel value="yes" control={<Radio color="primary" />} label="Yes" />
-                                                    <FormControlLabel value="no" control={<Radio color="primary" />} label="No" />
-                                                </RadioGroup>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <TextField
-                                                variant="outlined"
-                                                fullWidth
-                                                label="Describe your desired sales/onboarding funnel & goals with DotBridge"
-                                                name="courseTopic"
-                                                value={lead.courseTopic}
-                                                onChange={handleInputChange}
-                                                multiline
-                                                rows={3}
-                                                required
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12}>
-                                            <Button
-                                                type="submit"
-                                                variant="contained"
-                                                color="primary"
-                                                size="large"
-                                                fullWidth
-                                                disabled={isSubmitting}
-                                                sx={{ py: 1.5 }}
+                                        <DotBridgeCard
+                                            sx={{
+                                                p: { xs: 2, md: 3 },
+                                                textAlign: 'center',
+                                                height: '100%',
+                                                minHeight: { xs: '140px', md: '180px' },
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'center',
+                                                background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.lighter}20 100%)`,
+                                                border: '1px solid',
+                                                borderColor: 'primary.light'
+                                            }}
+                                        >
+                                            <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center' }}>
+                                                {metric.icon}
+                                            </Box>
+
+                                            <DotBridgeTypography
+                                                variant="h3"
+                                                sx={{
+                                                    fontWeight: 700,
+                                                    color: 'primary.main',
+                                                    mb: 1,
+                                                    fontSize: { xs: '1.5rem', md: '2.25rem' }
+                                                }}
                                             >
-                                                {isSubmitting ? (
-                                                    <CircularProgress size={24} color="inherit" />
-                                                ) : (
-                                                    'Request Demo / Consultation'
-                                                )}
-                                            </Button>
-                                        </Grid>
-                                        {error && (
-                                            <Grid item xs={12}>
-                                                <Typography color="error" variant="body2" align="center" sx={{ mt: 1 }}>
-                                                    {error}
-                                                </Typography>
-                                            </Grid>
-                                        )}
-                                    </Grid>
-                                </form>
-                            )}
-                        </Paper>
+                                                {metric.metric}
+                                            </DotBridgeTypography>
+
+                                            <DotBridgeTypography
+                                                variant="h6"
+                                                sx={{
+                                                    mb: 0.5,
+                                                    fontSize: { xs: '0.875rem', md: '1rem' },
+                                                    fontWeight: 600
+                                                }}
+                                            >
+                                                {metric.description}
+                                            </DotBridgeTypography>
+
+                                            <DotBridgeTypography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                sx={{
+                                                    fontStyle: 'italic',
+                                                    fontSize: { xs: '0.75rem', md: '0.8125rem' }
+                                                }}
+                                            >
+                                                {metric.subtitle}
+                                            </DotBridgeTypography>
+                                        </DotBridgeCard>
+                                    </motion.div>
+                                </Grid>
+                            ))}
+                        </Grid>
+
+                        <Box sx={{ textAlign: 'center', mt: { xs: 6, md: 8 } }}>
+                            <Paper sx={{
+                                display: 'inline-block',
+                                p: { xs: 2, md: 3 },
+                                maxWidth: { xs: '90%', md: '600px' },
+                                background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.primary.light}30 100%)`,
+                                border: '1px solid',
+                                borderColor: 'primary.light'
+                            }}>
+                                <DotBridgeTypography
+                                    variant="body1"
+                                    sx={{
+                                        fontStyle: 'italic',
+                                        color: 'primary.dark',
+                                        fontWeight: 500,
+                                        mb: 1,
+                                        fontSize: { xs: '0.9375rem', md: '1rem' }
+                                    }}
+                                >
+                                    "DotBridge has completely transformed how we engage with enterprise prospects.
+                                    Our demos now qualify themselves."
+                                </DotBridgeTypography>
+                                <DotBridgeTypography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
+                                    — VP of Sales, Leading Enterprise SaaS Platform
+                                </DotBridgeTypography>
+                            </Paper>
+                        </Box>
                     </motion.div>
                 </Container>
             </Box>
 
-            <Divider sx={{ my: { xs: 6, md: 10 }, display: 'none' }} />
+
 
             {/* Final CTA Section */}
-            <Container maxWidth="md" sx={{ textAlign: 'center', py: { xs: 8, md: 10 }, mb: { xs: 6, md: 10 } }}>
-                <Typography
-                    variant="h2"
-                    sx={{ color: 'text.primary', mb: 3 }}
-                >
-                    Don't Let Another Lead Slip Away. <PrimaryText>Automate Your Conversions Now.</PrimaryText>
-                </Typography>
-                <Typography
-                    variant="h5"
-                    sx={{ color: 'text.secondary', mb: 5, maxWidth: '700px', mx: 'auto' }}
-                >
-                    Your prospects demand a better experience. DotBridge delivers it: personalized, interactive, 24/7, and ready to turn interest into action. Stop leaving money on the table.
-                </Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    sx={{ px: 4, py: 1.2 }}
-                    onClick={() => {
-                        document.getElementById('lead-form-section')?.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }}
-                >
-                    Get Started Today
-                </Button>
-            </Container>
+            <Box sx={{
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                color: 'white',
+                py: { xs: 8, md: 10 },
+                textAlign: 'center',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Background pattern */}
+                <Box sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    opacity: 0.1,
+                    background: 'radial-gradient(circle at 20% 50%, white 0%, transparent 50%), radial-gradient(circle at 80% 80%, white 0%, transparent 50%)',
+                    pointerEvents: 'none',
+                    display: { xs: 'none', md: 'block' }
+                }} />
+
+                <Container maxWidth="md" sx={{ position: 'relative', zIndex: 1 }}>
+                    <DotBridgeTypography
+                        variant="h2"
+                        sx={{
+                            mb: 3,
+                            color: 'inherit',
+                            fontSize: { xs: '1.75rem', sm: '2.5rem', md: '2.75rem' },
+                            fontWeight: 600,
+                            lineHeight: { xs: 1.2, md: 1.1 },
+                            px: { xs: 2, md: 0 }
+                        }}
+                    >
+                        Don't Let Another Lead Slip Away.
+                        <Box component="span" sx={{
+                            display: 'block',
+                            mt: { xs: 0.5, md: 0 }
+                        }}>
+                            Automate Your Conversions Now.
+                        </Box>
+                    </DotBridgeTypography>
+
+                    <DotBridgeTypography
+                        variant="h5"
+                        sx={{
+                            mb: 5,
+                            maxWidth: '700px',
+                            mx: 'auto',
+                            color: 'inherit',
+                            opacity: 0.9,
+                            fontSize: { xs: '1.125rem', sm: '1.25rem', md: '1.375rem' },
+                            px: { xs: 2, md: 0 }
+                        }}
+                    >
+                        Your prospects demand a better experience. DotBridge delivers it:
+                        personalized, interactive, 24/7, and ready to turn interest into action.
+                    </DotBridgeTypography>
+
+                    <DotBridgeButton
+                        variant="contained"
+                        size="large"
+                        sx={{
+                            bgcolor: 'common.white',
+                            color: 'primary.main',
+                            px: 4,
+                            py: 1.5,
+                            fontSize: { xs: '1rem', md: '1.125rem' },
+                            fontWeight: 600,
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                            '&:hover': {
+                                bgcolor: 'grey.100',
+                                transform: 'translateY(-2px)',
+                                boxShadow: '0 12px 32px rgba(0,0,0,0.2)'
+                            }
+                        }}
+                        onClick={() => {
+                            document.getElementById('lead-form-section')?.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }}
+                    >
+                        Get Started Today
+                    </DotBridgeButton>
+                </Container>
+            </Box>
 
             {/* Add Footer */}
             <Footer />
@@ -686,7 +965,8 @@ const ServicesPage = () => {
                 borderRadius: '50%',
                 background: 'radial-gradient(circle, rgba(0,122,255,0.05) 0%, rgba(0,122,255,0) 70%)',
                 zIndex: 0,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                display: { xs: 'none', md: 'block' }
             }} />
             <Box sx={{
                 position: 'absolute',
@@ -697,9 +977,51 @@ const ServicesPage = () => {
                 borderRadius: '50%',
                 background: 'radial-gradient(circle, rgba(0,122,255,0.03) 0%, rgba(0,122,255,0) 60%)',
                 zIndex: 0,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                display: { xs: 'none', md: 'block' }
             }} />
 
+            {/* Mobile Performance Optimizations */}
+            <style jsx>{`
+                /* Mobile performance optimizations */
+                @media (max-width: 768px) {
+                    * {
+                        -webkit-tap-highlight-color: transparent;
+                    }
+                    
+                    /* Smooth scrolling with momentum */
+                    .horizontal-scroll {
+                        -webkit-overflow-scrolling: touch;
+                        scroll-behavior: smooth;
+                    }
+                    
+                    /* Optimize animations for mobile */
+                    .mobile-optimize {
+                        transform: translateZ(0);
+                        backface-visibility: hidden;
+                        -webkit-backface-visibility: hidden;
+                    }
+                    
+                    /* Reduce motion for battery saving */
+                    @media (prefers-reduced-motion: reduce) {
+                        *,
+                        *::before,
+                        *::after {
+                            animation-duration: 0.01ms !important;
+                            animation-iteration-count: 1 !important;
+                            transition-duration: 0.01ms !important;
+                        }
+                    }
+                }
+                
+                /* Glass morphism support */
+                @supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+                    .glass-morphism {
+                        backdrop-filter: blur(10px);
+                        -webkit-backdrop-filter: blur(10px);
+                    }
+                }
+            `}</style>
         </Box>
     );
 };

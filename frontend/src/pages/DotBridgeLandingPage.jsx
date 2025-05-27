@@ -118,7 +118,7 @@ const HeroSection = () => {
     });
 
     // Transform scroll progress to rotation values - reduced for mobile
-    const rotateX = useTransform(scrollYProgress, [0, 0.5], isMobile ? [10, 0] : [17, 0]);
+    const rotateX = useTransform(scrollYProgress, [0, 0.5], isMobile ? [12, 0] : [20, 0]);
     const scale = useTransform(scrollYProgress, [0, 0.5], isMobile ? [0.98, 1] : [0.97, 1]);
 
     useEffect(() => {
@@ -389,45 +389,25 @@ const HeroSection = () => {
                     >
                         <Box sx={{
                             maxWidth: { xs: '100%', sm: '600px', md: '900px' },
-                            mx: { xs: 0, sm: 'auto' },
+                            mx: { xs: 1, sm: 'auto' },
                             position: 'relative',
-                            borderRadius: { xs: '16px', sm: 3, md: 3 },
+                            borderRadius: 3,
                             overflow: 'hidden',
-                            boxShadow: {
-                                xs: '0 0 0 6px #1a1a1a, 0 0 0 8px #333, 0 20px 40px rgba(0,0,0,0.3)',
-                                sm: '0 30px 80px rgba(0, 102, 255, 0.15)',
-                                md: '0 30px 80px rgba(0, 102, 255, 0.15)'
-                            },
-                            border: { xs: 'none', sm: '2px solid', md: '2px solid' },
-                            borderImage: { xs: 'none', sm: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1`, md: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1` },
-                            bgcolor: { xs: '#000', sm: 'background.paper', md: 'background.paper' },
+                            boxShadow: '0 30px 80px rgba(0, 102, 255, 0.15)',
+                            border: '2px solid',
+                            borderImage: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1`,
+                            bgcolor: 'background.paper',
                             aspectRatio: { xs: '9 / 16', sm: '16 / 10', md: '16 / 10' },
                             transform: 'translateZ(0)',
                             backfaceVisibility: 'hidden',
-                            willChange: 'transform',
-                            mx: { xs: 1, sm: 'auto' }, // Small margin on mobile
-
-                            // Phone notch for mobile
-                            '&::before': {
-                                content: { xs: '""', sm: 'none', md: 'none' },
-                                position: 'absolute',
-                                top: '6px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                width: { xs: '120px', sm: 0, md: 0 },
-                                height: { xs: '20px', sm: 0, md: 0 },
-                                borderRadius: '15px',
-                                backgroundColor: '#1a1a1a',
-                                zIndex: 10,
-                                display: { xs: 'block', sm: 'none', md: 'none' }
-                            }
+                            willChange: 'transform'
                         }}>
                             <Box sx={{
                                 p: 1,
                                 borderBottom: '1px solid',
                                 borderColor: 'divider',
                                 background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.grey[100]} 100%)`,
-                                display: { xs: 'none', sm: 'flex', md: 'flex' },
+                                display: 'flex',
                                 alignItems: 'center',
                                 gap: 1
                             }}>
@@ -442,9 +422,7 @@ const HeroSection = () => {
                             </Box>
                             <Box sx={{
                                 position: 'relative',
-                                height: { xs: '100%', sm: 'calc(100% - 40px)', md: 'calc(100% - 40px)' },
-                                borderRadius: { xs: '10px', sm: 0, md: 0 },
-                                overflow: { xs: 'hidden', sm: 'visible', md: 'visible' },
+                                height: 'calc(100% - 40px)',
                                 '& .agent-connector-container': {
                                     position: 'absolute',
                                     top: 0,
