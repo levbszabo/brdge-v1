@@ -21,7 +21,6 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
         const id = urlParams.get('id');
         if (id) {
             setPersonalizationId(id);
-            console.log('Extracted personalization ID from URL:', id);
         }
     }, []);
 
@@ -122,20 +121,16 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             if (agentType === 'edit') {
                 if (!brdgeId || !token || !userId) {
                     missingRequiredProps = true;
-                    console.log('AgentConnector (Edit Mode) waiting for props:', { brdgeId, tokenExists: !!token, userIdExists: !!userId });
                 }
             } else {
                 if (!brdgeId) {
                     missingRequiredProps = true;
-                    console.log('AgentConnector (View Mode) waiting for brdgeId');
                 }
             }
 
             if (missingRequiredProps) {
                 return;
             }
-
-            console.log(`AgentConnector (${agentType} Mode) proceeding with props:`, { brdgeId, tokenExists: !!token, userIdExists: !!userId });
 
             try {
                 if (!api.defaults.baseURL) {
@@ -159,11 +154,9 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
                 // Add personalization ID if available
                 if (personalizationId) {
                     params.append('id', personalizationId);
-                    console.log('Adding personalization ID to iframe URL:', personalizationId);
                 }
 
                 const url = `${baseUrl}?${params.toString()}`;
-                console.log('Connector URL (token removed):', url);
                 setConnectorUrl(url);
                 setError(null);
             } catch (error) {
@@ -188,7 +181,6 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
 
         try {
             iframeRef.current.contentWindow.postMessage(message, targetOrigin);
-            console.log(`Sent AUTH_TOKEN to origin: ${targetOrigin}`);
             authSentRef.current = true;
         } catch (error) {
             console.error('Error sending auth message:', error);
@@ -225,7 +217,6 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
                     for (let i = 1; i <= retryCount; i++) {
                         setTimeout(() => {
                             if (!authSentRef.current) {
-                                console.log(`Retry ${i} sending AUTH_TOKEN (Safari)`);
                                 sendAuthMessage();
                             }
                         }, i * 200);

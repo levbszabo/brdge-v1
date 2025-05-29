@@ -33,7 +33,7 @@ function EditBrdgePage() {
                 if (uidFromUrl && response.data.brdge.public_id) {
                     const publicIdPrefix = response.data.brdge.public_id.substring(0, 6);
                     if (uidFromUrl !== publicIdPrefix) {
-                        console.error('Invalid Bridge URL');
+                        console.error('Invalid Bridge URL. UID mismatch.');
                         navigate('/');
                         return;
                     }
@@ -41,7 +41,7 @@ function EditBrdgePage() {
 
                 setIsAuthorized(true);
             } catch (error) {
-                console.error('Authorization check failed:', error);
+                console.error('Authorization check failed:', error.message || error);
                 navigate('/');
             }
         };
@@ -97,7 +97,7 @@ function EditBrdgePage() {
                             hasAccess = true;
                         }
                     } catch (err) {
-                        console.error('Error fetching user data:', err);
+                        console.error('Error fetching user data:', err.message || err);
                     }
                 }
 
@@ -136,11 +136,11 @@ function EditBrdgePage() {
                                     hasAccess = true;
                                 }
                             } catch (error) {
-                                console.error('Error checking enrollment status:', error);
+                                console.error('Error checking enrollment status:', error.message || error);
                             }
                         }
                     } catch (error) {
-                        console.error('Error fetching course info:', error);
+                        console.error('Error fetching course info:', error.message || error);
                     }
                 } else {
                     // Standalone brdge (not part of a course)
@@ -172,7 +172,7 @@ function EditBrdgePage() {
 
                 setLoading(false);
             } catch (error) {
-                console.error('Error checking Bridge access:', error);
+                console.error('Error checking Bridge access during access check:', error.message || error);
                 setError('Bridge Is Not Public: Access Denied');
                 setLoading(false);
             }

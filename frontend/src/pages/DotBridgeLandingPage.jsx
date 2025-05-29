@@ -12,7 +12,7 @@ import Footer from '../components/Footer';
 
 import AgentConnector from '../components/AgentConnector';
 
-const DEMO_BRIDGE_ID = '431';
+const DEMO_BRIDGE_ID = '448';
 
 // Haptic feedback utility
 const triggerHaptic = (style = 'light') => {
@@ -183,7 +183,7 @@ const HeroSection = () => {
                 animation: prefersReducedMotion ? 'none' : 'pulse 10s ease-in-out infinite'
             }} />
 
-            <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+            <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 2 } }}>
                 <motion.div
                     initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -388,7 +388,7 @@ const HeroSection = () => {
                         }}
                     >
                         <Box sx={{
-                            maxWidth: { xs: '100%', sm: '600px', md: '900px' },
+                            maxWidth: { xs: '100%', sm: '850px', md: '1300px' },
                             mx: { xs: 0.5, sm: 'auto' },
                             position: 'relative',
                             borderRadius: { xs: 2, sm: 3 },
@@ -398,7 +398,7 @@ const HeroSection = () => {
                             borderColor: { xs: 'divider', sm: 'transparent' },
                             borderImage: { xs: 'none', sm: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1` },
                             bgcolor: 'background.paper',
-                            aspectRatio: { xs: '16 / 9', sm: '16 / 10', md: '16 / 10' },
+                            aspectRatio: { xs: '16 / 9', sm: '16 / 9', md: '16 / 9' },
                             transform: 'translateZ(0)',
                             backfaceVisibility: 'hidden',
                             willChange: 'transform'
@@ -436,8 +436,8 @@ const HeroSection = () => {
                                 {isMobile ? (
                                     // Show video on mobile/Safari with proper 16:9 aspect ratio
                                     <video
-                                        src="/dotbridge-hero-small.mp4"
-                                        poster="/dotbridge-hero-cover.jpg"
+                                        src="/dotbridge-vsl-hero-final.mp4"
+                                        poster="/dotbridge-hero-cover.png"
                                         controls
                                         playsInline
                                         preload="metadata"
@@ -1086,7 +1086,7 @@ const DemoSection = () => {
             sx={{
                 borderTop: '1px solid',
                 borderColor: 'divider',
-                px: { xs: 1, sm: 2, md: 3 } // Reduced horizontal padding for mobile
+                px: { xs: 0.5, sm: 1.5, md: 2 }
             }}
         >
             <Box maxWidth="lg" mx="auto" textAlign="center" mb={{ xs: 3, md: 8 }}> {/* Reduced bottom margin on mobile */}
@@ -1175,11 +1175,11 @@ const DemoSection = () => {
                 <DotBridgeCard
                     variant="outlined"
                     sx={{
-                        maxWidth: { md: '100%', lg: '100%' }, // Use full width instead of fixed pixels
+                        maxWidth: { md: '100%', lg: '1300px' },
                         mx: 'auto',
                         position: 'relative',
                         aspectRatio: '16 / 9',
-                        minHeight: { xs: 'auto', md: '600px' }, // Auto height on mobile to match video
+                        minHeight: { xs: 'auto', md: '730px' },
                         overflow: 'hidden',
                         '& .agent-connector-container': {
                             position: 'absolute',

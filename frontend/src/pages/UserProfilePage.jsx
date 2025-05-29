@@ -882,9 +882,7 @@ function UserProfilePage() {
         setLoading(true);
         setError(null);
         try {
-            console.log('Fetching user profile...');
             const response = await api.get('/user/profile');
-            console.log('Profile data received:', response.data);
             setUserProfile(response.data);
         } catch (err) {
             console.error('Error fetching profile:', err);
@@ -906,7 +904,6 @@ function UserProfilePage() {
             const tier = localStorage.getItem('selected_tier');
 
             if (paymentSuccess && tier) {
-                console.log(`Payment success detected for ${tier}, verifying and refreshing...`);
                 setLoading(true);
                 setShowSuccess(false);
                 try {
@@ -922,7 +919,6 @@ function UserProfilePage() {
                     setLoading(false);
                 }
             } else if (cancelled) {
-                console.log('Checkout process cancelled.');
                 setError('Checkout process was cancelled.');
                 window.history.replaceState({}, document.title, "/profile");
                 localStorage.removeItem('selected_tier');
@@ -936,11 +932,7 @@ function UserProfilePage() {
         setIsProcessing(true);
         setPaymentError(null);
         setError(null);
-        // targetUpgradeTier should already be set if this function is called via modal
-        // const currentTierForCheckout = targetUpgradeTier || tier; 
-
         try {
-            // localStorage.setItem('selected_tier', currentTierForCheckout); // Already set when preview was fetched
             const response = await api.post('/create-checkout-session', { tier: tier });
 
             if (response.data.updated_directly) {
@@ -963,53 +955,28 @@ function UserProfilePage() {
             localStorage.removeItem('selected_tier');
         } finally {
             setIsProcessing(false);
-            setOpenUpgradeConfirmDialog(false); // Close confirmation dialog
-            setTargetUpgradeTier(null); // Reset target tier
-            setUpgradePreview(null); // Reset preview data
+            setOpenUpgradeConfirmDialog(false);
+            setTargetUpgradeTier(null);
+            setUpgradePreview(null);
         }
     };
 
-    // New function to handle the initial click on an upgrade button
     const handleUpgradeIntent = async (tier) => {
-        // If current plan is free, or if it's an upgrade to the same or lower tier (not handled here, simple checkout)
-        // This preview is primarily for active paid sub -> higher paid sub
         const currentPlan = userProfile?.account?.account_type || 'free';
-        const isActualUpgrade = (currentPlan === 'standard' && tier === 'premium'); // Add more conditions if other upgrade paths exist
+        const isActualUpgrade = (currentPlan === 'standard' && tier === 'premium');
 
         if (currentPlan === 'free' || !isActualUpgrade) {
-            // For free users or non-upgrade scenarios (e.g. choosing 'standard' while on 'free'), proceed to standard checkout
-            // This will be handled by the TierButton's direct onClick to handleCheckout('standard') or handleCheckout('premium')
-            // if they are on free. For now, let's assume handlePremiumUpgrade & handleStandardUpgrade are only for actual upgrades
-            // from a paid plan. We can refine this.
-            // For now, if not a clear upgrade path that needs preview, we could call execute directly,
-            // but the tier buttons are already wired. This function is for preview path.
-
-            // Fallback to direct checkout if it's not a previewable upgrade path
-            // This part needs to be thought out: which TierButton clicks go to preview vs direct?
-            // For now, let's assume only Premium upgrade from Standard goes through preview.
-            // The `SubscriptionTier` component's onClick will call `handlePremiumUpgrade` etc.
-            // So `handlePremiumUpgrade` should now call `handleUpgradeIntent`.
-
-            // If user is on free plan, they always go to Stripe Checkout directly
-            // The `executeSubscriptionChange` will handle the direct checkout via `/create-checkout-session`
-            // when it doesn't find an active subscription to modify.
-            // So, we can set the target tier and call execute.
-            // However, the `handleCheckout` in `SubscriptionTier` needs to be updated.
-
-            // For now, let's make `handleCheckout` the unified function.
-            // `handleUpgradeIntent` will be the new entry point for upgrade buttons on `SubscriptionTier`
-
-            setTargetUpgradeTier(tier); // Set tier for executeSubscriptionChange
-            localStorage.setItem('selected_tier', tier); // Ensure it's set for execute
-            executeSubscriptionChange(tier); // Standard checkout path
+            setTargetUpgradeTier(tier);
+            localStorage.setItem('selected_tier', tier);
+            executeSubscriptionChange(tier);
             return;
         }
 
         setIsProcessing(true);
         setPaymentError(null);
         setError(null);
-        setTargetUpgradeTier(tier); // Store the target tier for confirmation
-        localStorage.setItem('selected_tier', tier); // Store for potential direct checkout if preview fails
+        setTargetUpgradeTier(tier);
+        localStorage.setItem('selected_tier', tier);
 
         try {
             const response = await api.post('/preview-subscription-upgrade', { target_tier: tier });
@@ -1022,7 +989,7 @@ function UserProfilePage() {
             } else {
                 setUpgradePreview(response.data);
                 setOpenUpgradeConfirmDialog(true);
-                setIsProcessing(false); // Processing done for preview, wait for user confirm
+                setIsProcessing(false);
             }
         } catch (error) {
             console.error(`Error fetching upgrade preview for ${tier}:`, error);
@@ -1033,39 +1000,25 @@ function UserProfilePage() {
         }
     };
 
-    // Update these to call handleUpgradeIntent if it's a true upgrade from a paid plan
     const handleStandardUpgrade = () => {
-        // If current plan is 'pro', this is a downgrade - use portal or a different flow.
-        // If current plan is 'free', this is a new subscription.
-        // This preview logic is mainly for 'standard' -> 'premium'.
-        // For 'free' to 'standard', it's a new subscription.
         if (currentPlan === 'free') {
             setTargetUpgradeTier('standard');
             localStorage.setItem('selected_tier', 'standard');
-            executeSubscriptionChange('standard'); // Direct checkout
+            executeSubscriptionChange('standard');
         } else {
-            // Potentially a downgrade or other scenario - for now, let's assume portal for this
             handleManageSubscription();
-            // Or, if you want to allow free -> standard via this button directly:
-            // setTargetUpgradeTier('standard');
-            // executeSubscriptionChange('standard');
         }
     };
 
     const handlePremiumUpgrade = () => {
-        // This is the primary path for the preview feature (e.g., from Standard to Premium)
-        // Or from Free to Premium (which will also go through preview if we want, or direct checkout)
         const currentPlan = userProfile?.account?.account_type || 'free';
         if (currentPlan === 'standard' || currentPlan === 'free') {
             handleUpgradeIntent('premium');
         } else {
-            // Already on premium or pro, or other case
-            // Potentially show "already on highest plan" or similar
             setShowSuccess(true);
             setSuccessMessage("You are already on the Premium plan or higher.");
         }
     };
-
 
     const handleManageSubscription = async () => {
         setIsProcessing(true);
@@ -1075,7 +1028,6 @@ function UserProfilePage() {
             const response = await api.post('/create-portal-session');
             if (response.data.url) {
                 localStorage.setItem('return_from_portal', 'true');
-                console.log('Redirecting to portal:', response.data.url);
                 window.location.href = response.data.url;
             } else {
                 throw new Error("No portal URL received from server.");
@@ -1091,7 +1043,6 @@ function UserProfilePage() {
         const handleReturnFromPortal = async () => {
             const returnFromPortal = localStorage.getItem('return_from_portal');
             if (returnFromPortal) {
-                console.log("Returned from Stripe portal, refreshing profile...");
                 localStorage.removeItem('return_from_portal');
                 setLoading(true);
                 setShowSuccess(false);
@@ -1138,14 +1089,12 @@ function UserProfilePage() {
     };
 
     const handleSubscriptionChange = async () => {
-        console.log("Subscription changed locally (e.g., cancellation), refreshing profile...");
         await fetchUserProfile();
     };
 
     const verifyPayment = async (tier) => {
         try {
             const response = await api.post('/verify-subscription', { tier });
-            console.log('Verification response:', response.data);
 
             await fetchUserProfile();
 
@@ -1216,7 +1165,6 @@ function UserProfilePage() {
 
     const currentPlan = userProfile?.account?.account_type || 'free';
 
-    // Format currency utility
     const formatCurrency = (amountCents, currencyCode = 'USD') => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(amountCents / 100);
     };
@@ -1295,7 +1243,6 @@ function UserProfilePage() {
             position: 'relative',
             overflow: 'hidden',
         }}>
-            {/* Background decoration */}
             {!isMobile && (
                 <>
                     <Box sx={{
@@ -1391,7 +1338,6 @@ function UserProfilePage() {
                     )}
                 </AnimatePresence>
 
-                {/* Profile Header Card */}
                 <motion.div
                     initial="hidden"
                     animate="visible"
@@ -1467,7 +1413,6 @@ function UserProfilePage() {
                     </Paper>
                 </motion.div>
 
-                {/* Main Content with Tabs */}
                 <Paper elevation={0} sx={{
                     borderRadius: 2,
                     border: '1px solid',
@@ -1495,7 +1440,6 @@ function UserProfilePage() {
                     </Box>
 
                     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                        {/* Subscription Tab */}
                         <TabPanel value={tabValue} index={0}>
                             <Box sx={{ mb: 3 }}>
                                 <DotBridgeTypography variant="h4" sx={{
@@ -1538,7 +1482,6 @@ function UserProfilePage() {
                             </Box>
                         </TabPanel>
 
-                        {/* Billing & Usage Tab */}
                         <TabPanel value={tabValue} index={1}>
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={6}>
@@ -1554,7 +1497,6 @@ function UserProfilePage() {
                             </Grid>
                         </TabPanel>
 
-                        {/* Account Settings Tab */}
                         <TabPanel value={tabValue} index={2}>
                             <Box sx={{ maxWidth: 600 }}>
                                 <DotBridgeTypography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
@@ -1587,98 +1529,95 @@ function UserProfilePage() {
                 </Paper>
             </Container>
 
-            {/* Upgrade Confirmation Modal */}
-            {
-                upgradePreview && (
-                    <Dialog
-                        open={openUpgradeConfirmDialog}
-                        onClose={() => {
+            {upgradePreview && (
+                <Dialog
+                    open={openUpgradeConfirmDialog}
+                    onClose={() => {
+                        setOpenUpgradeConfirmDialog(false);
+                        setUpgradePreview(null);
+                        setTargetUpgradeTier(null);
+                        localStorage.removeItem('selected_tier');
+                    }}
+                    PaperProps={{
+                        sx: {
+                            p: { xs: 2, sm: 3 },
+                            minWidth: { sm: '450px' },
+                            borderRadius: 3
+                        }
+                    }}
+                >
+                    <DialogTitle sx={{ p: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <DotBridgeTypography variant="h5" sx={{ fontWeight: 600 }}>
+                            Confirm Upgrade to {upgradePreview.target_tier_name}
+                        </DotBridgeTypography>
+                        <IconButton onClick={() => {
                             setOpenUpgradeConfirmDialog(false);
                             setUpgradePreview(null);
                             setTargetUpgradeTier(null);
                             localStorage.removeItem('selected_tier');
-                        }}
-                        PaperProps={{
-                            sx: {
-                                p: { xs: 2, sm: 3 },
-                                minWidth: { sm: '450px' },
-                                borderRadius: 3
-                            }
-                        }}
-                    >
-                        <DialogTitle sx={{ p: 0, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <DotBridgeTypography variant="h5" sx={{ fontWeight: 600 }}>
-                                Confirm Upgrade to {upgradePreview.target_tier_name}
-                            </DotBridgeTypography>
-                            <IconButton onClick={() => {
+                        }} size="small">
+                            <X size={20} />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ p: 0, mb: 2 }}>
+                        <DotBridgeTypography variant="body1" sx={{ mb: 2 }}>
+                            You are upgrading to the <strong>{upgradePreview.target_tier_name}</strong> plan.
+                        </DotBridgeTypography>
+
+                        <Box sx={{
+                            p: 2.5,
+                            borderRadius: 2,
+                            bgcolor: 'primary.lighter',
+                            border: '1px solid',
+                            borderColor: 'primary.light',
+                            mb: 2
+                        }}>
+                            {upgradePreview.prorated_charge_now_cents > 0 ? (
+                                <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
+                                    Immediate prorated charge: <strong>{formatCurrency(upgradePreview.prorated_charge_now_cents, upgradePreview.currency)}</strong>
+                                </DotBridgeTypography>
+                            ) : (
+                                <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
+                                    No immediate prorated charge for this upgrade.
+                                </DotBridgeTypography>
+                            )}
+                        </Box>
+
+                        <DotBridgeTypography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                            Your next bill on <strong>{new Date(upgradePreview.next_billing_date_timestamp * 1000).toLocaleDateString()}</strong> will be <strong>{formatCurrency(upgradePreview.next_regular_charge_cents, upgradePreview.currency)}</strong>.
+                        </DotBridgeTypography>
+
+                        <DotBridgeTypography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
+                            By confirming, your subscription will be updated immediately.
+                        </DotBridgeTypography>
+
+                        {paymentError && openUpgradeConfirmDialog && (
+                            <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>{paymentError}</Alert>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 0, gap: 1 }}>
+                        <DotBridgeButton
+                            variant="outlined"
+                            onClick={() => {
                                 setOpenUpgradeConfirmDialog(false);
                                 setUpgradePreview(null);
                                 setTargetUpgradeTier(null);
                                 localStorage.removeItem('selected_tier');
-                            }} size="small">
-                                <X size={20} />
-                            </IconButton>
-                        </DialogTitle>
-                        <DialogContent sx={{ p: 0, mb: 2 }}>
-                            <DotBridgeTypography variant="body1" sx={{ mb: 2 }}>
-                                You are upgrading to the <strong>{upgradePreview.target_tier_name}</strong> plan.
-                            </DotBridgeTypography>
-
-                            <Box sx={{
-                                p: 2.5,
-                                borderRadius: 2,
-                                bgcolor: 'primary.lighter',
-                                border: '1px solid',
-                                borderColor: 'primary.light',
-                                mb: 2
-                            }}>
-                                {upgradePreview.prorated_charge_now_cents > 0 ? (
-                                    <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
-                                        Immediate prorated charge: <strong>{formatCurrency(upgradePreview.prorated_charge_now_cents, upgradePreview.currency)}</strong>
-                                    </DotBridgeTypography>
-                                ) : (
-                                    <DotBridgeTypography variant="body2" sx={{ fontWeight: 500 }}>
-                                        No immediate prorated charge for this upgrade.
-                                    </DotBridgeTypography>
-                                )}
-                            </Box>
-
-                            <DotBridgeTypography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                                Your next bill on <strong>{new Date(upgradePreview.next_billing_date_timestamp * 1000).toLocaleDateString()}</strong> will be <strong>{formatCurrency(upgradePreview.next_regular_charge_cents, upgradePreview.currency)}</strong>.
-                            </DotBridgeTypography>
-
-                            <DotBridgeTypography variant="caption" display="block" sx={{ color: 'text.secondary' }}>
-                                By confirming, your subscription will be updated immediately.
-                            </DotBridgeTypography>
-
-                            {paymentError && openUpgradeConfirmDialog && (
-                                <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>{paymentError}</Alert>
-                            )}
-                        </DialogContent>
-                        <DialogActions sx={{ p: 0, gap: 1 }}>
-                            <DotBridgeButton
-                                variant="outlined"
-                                onClick={() => {
-                                    setOpenUpgradeConfirmDialog(false);
-                                    setUpgradePreview(null);
-                                    setTargetUpgradeTier(null);
-                                    localStorage.removeItem('selected_tier');
-                                }}
-                            >
-                                Cancel
-                            </DotBridgeButton>
-                            <DotBridgeButton
-                                variant="contained"
-                                onClick={() => executeSubscriptionChange(targetUpgradeTier)}
-                                disabled={isProcessing}
-                                loading={isProcessing}
-                            >
-                                Confirm & Upgrade
-                            </DotBridgeButton>
-                        </DialogActions>
-                    </Dialog>
-                )
-            }
+                            }}
+                        >
+                            Cancel
+                        </DotBridgeButton>
+                        <DotBridgeButton
+                            variant="contained"
+                            onClick={() => executeSubscriptionChange(targetUpgradeTier)}
+                            disabled={isProcessing}
+                            loading={isProcessing}
+                        >
+                            Confirm & Upgrade
+                        </DotBridgeButton>
+                    </DialogActions>
+                </Dialog>
+            )}
 
             <Dialog
                 open={openContactDialog}

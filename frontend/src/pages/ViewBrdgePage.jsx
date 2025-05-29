@@ -71,7 +71,7 @@ function ViewBrdgePage() {
                             setIsEnrolled(enrollmentResponse.data.enrolled);
                         }
                     } catch (err) {
-                        console.error('Error fetching course info:', err);
+                        console.error('Error fetching course info:', err.message || err);
                     }
                 }
 
@@ -81,11 +81,11 @@ function ViewBrdgePage() {
                         const userResponse = await api.get('/user/current');
                         setCurrentUserId(userResponse.data.id);
                     } catch (userError) {
-                        console.error('Error fetching user info:', userError);
+                        console.error('Error fetching user info:', userError.message || userError);
                     }
                 }
             } catch (error) {
-                console.error('Error checking Bridge access:', error);
+                console.error('Error checking Bridge access:', error.message || error);
 
                 // More descriptive error messages based on status code
                 if (error.response?.status === 401) {
@@ -132,7 +132,7 @@ function ViewBrdgePage() {
             await api.post(`/courses/${courseInfo.id}/enroll`);
             setIsEnrolled(true);
         } catch (error) {
-            console.error('Error enrolling in course:', error);
+            console.error('Error enrolling in course:', error.message || error);
         } finally {
             setEnrollButtonLoading(false);
         }
