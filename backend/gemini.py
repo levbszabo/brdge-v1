@@ -13,6 +13,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+GEMINI_MODEL = "gemini-2.0-flash"
+
 
 # Add this class near the top of the file
 class LogCollector:
@@ -70,7 +72,7 @@ def configure_genai():
 
 
 # Initialize the model - ensure it uses the desired flash model
-def get_model(model_name="gemini-2.0-flash"):  # Updated default model name
+def get_model(model_name=GEMINI_MODEL):  # Updated default model name
     """Get configured Gemini model instance"""
     start_time = time.time()
     # Ensure your generation_config is appropriate for all calls, or adjust per call type.
@@ -2708,7 +2710,7 @@ def get_dynamic_challenge_sequence(job_id_str: str) -> List[Dict[str, Any]]:
         # Ensure Gemini is configured (if not done globally)
         # configure_genai() # Assuming this is called once at app startup or is idempotent
         model = get_model(
-            model_name="gemini-2.0-flash"
+            model_name=GEMINI_MODEL
         )  # Use the specific flash model for challenges
         if not model:
             logger.error("Failed to initialize Gemini model for challenge generation")

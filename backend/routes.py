@@ -360,31 +360,49 @@ def delete_brdge(user, brdge_id):
         db.session.begin_nested()
 
         try:
-            # 1. Delete associated scripts first
+            # 1. Delete personalization records first (they depend on templates)
+            # Get all template IDs for this bridge
+            template_ids = [
+                template.id
+                for template in PersonalizationTemplate.query.filter_by(
+                    brdge_id=brdge_id
+                ).all()
+            ]
+
+            # Delete all personalization records for these templates
+            if template_ids:
+                PersonalizationRecord.query.filter(
+                    PersonalizationRecord.template_id.in_(template_ids)
+                ).delete(synchronize_session=False)
+
+            # 2. Delete personalization templates
+            PersonalizationTemplate.query.filter_by(brdge_id=brdge_id).delete()
+
+            # 3. Delete associated scripts
             BrdgeScript.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 2. Delete any course modules that reference this brdge
+            # 4. Delete any course modules that reference this brdge
             CourseModule.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 3. Delete recordings
+            # 5. Delete recordings
             Recording.query.filter_by(brdge_id=brdge_id).delete()
             db.session.flush()  # Ensure recordings are deleted before brdge
 
-            # 4. Disassociate usage logs from this brdge (set brdge_id to null)
+            # 6. Disassociate usage logs from this brdge (set brdge_id to null)
             UsageLogs.query.filter_by(brdge_id=brdge_id).update(
                 {UsageLogs.brdge_id: None}
             )
 
-            # 5. Delete voices if they exist
+            # 7. Delete voices if they exist
             Voice.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 6. Delete document knowledge entries
+            # 8. Delete document knowledge entries
             DocumentKnowledge.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 7. Delete knowledge base entries
+            # 9. Delete knowledge base entries
             KnowledgeBase.query.filter_by(brdge_id=brdge_id).delete()
 
-            # 8. Delete S3 files
+            # 10. Delete S3 files
             try:
                 # List all objects in the brdge's folder
                 prefix = f"{brdge.folder}/"
@@ -400,7 +418,7 @@ def delete_brdge(user, brdge_id):
                 logger.error(f"Error deleting S3 files: {e}")
                 raise
 
-            # 9. Finally delete the brdge itself
+            # 11. Finally delete the brdge itself
             db.session.delete(brdge)
 
             # Commit all changes
