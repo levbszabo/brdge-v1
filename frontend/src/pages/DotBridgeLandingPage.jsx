@@ -223,7 +223,7 @@ const HeroSection = () => {
                             textAlign: 'center'
                         }}
                     >
-                        Your Demo Can
+                        Your Sales Video Can
                         <Box component="span" sx={{
                             position: 'relative',
                             display: 'inline-block',
@@ -257,7 +257,7 @@ const HeroSection = () => {
                                 </motion.span>
                             </AnimatePresence>
                         </Box>
-                        While You Sleep
+                        Personally At Scale
                     </DotBridgeTypography>
                 </motion.div>
 

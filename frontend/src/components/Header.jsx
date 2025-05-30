@@ -132,7 +132,6 @@ function Header() {
             { text: 'Contact', link: '/contact' }
         ]
         : [
-            { text: 'Product', link: '/demos' },
             { text: 'Pricing', link: '/pricing' },
             { text: 'Resources', link: '/blog' },
             { text: 'Contact', link: '/contact' }
