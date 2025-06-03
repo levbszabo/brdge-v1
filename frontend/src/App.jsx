@@ -33,6 +33,7 @@ import DotBridgeBuyerJourneyDemoPage from './pages/DotBridgeBuyerJourneyDemoPage
 import BlogPage from './pages/BlogPage'; // Import the new Blog page
 import BlogPostDetailPage from './pages/BlogPostDetailPage'; // Import Blog Post Detail Page
 import CareerPage from './pages/CareerPage'; // Import the new Career page
+import CareerAcceleratorPage from './pages/CareerAcceleratorPage'; // Add new Career Accelerator page
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -64,7 +65,7 @@ function Layout({ children }) {
   const showHeader = true;
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos', '/blog', '/careers'];
+  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos', '/blog', '/careers', '/career-accelerator'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -211,6 +212,7 @@ function App() {
                 <Route path="/blog" element={<BlogPage />} /> {/* Added route for BlogPage */}
                 <Route path="/blog/:slug" element={<BlogPostDetailPage />} /> {/* Added route for individual blog posts */}
                 <Route path="/careers" element={<CareerPage />} /> {/* Added route for CareerPage */}
+                <Route path="/career-accelerator" element={<CareerAcceleratorPage />} /> {/* Add Career Accelerator route */}
                 <Route
                   path="/home"
                   element={

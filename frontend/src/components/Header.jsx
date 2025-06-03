@@ -134,7 +134,8 @@ function Header() {
         : [
             { text: 'Pricing', link: '/pricing' },
             { text: 'Resources', link: '/blog' },
-            { text: 'Contact', link: '/contact' }
+            { text: 'Contact', link: '/contact' },
+            { text: 'Services', link: '/services' }
         ];
 
     // Improved menu button styles
