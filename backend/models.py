@@ -783,3 +783,43 @@ class JobApplication(db.Model):
             ),
             "notes": self.notes,
         }
+
+
+class ResumeAnalysis(db.Model):
+    __tablename__ = "resume_analyses"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    session_id = db.Column(db.String(255), nullable=True)  # For anonymous users
+    filename = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Integer, nullable=False)
+    s3_key = db.Column(db.String(255), nullable=False)
+    analysis_status = db.Column(
+        db.String(50), default="pending"
+    )  # pending, processing, completed, failed
+    analysis_results = db.Column(
+        db.JSON, nullable=True
+    )  # JSON instead of JSONB for MySQL
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    user = db.relationship(
+        "User", backref=db.backref("resume_analyses", lazy="dynamic")
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "session_id": self.session_id,
+            "filename": self.filename,
+            "file_size": self.file_size,
+            "s3_key": self.s3_key,
+            "analysis_status": self.analysis_status,
+            "analysis_results": self.analysis_results,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }

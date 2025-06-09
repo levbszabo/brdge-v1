@@ -107,8 +107,6 @@ const HeroSection = () => {
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const [wordIndex, setWordIndex] = useState(0);
-    const words = ['qualify', 'engage', 'convert', 'close'];
 
     // Add scroll animation hook
     const demoRef = useRef(null);
@@ -121,18 +119,11 @@ const HeroSection = () => {
     const rotateX = useTransform(scrollYProgress, [0, 0.5], isMobile ? [12, 0] : [20, 0]);
     const scale = useTransform(scrollYProgress, [0, 0.5], isMobile ? [0.98, 1] : [0.97, 1]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setWordIndex((prev) => (prev + 1) % words.length);
-        }, 2000);
-        return () => clearInterval(interval);
-    }, []);
-
     return (
         <Box sx={{
             pt: { xs: 4, sm: 6, md: 10 },
             pb: { xs: 6, sm: 8, md: 8 },
-            px: { xs: 1, sm: 2, md: 3 }, // Reduced mobile padding
+            px: { xs: 1, sm: 2, md: 3 },
             textAlign: 'center',
             position: 'relative',
             overflow: 'hidden',
@@ -141,7 +132,7 @@ const HeroSection = () => {
             alignItems: 'center',
             background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${theme.palette.primary.lighter}10 50%, ${theme.palette.background.default} 100%)`
         }}>
-            {/* Animated background elements - simplified for mobile */}
+            {/* Enhanced animated background elements */}
             {!isMobile && (
                 <>
                     <Box sx={{
@@ -191,73 +182,40 @@ const HeroSection = () => {
                 >
                     <Box sx={{ mb: 2 }}>
                         <Chip
-                            label="🚀 THE FUTURE OF B2B SALES"
+                            label="🚀 THE OUTBOUND OS"
                             sx={{
-                                background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.primary.light}50 100%)`,
-                                color: theme.palette.primary.dark,
-                                fontWeight: 600,
-                                fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                color: 'white',
+                                fontWeight: 650,
+                                fontSize: { xs: '0.75rem', sm: '0.875rem' },
                                 letterSpacing: '0.05em',
-                                px: { xs: 1.5, sm: 2 },
-                                py: 0.5,
-                                border: '1px solid',
-                                borderColor: theme.palette.primary.light,
-                                boxShadow: '0 2px 8px rgba(0, 102, 255, 0.2)',
-                                opacity: 1
+                                px: { xs: 2, sm: 2.5 },
+                                py: 0.75,
+                                borderRadius: theme.shape.borderRadius,
+                                boxShadow: `0 4px 16px ${theme.palette.primary.shadow}`,
+                                border: 'none',
+                                animation: prefersReducedMotion ? 'none' : 'pulse 3s ease-in-out infinite',
                             }}
                         />
                     </Box>
                     <DotBridgeTypography
                         variant="h1"
                         component="h1"
+                        balanced
                         sx={{
-                            mb: { xs: 2, sm: 2.5, md: 3 },
-                            fontSize: { xs: '3rem', sm: '3.5rem', md: '4.5rem' },
+                            mb: { xs: 3, sm: 4, md: 4 },
+                            fontSize: { xs: '3.5rem', sm: '4rem', md: '5rem' },
                             fontWeight: 800,
-                            letterSpacing: { xs: '-0.02em', sm: '-0.03em', md: '-0.04em' },
-                            lineHeight: { xs: 1.1, sm: 1.05, md: 1 },
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: { xs: '0.1em', sm: '0.15em' },
-                            textAlign: 'center'
+                            letterSpacing: { xs: '-0.03em', sm: '-0.04em', md: '-0.05em' },
+                            lineHeight: { xs: 1.05, sm: 1.02, md: 1 },
+                            textAlign: 'center',
+                            background: `linear-gradient(135deg, ${theme.palette.text.primary} 0%, ${theme.palette.primary.main} 100%)`,
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent'
                         }}
                     >
-                        Your Sales Video Can
-                        <Box component="span" sx={{
-                            position: 'relative',
-                            display: 'inline-block',
-                            height: '1.2em',
-                            minWidth: { xs: '280px', sm: '350px', md: '400px' },
-                            my: { xs: '0.1em', sm: '0.15em' }
-                        }}>
-                            <AnimatePresence mode="wait">
-                                <motion.span
-                                    key={words[wordIndex]}
-                                    initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -20 }}
-                                    transition={{ duration: prefersReducedMotion ? 0.01 : 0.5 }}
-                                    style={{
-                                        position: 'absolute',
-                                        width: '100%',
-                                        textAlign: 'center',
-                                        left: 0,
-                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                                        backgroundClip: 'text',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                        textTransform: 'uppercase',
-                                        fontWeight: 800,
-                                        lineHeight: 1,
-                                        fontSize: { xs: '3rem', sm: '3.5rem', md: 'inherit' }
-                                    }}
-                                >
-                                    {words[wordIndex]}
-                                </motion.span>
-                            </AnimatePresence>
-                        </Box>
-                        Personally At Scale
+                        Bridge the Gap Between<br />Attention and Action
                     </DotBridgeTypography>
                 </motion.div>
 
@@ -266,29 +224,26 @@ const HeroSection = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: prefersReducedMotion ? 0.01 : 0.6, delay: 0.3 }}
                 >
+                    {/* Subheadline */}
                     <DotBridgeTypography
-                        variant="h5"
+                        variant="h6"
                         color="text.secondary"
                         sx={{
                             mb: { xs: 4, sm: 5, md: 6 },
                             maxWidth: '800px',
                             mx: 'auto',
-                            fontSize: { xs: '1.125rem', sm: '1.25rem', md: '1.35rem' },
-                            lineHeight: { xs: 1.5, sm: 1.5, md: 1.6 },
+                            fontSize: { xs: '1.125rem', sm: '1.25rem', md: '1.375rem' },
+                            lineHeight: { xs: 1.5, sm: 1.55, md: 1.6 },
                             fontWeight: 400,
                             px: { xs: 2, sm: 1, md: 0 },
                             textAlign: 'center'
                         }}
                     >
-                        Transform any sales video into an AI-powered experience that
-                        <Box component="span" sx={{
-                            fontWeight: 600,
-                            color: 'text.primary',
-                            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                        }}> speaks to each prospect personally, answers objections and books meetings</Box> automatically.
+                        DotBridge is the Outbound OS for sales and career growth.{' '}
+                        <Box component="span" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                            AI agents powered by your voice
+                        </Box>{' '}
+                        turn static video into conversations that convert.
                     </DotBridgeTypography>
                 </motion.div>
 
@@ -310,65 +265,110 @@ const HeroSection = () => {
                             color="primary"
                             variant="contained"
                             component={Link}
-                            to="/signup"
+                            to="/services"
                             onClick={() => triggerHaptic('medium')}
+                            endIcon={<DotBridgeIcon name="ArrowRight" size={20} />}
                             sx={{
-                                px: { xs: 3, sm: 4 },
-                                py: { xs: 1.75, sm: 1.5 },
-                                fontSize: { xs: '1rem', sm: '1.1rem' },
+                                px: { xs: 4, sm: 5 },
+                                py: { xs: 2, sm: 1.75 },
+                                fontSize: { xs: '1.125rem', sm: '1.125rem' },
                                 fontWeight: 600,
                                 width: { xs: '100%', sm: 'auto' },
-                                minHeight: { xs: '52px', sm: 'auto' },
+                                minHeight: { xs: '56px', sm: 'auto' },
                                 background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                                boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
-                                opacity: 1,
+                                boxShadow: `0 8px 32px ${theme.palette.primary.shadow}`,
+                                borderRadius: theme.shape.borderRadiusLarge,
+                                position: 'relative',
+                                overflow: 'hidden',
                                 '&:hover': {
                                     '@media (hover: hover)': {
-                                        transform: 'translateY(-2px)',
-                                        boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)',
-                                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`
+                                        transform: 'translateY(-3px)',
+                                        boxShadow: `0 16px 40px ${theme.palette.primary.shadow}`,
+                                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.darker} 100%)`
                                     }
                                 },
                                 '&:active': {
                                     transform: 'scale(0.98)'
+                                },
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-100%',
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                                    transition: 'left 0.6s ease',
+                                },
+                                '&:hover::before': {
+                                    '@media (hover: hover)': {
+                                        left: '100%',
+                                    }
                                 }
                             }}
                         >
-                            Start Building Free →
+                            For B2B Sales Teams
                         </DotBridgeButton>
                         <DotBridgeButton
                             size="large"
                             color="primary"
                             variant={isMobile ? "text" : "outlined"}
                             component={Link}
-                            to={`/viewBridge/${DEMO_BRIDGE_ID}`}
-                            startIcon={!isMobile && <DotBridgeIcon name="Play" size={20} />}
+                            to="/career-accelerator"
+                            startIcon={!isMobile && <DotBridgeIcon name="Briefcase" size={20} variant="contained" />}
                             onClick={() => triggerHaptic('light')}
                             sx={{
-                                px: { xs: 3, sm: 4 },
-                                py: { xs: 1, sm: 1.5 },
-                                fontSize: { xs: '0.9rem', sm: '1rem' },
-                                fontWeight: { xs: 500, sm: 400 },
+                                px: { xs: 4, sm: 4 },
+                                py: { xs: 1.5, sm: 1.75 },
+                                fontSize: { xs: '1rem', sm: '1rem' },
+                                fontWeight: { xs: 500, sm: 500 },
                                 width: { xs: 'auto', sm: 'auto' },
                                 borderWidth: { xs: '0', sm: '2px' },
-                                borderImage: { xs: 'none', sm: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.light}) 1` },
-                                opacity: 1,
+                                borderRadius: theme.shape.borderRadiusLarge,
+                                backdropFilter: 'blur(8px)',
                                 '&:hover': {
                                     '@media (hover: hover)': {
                                         borderWidth: { xs: '0', sm: '2px' },
                                         transform: { xs: 'none', sm: 'translateY(-2px)' },
                                         background: { xs: 'transparent', sm: `linear-gradient(135deg, ${theme.palette.primary.main}10 0%, ${theme.palette.primary.light}10 100%)` },
-                                        textDecoration: { xs: 'underline', sm: 'none' }
+                                        textDecoration: { xs: 'underline', sm: 'none' },
+                                        boxShadow: { xs: 'none', sm: theme.shadows[4] }
                                     }
                                 }
                             }}
                         >
-                            Watch Interactive Demo
+                            For Job Seekers
+                        </DotBridgeButton>
+                    </Box>
+
+                    {/* Enhanced Third CTA */}
+                    <Box sx={{ mt: 2, textAlign: 'center' }}>
+                        <DotBridgeButton
+                            size="medium"
+                            color="primary"
+                            variant="text"
+                            component={Link}
+                            to="/signup"
+                            endIcon={<DotBridgeIcon name="Sparkles" size={16} animated="pulse" />}
+                            sx={{
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                color: 'text.secondary',
+                                borderRadius: theme.shape.borderRadius,
+                                '&:hover': {
+                                    color: 'primary.main',
+                                    textDecoration: 'underline',
+                                    textUnderlineOffset: '4px',
+                                    background: `linear-gradient(135deg, ${theme.palette.primary.main}05 0%, ${theme.palette.primary.light}05 100%)`,
+                                }
+                            }}
+                        >
+                            or try the self-serve platform
                         </DotBridgeButton>
                     </Box>
                 </motion.div>
 
-                {/* Interactive Bridge Demo - Optimized for mobile */}
+                {/* Enhanced Interactive Bridge Demo */}
                 <motion.div
                     ref={demoRef}
                     initial={{ opacity: 0, scale: prefersReducedMotion ? 1 : 0.9 }}
@@ -387,44 +387,68 @@ const HeroSection = () => {
                             transformOrigin: '50% 100%'
                         }}
                     >
-                        <Box sx={{
-                            maxWidth: { xs: '100%', sm: '850px', md: '1300px' },
-                            mx: { xs: 0.5, sm: 'auto' },
-                            position: 'relative',
-                            borderRadius: { xs: 2, sm: 3 },
-                            overflow: 'hidden',
-                            boxShadow: { xs: '0 8px 24px rgba(0, 102, 255, 0.1)', sm: '0 30px 80px rgba(0, 102, 255, 0.15)' },
-                            border: { xs: '1px solid', sm: '2px solid' },
-                            borderColor: { xs: 'divider', sm: 'transparent' },
-                            borderImage: { xs: 'none', sm: `linear-gradient(135deg, ${theme.palette.primary.light}50, ${theme.palette.primary.main}50) 1` },
-                            bgcolor: 'background.paper',
-                            aspectRatio: { xs: '16 / 9', sm: '16 / 9', md: '16 / 9' },
-                            transform: 'translateZ(0)',
-                            backfaceVisibility: 'hidden',
-                            willChange: 'transform'
-                        }}>
-                            {/* Top bar - only show on desktop */}
+                        <DotBridgeCard
+                            variant="premium"
+                            interactive
+                            sx={{
+                                maxWidth: { xs: '100%', sm: '850px', md: '1300px' },
+                                mx: { xs: 0.5, sm: 'auto' },
+                                aspectRatio: { xs: '16 / 9', sm: '16 / 9', md: '16 / 9' },
+                                transform: 'translateZ(0)',
+                                backfaceVisibility: 'hidden',
+                                willChange: 'transform',
+                                position: 'relative',
+                                overflow: 'hidden',
+                                boxShadow: `0 20px 60px ${theme.palette.primary.shadow}`,
+                            }}
+                        >
+                            {/* Enhanced top bar */}
                             <Box sx={{
-                                p: 1,
+                                p: 1.5,
                                 borderBottom: '1px solid',
                                 borderColor: 'divider',
-                                background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.grey[100]} 100%)`,
+                                background: `linear-gradient(135deg, ${theme.palette.grey[25]} 0%, ${theme.palette.grey[50]} 100%)`,
                                 display: { xs: 'none', sm: 'flex' },
                                 alignItems: 'center',
-                                gap: 1
+                                gap: 1.5
                             }}>
-                                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'error.main' }} />
-                                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'warning.main' }} />
-                                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: 'success.main' }} />
+                                <Box sx={{ display: 'flex', gap: 0.75 }}>
+                                    <Box sx={{
+                                        width: 14,
+                                        height: 14,
+                                        borderRadius: '50%',
+                                        bgcolor: 'error.main',
+                                        boxShadow: `0 2px 8px ${theme.palette.error.shadow}`
+                                    }} />
+                                    <Box sx={{
+                                        width: 14,
+                                        height: 14,
+                                        borderRadius: '50%',
+                                        bgcolor: 'warning.main',
+                                        boxShadow: `0 2px 8px ${theme.palette.warning.shadow}`
+                                    }} />
+                                    <Box sx={{
+                                        width: 14,
+                                        height: 14,
+                                        borderRadius: '50%',
+                                        bgcolor: 'success.main',
+                                        boxShadow: `0 2px 8px ${theme.palette.success.shadow}`
+                                    }} />
                                 </Box>
-                                <Typography variant="caption" color="text.secondary" sx={{ flex: 1, textAlign: 'center' }}>
-                                    DotBridge Demo
-                                </Typography>
+                                <DotBridgeTypography variant="caption" color="text.secondary" sx={{
+                                    flex: 1,
+                                    textAlign: 'center',
+                                    fontWeight: 550,
+                                    letterSpacing: '0.05em'
+                                }}>
+                                    <DotBridgeIcon name="Sparkles" size={12} sx={{ mr: 0.5 }} />
+                                    DotBridge Live Demo
+                                </DotBridgeTypography>
+                                <DotBridgeIcon name="Maximize2" size={16} color="text.secondary" interactive />
                             </Box>
                             <Box sx={{
                                 position: 'relative',
-                                height: { xs: '100%', sm: 'calc(100% - 40px)' },
+                                height: { xs: '100%', sm: 'calc(100% - 52px)' },
                                 '& .agent-connector-container': {
                                     position: 'absolute',
                                     top: 0,
@@ -434,7 +458,6 @@ const HeroSection = () => {
                                 }
                             }}>
                                 {isMobile ? (
-                                    // Show video on mobile/Safari with proper 16:9 aspect ratio
                                     <video
                                         src="/dotbridge-vsl-hero-final.mp4"
                                         poster="/dotbridge-hero-cover.png"
@@ -449,7 +472,6 @@ const HeroSection = () => {
                                         }}
                                     />
                                 ) : (
-                                    // Show AgentConnector on desktop
                                     <div className="agent-connector-container">
                                         <AgentConnector
                                             brdgeId={DEMO_BRIDGE_ID}
@@ -461,12 +483,12 @@ const HeroSection = () => {
                                     </div>
                                 )}
                             </Box>
-                        </Box>
+                        </DotBridgeCard>
                     </motion.div>
                 </motion.div>
             </Container>
 
-            {/* CSS Animation */}
+            {/* Enhanced CSS Animation */}
             <style jsx>{`
                 @keyframes float {
                     0%, 100% { transform: translate(0, 0) rotate(0deg); }
@@ -502,10 +524,10 @@ const TrustedBySection = () => (
             color="text.secondary"
             sx={{ mb: 2, opacity: 0.8 }}
         >
-            Built for forward-thinking sales teams
+            The New Standard for Outbound
         </DotBridgeTypography>
         <DotBridgeTypography variant="body2" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
-            Join the early adopters transforming how B2B sales is done
+            Forward-thinking companies are replacing cold outreach with intelligent Bridges
         </DotBridgeTypography>
     </Section>
 );
@@ -526,7 +548,7 @@ const WhyNowSection = () => {
                         mb: 3,
                         fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                     }}>
-                        The Old Way Isn't Working Anymore
+                        Your Videos Can't Close Deals
                     </DotBridgeTypography>
                 </motion.div>
                 <motion.div
@@ -542,8 +564,8 @@ const WhyNowSection = () => {
                         fontSize: { xs: '1rem', sm: '1.15rem', md: '1.25rem' },
                         lineHeight: 1.6
                     }}>
-                        Static videos leave money on the table. Your prospects have questions.
-                        Your video can't answer. They find another vendor.
+                        73% drop off after 2 minutes. Questions go unanswered.
+                        Deals die in silence. Every static video is a missed opportunity.
                     </DotBridgeTypography>
                 </motion.div>
                 <Grid container spacing={4} justifyContent="center" maxWidth="lg" mx="auto">
@@ -636,6 +658,197 @@ const WhyNowSection = () => {
     );
 };
 
+const TransformationCarousel = () => {
+    const theme = useTheme();
+    const [activeTransformation, setActiveTransformation] = useState(0);
+    const [isPaused, setIsPaused] = useState(false);
+
+    const transformations = [
+        {
+            title: "Sales Teams",
+            icon: "TrendingUp",
+            transformation: "AI qualifies every prospect and books qualified demos automatically",
+            result: "22 meetings booked in 3 days",
+            gradient: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+            bgColor: 'primary.lighter'
+        },
+        {
+            title: "Job Seekers",
+            icon: "Briefcase",
+            transformation: "AI pitches you directly to hiring managers with personalized video introductions",
+            result: "3 interviews in 2 weeks",
+            gradient: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+            bgColor: 'secondary.lighter'
+        },
+        {
+            title: "Coaches & Consultants",
+            icon: "Users",
+            transformation: "AI pre-qualifies clients and showcases your expertise before the sales call",
+            result: "5x higher conversion rate",
+            gradient: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+            bgColor: 'success.lighter'
+        },
+        {
+            title: "Course Creators",
+            icon: "Video",
+            transformation: "AI demonstrates course value and answers student questions instantly",
+            result: "3x enrollment increase",
+            gradient: `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
+            bgColor: 'warning.lighter'
+        }
+    ];
+
+    // Auto-cycle through transformations
+    useEffect(() => {
+        if (isPaused) return;
+
+        const interval = setInterval(() => {
+            setActiveTransformation((prev) => (prev + 1) % transformations.length);
+        }, 1500); // 1.5 seconds per transformation
+
+        return () => clearInterval(interval);
+    }, [transformations.length, isPaused]);
+
+    return (
+        <Box
+            sx={{ maxWidth: '800px', mx: 'auto', position: 'relative' }}
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+        >
+            {/* Progress indicators */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 4 }}>
+                {transformations.map((_, index) => (
+                    <Box
+                        key={index}
+                        onClick={() => {
+                            setActiveTransformation(index);
+                            setIsPaused(true);
+                            setTimeout(() => setIsPaused(false), 2000);
+                        }}
+                        sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: activeTransformation === index ? 'primary.main' : 'grey.300',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            transform: activeTransformation === index ? 'scale(1.2)' : 'scale(1)',
+                            '&:hover': {
+                                bgcolor: activeTransformation === index ? 'primary.dark' : 'grey.400'
+                            }
+                        }}
+                    />
+                ))}
+            </Box>
+
+            {/* Carousel content */}
+            <Box sx={{
+                height: '280px',
+                position: 'relative',
+                overflow: 'hidden',
+                borderRadius: 3,
+                boxShadow: theme.shadows[3]
+            }}>
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTransformation}
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -50 }}
+                        transition={{ duration: 0.5, ease: "easeInOut" }}
+                        style={{
+                            position: 'absolute',
+                            width: '100%',
+                            height: '100%'
+                        }}
+                    >
+                        <Box sx={{
+                            height: '100%',
+                            p: { xs: 3, md: 4 },
+                            bgcolor: 'background.paper',
+                            border: '2px solid',
+                            borderImage: transformations[activeTransformation].gradient + ' 1',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            textAlign: 'center',
+                            position: 'relative',
+                            overflow: 'hidden'
+                        }}>
+                            {/* Icon */}
+                            <Box sx={{
+                                width: 64,
+                                height: 64,
+                                mx: 'auto',
+                                mb: 3,
+                                borderRadius: 3,
+                                background: transformations[activeTransformation].gradient,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)'
+                            }}>
+                                <DotBridgeIcon
+                                    name={transformations[activeTransformation].icon}
+                                    size={32}
+                                    color="white"
+                                />
+                            </Box>
+
+                            {/* Title */}
+                            <Typography variant="h4" sx={{
+                                fontWeight: 800,
+                                mb: 2,
+                                color: '#1a1a1a'
+                            }}>
+                                {transformations[activeTransformation].title}
+                            </Typography>
+
+                            {/* Transformation text */}
+                            <Typography variant="body1" sx={{
+                                mb: 3,
+                                fontSize: { xs: '1rem', md: '1.125rem' },
+                                lineHeight: 1.6,
+                                color: '#1a1a1a',
+                                fontWeight: 700,
+                                maxWidth: '600px',
+                                mx: 'auto'
+                            }}>
+                                {transformations[activeTransformation].transformation}
+                            </Typography>
+
+                            {/* Result */}
+                            <Box sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 1,
+                                mx: 'auto',
+                                px: 3,
+                                py: 1.5,
+                                borderRadius: 2,
+                                bgcolor: '#1a1a1a',
+                                color: 'white',
+                                fontWeight: 700,
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)'
+                            }}>
+                                <DotBridgeIcon name="CheckCircle" size={20} color="white" />
+                                <Typography variant="body2" sx={{
+                                    fontWeight: 700,
+                                    color: 'white',
+                                    fontSize: '0.875rem'
+                                }}>
+                                    {transformations[activeTransformation].result}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    </motion.div>
+                </AnimatePresence>
+            </Box>
+        </Box>
+    );
+};
+
 const WhatIsBridgeSection = () => {
     const [sectionRef, inView] = useInView({
         triggerOnce: true,
@@ -678,7 +891,7 @@ const WhatIsBridgeSection = () => {
                         >
                             <motion.div variants={fadeInUp}>
                                 <Chip
-                                    label="THE BRIDGE FORMAT"
+                                    label="WHAT IS A BRIDGE?"
                                     color="primary"
                                     size="small"
                                     sx={{
@@ -701,7 +914,7 @@ const WhatIsBridgeSection = () => {
                                     WebkitBackgroundClip: 'text',
                                     WebkitTextFillColor: 'transparent'
                                 }}>
-                                    From Static Video to
+                                    Your Content Becomes
                                     <Box component="span" sx={{
                                         display: 'block',
                                         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
@@ -709,7 +922,7 @@ const WhatIsBridgeSection = () => {
                                         WebkitBackgroundClip: 'text',
                                         WebkitTextFillColor: 'transparent'
                                     }}>
-                                        Smart Sales Agent
+                                        Your Best Rep
                                     </Box>
                                 </DotBridgeTypography>
                             </motion.div>
@@ -722,16 +935,17 @@ const WhatIsBridgeSection = () => {
                                     textAlign: { xs: 'center', md: 'left' },
                                     px: { xs: 2, md: 0 }
                                 }}>
-                                    Transform any video into an AI-powered experience that understands,
-                                    responds, and converts like your best sales rep.
+                                    A Bridge transforms any video into an AI agent that speaks,
+                                    listens, and converts. Whether you're closing deals or landing jobs,
+                                    your Bridge works 24/7 to turn viewers into meetings.
                                 </DotBridgeTypography>
                             </motion.div>
 
                             <Grid container spacing={{ xs: 1, md: 0 }}>
                                 {[
-                                    { icon: 'Mic', title: 'Your Voice, Cloned', text: 'AI speaks with your authentic voice and personality' },
-                                    { icon: 'Brain', title: 'Contextual Memory', text: 'Remembers every interaction and personalizes responses' },
-                                    { icon: 'Zap', title: 'Always-On Sales', text: 'Qualifies leads and books meetings 24/7' }
+                                    { icon: 'MessageSquare', title: 'Handles Every Question', text: 'Answers objections, explains features, and guides meaningful conversations' },
+                                    { icon: 'Target', title: 'Qualifies & Converts', text: 'Scores prospects by fit and readiness, then moves them forward' },
+                                    { icon: 'Calendar', title: 'Books Real Meetings', text: 'Connects you directly with decision makers and key stakeholders' }
                                 ].map((item, i) => (
                                     <Grid item xs={4} md={12} key={i}>
                                         <motion.div
@@ -825,7 +1039,7 @@ const WhatIsBridgeSection = () => {
                                     position: 'relative'
                                 }}>
                                     <Typography variant="h6" sx={{ mb: 4, textAlign: 'center', fontWeight: 600 }}>
-                                        Transform Your Video in 4 Simple Steps
+                                        From Static Content to Smart Conversations
                                     </Typography>
 
                                     {/* Step 1: Video Upload */}
@@ -865,7 +1079,7 @@ const WhatIsBridgeSection = () => {
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                                    Upload Your Content
+                                                    Upload Any Video
                                                 </Typography>
                                                 <Box sx={{
                                                     p: 2,
@@ -878,7 +1092,7 @@ const WhatIsBridgeSection = () => {
                                                     gap: 1.5
                                                 }}>
                                                     <DotBridgeIcon name="Video" size={20} color="primary.main" />
-                                                    <Typography variant="body2">demo-video.mp4</Typography>
+                                                    <Typography variant="body2">Sales demo, pitch, or intro</Typography>
                                                 </Box>
                                             </Box>
                                         </Box>
@@ -923,7 +1137,7 @@ const WhatIsBridgeSection = () => {
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                                    AI Analyzes & Learns
+                                                    AI Becomes Your Expert
                                                 </Typography>
                                                 <Box sx={{
                                                     p: 2,
@@ -936,7 +1150,7 @@ const WhatIsBridgeSection = () => {
                                                     gap: 1.5
                                                 }}>
                                                     <DotBridgeIcon name="Brain" size={20} color="success.main" />
-                                                    <Typography variant="body2">Understanding content & context</Typography>
+                                                    <Typography variant="body2">Masters your product or story</Typography>
                                                 </Box>
                                             </Box>
                                         </Box>
@@ -981,7 +1195,7 @@ const WhatIsBridgeSection = () => {
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                                    Personalize Experience
+                                                    Set Your Goals
                                                 </Typography>
                                                 <Box sx={{
                                                     p: 2,
@@ -994,7 +1208,7 @@ const WhatIsBridgeSection = () => {
                                                     gap: 1.5
                                                 }}>
                                                     <DotBridgeIcon name="UserCog" size={20} color="warning.main" />
-                                                    <Typography variant="body2">Clone voice & set objectives</Typography>
+                                                    <Typography variant="body2">Book demos or interviews</Typography>
                                                 </Box>
                                             </Box>
                                         </Box>
@@ -1038,7 +1252,7 @@ const WhatIsBridgeSection = () => {
                                             </Box>
                                             <Box sx={{ flex: 1 }}>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
-                                                    Launch Your Bridge
+                                                    Watch It Convert
                                                 </Typography>
                                                 <Box sx={{
                                                     p: 2,
@@ -1051,7 +1265,7 @@ const WhatIsBridgeSection = () => {
                                                     gap: 1.5
                                                 }}>
                                                     <DotBridgeIcon name="Sparkles" size={20} color="info.main" />
-                                                    <Typography variant="body2">Ready to engage prospects!</Typography>
+                                                    <Typography variant="body2">Meetings booked automatically</Typography>
                                                 </Box>
                                             </Box>
                                         </Box>
@@ -1061,6 +1275,14 @@ const WhatIsBridgeSection = () => {
                         </motion.div>
                     </Grid>
                 </Grid>
+
+                {/* Transformation Carousel */}
+                <Box sx={{ mt: { xs: 6, md: 8 }, textAlign: 'center' }}>
+                    <Typography variant="h5" sx={{ mb: 4, fontWeight: 600 }}>
+                        See The Bridge Difference
+                    </Typography>
+                    <TransformationCarousel />
+                </Box>
             </Container>
         </Section>
     );
@@ -1234,32 +1456,32 @@ const ComparisonSection = () => {
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const comparisons = [
         {
-            useCase: "Enterprise Demos",
+            useCase: "Product Demos",
             icon: "Presentation",
-            before: "60-min demos to unqualified prospects",
-            afterText: "AI pre-qualifies & personalizes demo path by role",
-            result: "50% shorter cycles"
+            before: "One-size-fits-all demo videos",
+            afterText: "AI personalizes demo path by role and company",
+            result: "3× higher conversion"
         },
         {
-            useCase: "Champion Enablement",
-            icon: "Users",
-            before: "Send deck, hope they sell internally",
-            afterText: "Equip champions with interactive business case",
-            result: "3× champion success"
-        },
-        {
-            useCase: "Technical Evaluation",
-            icon: "Code",
-            before: "SE bottleneck for every POC",
-            afterText: "Engineers self-serve technical deep-dives 24/7",
-            result: "5× more POCs"
-        },
-        {
-            useCase: "Executive Briefings",
+            useCase: "Portfolio Showcase",
             icon: "Briefcase",
-            before: "Generic pitch to C-suite",
-            afterText: "ROI-focused narratives adapted per stakeholder",
-            result: "22% higher ACV"
+            before: "Static portfolio links in applications",
+            afterText: "Interactive portfolio that answers hiring manager questions",
+            result: "5× more interviews"
+        },
+        {
+            useCase: "Course Sales",
+            icon: "GraduationCap",
+            before: "Long sales pages with generic testimonials",
+            afterText: "AI demonstrates course value for each visitor's goals",
+            result: "40% higher enrollment"
+        },
+        {
+            useCase: "Consulting Pitches",
+            icon: "Users",
+            before: "Send proposal deck and wait for response",
+            afterText: "Interactive ROI calculator with personalized case studies",
+            result: "2× faster decisions"
         }
     ];
 
@@ -1279,13 +1501,13 @@ const ComparisonSection = () => {
                             lineHeight: { xs: 1.2, md: 1.1 },
                             textAlign: 'center'
                         }}>
-                            Every Sales Asset
+                            Every Bridge Works
                             <Box component="span" sx={{
                                 color: theme.palette.primary.main,
                                 display: 'block',
                                 mt: { xs: 0.5, md: 0.25 }
                             }}>
-                                Now Sells For You
+                                Around the Clock
                             </Box>
                         </DotBridgeTypography>
                     </motion.div>
@@ -1302,7 +1524,7 @@ const ComparisonSection = () => {
                             textAlign: 'center',
                             px: { xs: 2, md: 0 }
                         }}>
-                            Stop losing momentum between touchpoints. Turn every asset into a revenue-driving conversation.
+                            Whether you're selling products or selling yourself, your Bridge never stops working. Turn every interaction into a meaningful connection.
                         </DotBridgeTypography>
                     </motion.div>
                 </Box>
@@ -1380,7 +1602,7 @@ const ComparisonSection = () => {
                                             {item.useCase}
                                         </Typography>
 
-                                        <Box sx={{ mb: { xs: 2, sm: 3 } }}>
+                                        <Box sx={{ mt: 'auto', mb: { xs: 2, sm: 3 } }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 0.5, sm: 1 } }}>
                                                 <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: 'error.main' }} />
                                                 <Typography variant="caption" color="text.secondary" fontWeight="bold">
@@ -1540,14 +1762,14 @@ const PersonalizedOutboundSection = () => {
                             lineHeight: { xs: 1.2, md: 1.1 },
                             textAlign: 'center'
                         }}>
-                            Send 1,000 Personalized Demos
+                            Create 1,000 Personal Connections
                             <Box component="span" sx={{
                                 color: theme.palette.primary.main,
                                 display: 'block',
                                 fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' },
                                 mt: { xs: 0.5, md: 0.25 }
                             }}>
-                                in 10 Minutes
+                                in Minutes, Not Months
                             </Box>
                         </DotBridgeTypography>
                     </motion.div>
@@ -1565,8 +1787,8 @@ const PersonalizedOutboundSection = () => {
                             px: { xs: 2, sm: 1, md: 0 },
                             textAlign: 'center'
                         }}>
-                            Upload a CSV. Each prospect gets their own AI-powered demo that addresses
-                            their specific role, company, and pain points. No more generic pitches.
+                            Upload your list. Each person gets their own AI-powered Bridge that speaks
+                            directly to their needs, goals, and interests. No more generic messages.
                         </DotBridgeTypography>
                     </motion.div>
                 </Box>
@@ -1596,7 +1818,7 @@ const PersonalizedOutboundSection = () => {
                                         textAlign: 'center',
                                         fontSize: { xs: '1.125rem', md: '1.25rem' }
                                     }}>
-                                        🎯 AI Personalization in Action
+                                        ✨ See Your Bridge in Action
                                     </Typography>
 
                                     {/* Example personalized messages */}
@@ -1605,20 +1827,20 @@ const PersonalizedOutboundSection = () => {
                                             {
                                                 name: "Sarah Chen",
                                                 company: "TechCorp",
-                                                role: "VP of Sales",
-                                                message: "Hi Sarah! As VP of Sales at TechCorp, you're likely facing the challenge of scaling your team's outreach while maintaining personalization..."
+                                                role: "Product Lead",
+                                                message: "Hi Sarah! I noticed your focus on AI-driven products at TechCorp. I'd love to show you how we're helping product teams automate personalized user interactions..."
                                             },
                                             {
                                                 name: "Mike Rodriguez",
-                                                company: "StartupXYZ",
-                                                role: "Founder",
-                                                message: "Hey Mike! I know as a founder at StartupXYZ, every dollar counts. Let me show you how to 10x your demo reach without hiring more SDRs..."
+                                                company: "Design Portfolio",
+                                                role: "UX Designer",
+                                                message: "Hey Mike! Your portfolio shows amazing work in user experience design. Let me demonstrate how you could showcase your design process and results to hiring managers..."
                                             },
                                             {
                                                 name: "Jennifer Kim",
-                                                company: "Enterprise Inc",
-                                                role: "CRO",
-                                                message: "Jennifer, as CRO at Enterprise Inc, you understand the importance of pipeline velocity. Here's how we're helping similar companies reduce sales cycles by 38%..."
+                                                company: "Growth Academy",
+                                                role: "Course Creator",
+                                                message: "Jennifer, your course on growth marketing looks fantastic. Here's how we can help you engage with potential students and showcase real success stories..."
                                             }
                                         ].map((example, index) => (
                                             <motion.div
@@ -1697,7 +1919,7 @@ const PersonalizedOutboundSection = () => {
                                             fontWeight: 600,
                                             fontSize: { xs: '0.75rem', md: '0.8125rem' }
                                         }}>
-                                            ✨ Each demo is uniquely tailored using prospect data
+                                            ✨ Each Bridge adapts to create meaningful connections
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -1724,19 +1946,19 @@ const PersonalizedOutboundSection = () => {
                                     {
                                         icon: 'Upload',
                                         title: 'Upload Your List',
-                                        desc: 'CSV with prospect data (name, company, role, industry)',
+                                        desc: 'Add your audience list with relevant details about each person',
                                         color: 'primary'
                                     },
                                     {
                                         icon: 'Sparkles',
-                                        title: 'AI Personalizes Each Bridge',
-                                        desc: 'Every demo speaks directly to their challenges and use case',
+                                        title: 'AI Creates Personal Connections',
+                                        desc: 'Each Bridge speaks directly to individual needs and goals',
                                         color: 'success'
                                     },
                                     {
                                         icon: 'Send',
-                                        title: 'Launch Campaign',
-                                        desc: 'Each prospect gets a unique link to their personalized experience',
+                                        title: 'Share Your Bridges',
+                                        desc: 'Everyone gets a unique link to their personalized experience',
                                         color: 'info'
                                     }
                                 ].map((step, index) => (
@@ -1867,13 +2089,13 @@ const PersonalizedOutboundSection = () => {
                     display: { xs: 'none', md: 'block' }
                 }} ref={(ref) => ref && setStatsInView(true)}>
                     <Typography variant="h5" sx={{ mb: 4, fontWeight: 600 }}>
-                        Real Results from Early Users
+                        Real Results from Bridge Users
                     </Typography>
                     <Grid container spacing={3} justifyContent="center">
                         {[
-                            { metric: '22', suffix: ' meetings', desc: 'booked in 3 days', icon: 'Calendar' },
-                            { metric: '67', suffix: '%', prefix: '', desc: 'open rate vs 20% average', icon: 'Eye' },
-                            { metric: '5', suffix: ' minutes', desc: 'average watch time', icon: 'Clock' }
+                            { metric: '22', suffix: ' connections', desc: 'made in 3 days', icon: 'Users' },
+                            { metric: '67', suffix: '%', prefix: '', desc: 'engagement vs 20% average', icon: 'Eye' },
+                            { metric: '5', suffix: ' minutes', desc: 'average interaction time', icon: 'Clock' }
                         ].map((stat, index) => (
                             <Grid item xs={4} sm={4} key={index}>
                                 <motion.div
@@ -1942,36 +2164,7 @@ const PersonalizedOutboundSection = () => {
                     </Grid>
                 </Box>
 
-                <Box sx={{ mt: { xs: 4, md: 6 } }}>
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        whileInView={{ opacity: 1 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.5 }}
-                    >
-                        <Paper sx={{
-                            p: { xs: 2, md: 3 },
-                            maxWidth: 600,
-                            mx: 'auto',
-                            background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.primary.light}30 100%)`,
-                            border: '1px solid',
-                            borderColor: theme.palette.primary.light,
-                            borderRadius: 3
-                        }}>
-                            <Typography variant="body1" sx={{
-                                fontStyle: 'italic',
-                                color: theme.palette.primary.dark,
-                                fontWeight: 500,
-                                fontSize: { xs: '0.9rem', md: '1rem' }
-                            }}>
-                                "I sent 1,000 personalized demos and booked 22 calls in 3 days. Nobody else is doing this."
-                            </Typography>
-                            <Typography variant="caption" color="primary.main" sx={{ mt: 1, display: 'block' }}>
-                                — Early DotBridge User
-                            </Typography>
-                        </Paper>
-                    </motion.div>
-                </Box>
+
             </Container>
 
             {/* Add pulse animation style */}
@@ -2546,7 +2739,7 @@ const FAQSection = () => {
                         textAlign: 'center',
                         fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                     }}>
-                        Frequently Asked Questions
+                        Questions About Bridges?
                     </DotBridgeTypography>
                 </motion.div>
 
@@ -2623,46 +2816,46 @@ const UseCasesSection = () => {
     const buyerJourneySteps = [
         {
             icon: 'Eye',
-            title: 'Awareness',
-            description: 'First touchpoint with prospect',
-            bridgeAction: 'Educational content Bridge',
-            example: 'Industry insights & trends',
+            title: 'First Impression',
+            description: 'Initial connection point',
+            bridgeAction: 'Introduction Bridge',
+            example: 'Share expertise & build trust',
             color: 'primary',
             gradient: blueGradient
         },
         {
-            icon: 'Phone',
-            title: 'Discovery Call',
-            description: 'Initial needs assessment',
-            bridgeAction: 'Pre-call prep Bridge',
-            example: 'Qualify & gather requirements',
+            icon: 'MessageSquare',
+            title: 'Understanding',
+            description: 'Learn about their needs',
+            bridgeAction: 'Conversation Bridge',
+            example: 'Ask questions & listen',
             color: 'primary',
             gradient: blueGradient
         },
         {
             icon: 'Presentation',
-            title: 'Product Demo',
-            description: 'Tailored solution showcase',
-            bridgeAction: 'Interactive demo Bridge',
-            example: 'Personalized walkthrough',
+            title: 'Solution',
+            description: 'Show how you can help',
+            bridgeAction: 'Demo Bridge',
+            example: 'Personalized presentation',
             color: 'primary',
             gradient: blueGradient
         },
         {
-            icon: 'FileText',
-            title: 'Sales Proposal',
-            description: 'Business case & pricing',
-            bridgeAction: 'Proposal review Bridge',
-            example: 'ROI calculator & terms',
+            icon: 'CheckCircle',
+            title: 'Decision',
+            description: 'Support their choice',
+            bridgeAction: 'Support Bridge',
+            example: 'Answer final questions',
             color: 'primary',
             gradient: blueGradient
         },
         {
             icon: 'Rocket',
-            title: 'Onboarding',
-            description: 'Customer success starts',
-            bridgeAction: 'Onboarding Bridge',
-            example: 'Training & implementation',
+            title: 'Success',
+            description: 'Help them achieve goals',
+            bridgeAction: 'Success Bridge',
+            example: 'Guide & support journey',
             color: 'primary',
             gradient: blueGradient
         }
@@ -2754,7 +2947,7 @@ const UseCasesSection = () => {
                                 fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' },
                                 mt: { xs: 0.5, md: 0.25 }
                             }}>
-                                of Your Buyer's Journey
+                                of Your Connection Journey
                             </Box>
                         </DotBridgeTypography>
                     </motion.div>
@@ -2772,7 +2965,7 @@ const UseCasesSection = () => {
                             px: { xs: 2, sm: 2, md: 0 },
                             textAlign: 'center'
                         }}>
-                            From awareness to onboarding, create personalized Bridges that guide prospects through
+                            From first impression to success, create personalized Bridges that guide people through
                             every touchpoint. Each Bridge speaks to specific needs at the right moment.
                         </DotBridgeTypography>
                     </motion.div>
@@ -3163,15 +3356,15 @@ const UseCasesSection = () => {
                             color: darkBlue,
                             fontSize: { xs: '1.5rem', sm: '2rem', md: '2.25rem' }
                         }}>
-                            The Result: 3× More Qualified Meetings
+                            The Result: 3× More Meaningful Connections
                         </Typography>
                     </motion.div>
 
                     <Grid container spacing={{ xs: 2, md: 3 }} justifyContent="center">
                         {[
-                            { metric: '73%', label: 'Higher Engagement', desc: 'vs static videos' },
-                            { metric: '5× More', label: 'Qualified Leads', desc: 'through AI conversations' },
-                            { metric: '24/7', label: 'Sales Coverage', desc: 'never miss a prospect' }
+                            { metric: '73%', label: 'Higher Engagement', desc: 'vs static content' },
+                            { metric: '5× More', label: 'Quality Connections', desc: 'through AI conversations' },
+                            { metric: '24/7', label: 'Always Available', desc: 'never miss an opportunity' }
                         ].map((stat, index) => (
                             <Grid item xs={4} sm={4} key={index}>
                                 <motion.div
@@ -3240,6 +3433,7 @@ const UseCasesSection = () => {
                                 fontSize: { xs: '0.9rem', md: '1.1rem' },
                                 fontWeight: 600,
                                 background: blueGradient,
+                                color: 'white',
                                 boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
                                 '&:hover': {
                                     transform: 'translateY(-2px)',
@@ -3961,7 +4155,7 @@ const PricingSection = () => {
                                 </Box>
                             ))}
                         </Box>
-                        <DotBridgeButton fullWidth variant="contained" color="primary" component={Link} to="/signup?plan=standard">
+                        <DotBridgeButton fullWidth variant="contained" color="primary" component={Link} to="/signup?plan=standard" sx={{ color: 'white' }}>
                             Start Free Trial
                         </DotBridgeButton>
                     </DotBridgeCard>
@@ -4067,7 +4261,7 @@ const FinalCTASection = () => {
                         lineHeight: { xs: 1.2, md: 1.1 },
                         textAlign: 'center'
                     }}>
-                        Ready to Scale Your Sales with AI?
+                        The Future of Outbound is Here.
                     </DotBridgeTypography>
                 </motion.div>
                 <motion.div
@@ -4086,8 +4280,8 @@ const FinalCTASection = () => {
                         px: { xs: 2, sm: 1, md: 0 },
                         textAlign: 'center'
                     }}>
-                        Transform your sales content into intelligent conversations.
-                        Start with one Bridge, scale to thousands.
+                        Join the companies replacing manual outreach with intelligent Bridges.
+                        Whether you're selling software or yourself, the old way is dead.
                     </DotBridgeTypography>
                 </motion.div>
                 <motion.div
@@ -4105,53 +4299,82 @@ const FinalCTASection = () => {
                     }}>
                         <DotBridgeButton
                             size="large"
+                            variant="contained"
+                            component={Link}
+                            to="/services"
+                            onClick={() => triggerHaptic('medium')}
+                            endIcon={<DotBridgeIcon name="ArrowRight" size={20} />}
                             sx={{
-                                bgcolor: 'common.white',
-                                color: 'primary.main',
-                                px: { xs: 4, sm: 4 },
-                                py: { xs: 2, sm: 1.5 },
-                                fontSize: { xs: '1.125rem', sm: '1rem' },
-                                fontWeight: 600,
+                                bgcolor: 'white',
+                                color: 'common.white',
+                                px: { xs: 4, sm: 5 },
+                                py: { xs: 2.25, sm: 2 },
+                                fontSize: { xs: '1.125rem', sm: '1.125rem' },
+                                fontWeight: 700,
                                 width: { xs: '100%', sm: 'auto' },
-                                minHeight: { xs: '56px', sm: 'auto' },
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                borderRadius: { xs: 2, sm: 1.5 },
+                                minHeight: { xs: '60px', sm: 'auto' },
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                                borderRadius: theme.shape.borderRadiusLarge,
+                                border: '2px solid',
+                                borderColor: 'white',
+                                position: 'relative',
+                                overflow: 'hidden',
                                 '&:hover': {
                                     bgcolor: 'grey.100',
-                                    transform: 'translateY(-2px)',
-                                    boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
+                                    color: 'primary.dark',
+                                    transform: 'translateY(-3px)',
+                                    boxShadow: '0 16px 48px rgba(0,0,0,0.3)',
+                                    borderColor: 'grey.100',
+                                    '&::before': {
+                                        opacity: 1,
+                                    }
                                 },
                                 '&:active': {
                                     transform: 'scale(0.98)'
+                                },
+                                '&::before': {
+                                    content: '""',
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: '-100%',
+                                    width: '100%',
+                                    height: '100%',
+                                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                                    transition: 'all 0.6s ease',
+                                    opacity: 0,
+                                },
+                                '&:hover::before': {
+                                    left: '100%',
+                                    opacity: 1,
                                 }
                             }}
-                            variant="contained"
-                            component={Link}
-                            to="/signup"
-                            onClick={() => triggerHaptic('medium')}
                         >
-                            Start Building Free
+                            Explore B2B Solutions
                         </DotBridgeButton>
                         <DotBridgeButton
                             size="large"
                             variant="outlined"
                             component={Link}
-                            to={`/viewBridge/${DEMO_BRIDGE_ID}`}
+                            to="/career-accelerator"
                             sx={{
                                 color: 'common.white',
-                                borderColor: 'rgba(255,255,255,0.5)',
+                                borderColor: 'common.white',
                                 borderWidth: '2px',
                                 px: { xs: 4, sm: 4 },
                                 py: { xs: 1.75, sm: 1.5 },
                                 fontSize: { xs: '1rem', sm: '1rem' },
+                                fontWeight: 600,
                                 width: { xs: '100%', sm: 'auto' },
                                 minHeight: { xs: '56px', sm: 'auto' },
                                 borderRadius: { xs: 2, sm: 1.5 },
+                                boxShadow: '0 4px 16px rgba(255,255,255,0.1)',
                                 '&:hover': {
                                     borderColor: 'common.white',
-                                    bgcolor: 'rgba(255,255,255,0.1)',
+                                    bgcolor: 'common.white',
+                                    color: 'primary.dark',
                                     transform: 'translateY(-2px)',
-                                    borderWidth: '2px'
+                                    borderWidth: '2px',
+                                    boxShadow: '0 8px 24px rgba(255,255,255,0.2)'
                                 },
                                 '&:active': {
                                     transform: 'scale(0.98)'
@@ -4159,7 +4382,7 @@ const FinalCTASection = () => {
                             }}
                             onClick={() => triggerHaptic('light')}
                         >
-                            Watch Demo
+                            Career Solutions
                         </DotBridgeButton>
                     </Box>
                 </motion.div>
@@ -4190,9 +4413,9 @@ function DotBridgeLandingPage() {
 
             <PersonalizedOutboundSection />
 
-            <Section variant="light">
+            {/* <Section variant="light">
                 <FlowsSection />
-            </Section>
+            </Section> */}
 
             <HowItWorksSection />
 

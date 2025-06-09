@@ -208,7 +208,7 @@ const ServicesPage = () => {
                 >
                     <Box sx={{ mb: { xs: 2, sm: 3 } }}>
                         <Chip
-                            label="🎯 PIPELINE-AS-A-SERVICE"
+                            label="🎯 BRIDGE-AS-OUTBOUND"
                             sx={{
                                 background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.primary.light}50 100%)`,
                                 color: theme.palette.primary.dark,
@@ -247,7 +247,7 @@ const ServicesPage = () => {
                             display: 'block',
                             mb: { xs: 0.25, sm: 0.5, md: 0.25 }
                         }}>
-                            Install a GTM Engine That
+                            Scale Your Outreach,
                         </Box>
                         <Box component="span" sx={{
                             display: 'block',
@@ -257,7 +257,7 @@ const ServicesPage = () => {
                             WebkitTextFillColor: 'transparent',
                             mt: { xs: 0.15, sm: 0.25, md: 0.15 }
                         }}>
-                            Books Sales Calls While You Sleep
+                            Personalize Every Pitch
                         </Box>
                     </DotBridgeTypography>
 
@@ -276,37 +276,7 @@ const ServicesPage = () => {
                             opacity: { xs: 0.95, sm: 0.85 }
                         }}
                     >
-                        We combine
-                        <Box component="span" sx={{
-                            fontWeight: 600,
-                            color: 'primary.main',
-                            whiteSpace: { xs: 'normal', sm: 'nowrap' },
-                            display: { xs: 'block', sm: 'inline' },
-                            my: { xs: 1, sm: 0 }
-                        }}> AI-powered demos, scraping, and outreach</Box>
-                        <Box component="span" sx={{
-                            display: { xs: 'block', sm: 'inline' },
-                            my: { xs: 1, sm: 0 }
-                        }}> to deliver qualified pipeline</Box>
-                        <Box component="span" sx={{
-                            fontWeight: 600,
-                            color: 'text.primary',
-                            display: { xs: 'block', sm: 'inline' },
-                            mt: { xs: 1, sm: 0 }
-                        }}> without hiring more SDRs.</Box>
-                        <Box component="span" sx={{
-                            display: 'block',
-                            mt: { xs: 3, sm: 2, md: 1 },
-                            mb: { xs: 1, sm: 0 },
-                            fontSize: { xs: '0.9375rem', sm: '1rem', md: '1.35rem' },
-                            color: 'text.secondary',
-                            fontStyle: 'normal',
-                            lineHeight: { xs: 1.6, sm: 1.5 },
-                            px: { xs: 1, md: 0 },
-                            opacity: { xs: 0.9, sm: 0.85 }
-                        }}>
-                            Your first GTM hire that never sleeps, never quits, and scales infinitely.
-                        </Box>
+                        Launch AI-powered video campaigns that engage 1,000+ prospects like you're speaking to one — and book qualified meetings automatically.
                     </DotBridgeTypography>
 
                     {/* Demo Section - Clean styling with proper mobile aspect ratio and 3D tilt */}
@@ -449,7 +419,7 @@ const ServicesPage = () => {
                                     px: { xs: 2, md: 0 }
                                 }}
                             >
-                                From first touch to booked meeting - completely automated and personalized at scale
+                                From prospect research to signed deals - completely automated and personalized at scale
                             </DotBridgeTypography>
 
                             {/* Process Flow Diagram */}
@@ -591,9 +561,15 @@ const ServicesPage = () => {
                                         fontSize: '1.125rem',
                                         fontWeight: 600,
                                         borderRadius: 2,
-                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                        bgcolor: 'primary.main',
+                                        color: 'white',
+                                        border: '2px solid',
+                                        borderColor: 'primary.main',
                                         boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
                                         '&:hover': {
+                                            bgcolor: 'primary.dark',
+                                            color: 'white',
+                                            borderColor: 'primary.dark',
                                             transform: 'translateY(-2px)',
                                             boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
                                         }
@@ -659,7 +635,7 @@ const ServicesPage = () => {
                                             price: "$5K",
                                             subtitle: "one-time setup",
                                             description: "Perfect for testing the waters",
-                                            mainValue: "Get 500+ qualified leads delivered with automated outreach",
+                                            mainValue: "Get 500+ qualified prospects delivered with automated outreach",
                                             includes: {
                                                 leads: "500+",
                                                 bridges: "1",
@@ -670,10 +646,10 @@ const ServicesPage = () => {
                                                 support: "Email"
                                             },
                                             highlights: [
-                                                "Scraped & enriched B2B leads",
-                                                "1 personalized interactive demo",
+                                                "Researched & verified B2B prospects",
+                                                "1 personalized interactive presentation",
                                                 "5-touch email sequence",
-                                                "Basic CRM integration"
+                                                "Basic sales system integration"
                                             ],
                                             color: 'grey',
                                             popular: false
@@ -682,8 +658,8 @@ const ServicesPage = () => {
                                             tier: "Pro",
                                             price: "$10K-$15K",
                                             subtitle: "one-time setup",
-                                            description: "For serious pipeline builders",
-                                            mainValue: "2,000+ leads with multi-channel outreach and A/B testing",
+                                            description: "For serious revenue builders",
+                                            mainValue: "2,000+ prospects with multi-channel outreach and optimization",
                                             includes: {
                                                 leads: "2,000+",
                                                 bridges: "2-3",
@@ -694,10 +670,10 @@ const ServicesPage = () => {
                                                 support: "Priority"
                                             },
                                             highlights: [
-                                                "2,000+ enriched prospects",
-                                                "2-3 segment-specific demos",
+                                                "2,000+ qualified business prospects",
+                                                "2-3 industry-specific presentations",
                                                 "LinkedIn + email automation",
-                                                "Advanced lead scoring",
+                                                "Advanced opportunity scoring",
                                                 "A/B testing framework"
                                             ],
                                             color: 'primary',
@@ -707,8 +683,8 @@ const ServicesPage = () => {
                                             tier: "Growth",
                                             price: "$3K",
                                             subtitle: "per month",
-                                            description: "Continuous pipeline optimization",
-                                            mainValue: "Never-ending pipeline with monthly campaign refresh",
+                                            description: "Continuous sales optimization",
+                                            mainValue: "Never-ending prospect flow with monthly campaign refresh",
                                             includes: {
                                                 leads: "2,000+/mo",
                                                 bridges: "Ongoing",
@@ -719,10 +695,10 @@ const ServicesPage = () => {
                                                 support: "Dedicated Manager"
                                             },
                                             highlights: [
-                                                "2,000+ new leads monthly",
+                                                "2,000+ new prospects monthly",
                                                 "Weekly optimization calls",
-                                                "AI-generated ad creative",
-                                                "Custom integrations",
+                                                "AI-generated sales materials",
+                                                "Custom system integrations",
                                                 "Dedicated success manager"
                                             ],
                                             color: 'success',
@@ -1098,9 +1074,14 @@ const ServicesPage = () => {
                                                             fontSize: { xs: '0.9375rem', md: '1rem' },
                                                             mt: 'auto',
                                                             ...(pkg.popular && {
-                                                                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                                                bgcolor: 'primary.main',
+                                                                color: 'white',
+                                                                border: '2px solid',
+                                                                borderColor: 'primary.main',
                                                                 boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
                                                                 '&:hover': {
+                                                                    bgcolor: 'primary.dark',
+                                                                    borderColor: 'primary.dark',
                                                                     transform: 'translateY(-2px)',
                                                                     boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
                                                                 }
@@ -1142,13 +1123,13 @@ const ServicesPage = () => {
                                     px: { xs: 1, md: 0 }
                                 }}
                             >
-                                Want a GTM System That
+                                Want a Sales System That
                                 <Box component="span" sx={{
                                     color: 'primary.main',
                                     display: 'block',
                                     mt: { xs: 0.25, md: 0.15 }
                                 }}>
-                                    Replaces Your First SDR?
+                                    Works Around the Clock?
                                 </Box>
                             </DotBridgeTypography>
 
@@ -1166,7 +1147,7 @@ const ServicesPage = () => {
                                     lineHeight: 1.6
                                 }}
                             >
-                                Book a free strategy walkthrough to see how our Pipeline-as-a-Service can 3x your qualified pipeline
+                                Book a free strategy session to see how our automated sales system can 3x your qualified opportunities
                                 in the next 90 days.
                             </DotBridgeTypography>
 
@@ -1277,7 +1258,7 @@ const ServicesPage = () => {
                                                     fontWeight: 500,
                                                     fontSize: { xs: '0.9375rem', md: '1rem' }
                                                 }}>
-                                                    What's your current biggest pipeline challenge?
+                                                    What's your biggest sales challenge right now?
                                                 </FormLabel>
                                                 <RadioGroup
                                                     name="hasExistingCourse"
@@ -1289,7 +1270,7 @@ const ServicesPage = () => {
                                                     <FormControlLabel
                                                         value="lead-gen"
                                                         control={<Radio color="primary" />}
-                                                        label="Not enough qualified leads"
+                                                        label="Not enough qualified prospects"
                                                         sx={{
                                                             '& .MuiFormControlLabel-label': {
                                                                 fontSize: { xs: '0.875rem', md: '0.95rem' }
@@ -1299,7 +1280,7 @@ const ServicesPage = () => {
                                                     <FormControlLabel
                                                         value="conversion"
                                                         control={<Radio color="primary" />}
-                                                        label="Low demo-to-close conversion"
+                                                        label="Low meeting-to-close conversion"
                                                         sx={{
                                                             '& .MuiFormControlLabel-label': {
                                                                 fontSize: { xs: '0.875rem', md: '0.95rem' }
@@ -1309,7 +1290,7 @@ const ServicesPage = () => {
                                                     <FormControlLabel
                                                         value="scaling"
                                                         control={<Radio color="primary" />}
-                                                        label="Can't scale current process"
+                                                        label="Can't scale current sales process"
                                                         sx={{
                                                             '& .MuiFormControlLabel-label': {
                                                                 fontSize: { xs: '0.875rem', md: '0.95rem' }
@@ -1319,7 +1300,7 @@ const ServicesPage = () => {
                                                     <FormControlLabel
                                                         value="attribution"
                                                         control={<Radio color="primary" />}
-                                                        label="Poor pipeline attribution/visibility"
+                                                        label="Poor sales tracking/visibility"
                                                         sx={{
                                                             '& .MuiFormControlLabel-label': {
                                                                 fontSize: { xs: '0.875rem', md: '0.95rem' }
@@ -1332,14 +1313,14 @@ const ServicesPage = () => {
                                                 <TextField
                                                     variant="outlined"
                                                     fullWidth
-                                                    label="Tell us about your current revenue goals & team size"
+                                                    label="Tell us about your business & sales goals"
                                                     name="courseTopic"
                                                     value={lead.courseTopic}
                                                     onChange={handleInputChange}
                                                     multiline
                                                     rows={3}
                                                     required
-                                                    placeholder="e.g., $10M ARR target, 15-person sales team, struggling with lead quality..."
+                                                    placeholder="e.g., $5M revenue target, 8-person team, struggling with prospect quality & conversion..."
                                                     sx={{
                                                         '& .MuiOutlinedInput-root': {
                                                             borderRadius: 2
@@ -1369,13 +1350,21 @@ const ServicesPage = () => {
                                                         fontSize: { xs: '1rem', md: '1.25rem' },
                                                         fontWeight: 600,
                                                         borderRadius: 2,
-                                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                                        bgcolor: 'primary.main',
+                                                        color: 'white',
+                                                        border: '2px solid',
+                                                        borderColor: 'primary.main',
                                                         boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
                                                         '&:hover': {
+                                                            bgcolor: 'primary.dark',
+                                                            borderColor: 'primary.dark',
                                                             transform: 'translateY(-2px)',
                                                             boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
                                                         },
                                                         '&:disabled': {
+                                                            bgcolor: 'grey.400',
+                                                            borderColor: 'grey.400',
+                                                            color: 'white',
                                                             transform: 'none',
                                                             boxShadow: '0 4px 12px rgba(0, 102, 255, 0.2)'
                                                         }
@@ -1384,7 +1373,7 @@ const ServicesPage = () => {
                                                     {isSubmitting ? (
                                                         <CircularProgress size={24} color="inherit" />
                                                     ) : (
-                                                        'Get Your Revenue Engine Audit →'
+                                                        'Get Your Sales System Audit →'
                                                     )}
                                                 </DotBridgeButton>
                                             </Grid>
@@ -1458,7 +1447,7 @@ const ServicesPage = () => {
                                 lineHeight: { xs: 1.6, md: 1.6 }
                             }}
                         >
-                            Why juggle 8 different tools when you can have
+                            Why manage multiple sales tools when you can have
                             <Box component="span" sx={{
                                 fontWeight: 600,
                                 color: 'primary.main',
@@ -1468,7 +1457,7 @@ const ServicesPage = () => {
                                 {' '}one integrated system that finds, engages, and converts prospects
                             </Box>
                             <Box component="span" sx={{ display: { xs: 'block', sm: 'inline' } }}>
-                                {' '}from first touch to signed contract?
+                                {' '}from first contact to closed deal?
                             </Box>
                         </DotBridgeTypography>
                     </motion.div>
@@ -1497,7 +1486,7 @@ const ServicesPage = () => {
                         <Box component="span" sx={{
                             color: 'primary.main',
                             display: { xs: 'block', sm: 'inline' }
-                        }}> Pipeline-as-a-Service</Box>
+                        }}> Sales Automation System</Box>
                     </DotBridgeTypography>
 
                     <DotBridgeTypography
@@ -1512,49 +1501,49 @@ const ServicesPage = () => {
                             px: { xs: 2, md: 0 }
                         }}
                     >
-                        From prospect identification to deal closure - we handle your entire revenue engine
-                        so you can focus on scaling your business.
+                        From prospect research to closed deals - we handle your entire sales process
+                        so you can focus on growing your business.
                     </DotBridgeTypography>
 
                     <Grid container spacing={{ xs: 3, md: 4 }} justifyContent="center" sx={{ maxWidth: '1200px', mx: 'auto' }}>
                         {[
                             {
-                                title: "Intelligent Lead Discovery & Enrichment",
-                                description: "AI-powered prospect identification with deep data enrichment. We find your ideal customers and build comprehensive profiles before first contact.",
+                                title: "Smart Prospect Research & Targeting",
+                                description: "AI-powered prospect identification with comprehensive business intelligence. We find your ideal buyers and build detailed profiles for maximum relevance.",
                                 icon: <QueryStats sx={{ fontSize: 40, color: 'primary.main' }} />,
-                                features: ["Intent data analysis", "Company & contact enrichment", "Ideal Customer Profile matching"],
+                                features: ["Market intelligence gathering", "Decision-maker identification", "Buying signal detection"],
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)',
                                 delay: 0
                             },
                             {
-                                title: "Personalized Multi-Channel Outreach",
-                                description: "Coordinated email and LinkedIn campaigns that adapt messaging based on prospect behavior and engagement patterns.",
+                                title: "Multi-Channel Sales Campaigns",
+                                description: "Coordinated outreach across email, LinkedIn, and phone that adapts messaging based on prospect engagement and industry context.",
                                 icon: <Users sx={{ fontSize: 40, color: 'primary.main' }} />,
-                                features: ["Email sequence automation", "LinkedIn outreach campaigns", "Behavioral response triggers"],
+                                features: ["Email sequence automation", "LinkedIn outreach", "Call scheduling integration"],
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)',
                                 delay: 0.1
                             },
                             {
-                                title: "Interactive Demo Experiences",
-                                description: "Transform prospects into qualified leads with AI-powered video demos that adapt to viewer interests and capture intent signals.",
+                                title: "Interactive Sales Presentations",
+                                description: "Transform prospects into qualified opportunities with AI-powered presentations that adapt to viewer interests and capture buying intent.",
                                 icon: <TrendingUp sx={{ fontSize: 40, color: 'primary.main' }} />,
-                                features: ["Real-time interaction", "Lead qualification", "Automated booking"],
+                                features: ["Real-time interaction", "Opportunity qualification", "Meeting automation"],
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)',
                                 delay: 0.2
                             },
                             {
-                                title: "CRM Integration & Analytics",
-                                description: "Seamless data flow into your existing systems with comprehensive attribution tracking and pipeline performance analytics.",
+                                title: "Sales Process Integration",
+                                description: "Seamless workflow integration with your existing sales tools, complete with performance tracking and deal attribution analytics.",
                                 icon: <Groups sx={{ fontSize: 40, color: 'primary.main' }} />,
-                                features: ["Native CRM sync", "Attribution tracking", "Performance dashboards"],
+                                features: ["CRM synchronization", "Deal attribution", "Performance reporting"],
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)',
                                 delay: 0.3
                             },
                             {
-                                title: "AI-Generated Creative Assets",
-                                description: "Dynamic ad creative generation and A/B testing to maximize conversion rates across all touchpoints.",
+                                title: "Dynamic Sales Content Creation",
+                                description: "AI-generated sales materials and A/B testing to maximize response rates across all customer touchpoints and sales stages.",
                                 icon: <Sparkles sx={{ fontSize: 40, color: 'primary.main' }} />,
-                                features: ["Dynamic ad creation", "A/B testing automation", "Creative optimization"],
+                                features: ["Sales material generation", "A/B testing automation", "Content optimization"],
                                 gradient: 'linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0) 60%)',
                                 delay: 0.4
                             }
@@ -1784,30 +1773,30 @@ const ServicesPage = () => {
                         <Grid container spacing={4} justifyContent="center">
                             {[
                                 {
-                                    title: "Founders & CEOs",
-                                    description: "Who don't want to hire a sales team yet",
+                                    title: "Business Owners",
+                                    description: "Who need sales results without the sales team",
                                     pain: "You need revenue, not overhead",
                                     icon: <Users sx={{ fontSize: 48 }} />,
                                     gradient: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)'
                                 },
                                 {
-                                    title: "CROs & VP Sales",
-                                    description: "Who want to scale without more SDRs",
-                                    pain: "Your CAC is too high to keep hiring",
+                                    title: "Sales Leaders",
+                                    description: "Who want to scale without hiring more reps",
+                                    pain: "Your cost per deal is too high to keep hiring",
                                     icon: <TrendingUp sx={{ fontSize: 48 }} />,
                                     gradient: 'linear-gradient(135deg, #5856D6 0%, #AF52DE 100%)'
                                 },
                                 {
-                                    title: "RevOps Leaders",
-                                    description: "Optimizing funnel ROI",
-                                    pain: "You're drowning in tools, not insights",
+                                    title: "Operations Managers",
+                                    description: "Optimizing sales efficiency and ROI",
+                                    pain: "You're managing processes, not driving results",
                                     icon: <QueryStats sx={{ fontSize: 48 }} />,
                                     gradient: 'linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%)'
                                 },
                                 {
-                                    title: "Growth Agencies",
-                                    description: "Automating client acquisition",
-                                    pain: "You practice what you preach",
+                                    title: "Marketing Directors",
+                                    description: "Converting leads into qualified opportunities",
+                                    pain: "Your MQLs aren't becoming SQLs",
                                     icon: <Groups sx={{ fontSize: 48 }} />,
                                     gradient: 'linear-gradient(135deg, #34C759 0%, #30D158 100%)'
                                 }
@@ -1959,12 +1948,12 @@ const ServicesPage = () => {
                             px: { xs: 2, md: 0 }
                         }}
                     >
-                        Your Competition is Building
+                        Stop Chasing Prospects.
                         <Box component="span" sx={{
                             display: 'block',
                             mt: { xs: 0.5, md: 0 }
                         }}>
-                            Their GTM Engine Right Now.
+                            Start Building Bridges.
                         </Box>
                     </DotBridgeTypography>
 
@@ -1980,25 +1969,29 @@ const ServicesPage = () => {
                             px: { xs: 2, md: 0 }
                         }}
                     >
-                        While they're hiring SDRs at $80K+ each, you could have an AI system
-                        booking qualified meetings 24/7. Which strategy wins in 2024?
+                        One Bridge can replace an entire sales team. For less than a month's payroll,
+                        get a system that never sleeps, never quits, and builds your business.
                     </DotBridgeTypography>
 
                     <DotBridgeButton
                         variant="contained"
                         size="large"
                         sx={{
-                            bgcolor: 'common.white',
-                            color: 'primary.main',
+                            bgcolor: 'white',
+                            color: 'common.white',
                             px: 4,
                             py: 1.5,
                             fontSize: { xs: '1rem', md: '1.125rem' },
-                            fontWeight: 600,
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                            fontWeight: 800,
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                            border: '2px solid',
+                            borderColor: 'white',
                             '&:hover': {
                                 bgcolor: 'grey.100',
+                                color: 'primary.light',
+                                borderColor: 'grey.100',
                                 transform: 'translateY(-2px)',
-                                boxShadow: '0 12px 32px rgba(0,0,0,0.2)'
+                                boxShadow: '0 12px 32px rgba(0,0,0,0.3)'
                             }
                         }}
                         onClick={() => {
@@ -2008,7 +2001,7 @@ const ServicesPage = () => {
                             });
                         }}
                     >
-                        Install Your GTM Engine Today →
+                        Transform Your Sales→
                     </DotBridgeButton>
                 </Container>
             </Box>
@@ -2048,16 +2041,22 @@ const ServicesPage = () => {
                         fontSize: '1rem',
                         fontWeight: 600,
                         borderRadius: 3,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        border: '2px solid',
+                        borderColor: 'primary.main',
                         boxShadow: '0 8px 32px rgba(0, 102, 255, 0.4)',
                         '&:hover': {
+                            bgcolor: 'primary.dark',
+                            color: 'white',
+                            borderColor: 'primary.dark',
                             transform: 'translateY(-3px) scale(1.02)',
                             boxShadow: '0 12px 40px rgba(0, 102, 255, 0.5)'
                         },
                         transition: 'all 0.3s ease'
                     }}
                 >
-                    Get Revenue Audit →
+                    Get Sales Audit →
                 </DotBridgeButton>
             </motion.div>
 

@@ -18,7 +18,10 @@ import {
     FormLabel,
     RadioGroup,
     FormControlLabel,
-    Radio
+    Radio,
+    LinearProgress,
+    IconButton,
+    Alert
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -32,24 +35,31 @@ import {
     FileText,
     TrendingUp,
     Users,
-    Star,
     ArrowRight,
     Sparkles,
     Rocket,
-    Shield,
     Clock,
     Globe,
     Briefcase,
     Heart,
     Zap,
     Award,
-    ChevronRight
+    ChevronRight,
+    Upload,
+    X,
+    FileCheck,
+    AlertCircle,
+    Star,
+    BarChart3,
+    Lightbulb,
+    RefreshCw
 } from 'lucide-react';
 import Footer from '../components/Footer';
 import DotBridgeButton from '../components/DotBridgeButton';
 import DotBridgeTypography from '../components/DotBridgeTypography';
 import DotBridgeCard from '../components/DotBridgeCard';
 import AgentConnector from '../components/AgentConnector';
+import ResumeAnalyzer from '../components/ResumeAnalyzer';
 
 // Demo Bridge ID for the AI intake
 const CAREER_DEMO_BRIDGE_ID = '448';
@@ -84,6 +94,9 @@ const staggerChildren = {
 const PageContainer = styled(Container)(({ theme }) => ({
     paddingTop: theme.spacing(4),
     paddingBottom: theme.spacing(8),
+    paddingLeft: { xs: theme.spacing(2), sm: theme.spacing(3), md: theme.spacing(4) },
+    paddingRight: { xs: theme.spacing(2), sm: theme.spacing(3), md: theme.spacing(4) },
+    maxWidth: 'none !important',
     [theme.breakpoints.up('md')]: {
         paddingTop: theme.spacing(6),
         paddingBottom: theme.spacing(10),
@@ -163,35 +176,7 @@ const PricingCard = styled(Paper)(({ theme, popular }) => ({
     },
 }));
 
-const TestimonialCard = styled(Card)(({ theme }) => ({
-    padding: theme.spacing(3),
-    height: '100%',
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: theme.shape.borderRadius * 2,
-    background: theme.palette.background.paper,
-    transition: 'all 0.3s ease',
-    position: 'relative',
-    overflow: 'hidden',
-    '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: theme.shadows[8],
-        borderColor: theme.palette.primary.light,
-    },
-    '&::before': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
-        opacity: 0,
-        transition: 'opacity 0.3s ease'
-    },
-    '&:hover::before': {
-        opacity: 1
-    }
-}));
+
 
 const CareerAcceleratorPage = () => {
     const theme = useTheme();
@@ -210,18 +195,23 @@ const CareerAcceleratorPage = () => {
     const rotateX = useTransform(scrollYProgress, [0, 0.5], isMobile ? [10, 0] : [15, 0]);
     const scale = useTransform(scrollYProgress, [0, 0.5], isMobile ? [0.98, 1] : [0.97, 1]);
 
+    // Animation and scroll handling
+    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
     // Lead form state
-    const [lead, setLead] = useState({
+    const [leadForm, setLeadForm] = useState({
         name: '',
         email: '',
-        phone: '',
-        currentRole: '',
-        targetRole: '',
-        experience: '',
-        urgency: ''
+        hasExistingCourse: '',
+        courseTopic: ''
     });
-    const [submitted, setSubmitted] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [leadSubmitted, setLeadSubmitted] = useState(false);
+    const [leadSubmitting, setLeadSubmitting] = useState(false);
+
+    // State for personalized AI strategist
+    const [showPersonalizedStrategist, setShowPersonalizedStrategist] = useState(false);
+    const [personalizationId, setPersonalizationId] = useState(null);
+    const [isCreatingPersonalization, setIsCreatingPersonalization] = useState(false);
 
     // Track scroll for floating CTA
     useEffect(() => {
@@ -276,8 +266,7 @@ const CareerAcceleratorPage = () => {
     const pricingPlans = [
         {
             name: "STARTER",
-            price: 149,
-            originalPrice: 199,
+            price: "$149",
             description: "Perfect for getting started",
             mainValue: "Everything you need to launch your targeted job search",
             features: [
@@ -292,8 +281,7 @@ const CareerAcceleratorPage = () => {
         },
         {
             name: "PRO",
-            price: 249,
-            originalPrice: 399,
+            price: "$249",
             description: "Most popular for serious job seekers",
             mainValue: "Comprehensive system with multi-channel outreach",
             features: [
@@ -309,8 +297,7 @@ const CareerAcceleratorPage = () => {
         },
         {
             name: "PREMIUM",
-            price: 399,
-            originalPrice: 699,
+            price: "$399",
             description: "Maximum support & guidance",
             mainValue: "White-glove service with personal coaching",
             features: [
@@ -326,29 +313,7 @@ const CareerAcceleratorPage = () => {
         }
     ];
 
-    const testimonials = [
-        {
-            quote: "The targeted employer list and custom scripts were a game-changer. I went from 0 responses to 3 interviews in my first two weeks!",
-            name: "Sarah K.",
-            role: "Marketing Manager",
-            background: "Previously Retail",
-            rating: 5
-        },
-        {
-            quote: "As a new RN targeting med spas, I had no clue where to start. This system gave me direct contacts and confidence. Got my first offer in a month!",
-            name: "Tracy M.",
-            role: "Registered Nurse",
-            background: "Med Spa Transition",
-            rating: 5
-        },
-        {
-            quote: "After my bootcamp, I was lost in the job search. The AI Career Accelerator gave me a clear roadmap and I landed my dream dev role!",
-            name: "Mike D.",
-            role: "Software Developer",
-            background: "Bootcamp Graduate",
-            rating: 5
-        }
-    ];
+
 
     const targetPersonas = [
         { icon: <Rocket />, text: "Recent Tech Bootcamp Graduates", color: '#007AFF' },
@@ -361,23 +326,23 @@ const CareerAcceleratorPage = () => {
 
     const handleLeadSubmit = async (e) => {
         e.preventDefault();
-        setIsSubmitting(true);
+        setLeadSubmitting(true);
 
         // Simulate API call
         setTimeout(() => {
-            setSubmitted(true);
-            setIsSubmitting(false);
+            setLeadSubmitted(true);
+            setLeadSubmitting(false);
         }, 1500);
     };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setLead(prev => ({ ...prev, [name]: value }));
+        setLeadForm(prev => ({ ...prev, [name]: value }));
     };
 
     return (
         <>
-            <PageContainer maxWidth="lg">
+            <PageContainer>
                 {/* Hero Section - Enhanced */}
                 <Box ref={headerRef}>
                     <HeroSection>
@@ -394,7 +359,7 @@ const CareerAcceleratorPage = () => {
                             >
                                 <Chip
                                     icon={<Sparkles size={16} />}
-                                    label="AI-POWERED JOB SEARCH SYSTEM"
+                                    label="BRIDGE YOUR CAREER"
                                     sx={{
                                         mb: 3,
                                         background: `linear-gradient(135deg, ${theme.palette.primary.main}20 0%, ${theme.palette.primary.light}30 100%)`,
@@ -431,7 +396,7 @@ const CareerAcceleratorPage = () => {
                                     WebkitTextFillColor: 'transparent',
                                     display: 'block'
                                 }}>
-                                    Land Interviews,
+                                    Stop Applying Blind.
                                 </Box>
                                 <Box component="span" sx={{
                                     background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
@@ -441,7 +406,7 @@ const CareerAcceleratorPage = () => {
                                     display: 'block',
                                     mt: 0.5
                                 }}>
-                                    Not Ghosted
+                                    Start Reaching the Right People.
                                 </Box>
                             </DotBridgeTypography>
 
@@ -457,15 +422,7 @@ const CareerAcceleratorPage = () => {
                                     fontWeight: 400
                                 }}
                             >
-                                Stop applying blindly. We build you a
-                                <Box component="span" sx={{
-                                    fontWeight: 600,
-                                    color: theme.palette.primary.main,
-                                    mx: 0.5
-                                }}>
-                                    personalized outreach strategy
-                                </Box>
-                                —identifying ideal employers, crafting compelling messages, and providing a step-by-step daily plan—to get you seen by the right people.
+                                DotBridge gives you a complete job outreach system—built around your goals, your experience, and your voice.
                             </DotBridgeTypography>
 
                             {/* CTA Buttons */}
@@ -497,7 +454,7 @@ const CareerAcceleratorPage = () => {
                                     }}
                                     onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
                                 >
-                                    Start Building My Plan
+                                    Build My Job Plan
                                 </DotBridgeButton>
 
                                 <DotBridgeButton
@@ -521,7 +478,7 @@ const CareerAcceleratorPage = () => {
                                     }}
                                     onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
                                 >
-                                    View Pricing
+                                    See What's Included
                                 </DotBridgeButton>
                             </Box>
 
@@ -535,9 +492,8 @@ const CareerAcceleratorPage = () => {
                                 px: 2
                             }}>
                                 {[
-                                    { icon: <Shield size={20} />, text: "100% Money-Back Guarantee" },
                                     { icon: <Clock size={20} />, text: "48-72 Hour Delivery" },
-                                    { icon: <Users size={20} />, text: "500+ Success Stories" }
+                                    { icon: <Users size={20} />, text: "Professional Service" }
                                 ].map((item, index) => (
                                     <motion.div
                                         key={index}
@@ -576,12 +532,12 @@ const CareerAcceleratorPage = () => {
                             fontWeight: 700,
                             fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
                         }}>
-                            Tired of Sending Your Résumé Into the
+                            Feeling Qualified But
                             <Box component="span" sx={{
                                 color: theme.palette.primary.main,
                                 display: 'block'
                             }}>
-                                Black Hole?
+                                Completely Invisible?
                             </Box>
                         </DotBridgeTypography>
 
@@ -593,18 +549,19 @@ const CareerAcceleratorPage = () => {
                             lineHeight: 1.7,
                             color: theme.palette.text.secondary
                         }}>
-                            You're qualified. You've polished your résumé countless times. You spend hours on job boards,
-                            hitting "apply" only to hear… <strong>silence</strong>. It's frustrating, demoralizing, and feels
-                            like a full-time job with no paycheck.
+                            You have the skills. You've updated your resume countless times. You spend hours scrolling
+                            job boards, clicking "apply" over and over... but it feels like your applications disappear
+                            into a <strong>black hole</strong>. You're frustrated, tired, and starting to question if
+                            anyone will ever notice you.
                         </DotBridgeTypography>
 
                         {/* Pain Points Grid */}
                         <Grid container spacing={3} sx={{ maxWidth: '900px', mx: 'auto', mb: 5 }}>
                             {[
-                                { icon: <Target />, stat: "200+", label: "Average applications sent", color: '#FF3B30' },
-                                { icon: <MessageSquare />, stat: "2%", label: "Typical response rate", color: '#FF9500' },
+                                { icon: <Target />, stat: "200+", label: "Applications sent", color: '#FF3B30' },
+                                { icon: <MessageSquare />, stat: "2%", label: "Response rate", color: '#FF9500' },
                                 { icon: <Clock />, stat: "40hrs", label: "Weekly job search time", color: '#AF52DE' },
-                                { icon: <TrendingUp />, stat: "6mo+", label: "Average search duration", color: '#5856D6' }
+                                { icon: <TrendingUp />, stat: "6mo+", label: "Search duration", color: '#5856D6' }
                             ].map((item, index) => (
                                 <Grid item xs={6} md={3} key={index}>
                                     <motion.div
@@ -660,12 +617,199 @@ const CareerAcceleratorPage = () => {
                                     color: theme.palette.primary.dark,
                                     fontSize: { xs: '1.25rem', sm: '1.5rem' }
                                 }}>
-                                    You don't need another résumé template.
+                                    You don't need another resume template.
                                     <Box component="span" sx={{ display: 'block', mt: 1 }}>
-                                        You need a system that puts you directly in front of decision-makers.
+                                        You need a system that gets you noticed by the right people.
                                     </Box>
                                 </DotBridgeTypography>
                             </Box>
+                        </motion.div>
+                    </motion.div>
+                </Box>
+
+                {/* Resume Analyzer Section */}
+                <Box sx={{ mb: 10, py: 8, bgcolor: theme.palette.background.subtle, borderRadius: 3, mx: { xs: 2, sm: 3, md: 4 } }}>
+                    <Box sx={{ px: { xs: 2, sm: 4, md: 6 }, maxWidth: '1200px', mx: 'auto' }}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.7 }}
+                        >
+                            <DotBridgeTypography variant="h2" sx={{
+                                textAlign: 'center',
+                                mb: 3,
+                                fontWeight: 700,
+                                fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' }
+                            }}>
+                                Get Your Free
+                                <Box component="span" sx={{
+                                    color: theme.palette.primary.main,
+                                    mx: 1
+                                }}>
+                                    AI Resume Analysis
+                                </Box>
+                            </DotBridgeTypography>
+
+                            <DotBridgeTypography variant="h5" sx={{
+                                textAlign: 'center',
+                                mb: 6,
+                                color: theme.palette.text.secondary,
+                                lineHeight: 1.6,
+                                fontSize: { xs: '1.125rem', sm: '1.25rem', md: '1.375rem' }
+                            }}>
+                                Upload your resume and get instant AI-powered insights
+                                <br />
+                                on your strengths, target roles, and improvement opportunities.
+                            </DotBridgeTypography>
+
+                            <ResumeAnalyzer
+                                showPersonalizedStrategist={showPersonalizedStrategist}
+                                setShowPersonalizedStrategist={setShowPersonalizedStrategist}
+                                personalizationId={personalizationId}
+                                setPersonalizationId={setPersonalizationId}
+                                isCreatingPersonalization={isCreatingPersonalization}
+                                setIsCreatingPersonalization={setIsCreatingPersonalization}
+                            />
+                        </motion.div>
+                    </Box>
+                </Box>
+
+                {/* Interactive Demo Section */}
+                <Box id="demo-section" sx={{ mb: 10, py: 8 }}>
+                    <motion.div
+                        ref={demoRef}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.7 }}
+                    >
+                        <DotBridgeTypography variant="h2" sx={{
+                            textAlign: 'center',
+                            mb: 2,
+                            fontWeight: 700,
+                            fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' }
+                        }}>
+                            Meet Your AI Career Strategist
+                        </DotBridgeTypography>
+
+                        <DotBridgeTypography variant="h6" sx={{
+                            textAlign: 'center',
+                            mb: 6,
+                            color: theme.palette.text.secondary,
+                            maxWidth: '700px',
+                            mx: 'auto'
+                        }}>
+                            Chat with our AI assistant below. Upload your résumé or simply tell it about your career goals.
+                            In minutes, it will analyze your needs and generate a free preview of your personalized outreach strategy.
+                        </DotBridgeTypography>
+
+                        <motion.div
+                            style={{
+                                perspective: isMobile ? '1000px' : '1500px',
+                                perspectiveOrigin: '50% 30%'
+                            }}
+                        >
+                            <motion.div
+                                style={{
+                                    rotateX: prefersReducedMotion ? 0 : rotateX,
+                                    scale: prefersReducedMotion ? 1 : scale,
+                                    transformStyle: 'preserve-3d',
+                                    transformOrigin: '50% 100%'
+                                }}
+                            >
+                                <Box sx={{
+                                    maxWidth: '1100px',
+                                    mx: 'auto',
+                                    position: 'relative',
+                                    borderRadius: 3,
+                                    overflow: 'hidden',
+                                    boxShadow: '0 30px 80px rgba(0, 102, 255, 0.15)',
+                                    border: '2px solid',
+                                    borderColor: theme.palette.primary.light,
+                                    bgcolor: 'background.paper',
+                                    aspectRatio: '16 / 9',
+                                    transform: 'translateZ(0)',
+                                    backfaceVisibility: 'hidden'
+                                }}>
+                                    {/* Demo Header */}
+                                    <Box sx={{
+                                        p: 2,
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
+                                        background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.background.paper} 100%)`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between'
+                                    }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Sparkles size={20} color={theme.palette.primary.main} />
+                                            <DotBridgeTypography variant="subtitle1" fontWeight={600}>
+                                                AI Career Strategist
+                                            </DotBridgeTypography>
+                                        </Box>
+                                        <Chip
+                                            label="LIVE DEMO"
+                                            size="small"
+                                            color="primary"
+                                            sx={{ fontWeight: 600 }}
+                                        />
+                                    </Box>
+
+                                    {/* Agent Connector - Conditionally Rendered */}
+                                    <Box sx={{
+                                        position: 'relative',
+                                        height: 'calc(100% - 60px)',
+                                        '& .agent-connector-container': {
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            height: '100%',
+                                        }
+                                    }}>
+                                        {showPersonalizedStrategist && personalizationId ? (
+                                            <div className="agent-connector-container">
+                                                <AgentConnector
+                                                    brdgeId={CAREER_DEMO_BRIDGE_ID}
+                                                    agentType="view"
+                                                    token=""
+                                                    userId={`anon_demo_${Date.now()}`}
+                                                    isEmbed={false}
+                                                    personalizationId={personalizationId}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <Box sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                height: '100%',
+                                                color: 'text.secondary',
+                                                flexDirection: 'column',
+                                                gap: 2
+                                            }}>
+                                                {isCreatingPersonalization ? (
+                                                    <>
+                                                        <CircularProgress size={40} />
+                                                        <Typography variant="body1" fontWeight={500}>
+                                                            Creating your personalized session...
+                                                        </Typography>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles size={48} />
+                                                        <Typography variant="h6" fontWeight={600} textAlign="center">
+                                                            Upload your resume above to get started
+                                                        </Typography>
+                                                        <Typography variant="body2" textAlign="center" sx={{ maxWidth: 400 }}>
+                                                            Click "Talk to your AI Strategist" after analyzing your resume to see a personalized career acceleration plan.
+                                                        </Typography>
+                                                    </>
+                                                )}
+                                            </Box>
+                                        )}
+                                    </Box>
+                                </Box>
+                            </motion.div>
                         </motion.div>
                     </motion.div>
                 </Box>
@@ -684,12 +828,12 @@ const CareerAcceleratorPage = () => {
                                     fontWeight: 700,
                                     fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' }
                                 }}>
-                                    We Build Your
+                                    We Don't Just Polish Your Resume.
                                     <Box component="span" sx={{
                                         color: theme.palette.primary.main,
                                         display: 'block'
                                     }}>
-                                        Personalized Job Outreach Engine
+                                        We Build You a Search System.
                                     </Box>
                                 </DotBridgeTypography>
                                 <DotBridgeTypography variant="body1" sx={{
@@ -698,18 +842,18 @@ const CareerAcceleratorPage = () => {
                                     lineHeight: 1.7,
                                     color: theme.palette.text.secondary
                                 }}>
-                                    The AI Career Accelerator is a comprehensive service that transforms your job search
-                                    from a guessing game into a targeted campaign. We handle the heavy lifting of strategy
-                                    and preparation, so you can focus on what matters: acing interviews and landing your dream role.
+                                    DotBridge helps you move from scattered applications to strategic outreach.
+                                    We create your personalized job search system that targets the right companies,
+                                    reaches the right people, and gives you a clear plan to follow every day.
                                 </DotBridgeTypography>
 
                                 {/* Benefits List */}
                                 <Box sx={{ mt: 4 }}>
                                     {[
-                                        "Get responses from 10-20% of your outreach (vs. 2% industry average)",
-                                        "Save 30+ hours per week on job search activities",
-                                        "Access hidden job market (70% of roles never posted)",
-                                        "Stand out with personalized, strategic messaging"
+                                        "Find 50–100 companies aligned with your background",
+                                        "Get direct contact info for hiring teams",
+                                        "Use personalized messages (email + LinkedIn) proven to get replies",
+                                        "Stay on track with a daily calendar that tells you who to reach out to and when"
                                     ].map((benefit, index) => (
                                         <motion.div
                                             key={index}
@@ -750,26 +894,22 @@ const CareerAcceleratorPage = () => {
                                     {[
                                         {
                                             icon: <Target />,
-                                            from: "Aimlessly applying to hundreds of jobs",
+
                                             to: "Precisely targeting 50-100+ ideal employers",
                                             gradient: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)'
                                         },
                                         {
                                             icon: <MessageSquare />,
-                                            from: "Generic résumés getting ignored",
-                                            to: "Custom-crafted outreach messages that get replies",
+                                            to: "Personal outreach messages that get replies",
                                             gradient: 'linear-gradient(135deg, #5856D6 0%, #AF52DE 100%)'
                                         },
                                         {
-                                            icon: <Calendar />,
-                                            from: "Overwhelm and uncertainty",
-                                            to: "Clear, daily action plan that keeps you focused",
+                                            icon: <Calendar />, to: "Clear, daily action plan that keeps you focused",
                                             gradient: 'linear-gradient(135deg, #FF3B30 0%, #FF6B6B 100%)'
                                         },
                                         {
                                             icon: <TrendingUp />,
-                                            from: "Radio silence and rejection",
-                                            to: "Meaningful conversations and job offers",
+                                            to: "Meaningful conversations and job opportunities",
                                             gradient: 'linear-gradient(135deg, #34C759 0%, #30D158 100%)'
                                         }
                                     ].map((item, index) => (
@@ -834,8 +974,8 @@ const CareerAcceleratorPage = () => {
                 </Box>
 
                 {/* Process Section - Enhanced */}
-                <Box ref={processRef} sx={{ mb: 10, py: 8, bgcolor: theme.palette.grey[50], borderRadius: 3 }}>
-                    <Container>
+                <Box ref={processRef} sx={{ mb: 12, py: { xs: 8, md: 10 }, bgcolor: theme.palette.grey[50], borderRadius: 3, mx: { xs: 2, sm: 3, md: 4 } }}>
+                    <Box sx={{ px: { xs: 2, sm: 4, md: 6 } }}>
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={processInView ? { opacity: 1, y: 0 } : {}}
@@ -947,120 +1087,14 @@ const CareerAcceleratorPage = () => {
                                 }
                             }} />
                         </motion.div>
-                    </Container>
+                    </Box>
                 </Box>
 
-                {/* Interactive Demo Section */}
-                <Box id="demo-section" sx={{ mb: 10, py: 8 }}>
-                    <motion.div
-                        ref={demoRef}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.7 }}
-                    >
-                        <DotBridgeTypography variant="h2" sx={{
-                            textAlign: 'center',
-                            mb: 2,
-                            fontWeight: 700,
-                            fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' }
-                        }}>
-                            Meet Your AI Career Strategist
-                        </DotBridgeTypography>
 
-                        <DotBridgeTypography variant="h6" sx={{
-                            textAlign: 'center',
-                            mb: 6,
-                            color: theme.palette.text.secondary,
-                            maxWidth: '700px',
-                            mx: 'auto'
-                        }}>
-                            Chat with our AI assistant below. Upload your résumé or simply tell it about your career goals.
-                            In minutes, it will analyze your needs and generate a free preview of your personalized outreach strategy.
-                        </DotBridgeTypography>
-
-                        <motion.div
-                            style={{
-                                perspective: isMobile ? '1000px' : '1500px',
-                                perspectiveOrigin: '50% 30%'
-                            }}
-                        >
-                            <motion.div
-                                style={{
-                                    rotateX: prefersReducedMotion ? 0 : rotateX,
-                                    scale: prefersReducedMotion ? 1 : scale,
-                                    transformStyle: 'preserve-3d',
-                                    transformOrigin: '50% 100%'
-                                }}
-                            >
-                                <Box sx={{
-                                    maxWidth: '900px',
-                                    mx: 'auto',
-                                    position: 'relative',
-                                    borderRadius: 3,
-                                    overflow: 'hidden',
-                                    boxShadow: '0 30px 80px rgba(0, 102, 255, 0.15)',
-                                    border: '2px solid',
-                                    borderColor: theme.palette.primary.light,
-                                    bgcolor: 'background.paper',
-                                    aspectRatio: '16 / 9',
-                                    transform: 'translateZ(0)',
-                                    backfaceVisibility: 'hidden'
-                                }}>
-                                    {/* Demo Header */}
-                                    <Box sx={{
-                                        p: 2,
-                                        borderBottom: '1px solid',
-                                        borderColor: 'divider',
-                                        background: `linear-gradient(135deg, ${theme.palette.primary.lighter} 0%, ${theme.palette.background.paper} 100%)`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between'
-                                    }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Sparkles size={20} color={theme.palette.primary.main} />
-                                            <DotBridgeTypography variant="subtitle1" fontWeight={600}>
-                                                AI Career Strategist
-                                            </DotBridgeTypography>
-                                        </Box>
-                                        <Chip
-                                            label="LIVE DEMO"
-                                            size="small"
-                                            color="primary"
-                                            sx={{ fontWeight: 600 }}
-                                        />
-                                    </Box>
-
-                                    {/* Agent Connector */}
-                                    <Box sx={{
-                                        position: 'relative',
-                                        height: 'calc(100% - 60px)',
-                                        '& .agent-connector-container': {
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            height: '100%',
-                                        }
-                                    }}>
-                                        <div className="agent-connector-container">
-                                            <AgentConnector
-                                                brdgeId={CAREER_DEMO_BRIDGE_ID}
-                                                agentType="view"
-                                                token=""
-                                                userId={null}
-                                                isEmbed={false}
-                                            />
-                                        </div>
-                                    </Box>
-                                </Box>
-                            </motion.div>
-                        </motion.div>
-                    </motion.div>
-                </Box>
 
                 {/* Target Audience Section - Enhanced */}
-                <Box sx={{ mb: 10, py: 8, bgcolor: theme.palette.background.subtle, borderRadius: 3 }}>
-                    <Container>
+                <Box sx={{ mb: 10, py: 8, bgcolor: theme.palette.background.subtle, borderRadius: 3, mx: { xs: 2, sm: 3, md: 4 } }}>
+                    <Box sx={{ px: { xs: 2, sm: 4, md: 6 } }}>
                         <DotBridgeTypography variant="h2" sx={{
                             textAlign: 'center',
                             mb: 4,
@@ -1160,21 +1194,21 @@ const CareerAcceleratorPage = () => {
                                 </Box>
                             </DotBridgeTypography>
                         </motion.div>
-                    </Container>
+                    </Box>
                 </Box>
 
                 {/* What You Get Section - Enhanced */}
-                <Box sx={{ mb: 10 }}>
+                <Box sx={{ mb: 12, py: { xs: 6, md: 8 } }}>
                     <DotBridgeTypography variant="h3" sx={{
                         textAlign: 'center',
-                        mb: 6,
+                        mb: 8,
                         fontWeight: 600,
-                        fontSize: { xs: '1.75rem', sm: '2.25rem' }
+                        fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                     }}>
                         Your Complete Job Outreach System Includes:
                     </DotBridgeTypography>
 
-                    <Grid container spacing={3} sx={{ maxWidth: '1000px', mx: 'auto' }}>
+                    <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
                         {[
                             {
                                 icon: <FileText size={32} />,
@@ -1272,7 +1306,7 @@ const CareerAcceleratorPage = () => {
                 </Box>
 
                 {/* Pricing Section - Enhanced */}
-                <Box id="pricing" sx={{ mb: 10, py: 8 }}>
+                <Box id="pricing" sx={{ mb: 10, py: 8, textAlign: 'center' }}>
                     <DotBridgeTypography variant="h2" sx={{
                         textAlign: 'center',
                         mb: 2,
@@ -1290,258 +1324,193 @@ const CareerAcceleratorPage = () => {
 
                     <DotBridgeTypography variant="h6" sx={{
                         textAlign: 'center',
-                        mb: 6,
+                        mb: 8,
                         color: theme.palette.text.secondary,
                         maxWidth: '600px',
-                        mx: 'auto'
+                        mx: 'auto',
+                        fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' }
                     }}>
-                        Limited-time launch pricing - Save up to 43% off regular rates
+                        Professional career acceleration packages designed for your success
                     </DotBridgeTypography>
 
-                    <Grid container spacing={4} alignItems="stretch" sx={{ maxWidth: '1100px', mx: 'auto' }}>
-                        {pricingPlans.map((plan, index) => (
-                            <Grid item xs={12} md={4} key={index}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 30 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                                    style={{ height: '100%' }}
-                                >
-                                    <PricingCard popular={plan.popular}>
-                                        {plan.popular && (
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                transition={{ duration: 0.5, delay: 0.3 }}
-                                            >
-                                                <Box sx={{
-                                                    position: 'absolute',
-                                                    top: -16,
-                                                    left: '50%',
-                                                    transform: 'translateX(-50%)',
-                                                    bgcolor: 'primary.main',
-                                                    color: 'primary.contrastText',
-                                                    px: 3,
-                                                    py: 0.75,
-                                                    borderRadius: '99px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 700,
-                                                    letterSpacing: '0.05em',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 0.5,
-                                                    boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3)'
-                                                }}>
-                                                    <Star size={14} fill="currentColor" />
-                                                    MOST POPULAR
-                                                </Box>
-                                            </motion.div>
-                                        )}
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Grid container spacing={{ xs: 3, md: 4 }} alignItems="stretch" sx={{ maxWidth: '1200px', mb: 6, px: { xs: 2, sm: 3, md: 4 } }}>
+                            {pricingPlans.map((plan, index) => (
+                                <Grid item xs={12} md={4} key={index}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 30 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.6, delay: index * 0.1 }}
+                                        style={{ height: '100%' }}
+                                    >
+                                        <PricingCard popular={plan.popular}>
+                                            {plan.popular && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    transition={{ duration: 0.5, delay: 0.3 }}
+                                                >
+                                                    <Chip
+                                                        label="MOST POPULAR"
+                                                        size="small"
+                                                        sx={{
+                                                            position: 'absolute',
+                                                            top: -12,
+                                                            left: '50%',
+                                                            transform: 'translateX(-50%)',
+                                                            bgcolor: 'primary.main',
+                                                            color: 'white',
+                                                            fontWeight: 600,
+                                                            fontSize: '0.75rem',
+                                                            letterSpacing: '0.05em',
+                                                            px: 2,
+                                                            py: 0.5,
+                                                            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3)'
+                                                        }}
+                                                    />
+                                                </motion.div>
+                                            )}
 
-                                        <Box sx={{ textAlign: 'center', mb: 3 }}>
-                                            <Typography variant="h4" fontWeight={700} sx={{ mb: 1 }}>
-                                                {plan.name}
-                                            </Typography>
-                                            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                                                {plan.description}
-                                            </Typography>
-
-                                            <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', mb: 1 }}>
-                                                <Typography variant="h6" color="text.secondary" sx={{ textDecoration: 'line-through', mr: 1 }}>
-                                                    ${plan.originalPrice}
+                                            <Box sx={{ textAlign: 'center', mb: 4, pt: plan.popular ? 3 : 2 }}>
+                                                <Typography variant="h4" fontWeight={700} sx={{ mb: 2, fontSize: { xs: '1.5rem', md: '1.75rem' } }}>
+                                                    {plan.name}
                                                 </Typography>
-                                                <Typography variant="h2" fontWeight={800} color={plan.popular ? 'primary.main' : 'text.primary'}>
-                                                    ${plan.price}
+
+                                                <Box sx={{ mb: 3 }}>
+                                                    <Typography variant="h2" fontWeight={800} color={plan.popular ? 'primary.main' : 'text.primary'} sx={{ fontSize: { xs: '2.5rem', md: '3rem' } }}>
+                                                        {plan.price}
+                                                    </Typography>
+                                                </Box>
+
+                                                <Typography variant="body1" color="text.secondary" sx={{ mb: 3, fontSize: { xs: '0.9375rem', md: '1rem' } }}>
+                                                    {plan.description}
                                                 </Typography>
                                             </Box>
 
-                                            <Chip
-                                                label={`Save $${plan.originalPrice - plan.price}`}
-                                                color="error"
-                                                size="small"
-                                                sx={{ fontWeight: 600 }}
-                                            />
-                                        </Box>
+                                            <Box sx={{
+                                                p: 2,
+                                                borderRadius: 2,
+                                                bgcolor: plan.popular ? 'primary.lighter' : theme.palette.grey[50],
+                                                mb: 3
+                                            }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'center' }}>
+                                                    {plan.mainValue}
+                                                </Typography>
+                                            </Box>
 
-                                        <Box sx={{
-                                            p: 2,
-                                            borderRadius: 2,
-                                            bgcolor: plan.popular ? 'primary.lighter' : theme.palette.grey[50],
-                                            mb: 3
-                                        }}>
-                                            <Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'center' }}>
-                                                {plan.mainValue}
-                                            </Typography>
-                                        </Box>
-
-                                        <Box sx={{ flexGrow: 1, mb: 3 }}>
-                                            {plan.features.map((feature, featureIndex) => (
-                                                <Box key={featureIndex} sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'flex-start',
-                                                    mb: 2,
-                                                    '&:hover': {
-                                                        '& .feature-check': {
-                                                            transform: 'scale(1.2)',
-                                                            background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`
+                                            <Box sx={{ flexGrow: 1, mb: 3 }}>
+                                                {plan.features.map((feature, featureIndex) => (
+                                                    <Box key={featureIndex} sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        mb: 2,
+                                                        '&:hover': {
+                                                            '& .feature-check': {
+                                                                transform: 'scale(1.2)',
+                                                                background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`
+                                                            }
                                                         }
-                                                    }
-                                                }}>
-                                                    <Box
-                                                        className="feature-check"
-                                                        sx={{
-                                                            width: 20,
-                                                            height: 20,
-                                                            borderRadius: '50%',
-                                                            bgcolor: plan.popular ? 'primary.main' : 'success.main',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            mr: 1.5,
-                                                            mt: 0.25,
-                                                            flexShrink: 0,
-                                                            transition: 'all 0.3s ease'
-                                                        }}
-                                                    >
-                                                        <CheckCircle size={14} color="white" />
-                                                    </Box>
-                                                    <Typography variant="body2" sx={{
-                                                        fontWeight: feature.includes('PLUS:') ? 600 : 400,
-                                                        color: feature.includes('PLUS:') ? 'primary.main' : 'text.secondary'
                                                     }}>
-                                                        {feature}
-                                                    </Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
+                                                        <Box
+                                                            className="feature-check"
+                                                            sx={{
+                                                                width: 20,
+                                                                height: 20,
+                                                                borderRadius: '50%',
+                                                                bgcolor: plan.popular ? 'primary.main' : 'success.main',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                mr: 1.5,
+                                                                mt: 0.25,
+                                                                flexShrink: 0,
+                                                                transition: 'all 0.3s ease'
+                                                            }}
+                                                        >
+                                                            <CheckCircle size={14} color="white" />
+                                                        </Box>
+                                                        <Typography variant="body2" sx={{
+                                                            fontWeight: feature.includes('PLUS:') ? 600 : 400,
+                                                            color: feature.includes('PLUS:') ? 'primary.main' : 'text.secondary'
+                                                        }}>
+                                                            {feature}
+                                                        </Typography>
+                                                    </Box>
+                                                ))}
+                                            </Box>
 
-                                        <DotBridgeButton
-                                            variant={plan.popular ? "contained" : "outlined"}
-                                            fullWidth
-                                            size="large"
-                                            sx={{
-                                                mt: 'auto',
-                                                py: 1.75,
-                                                fontSize: '1rem',
-                                                fontWeight: 600,
-                                                ...(plan.popular && {
-                                                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                                                    boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
-                                                    '&:hover': {
-                                                        transform: 'translateY(-2px)',
-                                                        boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
-                                                    }
-                                                })
-                                            }}
-                                            onClick={() => document.getElementById('lead-form')?.scrollIntoView({ behavior: 'smooth' })}
-                                        >
-                                            Get {plan.name} Plan →
-                                        </DotBridgeButton>
-                                    </PricingCard>
-                                </motion.div>
-                            </Grid>
-                        ))}
-                    </Grid>
+                                            <DotBridgeButton
+                                                variant={plan.popular ? "contained" : "outlined"}
+                                                fullWidth
+                                                size="large"
+                                                sx={{
+                                                    mt: 'auto',
+                                                    py: 1.75,
+                                                    fontSize: '1rem',
+                                                    fontWeight: 600,
+                                                    ...(plan.popular && {
+                                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                                        boxShadow: '0 8px 24px rgba(0, 102, 255, 0.3)',
+                                                        '&:hover': {
+                                                            transform: 'translateY(-2px)',
+                                                            boxShadow: '0 12px 32px rgba(0, 102, 255, 0.4)'
+                                                        }
+                                                    })
+                                                }}
+                                                onClick={() => document.getElementById('lead-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                            >
+                                                Get {plan.name} Plan →
+                                            </DotBridgeButton>
+                                        </PricingCard>
+                                    </motion.div>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Box>
 
                     <Box sx={{ textAlign: 'center', mt: 4 }}>
                         <Typography variant="body2" color="text.secondary">
                             All plans include a typical 48-72 hour turnaround for your personalized system delivery.
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            30-day money-back guarantee. Payment plans available for Pro & Premium.
-                        </Typography>
                     </Box>
                 </Box>
 
-                {/* Testimonials - Enhanced */}
-                <Box sx={{ mb: 10, py: 8, bgcolor: theme.palette.grey[50], borderRadius: 3 }}>
-                    <Container>
-                        <DotBridgeTypography variant="h3" sx={{
-                            textAlign: 'center',
-                            mb: 6,
-                            fontWeight: 600,
-                            fontSize: { xs: '1.75rem', sm: '2.25rem' }
-                        }}>
-                            Success Stories From Job Seekers Like You
-                        </DotBridgeTypography>
 
-                        <Grid container spacing={4}>
-                            {testimonials.map((testimonial, index) => (
-                                <Grid item xs={12} md={4} key={index}>
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.5, delay: index * 0.1 }}
-                                        whileHover={{ y: -4 }}
-                                        style={{ height: '100%' }}
-                                    >
-                                        <TestimonialCard>
-                                            <Box sx={{ mb: 2 }}>
-                                                {[...Array(testimonial.rating)].map((_, i) => (
-                                                    <Star key={i} size={20} fill={theme.palette.warning.main} color={theme.palette.warning.main} />
-                                                ))}
-                                            </Box>
-
-                                            <Typography variant="body1" sx={{
-                                                mb: 3,
-                                                fontStyle: 'italic',
-                                                lineHeight: 1.7,
-                                                color: theme.palette.text.secondary
-                                            }}>
-                                                "{testimonial.quote}"
-                                            </Typography>
-
-                                            <Divider sx={{ mb: 2 }} />
-
-                                            <Box>
-                                                <Typography variant="subtitle1" fontWeight={600}>
-                                                    {testimonial.name}
-                                                </Typography>
-                                                <Typography variant="body2" color="primary.main" fontWeight={500}>
-                                                    {testimonial.role}
-                                                </Typography>
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {testimonial.background}
-                                                </Typography>
-                                            </Box>
-                                        </TestimonialCard>
-                                    </motion.div>
-                                </Grid>
-                            ))}
-                        </Grid>
-                    </Container>
-                </Box>
 
                 {/* Lead Capture Form */}
-                <Box id="lead-form" sx={{ mb: 10, py: 8 }}>
-                    <Container maxWidth="sm">
+                <Box id="lead-form" sx={{ mb: 12, py: { xs: 8, md: 10 }, px: { xs: 2, sm: 3, md: 4 } }}>
+                    <Box sx={{ maxWidth: '600px', mx: 'auto' }}>
                         <DotBridgeCard
                             sx={{
-                                p: { xs: 3, md: 5 },
+                                p: { xs: 3, md: 4 },
                                 background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.lighter}10 100%)`,
                                 border: '2px solid',
                                 borderColor: 'primary.light',
-                                boxShadow: '0 20px 60px rgba(0, 102, 255, 0.1)'
+                                boxShadow: '0 8px 32px rgba(0, 102, 255, 0.1)',
+                                borderRadius: { xs: 2, md: 3 }
                             }}
                         >
                             <DotBridgeTypography variant="h4" sx={{
                                 textAlign: 'center',
                                 mb: 2,
-                                fontWeight: 700
+                                fontWeight: 700,
+                                fontSize: { xs: '1.5rem', md: '1.75rem' }
                             }}>
-                                Ready to Transform Your Job Search?
+                                Ready to Accelerate Your Career?
                             </DotBridgeTypography>
 
                             <DotBridgeTypography variant="body1" sx={{
                                 textAlign: 'center',
                                 mb: 4,
-                                color: theme.palette.text.secondary
+                                color: theme.palette.text.secondary,
+                                fontSize: { xs: '1rem', md: '1.125rem' },
+                                lineHeight: 1.6
                             }}>
-                                Get instant access to your personalized job search strategy.
-                                Limited spots available at launch pricing.
+                                Get your personalized career acceleration strategy and start connecting
+                                with decision-makers in your target companies.
                             </DotBridgeTypography>
 
-                            {submitted ? (
+                            {leadSubmitted ? (
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
@@ -1565,7 +1534,7 @@ const CareerAcceleratorPage = () => {
                                                 fullWidth
                                                 label="Full Name"
                                                 name="name"
-                                                value={lead.name}
+                                                value={leadForm.name}
                                                 onChange={handleInputChange}
                                                 required
                                                 variant="outlined"
@@ -1577,7 +1546,7 @@ const CareerAcceleratorPage = () => {
                                                 label="Email"
                                                 name="email"
                                                 type="email"
-                                                value={lead.email}
+                                                value={leadForm.email}
                                                 onChange={handleInputChange}
                                                 required
                                                 variant="outlined"
@@ -1588,7 +1557,7 @@ const CareerAcceleratorPage = () => {
                                                 fullWidth
                                                 label="Phone (Optional)"
                                                 name="phone"
-                                                value={lead.phone}
+                                                value={leadForm.phone}
                                                 onChange={handleInputChange}
                                                 variant="outlined"
                                             />
@@ -1600,7 +1569,7 @@ const CareerAcceleratorPage = () => {
                                                 </FormLabel>
                                                 <RadioGroup
                                                     name="urgency"
-                                                    value={lead.urgency}
+                                                    value={leadForm.urgency}
                                                     onChange={handleInputChange}
                                                     required
                                                 >
@@ -1617,7 +1586,7 @@ const CareerAcceleratorPage = () => {
                                                 variant="contained"
                                                 fullWidth
                                                 size="large"
-                                                disabled={isSubmitting}
+                                                disabled={leadSubmitting}
                                                 sx={{
                                                     py: 2,
                                                     fontSize: '1.125rem',
@@ -1630,7 +1599,7 @@ const CareerAcceleratorPage = () => {
                                                     }
                                                 }}
                                             >
-                                                {isSubmitting ? (
+                                                {leadSubmitting ? (
                                                     <CircularProgress size={24} color="inherit" />
                                                 ) : (
                                                     'Get My Career Accelerator Plan →'
@@ -1641,7 +1610,7 @@ const CareerAcceleratorPage = () => {
                                 </form>
                             )}
                         </DotBridgeCard>
-                    </Container>
+                    </Box>
                 </Box>
 
                 {/* Final CTA Section */}
@@ -1652,7 +1621,8 @@ const CareerAcceleratorPage = () => {
                     color: 'white',
                     borderRadius: 3,
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    mx: { xs: 2, sm: 3, md: 4 }
                 }}>
                     {/* Background decoration */}
                     <Box sx={{
@@ -1666,14 +1636,14 @@ const CareerAcceleratorPage = () => {
                         filter: 'blur(60px)'
                     }} />
 
-                    <Container sx={{ position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ position: 'relative', zIndex: 1, px: { xs: 2, sm: 4, md: 6 } }}>
                         <DotBridgeTypography variant="h2" sx={{
                             mb: 3,
                             fontWeight: 700,
                             color: 'inherit',
                             fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }
                         }}>
-                            Stop Applying. Start Connecting.
+                            Your Resume Isn't Enough.
                         </DotBridgeTypography>
 
                         <DotBridgeTypography variant="h5" sx={{
@@ -1684,8 +1654,8 @@ const CareerAcceleratorPage = () => {
                             opacity: 0.9,
                             fontWeight: 400
                         }}>
-                            Your dream job won't find you in a pile of résumés. It's time to take control
-                            with a proven system. Let us build your personalized AI Career Accelerator today.
+                            Bridge the gap between qualified and hired. Get your personalized outreach system
+                            that transforms your job search from reactive applying to proactive networking.
                         </DotBridgeTypography>
 
                         <DotBridgeButton
@@ -1708,23 +1678,11 @@ const CareerAcceleratorPage = () => {
                             }}
                             onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
                         >
-                            Build My Job-Getting System Now
+                            Get 3 Interviews in 2 Weeks →
                         </DotBridgeButton>
 
-                        {/* Urgency indicator */}
-                        <Box sx={{ mt: 4 }}>
-                            <Chip
-                                icon={<Zap size={16} />}
-                                label="Limited Launch Pricing Ends Soon"
-                                sx={{
-                                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                                    color: 'white',
-                                    fontWeight: 600,
-                                    backdropFilter: 'blur(10px)'
-                                }}
-                            />
-                        </Box>
-                    </Container>
+
+                    </Box>
                 </Box>
             </PageContainer>
 

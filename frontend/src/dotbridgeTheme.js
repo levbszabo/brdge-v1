@@ -1,315 +1,343 @@
 import { createTheme } from '@mui/material/styles';
 
-// 1. Font Declarations - Using Inter for a clean, modern SaaS look
+// 1. Enhanced Font Declarations - Using a more sophisticated font stack
 const fontFamilyBody = '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 const fontFamilyHeading = '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const fontFamilyMono = '"Fira Code", "Monaco", "Consolas", monospace';
 
-// 2. Enhanced Color Palette - Modern SaaS design
+// 2. Enhanced Color Palette - More sophisticated and modern
 const palette = {
-    // Ink & Text - Optimized for readability
-    ink: '#0A0D1C', // Rich black for high contrast
-    inkLight: '#4A5568', // Refined gray
-    inkFaded: '#8892A0', // Softer gray
+    // Enhanced Ink & Text with better contrast
+    ink: '#0A0D1C',
+    inkLight: '#3A4553',
+    inkFaded: '#7B8794',
     text: {
-        primary: '#0A0D1C', // Rich black for main text
-        secondary: '#64748B', // Balanced secondary text
-        disabled: '#CBD5E0', // Light gray for disabled states
+        primary: '#0A0D1C',
+        secondary: '#5B6B7A',
+        disabled: '#B8C5D1',
     },
 
-    // Brand Accent - Vibrant Azure Blue
+    // Enhanced Brand Colors - More vibrant and sophisticated
     primary: {
         main: '#0066FF', // Bright Azure
-        light: '#3384FF', // Lighter shade
-        lighter: '#E6F0FF', // Very light blue for backgrounds
-        dark: '#0052CC', // Darker shade
-        darker: '#003D99', // Even darker
+        light: '#4D8CFF', // Lighter shade
+        lighter: '#E8F2FF', // Very light blue for backgrounds
+        dark: '#0052DD', // Darker shade
+        darker: '#003DB8', // Even darker
         contrastText: '#FFFFFF',
+        // Add gradient variants
+        gradientStart: '#0066FF',
+        gradientEnd: '#0052DD',
+        shadow: 'rgba(0, 102, 255, 0.3)',
     },
 
-    // Neutrals - Clean grayscale
+    // Enhanced Neutrals with more sophisticated grays
     grey: {
-        50: '#FAFBFC',   // Almost white
-        100: '#F1F5F9',  // Light gray
-        200: '#E2E8F0',  // Border gray
-        300: '#CBD5E0',  // Light mid gray
-        400: '#94A3B8',  // Mid gray
-        500: '#64748B',  // True mid gray
-        600: '#475569',  // Dark gray
-        700: '#334155',  // Darker gray
-        800: '#1E293B',  // Very dark
-        900: '#0F172A',  // Near black
+        25: '#FCFCFD',   // Ultra light
+        50: '#F9FAFB',   // Almost white
+        100: '#F2F4F7',  // Light gray
+        200: '#E4E7EC',  // Border gray
+        300: '#D0D5DD',  // Light mid gray
+        400: '#98A2B3',  // Mid gray
+        500: '#667085',  // True mid gray
+        600: '#475467',  // Dark gray
+        700: '#344054',  // Darker gray
+        800: '#1D2939',  // Very dark
+        900: '#101828',  // Near black
+        950: '#0C111D',  // Ultra dark
     },
     neutral: {
-        lightest: '#FAFBFC',
-        light: '#F1F5F9',
-        mid: '#CBD5E0',
-        dark: '#475569',
+        lightest: '#FCFCFD',
+        light: '#F9FAFB',
+        mid: '#D0D5DD',
+        dark: '#475467',
     },
 
-    // Backgrounds - Clean and modern
+    // Enhanced Backgrounds with subtle variations
     background: {
-        default: '#FFFFFF', // Pure white
-        paper: '#FFFFFF', // Pure white
-        subtle: '#FAFBFC', // Very subtle gray for sections
+        default: '#FFFFFF',
+        paper: '#FFFFFF',
+        subtle: '#F9FAFB',
+        elevated: '#FCFCFD',
+        glass: 'rgba(255, 255, 255, 0.8)',
     },
 
-    // Feedback Colors - Clear and accessible
+    // Enhanced Feedback Colors
     success: {
-        main: '#00C781',
-        light: '#E6FFFA',
-        dark: '#00A368',
-        contrastText: '#FFFFFF'
+        main: '#00D084',
+        light: '#E7FDF4',
+        lighter: '#F0FDF9',
+        dark: '#00B872',
+        darker: '#059669',
+        contrastText: '#FFFFFF',
+        shadow: 'rgba(0, 208, 132, 0.3)',
     },
     error: {
-        main: '#FF3B30',
-        light: '#FFE5E5',
-        dark: '#DC2626',
-        contrastText: '#FFFFFF'
+        main: '#FF4444',
+        light: '#FEF2F2',
+        lighter: '#FFF5F5',
+        dark: '#E53E3E',
+        darker: '#C53030',
+        contrastText: '#FFFFFF',
+        shadow: 'rgba(255, 68, 68, 0.3)',
     },
     warning: {
         main: '#FF9500',
-        light: '#FFF4E5',
-        dark: '#F97316',
-        contrastText: '#FFFFFF'
+        light: '#FFFBEB',
+        lighter: '#FFFCF0',
+        dark: '#F59E0B',
+        darker: '#D97706',
+        contrastText: '#FFFFFF',
+        shadow: 'rgba(255, 149, 0, 0.3)',
     },
     info: {
-        main: '#0066FF',
-        light: '#E6F0FF',
-        dark: '#0052CC',
-        contrastText: '#FFFFFF'
+        main: '#0EA5E9',
+        light: '#F0F9FF',
+        lighter: '#F7FBFF',
+        dark: '#0284C7',
+        darker: '#0369A1',
+        contrastText: '#FFFFFF',
+        shadow: 'rgba(14, 165, 233, 0.3)',
     },
 
-    // Secondary - Refined gray
+    // Enhanced Secondary
     secondary: {
-        main: '#64748B',
-        light: '#94A3B8',
-        dark: '#475569',
+        main: '#667085',
+        light: '#98A2B3',
+        lighter: '#F2F4F7',
+        dark: '#475467',
+        darker: '#344054',
         contrastText: '#FFFFFF',
     },
 
-    // Divider Color
-    divider: '#E2E8F0', // Clean border color
+    // Enhanced Divider
+    divider: '#E4E7EC',
 };
 
-// 3. Typography System - Modern and clean
+// 3. Enhanced Typography System with better hierarchy and spacing
 const typography = {
     fontFamily: fontFamilyBody,
     h1: {
         fontFamily: fontFamilyHeading,
-        fontWeight: 700,
-        fontSize: '3.5rem', // 56px - slightly smaller for elegance
-        lineHeight: 1.1,
-        letterSpacing: '-0.04em',
+        fontWeight: 800, // Increased weight for more impact
+        fontSize: '4rem', // Larger for hero impact
+        lineHeight: 1.05, // Tighter line height
+        letterSpacing: '-0.05em', // More dramatic negative spacing
         color: palette.text.primary,
+        textRendering: 'optimizeLegibility',
         '@media (max-width: 768px)': {
-            fontSize: '3.5rem', // 56px on mobile - much larger for hero impact
+            fontSize: '3.5rem',
+            lineHeight: 1.1,
         },
         '@media (max-width: 640px)': {
-            fontSize: '3rem', // 48px on smaller mobile
+            fontSize: '3rem',
+            lineHeight: 1.15,
         }
     },
     h2: {
         fontFamily: fontFamilyHeading,
-        fontWeight: 600,
-        fontSize: '2.25rem', // 36px
-        lineHeight: 1.2,
-        letterSpacing: '-0.03em',
+        fontWeight: 700, // Increased weight
+        fontSize: '2.75rem', // Larger
+        lineHeight: 1.15,
+        letterSpacing: '-0.04em',
         color: palette.text.primary,
+        textRendering: 'optimizeLegibility',
         '@media (max-width: 768px)': {
-            fontSize: '2.25rem', // 36px on mobile - larger than before
+            fontSize: '2.5rem',
+            lineHeight: 1.2,
         },
         '@media (max-width: 640px)': {
-            fontSize: '2rem', // 32px on smaller mobile
+            fontSize: '2.25rem',
         }
     },
     h3: {
         fontFamily: fontFamilyHeading,
-        fontWeight: 600,
-        fontSize: '1.75rem', // 28px
-        lineHeight: 1.3,
-        letterSpacing: '-0.02em',
+        fontWeight: 650, // Custom weight
+        fontSize: '2rem',
+        lineHeight: 1.25,
+        letterSpacing: '-0.03em',
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '1.5rem', // 24px on mobile
+            fontSize: '1.75rem',
         }
     },
     h4: {
         fontFamily: fontFamilyBody,
         fontWeight: 600,
-        fontSize: '1.375rem', // 22px
-        lineHeight: 1.4,
-        letterSpacing: '-0.01em',
+        fontSize: '1.5rem',
+        lineHeight: 1.35,
+        letterSpacing: '-0.02em',
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '1.25rem', // 20px on mobile
+            fontSize: '1.375rem',
         }
     },
     h5: {
         fontFamily: fontFamilyBody,
-        fontWeight: 500,
-        fontSize: '1.125rem', // 18px
-        lineHeight: 1.5,
-        letterSpacing: '-0.005em',
+        fontWeight: 550, // Custom weight
+        fontSize: '1.25rem',
+        lineHeight: 1.4,
+        letterSpacing: '-0.01em',
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '1.125rem', // Keep same size on mobile
+            fontSize: '1.125rem',
         }
     },
     h6: {
         fontFamily: fontFamilyBody,
-        fontWeight: 500,
-        fontSize: '1rem', // 16px
-        lineHeight: 1.5,
-        letterSpacing: 0,
+        fontWeight: 550,
+        fontSize: '1.125rem',
+        lineHeight: 1.45,
+        letterSpacing: '-0.005em',
         color: palette.text.primary,
-        '@media (max-width: 768px)': {
-            fontSize: '1rem', // Keep same size on mobile
-        }
     },
     subtitle1: {
         fontFamily: fontFamilyBody,
         fontWeight: 500,
-        fontSize: '1.125rem', // 18px
-        lineHeight: 1.6,
+        fontSize: '1.25rem',
+        lineHeight: 1.5,
         letterSpacing: 0,
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '1rem', // 16px on mobile
+            fontSize: '1.125rem',
         }
     },
     subtitle2: {
         fontFamily: fontFamilyBody,
         fontWeight: 500,
-        fontSize: '1rem', // 16px
-        lineHeight: 1.6,
+        fontSize: '1.125rem',
+        lineHeight: 1.5,
         letterSpacing: 0,
         color: palette.text.secondary,
         '@media (max-width: 768px)': {
-            fontSize: '0.875rem', // 14px on mobile
+            fontSize: '1rem',
         }
     },
     body1: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '1rem', // 16px
+        fontSize: '1.0625rem', // Slightly larger for better readability
         lineHeight: 1.65,
         letterSpacing: 0,
         color: palette.text.primary,
         '@media (max-width: 768px)': {
-            fontSize: '0.9375rem', // 15px on mobile for better readability
+            fontSize: '1rem',
         }
     },
     body2: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '0.875rem', // 14px
+        fontSize: '0.9375rem',
         lineHeight: 1.6,
         letterSpacing: 0,
         color: palette.text.secondary,
         '@media (max-width: 768px)': {
-            fontSize: '0.8125rem', // 13px on mobile
+            fontSize: '0.875rem',
         }
     },
     button: {
         fontFamily: fontFamilyBody,
-        fontWeight: 500,
-        fontSize: '0.875rem', // 14px
+        fontWeight: 550, // Custom weight for buttons
+        fontSize: '0.9375rem',
         textTransform: 'none',
-        letterSpacing: '0.01em',
+        letterSpacing: '0.005em',
+        lineHeight: 1.5,
         '@media (max-width: 768px)': {
-            fontSize: '0.9375rem', // 15px on mobile for better touch targets
+            fontSize: '1rem',
         }
     },
     caption: {
         fontFamily: fontFamilyBody,
         fontWeight: 400,
-        fontSize: '0.75rem', // 12px
+        fontSize: '0.8125rem',
         lineHeight: 1.5,
         letterSpacing: '0.01em',
         color: palette.text.secondary,
-        '@media (max-width: 768px)': {
-            fontSize: '0.6875rem', // 11px on mobile
-        }
     },
     overline: {
         fontFamily: fontFamilyBody,
-        fontWeight: 600,
-        fontSize: '0.75rem', // 12px
+        fontWeight: 650, // Stronger for labels
+        fontSize: '0.8125rem',
         textTransform: 'uppercase',
-        letterSpacing: '0.08em',
+        letterSpacing: '0.1em',
         lineHeight: 1.5,
         color: palette.text.secondary,
-        '@media (max-width: 768px)': {
-            fontSize: '0.6875rem', // 11px on mobile
-        }
+    },
+    // Add monospace variant
+    mono: {
+        fontFamily: fontFamilyMono,
+        fontWeight: 400,
+        fontSize: '0.875rem',
+        lineHeight: 1.6,
+        letterSpacing: 0,
     }
 };
 
-// 4. Shape (Border Radius)
+// 4. Enhanced Shape with more subtle radius values
 const shape = {
-    borderRadius: 4, // Subtle, modern radius for cleaner look
+    borderRadius: 4, // Subtle base radius
+    borderRadiusSmall: 3,
+    borderRadiusLarge: 6,
+    borderRadiusXLarge: 8,
 };
 
-// 5. Shadows - Subtle and elegant
+// 5. Enhanced Shadows with more depth and sophistication
 const shadows = [
     'none',
-    '0 1px 2px rgba(0, 0, 0, 0.05)', // xs
-    '0 2px 4px rgba(0, 0, 0, 0.05)', // sm
-    '0 4px 8px rgba(0, 0, 0, 0.08)', // md
-    '0 8px 16px rgba(0, 0, 0, 0.1)', // lg
-    '0 12px 24px rgba(0, 0, 0, 0.12)', // xl
-    '0 16px 32px rgba(0, 0, 0, 0.14)', // 2xl
-    '0 24px 48px rgba(0, 0, 0, 0.16)', // 3xl
-    // Fill the rest with gradual progression
-    ...Array(16).fill('0 32px 64px rgba(0, 0, 0, 0.18)'),
+    '0 1px 2px rgba(16, 24, 40, 0.05)', // xs - subtle
+    '0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06)', // sm - layered
+    '0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.03)', // md - layered
+    '0 8px 16px rgba(16, 24, 40, 0.1), 0 4px 6px rgba(16, 24, 40, 0.05)', // lg - layered
+    '0 12px 24px rgba(16, 24, 40, 0.12), 0 4px 8px rgba(16, 24, 40, 0.06)', // xl - layered
+    '0 16px 32px rgba(16, 24, 40, 0.14), 0 6px 12px rgba(16, 24, 40, 0.08)', // 2xl - dramatic
+    '0 24px 48px rgba(16, 24, 40, 0.16), 0 12px 24px rgba(16, 24, 40, 0.1)', // 3xl - very dramatic
+    // Colored shadows for interactive elements
+    '0 8px 24px rgba(0, 102, 255, 0.2), 0 4px 8px rgba(0, 102, 255, 0.1)', // primary shadow
+    '0 8px 24px rgba(0, 208, 132, 0.2), 0 4px 8px rgba(0, 208, 132, 0.1)', // success shadow
+    // Fill the rest
+    ...Array(14).fill('0 32px 64px rgba(16, 24, 40, 0.18), 0 16px 32px rgba(16, 24, 40, 0.12)'),
 ];
 
-// 6. Components Overrides (Refined Styles)
+// 6. Enhanced Components with premium styling
 const components = {
-    // Apply baseline styles globally
     MuiCssBaseline: {
         styleOverrides: {
             html: {
                 scrollBehavior: 'smooth',
                 fontSize: '16px',
-                // Better font rendering
                 WebkitFontSmoothing: 'antialiased',
                 MozOsxFontSmoothing: 'grayscale',
+                textRendering: 'optimizeLegibility',
             },
             body: {
                 backgroundColor: palette.background.default,
                 scrollBehavior: 'smooth',
-                // Add subtle selection color
                 '& ::selection': {
                     backgroundColor: palette.primary.lighter,
-                    color: palette.primary.dark,
+                    color: palette.primary.darker,
                 },
-                // Improve readability
                 textRendering: 'optimizeLegibility',
-                // Remove default margins
                 margin: 0,
-                // Smooth scrolling on iOS
                 WebkitOverflowScrolling: 'touch',
+                // Enhanced font feature settings
+                fontFeatureSettings: '"rlig" 1, "calt" 1, "ss01" 1',
             },
-            // Basic link styling
             a: {
                 color: palette.primary.main,
                 textDecoration: 'none',
-                transition: 'color 0.2s ease',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                     color: palette.primary.dark,
                 },
             },
-            // Improved focus styles
             '*:focus-visible': {
                 outline: `2px solid ${palette.primary.main}`,
                 outlineOffset: '2px',
+                borderRadius: '4px',
             },
-            // Remove default button styles
             'button, input, textarea': {
                 fontFamily: 'inherit',
             },
-            // Smooth transitions globally
             '*, *::before, *::after': {
                 boxSizing: 'border-box',
             },
@@ -319,73 +347,115 @@ const components = {
         styleOverrides: {
             root: {
                 borderRadius: shape.borderRadius,
-                padding: '10px 20px',
-                fontWeight: 500,
-                transition: 'all 0.2s ease',
+                padding: '11px 20px',
+                fontWeight: 550,
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 textTransform: 'none',
                 boxShadow: 'none',
-                fontSize: '0.875rem',
+                fontSize: '0.9375rem',
+                lineHeight: 1.5,
+                position: 'relative',
+                overflow: 'hidden',
                 '&:active': {
                     transform: 'scale(0.98)',
-                }
+                },
+                // Add subtle ripple effect
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'transparent',
+                    transition: 'background 0.2s ease',
+                    borderRadius: 'inherit',
+                },
             },
             containedPrimary: {
                 backgroundColor: palette.primary.main,
                 color: palette.primary.contrastText,
                 border: 'none',
+                background: `linear-gradient(135deg, ${palette.primary.main} 0%, ${palette.primary.dark} 100%)`,
                 '&:hover': {
-                    backgroundColor: palette.primary.dark,
-                    boxShadow: shadows[2],
-                    transform: 'translateY(-1px)',
+                    background: `linear-gradient(135deg, ${palette.primary.dark} 0%, ${palette.primary.darker} 100%)`,
+                    boxShadow: `0 8px 24px ${palette.primary.shadow}`,
+                    transform: 'translateY(-2px)',
                 },
                 '&:active': {
-                    transform: 'translateY(0)',
-                    boxShadow: 'none',
+                    transform: 'translateY(-1px) scale(0.98)',
+                    boxShadow: `0 4px 12px ${palette.primary.shadow}`,
                 },
             },
             outlinedPrimary: {
                 borderColor: palette.grey[300],
-                borderWidth: '1px',
+                borderWidth: '1.5px',
                 color: palette.text.primary,
                 backgroundColor: 'transparent',
+                backdropFilter: 'blur(8px)',
                 '&:hover': {
                     backgroundColor: palette.grey[50],
                     borderColor: palette.grey[400],
-                    borderWidth: '1px',
+                    borderWidth: '1.5px',
+                    transform: 'translateY(-1px)',
+                    boxShadow: shadows[2],
                 },
             },
             textPrimary: {
                 color: palette.text.primary,
                 '&:hover': {
                     backgroundColor: palette.grey[50],
+                    '&::before': {
+                        background: `linear-gradient(135deg, ${palette.primary.main}08 0%, ${palette.primary.light}08 100%)`,
+                    },
                 },
             },
-            // Size variants
             sizeLarge: {
-                padding: '12px 24px',
-                fontSize: '0.9375rem',
-                borderRadius: shape.borderRadius,
+                padding: '14px 28px',
+                fontSize: '1rem',
+                borderRadius: shape.borderRadiusLarge,
+                fontWeight: 550,
             },
             sizeSmall: {
-                padding: '6px 12px',
-                fontSize: '0.8125rem',
-                borderRadius: shape.borderRadius * 0.75,
+                padding: '6px 16px',
+                fontSize: '0.875rem',
+                borderRadius: shape.borderRadiusSmall,
             },
         },
     },
     MuiCard: {
         styleOverrides: {
             root: {
-                borderRadius: shape.borderRadius,
+                borderRadius: shape.borderRadiusLarge,
                 border: `1px solid ${palette.grey[200]}`,
                 boxShadow: 'none',
                 backgroundColor: palette.background.paper,
-                transition: 'all 0.2s ease',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                position: 'relative',
+                overflow: 'hidden',
+                // Add subtle backdrop filter for glass effect
+                backdropFilter: 'blur(1px)',
                 '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: shadows[2],
+                    transform: 'translateY(-4px)',
+                    boxShadow: shadows[4],
                     borderColor: palette.grey[300],
-                }
+                    '&::before': {
+                        opacity: 1,
+                    },
+                },
+                // Subtle shine effect
+                '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: '-100%',
+                    width: '100%',
+                    height: '100%',
+                    background: `linear-gradient(90deg, transparent, ${palette.background.glass}, transparent)`,
+                    transition: 'all 0.6s ease',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                },
             }
         }
     },
@@ -405,6 +475,10 @@ const components = {
                 '@media (min-width: 1024px)': {
                     paddingLeft: 40,
                     paddingRight: 40,
+                },
+                '@media (min-width: 1280px)': {
+                    paddingLeft: 48,
+                    paddingRight: 48,
                 }
             }
         }
@@ -420,13 +494,13 @@ const components = {
         styleOverrides: {
             root: {
                 '& .MuiOutlinedInput-root': {
-                    borderRadius: shape.borderRadius * 0.75,
+                    borderRadius: shape.borderRadius,
                     backgroundColor: palette.background.paper,
-                    transition: 'all 0.2s ease',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                     fontSize: '0.9375rem',
                     '& fieldset': {
                         borderColor: palette.grey[300],
-                        borderWidth: '1px',
+                        borderWidth: '1.5px',
                         transition: 'all 0.2s ease',
                     },
                     '&:hover fieldset': {
@@ -434,7 +508,7 @@ const components = {
                     },
                     '&.Mui-focused fieldset': {
                         borderColor: palette.primary.main,
-                        borderWidth: '1px',
+                        borderWidth: '2px',
                     },
                     '&.Mui-focused': {
                         boxShadow: `0 0 0 4px ${palette.primary.main}15`,
@@ -449,14 +523,14 @@ const components = {
                 '& .MuiInputLabel-root': {
                     color: palette.text.secondary,
                     fontSize: '0.875rem',
-                    fontWeight: 400,
+                    fontWeight: 500,
                     '&.Mui-focused': {
                         color: palette.primary.main,
-                        fontWeight: 500,
+                        fontWeight: 550,
                     },
                 },
                 '& .MuiInputBase-input': {
-                    padding: '12px 14px',
+                    padding: '12px 16px',
                     fontSize: '0.9375rem',
                     lineHeight: 1.5,
                     '&::placeholder': {
@@ -465,8 +539,8 @@ const components = {
                     },
                 },
                 '& .MuiFormHelperText-root': {
-                    marginTop: '4px',
-                    fontSize: '0.75rem',
+                    marginTop: '6px',
+                    fontSize: '0.8125rem',
                 },
             },
         }
@@ -477,12 +551,12 @@ const components = {
                 color: palette.primary.main,
                 textDecoration: 'none',
                 fontWeight: 500,
-                transition: 'color 0.2s ease',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                     color: palette.primary.dark,
                     textDecoration: 'underline',
-                    textUnderlineOffset: '3px',
-                    textDecorationThickness: '1px',
+                    textUnderlineOffset: '4px',
+                    textDecorationThickness: '2px',
                 },
             },
         },
@@ -491,7 +565,7 @@ const components = {
         styleOverrides: {
             root: {
                 backgroundImage: 'none',
-                borderRadius: shape.borderRadius,
+                borderRadius: shape.borderRadiusLarge,
             },
             elevation0: {
                 boxShadow: 'none',
@@ -518,17 +592,22 @@ const components = {
     MuiChip: {
         styleOverrides: {
             root: {
-                borderRadius: shape.borderRadius * 0.5,
-                fontWeight: 500,
+                borderRadius: shape.borderRadius,
+                fontWeight: 550,
                 border: 'none',
-                height: '28px',
-                fontSize: '0.8125rem',
+                height: '32px',
+                fontSize: '0.875rem',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                    transform: 'translateY(-1px)',
+                },
             },
             filled: {
                 backgroundColor: palette.grey[100],
                 color: palette.text.primary,
                 '&:hover': {
                     backgroundColor: palette.grey[200],
+                    boxShadow: shadows[1],
                 },
             },
             outlined: {
@@ -536,6 +615,7 @@ const components = {
                 backgroundColor: palette.background.paper,
                 '&:hover': {
                     backgroundColor: palette.grey[50],
+                    borderColor: palette.grey[400],
                 },
             },
         }
@@ -543,9 +623,10 @@ const components = {
     MuiIconButton: {
         styleOverrides: {
             root: {
-                transition: 'all 0.2s ease',
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                     backgroundColor: palette.grey[100],
+                    transform: 'translateY(-1px)',
                 },
             },
         }
@@ -553,10 +634,12 @@ const components = {
     MuiAppBar: {
         styleOverrides: {
             root: {
-                backgroundColor: palette.background.paper,
+                backgroundColor: palette.background.glass,
                 color: palette.text.primary,
                 boxShadow: 'none',
                 borderBottom: `1px solid ${palette.divider}`,
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
             },
         }
     },
@@ -564,17 +647,18 @@ const components = {
         styleOverrides: {
             paper: {
                 borderRadius: 0,
-                boxShadow: shadows[4],
+                boxShadow: shadows[6],
+                backdropFilter: 'blur(12px)',
+                backgroundColor: palette.background.glass,
             },
         }
     },
-    // Add other components as needed
 };
 
-// 7. Spacing System - Consistent spacing scale
-const spacing = 8; // Base spacing unit (8px)
+// 7. Enhanced Spacing System
+const spacing = 8;
 
-// 8. Create the Theme
+// 8. Create the Enhanced Theme
 const dotbridgeTheme = createTheme({
     palette: palette,
     typography: typography,
@@ -582,7 +666,6 @@ const dotbridgeTheme = createTheme({
     shadows: shadows,
     spacing: spacing,
     components: components,
-    // Add custom breakpoints for better responsive control
     breakpoints: {
         values: {
             xs: 0,
@@ -590,21 +673,40 @@ const dotbridgeTheme = createTheme({
             md: 768,
             lg: 1024,
             xl: 1280,
+            xxl: 1536, // Add extra large breakpoint
+        },
+    },
+    // Add custom easing functions
+    transitions: {
+        easing: {
+            // Custom easing curves for premium feel
+            easeInOutCubic: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            easeOutQuart: 'cubic-bezier(0.25, 1, 0.5, 1)',
+            easeInOutQuart: 'cubic-bezier(0.76, 0, 0.24, 1)',
+        },
+        duration: {
+            shortest: 150,
+            shorter: 200,
+            short: 250,
+            standard: 300,
+            complex: 375,
+            enteringScreen: 225,
+            leavingScreen: 195,
         },
     },
 });
 
-// Apply responsive typography - Enhanced for premium mobile experience
+// Apply enhanced responsive typography
 dotbridgeTheme.typography.h1 = {
     ...dotbridgeTheme.typography.h1,
     [dotbridgeTheme.breakpoints.down('md')]: {
-        fontSize: '3.5rem', // Keep large on tablet
+        fontSize: '3.5rem',
         lineHeight: 1.1,
         letterSpacing: '-0.04em',
     },
     [dotbridgeTheme.breakpoints.down('sm')]: {
-        fontSize: '3rem', // Large and impactful on mobile
-        lineHeight: 1.1,
+        fontSize: '3rem',
+        lineHeight: 1.15,
         letterSpacing: '-0.03em',
     },
 };
@@ -612,13 +714,13 @@ dotbridgeTheme.typography.h1 = {
 dotbridgeTheme.typography.h2 = {
     ...dotbridgeTheme.typography.h2,
     [dotbridgeTheme.breakpoints.down('md')]: {
-        fontSize: '2.25rem', // Larger on tablet
+        fontSize: '2.5rem',
         lineHeight: 1.2,
         letterSpacing: '-0.03em',
     },
     [dotbridgeTheme.breakpoints.down('sm')]: {
-        fontSize: '2rem', // Larger on mobile
-        lineHeight: 1.2,
+        fontSize: '2.25rem',
+        lineHeight: 1.25,
         letterSpacing: '-0.02em',
     },
 };
@@ -631,7 +733,7 @@ dotbridgeTheme.typography.h3 = {
     },
     [dotbridgeTheme.breakpoints.down('sm')]: {
         fontSize: '1.5rem',
-        lineHeight: 1.3,
+        lineHeight: 1.35,
     },
 };
 

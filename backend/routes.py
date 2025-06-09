@@ -38,6 +38,7 @@ from models import (
     JobApplication,  # Add JobApplication model
     PersonalizationTemplate,  # Add PersonalizationTemplate model
     PersonalizationRecord,  # Add PersonalizationRecord model
+    ResumeAnalysis,  # Add ResumeAnalysis model
 )
 from utils import (
     clone_voice_helper,
@@ -2028,13 +2029,31 @@ def get_agent_config(brdge_id):
         personalization_data = None
         personalization_record = None
 
+        logger.info(
+            f"🔍 Agent-config: brdge_id={brdge_id}, personalization_id={personalization_id}"
+        )
+
         if personalization_id:
+            logger.info(
+                f"🔍 Agent-config: Looking up personalization record with unique_id={personalization_id}"
+            )
+
+            # Truncate the personalization_id to match DB schema (first 12 chars)
+            truncated_id = personalization_id[:12]
+            logger.info(
+                f"🔍 Agent-config: Using truncated ID for lookup: {truncated_id}"
+            )
+
             # Look up the personalization record
             record = PersonalizationRecord.query.filter_by(
-                unique_id=personalization_id
+                unique_id=truncated_id
             ).first()
 
             if record:
+                logger.info(
+                    f"✅ Agent-config: Found personalization record {record.id} with data keys: {list(record.data.keys())}"
+                )
+
                 # Update access metrics
                 record.last_accessed = datetime.utcnow()
                 record.access_count += 1
@@ -2046,6 +2065,9 @@ def get_agent_config(brdge_id):
                 # Get template info for context
                 template = record.template
                 if template:
+                    logger.info(
+                        f"📋 Agent-config: Found template '{template.name}' with {len(template.columns)} columns"
+                    )
                     # Add column metadata to help agent understand the data
                     personalization_data["_metadata"] = {
                         "template_name": template.name,
@@ -2053,6 +2075,40 @@ def get_agent_config(brdge_id):
                         "personalization_id": personalization_id,
                         "record_id": record.id,
                     }
+                else:
+                    logger.warning(
+                        f"⚠️ Agent-config: No template found for personalization record {record.id}"
+                    )
+            else:
+                logger.warning(
+                    f"❌ Agent-config: No personalization record found with unique_id={personalization_id}"
+                )
+
+                # Debug: Check if any records exist for this bridge's templates
+                from models import PersonalizationTemplate
+
+                templates = PersonalizationTemplate.query.filter_by(
+                    brdge_id=brdge_id
+                ).all()
+                logger.info(
+                    f"🔍 Agent-config: Found {len(templates)} templates for bridge {brdge_id}"
+                )
+
+                total_records = 0
+                for template in templates:
+                    template_records = PersonalizationRecord.query.filter_by(
+                        template_id=template.id
+                    ).count()
+                    total_records += template_records
+                    logger.info(
+                        f"📊 Agent-config: Template '{template.name}' has {template_records} records"
+                    )
+
+                logger.info(
+                    f"📊 Agent-config: Total personalization records for bridge {brdge_id}: {total_records}"
+                )
+        else:
+            logger.info("ℹ️ Agent-config: No personalization_id provided in request")
 
         # Get the latest script to extract data
         script = (
@@ -2097,6 +2153,13 @@ def get_agent_config(brdge_id):
                 personalization_record.id if personalization_record else None
             ),
         }
+
+        if personalization_data:
+            logger.info(
+                f"✅ Agent-config: Including personalization data with {len(personalization_data)} fields"
+            )
+        else:
+            logger.info("ℹ️ Agent-config: No personalization data included in response")
 
         # Add presentation document to knowledge base if it exists
         if brdge.presentation_filename:
@@ -4739,36 +4802,47 @@ def get_personalization_records(user, brdge_id, template_id):
 )
 @login_required
 def create_personalization_record(user, brdge_id, template_id):
-    """Create a single personalization record manually"""
-    # Verify the user owns the bridge
-    brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first_or_404()
-
-    data = request.get_json()
-    if not data or not data.get("data"):
-        return jsonify({"error": "Record data is required"}), 400
-
-    # Verify template exists and belongs to this bridge
-    template = PersonalizationTemplate.query.filter_by(
-        id=template_id, brdge_id=brdge_id
-    ).first_or_404()
-
+    """Create a new personalization record for a template"""
     try:
-        # Import unique ID generator
-        from personalization_utils.unique_id import generate_unique_id
+        # Verify bridge ownership
+        brdge = Brdge.query.filter_by(id=brdge_id, user_id=user.id).first()
+        if not brdge:
+            return jsonify({"error": "Bridge not found or access denied"}), 404
 
-        # Generate unique ID
-        unique_id = generate_unique_id()
+        # Verify template ownership
+        template = PersonalizationTemplate.query.filter_by(
+            id=template_id, brdge_id=brdge_id
+        ).first()
+        if not template:
+            return jsonify({"error": "Template not found"}), 404
 
-        # Extract email if present
-        record_data = data["data"]
-        email = record_data.get("email", "")
+        data = request.get_json()
+        record_data = data.get("data", {})
+
+        # Generate unique ID (truncated to 12 chars to match DB schema)
+        unique_id = str(uuid.uuid4())[:12]
+
+        # Add security metadata
+        security_metadata = {
+            "created_ip": request.remote_addr,
+            "user_agent": request.headers.get("User-Agent", ""),
+            "session_fingerprint": request.headers.get("X-Session-Fingerprint", ""),
+            "created_at": datetime.utcnow().isoformat(),
+            "expires_at": (
+                datetime.utcnow() + timedelta(hours=24)
+            ).isoformat(),  # 24-hour expiration
+            "access_count": 0,
+            "max_access_count": 10,  # Limit to 10 accesses
+            "is_demo_record": True,  # Mark as demo/temporary record
+        }
 
         # Create record
         record = PersonalizationRecord(
             template_id=template_id,
             unique_id=unique_id,
             data=record_data,
-            email=email,
+            metadata=security_metadata,
+            created_at=datetime.utcnow(),
         )
 
         db.session.add(record)
@@ -4776,15 +4850,20 @@ def create_personalization_record(user, brdge_id, template_id):
 
         return (
             jsonify(
-                {"message": "Record created successfully", "record": record.to_dict()}
+                {
+                    "message": "Record created successfully",
+                    "id": record.id,
+                    "unique_id": unique_id,
+                    "expires_in_hours": 24,
+                }
             ),
             201,
         )
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Error creating personalization record: {str(e)}")
-        return jsonify({"error": str(e)}), 400
+        logger.error(f"Error creating personalization record: {e}")
+        return jsonify({"error": "Failed to create record"}), 500
 
 
 @app.route(
@@ -4934,16 +5013,67 @@ def create_personalization_records(user, brdge_id):
 
 @app.route("/api/personalization/<string:unique_id>", methods=["GET"])
 def get_personalization_data(unique_id):
-    """Get personalization data for a unique ID (public endpoint)"""
-    record = PersonalizationRecord.query.filter_by(unique_id=unique_id).first()
+    """Get personalization data for a unique ID (public endpoint with security)"""
+    # Truncate to 12 characters to match DB schema
+    truncated_id = unique_id[:12]
+    record = PersonalizationRecord.query.filter_by(unique_id=truncated_id).first()
 
     if not record:
         # Return empty data instead of 404 to avoid revealing valid IDs
         return jsonify({"data": {}}), 200
 
-    # Update access metrics
+    # Security validation
+    metadata = record.metadata or {}
+
+    # Check expiration
+    expires_at_str = metadata.get("expires_at")
+    if expires_at_str:
+        try:
+            expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
+            if datetime.utcnow() > expires_at:
+                logger.warning(f"Expired personalization record accessed: {unique_id}")
+                return jsonify({"data": {}, "error": "Session expired"}), 410
+        except ValueError:
+            logger.warning(f"Invalid expiration date for record: {unique_id}")
+
+    # Check access limit
+    max_access = metadata.get("max_access_count", 50)
+    if record.access_count >= max_access:
+        logger.warning(f"Access limit exceeded for personalization record: {unique_id}")
+        return jsonify({"data": {}, "error": "Access limit exceeded"}), 429
+
+    # Validate request source (basic IP check for suspicious activity)
+    request_ip = request.remote_addr
+    created_ip = metadata.get("created_ip")
+
+    # Log suspicious access patterns (but don't block - could be legitimate)
+    if created_ip and request_ip != created_ip:
+        logger.info(
+            f"IP change for personalization record {unique_id}: created from {created_ip}, accessed from {request_ip}"
+        )
+
+    # Update access metrics with security tracking
     record.last_accessed = datetime.utcnow()
     record.access_count += 1
+
+    # Update metadata with access info
+    if "access_history" not in metadata:
+        metadata["access_history"] = []
+
+    metadata["access_history"].append(
+        {
+            "timestamp": datetime.utcnow().isoformat(),
+            "ip": request_ip,
+            "user_agent": request.headers.get("User-Agent", "")[
+                :200
+            ],  # Truncate user agent
+        }
+    )
+
+    # Keep only last 10 access records
+    metadata["access_history"] = metadata["access_history"][-10:]
+    record.metadata = metadata
+
     db.session.commit()
 
     # Get the associated bridge info
@@ -4956,6 +5086,9 @@ def get_personalization_data(unique_id):
                 "data": record.data,
                 "brdge_id": brdge.id,
                 "template_columns": template.columns,
+                "expires_at": expires_at_str,
+                "remaining_access": max(0, max_access - record.access_count),
+                "access_count": record.access_count,
             }
         ),
         200,
@@ -5265,3 +5398,503 @@ def improve_template_descriptions(user, brdge_id, template_id):
         db.session.rollback()
         logger.error(f"Error improving template descriptions: {str(e)}")
         return jsonify({"error": f"Failed to improve descriptions: {str(e)}"}), 400
+
+
+# Resume Analysis Endpoints
+@app.route("/api/resume-analysis", methods=["POST"])
+@cross_origin()
+def create_resume_analysis():
+    """Upload and analyze a resume"""
+    try:
+        # Check for file
+        if "resume" not in request.files:
+            return jsonify({"error": "No resume file provided"}), 400
+
+        file = request.files["resume"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
+        # Validate file type
+        allowed_extensions = [".pdf", ".docx"]
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        if file_extension not in allowed_extensions:
+            return (
+                jsonify(
+                    {"error": "Invalid file type. Please upload a PDF or DOCX file"}
+                ),
+                400,
+            )
+
+        # Validate file size (max 10MB)
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+
+        if file_size > 10 * 1024 * 1024:
+            return jsonify({"error": "File size must be less than 10MB"}), 400
+
+        # Get current user if authenticated, otherwise use session ID
+        current_user = get_current_user()
+        user_id = current_user.id if current_user else None
+
+        # Generate session ID for anonymous users
+        session_id = None
+        if not user_id:
+            session_id = request.headers.get("X-Session-ID") or str(uuid.uuid4())
+
+        # Generate unique filename and S3 key
+        original_filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{original_filename}"
+        s3_key = f"resume-analyses/{user_id or session_id}/{unique_filename}"
+
+        # Create database record
+        analysis = ResumeAnalysis(
+            user_id=user_id,
+            session_id=session_id,
+            filename=original_filename,
+            file_size=file_size,
+            s3_key=s3_key,
+            analysis_status="pending",
+        )
+        db.session.add(analysis)
+        db.session.commit()
+
+        # Save file temporarily
+        temp_path = f"/tmp/{unique_filename}"
+        file.save(temp_path)
+
+        try:
+            # Upload to S3
+            s3_client.upload_file(
+                temp_path,
+                S3_BUCKET,
+                s3_key,
+                ExtraArgs={
+                    "ContentType": (
+                        "application/pdf"
+                        if file_extension == ".pdf"
+                        else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                },
+            )
+
+            # Update status to processing
+            analysis.analysis_status = "processing"
+            db.session.commit()
+
+            # Analyze resume using Gemini
+            analysis_results = gemini.analyze_resume_for_career(temp_path)
+
+            # Update with results
+            analysis.analysis_results = analysis_results
+            analysis.analysis_status = "completed"
+            db.session.commit()
+
+            # Clean up temp file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            return (
+                jsonify(
+                    {
+                        "message": "Resume analyzed successfully",
+                        "analysis_id": analysis.id,
+                        "session_id": session_id,
+                        "results": analysis_results,
+                    }
+                ),
+                201,
+            )
+
+        except Exception as e:
+            # Update status to failed
+            analysis.analysis_status = "failed"
+            db.session.commit()
+
+            # Clean up temp file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            logger.error(f"Error analyzing resume: {str(e)}")
+            return jsonify({"error": f"Failed to analyze resume: {str(e)}"}), 500
+
+    except Exception as e:
+        logger.error(f"Error in resume analysis endpoint: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/resume-analysis/<int:analysis_id>", methods=["GET"])
+@cross_origin()
+def get_resume_analysis(analysis_id):
+    """Get analysis results"""
+    try:
+        # Get current user or session ID
+        current_user = get_current_user()
+        user_id = current_user.id if current_user else None
+        session_id = request.headers.get("X-Session-ID")
+
+        # Find the analysis
+        query = ResumeAnalysis.query.filter_by(id=analysis_id)
+
+        # Filter by user or session
+        if user_id:
+            query = query.filter(
+                (ResumeAnalysis.user_id == user_id)
+                | (ResumeAnalysis.session_id == session_id)
+            )
+        elif session_id:
+            query = query.filter_by(session_id=session_id)
+        else:
+            return jsonify({"error": "Authentication or session ID required"}), 401
+
+        analysis = query.first()
+
+        if not analysis:
+            return jsonify({"error": "Analysis not found"}), 404
+
+        return jsonify(analysis.to_dict()), 200
+
+    except Exception as e:
+        logger.error(f"Error getting resume analysis: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/resume-analysis/<int:analysis_id>", methods=["PUT"])
+@cross_origin()
+def update_resume_analysis(analysis_id):
+    """Update/replace resume for re-analysis"""
+    try:
+        # Get current user or session ID
+        current_user = get_current_user()
+        user_id = current_user.id if current_user else None
+        session_id = request.headers.get("X-Session-ID")
+
+        # Find the analysis
+        query = ResumeAnalysis.query.filter_by(id=analysis_id)
+
+        # Filter by user or session
+        if user_id:
+            query = query.filter(
+                (ResumeAnalysis.user_id == user_id)
+                | (ResumeAnalysis.session_id == session_id)
+            )
+        elif session_id:
+            query = query.filter_by(session_id=session_id)
+        else:
+            return jsonify({"error": "Authentication or session ID required"}), 401
+
+        analysis = query.first()
+
+        if not analysis:
+            return jsonify({"error": "Analysis not found"}), 404
+
+        # Check for new file
+        if "resume" not in request.files:
+            return jsonify({"error": "No resume file provided"}), 400
+
+        file = request.files["resume"]
+        if file.filename == "":
+            return jsonify({"error": "No file selected"}), 400
+
+        # Validate file type
+        allowed_extensions = [".pdf", ".docx"]
+        file_extension = os.path.splitext(file.filename)[1].lower()
+        if file_extension not in allowed_extensions:
+            return (
+                jsonify(
+                    {"error": "Invalid file type. Please upload a PDF or DOCX file"}
+                ),
+                400,
+            )
+
+        # Validate file size
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+
+        if file_size > 10 * 1024 * 1024:
+            return jsonify({"error": "File size must be less than 10MB"}), 400
+
+        # Delete old file from S3
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=analysis.s3_key)
+        except Exception as e:
+            logger.warning(f"Failed to delete old resume from S3: {str(e)}")
+
+        # Generate new filename and S3 key
+        original_filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{original_filename}"
+        s3_key = f"resume-analyses/{analysis.user_id or analysis.session_id}/{unique_filename}"
+
+        # Update record
+        analysis.filename = original_filename
+        analysis.file_size = file_size
+        analysis.s3_key = s3_key
+        analysis.analysis_status = "processing"
+        analysis.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        # Save file temporarily
+        temp_path = f"/tmp/{unique_filename}"
+        file.save(temp_path)
+
+        try:
+            # Upload to S3
+            s3_client.upload_file(
+                temp_path,
+                S3_BUCKET,
+                s3_key,
+                ExtraArgs={
+                    "ContentType": (
+                        "application/pdf"
+                        if file_extension == ".pdf"
+                        else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                },
+            )
+
+            # Analyze resume
+            analysis_results = gemini.analyze_resume_for_career(temp_path)
+
+            # Update with results
+            analysis.analysis_results = analysis_results
+            analysis.analysis_status = "completed"
+            db.session.commit()
+
+            # Clean up temp file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            return (
+                jsonify(
+                    {
+                        "message": "Resume re-analyzed successfully",
+                        "analysis": analysis.to_dict(),
+                    }
+                ),
+                200,
+            )
+
+        except Exception as e:
+            # Update status to failed
+            analysis.analysis_status = "failed"
+            db.session.commit()
+
+            # Clean up temp file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+            logger.error(f"Error re-analyzing resume: {str(e)}")
+            return jsonify({"error": f"Failed to re-analyze resume: {str(e)}"}), 500
+
+    except Exception as e:
+        logger.error(f"Error updating resume analysis: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/resume-analysis/<int:analysis_id>", methods=["DELETE"])
+@cross_origin()
+def delete_resume_analysis(analysis_id):
+    """Delete resume and analysis"""
+    try:
+        # Get current user or session ID
+        current_user = get_current_user()
+        user_id = current_user.id if current_user else None
+        session_id = request.headers.get("X-Session-ID")
+
+        # Find the analysis
+        query = ResumeAnalysis.query.filter_by(id=analysis_id)
+
+        # Filter by user or session
+        if user_id:
+            query = query.filter(
+                (ResumeAnalysis.user_id == user_id)
+                | (ResumeAnalysis.session_id == session_id)
+            )
+        elif session_id:
+            query = query.filter_by(session_id=session_id)
+        else:
+            return jsonify({"error": "Authentication or session ID required"}), 401
+
+        analysis = query.first()
+
+        if not analysis:
+            return jsonify({"error": "Analysis not found"}), 404
+
+        # Delete from S3
+        try:
+            s3_client.delete_object(Bucket=S3_BUCKET, Key=analysis.s3_key)
+        except Exception as e:
+            logger.warning(f"Failed to delete resume from S3: {str(e)}")
+
+        # Delete from database
+        db.session.delete(analysis)
+        db.session.commit()
+
+        return jsonify({"message": "Resume analysis deleted successfully"}), 200
+
+    except Exception as e:
+        logger.error(f"Error deleting resume analysis: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/brdges/<int:brdge_id>/personalization/demo-record", methods=["POST"])
+@cross_origin()
+def create_demo_personalization_record(brdge_id):
+    """Create a temporary demo personalization record (no auth required, but secured)"""
+    try:
+        # Rate limiting by IP
+        request_ip = request.remote_addr
+        rate_limit_key = f"demo_personalization_{request_ip}_{brdge_id}"
+
+        # Basic rate limiting (could be enhanced with Redis)
+        # For now, just log the attempt for monitoring
+        logger.info(
+            f"Demo personalization record request from {request_ip} for bridge {brdge_id}"
+        )
+
+        # Verify bridge exists (remove shareable requirement for demo records)
+        brdge = Brdge.query.filter_by(id=brdge_id).first()
+        if not brdge:
+            return jsonify({"error": "Bridge not found"}), 404
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        template_name = data.get("template_name", "Demo Template")
+        columns = data.get("columns", [])
+        record_data = data.get("data", {})
+
+        # Find or create the demo template
+        template = PersonalizationTemplate.query.filter_by(
+            brdge_id=brdge_id, name=template_name
+        ).first()
+
+        if not template:
+            # Create the template
+            template = PersonalizationTemplate(
+                brdge_id=brdge_id,
+                name=template_name,
+                columns=columns,
+                created_at=datetime.utcnow(),
+            )
+            db.session.add(template)
+            db.session.flush()  # Get the ID
+
+        # Generate unique ID (truncated to 12 chars to match DB schema)
+        unique_id = str(uuid.uuid4())[:12]
+
+        # Add strict security metadata for demo records
+        security_metadata = {
+            "created_ip": request_ip,
+            "user_agent": request.headers.get("User-Agent", "")[:200],
+            "session_fingerprint": request.headers.get("X-Session-Fingerprint", ""),
+            "created_at": datetime.utcnow().isoformat(),
+            "expires_at": (
+                datetime.utcnow() + timedelta(hours=2)
+            ).isoformat(),  # 2-hour expiration for demos
+            "access_count": 0,
+            "max_access_count": 5,  # Limit to 5 accesses for demo
+            "is_demo_record": True,
+            "is_temporary": True,
+            "rate_limit_key": rate_limit_key,
+        }
+
+        # Create record
+        record = PersonalizationRecord(
+            template_id=template.id,
+            unique_id=unique_id,
+            data=record_data,
+            metadata=security_metadata,
+            created_at=datetime.utcnow(),
+        )
+
+        db.session.add(record)
+        db.session.commit()
+
+        logger.info(
+            f"✅ Demo Record: Created personalization record {unique_id} for bridge {brdge_id}"
+        )
+        logger.info(f"📋 Demo Record: Template ID {template.id}, Record ID {record.id}")
+        logger.info(f"📊 Demo Record: Record data keys: {list(record_data.keys())}")
+
+        return (
+            jsonify(
+                {
+                    "message": "Demo record created successfully",
+                    "unique_id": unique_id,
+                    "expires_in_hours": 2,
+                    "max_access_count": 5,
+                    "security_notice": "This is a temporary demo record with limited access",
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error creating demo personalization record: {e}")
+        return jsonify({"error": "Failed to create demo record"}), 500
+
+
+@app.route("/api/personalization/cleanup-expired", methods=["POST"])
+def cleanup_expired_personalization_records():
+    """Cleanup expired demo personalization records (internal endpoint)"""
+    try:
+        # Security: Only allow this from localhost/internal calls
+        if request.remote_addr not in ["127.0.0.1", "localhost", "::1"]:
+            return jsonify({"error": "Access denied"}), 403
+
+        # Find expired demo records
+        current_time = datetime.utcnow()
+        expired_records = []
+
+        # Query all demo records
+        demo_records = PersonalizationRecord.query.filter(
+            PersonalizationRecord.metadata.op("->>")("is_demo_record") == "true"
+        ).all()
+
+        for record in demo_records:
+            metadata = record.metadata or {}
+            expires_at_str = metadata.get("expires_at")
+
+            if expires_at_str:
+                try:
+                    expires_at = datetime.fromisoformat(
+                        expires_at_str.replace("Z", "+00:00")
+                    )
+                    if current_time > expires_at:
+                        expired_records.append(record)
+                except ValueError:
+                    # Invalid date format, treat as expired
+                    expired_records.append(record)
+
+        # Delete expired records
+        deleted_count = 0
+        for record in expired_records:
+            logger.info(
+                f"Deleting expired demo personalization record: {record.unique_id}"
+            )
+            db.session.delete(record)
+            deleted_count += 1
+
+        db.session.commit()
+
+        logger.info(f"Cleanup completed: {deleted_count} expired demo records deleted")
+
+        return (
+            jsonify(
+                {
+                    "message": f"Cleanup completed successfully",
+                    "deleted_count": deleted_count,
+                    "total_checked": len(demo_records),
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error during personalization cleanup: {e}")
+        return jsonify({"error": "Cleanup failed"}), 500

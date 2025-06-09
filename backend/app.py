@@ -12,6 +12,7 @@ from flask_jwt_extended import (
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 from dotenv import load_dotenv
+import logging
 
 # Load environment variables
 load_dotenv()
@@ -68,6 +69,9 @@ def reset_db():
         db.drop_all()
         db.create_all()
         print("Database reset successfully.")
+
+
+# Note: All routes are now defined in routes.py to avoid duplicates
 
 
 if __name__ == "__main__":

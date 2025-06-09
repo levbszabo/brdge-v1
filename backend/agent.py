@@ -219,10 +219,27 @@ class Assistant(Agent):
             url = f"{self.api_base_url}/brdges/{self.brdge_id}/agent-config"
             if hasattr(self, "personalization_id") and self.personalization_id:
                 url += f"?personalization_id={self.personalization_id}"
+                logger.info(
+                    f"🎯 Agent: Using personalization ID {self.personalization_id} in agent-config request"
+                )
+            else:
+                logger.info(
+                    "⚠️ Agent: No personalization ID available for agent-config request"
+                )
+
+            logger.info(f"🌐 Agent: Fetching config from: {url}")
             response = requests.get(url)
             response.raise_for_status()
             config_data = response.json()
             logger.debug(f"Fetched agent-config: {json.dumps(config_data, indent=2)}")
+
+            # Log personalization data if present
+            if config_data.get("personalization_data"):
+                logger.info(
+                    f"✅ Agent: Received personalization data with keys: {list(config_data['personalization_data'].keys())}"
+                )
+            else:
+                logger.info("❌ Agent: No personalization data in config response")
 
             self.brdge = config_data.get("brdge", {})  # Store full brdge object
             self.bridge_type = self.brdge.get("bridge_type", "general")
@@ -1339,20 +1356,29 @@ async def entrypoint(ctx: JobContext):
     personalization_id = None
     try:
         identity_parts = participant.identity.split("-")
-        logger.info(f"Identity parts: {identity_parts}")
+        logger.info(
+            f"🔍 Agent: Parsing participant identity: '{participant.identity}' into parts: {identity_parts}"
+        )
         if len(identity_parts) >= 3:
             brdge_id = identity_parts[1]
             user_id = identity_parts[2]
             # Check if there's a personalization ID in the identity
+            # UUIDs contain hyphens, so we need to join all parts after the user_id
             if len(identity_parts) >= 4:
-                personalization_id = identity_parts[3]
-            logger.info(f"Extracted brdge_id: {brdge_id}, user_id: {user_id}")
+                # Join all remaining parts to reconstruct the full UUID
+                personalization_id = "-".join(identity_parts[3:])
+                logger.info(
+                    f"🎯 Agent: Found personalization ID in identity: {personalization_id}"
+                )
+            logger.info(
+                f"✅ Agent: Extracted brdge_id: {brdge_id}, user_id: {user_id}, personalization_id: {personalization_id}"
+            )
         elif len(identity_parts) >= 2:
             brdge_id = identity_parts[1]
-            logger.info(f"Extracted brdge_id: {brdge_id}, no user_id found")
+            logger.info(f"⚠️ Agent: Extracted brdge_id: {brdge_id}, no user_id found")
         else:
             logger.warning(
-                f"Could not parse brdge_id from identity: {participant.identity}"
+                f"❌ Agent: Could not parse brdge_id from identity: {participant.identity}"
             )
             # Attempt to get brdge_id and personalization_id from room metadata if available
             try:
@@ -1388,6 +1414,9 @@ async def entrypoint(ctx: JobContext):
     except Exception as e:
         logger.error(f"Error loading VAD model: {e}")
         return  # Cannot proceed without VAD
+    logger.info(
+        f"🚀 Agent: Creating Assistant with brdge_id={brdge_id}, personalization_id={personalization_id}"
+    )
     agent = Assistant(
         brdge_id=brdge_id, room=ctx.room, personalization_id=personalization_id
     )

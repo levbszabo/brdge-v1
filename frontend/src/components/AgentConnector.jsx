@@ -3,7 +3,7 @@ import { Box, Typography, CircularProgress } from '@mui/material';
 import { api } from '../api';
 import { isSafari, isIOS } from '../utils/browserDetection';
 
-function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = false, preventSafariScroll = false }) {
+function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = false, preventSafariScroll = false, personalizationId: propPersonalizationId }) {
     const [connectorUrl, setConnectorUrl] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -15,14 +15,36 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
     const authSentRef = useRef(false);
     const containerRef = useRef(null);
 
-    // Extract personalization ID from URL
+    // Handle personalization ID from props or URL with improved logic
     useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const id = urlParams.get('id');
-        if (id) {
-            setPersonalizationId(id);
+        let finalPersonalizationId = null;
+
+        if (propPersonalizationId) {
+            // Use personalization ID from props (preferred for embedded scenarios)
+            console.log('🔗 AgentConnector: Using personalization ID from props:', propPersonalizationId);
+            finalPersonalizationId = propPersonalizationId;
+        } else {
+            // Fallback to URL extraction for backwards compatibility (ViewBrdgePage scenarios)
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Check for both parameter names for maximum compatibility
+            const pidParam = urlParams.get('pid');  // ViewBrdgePage format
+            const idParam = urlParams.get('id');    // Direct playground format
+
+            finalPersonalizationId = pidParam || idParam;
+
+            if (finalPersonalizationId) {
+                console.log('🔍 AgentConnector: Found personalization ID in URL:', {
+                    source: pidParam ? 'pid parameter' : 'id parameter',
+                    value: finalPersonalizationId
+                });
+            } else {
+                console.log('⚠️ AgentConnector: No personalization ID found in URL or props');
+            }
         }
-    }, []);
+
+        setPersonalizationId(finalPersonalizationId);
+    }, [propPersonalizationId]);
 
     // Apply embed-specific styles and scroll prevention
     useEffect(() => {
@@ -34,7 +56,13 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
 
             // Prevent focus from triggering scroll
             const preventFocusScroll = (e) => {
-                if (e.target === iframeRef.current || containerRef.current?.contains(e.target)) {
+                // Ensure e.target is a valid DOM Node before using contains
+                if (!e.target || !e.target.nodeType) {
+                    return;
+                }
+
+                if (e.target === iframeRef.current ||
+                    (containerRef.current && containerRef.current.contains && containerRef.current.contains(e.target))) {
                     // Save current scroll position
                     const scrollX = window.pageXOffset;
                     const scrollY = window.pageYOffset;
@@ -117,18 +145,27 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             setConnectorUrl('');
             authSentRef.current = false;
 
+            // Validate required props based on agent type
             let missingRequiredProps = false;
             if (agentType === 'edit') {
                 if (!brdgeId || !token || !userId) {
+                    console.log('⚠️ AgentConnector: Missing required props for edit mode:', {
+                        brdgeId: !!brdgeId,
+                        token: !!token,
+                        userId: !!userId
+                    });
                     missingRequiredProps = true;
                 }
             } else {
                 if (!brdgeId) {
+                    console.log('⚠️ AgentConnector: Missing brdgeId for view mode');
                     missingRequiredProps = true;
                 }
             }
 
             if (missingRequiredProps) {
+                setIsLoading(false);
+                setError('Missing required configuration parameters');
                 return;
             }
 
@@ -142,25 +179,37 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
                 if (!baseUrl) {
                     throw new Error('Playground URL (REACT_APP_PLAYGROUND_URL) is not configured');
                 }
+
+                // Build iframe URL parameters
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     apiBaseUrl: cleanApiBaseUrl,
                     agentType: agentType,
                     mobile: isMobile ? '1' : '0',
                     userId: userId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    embed: isEmbed ? '1' : '0' // Pass embed flag to iframe
+                    embed: isEmbed ? '1' : '0'
                 });
 
                 // Add personalization ID if available
                 if (personalizationId) {
+                    console.log('🎯 AgentConnector: Adding personalization ID to iframe URL:', {
+                        personalizationId,
+                        source: propPersonalizationId ? 'props' : 'URL',
+                        agentType,
+                        isEmbed
+                    });
                     params.append('id', personalizationId);
+                } else {
+                    console.log('ℹ️ AgentConnector: No personalization ID - creating standard session');
                 }
 
                 const url = `${baseUrl}?${params.toString()}`;
+                console.log('🔗 AgentConnector: Final iframe URL constructed:', url);
+
                 setConnectorUrl(url);
                 setError(null);
             } catch (error) {
-                console.error('Connection error:', error);
+                console.error('❌ AgentConnector: Connection error:', error);
                 setError(error.message || 'Failed to initialize connection');
             } finally {
                 setIsLoading(false);
@@ -168,7 +217,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
         };
 
         initConnection();
-    }, [brdgeId, agentType, isMobile, userId, personalizationId, isEmbed]);
+    }, [brdgeId, agentType, isMobile, userId, personalizationId, isEmbed, token]);
 
     // Enhanced message sending for Safari compatibility
     const sendAuthMessage = () => {
@@ -182,8 +231,9 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
         try {
             iframeRef.current.contentWindow.postMessage(message, targetOrigin);
             authSentRef.current = true;
+            console.log('✅ AgentConnector: Auth message sent to iframe');
         } catch (error) {
-            console.error('Error sending auth message:', error);
+            console.error('❌ AgentConnector: Error sending auth message:', error);
         }
     };
 
@@ -227,6 +277,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
     }, [token, isIframeLoaded]);
 
     const handleIframeLoad = () => {
+        console.log('🔌 AgentConnector: Iframe loaded successfully');
         setIsIframeLoaded(true);
 
         // Only prevent auto-focus, don't interfere with scrolling

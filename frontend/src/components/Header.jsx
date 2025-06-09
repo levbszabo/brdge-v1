@@ -50,6 +50,8 @@ function Header() {
     const [userEmail, setUserEmail] = useState('');
     const location = useLocation();
     const [anchorElNav, setAnchorElNav] = useState(null);
+    const [servicesAnchorEl, setServicesAnchorEl] = useState(null);
+    const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
 
     // Determine if we're on the landing page
     const isLandingPage = location.pathname === '/';
@@ -125,6 +127,21 @@ function Header() {
         setAnchorElNav(null);
     };
 
+    const handleServicesMenuEnter = (event) => {
+        setServicesAnchorEl(event.currentTarget);
+        setServicesMenuOpen(true);
+    };
+
+    const handleServicesMenuLeave = () => {
+        setServicesMenuOpen(false);
+        setServicesAnchorEl(null);
+    };
+
+    const handleServicesMenuClose = () => {
+        setServicesMenuOpen(false);
+        setServicesAnchorEl(null);
+    };
+
     // Updated menu items with better structure
     const menuItems = isAuthenticated
         ? [
@@ -134,9 +151,14 @@ function Header() {
         : [
             { text: 'Pricing', link: '/pricing' },
             { text: 'Resources', link: '/blog' },
-            { text: 'Contact', link: '/contact' },
-            { text: 'Services', link: '/services' }
+            { text: 'Contact', link: '/contact' }
         ];
+
+    // Services dropdown items
+    const servicesMenuItems = [
+        { text: 'B2B Sales', link: '/services' },
+        { text: 'Career Growth', link: '/career-accelerator' }
+    ];
 
     // Improved menu button styles
     const menuItemStyle = {
@@ -303,6 +325,36 @@ function Header() {
                         <ListItemText primary="Careers" />
                     </ListItemButton>
                 </ListItem>
+
+                {/* Services section (only for non-authenticated users) */}
+                {!isAuthenticated && (
+                    <>
+                        <ListItem disablePadding>
+                            <ListItemButton
+                                component={RouterLink}
+                                to="/services"
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    ...drawerItemStyle,
+                                }}
+                            >
+                                <ListItemText primary="B2B Sales" />
+                            </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding>
+                            <ListItemButton
+                                component={RouterLink}
+                                to="/career-accelerator"
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    ...drawerItemStyle,
+                                }}
+                            >
+                                <ListItemText primary="Career Growth" />
+                            </ListItemButton>
+                        </ListItem>
+                    </>
+                )}
 
                 {/* Pricing (only for non-authenticated users) */}
                 {!isAuthenticated && (
@@ -581,6 +633,37 @@ function Header() {
                                         </motion.div>
                                     ))}
 
+                                    {/* Services items for non-authenticated users in mobile menu */}
+                                    {!isAuthenticated && servicesMenuItems.map((item, index) => (
+                                        <motion.div
+                                            key={item.text}
+                                            initial="initial"
+                                            animate="animate"
+                                            exit="exit"
+                                            variants={menuItemVariants}
+                                            custom={menuItems.length + index}
+                                        >
+                                            <MenuItem
+                                                onClick={handleCloseNavMenu}
+                                                component={RouterLink}
+                                                to={item.link}
+                                                sx={{
+                                                    my: 0.5,
+                                                    mx: 1,
+                                                    borderRadius: '6px',
+                                                    color: location.pathname === item.link ? 'primary.main' : 'text.primary',
+                                                    fontWeight: location.pathname === item.link ? 600 : 400,
+                                                    transition: 'background-color 0.2s, color 0.2s, font-weight 0.2s',
+                                                    '&:hover': {
+                                                        backgroundColor: theme.palette.action.hover,
+                                                    },
+                                                }}
+                                            >
+                                                <Typography textAlign="center">{item.text}</Typography>
+                                            </MenuItem>
+                                        </motion.div>
+                                    ))}
+
                                     {isAuthenticated ? (
                                         <motion.div
                                             initial="initial"
@@ -723,6 +806,119 @@ function Header() {
                                         </Button>
                                     </motion.div>
                                 ))}
+
+                                {/* Services dropdown for non-authenticated users */}
+                                {!isAuthenticated && (
+                                    <motion.div
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                        variants={menuItemVariants}
+                                        custom={menuItems.length}
+                                    >
+                                        <Box
+                                            onMouseEnter={handleServicesMenuEnter}
+                                            onMouseLeave={handleServicesMenuLeave}
+                                            sx={{ position: 'relative' }}
+                                        >
+                                            <Button
+                                                sx={{
+                                                    my: 2,
+                                                    mx: 1,
+                                                    color: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? 'primary.main' : 'inherit',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    fontWeight: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? 600 : 500,
+                                                    fontSize: '0.95rem',
+                                                    textTransform: 'none',
+                                                    position: 'relative',
+                                                    '&::after': {
+                                                        content: '""',
+                                                        position: 'absolute',
+                                                        width: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? '100%' : '0%',
+                                                        height: '2px',
+                                                        bottom: 0,
+                                                        left: 0,
+                                                        backgroundColor: 'primary.main',
+                                                        transition: 'width 0.3s ease-in-out',
+                                                        borderRadius: '2px',
+                                                        opacity: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? 1 : 0,
+                                                    },
+                                                    '&:hover': {
+                                                        backgroundColor: 'transparent',
+                                                        '&::after': {
+                                                            width: '100%',
+                                                            opacity: 0.7,
+                                                        },
+                                                    },
+                                                }}
+                                            >
+                                                Services
+                                                <Box
+                                                    component="span"
+                                                    sx={{
+                                                        ml: 0.5,
+                                                        transition: 'transform 0.2s ease',
+                                                        transform: servicesMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                                    }}
+                                                >
+                                                    ▼
+                                                </Box>
+                                            </Button>
+                                            <Menu
+                                                anchorEl={servicesAnchorEl}
+                                                open={servicesMenuOpen}
+                                                onClose={handleServicesMenuClose}
+                                                MenuListProps={{
+                                                    'aria-labelledby': 'services-button',
+                                                    onMouseLeave: handleServicesMenuLeave,
+                                                }}
+                                                PaperProps={{
+                                                    sx: {
+                                                        mt: 1,
+                                                        minWidth: 180,
+                                                        borderRadius: theme.shape.borderRadius,
+                                                        boxShadow: theme.shadows[3],
+                                                        border: `1px solid ${theme.palette.divider}`,
+                                                        '& .MuiMenu-list': {
+                                                            padding: '8px 0',
+                                                        },
+                                                    },
+                                                }}
+                                                anchorOrigin={{
+                                                    vertical: 'bottom',
+                                                    horizontal: 'left',
+                                                }}
+                                                transformOrigin={{
+                                                    vertical: 'top',
+                                                    horizontal: 'left',
+                                                }}
+                                            >
+                                                {servicesMenuItems.map((item) => (
+                                                    <MenuItem
+                                                        key={item.text}
+                                                        component={RouterLink}
+                                                        to={item.link}
+                                                        onClick={handleServicesMenuClose}
+                                                        sx={{
+                                                            my: 0.5,
+                                                            mx: 1,
+                                                            borderRadius: '6px',
+                                                            color: location.pathname === item.link ? 'primary.main' : 'text.primary',
+                                                            fontWeight: location.pathname === item.link ? 600 : 400,
+                                                            transition: 'background-color 0.2s, color 0.2s, font-weight 0.2s',
+                                                            '&:hover': {
+                                                                backgroundColor: theme.palette.action.hover,
+                                                            },
+                                                        }}
+                                                    >
+                                                        <Typography>{item.text}</Typography>
+                                                    </MenuItem>
+                                                ))}
+                                            </Menu>
+                                        </Box>
+                                    </motion.div>
+                                )}
                             </AnimatePresence>
                         </Box>
 

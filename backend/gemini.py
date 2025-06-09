@@ -3703,3 +3703,222 @@ def update_personalization_template_descriptions(template_columns, usage_feedbac
     except Exception as e:
         logger.error(f"Error improving template descriptions: {str(e)}")
         raise
+
+
+def analyze_resume_for_career(resume_path: str) -> Dict[str, Any]:
+    """
+    Analyze a resume to provide career insights and recommendations
+
+    Args:
+        resume_path: Path to the resume file (PDF or DOCX)
+
+    Returns:
+        Dictionary containing analysis results with career insights
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        # Check file extension to determine if we need to convert DOCX to text
+        file_extension = os.path.splitext(resume_path)[1].lower()
+
+        # Upload the resume file
+        resume_file = genai.upload_file(path=resume_path)
+
+        # Wait for processing
+        while resume_file.state.name == "PROCESSING":
+            time.sleep(1)
+            resume_file = genai.get_file(name=resume_file.name)
+
+        # Create the analysis prompt
+        prompt = """
+        Analyze this resume to provide comprehensive career insights and actionable recommendations.
+        
+        Extract and analyze:
+        1. Candidate information and experience level
+        2. Best-fit target roles based on skills and experience
+        3. Key strengths that stand out
+        4. Specific improvements needed for better ATS performance and impact
+        5. Strategic career advice
+        
+        Be specific, actionable, and encouraging. Focus on high-value insights that will help the candidate succeed.
+        
+        Return ONLY a JSON object with this EXACT structure (no additional fields):
+        {
+            "overallScore": float (0-10, based on resume quality, clarity, and impact),
+            "candidateName": "str (extracted name or 'Not Found')",
+            "potentialTitles": ["str (3-5 best-fit job titles based on experience)"],
+            "strengths": ["str (3-4 key strengths with specific evidence from resume)"],
+            "improvements": [
+                {
+                    "category": "str (Keywords|Quantification|Format|Skills|Experience)",
+                    "suggestion": "str (specific, actionable improvement)",
+                    "impact": "high|medium|low"
+                }
+            ],
+            "targetRoleMatch": {
+                "Role Title 1": int (match percentage 0-100),
+                "Role Title 2": int,
+                "Role Title 3": int
+            },
+            "strategy": "str (2-3 sentences of personalized strategic career advice)",
+            "keywordGaps": ["str (5-10 important keywords missing for target roles)"],
+            "industryInsights": "str (1-2 sentences about relevant industry trends)",
+            "suggestedJobTitles": ["str (5-8 specific job titles to search for)"],
+            "targetCompanies": ["str (5-10 company names or types that would be good fits)"]
+        }
+        
+        EXAMPLE OUTPUT for a Software Engineer:
+        {
+            "overallScore": 7.5,
+            "candidateName": "Sarah Chen",
+            "potentialTitles": ["Senior Software Engineer", "Full Stack Developer", "Technical Lead", "Software Architect"],
+            "strengths": [
+                "Strong full-stack experience with React, Node.js, and Python demonstrated across 3 major projects",
+                "Led cross-functional team of 8 engineers, showing leadership potential",
+                "Quantified achievements: 'Reduced API response time by 45%' shows impact focus",
+                "Active open-source contributor with 2.5k GitHub stars on personal projects"
+            ],
+            "improvements": [
+                {
+                    "category": "Keywords",
+                    "suggestion": "Add cloud platform keywords like 'AWS', 'Docker', 'Kubernetes' which appear in 78% of senior roles",
+                    "impact": "high"
+                },
+                {
+                    "category": "Quantification",
+                    "suggestion": "Quantify team leadership impact - add metrics like team velocity improvement or project delivery time",
+                    "impact": "high"
+                },
+                {
+                    "category": "Skills",
+                    "suggestion": "Add a dedicated 'Technical Skills' section with categorized skills (Languages, Frameworks, Tools, Cloud)",
+                    "impact": "medium"
+                }
+            ],
+            "targetRoleMatch": {
+                "Senior Software Engineer": 85,
+                "Full Stack Developer": 78,
+                "Technical Lead": 72
+            },
+            "strategy": "Your combination of technical depth and emerging leadership experience positions you well for senior IC or team lead roles. Focus on highlighting your mentorship experience and architectural decisions to stand out for technical lead positions.",
+            "keywordGaps": ["Microservices", "CI/CD", "Agile", "System Design", "AWS/GCP", "Docker", "REST API", "Unit Testing"],
+            "industryInsights": "The market for senior engineers with full-stack expertise is strong, with 23% YoY growth. Companies are especially seeking engineers who can mentor others and make architectural decisions.",
+            "suggestedJobTitles": [
+                "Senior Software Engineer",
+                "Senior Full Stack Developer", 
+                "Staff Software Engineer",
+                "Technical Lead - Full Stack",
+                "Principal Software Engineer",
+                "Software Architect",
+                "Engineering Manager",
+                "Senior Backend Engineer"
+            ],
+            "targetCompanies": [
+                "Mid-size tech companies (Series B-D startups)",
+                "Fintech companies like Stripe, Square, Plaid",
+                "Enterprise SaaS companies",
+                "Remote-first companies like GitLab, Zapier",
+                "Tech consultancies like Thoughtworks",
+                "Major tech companies' product teams"
+            ]
+        }
+        
+        Scoring guidelines:
+        - 9-10: Exceptional resume with strong quantification, keywords, and clear value proposition
+        - 7-8: Good resume with minor improvements needed
+        - 5-6: Average resume needing significant optimization
+        - 3-4: Weak resume requiring major overhaul
+        - 0-2: Very poor or incomplete resume
+        
+        IMPORTANT: 
+        - Be generous with scores - most resumes should be 5-8
+        - Provide specific, actionable suggestions
+        - Include actual keywords and job titles relevant to their field
+        - targetRoleMatch should use the exact titles from potentialTitles
+        - Keep all text concise and valuable
+        """
+
+        # Generate analysis
+        response = model.generate_content([prompt, resume_file])
+        analysis_results = json.loads(response.text)
+
+        # Validate the response structure
+        required_keys = [
+            "overallScore",
+            "candidateName",
+            "potentialTitles",
+            "strengths",
+            "improvements",
+            "targetRoleMatch",
+            "strategy",
+            "keywordGaps",
+            "industryInsights",
+            "suggestedJobTitles",
+            "targetCompanies",
+        ]
+
+        for key in required_keys:
+            if key not in analysis_results:
+                logger.warning(f"Missing key in resume analysis: {key}")
+                # Provide defaults for missing keys
+                if key == "overallScore":
+                    analysis_results[key] = 5.0
+                elif key == "candidateName":
+                    analysis_results[key] = "Not Found"
+                elif key in [
+                    "potentialTitles",
+                    "strengths",
+                    "keywordGaps",
+                    "suggestedJobTitles",
+                    "targetCompanies",
+                ]:
+                    analysis_results[key] = []
+                elif key == "improvements":
+                    analysis_results[key] = [
+                        {
+                            "category": "General",
+                            "suggestion": "Resume could not be fully analyzed",
+                            "impact": "high",
+                        }
+                    ]
+                elif key == "targetRoleMatch":
+                    analysis_results[key] = {}
+                elif key == "strategy":
+                    analysis_results[key] = (
+                        "Focus on highlighting your key achievements and skills relevant to your target roles."
+                    )
+                elif key == "industryInsights":
+                    analysis_results[key] = (
+                        "The job market is competitive. Focus on showcasing your unique value proposition."
+                    )
+
+        # Ensure score is within range
+        analysis_results["overallScore"] = max(
+            0, min(10, float(analysis_results["overallScore"]))
+        )
+
+        logger.info(
+            f"Successfully analyzed resume with score: {analysis_results['overallScore']}"
+        )
+        return analysis_results
+
+    except Exception as e:
+        logger.error(f"Error analyzing resume: {str(e)}")
+        # Return a default error response
+        return {
+            "overallScore": 0,
+            "candidateName": "Error",
+            "potentialTitles": [],
+            "strengths": [],
+            "improvements": [
+                {
+                    "category": "Error",
+                    "suggestion": f"Unable to analyze resume: {str(e)}",
+                    "impact": "high",
+                }
+            ],
+            "targetRoleMatch": {},
+            "strategy": "Please try uploading your resume again.",
+            "error": str(e),
+        }
