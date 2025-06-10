@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -161,6 +161,10 @@ const ResumeAnalyzer = ({
     const [customTitles, setCustomTitles] = useState([]);
     const [activeInsight, setActiveInsight] = useState('keywords'); // For additional insights tabs
 
+    // Rate limiting state
+    const [rateLimitReached, setRateLimitReached] = useState(false);
+    const [timeUntilReset, setTimeUntilReset] = useState(0);
+
     // Expandable sections state
     const [expandedSections, setExpandedSections] = useState({
         strengths: true,
@@ -173,6 +177,105 @@ const ResumeAnalyzer = ({
 
     // Analysis results from API
     const [analysisResults, setAnalysisResults] = useState(null);
+
+    // Rate limiting configuration
+    const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 requests
+    const RATE_LIMIT_WINDOW_HOURS = 24; // Per 24 hours
+    const RATE_LIMIT_KEY = 'resumeAnalysisRateLimit';
+
+    // Check rate limit on component mount
+    useEffect(() => {
+        checkRateLimit();
+    }, []);
+
+    // Update countdown timer
+    useEffect(() => {
+        let interval;
+        if (rateLimitReached && timeUntilReset > 0) {
+            interval = setInterval(() => {
+                setTimeUntilReset(prev => {
+                    if (prev <= 1) {
+                        setRateLimitReached(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => interval && clearInterval(interval);
+    }, [rateLimitReached, timeUntilReset]);
+
+    const checkRateLimit = () => {
+        const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
+
+        if (!rateLimitData) {
+            return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS };
+        }
+
+        const { requests, windowStart } = JSON.parse(rateLimitData);
+        const now = Date.now();
+        const windowDuration = RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000;
+
+        // Check if we're still in the same window
+        if (now - windowStart < windowDuration) {
+            const remaining = RATE_LIMIT_MAX_REQUESTS - requests.length;
+
+            if (remaining <= 0) {
+                const timeLeft = Math.ceil((windowStart + windowDuration - now) / 1000);
+                setRateLimitReached(true);
+                setTimeUntilReset(timeLeft);
+                return { allowed: false, remaining: 0, timeLeft };
+            }
+
+            return { allowed: true, remaining };
+        } else {
+            // Window has expired, clear old data
+            localStorage.removeItem(RATE_LIMIT_KEY);
+            return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS };
+        }
+    };
+
+    const recordRequest = () => {
+        const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
+        const now = Date.now();
+
+        if (!rateLimitData) {
+            const newData = {
+                requests: [now],
+                windowStart: now
+            };
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(newData));
+        } else {
+            const { requests, windowStart } = JSON.parse(rateLimitData);
+            const windowDuration = RATE_LIMIT_WINDOW_HOURS * 60 * 60 * 1000;
+
+            if (now - windowStart < windowDuration) {
+                requests.push(now);
+                localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({ requests, windowStart }));
+            } else {
+                // Start new window
+                const newData = {
+                    requests: [now],
+                    windowStart: now
+                };
+                localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(newData));
+            }
+        }
+    };
+
+    const formatTimeRemaining = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+            return `${minutes}m ${secs}s`;
+        } else {
+            return `${secs}s`;
+        }
+    };
 
     // Sample data for preview
     const sampleData = {
@@ -340,10 +443,20 @@ const ResumeAnalyzer = ({
     };
 
     const analyzeResume = async () => {
+        // Check rate limit before proceeding
+        const rateLimitStatus = checkRateLimit();
+        if (!rateLimitStatus.allowed) {
+            setError(`Rate limit reached. You can analyze ${RATE_LIMIT_MAX_REQUESTS} resumes per ${RATE_LIMIT_WINDOW_HOURS} hours. Try again in ${formatTimeRemaining(rateLimitStatus.timeLeft)}.`);
+            return;
+        }
+
         setIsAnalyzing(true);
         setError(null);
 
         try {
+            // Record this request for rate limiting
+            recordRequest();
+
             // Create FormData for file upload
             const formData = new FormData();
             formData.append('resume', file);
@@ -623,24 +736,31 @@ const ResumeAnalyzer = ({
                                             variant="contained"
                                             fullWidth
                                             onClick={analyzeResume}
-                                            disabled={isAnalyzing || analysisComplete}
+                                            disabled={isAnalyzing || analysisComplete || rateLimitReached}
                                             startIcon={isAnalyzing ? <CircularProgress size={16} color="inherit" /> : <BarChart3 size={16} />}
                                             sx={{
                                                 py: 1,
-                                                bgcolor: theme.palette.primary.main,
+                                                bgcolor: rateLimitReached ? theme.palette.error.main : theme.palette.primary.main,
                                                 color: 'common.white',
                                                 boxShadow: 'none',
                                                 '&:hover': {
-                                                    bgcolor: theme.palette.primary.dark,
+                                                    bgcolor: rateLimitReached ? theme.palette.error.dark : theme.palette.primary.dark,
                                                     boxShadow: 'none'
                                                 },
                                                 '&.Mui-disabled': {
-                                                    bgcolor: theme.palette.primary.main,
+                                                    bgcolor: rateLimitReached ? theme.palette.error.main : theme.palette.primary.main,
                                                     color: 'common.white'
                                                 }
                                             }}
                                         >
-                                            {isAnalyzing ? 'Analyzing...' : analysisComplete ? '✓ Complete' : 'Analyze Resume'}
+                                            {rateLimitReached
+                                                ? `Rate Limited (${formatTimeRemaining(timeUntilReset)})`
+                                                : isAnalyzing
+                                                    ? 'Analyzing...'
+                                                    : analysisComplete
+                                                        ? '✓ Complete'
+                                                        : 'Analyze Resume'
+                                            }
                                         </Button>
 
                                         {analysisComplete && (

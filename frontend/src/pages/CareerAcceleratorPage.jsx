@@ -370,7 +370,7 @@ const CareerAcceleratorPage = () => {
             icon: <Users size={36} />,
             number: "1",
             title: "Define Your Vision",
-            description: "Share your résumé and career goals through our AI strategist. We help clarify your ideal role and target companies.",
+            description: "Discuss your career goals through our AI strategist. We help clarify your ideal role and target companies.",
             color: '#007AFF'
         },
         {
@@ -1035,7 +1035,7 @@ const CareerAcceleratorPage = () => {
                                 fontWeight: 700,
                                 fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' }
                             }}>
-                                Meet Your AI Career Strategist
+                                Now, Let's Build Your Personalized Plan.
                             </DotBridgeTypography>
 
                             <DotBridgeTypography variant="h6" sx={{
@@ -1045,8 +1045,8 @@ const CareerAcceleratorPage = () => {
                                 maxWidth: '700px',
                                 mx: 'auto'
                             }}>
-                                Chat with our AI assistant below. Upload your résumé or simply tell it about your career goals.
-                                In minutes, it will analyze your needs and generate a free preview of your personalized outreach strategy.
+                                Our AI Strategist has already reviewed your resume analysis. Now, it needs to understand your unique career goals.
+                                Have a brief chat and we will use this conversation to generate a final proposal for your playbook.
                             </DotBridgeTypography>
 
                             <motion.div
