@@ -133,11 +133,19 @@ function Header() {
     };
 
     const handleServicesMenuLeave = () => {
+        // Blur any focused element before closing to prevent aria-hidden warnings
+        if (document.activeElement && document.activeElement.blur) {
+            document.activeElement.blur();
+        }
         setServicesMenuOpen(false);
         setServicesAnchorEl(null);
     };
 
     const handleServicesMenuClose = () => {
+        // Blur any focused element before closing to prevent aria-hidden warnings
+        if (document.activeElement && document.activeElement.blur) {
+            document.activeElement.blur();
+        }
         setServicesMenuOpen(false);
         setServicesAnchorEl(null);
     };
@@ -585,6 +593,9 @@ function Header() {
                                 }}
                                 open={Boolean(anchorElNav)}
                                 onClose={handleCloseNavMenu}
+                                disableAutoFocus={true}
+                                disableEnforceFocus={true}
+                                disableRestoreFocus={true}
                                 PaperProps={{
                                     sx: {
                                         mt: 1.5,
@@ -869,9 +880,18 @@ function Header() {
                                                 anchorEl={servicesAnchorEl}
                                                 open={servicesMenuOpen}
                                                 onClose={handleServicesMenuClose}
+                                                disableAutoFocus={true}
+                                                disableEnforceFocus={true}
+                                                disableRestoreFocus={true}
+                                                disableScrollLock={true}
                                                 MenuListProps={{
                                                     'aria-labelledby': 'services-button',
                                                     onMouseLeave: handleServicesMenuLeave,
+                                                    sx: {
+                                                        '&:focus': {
+                                                            outline: 'none',
+                                                        },
+                                                    },
                                                 }}
                                                 PaperProps={{
                                                     sx: {
@@ -884,6 +904,7 @@ function Header() {
                                                             padding: '8px 0',
                                                         },
                                                     },
+                                                    onMouseLeave: handleServicesMenuLeave,
                                                 }}
                                                 anchorOrigin={{
                                                     vertical: 'bottom',
@@ -892,6 +913,11 @@ function Header() {
                                                 transformOrigin={{
                                                     vertical: 'top',
                                                     horizontal: 'left',
+                                                }}
+                                                slotProps={{
+                                                    backdrop: {
+                                                        invisible: true,
+                                                    },
                                                 }}
                                             >
                                                 {servicesMenuItems.map((item) => (

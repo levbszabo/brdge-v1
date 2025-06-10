@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Paper } from '@mui/material';
+import { Box, Typography, useTheme, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Paper, CircularProgress } from '@mui/material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import AgentConnector from '../components/AgentConnector';
 import { api } from '../api';
@@ -26,6 +26,11 @@ function EditBrdgePage() {
                 // Get the token from localStorage
                 const token = localStorage.getItem('token');
                 setAuthToken(token || '');
+
+                // Ensure the API instance has the token set
+                if (token) {
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                }
 
                 const response = await api.get(`/brdges/${id}/check-auth`);
 
@@ -54,6 +59,11 @@ function EditBrdgePage() {
     }, [id, uidFromUrl, navigate]);
 
     useEffect(() => {
+        // Only run this effect after we have the authToken state set
+        if (!isAuthorized) {
+            return;
+        }
+
         // Prevent scrolling on the body
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
@@ -89,20 +99,36 @@ function EditBrdgePage() {
                 // First, if user is authenticated, get their ID regardless of course/standalone brdge
                 if (authToken) {
                     try {
-                        const userResponse = await api.get('/user/current');
-                        setCurrentUserId(userResponse.data.id);
+                        // Ensure the API has the auth token before making the request
+                        if (!api.defaults.headers.common['Authorization']) {
+                            api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                        }
 
-                        // If this is the owner, grant access
-                        if (userResponse.data.id === brdge.user_id) {
-                            hasAccess = true;
+                        console.log('Fetching current user with token:', authToken ? 'Token present' : 'No token');
+                        const userResponse = await api.get('/user/current');
+                        console.log('User response:', userResponse.data);
+
+                        if (userResponse.data && userResponse.data.id) {
+                            setCurrentUserId(userResponse.data.id);
+                            console.log('Set current user ID to:', userResponse.data.id);
+
+                            // If this is the owner, grant access
+                            if (userResponse.data.id === brdge.user_id) {
+                                hasAccess = true;
+                            }
+                        } else {
+                            console.error('User response missing ID:', userResponse.data);
+                            // Set a fallback anonymous user ID if user data is incomplete
+                            setCurrentUserId(`anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
                         }
                     } catch (err) {
-                        console.error('Error fetching user data:', err.message || err);
+                        console.error('Error fetching user data:', err.response?.data || err.message || err);
                         // Set a fallback anonymous user ID if user fetch fails
                         setCurrentUserId(`anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
                     }
                 } else {
                     // Set a fallback anonymous user ID if no auth token
+                    console.log('No auth token, setting anonymous user ID');
                     setCurrentUserId(`anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
                 }
 
@@ -197,7 +223,7 @@ function EditBrdgePage() {
                 viewport.setAttribute('content', 'width=device-width, initial-scale=1.0');
             }
         };
-    }, [id, uidFromUrl, authToken]);
+    }, [id, uidFromUrl, authToken, isAuthorized]);
 
     // Only render the main content if authorized
     if (!isAuthorized) {
@@ -266,13 +292,26 @@ function EditBrdgePage() {
                             </>
                         )}
                     </Box>
-                ) : (
+                ) : currentUserId ? (
                     <AgentConnector
                         brdgeId={id}
                         agentType="edit"
                         token={authToken}
                         userId={currentUserId}
                     />
+                ) : (
+                    <Box sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        gap: 2
+                    }}>
+                        <CircularProgress color="inherit" size={24} />
+                        <Typography variant="h6">Initializing User Session...</Typography>
+                    </Box>
                 )}
             </Box>
 

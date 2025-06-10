@@ -3025,6 +3025,9 @@ const CareerAcceleratorPage = () => {
                 open={ctaModalOpen}
                 onClose={handleCtaClose}
                 closeAfterTransition
+                disableAutoFocus={true}
+                disableEnforceFocus={true}
+                disableRestoreFocus={true}
                 BackdropComponent={Backdrop}
                 BackdropProps={{
                     timeout: 500,

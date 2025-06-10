@@ -14,6 +14,7 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
     const messageQueueRef = useRef([]);
     const authSentRef = useRef(false);
     const containerRef = useRef(null);
+    const [authAcknowledged, setAuthAcknowledged] = useState(false);
 
     // Handle personalization ID from props or URL with improved logic
     useEffect(() => {
@@ -145,6 +146,10 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
             setConnectorUrl('');
             authSentRef.current = false;
 
+            // Log the userId we're receiving
+            console.log('🔍 AgentConnector: Received userId:', userId);
+            console.log('🔍 AgentConnector: Received token:', token ? 'Token present' : 'No token');
+
             // Validate required props based on agent type
             let missingRequiredProps = false;
             if (agentType === 'edit') {
@@ -181,12 +186,15 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
                 }
 
                 // Build iframe URL parameters
+                const finalUserId = userId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                console.log('🎯 AgentConnector: Final userId for iframe:', finalUserId);
+
                 const params = new URLSearchParams({
                     brdgeId: brdgeId.toString(),
                     apiBaseUrl: cleanApiBaseUrl,
                     agentType: agentType,
                     mobile: isMobile ? '1' : '0',
-                    userId: userId || `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    userId: finalUserId,
                     embed: isEmbed ? '1' : '0'
                 });
 
@@ -219,9 +227,30 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
         initConnection();
     }, [brdgeId, agentType, isMobile, userId, personalizationId, isEmbed, token]);
 
+    // Listen for acknowledgment from iframe
+    useEffect(() => {
+        const handleAckMessage = (event) => {
+            if (event.data && event.data.type === 'AUTH_TOKEN_ACK' && event.data.received) {
+                console.log('✅ AgentConnector: AUTH_TOKEN_ACK received from iframe');
+                setAuthAcknowledged(true);
+                authSentRef.current = true;
+            }
+        };
+
+        window.addEventListener('message', handleAckMessage);
+
+        return () => {
+            window.removeEventListener('message', handleAckMessage);
+        };
+    }, []);
+
     // Enhanced message sending for Safari compatibility
     const sendAuthMessage = () => {
-        if (!token || !iframeRef.current?.contentWindow || authSentRef.current) {
+        if (!token || !iframeRef.current?.contentWindow) {
+            console.log('⚠️ AgentConnector: Cannot send auth - missing token or iframe', {
+                hasToken: !!token,
+                hasIframe: !!iframeRef.current?.contentWindow
+            });
             return;
         }
 
@@ -229,8 +258,17 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
         const message = { token: token, type: 'AUTH_TOKEN' };
 
         try {
+            console.log('📤 AgentConnector: Sending auth message to iframe', {
+                targetOrigin,
+                tokenLength: token.length,
+                messageType: message.type
+            });
+
             iframeRef.current.contentWindow.postMessage(message, targetOrigin);
-            authSentRef.current = true;
+
+            // Don't set authSentRef to true anymore, to allow retries
+            // authSentRef.current = true;
+
             console.log('✅ AgentConnector: Auth message sent to iframe');
         } catch (error) {
             console.error('❌ AgentConnector: Error sending auth message:', error);
@@ -257,22 +295,38 @@ function AgentConnector({ brdgeId, agentType = 'edit', token, userId, isEmbed = 
     // Send auth token when conditions are met
     useEffect(() => {
         if (isIframeLoaded && token && iframeRef.current) {
-            // Use requestAnimationFrame to ensure DOM is settled
-            requestAnimationFrame(() => {
+            console.log('🚀 AgentConnector: Starting auth token send process');
+
+            // Initial delay to ensure iframe's postMessage listener is set up
+            setTimeout(() => {
                 sendAuthMessage();
 
-                // Retry mechanism for Safari
-                if (isSafari() || isIOS()) {
-                    const retryCount = 3;
-                    for (let i = 1; i <= retryCount; i++) {
-                        setTimeout(() => {
-                            if (!authSentRef.current) {
-                                sendAuthMessage();
-                            }
-                        }, i * 200);
+                // Retry mechanism for all browsers, not just Safari
+                // This ensures the message is received even if the iframe loads slowly
+                const retryCount = 5;
+                let retryAttempt = 0;
+
+                const retryInterval = setInterval(() => {
+                    if (authSentRef.current) {
+                        // Already acknowledged, stop retrying
+                        clearInterval(retryInterval);
+                        console.log('✅ AgentConnector: Auth token acknowledged, stopping retries');
+                        return;
                     }
-                }
-            });
+
+                    retryAttempt++;
+                    console.log(`🔄 AgentConnector: Retry attempt ${retryAttempt} for auth token`);
+                    sendAuthMessage();
+
+                    if (retryAttempt >= retryCount) {
+                        clearInterval(retryInterval);
+                        console.log('⚠️ AgentConnector: Max retry attempts reached for auth token');
+                    }
+                }, 500); // Retry every 500ms
+
+                // Clean up interval after max time
+                setTimeout(() => clearInterval(retryInterval), retryCount * 500 + 100);
+            }, 1000); // Wait 1 second before first attempt
         }
     }, [token, isIframeLoaded]);
 
