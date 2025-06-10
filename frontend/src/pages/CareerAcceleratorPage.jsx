@@ -2604,126 +2604,134 @@ const CareerAcceleratorPage = () => {
                 </Box>
 
                 {/* What You Get Section - Enhanced */}
-                <Box sx={{ mb: { xs: 8, md: 12 }, py: { xs: 4, sm: 6, md: 8 } }}>
-                    <DotBridgeTypography variant="h3" sx={{
-                        textAlign: 'center',
-                        mb: { xs: 4, sm: 6, md: 8 },
-                        fontWeight: 600,
-                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                        px: { xs: 2, sm: 0 },
-                        lineHeight: 1.3
-                    }}>
-                        Your Complete Job Outreach System Includes:
-                    </DotBridgeTypography>
+                <Box sx={{
+                    mb: { xs: 8, md: 12 },
+                    py: { xs: 4, sm: 6, md: 8 },
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <Container maxWidth="lg" sx={{ width: '100%' }}>
+                        <DotBridgeTypography variant="h3" sx={{
+                            textAlign: 'center',
+                            mb: { xs: 4, sm: 6, md: 8 },
+                            fontWeight: 600,
+                            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                            px: { xs: 2, sm: 0 },
+                            lineHeight: 1.3
+                        }}>
+                            Your Complete Job Outreach System Includes:
+                        </DotBridgeTypography>
 
-                    <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{
-                        maxWidth: '1200px',
-                        mx: 'auto',
-                        px: { xs: 1, sm: 2, md: 4 }
-                    }}>
-                        {[
-                            {
-                                icon: <FileText size={isMobile ? 28 : 32} />,
-                                title: "AI-Driven Résumé Analysis",
-                                description: "Get specific, actionable feedback to optimize your résumé for ATS systems and human readers",
-                                color: '#007AFF'
-                            },
-                            {
-                                icon: <Search size={isMobile ? 28 : 32} />,
-                                title: "Curated Employer List",
-                                description: "50-100+ targeted companies with direct decision-maker contacts who are likely to hire you",
-                                color: '#5856D6'
-                            },
-                            {
-                                icon: <MessageSquare size={isMobile ? 28 : 32} />,
-                                title: "Custom Outreach Templates",
-                                description: "3-5 proven email & LinkedIn message templates personalized for your background and goals",
-                                color: '#AF52DE'
-                            },
-                            {
-                                icon: <Calendar size={isMobile ? 28 : 32} />,
-                                title: "Daily Action Calendar",
-                                description: "Step-by-step roadmap showing exactly who to contact, when, and how to follow up",
-                                color: '#FF3B30'
-                            },
-                            {
-                                icon: <TrendingUp size={isMobile ? 28 : 32} />,
-                                title: "Response Tracking System",
-                                description: "Simple spreadsheet to track your outreach, responses, and interview pipeline",
-                                color: '#34C759'
-                            },
-                            {
-                                icon: <Sparkles size={isMobile ? 28 : 32} />,
-                                title: "Bonus: Interview Prep Guide",
-                                description: "Common questions, storytelling frameworks, and negotiation tips for your target roles",
-                                color: '#FF9500'
-                            }
-                        ].map((item, index) => (
-                            <Grid item xs={12} md={6} key={index}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: index * 0.1 }}
-                                    whileHover={!isMobile ? { y: -4 } : {}}
-                                >
-                                    <DotBridgeCard
-                                        sx={{
-                                            p: { xs: 2, sm: 2.5, md: 3 },
-                                            height: '100%',
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: { xs: 1.5, md: 2 },
-                                            transition: 'all 0.3s ease',
-                                            border: '1px solid',
-                                            borderColor: 'divider',
-                                            borderRadius: { xs: 2, md: 3 },
-                                            '&:hover': {
-                                                borderColor: item.color,
-                                                boxShadow: `0 8px 24px ${item.color}20`,
-                                                '& .deliverable-icon': {
-                                                    transform: isMobile ? 'none' : 'scale(1.1) rotate(5deg)'
-                                                }
-                                            }
-                                        }}
+                        <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{
+                            maxWidth: '1200px',
+                            mx: 'auto',
+                            px: { xs: 1, sm: 2, md: 4 }
+                        }}>
+                            {[
+                                {
+                                    icon: <FileText size={isMobile ? 28 : 32} />,
+                                    title: "AI-Driven Resume Analysis",
+                                    description: "Get specific, actionable feedback and an optimized resume for ATS systems and human readers",
+                                    color: '#007AFF'
+                                },
+                                {
+                                    icon: <Search size={isMobile ? 28 : 32} />,
+                                    title: "Curated Employer List",
+                                    description: "50-100+ targeted companies with direct decision-maker contacts who are likely to hire you",
+                                    color: '#5856D6'
+                                },
+                                {
+                                    icon: <MessageSquare size={isMobile ? 28 : 32} />,
+                                    title: "Custom Outreach Templates",
+                                    description: "3-5 proven email & LinkedIn message templates personalized for your background and goals",
+                                    color: '#AF52DE'
+                                },
+                                {
+                                    icon: <Calendar size={isMobile ? 28 : 32} />,
+                                    title: "Daily Action Calendar",
+                                    description: "Step-by-step roadmap showing exactly who to contact, when, and how to follow up",
+                                    color: '#FF3B30'
+                                },
+                                {
+                                    icon: <TrendingUp size={isMobile ? 28 : 32} />,
+                                    title: "Response Tracking System",
+                                    description: "Simple spreadsheet to track your outreach, responses, and interview pipeline",
+                                    color: '#34C759'
+                                },
+                                {
+                                    icon: <Sparkles size={isMobile ? 28 : 32} />,
+                                    title: "Bonus: Interview Prep Guide",
+                                    description: "Common questions, storytelling frameworks, and negotiation tips for your target roles",
+                                    color: '#FF9500'
+                                }
+                            ].map((item, index) => (
+                                <Grid item xs={12} md={6} key={index}>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                                        whileHover={!isMobile ? { y: -4 } : {}}
                                     >
-                                        <Box
-                                            className="deliverable-icon"
+                                        <DotBridgeCard
                                             sx={{
-                                                width: { xs: 48, sm: 52, md: 56 },
-                                                height: { xs: 48, sm: 52, md: 56 },
-                                                borderRadius: 2,
-                                                background: `linear-gradient(135deg, ${item.color}20 0%, ${item.color}10 100%)`,
+                                                p: { xs: 2, sm: 2.5, md: 3 },
+                                                height: '100%',
                                                 display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                color: item.color,
-                                                flexShrink: 0,
-                                                transition: 'transform 0.3s ease'
+                                                alignItems: 'flex-start',
+                                                gap: { xs: 1.5, md: 2 },
+                                                transition: 'all 0.3s ease',
+                                                border: '1px solid',
+                                                borderColor: 'divider',
+                                                borderRadius: { xs: 2, md: 3 },
+                                                '&:hover': {
+                                                    borderColor: item.color,
+                                                    boxShadow: `0 8px 24px ${item.color}20`,
+                                                    '& .deliverable-icon': {
+                                                        transform: isMobile ? 'none' : 'scale(1.1) rotate(5deg)'
+                                                    }
+                                                }
                                             }}
                                         >
-                                            {item.icon}
-                                        </Box>
-                                        <Box>
-                                            <Typography variant="h6" sx={{
-                                                fontWeight: 600,
-                                                mb: { xs: 0.5, md: 1 },
-                                                fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.125rem' },
-                                                lineHeight: 1.3
-                                            }}>
-                                                {item.title}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{
-                                                lineHeight: 1.6,
-                                                fontSize: { xs: '0.8rem', sm: '0.85rem', md: '0.875rem' }
-                                            }}>
-                                                {item.description}
-                                            </Typography>
-                                        </Box>
-                                    </DotBridgeCard>
-                                </motion.div>
-                            </Grid>
-                        ))}
-                    </Grid>
+                                            <Box
+                                                className="deliverable-icon"
+                                                sx={{
+                                                    width: { xs: 48, sm: 52, md: 56 },
+                                                    height: { xs: 48, sm: 52, md: 56 },
+                                                    borderRadius: 2,
+                                                    background: `linear-gradient(135deg, ${item.color}20 0%, ${item.color}10 100%)`,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: item.color,
+                                                    flexShrink: 0,
+                                                    transition: 'transform 0.3s ease'
+                                                }}
+                                            >
+                                                {item.icon}
+                                            </Box>
+                                            <Box>
+                                                <Typography variant="h6" sx={{
+                                                    fontWeight: 600,
+                                                    mb: { xs: 0.5, md: 1 },
+                                                    fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.125rem' },
+                                                    lineHeight: 1.3
+                                                }}>
+                                                    {item.title}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    lineHeight: 1.6,
+                                                    fontSize: { xs: '0.8rem', sm: '0.85rem', md: '0.875rem' }
+                                                }}>
+                                                    {item.description}
+                                                </Typography>
+                                            </Box>
+                                        </DotBridgeCard>
+                                    </motion.div>
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </Container>
                 </Box>
 
 
