@@ -73,29 +73,30 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 // Reusable DeliverableCard component
 const DeliverableCard = ({ icon, title, description, color = '#007AFF' }) => {
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
         <motion.div
-            whileHover={{ y: -4 }}
+            whileHover={!isMobile ? { y: -4 } : {}}
             transition={{ duration: 0.2 }}
         >
             <DotBridgeCard
                 sx={{
-                    p: 3,
+                    p: { xs: 2, sm: 2.5, md: 3 },
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
                     border: `2px solid ${color}20`,
-                    borderRadius: 3,
+                    borderRadius: { xs: 2, md: 3 },
                     background: `linear-gradient(135deg, ${color}03 0%, transparent 100%)`,
                     position: 'relative',
                     transition: 'all 0.3s ease',
                     '&:hover': {
                         borderColor: color,
                         boxShadow: `0 16px 48px ${color}20`,
-                        transform: 'translateY(-4px)',
+                        transform: isMobile ? 'none' : 'translateY(-4px)',
                         '& .deliverable-icon': {
-                            transform: 'scale(1.1) rotate(5deg)'
+                            transform: isMobile ? 'none' : 'scale(1.1) rotate(5deg)'
                         }
                     },
                 }}
@@ -103,37 +104,38 @@ const DeliverableCard = ({ icon, title, description, color = '#007AFF' }) => {
                 <Box sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    mb: 2
+                    mb: { xs: 1.5, md: 2 }
                 }}>
                     <Box
                         className="deliverable-icon"
                         sx={{
-                            width: 48,
-                            height: 48,
+                            width: { xs: 40, sm: 44, md: 48 },
+                            height: { xs: 40, sm: 44, md: 48 },
                             borderRadius: 2,
                             background: `linear-gradient(135deg, ${color}20 0%, ${color}10 100%)`,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: color,
-                            mr: 2,
+                            mr: { xs: 1.5, md: 2 },
                             flexShrink: 0,
                             transition: 'transform 0.3s ease'
                         }}
                     >
-                        {React.cloneElement(icon, { size: 24 })}
+                        {React.cloneElement(icon, { size: isMobile ? 20 : 24 })}
                     </Box>
                     <Typography variant="h6" fontWeight={700} sx={{
                         color: theme.palette.text.primary,
-                        fontSize: '1rem',
-                        flex: 1
+                        fontSize: { xs: '0.85rem', sm: '0.95rem', md: '1rem' },
+                        flex: 1,
+                        lineHeight: 1.3
                     }}>
                         {title}
                     </Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{
                     lineHeight: 1.6,
-                    fontSize: '0.875rem',
+                    fontSize: { xs: '0.75rem', sm: '0.8rem', md: '0.875rem' },
                     flex: 1
                 }}>
                     {description}
@@ -168,24 +170,30 @@ const staggerChildren = {
 };
 
 const PageContainer = styled(Container)(({ theme }) => ({
-    paddingTop: theme.spacing(3),
-    paddingBottom: theme.spacing(6),
-    paddingLeft: theme.spacing(1),
-    paddingRight: theme.spacing(1),
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(4),
+    paddingLeft: theme.spacing(0.5),
+    paddingRight: theme.spacing(0.5),
     maxWidth: 'none !important',
     [theme.breakpoints.up('sm')]: {
+        paddingTop: theme.spacing(3),
+        paddingBottom: theme.spacing(6),
+        paddingLeft: theme.spacing(1),
+        paddingRight: theme.spacing(1),
+    },
+    [theme.breakpoints.up('md')]: {
         paddingTop: theme.spacing(4),
         paddingBottom: theme.spacing(8),
         paddingLeft: theme.spacing(2),
         paddingRight: theme.spacing(2),
     },
-    [theme.breakpoints.up('md')]: {
+    [theme.breakpoints.up('lg')]: {
         paddingTop: theme.spacing(6),
         paddingBottom: theme.spacing(10),
         paddingLeft: theme.spacing(3),
         paddingRight: theme.spacing(3),
     },
-    [theme.breakpoints.up('lg')]: {
+    [theme.breakpoints.up('xl')]: {
         paddingLeft: theme.spacing(4),
         paddingRight: theme.spacing(4),
     },
@@ -193,17 +201,19 @@ const PageContainer = styled(Container)(({ theme }) => ({
 
 const HeroSection = styled(Box)(({ theme }) => ({
     textAlign: 'center',
-    marginBottom: theme.spacing(6),
-    padding: theme.spacing(4, 1),
+    marginBottom: theme.spacing(4),
+    padding: theme.spacing(3, 1),
     background: `linear-gradient(135deg, ${theme.palette.primary.lighter}20 0%, ${theme.palette.background.paper} 100%)`,
-    borderRadius: theme.shape.borderRadius * 3,
+    borderRadius: theme.shape.borderRadius * 2,
     position: 'relative',
     overflow: 'hidden',
     [theme.breakpoints.up('sm')]: {
-        marginBottom: theme.spacing(8),
-        padding: theme.spacing(5, 2),
+        marginBottom: theme.spacing(6),
+        padding: theme.spacing(4, 2),
+        borderRadius: theme.shape.borderRadius * 3,
     },
     [theme.breakpoints.up('md')]: {
+        marginBottom: theme.spacing(8),
         padding: theme.spacing(6, 0),
     },
     '&::before': {
@@ -211,22 +221,30 @@ const HeroSection = styled(Box)(({ theme }) => ({
         position: 'absolute',
         top: -100,
         right: -100,
-        width: 300,
-        height: 300,
+        width: 200,
+        height: 200,
         borderRadius: '50%',
         background: `radial-gradient(circle, ${theme.palette.primary.main}15 0%, transparent 70%)`,
         filter: 'blur(60px)',
+        [theme.breakpoints.up('sm')]: {
+            width: 300,
+            height: 300,
+        }
     },
     '&::after': {
         content: '""',
         position: 'absolute',
         bottom: -150,
         left: -150,
-        width: 400,
-        height: 400,
+        width: 300,
+        height: 300,
         borderRadius: '50%',
         background: `radial-gradient(circle, ${theme.palette.secondary.main}10 0%, transparent 70%)`,
         filter: 'blur(80px)',
+        [theme.breakpoints.up('sm')]: {
+            width: 400,
+            height: 400,
+        }
     }
 }));
 
@@ -340,12 +358,12 @@ const CareerAcceleratorPage = () => {
         const handleScroll = () => {
             const scrolled = window.scrollY;
             const threshold = window.innerHeight * 1.2;
-            setShowFloatingCTA(scrolled > threshold);
+            setShowFloatingCTA(scrolled > threshold && !isMobile);
         };
 
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [isMobile]);
 
     const processSteps = [
         {
@@ -782,11 +800,12 @@ const CareerAcceleratorPage = () => {
                             <DotBridgeTypography
                                 variant="h1"
                                 sx={{
-                                    mb: 3,
-                                    fontSize: { xs: '2.5rem', sm: '3rem', md: '4rem' },
+                                    mb: { xs: 2, sm: 3 },
+                                    fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem', lg: '4rem' },
                                     fontWeight: 800,
                                     lineHeight: { xs: 1.2, md: 1.1 },
-                                    letterSpacing: '-0.02em'
+                                    letterSpacing: '-0.02em',
+                                    px: { xs: 1, sm: 0 }
                                 }}
                             >
                                 <Box component="span" sx={{
@@ -813,40 +832,55 @@ const CareerAcceleratorPage = () => {
                             <DotBridgeTypography
                                 variant="h5"
                                 sx={{
-                                    mb: 5,
+                                    mb: { xs: 4, sm: 5 },
                                     color: theme.palette.text.secondary,
                                     maxWidth: '800px',
                                     mx: 'auto',
                                     lineHeight: 1.6,
-                                    fontSize: { xs: '1.125rem', sm: '1.25rem', md: '1.5rem' },
-                                    fontWeight: 400
+                                    fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem', lg: '1.5rem' },
+                                    fontWeight: 400,
+                                    px: { xs: 2, sm: 1, md: 0 }
                                 }}
                             >
                                 DotBridge gives you a complete job outreach system—built around your goals, your experience, and your voice.
+                                {!isMobile && ' '}
+                                {!isMobile && (
+                                    <Box component="span" sx={{
+                                        color: theme.palette.primary.main,
+                                        fontWeight: 600,
+                                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                                        backgroundClip: 'text',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent'
+                                    }}>
+                                        No more guessing, no more blind applications.
+                                    </Box>
+                                )}
                             </DotBridgeTypography>
 
                             {/* CTA Buttons */}
                             <Box sx={{
                                 display: 'flex',
-                                gap: 2,
+                                gap: { xs: 1.5, sm: 2 },
                                 justifyContent: 'center',
                                 flexDirection: { xs: 'column', sm: 'row' },
                                 alignItems: 'center',
-                                px: { xs: 2, sm: 0 }
+                                px: { xs: 3, sm: 2, md: 0 }
                             }}>
                                 <DotBridgeButton
                                     variant="contained"
-                                    size="large"
-                                    endIcon={<ArrowRight size={20} />}
+                                    size={isMobile ? "medium" : "large"}
+                                    endIcon={<ArrowRight size={isMobile ? 18 : 20} />}
                                     sx={{
-                                        px: 4,
-                                        py: 1.75,
-                                        fontSize: '1.125rem',
+                                        px: { xs: 3, sm: 4 },
+                                        py: { xs: 1.5, sm: 1.75 },
+                                        fontSize: { xs: '1rem', sm: '1.125rem' },
                                         fontWeight: 600,
                                         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                         boxShadow: '0 10px 30px rgba(0, 102, 255, 0.3)',
                                         borderRadius: 2,
                                         width: { xs: '100%', sm: 'auto' },
+                                        maxWidth: { xs: '280px', sm: 'none' },
                                         '&:hover': {
                                             transform: 'translateY(-3px)',
                                             boxShadow: '0 15px 40px rgba(0, 102, 255, 0.4)'
@@ -859,17 +893,18 @@ const CareerAcceleratorPage = () => {
 
                                 <DotBridgeButton
                                     variant="outlined"
-                                    size="large"
+                                    size={isMobile ? "medium" : "large"}
                                     sx={{
-                                        px: 4,
-                                        py: 1.75,
-                                        fontSize: '1.125rem',
+                                        px: { xs: 3, sm: 4 },
+                                        py: { xs: 1.5, sm: 1.75 },
+                                        fontSize: { xs: '1rem', sm: '1.125rem' },
                                         fontWeight: 600,
                                         borderWidth: 2,
                                         borderColor: theme.palette.primary.main,
                                         color: theme.palette.primary.main,
                                         borderRadius: 2,
                                         width: { xs: '100%', sm: 'auto' },
+                                        maxWidth: { xs: '280px', sm: 'none' },
                                         '&:hover': {
                                             borderWidth: 2,
                                             backgroundColor: theme.palette.primary.lighter,
@@ -884,16 +919,16 @@ const CareerAcceleratorPage = () => {
 
                             {/* Trust Indicators */}
                             <Box sx={{
-                                mt: 5,
+                                mt: { xs: 4, sm: 5 },
                                 display: 'flex',
-                                gap: 3,
+                                gap: { xs: 2, sm: 3 },
                                 justifyContent: 'center',
                                 flexWrap: 'wrap',
                                 px: 2
                             }}>
                                 {[
-                                    { icon: <Clock size={20} />, text: "48-72 Hour Delivery" },
-                                    { icon: <Users size={20} />, text: "Professional Service" }
+                                    { icon: <Clock size={isMobile ? 18 : 20} />, text: "48-72 Hour Delivery" },
+                                    { icon: <Users size={isMobile ? 18 : 20} />, text: "Professional Service" }
                                 ].map((item, index) => (
                                     <motion.div
                                         key={index}
@@ -904,9 +939,9 @@ const CareerAcceleratorPage = () => {
                                         <Box sx={{
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: 1,
+                                            gap: { xs: 0.5, sm: 1 },
                                             color: theme.palette.text.secondary,
-                                            fontSize: '0.875rem'
+                                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
                                         }}>
                                             <Box sx={{ color: theme.palette.primary.main }}>
                                                 {item.icon}
@@ -922,14 +957,14 @@ const CareerAcceleratorPage = () => {
 
                 {/* Resume Analyzer Section */}
                 <Box id="ai-resume-analyzer-section" sx={{
-                    mb: { xs: 8, md: 10 },
-                    py: { xs: 6, sm: 7, md: 8 },
+                    mb: { xs: 6, sm: 8, md: 10 },
+                    py: { xs: 4, sm: 6, md: 8 },
                     bgcolor: theme.palette.background.subtle,
-                    borderRadius: 3,
-                    mx: { xs: 1, sm: 2, md: 3, lg: 4 }
+                    borderRadius: { xs: 2, md: 3 },
+                    mx: { xs: 0.5, sm: 2, md: 3, lg: 4 }
                 }}>
                     <Box sx={{
-                        px: { xs: 1.5, sm: 3, md: 4, lg: 6 },
+                        px: { xs: 1, sm: 3, md: 4, lg: 6 },
                         maxWidth: '1200px',
                         mx: 'auto'
                     }}>
@@ -940,16 +975,17 @@ const CareerAcceleratorPage = () => {
                         >
                             <DotBridgeTypography variant="h2" sx={{
                                 textAlign: 'center',
-                                mb: { xs: 2, md: 3 },
+                                mb: { xs: 1.5, sm: 2, md: 3 },
                                 fontWeight: 700,
-                                fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem', lg: '2.75rem' },
-                                lineHeight: { xs: 1.3, md: 1.2 }
+                                fontSize: { xs: '1.5rem', sm: '2.25rem', md: '2.5rem', lg: '2.75rem' },
+                                lineHeight: { xs: 1.3, md: 1.2 },
+                                px: { xs: 1, sm: 0 }
                             }}>
                                 Get Your Free
                                 <Box component="span" sx={{
                                     color: theme.palette.primary.main,
-                                    mx: 1,
-                                    display: { xs: 'block', sm: 'inline' }
+                                    mx: { xs: 0.5, sm: 1 },
+                                    display: { xs: 'inline', sm: 'inline' }
                                 }}>
                                     AI Resume Analysis
                                 </Box>
@@ -957,19 +993,19 @@ const CareerAcceleratorPage = () => {
 
                             <DotBridgeTypography variant="h5" sx={{
                                 textAlign: 'center',
-                                mb: { xs: 4, sm: 5, md: 6 },
+                                mb: { xs: 3, sm: 4, md: 6 },
                                 color: theme.palette.text.secondary,
                                 lineHeight: 1.6,
-                                fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem', lg: '1.375rem' },
-                                px: { xs: 1, sm: 0 }
+                                fontSize: { xs: '0.9rem', sm: '1.125rem', md: '1.25rem', lg: '1.375rem' },
+                                px: { xs: 2, sm: 0 }
                             }}>
                                 Upload your resume and get instant AI-powered insights
-                                <br />
+                                {!isMobile && <br />}
                                 on your strengths, target roles, and improvement opportunities.
                             </DotBridgeTypography>
 
                             <ResumeAnalyzer
-                                showPersonalizedStrategist={showPersonalizedStrategist}
+                                showPersonalizedStrategist={!isMobile && showPersonalizedStrategist}
                                 setShowPersonalizedStrategist={setShowPersonalizedStrategist}
                                 personalizationId={personalizationId}
                                 setPersonalizationId={setPersonalizationId}
@@ -984,8 +1020,8 @@ const CareerAcceleratorPage = () => {
                     </Box>
                 </Box>
 
-                {/* Interactive Demo Section - Only show when AI strategist is active */}
-                {showPersonalizedStrategist && (
+                {/* Interactive Demo Section - Only show when AI strategist is active AND not on mobile */}
+                {!isMobile && showPersonalizedStrategist && (
                     <Box id="demo-section" sx={{ mb: 10, py: 8 }}>
                         <motion.div
                             ref={demoRef}
@@ -1123,26 +1159,33 @@ const CareerAcceleratorPage = () => {
                     </Box>
                 )}
 
-                {/* CTA Button after demo */}
-                {(resumeAnalysisId || showPersonalizedStrategist) && (
-                    <Box sx={{ textAlign: 'center', mb: 10, mt: showPersonalizedStrategist ? 4 : -6 }}>
+                {/* CTA Button after demo - Show for mobile after resume analysis or desktop after strategist */}
+                {(resumeAnalysisId || (!isMobile && showPersonalizedStrategist)) && (
+                    <Box sx={{
+                        textAlign: 'center',
+                        mb: { xs: 6, md: 10 },
+                        mt: isMobile ? -2 : (showPersonalizedStrategist ? 4 : -6),
+                        px: { xs: 2, sm: 0 }
+                    }}>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6 }}
                         >
                             <DotBridgeButton
-                                variant={showPersonalizedStrategist ? "contained" : "outlined"}
+                                variant={(!isMobile && showPersonalizedStrategist) ? "contained" : "outlined"}
                                 size="large"
                                 disabled={isGeneratingTicket}
                                 sx={{
-                                    px: 5,
-                                    py: 2,
-                                    fontSize: '1.125rem',
+                                    px: { xs: 4, sm: 5 },
+                                    py: { xs: 1.5, sm: 2 },
+                                    fontSize: { xs: '1rem', sm: '1.125rem' },
                                     fontWeight: 600,
                                     borderRadius: 2,
                                     transition: 'all 0.3s ease-in-out',
-                                    ...(showPersonalizedStrategist && {
+                                    width: { xs: '100%', sm: 'auto' },
+                                    maxWidth: { xs: '320px', sm: 'none' },
+                                    ...((!isMobile && showPersonalizedStrategist) && {
                                         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                         color: 'white',
                                         boxShadow: '0 10px 30px rgba(0, 102, 255, 0.3)',
@@ -1180,13 +1223,13 @@ const CareerAcceleratorPage = () => {
                                 {isGeneratingTicket ? (
                                     <>
                                         <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                                        Generating Your Plan...
+                                        {isMobile ? 'Generating...' : 'Generating Your Plan...'}
                                     </>
                                 ) : (
-                                    'Generate My Career Co-Pilot Plan'
+                                    isMobile ? 'Generate My Plan' : 'Generate My Career Co-Pilot Plan'
                                 )}
                             </DotBridgeButton>
-                            {!showPersonalizedStrategist && (
+                            {!isMobile && !showPersonalizedStrategist && (
                                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
                                     Or, skip ahead and generate your plan directly
                                 </Typography>
@@ -1206,7 +1249,11 @@ const CareerAcceleratorPage = () => {
 
                 {/* Career Strategy Ticket Display */}
                 {careerTicket && (
-                    <Box sx={{ mb: 8, mx: { xs: 1, sm: 2, md: 3 } }} data-ticket-display>
+                    <Box sx={{
+                        mb: { xs: 6, md: 8 },
+                        mx: { xs: 0.5, sm: 1, md: 3 },
+                        px: { xs: 0.5, sm: 0 }
+                    }} data-ticket-display>
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1215,11 +1262,11 @@ const CareerAcceleratorPage = () => {
                             <DotBridgeCard sx={{
                                 maxWidth: { xs: '100%', md: '1200px' },
                                 mx: 'auto',
-                                p: { xs: 2.5, sm: 3, md: 4 },
+                                p: { xs: 2, sm: 3, md: 4 },
                                 background: `linear-gradient(135deg, #ffffff 0%, #fafbff 50%, #f5f7ff 100%)`,
                                 border: '1px solid',
                                 borderColor: '#e1e7ff',
-                                borderRadius: 4,
+                                borderRadius: { xs: 2, md: 4 },
                                 boxShadow: '0 24px 80px rgba(0, 102, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04)',
                                 position: 'relative',
                                 overflow: 'hidden',
@@ -1229,7 +1276,7 @@ const CareerAcceleratorPage = () => {
                                     top: 0,
                                     left: 0,
                                     right: 0,
-                                    height: 6,
+                                    height: { xs: 4, md: 6 },
                                     background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 50%, ${theme.palette.primary.main} 100%)`,
                                     borderRadius: '16px 16px 0 0'
                                 }
@@ -1237,23 +1284,24 @@ const CareerAcceleratorPage = () => {
                                 {/* Premium Report Header */}
                                 <Box sx={{
                                     textAlign: 'center',
-                                    mb: 3.5,
-                                    pt: 1.5,
+                                    mb: { xs: 2.5, md: 3.5 },
+                                    pt: { xs: 1, md: 1.5 },
                                     position: 'relative'
                                 }}>
-                                    {/* Watermark/Background Text */}
+                                    {/* Watermark/Background Text - Hidden on mobile */}
                                     <Box sx={{
                                         position: 'absolute',
                                         top: -20,
                                         left: '50%',
                                         transform: 'translateX(-50%)',
-                                        fontSize: '8rem',
+                                        fontSize: { xs: '4rem', md: '8rem' },
                                         fontWeight: 900,
                                         color: theme.palette.primary.main,
                                         opacity: 0.02,
                                         zIndex: 0,
                                         userSelect: 'none',
-                                        pointerEvents: 'none'
+                                        pointerEvents: 'none',
+                                        display: { xs: 'none', sm: 'block' }
                                     }}>
                                         STRATEGY
                                     </Box>
@@ -1261,17 +1309,17 @@ const CareerAcceleratorPage = () => {
                                     <Box sx={{ position: 'relative', zIndex: 1 }}>
                                         <Chip
                                             icon={<Award size={16} />}
-                                            label="PREMIUM CAREER STRATEGY REPORT"
+                                            label={isMobile ? "CAREER STRATEGY" : "PREMIUM CAREER STRATEGY REPORT"}
                                             sx={{
-                                                mb: 2,
+                                                mb: { xs: 1.5, md: 2 },
                                                 background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                                 color: 'white',
                                                 fontWeight: 700,
-                                                fontSize: '0.75rem',
+                                                fontSize: { xs: '0.65rem', sm: '0.75rem' },
                                                 letterSpacing: '0.1em',
-                                                px: 2,
+                                                px: { xs: 1.5, sm: 2 },
                                                 py: 0.5,
-                                                height: 32,
+                                                height: { xs: 28, sm: 32 },
                                                 boxShadow: '0 8px 24px rgba(0, 102, 255, 0.2)',
                                                 '& .MuiChip-icon': {
                                                     color: 'white'
@@ -1285,26 +1333,28 @@ const CareerAcceleratorPage = () => {
                                             backgroundClip: 'text',
                                             WebkitBackgroundClip: 'text',
                                             WebkitTextFillColor: 'transparent',
-                                            mb: 1.5,
-                                            fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' },
-                                            letterSpacing: '-0.02em'
+                                            mb: { xs: 1, md: 1.5 },
+                                            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                                            letterSpacing: '-0.02em',
+                                            lineHeight: 1.2
                                         }}>
-                                            Career Acceleration Strategy
+                                            {isMobile ? 'Your Career Strategy' : 'Career Acceleration Strategy'}
                                         </DotBridgeTypography>
 
                                         <Typography variant="h5" sx={{
                                             color: theme.palette.text.secondary,
                                             fontWeight: 400,
                                             mb: 0.5,
-                                            fontSize: { xs: '1rem', md: '1.125rem' }
+                                            fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' }
                                         }}>
                                             Personalized for <strong>{careerTicket.client_info.name}</strong>
                                         </Typography>
 
                                         <Typography variant="body2" sx={{
                                             color: theme.palette.text.secondary,
-                                            fontSize: '0.875rem',
-                                            opacity: 0.7
+                                            fontSize: { xs: '0.75rem', sm: '0.875rem', md: '0.875rem' },
+                                            opacity: 0.7,
+                                            display: { xs: 'none', sm: 'block' }
                                         }}>
                                             Generated on {new Date().toLocaleDateString('en-US', {
                                                 year: 'numeric',
@@ -1315,46 +1365,47 @@ const CareerAcceleratorPage = () => {
                                     </Box>
                                 </Box>
 
-                                {/* Two-Column Layout */}
-                                <Grid container spacing={4}>
+                                {/* Two-Column Layout - Stack on mobile */}
+                                <Grid container spacing={{ xs: 3, md: 4 }}>
                                     {/* Left Column - Strategic Information */}
                                     <Grid item xs={12} md={7}>
 
                                         {/* Executive Summary Panel */}
                                         <Box sx={{
-                                            p: 3,
-                                            mb: 3.5,
+                                            p: { xs: 2, sm: 2.5, md: 3 },
+                                            mb: { xs: 2.5, md: 3.5 },
                                             background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.main}03 100%)`,
                                             border: `2px solid ${theme.palette.primary.main}15`,
-                                            borderRadius: 3,
+                                            borderRadius: { xs: 2, md: 3 },
                                             position: 'relative',
                                             '&::before': {
                                                 content: '"EXECUTIVE SUMMARY"',
                                                 position: 'absolute',
                                                 top: -10,
-                                                left: 20,
+                                                left: { xs: 15, sm: 20 },
                                                 backgroundColor: theme.palette.background.paper,
                                                 color: theme.palette.primary.main,
-                                                fontSize: '0.75rem',
+                                                fontSize: { xs: '0.65rem', sm: '0.75rem' },
                                                 fontWeight: 700,
                                                 letterSpacing: '0.1em',
-                                                px: 2
+                                                px: { xs: 1.5, sm: 2 }
                                             }
                                         }}>
                                             <Typography variant="overline" sx={{
                                                 color: theme.palette.primary.main,
                                                 fontWeight: 700,
                                                 letterSpacing: '0.1em',
-                                                mb: 2,
-                                                display: 'block'
+                                                mb: { xs: 1.5, md: 2 },
+                                                display: 'block',
+                                                fontSize: { xs: '0.65rem', sm: '0.75rem' }
                                             }}>
                                                 STRATEGIC OVERVIEW
                                             </Typography>
                                             <Typography variant="body1" sx={{
-                                                fontSize: '1rem',
+                                                fontSize: { xs: '0.875rem', sm: '0.95rem', md: '1rem' },
                                                 lineHeight: 1.7,
                                                 color: 'text.primary',
-                                                mb: 3
+                                                mb: { xs: 2, md: 3 }
                                             }}>
                                                 {careerTicket.strategy_summary}
                                             </Typography>
@@ -1362,31 +1413,35 @@ const CareerAcceleratorPage = () => {
 
                                         {/* Editable Co-Creation Fields */}
                                         <Box sx={{
-                                            p: 3,
-                                            mb: 3.5,
+                                            p: { xs: 2, sm: 2.5, md: 3 },
+                                            mb: { xs: 2.5, md: 3.5 },
                                             background: `linear-gradient(135deg, ${theme.palette.success.main}08 0%, ${theme.palette.success.main}03 100%)`,
                                             border: `2px solid ${theme.palette.success.main}15`,
-                                            borderRadius: 3,
+                                            borderRadius: { xs: 2, md: 3 },
                                             position: 'relative',
                                             '&::before': {
                                                 content: '"CUSTOMIZE YOUR GOALS"',
                                                 position: 'absolute',
                                                 top: -10,
-                                                left: 20,
+                                                left: { xs: 15, sm: 20 },
                                                 backgroundColor: theme.palette.background.paper,
                                                 color: theme.palette.success.main,
-                                                fontSize: '0.75rem',
+                                                fontSize: { xs: '0.65rem', sm: '0.75rem' },
                                                 fontWeight: 700,
                                                 letterSpacing: '0.1em',
-                                                px: 2
+                                                px: { xs: 1.5, sm: 2 }
                                             }
                                         }}>
                                             {/* Target Roles */}
-                                            <Box sx={{ mb: 3 }}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                                            <Box sx={{ mb: { xs: 2, md: 3 } }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    mb: 1,
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                                }}>
                                                     Target Roles
                                                 </Typography>
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.5, sm: 1 }, mb: { xs: 1.5, md: 2 } }}>
                                                     {editableTicketData.target_roles.map((role, index) => (
                                                         <Chip
                                                             key={index}
@@ -1395,6 +1450,10 @@ const CareerAcceleratorPage = () => {
                                                             color="primary"
                                                             variant="outlined"
                                                             size="small"
+                                                            sx={{
+                                                                fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                                                                height: { xs: 24, sm: 28 }
+                                                            }}
                                                         />
                                                     ))}
                                                 </Box>
@@ -1408,15 +1467,25 @@ const CareerAcceleratorPage = () => {
                                                             e.target.value = '';
                                                         }
                                                     }}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                                                            padding: { xs: '8px 12px', sm: '10px 14px' }
+                                                        }
+                                                    }}
                                                 />
                                             </Box>
 
                                             {/* Target Locations */}
-                                            <Box sx={{ mb: 3 }}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                                            <Box sx={{ mb: { xs: 2, md: 3 } }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    mb: 1,
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                                }}>
                                                     Target Locations
                                                 </Typography>
-                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 0.5, sm: 1 }, mb: { xs: 1.5, md: 2 } }}>
                                                     {editableTicketData.target_locations.map((location, index) => (
                                                         <Chip
                                                             key={index}
@@ -1425,6 +1494,10 @@ const CareerAcceleratorPage = () => {
                                                             color="secondary"
                                                             variant="outlined"
                                                             size="small"
+                                                            sx={{
+                                                                fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                                                                height: { xs: 24, sm: 28 }
+                                                            }}
                                                         />
                                                     ))}
                                                 </Box>
@@ -1438,12 +1511,22 @@ const CareerAcceleratorPage = () => {
                                                             e.target.value = '';
                                                         }
                                                     }}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                                                            padding: { xs: '8px 12px', sm: '10px 14px' }
+                                                        }
+                                                    }}
                                                 />
                                             </Box>
 
                                             {/* Salary Goal */}
-                                            <Box sx={{ mb: 3 }}>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                                            <Box sx={{ mb: { xs: 2, md: 3 } }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    mb: 1,
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                                }}>
                                                     Target Salary Range
                                                 </Typography>
                                                 <TextField
@@ -1452,12 +1535,22 @@ const CareerAcceleratorPage = () => {
                                                     fullWidth
                                                     value={editableTicketData.salary_goal}
                                                     onChange={(e) => handleTicketFieldChange('salary_goal', e.target.value)}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                                                            padding: { xs: '8px 12px', sm: '10px 14px' }
+                                                        }
+                                                    }}
                                                 />
                                             </Box>
 
                                             {/* Notes */}
                                             <Box>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    mb: 1,
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                                }}>
                                                     Optional: Add any notes or dream companies for our team
                                                 </Typography>
                                                 <TextField
@@ -1465,46 +1558,52 @@ const CareerAcceleratorPage = () => {
                                                     placeholder="Any specific companies, preferences, or additional context..."
                                                     fullWidth
                                                     multiline
-                                                    rows={3}
+                                                    rows={isMobile ? 2 : 3}
                                                     value={editableTicketData.notes}
                                                     onChange={(e) => handleTicketFieldChange('notes', e.target.value)}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                                                            padding: { xs: '8px 12px', sm: '10px 14px' }
+                                                        }
+                                                    }}
                                                 />
                                             </Box>
                                         </Box>
 
                                         {/* Key Challenges Section */}
-                                        <Box sx={{ mb: 3.5 }}>
+                                        <Box sx={{ mb: { xs: 2.5, md: 3.5 } }}>
                                             <Box sx={{
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                mb: 2.5,
-                                                pb: 1.5,
+                                                mb: { xs: 2, md: 2.5 },
+                                                pb: { xs: 1, md: 1.5 },
                                                 borderBottom: `2px solid ${theme.palette.primary.main}20`
                                             }}>
                                                 <Box sx={{
-                                                    width: 40,
-                                                    height: 40,
+                                                    width: { xs: 32, sm: 36, md: 40 },
+                                                    height: { xs: 32, sm: 36, md: 40 },
                                                     borderRadius: 2,
                                                     background: `linear-gradient(135deg, ${theme.palette.error.main}15 0%, ${theme.palette.error.main}05 100%)`,
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    mr: 2
+                                                    mr: { xs: 1.5, md: 2 }
                                                 }}>
-                                                    <AlertCircle size={20} color={theme.palette.error.main} />
+                                                    <AlertCircle size={isMobile ? 18 : 20} color={theme.palette.error.main} />
                                                 </Box>
                                                 <Typography variant="h4" fontWeight={700} sx={{
                                                     color: theme.palette.text.primary,
-                                                    fontSize: { xs: '1.25rem', md: '1.5rem' }
+                                                    fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' }
                                                 }}>
-                                                    Critical Challenges Analysis
+                                                    {isMobile ? 'Key Challenges' : 'Critical Challenges Analysis'}
                                                 </Typography>
                                             </Box>
-                                            <Grid container spacing={3}>
+                                            <Grid container spacing={{ xs: 2, md: 3 }}>
                                                 {careerTicket.client_info.key_challenges?.map((challenge, index) => (
                                                     <Grid item xs={12} key={index}>
                                                         <Box sx={{
-                                                            p: 2.5,
+                                                            p: { xs: 2, sm: 2.5 },
                                                             border: `1px solid ${theme.palette.error.main}20`,
                                                             borderRadius: 2,
                                                             background: `linear-gradient(135deg, ${theme.palette.error.main}02 0%, transparent 100%)`,
@@ -1517,17 +1616,17 @@ const CareerAcceleratorPage = () => {
                                                         }}>
                                                             <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
                                                                 <Box sx={{
-                                                                    width: 22,
-                                                                    height: 22,
+                                                                    width: { xs: 20, sm: 22 },
+                                                                    height: { xs: 20, sm: 22 },
                                                                     borderRadius: '50%',
                                                                     background: theme.palette.error.main,
                                                                     color: 'white',
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
-                                                                    fontSize: '0.7rem',
+                                                                    fontSize: { xs: '0.65rem', sm: '0.7rem' },
                                                                     fontWeight: 700,
-                                                                    mr: 1.5,
+                                                                    mr: { xs: 1, sm: 1.5 },
                                                                     mt: 0.25,
                                                                     flexShrink: 0
                                                                 }}>
@@ -1537,7 +1636,7 @@ const CareerAcceleratorPage = () => {
                                                                     fontWeight: 500,
                                                                     lineHeight: 1.6,
                                                                     color: theme.palette.text.primary,
-                                                                    fontSize: '0.95rem'
+                                                                    fontSize: { xs: '0.85rem', sm: '0.95rem' }
                                                                 }}>
                                                                     {challenge}
                                                                 </Typography>
@@ -1553,22 +1652,22 @@ const CareerAcceleratorPage = () => {
                                     {/* Right Column - Deliverable Preview Cards */}
                                     <Grid item xs={12} md={5}>
                                         <Box sx={{
-                                            position: 'sticky',
-                                            top: 20
+                                            position: { xs: 'relative', md: 'sticky' },
+                                            top: { md: 20 }
                                         }}>
                                             <Typography variant="h4" fontWeight={700} sx={{
-                                                mb: 3,
+                                                mb: { xs: 2, md: 3 },
                                                 textAlign: 'center',
                                                 color: theme.palette.text.primary,
-                                                fontSize: { xs: '1.25rem', md: '1.5rem' }
+                                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' }
                                             }}>
                                                 Your ABC Playbook Preview
                                             </Typography>
 
-                                            <Grid container spacing={2}>
+                                            <Grid container spacing={{ xs: 1.5, md: 2 }}>
                                                 <Grid item xs={12}>
                                                     <DeliverableCard
-                                                        icon={<FileCheck size={24} />}
+                                                        icon={<FileCheck size={isMobile ? 20 : 24} />}
                                                         title="Strategic Resume Tune-Up"
                                                         description={careerTicket.deliverable_previews?.resume_tune_up_preview || "We don't just proofread. We upgrade your core asset to get past AI screeners and impress the human hiring managers who matter."}
                                                         color="#007AFF"
@@ -1576,7 +1675,7 @@ const CareerAcceleratorPage = () => {
                                                 </Grid>
                                                 <Grid item xs={12}>
                                                     <DeliverableCard
-                                                        icon={<BarChart3 size={24} />}
+                                                        icon={<BarChart3 size={isMobile ? 20 : 24} />}
                                                         title="Opportunity & Decision-Maker Matrix"
                                                         description={careerTicket.deliverable_previews?.opportunity_matrix_preview || "You're not just getting a list of jobs. You'll receive a curated intelligence report of 50+ high-value companies and the specific decision-makers to contact."}
                                                         color="#5856D6"
@@ -1584,7 +1683,7 @@ const CareerAcceleratorPage = () => {
                                                 </Grid>
                                                 <Grid item xs={12}>
                                                     <DeliverableCard
-                                                        icon={<MessageSquare size={24} />}
+                                                        icon={<MessageSquare size={isMobile ? 20 : 24} />}
                                                         title="Multi-Channel Outreach Cadence"
                                                         description={careerTicket.deliverable_previews?.outreach_cadence_preview || "You're not just getting templates. We provide you with professionally written, non-generic messaging to start meaningful conversations."}
                                                         color="#AF52DE"
@@ -1592,7 +1691,7 @@ const CareerAcceleratorPage = () => {
                                                 </Grid>
                                                 <Grid item xs={12}>
                                                     <DeliverableCard
-                                                        icon={<Calendar size={24} />}
+                                                        icon={<Calendar size={isMobile ? 20 : 24} />}
                                                         title="14-Day Action Plan"
                                                         description={careerTicket.deliverable_previews?.action_playbook_preview || "You're not just getting advice. You get a step-by-step GPS for the first two weeks of your campaign."}
                                                         color="#34C759"
@@ -1611,29 +1710,29 @@ const CareerAcceleratorPage = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.6, delay: 0.5 }}
-                                    whileHover={{ scale: 1.01 }}
-                                    style={{ marginTop: '2rem' }}
+                                    whileHover={!isMobile ? { scale: 1.01 } : {}}
+                                    style={{ marginTop: isMobile ? '1.5rem' : '2rem' }}
                                 >
                                     <Box sx={{
-                                        maxWidth: '960px',
+                                        maxWidth: { xs: '100%', md: '960px' },
                                         mx: 'auto',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        p: { xs: 3, md: 4 },
+                                        p: { xs: 2.5, sm: 3, md: 4 },
                                         background: `linear-gradient(135deg, ${theme.palette.primary.main}1a 0%, ${theme.palette.primary.main}0d 50%, transparent 100%)`,
                                         border: `1px solid ${theme.palette.primary.main}30`,
-                                        borderRadius: 4,
+                                        borderRadius: { xs: 2, md: 4 },
                                         position: 'relative',
                                         overflow: 'hidden',
                                         backdropFilter: 'blur(10px)',
                                         transition: 'all 0.3s ease',
                                         flexDirection: 'column',
-                                        gap: 2.5,
+                                        gap: { xs: 2, md: 2.5 },
                                         textAlign: 'center',
                                         '&:hover': {
                                             borderColor: theme.palette.primary.main,
-                                            transform: 'translateY(-2px)',
+                                            transform: isMobile ? 'none' : 'translateY(-2px)',
                                             boxShadow: `0 20px 60px ${theme.palette.primary.main}25`,
                                             '& .cta-glow': {
                                                 opacity: 1
@@ -1652,31 +1751,36 @@ const CareerAcceleratorPage = () => {
                                     }}>
                                         {/* Content */}
                                         <Box>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, justifyContent: 'center' }}>
-                                                <Rocket size={28} color={theme.palette.primary.main} style={{ marginRight: 12 }} />
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, md: 1.5 }, justifyContent: 'center' }}>
+                                                <Rocket size={isMobile ? 24 : 28} color={theme.palette.primary.main} style={{ marginRight: isMobile ? 8 : 12 }} />
                                                 <Typography variant="h4" fontWeight={700} sx={{
                                                     background: `linear-gradient(135deg, ${theme.palette.text.primary} 0%, ${theme.palette.primary.main} 100%)`,
                                                     backgroundClip: 'text',
                                                     WebkitBackgroundClip: 'text',
                                                     WebkitTextFillColor: 'transparent',
-                                                    fontSize: { xs: '1.5rem', md: '1.75rem' }
+                                                    fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
+                                                    lineHeight: 1.2
                                                 }}>
-                                                    Ready to Transform Your Career?
+                                                    {isMobile ? 'Ready to Start?' : 'Ready to Transform Your Career?'}
                                                 </Typography>
                                             </Box>
                                             <Typography variant="body1" sx={{
                                                 color: theme.palette.text.secondary,
-                                                fontSize: '1.05rem',
+                                                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.05rem' },
                                                 lineHeight: 1.6,
                                                 maxWidth: '620px',
-                                                mx: 'auto'
+                                                mx: 'auto',
+                                                px: { xs: 1, sm: 0 }
                                             }}>
-                                                Get instant access to your personalized strategy and start connecting with decision-makers today.
+                                                {isMobile
+                                                    ? 'Start connecting with decision-makers today.'
+                                                    : 'Get instant access to your personalized strategy and start connecting with decision-makers today.'
+                                                }
                                             </Typography>
                                         </Box>
 
                                         {/* Button */}
-                                        <Box sx={{ pt: 1 }}>
+                                        <Box sx={{ pt: { xs: 0, md: 1 } }}>
                                             <DotBridgeButton
                                                 variant="contained"
                                                 size="large"
@@ -1686,16 +1790,18 @@ const CareerAcceleratorPage = () => {
                                                     background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                                     color: 'white',
                                                     fontWeight: 700,
-                                                    px: 4,
-                                                    py: 1.5,
-                                                    fontSize: '1.125rem',
-                                                    borderRadius: 3,
+                                                    px: { xs: 3, md: 4 },
+                                                    py: { xs: 1.25, md: 1.5 },
+                                                    fontSize: { xs: '1rem', md: '1.125rem' },
+                                                    borderRadius: { xs: 2, md: 3 },
                                                     position: 'relative',
                                                     overflow: 'hidden',
                                                     textShadow: '0 0 20px rgba(255, 255, 255, 0.8)',
                                                     boxShadow: `0 8px 32px ${theme.palette.primary.main}40`,
                                                     transition: 'all 0.3s ease',
-                                                    minWidth: '200px',
+                                                    minWidth: { xs: '180px', md: '200px' },
+                                                    width: { xs: '100%', sm: 'auto' },
+                                                    maxWidth: { xs: '280px', sm: 'none' },
                                                     '&::before': {
                                                         content: '""',
                                                         position: 'absolute',
@@ -1707,7 +1813,7 @@ const CareerAcceleratorPage = () => {
                                                         transition: 'left 0.6s ease'
                                                     },
                                                     '&:hover': {
-                                                        transform: 'translateY(-3px) scale(1.05)',
+                                                        transform: isMobile ? 'none' : 'translateY(-3px) scale(1.05)',
                                                         boxShadow: `0 16px 48px ${theme.palette.primary.main}60`,
                                                         textShadow: '0 0 30px rgba(255, 255, 255, 1)',
                                                         '&::before': {
@@ -1715,7 +1821,7 @@ const CareerAcceleratorPage = () => {
                                                         }
                                                     },
                                                     '&:active': {
-                                                        transform: 'translateY(-1px) scale(1.02)'
+                                                        transform: isMobile ? 'scale(0.98)' : 'translateY(-1px) scale(1.02)'
                                                     }
                                                 }}
                                             >
@@ -1747,9 +1853,6 @@ const CareerAcceleratorPage = () => {
                         </motion.div>
                     </Box>
                 )}
-
-
-
 
                 {/* How It Works Section */}
                 <Box id="how-it-works" sx={{
@@ -2501,50 +2604,56 @@ const CareerAcceleratorPage = () => {
                 </Box>
 
                 {/* What You Get Section - Enhanced */}
-                <Box sx={{ mb: 12, py: { xs: 6, md: 8 } }}>
+                <Box sx={{ mb: { xs: 8, md: 12 }, py: { xs: 4, sm: 6, md: 8 } }}>
                     <DotBridgeTypography variant="h3" sx={{
                         textAlign: 'center',
-                        mb: 8,
+                        mb: { xs: 4, sm: 6, md: 8 },
                         fontWeight: 600,
-                        fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+                        fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                        px: { xs: 2, sm: 0 },
+                        lineHeight: 1.3
                     }}>
                         Your Complete Job Outreach System Includes:
                     </DotBridgeTypography>
 
-                    <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto', px: { xs: 2, sm: 3, md: 4 } }}>
+                    <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{
+                        maxWidth: '1200px',
+                        mx: 'auto',
+                        px: { xs: 1, sm: 2, md: 4 }
+                    }}>
                         {[
                             {
-                                icon: <FileText size={32} />,
+                                icon: <FileText size={isMobile ? 28 : 32} />,
                                 title: "AI-Driven Résumé Analysis",
                                 description: "Get specific, actionable feedback to optimize your résumé for ATS systems and human readers",
                                 color: '#007AFF'
                             },
                             {
-                                icon: <Search size={32} />,
+                                icon: <Search size={isMobile ? 28 : 32} />,
                                 title: "Curated Employer List",
                                 description: "50-100+ targeted companies with direct decision-maker contacts who are likely to hire you",
                                 color: '#5856D6'
                             },
                             {
-                                icon: <MessageSquare size={32} />,
+                                icon: <MessageSquare size={isMobile ? 28 : 32} />,
                                 title: "Custom Outreach Templates",
                                 description: "3-5 proven email & LinkedIn message templates personalized for your background and goals",
                                 color: '#AF52DE'
                             },
                             {
-                                icon: <Calendar size={32} />,
+                                icon: <Calendar size={isMobile ? 28 : 32} />,
                                 title: "Daily Action Calendar",
                                 description: "Step-by-step roadmap showing exactly who to contact, when, and how to follow up",
                                 color: '#FF3B30'
                             },
                             {
-                                icon: <TrendingUp size={32} />,
+                                icon: <TrendingUp size={isMobile ? 28 : 32} />,
                                 title: "Response Tracking System",
                                 description: "Simple spreadsheet to track your outreach, responses, and interview pipeline",
                                 color: '#34C759'
                             },
                             {
-                                icon: <Sparkles size={32} />,
+                                icon: <Sparkles size={isMobile ? 28 : 32} />,
                                 title: "Bonus: Interview Prep Guide",
                                 description: "Common questions, storytelling frameworks, and negotiation tips for your target roles",
                                 color: '#FF9500'
@@ -2555,23 +2664,24 @@ const CareerAcceleratorPage = () => {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
-                                    whileHover={{ y: -4 }}
+                                    whileHover={!isMobile ? { y: -4 } : {}}
                                 >
                                     <DotBridgeCard
                                         sx={{
-                                            p: 3,
+                                            p: { xs: 2, sm: 2.5, md: 3 },
                                             height: '100%',
                                             display: 'flex',
                                             alignItems: 'flex-start',
-                                            gap: 2,
+                                            gap: { xs: 1.5, md: 2 },
                                             transition: 'all 0.3s ease',
                                             border: '1px solid',
                                             borderColor: 'divider',
+                                            borderRadius: { xs: 2, md: 3 },
                                             '&:hover': {
                                                 borderColor: item.color,
                                                 boxShadow: `0 8px 24px ${item.color}20`,
                                                 '& .deliverable-icon': {
-                                                    transform: 'scale(1.1) rotate(5deg)'
+                                                    transform: isMobile ? 'none' : 'scale(1.1) rotate(5deg)'
                                                 }
                                             }
                                         }}
@@ -2579,8 +2689,8 @@ const CareerAcceleratorPage = () => {
                                         <Box
                                             className="deliverable-icon"
                                             sx={{
-                                                width: 56,
-                                                height: 56,
+                                                width: { xs: 48, sm: 52, md: 56 },
+                                                height: { xs: 48, sm: 52, md: 56 },
                                                 borderRadius: 2,
                                                 background: `linear-gradient(135deg, ${item.color}20 0%, ${item.color}10 100%)`,
                                                 display: 'flex',
@@ -2594,10 +2704,18 @@ const CareerAcceleratorPage = () => {
                                             {item.icon}
                                         </Box>
                                         <Box>
-                                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                                            <Typography variant="h6" sx={{
+                                                fontWeight: 600,
+                                                mb: { xs: 0.5, md: 1 },
+                                                fontSize: { xs: '0.95rem', sm: '1.05rem', md: '1.125rem' },
+                                                lineHeight: 1.3
+                                            }}>
                                                 {item.title}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+                                            <Typography variant="body2" color="text.secondary" sx={{
+                                                lineHeight: 1.6,
+                                                fontSize: { xs: '0.8rem', sm: '0.85rem', md: '0.875rem' }
+                                            }}>
                                                 {item.description}
                                             </Typography>
                                         </Box>
