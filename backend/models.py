@@ -695,6 +695,9 @@ class PersonalizationRecord(db.Model):
     )  # Short unique ID for URL
     data = db.Column(db.JSON, nullable=False)  # Actual personalization data
     email = db.Column(db.String(255), index=True)  # For quick lookup
+    record_metadata = db.Column(
+        db.JSON, nullable=True
+    )  # Security and tracking metadata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_accessed = db.Column(db.DateTime)
     access_count = db.Column(db.Integer, default=0)
@@ -709,6 +712,7 @@ class PersonalizationRecord(db.Model):
             "unique_id": self.unique_id,
             "data": self.data,
             "email": self.email,
+            "record_metadata": self.record_metadata,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_accessed": (
                 self.last_accessed.isoformat() if self.last_accessed else None
@@ -822,4 +826,92 @@ class ResumeAnalysis(db.Model):
             "analysis_results": self.analysis_results,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class CareerLead(db.Model):
+    """Tracks leads from the career accelerator page with comprehensive data"""
+
+    __tablename__ = "career_leads"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Basic contact information
+    name = db.Column(db.String(255), nullable=True)
+    email = db.Column(db.String(255), nullable=False)
+    phone = db.Column(db.String(50), nullable=True)
+    linkedin_url = db.Column(db.String(500), nullable=True)
+
+    # Job search details
+    target_job_title = db.Column(db.String(255), nullable=True)
+    biggest_challenge = db.Column(db.Text, nullable=True)
+
+    # Source and urgency
+    source = db.Column(
+        db.String(100), default="career_accelerator"
+    )  # 'lead_form', 'cta_strategy_activation', etc.
+    urgency = db.Column(db.String(50), nullable=True)  # 'asap', '1-3months', etc.
+
+    # Resume file storage
+    resume_s3_key = db.Column(
+        db.String(512), nullable=True
+    )  # S3 key for uploaded resume
+    resume_s3_url = db.Column(
+        db.String(1024), nullable=True
+    )  # Full S3 URL for easy access
+
+    # AI Analysis IDs for linking
+    resume_analysis_id = db.Column(
+        db.Integer, db.ForeignKey("resume_analyses.id"), nullable=True
+    )
+    personalization_id = db.Column(
+        db.String(255), nullable=True
+    )  # The unique ID from PersonalizationRecord
+
+    # User's finalized goals and ticket data
+    finalized_goals = db.Column(
+        db.JSON, nullable=True
+    )  # target_roles, target_locations, salary_goal, notes
+    career_ticket_data = db.Column(
+        db.JSON, nullable=True
+    )  # Full generated ticket content
+
+    # Lead management
+    status = db.Column(
+        db.String(20), default="new"
+    )  # new, contacted, qualified, converted, closed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    contacted_at = db.Column(db.DateTime, nullable=True)
+    converted_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+
+    # Relationships
+    resume_analysis = db.relationship("ResumeAnalysis", backref="career_leads")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "email": self.email,
+            "phone": self.phone,
+            "linkedin_url": self.linkedin_url,
+            "target_job_title": self.target_job_title,
+            "biggest_challenge": self.biggest_challenge,
+            "resume_s3_key": self.resume_s3_key,
+            "resume_s3_url": self.resume_s3_url,
+            "source": self.source,
+            "urgency": self.urgency,
+            "resume_analysis_id": self.resume_analysis_id,
+            "personalization_id": self.personalization_id,
+            "finalized_goals": self.finalized_goals,
+            "career_ticket_data": self.career_ticket_data,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "contacted_at": (
+                self.contacted_at.isoformat() if self.contacted_at else None
+            ),
+            "converted_at": (
+                self.converted_at.isoformat() if self.converted_at else None
+            ),
+            "notes": self.notes,
         }

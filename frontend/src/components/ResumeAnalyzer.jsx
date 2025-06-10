@@ -66,7 +66,7 @@ import DotBridgeTypography from './DotBridgeTypography';
 import DotBridgeCard from './DotBridgeCard';
 
 // Styled components
-const UploadZone = styled(Paper)(({ theme, isDragActive, hasFile }) => ({
+const UploadZone = styled(Paper)(({ theme, isDragActive, hasFile, glowing }) => ({
     padding: theme.spacing(6),
     textAlign: 'center',
     border: `2px dashed ${isDragActive ? theme.palette.primary.main : theme.palette.divider}`,
@@ -80,11 +80,27 @@ const UploadZone = styled(Paper)(({ theme, isDragActive, hasFile }) => ({
     transition: 'all 0.3s ease',
     position: 'relative',
     overflow: 'hidden',
+    animation: glowing ? 'glow 2s infinite ease-in-out' : 'none',
+    '@keyframes glow': {
+        '0%': {
+            borderColor: theme.palette.primary.light,
+            boxShadow: `0 0 5px ${theme.palette.primary.light}`,
+        },
+        '50%': {
+            borderColor: theme.palette.primary.main,
+            boxShadow: `0 0 20px ${theme.palette.primary.main}`,
+        },
+        '100%': {
+            borderColor: theme.palette.primary.light,
+            boxShadow: `0 0 5px ${theme.palette.primary.light}`,
+        },
+    },
     '&:hover': {
         borderColor: theme.palette.primary.main,
         backgroundColor: alpha(theme.palette.primary.main, 0.02),
         transform: 'translateY(-2px)',
-        boxShadow: theme.shadows[4]
+        boxShadow: theme.shadows[4],
+        animation: 'none',
     }
 }));
 
@@ -132,7 +148,8 @@ const ResumeAnalyzer = ({
     personalizationId,
     setPersonalizationId,
     isCreatingPersonalization,
-    setIsCreatingPersonalization
+    setIsCreatingPersonalization,
+    onResumeAnalysisComplete
 }) => {
     const theme = useTheme();
     const [file, setFile] = useState(null);
@@ -361,6 +378,11 @@ const ResumeAnalyzer = ({
                 setCustomTitles([...data.results.potentialTitles]);
             }
 
+            // Notify parent component about successful analysis completion
+            if (onResumeAnalysisComplete && data.analysis_id) {
+                onResumeAnalysisComplete(data.analysis_id);
+            }
+
         } catch (err) {
             console.error('Error analyzing resume:', err);
             setError(err.message || 'Failed to analyze resume. Please try again.');
@@ -487,6 +509,7 @@ const ResumeAnalyzer = ({
                                         <UploadZone
                                             isDragActive={isDragActive}
                                             hasFile={false}
+                                            glowing={!file}
                                             onDragEnter={handleDragEnter}
                                             onDragLeave={handleDragLeave}
                                             onDragOver={handleDragOver}
@@ -733,6 +756,7 @@ const ResumeAnalyzer = ({
                                 setCustomTitles={() => { }}
                                 handleAIStrategistClick={handleAIStrategistClick}
                                 isCreatingPersonalization={isCreatingPersonalization}
+                                analysisComplete={analysisComplete}
                             />
                         </motion.div>
                     )}
@@ -745,12 +769,13 @@ const ResumeAnalyzer = ({
                             transition={{ duration: 0.3 }}
                         >
                             <Card sx={{
-                                height: '500px',
+                                height: '600px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 border: '1px solid',
-                                borderColor: theme.palette.divider
+                                borderColor: theme.palette.divider,
+                                background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 70%)`
                             }}>
                                 <Box sx={{ textAlign: 'center' }}>
                                     <CircularProgress size={60} thickness={2} />
@@ -773,7 +798,7 @@ const ResumeAnalyzer = ({
                                                     size="small"
                                                     color="primary"
                                                     variant="outlined"
-                                                    sx={{ fontSize: '0.75rem' }}
+                                                    sx={{ fontSize: '0.75rem', py: 1.5, px: 1 }}
                                                 />
                                             </motion.div>
                                         ))}
@@ -805,6 +830,7 @@ const ResumeAnalyzer = ({
                                 setCustomTitles={setCustomTitles}
                                 handleAIStrategistClick={handleAIStrategistClick}
                                 isCreatingPersonalization={isCreatingPersonalization}
+                                analysisComplete={analysisComplete}
                             />
                         </motion.div>
                     )}
@@ -829,9 +855,146 @@ const AnalysisResults = ({
     handleCancelEditingTitles,
     setCustomTitles,
     handleAIStrategistClick,
-    isCreatingPersonalization = false
+    isCreatingPersonalization = false,
+    analysisComplete = false
 }) => {
     const theme = useTheme();
+
+    const resultCards = [
+        {
+            id: 'roles',
+            icon: <Target size={24} color={theme.palette.primary.main} />,
+            title: "Best-Fit Target Roles",
+            subtitle: `${data.potentialTitles?.length || 0} roles identified`,
+            content: (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    {data.potentialTitles?.slice(0, 4).map((title, index) => (
+                        <Box
+                            key={index}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                p: 1.25,
+                                borderRadius: 1.5,
+                                bgcolor: theme.palette.grey[50],
+                                border: '1px solid',
+                                borderColor: 'transparent',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                '&:hover': {
+                                    borderColor: theme.palette.primary.light,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.04)
+                                }
+                            }}
+                        >
+                            <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.875rem' }}>
+                                {title}
+                            </Typography>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: '0.8125rem',
+                                    color: data.targetRoleMatch?.[title] >= 80 ? theme.palette.success.main : theme.palette.primary.main
+                                }}
+                            >
+                                {data.targetRoleMatch?.[title] || 75}% Match
+                            </Typography>
+                        </Box>
+                    ))}
+                </Box>
+            )
+        },
+        {
+            id: 'strengths',
+            icon: <Award size={24} color={theme.palette.success.main} />,
+            title: "Your Key Strengths",
+            subtitle: `${data.strengths?.length || 0} strengths found`,
+            content: (
+                <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
+                    {data.strengths?.map((strength, index) => (
+                        <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+                            <CheckCircle size={18} color={theme.palette.success.main} style={{ marginTop: 2, flexShrink: 0 }} />
+                            <Typography variant="body2" sx={{ lineHeight: 1.6, fontSize: '0.875rem', color: theme.palette.text.secondary }}>
+                                {strength}
+                            </Typography>
+                        </Box>
+                    ))}
+                </Box>
+            )
+        },
+        {
+            id: 'improvements',
+            icon: <Lightbulb size={24} color={theme.palette.warning.main} />,
+            title: "Improvement Opportunities",
+            subtitle: `${data.improvements?.length || 0} opportunities found`,
+            content: (
+                <Box sx={{ maxHeight: 220, overflowY: 'auto' }}>
+                    {data.improvements?.map((improvement, index) => (
+                        <Box key={index} sx={{
+                            mb: 1.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: theme.palette.grey[50],
+                            border: '1px solid',
+                            borderColor: theme.palette.grey[200]
+                        }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem' }}>
+                                    {improvement.category}
+                                </Typography>
+                                <Chip
+                                    label={improvement.impact}
+                                    size="small"
+                                    sx={{
+                                        height: 18,
+                                        fontSize: '0.6875rem',
+                                        fontWeight: 600,
+                                        bgcolor:
+                                            improvement.impact === 'high' ? theme.palette.error.main :
+                                                improvement.impact === 'medium' ? theme.palette.warning.main :
+                                                    theme.palette.info.main,
+                                        color: 'white'
+                                    }}
+                                />
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, fontSize: '0.8125rem' }}>
+                                {improvement.suggestion}
+                            </Typography>
+                        </Box>
+                    ))}
+                </Box>
+            )
+        },
+        {
+            id: 'strategy',
+            icon: <TrendingUp size={24} color={theme.palette.info.main} />,
+            title: "Your Career Strategy",
+            subtitle: "AI-generated roadmap",
+            content: (
+                <Box>
+                    <Typography variant="body2" sx={{ lineHeight: 1.6, fontSize: '0.875rem', display: 'block', mb: 1.5, color: theme.palette.text.secondary }}>
+                        {data.strategy}
+                    </Typography>
+                    {data.industryInsights && (
+                        <Box sx={{
+                            mt: 1.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: alpha(theme.palette.info.main, 0.08),
+                            border: '1px solid',
+                            borderColor: alpha(theme.palette.info.main, 0.2)
+                        }}>
+                            <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.8125rem' }}>
+                                <strong>Market Insight:</strong> {data.industryInsights}
+                            </Typography>
+                        </Box>
+                    )}
+                </Box>
+            )
+        },
+    ];
 
     return (
         <Box>
@@ -856,8 +1019,9 @@ const AnalysisResults = ({
                 mb: 2,
                 border: '1px solid',
                 borderColor: theme.palette.divider,
-                borderRadius: 2,
-                boxShadow: 'none'
+                borderRadius: 3,
+                boxShadow: `0 8px 32px ${alpha(theme.palette.primary.main, 0.05)}`,
+                background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.03)} 100%)`
             }}>
                 <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
                     <Grid container spacing={3} alignItems="center">
@@ -898,14 +1062,14 @@ const AnalysisResults = ({
                                         precision={0.5}
                                         readOnly
                                         size="small"
-                                        sx={{ fontSize: '1rem' }}
+                                        sx={{ fontSize: '1.25rem' }}
                                     />
                                 </Box>
                             </Box>
                         </Grid>
 
-                        <Grid item xs={12} md={6}>
-                            <Typography variant="h5" fontWeight={600} sx={{ mb: 0.5, color: theme.palette.text.primary }}>
+                        <Grid item xs={12} md={5}>
+                            <Typography variant="h6" fontWeight={600} sx={{ mb: 0.5, color: theme.palette.text.primary, fontSize: '1.1rem' }}>
                                 {data.candidateName}'s Resume Analysis
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
@@ -933,462 +1097,127 @@ const AnalysisResults = ({
                             </Box>
                         </Grid>
 
-                        <Grid item xs={12} md={3}>
+                        <Grid item xs={12} md={4}>
                             <Button
                                 variant="contained"
                                 fullWidth
-                                disabled={isPreview || isCreatingPersonalization}
-                                startIcon={isCreatingPersonalization ? <CircularProgress size={16} color="inherit" /> : null}
+                                disabled={isPreview || isCreatingPersonalization || !analysisComplete}
+                                startIcon={isCreatingPersonalization ? <CircularProgress size={16} color="inherit" /> : <Sparkles size={16} />}
                                 endIcon={!isCreatingPersonalization ? <ChevronRight size={18} /> : null}
                                 sx={{
-                                    py: 1.25,
+                                    py: 1.5,
                                     bgcolor: theme.palette.primary.main,
                                     color: 'common.white',
-                                    fontWeight: 600,
-                                    fontSize: '0.9375rem',
-                                    boxShadow: 'none',
+                                    fontWeight: 700,
+                                    fontSize: '1rem',
+                                    boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
                                     textTransform: 'none',
+                                    borderRadius: 2.5,
+                                    transition: 'all 0.3s ease',
                                     '&:hover': {
                                         bgcolor: theme.palette.primary.dark,
-                                        boxShadow: 'none'
+                                        boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}`,
+                                        transform: 'translateY(-2px)'
                                     },
                                     '&.Mui-disabled': {
-                                        bgcolor: theme.palette.primary.main,
-                                        color: 'common.white'
+                                        background: theme.palette.grey[300],
+                                        color: theme.palette.grey[500],
+                                        boxShadow: 'none',
+                                        cursor: 'not-allowed',
+                                        pointerEvents: 'auto',
+                                        transform: 'none'
                                     }
                                 }}
                                 onClick={handleAIStrategistClick}
                             >
-                                {isCreatingPersonalization ? 'Creating Your Session...' : 'Talk to your AI Strategist'}
+                                {isCreatingPersonalization ? 'Creating Session...' : 'Talk to AI Strategist'}
                             </Button>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, textAlign: 'center' }}>
-                                Free AI consultation
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
+                                This is your recommended next step
                             </Typography>
                         </Grid>
                     </Grid>
                 </CardContent>
             </Card>
 
-            {/* Main Analysis Grid - Compact 2x2 */}
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-                {/* Target Roles */}
-                <Grid item xs={12} md={6}>
-                    <Card sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: theme.palette.divider,
-                        borderRadius: 2,
-                        boxShadow: 'none',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            borderColor: theme.palette.primary.light
-                        }
-                    }}>
-                        <CardHeader
-                            sx={{ p: 2, pb: 1.5 }}
-                            avatar={
-                                <Box sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: theme.palette.grey[100],
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
-                                    <Target size={20} color={theme.palette.primary.main} />
-                                </Box>
-                            }
-                            title={
-                                <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: '1rem' }}>
-                                    Best-Fit Target Roles
-                                </Typography>
-                            }
-                            action={
-                                !isPreview && (
-                                    <IconButton size="small" sx={{ p: 0.75 }}>
-                                        <Edit2 size={16} />
-                                    </IconButton>
-                                )
-                            }
-                        />
-                        <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                                {data.potentialTitles?.slice(0, 4).map((title, index) => (
-                                    <Box
-                                        key={index}
-                                        sx={{
-                                            display: 'flex',
+            {/* Main Analysis Grid - Dashboard Style */}
+            <Grid container spacing={2}>
+                {resultCards.map((card, index) => (
+                    <Grid item xs={12} md={6} key={card.id}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: index * 0.1 }}
+                        >
+                            <Accordion
+                                defaultExpanded={index < 2}
+                                sx={{
+                                    height: '100%',
+                                    border: '1px solid',
+                                    borderColor: theme.palette.divider,
+                                    borderRadius: 3,
+                                    boxShadow: 'none',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                        borderColor: theme.palette.primary.light,
+                                        boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.05)}`
+                                    },
+                                    '&.Mui-expanded': {
+                                        borderColor: theme.palette.primary.main
+                                    },
+                                    '&:before': {
+                                        display: 'none', // Remove default Accordion top border
+                                    }
+                                }}
+                            >
+                                <AccordionSummary
+                                    expandIcon={<ExpandMore />}
+                                    aria-controls={`${card.id}-content`}
+                                    id={`${card.id}-header`}
+                                    sx={{
+                                        p: 2.5,
+                                        '& .MuiAccordionSummary-content': {
                                             alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            p: 1.25,
-                                            borderRadius: 1,
-                                            bgcolor: theme.palette.grey[50],
-                                            border: '1px solid',
-                                            borderColor: 'transparent',
-                                            transition: 'all 0.2s ease',
-                                            cursor: 'pointer',
-                                            '&:hover': {
-                                                borderColor: theme.palette.primary.light,
-                                                bgcolor: alpha(theme.palette.primary.main, 0.04)
-                                            }
-                                        }}
-                                    >
-                                        <Typography variant="body2" fontWeight={500} sx={{ fontSize: '0.875rem' }}>
-                                            {title}
-                                        </Typography>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                fontWeight: 600,
-                                                fontSize: '0.8125rem',
-                                                color: data.targetRoleMatch?.[title] >= 80 ? theme.palette.success.main : theme.palette.primary.main
-                                            }}
-                                        >
-                                            {data.targetRoleMatch?.[title] || 75}% Match
-                                        </Typography>
-                                    </Box>
-                                ))}
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Key Strengths */}
-                <Grid item xs={12} md={6}>
-                    <Card sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: theme.palette.divider,
-                        borderRadius: 2,
-                        boxShadow: 'none',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            borderColor: theme.palette.success.light
-                        }
-                    }}>
-                        <CardHeader
-                            sx={{ p: 2, pb: 1.5 }}
-                            avatar={
-                                <Box sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.success.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
-                                    <Award size={20} color={theme.palette.success.main} />
-                                </Box>
-                            }
-                            title={
-                                <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: '1rem' }}>
-                                    Your Key Strengths
-                                </Typography>
-                            }
-                            action={
-                                <Button
-                                    size="small"
-                                    onClick={() => toggleSection('strengths')}
-                                    disabled={isPreview}
-                                    sx={{
-                                        minWidth: 'auto',
-                                        px: 2,
-                                        py: 0.5,
-                                        fontSize: '0.8125rem',
-                                        fontWeight: 500,
-                                        textTransform: 'none',
-                                        bgcolor: 'transparent',
-                                        color: theme.palette.success.main,
-                                        border: '1px solid',
-                                        borderColor: theme.palette.success.light,
-                                        '&:hover': {
-                                            bgcolor: alpha(theme.palette.success.main, 0.08),
-                                            borderColor: theme.palette.success.main
-                                        }
-                                    }}
-                                    endIcon={expandedSections.strengths ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                >
-                                    {expandedSections.strengths ? 'Hide' : 'Show All'} {data.strengths?.length || 0}
-                                </Button>
-                            }
-                        />
-                        <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
-                            {!expandedSections.strengths ? (
-                                <Box>
-                                    {data.strengths?.slice(0, 2).map((strength, index) => (
-                                        <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
-                                            <CheckCircle size={16} color={theme.palette.success.main} style={{ marginTop: 2, flexShrink: 0 }} />
-                                            <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.875rem', color: theme.palette.text.secondary }}>
-                                                {strength.length > 60 ? `${strength.substring(0, 60)}...` : strength}
-                                            </Typography>
-                                        </Box>
-                                    ))}
-                                    {data.strengths?.length > 2 && (
-                                        <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic', fontSize: '0.75rem' }}>
-                                            +{data.strengths.length - 2} more strengths
-                                        </Typography>
-                                    )}
-                                </Box>
-                            ) : (
-                                <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                                    {data.strengths?.map((strength, index) => (
-                                        <Box key={index} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
-                                            <CheckCircle size={16} color={theme.palette.success.main} style={{ marginTop: 2, flexShrink: 0 }} />
-                                            <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.875rem', color: theme.palette.text.secondary }}>
-                                                {strength}
-                                            </Typography>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Improvements */}
-                <Grid item xs={12} md={6}>
-                    <Card sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: theme.palette.divider,
-                        borderRadius: 2,
-                        boxShadow: 'none',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            borderColor: theme.palette.warning.light
-                        }
-                    }}>
-                        <CardHeader
-                            sx={{ p: 2, pb: 1.5 }}
-                            avatar={
-                                <Box sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.warning.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
-                                    <Lightbulb size={20} color={theme.palette.warning.main} />
-                                </Box>
-                            }
-                            title={
-                                <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: '1rem' }}>
-                                    Improvement Opportunities
-                                </Typography>
-                            }
-                            action={
-                                <Button
-                                    size="small"
-                                    onClick={() => toggleSection('improvements')}
-                                    disabled={isPreview}
-                                    sx={{
-                                        minWidth: 'auto',
-                                        px: 2,
-                                        py: 0.5,
-                                        fontSize: '0.8125rem',
-                                        fontWeight: 500,
-                                        textTransform: 'none',
-                                        bgcolor: 'transparent',
-                                        color: theme.palette.warning.main,
-                                        border: '1px solid',
-                                        borderColor: theme.palette.warning.light,
-                                        animation: !expandedSections.improvements && !isPreview ? 'subtle-pulse 3s infinite' : 'none',
-                                        '@keyframes subtle-pulse': {
-                                            '0%': { borderColor: theme.palette.warning.light },
-                                            '50%': { borderColor: theme.palette.warning.main },
-                                            '100%': { borderColor: theme.palette.warning.light }
+                                            gap: 2
                                         },
-                                        '&:hover': {
-                                            bgcolor: alpha(theme.palette.warning.main, 0.08),
-                                            borderColor: theme.palette.warning.main,
-                                            animation: 'none'
+                                        '&.Mui-expanded': {
+                                            borderBottom: `1px solid ${theme.palette.divider}`
                                         }
                                     }}
-                                    endIcon={expandedSections.improvements ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                 >
-                                    {expandedSections.improvements ? 'Hide' : 'View'} {data.improvements?.length || 0} Items
-                                </Button>
-                            }
-                        />
-                        <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
-                            {!expandedSections.improvements ? (
-                                <Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                                        <AlertCircle size={16} color={theme.palette.warning.main} />
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                                            Quick fixes to boost your score
+                                    <Box sx={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 2,
+                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0
+                                    }}>
+                                        {card.icon}
+                                    </Box>
+                                    <Box>
+                                        <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: '1rem', lineHeight: 1.3 }}>
+                                            {card.title}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {card.subtitle}
                                         </Typography>
                                     </Box>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                        {data.improvements?.map((imp, index) => (
-                                            <Chip
-                                                key={index}
-                                                label={imp.category}
-                                                size="small"
-                                                sx={{
-                                                    height: 22,
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 500,
-                                                    bgcolor:
-                                                        imp.impact === 'high' ? alpha(theme.palette.error.main, 0.08) :
-                                                            imp.impact === 'medium' ? alpha(theme.palette.warning.main, 0.08) :
-                                                                alpha(theme.palette.info.main, 0.08),
-                                                    color:
-                                                        imp.impact === 'high' ? theme.palette.error.dark :
-                                                            imp.impact === 'medium' ? theme.palette.warning.dark :
-                                                                theme.palette.info.dark,
-                                                    border: 'none'
-                                                }}
-                                            />
-                                        ))}
-                                    </Box>
-                                </Box>
-                            ) : (
-                                <Box sx={{ maxHeight: 200, overflowY: 'auto' }}>
-                                    {data.improvements?.map((improvement, index) => (
-                                        <Box key={index} sx={{
-                                            mb: 1.5,
-                                            p: 1.25,
-                                            borderRadius: 1,
-                                            bgcolor: theme.palette.grey[50],
-                                            border: '1px solid',
-                                            borderColor: theme.palette.grey[200]
-                                        }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: '0.875rem' }}>
-                                                    {improvement.category}
-                                                </Typography>
-                                                <Chip
-                                                    label={improvement.impact}
-                                                    size="small"
-                                                    sx={{
-                                                        height: 18,
-                                                        fontSize: '0.6875rem',
-                                                        fontWeight: 600,
-                                                        bgcolor:
-                                                            improvement.impact === 'high' ? theme.palette.error.main :
-                                                                improvement.impact === 'medium' ? theme.palette.warning.main :
-                                                                    theme.palette.info.main,
-                                                        color: 'white'
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5, fontSize: '0.8125rem' }}>
-                                                {improvement.suggestion}
-                                            </Typography>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* Career Strategy */}
-                <Grid item xs={12} md={6}>
-                    <Card sx={{
-                        height: '100%',
-                        border: '1px solid',
-                        borderColor: theme.palette.divider,
-                        borderRadius: 2,
-                        boxShadow: 'none',
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            borderColor: theme.palette.info.light
-                        }
-                    }}>
-                        <CardHeader
-                            sx={{ p: 2, pb: 1.5 }}
-                            avatar={
-                                <Box sx={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 1.5,
-                                    bgcolor: alpha(theme.palette.info.main, 0.1),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}>
-                                    <TrendingUp size={20} color={theme.palette.info.main} />
-                                </Box>
-                            }
-                            title={
-                                <Typography variant="subtitle1" fontWeight={600} sx={{ fontSize: '1rem' }}>
-                                    Your Career Strategy
-                                </Typography>
-                            }
-                            action={
-                                <Button
-                                    size="small"
-                                    onClick={() => toggleSection('strategy')}
-                                    disabled={isPreview}
-                                    sx={{
-                                        minWidth: 'auto',
-                                        px: 2,
-                                        py: 0.5,
-                                        fontSize: '0.8125rem',
-                                        fontWeight: 500,
-                                        textTransform: 'none',
-                                        bgcolor: 'transparent',
-                                        color: theme.palette.info.main,
-                                        border: '1px solid',
-                                        borderColor: theme.palette.info.light,
-                                        '&:hover': {
-                                            bgcolor: alpha(theme.palette.info.main, 0.08),
-                                            borderColor: theme.palette.info.main
-                                        }
-                                    }}
-                                    endIcon={expandedSections.strategy ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                >
-                                    {expandedSections.strategy ? 'Hide' : 'Read'} Strategy
-                                </Button>
-                            }
-                        />
-                        <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
-                            {!expandedSections.strategy ? (
-                                <Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-                                        <Sparkles size={16} color={theme.palette.info.main} />
-                                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                                            AI-generated roadmap for your success
-                                        </Typography>
-                                    </Box>
-                                    <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.875rem', color: theme.palette.text.secondary }}>
-                                        {data.strategy?.substring(0, 100)}...
-                                    </Typography>
-                                </Box>
-                            ) : (
-                                <Box>
-                                    <Typography variant="body2" sx={{ lineHeight: 1.6, fontSize: '0.875rem', display: 'block', mb: 1.5, color: theme.palette.text.secondary }}>
-                                        {data.strategy}
-                                    </Typography>
-                                    {data.industryInsights && (
-                                        <Box sx={{
-                                            mt: 1.5,
-                                            p: 1.25,
-                                            borderRadius: 1,
-                                            bgcolor: alpha(theme.palette.info.main, 0.08),
-                                            border: '1px solid',
-                                            borderColor: alpha(theme.palette.info.main, 0.2)
-                                        }}>
-                                            <Typography variant="body2" sx={{ lineHeight: 1.5, fontSize: '0.8125rem' }}>
-                                                <strong>Market Insight:</strong> {data.industryInsights}
-                                            </Typography>
-                                        </Box>
-                                    )}
-                                </Box>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Grid>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ p: 2.5 }}>
+                                    {card.content}
+                                </AccordionDetails>
+                            </Accordion>
+                        </motion.div>
+                    </Grid>
+                ))}
             </Grid>
 
             {/* Additional Insights - Tabbed Interface */}
             <Card sx={{
+                mt: 2,
                 border: '1px solid',
                 borderColor: theme.palette.divider,
                 borderRadius: 2,

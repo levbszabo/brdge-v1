@@ -3922,3 +3922,241 @@ def analyze_resume_for_career(resume_path: str) -> Dict[str, Any]:
             "strategy": "Please try uploading your resume again.",
             "error": str(e),
         }
+
+
+def generate_career_strategy_ticket(
+    resume_analysis_json: Dict[str, Any],
+    raw_resume_text: str,
+    chat_transcript: List[Dict[str, Any]],
+    finalized_goals: Dict[str, Any] = None,
+) -> Dict[str, Any]:
+    """
+    Generate a career strategy proposal ticket using AI analysis with V7 ABC Playbook prompt
+
+    Args:
+        resume_analysis_json: The structured resume analysis results
+        raw_resume_text: The full text content of the resume
+        chat_transcript: List of conversation messages between user and AI
+        finalized_goals: Optional dictionary containing user's finalized goals from ticket editing
+
+    Returns:
+        Dictionary containing the structured career strategy ticket with ABC Playbook framework
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        # Add finalized goals to the input data if provided
+        if finalized_goals:
+            logger.info(f"Using finalized goals from user editing: {finalized_goals}")
+
+        # Create the V7 system prompt - "ABC Playbook" Proposal Generator
+        system_prompt = """# ROLE & GOAL
+You are an expert-level Career Strategist and a world-class Proposal Writer. Your primary function is to act as the final step in an automated client onboarding funnel. Your task is to synthesize all available client data (resume analysis, full resume text, and chat transcript) and generate a structured JSON object representing a compelling **"Account-Based Career (ABC) Playbook Proposal."** This ticket is the final, high-level proposal the client will review before they pay. It must be persuasive, clearly outline the value and deliverables, and compel the user to purchase the full, custom-built playbook.
+
+# 1. CONTEXT: INPUT DATA STRUCTURE
+You will receive three JSON objects as input: `resumeAnalysisJSON`, `rawResumeText`, and `chatTranscript`.
+- `resumeAnalysisJSON`: High-level summary of resume strengths and weaknesses.
+- `rawResumeText`: The full text of the client's resume for deeper analysis.
+- `chatTranscript`: Conversation history between the client and AI career advisor.
+
+# 2. OUTPUT STRUCTURE
+Your response must be a valid JSON object matching this exact schema:
+
+```json
+{
+  "client_info": {
+    "name": "First Last",
+    "target_role": "Specific Job Title",
+    "target_locations": ["City, State", "Remote"],
+    "salary_goal": "$XX,000+",
+    "suggested_salary_range": "$XX,000-$XX,000",
+    "key_challenges": ["Challenge 1", "Challenge 2", "Challenge 3"]
+  },
+  "strategy_summary": "2-3 sentence strategic overview of their career situation and our ABC Playbook solution",
+  "deliverable_previews": {
+    "resume_tune_up_preview": "We don't just proofread. We upgrade your core asset to get past AI screeners and impress the human hiring managers who matter. [Specific improvements for this person's resume]",
+    "opportunity_matrix_preview": "You're not just getting a list of jobs. You'll receive a curated intelligence report of 50+ high-value companies and the specific decision-makers to contact, including 'hidden market' opportunities that aren't on job boards. [Specific to their target role/industry]",
+    "outreach_cadence_preview": "We provide you with the professionally written, non-generic messaging to start meaningful conversations on both email and LinkedIn (phone, instagram if applicable). [Specific messaging strategy for their background]",
+    "action_playbook_preview": "You get a step-by-step GPS for the first two weeks of your campaign, telling you exactly who to contact, on which channel, and with what message each day. [Specific timeline for their situation]"
+  },
+  "internal_playbook_notes": {
+    "resume_optimization_focus": ["Specific areas to improve on their resume"],
+    "target_company_types": ["Types of companies to research for their matrix"],
+    "messaging_angles": ["Key value propositions to highlight in outreach"],
+    "timeline_priorities": ["Most important actions for first 2 weeks"]
+  }
+}
+```
+
+# 3. INSTRUCTIONS FOR EACH OUTPUT FIELD
+
+## client_info
+- **name**: Extract from resume or chat. If unclear, use "Career Accelerator Client"
+- **target_role**: Be specific (e.g., "Senior Product Manager" not just "Product Manager")
+- **target_locations**: Include 1-3 realistic locations from resume/chat. Always include "Remote" as an option
+- **salary_goal**: Provide a realistic range based on role/experience (e.g., "$120,000+")
+- **suggested_salary_range**: More specific range for negotiation (e.g., "$115,000-$135,000")
+- **key_challenges**: Identify 3 specific obstacles preventing them from landing their target role
+
+## strategy_summary
+Write 2-3 compelling sentences that:
+- Acknowledge their current situation/frustration
+- Position our ABC Playbook as the strategic solution
+- Create urgency around taking action now
+
+## deliverable_previews
+Each preview MUST start with the exact framework text provided, then add specific details:
+- **resume_tune_up_preview**: Start with "We don't just proofread..." then add specific improvements for their resume
+- **opportunity_matrix_preview**: Start with "You're not just getting a list of jobs..." then add industry/role-specific targeting
+- **outreach_cadence_preview**: Start with "You're not just getting templates..." then add messaging strategy details
+- **action_playbook_preview**: Start with "You're not just getting advice..." then add specific timeline elements
+
+## internal_playbook_notes
+These are internal notes for our team to execute the playbook:
+- **resume_optimization_focus**: 3-5 specific areas to improve on their resume
+- **target_company_types**: 3-5 types of companies to research for their opportunity matrix
+- **messaging_angles**: 3-5 key value propositions to highlight in outreach messages
+- **timeline_priorities**: 3-5 most important actions for the first 2 weeks
+
+# 4. WRITING STYLE & FRAMEWORK
+- Use the "Account-Based Career" terminology throughout
+- Professional but conversational tone
+- Results-focused and hyper-specific to their situation
+- Create excitement about the transformation
+- Use power words: "strategic," "targeted," "intelligence," "GPS," "non-generic"
+- Frame everything around the outcome, not just the deliverable
+- Emphasize the "done-for-you" nature of the system
+
+# 5. PERSONALIZATION REQUIREMENTS
+Every field must feel custom-built for this specific person:
+- Reference their specific industry/role in examples
+- Mention their experience level appropriately
+- Address their unique challenges and goals
+- Use language that matches their professional level
+- Include realistic salary ranges for their market/role"""
+
+        # Format the input data for the prompt
+        input_data = f"""
+resumeAnalysisJSON: {json.dumps(resume_analysis_json, indent=2)}
+
+rawResumeText: "{raw_resume_text}"
+
+chatTranscript: {json.dumps(chat_transcript, indent=2)}
+"""
+
+        # Add finalized goals if provided
+        if finalized_goals:
+            input_data += f"\nfinalizedGoals: {json.dumps(finalized_goals, indent=2)}"
+
+        # Generate the career strategy ticket
+        full_prompt = f"{system_prompt}\n\n{input_data}"
+
+        response = model.generate_content(full_prompt)
+
+        # Parse the JSON response
+        try:
+            ticket_data = json.loads(response.text)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse Gemini response as JSON: {e}")
+            logger.error(f"Raw response: {response.text}")
+            # Return a fallback structure matching V7 schema
+            return {
+                "client_info": {
+                    "name": resume_analysis_json.get("candidateName", "Candidate"),
+                    "target_role": "Professional Role",
+                    "target_locations": ["Location TBD"],
+                    "salary_goal": None,
+                    "suggested_salary_range": "$50,000-$80,000",
+                    "key_challenges": [
+                        "Finding the right opportunities",
+                        "Standing out in applications",
+                        "Getting responses from hiring managers",
+                    ],
+                },
+                "strategy_summary": "We'll help you create a strategic Account-Based Career (ABC) Playbook approach to your job search that gets results.",
+                "deliverable_previews": {
+                    "resume_tune_up_preview": "We don't just proofread. We upgrade your core asset to get past AI screeners and impress the human hiring managers who matter. Professional optimization of your resume to highlight your strongest qualifications.",
+                    "opportunity_matrix_preview": "You're not just getting a list of jobs. You'll receive a curated intelligence report of 50+ high-value companies and the specific decision-makers to contact, including 'hidden market' opportunities that aren't on job boards.",
+                    "outreach_cadence_preview": "You're not just getting templates. We provide you with the professionally written, non-generic messaging to start meaningful conversations on both email and LinkedIn.",
+                    "action_playbook_preview": "You're not just getting advice. You get a step-by-step GPS for the first two weeks of your campaign, telling you exactly who to contact, on which channel, and with what message each day.",
+                },
+                "internal_playbook_notes": {
+                    "resume_optimization_focus": ["General resume improvements needed"],
+                    "target_company_types": ["Companies matching candidate profile"],
+                    "messaging_angles": ["Professional background and experience"],
+                    "timeline_priorities": [
+                        "Resume optimization",
+                        "Company research",
+                        "Initial outreach",
+                    ],
+                },
+            }
+
+        # Validate the required structure
+        required_keys = [
+            "client_info",
+            "strategy_summary",
+            "deliverable_previews",
+            "internal_playbook_notes",
+        ]
+        if not all(key in ticket_data for key in required_keys):
+            logger.error("Generated ticket missing required keys")
+            raise ValueError("Invalid ticket structure generated")
+
+        # Validate client_info structure
+        client_info_keys = ["name", "target_role", "target_locations", "key_challenges"]
+        if not all(key in ticket_data["client_info"] for key in client_info_keys):
+            logger.error("Generated ticket client_info missing required keys")
+
+        # Validate deliverable_previews structure
+        deliverable_keys = [
+            "resume_tune_up_preview",
+            "opportunity_matrix_preview",
+            "outreach_cadence_preview",
+            "action_playbook_preview",
+        ]
+        if not all(
+            key in ticket_data["deliverable_previews"] for key in deliverable_keys
+        ):
+            logger.error("Generated ticket deliverable_previews missing required keys")
+
+        logger.info(
+            f"Successfully generated career strategy ticket for: {ticket_data['client_info'].get('name', 'Unknown')}"
+        )
+        return ticket_data
+
+    except Exception as e:
+        logger.error(f"Error generating career strategy ticket: {str(e)}")
+        # Return a basic fallback structure matching V7 schema
+        return {
+            "client_info": {
+                "name": resume_analysis_json.get("candidateName", "Candidate"),
+                "target_role": "Professional Role",
+                "target_locations": ["Location TBD"],
+                "salary_goal": None,
+                "suggested_salary_range": "$50,000-$80,000",
+                "key_challenges": [
+                    "Career advancement",
+                    "Job search optimization",
+                    "Getting noticed by employers",
+                ],
+            },
+            "strategy_summary": "We'll create a comprehensive Account-Based Career (ABC) Playbook acceleration strategy tailored to your goals.",
+            "deliverable_previews": {
+                "resume_tune_up_preview": "We don't just proofread. We upgrade your core asset to get past AI screeners and impress the human hiring managers who matter. Professional resume optimization to showcase your strongest qualifications and achievements.",
+                "opportunity_matrix_preview": "You're not just getting a list of jobs. You'll receive a curated intelligence report of 50+ high-value companies and the specific decision-makers to contact, including 'hidden market' opportunities that aren't on job boards.",
+                "outreach_cadence_preview": "You're not just getting templates. We provide you with the professionally written, non-generic messaging to start meaningful conversations on both email and LinkedIn.",
+                "action_playbook_preview": "You're not just getting advice. You get a step-by-step GPS for the first two weeks of your campaign, telling you exactly who to contact, on which channel, and with what message each day.",
+            },
+            "internal_playbook_notes": {
+                "resume_optimization_focus": ["General resume improvements needed"],
+                "target_company_types": ["Companies matching candidate profile"],
+                "messaging_angles": ["Professional background and experience"],
+                "timeline_priorities": [
+                    "Resume optimization",
+                    "Company research",
+                    "Initial outreach",
+                ],
+            },
+        }

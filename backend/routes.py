@@ -39,6 +39,7 @@ from models import (
     PersonalizationTemplate,  # Add PersonalizationTemplate model
     PersonalizationRecord,  # Add PersonalizationRecord model
     ResumeAnalysis,  # Add ResumeAnalysis model
+    CareerLead,  # Add CareerLead model
 )
 from utils import (
     clone_voice_helper,
@@ -3893,6 +3894,265 @@ def submit_service_lead():
         )
 
 
+@app.route("/api/leads", methods=["POST"])
+@cross_origin()
+def submit_career_lead():
+    """Handle career accelerator lead submissions with comprehensive logging"""
+    try:
+        # Check if this is a multipart form (has files) or JSON
+        if request.content_type and "multipart/form-data" in request.content_type:
+            # Handle multipart form data with potential file upload
+            name = request.form.get("name")
+            email = request.form.get("email")
+            phone = request.form.get("phone")
+            source = request.form.get("source", "career_accelerator")
+            urgency = request.form.get("urgency")
+            linkedinUrl = request.form.get("linkedinUrl")
+            targetJobTitle = request.form.get("targetJobTitle")
+            biggestChallenge = request.form.get("biggestChallenge")
+
+            # Parse JSON fields if they exist
+            resume_analysis_id = request.form.get("resume_analysis_id")
+            personalization_id = request.form.get("personalization_id")
+
+            # Parse JSON strings for complex fields
+            try:
+                finalized_goals = json.loads(request.form.get("finalized_goals", "{}"))
+            except (json.JSONDecodeError, TypeError):
+                finalized_goals = {}
+
+            try:
+                career_ticket_data = json.loads(
+                    request.form.get("career_ticket_data", "null")
+                )
+            except (json.JSONDecodeError, TypeError):
+                career_ticket_data = None
+
+            # Handle file upload if present
+            resume_file = request.files.get("resumeFile")
+            resume_s3_key = None
+
+            if resume_file and resume_file.filename:
+                # Validate file type
+                allowed_extensions = [".pdf", ".docx"]
+                file_extension = os.path.splitext(resume_file.filename)[1].lower()
+                if file_extension not in allowed_extensions:
+                    return (
+                        jsonify(
+                            {
+                                "error": "Invalid file type. Please upload a PDF or DOCX file"
+                            }
+                        ),
+                        400,
+                    )
+
+                # Validate file size (max 10MB)
+                resume_file.seek(0, os.SEEK_END)
+                file_size = resume_file.tell()
+                resume_file.seek(0)
+
+                if file_size > 10 * 1024 * 1024:
+                    return jsonify({"error": "File size must be less than 10MB"}), 400
+
+                # Generate unique filename and S3 key
+                original_filename = secure_filename(resume_file.filename)
+                unique_filename = f"{uuid.uuid4()}_{original_filename}"
+                resume_s3_key = f"career-leads/{email}/{unique_filename}"
+
+                # Save file temporarily
+                temp_path = f"/tmp/{unique_filename}"
+                resume_file.save(temp_path)
+
+                try:
+                    # Upload to S3
+                    s3_client.upload_file(
+                        temp_path,
+                        S3_BUCKET,
+                        resume_s3_key,
+                        ExtraArgs={
+                            "ContentType": (
+                                "application/pdf"
+                                if file_extension == ".pdf"
+                                else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            )
+                        },
+                    )
+
+                    logger.info(f"Uploaded resume to S3: {resume_s3_key}")
+
+                    # Optional: Trigger resume analysis if not already provided
+                    if not resume_analysis_id:
+                        try:
+                            # Create resume analysis record
+                            analysis = ResumeAnalysis(
+                                user_id=None,  # Anonymous submission
+                                session_id=f"career_lead_{email}",
+                                filename=original_filename,
+                                file_size=file_size,
+                                s3_key=resume_s3_key,
+                                analysis_status="processing",
+                            )
+                            db.session.add(analysis)
+                            db.session.flush()  # Get the ID
+
+                            # Analyze resume using Gemini
+                            analysis_results = gemini.analyze_resume_for_career(
+                                temp_path
+                            )
+
+                            # Update with results
+                            analysis.analysis_results = analysis_results
+                            analysis.analysis_status = "completed"
+                            resume_analysis_id = analysis.id
+
+                            logger.info(
+                                f"Created resume analysis {resume_analysis_id} for career lead"
+                            )
+
+                        except Exception as analysis_error:
+                            logger.error(
+                                f"Resume analysis failed for career lead: {str(analysis_error)}"
+                            )
+                            # Don't fail the entire submission if analysis fails
+
+                    # Clean up temp file
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+
+                except Exception as s3_error:
+                    logger.error(f"S3 upload failed for career lead: {str(s3_error)}")
+                    # Clean up temp file
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+                    # Don't fail the entire submission if S3 upload fails
+                    resume_s3_key = None
+        else:
+            # Handle JSON data (backward compatibility)
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data provided"}), 400
+
+            name = data.get("name")
+            email = data.get("email")
+            phone = data.get("phone")
+            source = data.get("source", "career_accelerator")
+            urgency = data.get("urgency")
+            linkedinUrl = data.get("linkedinUrl")
+            targetJobTitle = data.get("targetJobTitle")
+            biggestChallenge = data.get("biggestChallenge")
+
+            # AI Analysis IDs
+            resume_analysis_id = data.get("resume_analysis_id")
+            personalization_id = data.get("personalization_id")
+
+            # User's finalized goals
+            finalized_goals = data.get("finalized_goals", {})
+
+            # Career ticket data
+            career_ticket_data = data.get("career_ticket_data")
+            resume_s3_key = None
+
+        # Validate required email field
+        if not email:
+            return jsonify({"error": "Email is required"}), 400
+
+        # Validate email format
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_regex, email):
+            return jsonify({"error": "Invalid email format"}), 400
+
+        # Generate S3 URL if file was uploaded
+        resume_s3_url = None
+        if resume_s3_key:
+            resume_s3_url = (
+                f"https://{S3_BUCKET}.s3.{S3_REGION}.amazonaws.com/{resume_s3_key}"
+            )
+
+        # Create new career lead with all the data
+        lead = CareerLead(
+            name=name,
+            email=email,
+            phone=phone,
+            linkedin_url=linkedinUrl,
+            target_job_title=targetJobTitle,
+            biggest_challenge=biggestChallenge,
+            resume_s3_key=resume_s3_key,
+            resume_s3_url=resume_s3_url,
+            source=source,
+            urgency=urgency,
+            resume_analysis_id=resume_analysis_id,
+            personalization_id=personalization_id,
+            finalized_goals=finalized_goals,
+            career_ticket_data=career_ticket_data,
+            status="new",
+        )
+
+        db.session.add(lead)
+        db.session.commit()
+
+        # Log the comprehensive submission
+        logger.info(f"📊 Career Lead Submitted - ID: {lead.id}")
+        logger.info(f"📧 Email: {email}")
+        logger.info(f"📋 Source: {source}")
+        logger.info(f"🔗 Resume Analysis ID: {resume_analysis_id}")
+        logger.info(f"🎯 Personalization ID: {personalization_id}")
+        logger.info(f"📝 Has Finalized Goals: {bool(finalized_goals)}")
+        logger.info(f"🎫 Has Career Ticket: {bool(career_ticket_data)}")
+        logger.info(f"📎 Resume S3 Key: {resume_s3_key}")
+
+        # Send enhanced email notification
+        email_content = {
+            "name": name or "Not provided",
+            "email": email,
+            "phone": phone or "Not provided",
+            "linkedinUrl": linkedinUrl or "Not provided",
+            "targetJobTitle": targetJobTitle or "Not provided",
+            "biggestChallenge": biggestChallenge or "Not provided",
+            "source": source,
+            "urgency": urgency or "Not specified",
+            "resume_analysis_id": resume_analysis_id,
+            "personalization_id": personalization_id,
+            "finalized_goals": finalized_goals,
+            "career_ticket_data": career_ticket_data,
+            "lead_id": lead.id,
+            "resume_uploaded": resume_s3_key is not None,
+            "resume_s3_key": resume_s3_key,
+            "resume_s3_url": resume_s3_url,
+        }
+
+        send_notification_email(
+            subject=f"🚀 New Career Accelerator Lead - {email}",
+            content=email_content,
+            template_type="career_lead",
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Thank you! Your career strategy submission has been received. Our team will contact you within 24 hours.",
+                    "lead_id": lead.id,
+                    "resume_uploaded": resume_s3_key is not None,
+                    "resume_analysis_id": resume_analysis_id,
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error submitting career lead: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Failed to submit your information. Please try again.",
+                }
+            ),
+            500,
+        )
+
+
 def send_notification_email(
     subject,
     content,
@@ -3948,6 +4208,74 @@ def send_notification_email(
                     <p><strong>Application ID (DB):</strong> {content.get('application_id', 'N/A')}</p>
                     <p><strong>Submitted at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
                     <p>The resume is attached to this email.</p>
+                </body>
+            </html>
+            """
+        elif template_type == "career_lead":
+            # Create comprehensive career lead email template
+            finalized_goals = content.get("finalized_goals", {})
+            target_roles = finalized_goals.get("target_roles", [])
+            target_locations = finalized_goals.get("target_locations", [])
+            salary_goal = finalized_goals.get("salary_goal", "")
+            notes = finalized_goals.get("notes", "")
+
+            career_ticket = content.get("career_ticket_data", {})
+            has_ticket = bool(career_ticket)
+
+            resume_uploaded = content.get("resume_uploaded", False)
+            resume_s3_key = content.get("resume_s3_key")
+
+            html_content = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h2>🚀 New Career Accelerator Lead</h2>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📋 Contact Information</h3>
+                        <p><strong>Name:</strong> {content['name']}</p>
+                        <p><strong>Email:</strong> <a href="mailto:{content['email']}">{content['email']}</a></p>
+                        <p><strong>Phone:</strong> {content['phone']}</p>
+                        <p><strong>LinkedIn:</strong> {content.get('linkedinUrl', 'Not provided')}</p>
+                        <p><strong>Source:</strong> {content['source']}</p>
+                        <p><strong>Urgency:</strong> {content['urgency']}</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>💼 Job Search Details</h3>
+                        <p><strong>Target Job Title:</strong> {content.get('targetJobTitle', 'Not specified')}</p>
+                        <p><strong>Biggest Challenge:</strong> {content.get('biggestChallenge', 'Not specified')}</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📄 Resume & Analysis</h3>
+                        <p><strong>Resume Uploaded:</strong> {'✅ Yes' if resume_uploaded else '❌ No'}</p>
+                        {f'<p><strong>S3 Location:</strong> {resume_s3_key}</p>' if resume_s3_key else ''}
+                        {f'<p><strong>📎 Resume Download:</strong> <a href="{content.get("resume_s3_url")}">Download Resume</a></p>' if content.get('resume_s3_url') else ''}
+                        <p><strong>Resume Analysis ID:</strong> {content['resume_analysis_id'] or 'None'}</p>
+                        <p><strong>Personalization ID:</strong> {content['personalization_id'] or 'None'}</p>
+                        <p><strong>Lead ID (Database):</strong> {content['lead_id']}</p>
+                    </div>
+                    
+                    <div style="background-color: #f0f8e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>🎯 Finalized Goals</h3>
+                        <p><strong>Target Roles:</strong> {', '.join(target_roles) if target_roles else 'Not specified'}</p>
+                        <p><strong>Target Locations:</strong> {', '.join(target_locations) if target_locations else 'Not specified'}</p>
+                        <p><strong>Salary Goal:</strong> {salary_goal or 'Not specified'}</p>
+                        <p><strong>Additional Notes:</strong> {notes or 'None'}</p>
+                    </div>
+                    
+                    <div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>🎫 Career Strategy Ticket</h3>
+                        <p><strong>Generated:</strong> {'Yes' if has_ticket else 'No'}</p>
+                        {f'<p><strong>Strategy Summary Available:</strong> {"Yes" if career_ticket.get("strategy_summary") else "No"}</p>' if has_ticket else ''}
+                        {f'<p><strong>Client Info Available:</strong> {"Yes" if career_ticket.get("client_info") else "No"}</p>' if has_ticket else ''}
+                    </div>
+                    
+                    <div style="margin: 30px 0; padding: 20px; border-left: 4px solid #007AFF;">
+                        <p><strong>Submitted at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+                        <p><em>This lead has gone through the complete AI career strategist flow and is ready for follow-up.</em></p>
+                        {f'<p><em>📎 Resume was uploaded and {"analyzed" if content.get("resume_analysis_id") else "stored"} for follow-up.</em></p>' if resume_uploaded else ''}
+                    </div>
                 </body>
             </html>
             """
@@ -4841,7 +5169,7 @@ def create_personalization_record(user, brdge_id, template_id):
             template_id=template_id,
             unique_id=unique_id,
             data=record_data,
-            metadata=security_metadata,
+            record_metadata=security_metadata,
             created_at=datetime.utcnow(),
         )
 
@@ -5023,7 +5351,7 @@ def get_personalization_data(unique_id):
         return jsonify({"data": {}}), 200
 
     # Security validation
-    metadata = record.metadata or {}
+    metadata = record.record_metadata or {}
 
     # Check expiration
     expires_at_str = metadata.get("expires_at")
@@ -5072,7 +5400,7 @@ def get_personalization_data(unique_id):
 
     # Keep only last 10 access records
     metadata["access_history"] = metadata["access_history"][-10:]
-    record.metadata = metadata
+    record.record_metadata = metadata
 
     db.session.commit()
 
@@ -5806,7 +6134,7 @@ def create_demo_personalization_record(brdge_id):
             template_id=template.id,
             unique_id=unique_id,
             data=record_data,
-            metadata=security_metadata,
+            record_metadata=security_metadata,
             created_at=datetime.utcnow(),
         )
 
@@ -5852,11 +6180,11 @@ def cleanup_expired_personalization_records():
 
         # Query all demo records
         demo_records = PersonalizationRecord.query.filter(
-            PersonalizationRecord.metadata.op("->>")("is_demo_record") == "true"
+            PersonalizationRecord.record_metadata.op("->>")("is_demo_record") == "true"
         ).all()
 
         for record in demo_records:
-            metadata = record.metadata or {}
+            metadata = record.record_metadata or {}
             expires_at_str = metadata.get("expires_at")
 
             if expires_at_str:
@@ -5898,3 +6226,255 @@ def cleanup_expired_personalization_records():
         db.session.rollback()
         logger.error(f"Error during personalization cleanup: {e}")
         return jsonify({"error": "Cleanup failed"}), 500
+
+
+@app.route("/api/generate-ticket", methods=["POST"])
+@cross_origin()
+def generate_career_strategy_ticket():
+    """Generate a career strategy proposal ticket using AI analysis"""
+    try:
+        data = request.get_json()
+
+        # New primary method: Check for direct resume_analysis_id
+        resume_analysis_id = data.get("resume_analysis_id")
+        personalization_id = data.get("personalization_id")
+        finalized_goals = data.get("finalized_goals", {})
+
+        logger.info(
+            f"Generate ticket request - Analysis ID: {resume_analysis_id}, Personalization ID: {personalization_id}"
+        )
+
+        # Step 1: Find resume analysis using direct ID first
+        resume_analysis = None
+
+        if resume_analysis_id:
+            # Primary method: Direct lookup by resume_analysis_id
+            resume_analysis = ResumeAnalysis.query.filter_by(
+                id=resume_analysis_id, analysis_status="completed"
+            ).first()
+            logger.info(
+                f"Direct ID lookup: Found resume analysis: {resume_analysis is not None}"
+            )
+
+        # Fallback: Use personalization_id if no direct ID provided
+        if not resume_analysis and personalization_id:
+            # Step 2: Find the personalization record
+            personalization_record = PersonalizationRecord.query.filter_by(
+                unique_id=personalization_id[:12]
+            ).first()
+
+            if not personalization_record:
+                return jsonify({"error": "Personalization record not found"}), 404
+
+            # Try to get current user (if authenticated)
+            current_user = None
+            try:
+                if "Authorization" in request.headers:
+                    current_user = get_current_user()
+            except:
+                pass
+
+            # Build query for resume analysis - try multiple strategies
+            # Strategy 1: Try to find by user ID if authenticated
+            if current_user:
+                resume_analysis = (
+                    ResumeAnalysis.query.filter_by(analysis_status="completed")
+                    .filter(ResumeAnalysis.user_id == current_user.id)
+                    .order_by(ResumeAnalysis.created_at.desc())
+                    .first()
+                )
+                logger.info(
+                    f"Strategy 1 (user_id): Found resume analysis: {resume_analysis is not None}"
+                )
+
+            # Strategy 2: Try to find by session ID pattern
+            if not resume_analysis:
+                resume_analysis = (
+                    ResumeAnalysis.query.filter_by(analysis_status="completed")
+                    .filter(
+                        ResumeAnalysis.session_id.like(f"%{personalization_id[:8]}%")
+                    )
+                    .order_by(ResumeAnalysis.created_at.desc())
+                    .first()
+                )
+                logger.info(
+                    f"Strategy 2 (session_id pattern): Found resume analysis: {resume_analysis is not None}"
+                )
+
+            # Strategy 3: If still nothing, try to find the most recent completed analysis (fallback)
+            if not resume_analysis:
+                resume_analysis = (
+                    ResumeAnalysis.query.filter_by(analysis_status="completed")
+                    .order_by(ResumeAnalysis.created_at.desc())
+                    .first()
+                )
+                logger.info(
+                    f"Strategy 3 (fallback - most recent): Found resume analysis: {resume_analysis is not None}"
+                )
+
+        if not resume_analysis:
+            # Debug information
+            total_analyses = ResumeAnalysis.query.count()
+            completed_analyses = ResumeAnalysis.query.filter_by(
+                analysis_status="completed"
+            ).count()
+
+            logger.info(
+                f"Resume analysis debug - Total: {total_analyses}, Completed: {completed_analyses}"
+            )
+
+            return (
+                jsonify(
+                    {
+                        "error": "No completed resume analysis found. Please upload and analyze your resume first.",
+                        "debug_info": {
+                            "total_analyses": total_analyses,
+                            "completed_analyses": completed_analyses,
+                            "resume_analysis_id_provided": resume_analysis_id
+                            is not None,
+                            "personalization_id": personalization_id,
+                        },
+                    }
+                ),
+                404,
+            )
+
+        # Step 2: Get personalization record and conversation logs if available
+        personalization_record = None
+        conversation_logs = []
+
+        if personalization_id:
+            personalization_record = PersonalizationRecord.query.filter_by(
+                unique_id=personalization_id[:12]
+            ).first()
+
+            if personalization_record:
+                # Fetch conversation logs for this personalization record
+                conversation_logs = (
+                    ConversationLogs.query.filter_by(
+                        personalization_record_id=personalization_record.id
+                    )
+                    .order_by(ConversationLogs.timestamp.asc())
+                    .all()
+                )
+
+        # Step 3: Download the actual resume from S3
+        resume_text = ""
+        try:
+            s3_response = s3_client.get_object(
+                Bucket=S3_BUCKET, Key=resume_analysis.s3_key
+            )
+            resume_content = s3_response["Body"].read()
+
+            # If it's a PDF, we'll need to extract text (simplified approach)
+            if resume_analysis.s3_key.endswith(".pdf"):
+                # For now, we'll use a placeholder. In production, you'd want to use a PDF text extraction library
+                resume_text = f"[PDF Resume Content - File: {resume_analysis.filename}]"
+            else:
+                # Assume it's a text-based format
+                resume_text = resume_content.decode("utf-8", errors="ignore")
+
+        except Exception as e:
+            logger.error(f"Error downloading resume from S3: {str(e)}")
+            resume_text = (
+                f"[Resume content unavailable - File: {resume_analysis.filename}]"
+            )
+
+        # Step 4: Format the chat transcript
+        chat_transcript = []
+
+        if conversation_logs:
+            # Use actual conversation logs if available
+            for log in conversation_logs:
+                chat_transcript.append(
+                    {
+                        "role": log.role,
+                        "content": log.message,
+                        "timestamp": (
+                            log.timestamp.isoformat() if log.timestamp else None
+                        ),
+                    }
+                )
+        else:
+            # Create a simulated conversation based on personalization data or finalized goals
+            user_data = {}
+            if personalization_record and personalization_record.data:
+                user_data = personalization_record.data
+
+            # Override with finalized goals if provided
+            if finalized_goals:
+                user_data.update(finalized_goals)
+
+            # Extract key information from user data
+            user_goals = []
+            if user_data.get("name"):
+                user_goals.append(f"My name is {user_data['name']}")
+            if user_data.get("email"):
+                user_goals.append(f"You can reach me at {user_data['email']}")
+            if user_data.get("target_role"):
+                user_goals.append(
+                    f"I'm looking for opportunities in {user_data['target_role']}"
+                )
+            if user_data.get("experience_level"):
+                user_goals.append(
+                    f"I have {user_data['experience_level']} experience level"
+                )
+            if user_data.get("location"):
+                user_goals.append(
+                    f"I'm looking for positions in {user_data['location']}"
+                )
+            if user_data.get("salary_expectation"):
+                user_goals.append(
+                    f"My salary expectation is {user_data['salary_expectation']}"
+                )
+
+            # Create a simulated conversation
+            chat_transcript = [
+                {
+                    "role": "user",
+                    "content": f"Hi, I'm interested in getting help with my job search. {' '.join(user_goals) if user_goals else 'I want to find better career opportunities and need guidance on how to reach the right people in my target companies.'}",
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+                {
+                    "role": "assistant",
+                    "content": "I'd be happy to help you create a targeted job search strategy. Based on your background, I can help you identify the right companies and contacts, craft compelling outreach messages, and create an action plan to get noticed by hiring managers.",
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            ]
+
+        # Step 5: Call Gemini to generate the career strategy ticket with finalized goals
+        ticket_response = gemini.generate_career_strategy_ticket(
+            resume_analysis_json=resume_analysis.analysis_results,
+            raw_resume_text=resume_text,
+            chat_transcript=chat_transcript,
+            finalized_goals=finalized_goals,
+        )
+
+        if not ticket_response:
+            return jsonify({"error": "Failed to generate career strategy ticket"}), 500
+
+        # Step 6: Return the structured response
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "ticket": ticket_response,
+                    "metadata": {
+                        "personalization_id": personalization_id,
+                        "resume_analysis_id": resume_analysis.id,
+                        "conversation_logs_count": len(conversation_logs),
+                        "used_simulated_conversation": len(conversation_logs) == 0,
+                        "used_finalized_goals": bool(finalized_goals),
+                        "finalized_goals_count": (
+                            len(finalized_goals) if finalized_goals else 0
+                        ),
+                        "generated_at": datetime.utcnow().isoformat(),
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating career strategy ticket: {str(e)}")
+        return jsonify({"error": f"Failed to generate ticket: {str(e)}"}), 500

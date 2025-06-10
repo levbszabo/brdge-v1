@@ -98,7 +98,12 @@ function EditBrdgePage() {
                         }
                     } catch (err) {
                         console.error('Error fetching user data:', err.message || err);
+                        // Set a fallback anonymous user ID if user fetch fails
+                        setCurrentUserId(`anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
                     }
+                } else {
+                    // Set a fallback anonymous user ID if no auth token
+                    setCurrentUserId(`anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
                 }
 
                 // Check if this brdge is part of a course
@@ -243,12 +248,32 @@ function EditBrdgePage() {
                 zIndex: 1,
                 WebkitOverflowScrolling: 'touch'
             }}>
-                <AgentConnector
-                    brdgeId={id}
-                    agentType="edit"
-                    token={authToken}
-                    userId={currentUserId}
-                />
+                {loading || error ? (
+                    <Box sx={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: error ? 'error.main' : 'white',
+                        gap: 2
+                    }}>
+                        {error ? (
+                            <Typography variant="h6">Error: {error}</Typography>
+                        ) : (
+                            <>
+                                <Typography variant="h6">Loading...</Typography>
+                            </>
+                        )}
+                    </Box>
+                ) : (
+                    <AgentConnector
+                        brdgeId={id}
+                        agentType="edit"
+                        token={authToken}
+                        userId={currentUserId}
+                    />
+                )}
             </Box>
 
             {/* Premium Access Dialog */}
