@@ -149,6 +149,7 @@ const ResumeAnalyzer = ({
     setPersonalizationId,
     isCreatingPersonalization,
     setIsCreatingPersonalization,
+    isMobile = false,
     onResumeAnalysisComplete
 }) => {
     const theme = useTheme();
@@ -883,6 +884,7 @@ const ResumeAnalyzer = ({
                                 handleAIStrategistClick={handleAIStrategistClick}
                                 isCreatingPersonalization={isCreatingPersonalization}
                                 analysisComplete={analysisComplete}
+                                isMobile={isMobile}
                             />
                         </motion.div>
                     )}
@@ -957,6 +959,7 @@ const ResumeAnalyzer = ({
                                 handleAIStrategistClick={handleAIStrategistClick}
                                 isCreatingPersonalization={isCreatingPersonalization}
                                 analysisComplete={analysisComplete}
+                                isMobile={isMobile}
                             />
                         </motion.div>
                     )}
@@ -982,7 +985,8 @@ const AnalysisResults = ({
     setCustomTitles,
     handleAIStrategistClick,
     isCreatingPersonalization = false,
-    analysisComplete = false
+    analysisComplete = false,
+    isMobile = false
 }) => {
     const theme = useTheme();
 
@@ -1256,10 +1260,10 @@ const AnalysisResults = ({
                                 }}
                                 onClick={handleAIStrategistClick}
                             >
-                                {isCreatingPersonalization ? 'Creating Session...' : 'Talk to AI Strategist'}
+                                {isCreatingPersonalization ? 'Creating Session...' : (isMobile ? 'Generate My Plan' : 'Talk to AI Strategist')}
                             </Button>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'center' }}>
-                                This is your recommended next step
+                                {isMobile ? 'Generate your personalized career strategy' : 'This is your recommended next step'}
                             </Typography>
                         </Grid>
                     </Grid>

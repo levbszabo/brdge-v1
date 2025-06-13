@@ -728,8 +728,13 @@ const CareerAcceleratorPage = () => {
 
             console.log('Redirecting to Stripe:', fullPaymentUrl);
 
-            // Redirect to Stripe (you can change this to open in new tab if preferred)
-            window.open(fullPaymentUrl, '_blank', 'noopener,noreferrer');
+            // For mobile devices, use window.location.href to avoid popup blockers
+            if (isMobile) {
+                window.location.href = fullPaymentUrl;
+            } else {
+                // For desktop, open in new tab
+                window.open(fullPaymentUrl, '_blank', 'noopener,noreferrer');
+            }
 
         } catch (error) {
             console.error('Error creating order or initiating payment:', error);
@@ -997,9 +1002,26 @@ const CareerAcceleratorPage = () => {
                                         borderRadius: 2,
                                         width: { xs: '100%', sm: 'auto' },
                                         maxWidth: { xs: '280px', sm: 'none' },
+                                        position: 'relative',
                                         '&:hover': {
                                             transform: 'translateY(-3px)',
                                             boxShadow: '0 15px 40px rgba(0, 102, 255, 0.4)'
+                                        },
+                                        '&::before': {
+                                            content: '"START HERE"',
+                                            position: 'absolute',
+                                            top: -12,
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            background: theme.palette.success.main,
+                                            color: 'white',
+                                            fontSize: '0.65rem',
+                                            fontWeight: 700,
+                                            letterSpacing: '0.1em',
+                                            px: 1.5,
+                                            py: 0.25,
+                                            borderRadius: 1,
+                                            boxShadow: `0 4px 12px ${theme.palette.success.main}40`
                                         }
                                     }}
                                     onClick={() => document.getElementById('ai-resume-analyzer-section')?.scrollIntoView({ behavior: 'smooth' })}
@@ -1071,6 +1093,74 @@ const CareerAcceleratorPage = () => {
                     </HeroSection>
                 </Box>
 
+                {/* Progress Indicator - Desktop Only */}
+                {!isMobile && (
+                    <Box sx={{
+                        textAlign: 'center',
+                        mb: { xs: 4, md: 6 },
+                        px: { xs: 2, sm: 0 }
+                    }}>
+                        <Box sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: { xs: 1, sm: 2 },
+                            p: { xs: 1.5, sm: 2 },
+                            background: `linear-gradient(135deg, ${theme.palette.primary.main}08 0%, ${theme.palette.primary.main}03 100%)`,
+                            border: `1px solid ${theme.palette.primary.main}20`,
+                            borderRadius: { xs: 2, md: 3 },
+                            boxShadow: '0 4px 16px rgba(0, 102, 255, 0.1)'
+                        }}>
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                px: { xs: 1, sm: 1.5 },
+                                py: 0.5,
+                                background: theme.palette.primary.main,
+                                color: 'white',
+                                borderRadius: 1,
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                                fontWeight: 700
+                            }}>
+                                <span>1</span>
+                                <span>ANALYZE</span>
+                            </Box>
+                            <ArrowRight size={16} color={theme.palette.text.secondary} />
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                px: { xs: 1, sm: 1.5 },
+                                py: 0.5,
+                                background: theme.palette.grey[200],
+                                color: theme.palette.text.secondary,
+                                borderRadius: 1,
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                                fontWeight: 600
+                            }}>
+                                <span>2</span>
+                                <span>STRATEGIZE</span>
+                            </Box>
+                            <ArrowRight size={16} color={theme.palette.text.secondary} />
+                            <Box sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                px: { xs: 1, sm: 1.5 },
+                                py: 0.5,
+                                background: theme.palette.grey[200],
+                                color: theme.palette.text.secondary,
+                                borderRadius: 1,
+                                fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                                fontWeight: 600
+                            }}>
+                                <span>3</span>
+                                <span>ACTIVATE</span>
+                            </Box>
+                        </Box>
+                    </Box>
+                )}
+
                 {/* Resume Analyzer Section */}
                 <Box id="ai-resume-analyzer-section" sx={{
                     mb: { xs: 6, sm: 8, md: 10 },
@@ -1117,8 +1207,11 @@ const CareerAcceleratorPage = () => {
                             }}>
                                 This instant, free analysis gives us the raw intelligence we need.
                                 {!isMobile && <br />}
-                                In the next step, our AI Strategist will work with you to turn that
-                                intelligence into a winning action plan.
+                                {isMobile ? (
+                                    "After your analysis, you'll be able to generate your personalized career strategy."
+                                ) : (
+                                    "In the next step, our AI Strategist will work with you to turn that intelligence into a winning action plan."
+                                )}
                             </DotBridgeTypography>
 
                             <ResumeAnalyzer
@@ -1128,6 +1221,7 @@ const CareerAcceleratorPage = () => {
                                 setPersonalizationId={setPersonalizationId}
                                 isCreatingPersonalization={isCreatingPersonalization}
                                 setIsCreatingPersonalization={setIsCreatingPersonalization}
+                                isMobile={isMobile}
                                 onResumeAnalysisComplete={(analysisId) => {
                                     console.log('Resume analysis completed with ID:', analysisId);
                                     setResumeAnalysisId(analysisId);
@@ -1277,11 +1371,11 @@ const CareerAcceleratorPage = () => {
                 )}
 
                 {/* CTA Button after demo - Show for mobile after resume analysis or desktop after strategist */}
-                {(resumeAnalysisId || (!isMobile && showPersonalizedStrategist)) && (
+                {((isMobile && resumeAnalysisId) || (!isMobile && (resumeAnalysisId || showPersonalizedStrategist))) && (
                     <Box sx={{
                         textAlign: 'center',
                         mb: { xs: 6, md: 10 },
-                        mt: isMobile ? -2 : (showPersonalizedStrategist ? 4 : -6),
+                        mt: isMobile ? 4 : (showPersonalizedStrategist ? 4 : -6),
                         px: { xs: 2, sm: 0 }
                     }}>
                         <motion.div
@@ -1290,7 +1384,7 @@ const CareerAcceleratorPage = () => {
                             transition={{ duration: 0.6 }}
                         >
                             <DotBridgeButton
-                                variant={(!isMobile && showPersonalizedStrategist) ? "contained" : "outlined"}
+                                variant={(isMobile || (!isMobile && showPersonalizedStrategist)) ? "contained" : "outlined"}
                                 size="large"
                                 disabled={isGeneratingTicket}
                                 sx={{
@@ -1302,11 +1396,11 @@ const CareerAcceleratorPage = () => {
                                     transition: 'all 0.3s ease-in-out',
                                     width: { xs: '100%', sm: 'auto' },
                                     maxWidth: { xs: '320px', sm: 'none' },
-                                    ...((!isMobile && showPersonalizedStrategist) && {
+                                    ...((isMobile || (!isMobile && showPersonalizedStrategist)) && {
                                         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                         color: 'white',
                                         boxShadow: '0 10px 30px rgba(0, 102, 255, 0.3)',
-                                        animation: 'pulse 2s infinite',
+                                        animation: isMobile ? 'none' : 'pulse 2s infinite',
                                     }),
                                     '@keyframes pulse': {
                                         '0%': {
@@ -1890,7 +1984,7 @@ const CareerAcceleratorPage = () => {
                                                 px: { xs: 1, sm: 0 }
                                             }}>
                                                 {isMobile
-                                                    ? 'Start connecting with decision-makers today.'
+                                                    ? 'Your personalized strategy is ready. Activate now to start connecting with decision-makers today.'
                                                     : 'Get instant access to your personalized strategy and start connecting with decision-makers today.'
                                                 }
                                             </Typography>
@@ -2876,6 +2970,52 @@ const CareerAcceleratorPage = () => {
                     px: { xs: 1, sm: 2, md: 3, lg: 4 }
                 }}>
                     <Box sx={{ maxWidth: '600px', mx: 'auto' }}>
+                        {/* Redirect Notice */}
+                        <Box sx={{
+                            textAlign: 'center',
+                            mb: { xs: 3, md: 4 },
+                            p: { xs: 2, md: 3 },
+                            background: `linear-gradient(135deg, ${theme.palette.warning.main}15 0%, ${theme.palette.warning.main}05 100%)`,
+                            border: `2px solid ${theme.palette.warning.main}30`,
+                            borderRadius: { xs: 2, md: 3 },
+                            mx: { xs: 1, sm: 0 }
+                        }}>
+                            <Typography variant="h6" sx={{
+                                fontWeight: 600,
+                                mb: 1,
+                                color: theme.palette.warning.dark,
+                                fontSize: { xs: '1rem', md: '1.125rem' }
+                            }}>
+                                ⚡ Want Faster Results?
+                            </Typography>
+                            <Typography variant="body1" sx={{
+                                color: theme.palette.text.secondary,
+                                mb: 2,
+                                fontSize: { xs: '0.9rem', md: '1rem' }
+                            }}>
+                                Skip the form below and get your personalized strategy in minutes instead of days.
+                            </Typography>
+                            <DotBridgeButton
+                                variant="contained"
+                                size="medium"
+                                onClick={() => document.getElementById('ai-resume-analyzer-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                sx={{
+                                    background: `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    px: 3,
+                                    py: 1,
+                                    fontSize: '0.9rem',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: `0 8px 24px ${theme.palette.warning.main}40`
+                                    }
+                                }}
+                            >
+                                🚀 Start with Free Analysis Instead
+                            </DotBridgeButton>
+                        </Box>
+
                         <DotBridgeCard
                             sx={{
                                 p: { xs: 2.5, sm: 3, md: 4 },
@@ -2894,7 +3034,7 @@ const CareerAcceleratorPage = () => {
                                 fontSize: { xs: '1.375rem', sm: '1.5rem', md: '1.75rem' },
                                 lineHeight: 1.3
                             }}>
-                                Request Your Manual Playbook Build
+                                Alternative: Request Manual Playbook Build
                             </DotBridgeTypography>
 
                             <DotBridgeTypography variant="body1" sx={{
@@ -2905,7 +3045,7 @@ const CareerAcceleratorPage = () => {
                                 lineHeight: 1.6,
                                 px: { xs: 0.5, sm: 0 }
                             }}>
-                                Prefer a more direct approach? Fill out the form below with your details.
+                                Prefer a more traditional approach? Fill out the form below with your details.
                                 Our team will personally review your profile and contact you within one business day to begin building your complete job outreach system.
                             </DotBridgeTypography>
 
