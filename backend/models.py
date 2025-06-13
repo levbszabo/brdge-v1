@@ -915,3 +915,401 @@ class CareerLead(db.Model):
             ),
             "notes": self.notes,
         }
+
+
+class AdminUser(db.Model):
+    """Admin users with role-based permissions"""
+
+    __tablename__ = "admin_users"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    role = db.Column(
+        db.String(50), default="fulfillment", nullable=False
+    )  # admin, fulfillment, support
+    permissions = db.Column(db.JSON, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship("User", backref="admin_profile")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "role": self.role,
+            "permissions": self.permissions,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "user": (
+                {"id": self.user.id, "email": self.user.email} if self.user else None
+            ),
+        }
+
+
+class Offer(db.Model):
+    """Service offerings/packages"""
+
+    __tablename__ = "offers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    slug = db.Column(db.String(100), unique=True, nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price_cents = db.Column(db.Integer, nullable=False)
+    deliverables = db.Column(db.JSON, nullable=True)  # List of expected deliverables
+    timeline_days = db.Column(db.Integer, default=3)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    orders = db.relationship("Order", backref="offer", lazy="dynamic")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "slug": self.slug,
+            "description": self.description,
+            "price_cents": self.price_cents,
+            "price_dollars": self.price_cents / 100 if self.price_cents else 0,
+            "deliverables": self.deliverables or [],
+            "timeline_days": self.timeline_days,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class Order(db.Model):
+    """Client orders for services"""
+
+    __tablename__ = "orders"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    offer_id = db.Column(db.Integer, db.ForeignKey("offers.id"), nullable=False)
+    status = db.Column(
+        db.String(50), default="new", nullable=False
+    )  # new, in_progress, delivered, completed
+    order_date = db.Column(db.DateTime, default=datetime.utcnow)
+    due_date = db.Column(db.DateTime, nullable=True)
+    payment_status = db.Column(db.String(50), default="pending")
+    payment_amount_cents = db.Column(db.Integer, nullable=True)
+    stripe_payment_id = db.Column(db.String(255), nullable=True)
+    service_ticket = db.Column(db.JSON, nullable=True)  # AI-generated ticket data
+    deliverables = db.Column(db.JSON, nullable=True)  # S3 URLs for uploaded files
+    internal_notes = db.Column(db.Text, nullable=True)
+
+    # NEW FULFILLMENT FIELDS
+    welcome_bridge_id = db.Column(
+        db.Integer, db.ForeignKey("brdge.id"), nullable=True
+    )  # Selected welcome video bridge
+    intelligence_data = db.Column(
+        db.JSON, nullable=True
+    )  # Processed CSV intelligence data
+    fulfillment_metadata = db.Column(
+        db.JSON, nullable=True
+    )  # Additional fulfillment tracking
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    client = db.relationship("User", backref="orders")
+    welcome_bridge = db.relationship(
+        "Brdge", foreign_keys=[welcome_bridge_id], backref="welcome_orders"
+    )
+    order_deliverables = db.relationship(
+        "OrderDeliverable", backref="order", cascade="all, delete-orphan"
+    )
+    client_progress = db.relationship(
+        "ClientProgress", backref="order", cascade="all, delete-orphan"
+    )
+
+    def calculate_due_date(self):
+        """Calculate due date based on offer timeline"""
+        if self.offer and self.offer.timeline_days:
+            from datetime import timedelta
+
+            return self.order_date + timedelta(days=self.offer.timeline_days)
+        return None
+
+    def get_progress_percentage(self):
+        """Calculate completion percentage based on deliverables"""
+        if not self.offer or not self.offer.deliverables:
+            return 0
+
+        total_deliverables = len(self.offer.deliverables)
+        completed_deliverables = len(self.order_deliverables)
+
+        return (
+            min(100, (completed_deliverables / total_deliverables) * 100)
+            if total_deliverables > 0
+            else 0
+        )
+
+    def to_dict(
+        self,
+        include_client=True,
+        include_service_ticket=False,
+        include_fulfillment=False,
+    ):
+        result = {
+            "id": self.id,
+            "client_id": self.client_id,
+            "offer_id": self.offer_id,
+            "status": self.status,
+            "order_date": self.order_date.isoformat() if self.order_date else None,
+            "due_date": self.due_date.isoformat() if self.due_date else None,
+            "payment_status": self.payment_status,
+            "payment_amount_cents": self.payment_amount_cents,
+            "payment_amount_dollars": (
+                self.payment_amount_cents / 100 if self.payment_amount_cents else 0
+            ),
+            "stripe_payment_id": self.stripe_payment_id,
+            "deliverables": self.deliverables or {},
+            "internal_notes": self.internal_notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "progress_percentage": self.get_progress_percentage(),
+        }
+
+        if include_client and self.client:
+            result["client"] = {"id": self.client.id, "email": self.client.email}
+
+        if self.offer:
+            result["offer"] = self.offer.to_dict()
+
+        if include_service_ticket:
+            result["service_ticket"] = self.service_ticket
+
+        if include_fulfillment:
+            result["welcome_bridge_id"] = self.welcome_bridge_id
+            result["intelligence_data"] = self.intelligence_data
+            result["fulfillment_metadata"] = self.fulfillment_metadata
+            if self.welcome_bridge:
+                result["welcome_bridge"] = self.welcome_bridge.to_dict()
+
+        return result
+
+
+class OrderDeliverable(db.Model):
+    """Individual deliverable files for orders"""
+
+    __tablename__ = "order_deliverables"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    deliverable_type = db.Column(
+        db.String(100), nullable=False
+    )  # resume_tuneup, opportunity_matrix, etc.
+    file_name = db.Column(db.String(255), nullable=False)
+    s3_key = db.Column(db.String(512), nullable=False)
+    s3_url = db.Column(db.String(1024), nullable=True)
+    file_size = db.Column(db.Integer, nullable=True)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+
+    # Relationships
+    uploader = db.relationship("User", backref="uploaded_deliverables")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "deliverable_type": self.deliverable_type,
+            "file_name": self.file_name,
+            "s3_key": self.s3_key,
+            "s3_url": self.s3_url,
+            "file_size": self.file_size,
+            "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
+            "uploaded_by": self.uploaded_by,
+            "uploader": (
+                {"id": self.uploader.id, "email": self.uploader.email}
+                if self.uploader
+                else None
+            ),
+        }
+
+
+class ClientProgress(db.Model):
+    """Track client progress through their action plan"""
+
+    __tablename__ = "client_progress"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    module_name = db.Column(
+        db.String(100), nullable=False
+    )  # action_plan, core_assets, etc.
+    task_id = db.Column(db.String(100), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "module_name": self.module_name,
+            "task_id": self.task_id,
+            "completed": self.completed,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class IntelligenceTemplate(db.Model):
+    """Stores intelligence data schema for an order (similar to PersonalizationTemplate but for leads/intelligence)"""
+
+    __tablename__ = "intelligence_template"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    columns = db.Column(db.JSON, nullable=False)  # Column definitions with AI analysis
+    source_files = db.Column(db.JSON, nullable=True)  # Track uploaded CSV files
+    analysis_metadata = db.Column(db.JSON, nullable=True)  # Gemini analysis results
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    is_active = db.Column(db.Boolean, default=True)
+
+    # Relationships
+    order = db.relationship("Order", backref="intelligence_templates")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "name": self.name,
+            "columns": self.columns,
+            "source_files": self.source_files,
+            "analysis_metadata": self.analysis_metadata,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "is_active": self.is_active,
+        }
+
+
+class IntelligenceRecord(db.Model):
+    """Stores individual intelligence data records"""
+
+    __tablename__ = "intelligence_record"
+
+    id = db.Column(db.Integer, primary_key=True)
+    template_id = db.Column(
+        db.Integer, db.ForeignKey("intelligence_template.id"), nullable=False
+    )
+    data = db.Column(db.JSON, nullable=False)  # Actual intelligence data
+    source_row = db.Column(db.Integer, nullable=True)  # Row number from CSV
+    source_file = db.Column(db.String(255), nullable=True)  # Source filename
+    confidence_score = db.Column(
+        db.Float, nullable=True
+    )  # AI confidence in data quality
+    validation_status = db.Column(
+        db.String(50), default="pending"
+    )  # pending, validated, flagged
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    template = db.relationship("IntelligenceTemplate", backref="records")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "template_id": self.template_id,
+            "data": self.data,
+            "source_row": self.source_row,
+            "source_file": self.source_file,
+            "confidence_score": self.confidence_score,
+            "validation_status": self.validation_status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class OutreachTemplate(db.Model):
+    """Stores outreach templates for an order"""
+
+    __tablename__ = "outreach_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    subject = db.Column(db.String(500), nullable=True)  # For email templates
+    content = db.Column(db.Text, nullable=False)
+    template_type = db.Column(
+        db.String(50), nullable=False, default="email"
+    )  # email, linkedin, phone
+    position = db.Column(db.Integer, default=0)  # For ordering templates
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    order = db.relationship("Order", backref="outreach_templates")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "title": self.title,
+            "subject": self.subject,
+            "content": self.content,
+            "template_type": self.template_type,
+            "position": self.position,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class FulfillmentLog(db.Model):
+    """Tracks fulfillment actions and changes for audit trail"""
+
+    __tablename__ = "fulfillment_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    admin_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    action_type = db.Column(
+        db.String(100), nullable=False
+    )  # bridge_selected, csv_uploaded, intelligence_processed
+    action_data = db.Column(db.JSON, nullable=True)  # Details of the action
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    order = db.relationship("Order", backref="fulfillment_logs")
+    admin_user = db.relationship("User", backref="fulfillment_actions")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "admin_user_id": self.admin_user_id,
+            "action_type": self.action_type,
+            "action_data": self.action_data,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+        }

@@ -65,7 +65,7 @@ import AgentConnector from '../components/AgentConnector';
 import ResumeAnalyzer from '../components/ResumeAnalyzer';
 
 // Demo Bridge ID for the AI intake
-const CAREER_DEMO_BRIDGE_ID = '448';
+const CAREER_DEMO_BRIDGE_ID = '452';
 
 // Performance optimization
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -353,6 +353,9 @@ const CareerAcceleratorPage = () => {
     const [ctaSubmitting, setCtaSubmitting] = useState(false);
     const [ctaSubmitted, setCtaSubmitted] = useState(false);
 
+    // State for Stripe payment processing
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
     // Track scroll for floating CTA
     useEffect(() => {
         const handleScroll = () => {
@@ -622,9 +625,75 @@ const CareerAcceleratorPage = () => {
         }));
     };
 
-    // CTA Modal handlers
+    // Stripe Payment Handler
+    const handleActivateStrategy = async () => {
+        setIsProcessingPayment(true);
+
+        try {
+            // Track conversion event for analytics
+            if (typeof window.gtag !== 'undefined') {
+                window.gtag('event', 'begin_checkout', {
+                    currency: 'USD',
+                    value: 299,
+                    items: [{
+                        item_id: 'career_playbook_complete',
+                        item_name: 'DotBridge Career Acceleration System',
+                        category: 'Career Services',
+                        quantity: 1,
+                        price: 299
+                    }]
+                });
+            }
+
+            // Prepare user data for post-purchase fulfillment
+            const purchaseData = {
+                resume_analysis_id: resumeAnalysisId,
+                personalization_id: personalizationId,
+                finalized_goals: editableTicketData,
+                career_ticket_data: careerTicket ? {
+                    strategy_summary: careerTicket.strategy_summary,
+                    client_info: careerTicket.client_info,
+                    generated_at: new Date().toISOString()
+                } : null,
+                timestamp: Date.now()
+            };
+
+            // Store in localStorage for post-purchase retrieval
+            localStorage.setItem('dotbridge_purchase_data', JSON.stringify(purchaseData));
+
+            // Get the payment link from environment variables
+            const paymentLink = process.env.REACT_APP_STRIPE_CAREER_PAYMENT_LINK;
+
+            if (!paymentLink) {
+                throw new Error('Payment link not configured');
+            }
+
+            // Build URL with metadata
+            const urlParams = new URLSearchParams({
+                'client_reference_id': `dotbridge_${Date.now()}`,
+                'prefilled_email': ctaEmail || ''
+            });
+
+            const fullPaymentUrl = `${paymentLink}?${urlParams.toString()}`;
+
+            // OPTION 1: Always redirect in same tab (more reliable)
+            // window.location.href = fullPaymentUrl;
+
+            // OPTION 2: Always open in new tab (preserves funnel page)
+            window.open(fullPaymentUrl, '_blank', 'noopener,noreferrer');
+
+        } catch (error) {
+            console.error('Error initiating payment:', error);
+            alert('Unable to open payment page. Please try again.');
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
+    // CTA Modal handlers (keeping for backward compatibility)
     const handleCtaOpen = () => {
-        setCtaModalOpen(true);
+        // Now redirect directly to Stripe instead of opening modal
+        handleActivateStrategy();
     };
 
     const handleCtaClose = () => {
@@ -732,9 +801,7 @@ const CareerAcceleratorPage = () => {
 
                 // Initialize editable fields with ticket data
                 setEditableTicketData({
-                    target_roles: Array.isArray(data.ticket.client_info?.target_role)
-                        ? data.ticket.client_info.target_role
-                        : [data.ticket.client_info?.target_role || ''].filter(Boolean),
+                    target_roles: data.ticket.client_info?.target_roles || [],
                     target_locations: data.ticket.client_info?.target_locations || [],
                     salary_goal: data.ticket.client_info?.suggested_salary_range || data.ticket.client_info?.salary_goal || '',
                     notes: ''
@@ -981,13 +1048,13 @@ const CareerAcceleratorPage = () => {
                                 lineHeight: { xs: 1.3, md: 1.2 },
                                 px: { xs: 1, sm: 0 }
                             }}>
-                                Get Your Free
+                                Step 1:
                                 <Box component="span" sx={{
                                     color: theme.palette.primary.main,
                                     mx: { xs: 0.5, sm: 1 },
                                     display: { xs: 'inline', sm: 'inline' }
                                 }}>
-                                    AI Resume Analysis
+                                    Get Your Data-Driven Baseline
                                 </Box>
                             </DotBridgeTypography>
 
@@ -999,9 +1066,10 @@ const CareerAcceleratorPage = () => {
                                 fontSize: { xs: '0.9rem', sm: '1.125rem', md: '1.25rem', lg: '1.375rem' },
                                 px: { xs: 2, sm: 0 }
                             }}>
-                                Upload your resume and get instant AI-powered insights
+                                This instant, free analysis gives us the raw intelligence we need.
                                 {!isMobile && <br />}
-                                on your strengths, target roles, and improvement opportunities.
+                                In the next step, our AI Strategist will work with you to turn that
+                                intelligence into a winning action plan.
                             </DotBridgeTypography>
 
                             <ResumeAnalyzer
@@ -1035,7 +1103,7 @@ const CareerAcceleratorPage = () => {
                                 fontWeight: 700,
                                 fontSize: { xs: '2rem', sm: '2.5rem', md: '2.75rem' }
                             }}>
-                                Now, Let's Build Your Personalized Plan.
+                                Step 2: Let's Build Your Personalized Plan.
                             </DotBridgeTypography>
 
                             <DotBridgeTypography variant="h6" sx={{
@@ -1784,8 +1852,9 @@ const CareerAcceleratorPage = () => {
                                             <DotBridgeButton
                                                 variant="contained"
                                                 size="large"
-                                                endIcon={<ArrowRight size={20} />}
+                                                endIcon={!isProcessingPayment && <ArrowRight size={20} />}
                                                 onClick={handleCtaOpen}
+                                                disabled={isProcessingPayment}
                                                 sx={{
                                                     background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                                     color: 'white',
@@ -1822,10 +1891,24 @@ const CareerAcceleratorPage = () => {
                                                     },
                                                     '&:active': {
                                                         transform: isMobile ? 'scale(0.98)' : 'translateY(-1px) scale(1.02)'
+                                                    },
+                                                    '&:disabled': {
+                                                        background: theme.palette.grey[400],
+                                                        color: theme.palette.grey[600],
+                                                        textShadow: 'none',
+                                                        transform: 'none',
+                                                        boxShadow: 'none'
                                                     }
                                                 }}
                                             >
-                                                Activate Strategy
+                                                {isProcessingPayment ? (
+                                                    <>
+                                                        <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                                                        Opening Secure Checkout...
+                                                    </>
+                                                ) : (
+                                                    'Activate Strategy - $299'
+                                                )}
                                             </DotBridgeButton>
                                         </Box>
 

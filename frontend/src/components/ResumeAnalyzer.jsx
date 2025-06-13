@@ -481,8 +481,12 @@ const ResumeAnalyzer = ({
             // Store analysis ID for future reference
             localStorage.setItem('lastAnalysisId', data.analysis_id);
 
-            // Set results
-            setAnalysisResults(data.results);
+            // Set results with analysis ID included for personalization
+            const resultsWithId = {
+                ...data.results,
+                resume_analysis_id: data.analysis_id
+            };
+            setAnalysisResults(resultsWithId);
             setIsAnalyzing(false);
             setAnalysisComplete(true);
 
@@ -506,9 +510,11 @@ const ResumeAnalyzer = ({
     // Simplified function to create personalization record
     const createPersonalizationRecord = async (analysisData, brdgeId = 448) => {
         console.log('📊 Creating personalization record for bridge ID:', brdgeId);
+        console.log('📋 Analysis data contains resume_analysis_id:', analysisData.resume_analysis_id);
 
         const response = await api.post(`/brdges/${brdgeId}/personalization/demo-record`, {
             template_name: 'Resume Analysis',
+            resume_analysis_id: analysisData.resume_analysis_id, // Pass the analysis ID for backend enhancement
             columns: [
                 { name: 'name', usage_note: 'Use to personalize greetings and conversation', example: 'Sarah Chen' },
                 { name: 'experience_level', usage_note: 'Tailor advice complexity to their experience', example: 'Experienced' },
@@ -522,7 +528,7 @@ const ResumeAnalyzer = ({
                 { name: 'resume_suggestions', usage_note: 'Specific actionable advice to provide', example: 'Quantify achievements' }
             ],
             data: {
-                // Core profile data
+                // Core profile data - these will be enhanced by backend if resume_analysis_id is provided
                 name: analysisData.candidateName || 'Professional',
                 experience_level: analysisData.experienceLevel || 'Experienced',
                 current_role: analysisData.potentialTitles?.[0] || 'Software Engineer',

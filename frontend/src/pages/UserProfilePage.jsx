@@ -1433,14 +1433,14 @@ function UserProfilePage() {
                                 },
                             }}
                         >
-                            <Tab label="Subscription" />
-                            <Tab label="Billing & Usage" />
+                            {/* <Tab label="Subscription" /> */}
+                            {/* <Tab label="Billing & Usage" /> */}
                             <Tab label="Account Settings" />
                         </Tabs>
                     </Box>
 
                     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-                        <TabPanel value={tabValue} index={0}>
+                        {/* <TabPanel value={tabValue} index={0}>
                             <Box sx={{ mb: 3 }}>
                                 <DotBridgeTypography variant="h4" sx={{
                                     fontWeight: 600,
@@ -1480,9 +1480,9 @@ function UserProfilePage() {
                                     </RouterLink>
                                 </DotBridgeTypography>
                             </Box>
-                        </TabPanel>
+                        </TabPanel> */}
 
-                        <TabPanel value={tabValue} index={1}>
+                        {/* <TabPanel value={tabValue} index={1}>
                             <Grid container spacing={3}>
                                 <Grid item xs={12} md={6}>
                                     <BillingCard
@@ -1495,9 +1495,9 @@ function UserProfilePage() {
                                     <UsageStats currentPlan={currentPlan} />
                                 </Grid>
                             </Grid>
-                        </TabPanel>
+                        </TabPanel> */}
 
-                        <TabPanel value={tabValue} index={2}>
+                        <TabPanel value={tabValue} index={0}>
                             <Box sx={{ maxWidth: 600 }}>
                                 <DotBridgeTypography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
                                     Account Settings

@@ -42,7 +42,7 @@ function HideOnScroll(props) {
 }
 
 function Header() {
-    const { isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
+    const { isAuthenticated, setIsAuthenticated, userRole } = useContext(AuthContext);
     const navigate = useNavigate();
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -153,11 +153,13 @@ function Header() {
     // Updated menu items with better structure
     const menuItems = isAuthenticated
         ? [
-            { text: 'Dashboard', link: '/home' },
+            {
+                text: userRole === 'admin' ? 'Admin Dashboard' : 'Dashboard',
+                link: userRole === 'admin' ? '/admin' : '/dashboard'
+            },
             { text: 'Contact', link: '/contact' }
         ]
         : [
-            { text: 'Pricing', link: '/pricing' },
             { text: 'Resources', link: '/blog' },
             { text: 'Contact', link: '/contact' }
         ];
@@ -275,19 +277,33 @@ function Header() {
             role="presentation"
         >
             <List>
-                {/* Home Dashboard (only for authenticated users) */}
+                {/* Dashboard (only for authenticated users) */}
                 {isAuthenticated && (
                     <ListItem disablePadding>
                         <ListItemButton
                             component={RouterLink}
-                            to="/home"
+                            to={userRole === 'admin' ? '/admin' : '/dashboard'}
                             onClick={() => setDrawerOpen(false)}
                             sx={{
                                 ...drawerItemStyle,
                                 backgroundColor: theme.palette.action.selected + '30',
                             }}
                         >
-                            <ListItemText primary="Home Dashboard" />
+                            <ListItemText primary={userRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'} />
+                        </ListItemButton>
+                    </ListItem>
+                )}
+
+                {/* Bridge Builder (only for authenticated non-admin users) */}
+                {isAuthenticated && userRole !== 'admin' && (
+                    <ListItem disablePadding>
+                        <ListItemButton
+                            component={RouterLink}
+                            to="/bridges"
+                            onClick={() => setDrawerOpen(false)}
+                            sx={drawerItemStyle}
+                        >
+                            <ListItemText primary="Bridge Builder" />
                         </ListItemButton>
                     </ListItem>
                 )}

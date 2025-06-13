@@ -15,6 +15,9 @@ import ViewCoursePage from './pages/ViewCoursePage';
 import EditCoursePage from './pages/EditCoursePage';
 import ServicesPage from './pages/ServicesPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
+import SmartRedirect from './components/SmartRedirect';
+import AdminClientDashboard from './pages/AdminClientDashboard';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import { api } from './api';
@@ -25,7 +28,7 @@ import PricingPage from './pages/PricingPage';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import PolicyPage from './pages/PolicyPage';
 import UserProfilePage from './pages/UserProfilePage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentSuccessCareer from './pages/PaymentSuccessCareer';
 import { REACT_APP_GOOGLE_CLIENT_ID } from './config';
 import ContactPage from './pages/ContactPage';
 import CookieConsent from './components/CookieConsent';
@@ -34,6 +37,8 @@ import BlogPage from './pages/BlogPage'; // Import the new Blog page
 import BlogPostDetailPage from './pages/BlogPostDetailPage'; // Import Blog Post Detail Page
 import CareerPage from './pages/CareerPage'; // Import the new Career page
 import CareerAcceleratorPage from './pages/CareerAcceleratorPage'; // Add new Career Accelerator page
+import AdminDashboard from './pages/AdminDashboard'; // Import Admin Dashboard
+import ClientDashboard from './pages/ClientDashboard'; // Import Client Dashboard
 
 // Create an AuthContext
 export const AuthContext = React.createContext(null);
@@ -59,13 +64,14 @@ export const AuthContext = React.createContext(null);
 function Layout({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null); // Track user role (admin, client, etc.)
   const navigate = useNavigate();
   const location = useLocation();
   // Always show header on all pages
   const showHeader = true;
 
   // Define public routes
-  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos', '/blog', '/careers', '/career-accelerator'];
+  const publicRoutes = ['/login', '/signup', '/pricing', '/policy', '/', '/contact', '/services', '/marketplace', '/demos', '/blog', '/careers', '/career-accelerator', '/payment-success-career'];
 
   // Check if the current path is a viewBridge route or viewCourse route
   const isViewBrdgePath = (path) => {
@@ -91,10 +97,32 @@ function Layout({ children }) {
 
       if (token) {
         try {
-          await api.get('/auth/verify', {
+          const response = await api.get('/auth/verify', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setIsAuthenticated(true);
+
+          // Check if user is admin
+          let adminResponse = null;
+          try {
+            const userResponse = await api.get('/user/profile', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // Check admin status
+            adminResponse = await api.get('/admin/check', {
+              headers: { Authorization: `Bearer ${token}` }
+            }).catch((error) => {
+              console.warn('Admin check failed:', error);
+              return { data: { is_admin: false } };
+            }); // Default to non-admin if endpoint fails
+
+            console.log('Admin check response:', adminResponse.data);
+            setUserRole(adminResponse.data.is_admin ? 'admin' : 'client');
+          } catch (profileError) {
+            console.warn('Could not fetch user profile:', profileError);
+            setUserRole('client'); // Default to client
+          }
 
           // Check if there's a redirect path stored after login
           const redirectPath = sessionStorage.getItem('redirectAfterLogin');
@@ -104,12 +132,15 @@ function Layout({ children }) {
           }
           // Only redirect if specifically on login/signup pages and no redirect path
           else if (['/login', '/signup'].includes(currentPath)) {
-            navigate('/home', { replace: true }); // Redirect logged-in users from login/signup to home
+            // Redirect based on user role
+            const defaultRoute = adminResponse?.data?.is_admin ? '/admin' : '/dashboard';
+            navigate(defaultRoute, { replace: true });
           }
         } catch (error) {
           console.error('Token verification failed:', error);
           logout();
           setIsAuthenticated(false);
+          setUserRole(null);
           // If token is invalid, and user is on protected route, redirect to login
           const needsAuth = !publicRoutes.includes(currentPath) &&
             !isViewBrdgePath(currentPath) &&
@@ -151,7 +182,7 @@ function Layout({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated }}>
+    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, userRole, setUserRole }}>
       {/* Apply global styles here, after CssBaseline but before main content Box */}
       {/* {globalStyles} // Decide if needed or handled by CssBaseline/Theme */}
       <Box sx={{
@@ -214,12 +245,32 @@ function App() {
                 <Route path="/careers" element={<CareerPage />} /> {/* Added route for CareerPage */}
                 <Route path="/career-accelerator" element={<CareerAcceleratorPage />} /> {/* Add Career Accelerator route */}
                 <Route
-                  path="/home"
+                  path="/admin"
+                  element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/admin/client/:clientId/dashboard"
+                  element={
+                    <AdminRoute>
+                      <AdminClientDashboard />
+                    </AdminRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard"
                   element={
                     <ProtectedRoute>
-                      <DotBrdgeListPage />
+                      <ClientDashboard />
                     </ProtectedRoute>
                   }
+                />
+                <Route
+                  path="/home"
+                  element={<SmartRedirect />}
                 />
                 <Route
                   path="/bridges"
@@ -263,7 +314,7 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                <Route path="/payment-success" element={<PaymentSuccessPage />} />
+                <Route path="/payment-success-career" element={<PaymentSuccessCareer />} />
                 {/* Add a catch-all or 404 route if desired */}
                 {/* <Route path="*" element={<NotFoundPage />} /> */}
               </Routes>

@@ -40,6 +40,15 @@ from models import (
     PersonalizationRecord,  # Add PersonalizationRecord model
     ResumeAnalysis,  # Add ResumeAnalysis model
     CareerLead,  # Add CareerLead model
+    Order,  # Add Order model
+    OrderDeliverable,  # Add OrderDeliverable model
+    ClientProgress,  # Add ClientProgress model
+    Offer,  # Add Offer model
+    AdminUser,  # Add AdminUser model
+    IntelligenceTemplate,  # Add IntelligenceTemplate model
+    IntelligenceRecord,  # Add IntelligenceRecord model
+    OutreachTemplate,  # Add OutreachTemplate model
+    FulfillmentLog,  # Add FulfillmentLog model
 )
 from utils import (
     clone_voice_helper,
@@ -5810,8 +5819,8 @@ def create_resume_analysis():
             analysis.analysis_status = "processing"
             db.session.commit()
 
-            # Analyze resume using Gemini
-            analysis_results = gemini.analyze_resume_for_career(temp_path)
+            # Analyze resume using Gemini (includes text extraction and analysis in one call)
+            analysis_results = gemini.analyze_resume_for_career_with_text(temp_path)
 
             # Update with results
             analysis.analysis_results = analysis_results
@@ -5981,8 +5990,8 @@ def update_resume_analysis(analysis_id):
                 },
             )
 
-            # Analyze resume
-            analysis_results = gemini.analyze_resume_for_career(temp_path)
+            # Analyze resume using Gemini (includes text extraction and analysis in one call)
+            analysis_results = gemini.analyze_resume_for_career_with_text(temp_path)
 
             # Update with results
             analysis.analysis_results = analysis_results
@@ -6092,7 +6101,106 @@ def create_demo_personalization_record(brdge_id):
 
         template_name = data.get("template_name", "Demo Template")
         columns = data.get("columns", [])
-        record_data = data.get("data", {})
+        raw_record_data = data.get("data", {})
+        resume_analysis_id = data.get("resume_analysis_id")
+
+        # Enhance record data with resume analysis if available
+        record_data = raw_record_data.copy()
+
+        if resume_analysis_id:
+            try:
+                # Get the resume analysis
+                resume_analysis = ResumeAnalysis.query.filter_by(
+                    id=resume_analysis_id, analysis_status="completed"
+                ).first()
+
+                if resume_analysis and resume_analysis.analysis_results:
+                    analysis_results = resume_analysis.analysis_results
+
+                    # Extract career-relevant data from resume analysis
+                    record_data.update(
+                        {
+                            "name": analysis_results.get("candidateName", "Demo User"),
+                            "resume_score": analysis_results.get("overallScore", 0),
+                            "resume_strengths": analysis_results.get("strengths", []),
+                            "resume_improvements": analysis_results.get(
+                                "improvements", []
+                            ),
+                            "resume_suggestions": analysis_results.get(
+                                "suggestedJobTitles", []
+                            ),
+                            "skills": analysis_results.get("keywordGaps", []),
+                            "industry": analysis_results.get(
+                                "industryInsights", "Technology"
+                            ),
+                            "current_role": (
+                                analysis_results.get(
+                                    "potentialTitles", ["Professional"]
+                                )[0]
+                                if analysis_results.get("potentialTitles")
+                                else "Professional"
+                            ),
+                            "experience_level": "Mid-level",  # Default, could be inferred from analysis
+                            "career_goals": analysis_results.get(
+                                "strategy", "Advance career opportunities"
+                            ),
+                            "target_companies": analysis_results.get(
+                                "targetCompanies", []
+                            ),
+                            "target_role_match": analysis_results.get(
+                                "targetRoleMatch", {}
+                            ),
+                            "raw_resume_text": analysis_results.get(
+                                "raw_resume_text", ""
+                            ),
+                        }
+                    )
+
+                    logger.info(
+                        f"✅ Demo Record: Enhanced with resume analysis data for candidate: {record_data.get('name')}"
+                    )
+                    logger.info(
+                        f"📊 Demo Record: Resume score: {record_data.get('resume_score')}, Skills: {len(record_data.get('skills', []))}"
+                    )
+
+            except Exception as analysis_error:
+                logger.warning(
+                    f"Could not enhance demo record with resume analysis: {analysis_error}"
+                )
+                # Continue with basic record creation
+
+        # If no resume analysis or enhancement failed, provide default career data structure
+        if not record_data.get("name"):
+            record_data.update(
+                {
+                    "name": raw_record_data.get("name", "Demo User"),
+                    "resume_score": 7.5,
+                    "resume_strengths": [
+                        "Strong technical background",
+                        "Clear communication skills",
+                    ],
+                    "resume_improvements": [
+                        "Add more quantified achievements",
+                        "Include relevant keywords",
+                    ],
+                    "resume_suggestions": [
+                        "Software Engineer",
+                        "Product Manager",
+                        "Data Analyst",
+                    ],
+                    "skills": ["Python", "Project Management", "Data Analysis"],
+                    "industry": "Technology",
+                    "current_role": "Software Developer",
+                    "experience_level": "Mid-level",
+                    "career_goals": "Advance to senior technical role with leadership opportunities",
+                    "target_companies": ["Tech Startups", "Fortune 500 Companies"],
+                    "target_role_match": {
+                        "Software Engineer": 85,
+                        "Product Manager": 70,
+                    },
+                    "raw_resume_text": "",
+                }
+            )
 
         # Find or create the demo template
         template = PersonalizationTemplate.query.filter_by(
@@ -6100,7 +6208,21 @@ def create_demo_personalization_record(brdge_id):
         ).first()
 
         if not template:
-            # Create the template
+            # Create the template with career-focused columns
+            if not columns:
+                columns = [
+                    {"name": "name", "usage_note": "Candidate's full name"},
+                    {"name": "current_role", "usage_note": "Current job title"},
+                    {
+                        "name": "experience_level",
+                        "usage_note": "Career experience level",
+                    },
+                    {"name": "industry", "usage_note": "Primary industry focus"},
+                    {"name": "career_goals", "usage_note": "Career advancement goals"},
+                    {"name": "resume_score", "usage_note": "Resume analysis score"},
+                    {"name": "skills", "usage_note": "Key skills and competencies"},
+                ]
+
             template = PersonalizationTemplate(
                 brdge_id=brdge_id,
                 name=template_name,
@@ -6127,6 +6249,7 @@ def create_demo_personalization_record(brdge_id):
             "is_demo_record": True,
             "is_temporary": True,
             "rate_limit_key": rate_limit_key,
+            "resume_analysis_id": resume_analysis_id,  # Track source
         }
 
         # Create record
@@ -6146,6 +6269,9 @@ def create_demo_personalization_record(brdge_id):
         )
         logger.info(f"📋 Demo Record: Template ID {template.id}, Record ID {record.id}")
         logger.info(f"📊 Demo Record: Record data keys: {list(record_data.keys())}")
+        logger.info(
+            f"🎯 Demo Record: Career data - Name: {record_data.get('name')}, Role: {record_data.get('current_role')}, Industry: {record_data.get('industry')}"
+        )
 
         return (
             jsonify(
@@ -6155,6 +6281,7 @@ def create_demo_personalization_record(brdge_id):
                     "expires_in_hours": 2,
                     "max_access_count": 5,
                     "security_notice": "This is a temporary demo record with limited access",
+                    "enhanced_with_resume": resume_analysis_id is not None,
                 }
             ),
             201,
@@ -6478,3 +6605,1531 @@ def generate_career_strategy_ticket():
     except Exception as e:
         logger.error(f"Error generating career strategy ticket: {str(e)}")
         return jsonify({"error": f"Failed to generate ticket: {str(e)}"}), 500
+
+
+# ============================================================================
+# DASHBOARD API ROUTES
+# ============================================================================
+
+
+# Admin Check Route
+@app.route("/api/admin/check", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def check_admin_status():
+    """Check if current user is an admin"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check if user has admin record
+        admin_record = AdminUser.query.filter_by(
+            user_id=user.id, is_active=True
+        ).first()
+
+        return jsonify(
+            {
+                "success": True,
+                "is_admin": admin_record is not None,
+                "role": admin_record.role if admin_record else None,
+                "permissions": admin_record.permissions if admin_record else None,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error checking admin status: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Admin Dashboard Routes
+@app.route("/api/admin/orders", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_admin_orders():
+    """Get all orders for admin dashboard with filtering and pagination"""
+    try:
+        # Check if user is admin (for now, we'll skip this check)
+        # TODO: Add proper admin role checking
+
+        # Get query parameters
+        status = request.args.get("status")
+        offer_id = request.args.get("offer_id")
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 20))
+        sort_by = request.args.get("sort", "order_date")
+        sort_order = request.args.get("order", "desc")
+
+        # Build query
+        query = Order.query
+
+        # Apply filters
+        if status:
+            query = query.filter(Order.status == status)
+        if offer_id:
+            query = query.filter(Order.offer_id == offer_id)
+
+        # Apply sorting
+        if sort_order == "desc":
+            query = query.order_by(getattr(Order, sort_by).desc())
+        else:
+            query = query.order_by(getattr(Order, sort_by))
+
+        # Paginate
+        orders = query.paginate(page=page, per_page=limit, error_out=False)
+
+        return jsonify(
+            {
+                "success": True,
+                "orders": [
+                    order.to_dict(include_client=True) for order in orders.items
+                ],
+                "pagination": {
+                    "page": page,
+                    "pages": orders.pages,
+                    "per_page": limit,
+                    "total": orders.total,
+                    "has_next": orders.has_next,
+                    "has_prev": orders.has_prev,
+                },
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching admin orders: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_admin_order_detail(order_id):
+    """Get detailed order information for admin"""
+    try:
+        order = Order.query.get_or_404(order_id)
+
+        # Include service ticket and deliverables
+        order_data = order.to_dict(include_client=True, include_service_ticket=True)
+
+        # Add deliverables
+        order_data["order_deliverables"] = [
+            d.to_dict() for d in order.order_deliverables
+        ]
+
+        return jsonify({"success": True, "order": order_data})
+
+    except Exception as e:
+        logger.error(f"Error fetching order detail: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>", methods=["PUT"])
+@jwt_required()
+@cross_origin()
+def update_admin_order(order_id):
+    """Update order status and notes"""
+    try:
+        order = Order.query.get_or_404(order_id)
+        data = request.get_json()
+
+        # Update allowed fields
+        if "status" in data:
+            order.status = data["status"]
+        if "internal_notes" in data:
+            order.internal_notes = data["internal_notes"]
+        if "due_date" in data and data["due_date"]:
+            order.due_date = datetime.fromisoformat(
+                data["due_date"].replace("Z", "+00:00")
+            )
+
+        db.session.commit()
+
+        return jsonify({"success": True, "order": order.to_dict(include_client=True)})
+
+    except Exception as e:
+        logger.error(f"Error updating order: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>/deliverables", methods=["POST"])
+@jwt_required()
+@cross_origin()
+def upload_order_deliverable(order_id):
+    """Upload deliverable files for an order"""
+    try:
+        order = Order.query.get_or_404(order_id)
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+
+        file = request.files["file"]
+        deliverable_type = request.form.get("deliverable_type")
+
+        if not deliverable_type:
+            return (
+                jsonify({"success": False, "error": "Deliverable type required"}),
+                400,
+            )
+
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+
+        # Generate S3 key
+        file_extension = (
+            file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
+        )
+        s3_key = f"orders/{order_id}/deliverables/{deliverable_type}/{uuid.uuid4()}.{file_extension}"
+
+        # Get file size before upload
+        file.seek(0, 2)  # Seek to end
+        file_size = file.tell()
+        file.seek(0)  # Reset to beginning
+
+        # Upload to S3
+        try:
+            s3_client.upload_fileobj(
+                file,
+                S3_BUCKET_NAME,
+                s3_key,
+                ExtraArgs={
+                    "ContentType": file.content_type or "application/octet-stream"
+                },
+            )
+
+            # Generate S3 URL
+            s3_url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{s3_key}"
+
+        except Exception as s3_error:
+            logger.error(f"S3 upload error: {s3_error}")
+            return jsonify({"success": False, "error": "File upload failed"}), 500
+
+        # Save deliverable record
+        deliverable = OrderDeliverable(
+            order_id=order_id,
+            deliverable_type=deliverable_type,
+            file_name=file.filename,
+            s3_key=s3_key,
+            s3_url=s3_url,
+            file_size=file_size,
+            uploaded_by=user.id if user else None,
+        )
+
+        db.session.add(deliverable)
+        db.session.commit()
+
+        return jsonify({"success": True, "deliverable": deliverable.to_dict()})
+
+    except Exception as e:
+        logger.error(f"Error uploading deliverable: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Client Dashboard Routes
+@app.route("/api/dashboard/data", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_client_dashboard_data():
+    """Get all dashboard data for the authenticated client"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get user's orders
+        orders = Order.query.filter_by(client_id=user.id).all()
+
+        if not orders:
+            return jsonify(
+                {
+                    "success": True,
+                    "user": {"id": user.id, "email": user.email},
+                    "orders": [],
+                    "message": "No orders found",
+                }
+            )
+
+        # For now, return the most recent order
+        latest_order = max(orders, key=lambda x: x.created_at)
+
+        # Get deliverables with secure download URLs
+        deliverables = []
+        for deliverable in latest_order.order_deliverables:
+            deliverable_data = deliverable.to_dict()
+            # Use our secure download endpoint instead of exposing S3 URLs
+            deliverable_data["download_url"] = (
+                f"/api/deliverables/{deliverable.id}/download"
+            )
+            deliverables.append(deliverable_data)
+
+        # Get progress data
+        progress = [p.to_dict() for p in latest_order.client_progress]
+
+        return jsonify(
+            {
+                "success": True,
+                "user": {"id": user.id, "email": user.email},
+                "order": latest_order.to_dict(
+                    include_client=False,
+                    include_service_ticket=True,
+                    include_fulfillment=True,  # <-- FIX: Ensure fulfillment data is also sent to the client
+                ),
+                "deliverables": deliverables,
+                "progress": progress,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching client dashboard data: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/dashboard/progress", methods=["POST"])
+@jwt_required()
+@cross_origin()
+def update_client_progress():
+    """Update client progress on tasks"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+        data = request.get_json()
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get user's latest order
+        order = (
+            Order.query.filter_by(client_id=user.id)
+            .order_by(Order.created_at.desc())
+            .first()
+        )
+
+        if not order:
+            return jsonify({"success": False, "error": "No order found"}), 404
+
+        # Find or create progress record
+        progress = ClientProgress.query.filter_by(
+            order_id=order.id,
+            module_name=data.get("module"),
+            task_id=data.get("task_id"),
+        ).first()
+
+        if not progress:
+            progress = ClientProgress(
+                order_id=order.id,
+                module_name=data.get("module"),
+                task_id=data.get("task_id"),
+            )
+            db.session.add(progress)
+
+        # Update progress
+        progress.completed = data.get("completed", False)
+        if progress.completed:
+            progress.completed_at = datetime.utcnow()
+        else:
+            progress.completed_at = None
+
+        if "notes" in data:
+            progress.notes = data["notes"]
+
+        db.session.commit()
+
+        return jsonify({"success": True, "progress": progress.to_dict()})
+
+    except Exception as e:
+        logger.error(f"Error updating client progress: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Admin route to view client dashboard data
+@app.route("/api/admin/client/<int:client_id>/dashboard", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_client_dashboard_for_admin(client_id):
+    """Get client dashboard data for admin viewing"""
+    try:
+        # Check if current user is admin
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the client user
+        client_user = User.query.get(client_id)
+        if not client_user:
+            return jsonify({"success": False, "error": "Client not found"}), 404
+
+        # Get client's orders
+        orders = Order.query.filter_by(client_id=client_id).all()
+
+        if not orders:
+            return jsonify(
+                {
+                    "success": True,
+                    "user": {"id": client_user.id, "email": client_user.email},
+                    "orders": [],
+                    "message": "No orders found for this client",
+                }
+            )
+
+        # Get the most recent order
+        latest_order = max(orders, key=lambda x: x.created_at)
+
+        # Get deliverables with secure download URLs
+        deliverables = []
+        for deliverable in latest_order.order_deliverables:
+            deliverable_data = deliverable.to_dict()
+            # Use our secure download endpoint instead of exposing S3 URLs
+            deliverable_data["download_url"] = (
+                f"/api/deliverables/{deliverable.id}/download"
+            )
+            deliverables.append(deliverable_data)
+
+        # Get progress data
+        progress = [p.to_dict() for p in latest_order.client_progress]
+
+        return jsonify(
+            {
+                "success": True,
+                "user": {"id": client_user.id, "email": client_user.email},
+                "order": latest_order.to_dict(
+                    include_client=False,
+                    include_service_ticket=True,
+                    include_fulfillment=True,  # <-- FIX: Ensure fulfillment data is sent
+                ),
+                "deliverables": deliverables,
+                "progress": progress,
+                "admin_view": True,  # Flag to indicate this is admin viewing
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching client dashboard for admin: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Client-friendly aliases for intelligence data access
+@app.route("/api/orders/<int:order_id>/intelligence/templates", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_order_intelligence_templates_client(order_id):
+    """Client-friendly alias for getting intelligence templates"""
+    return get_order_intelligence_templates(order_id)
+
+
+@app.route(
+    "/api/orders/<int:order_id>/intelligence/templates/<int:template_id>/records",
+    methods=["GET"],
+)
+@jwt_required()
+@cross_origin()
+def get_intelligence_records_client(order_id, template_id):
+    """Client-friendly alias for getting intelligence records"""
+    return get_intelligence_records(order_id, template_id)
+
+
+# Utility Routes for Dashboard
+@app.route("/api/offers", methods=["GET"])
+@cross_origin()
+def get_offers():
+    """Get all active offers"""
+    try:
+        offers = Offer.query.filter_by(is_active=True).all()
+        return jsonify(
+            {"success": True, "offers": [offer.to_dict() for offer in offers]}
+        )
+    except Exception as e:
+        logger.error(f"Error fetching offers: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/analytics/overview", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_admin_analytics():
+    """Get admin dashboard analytics"""
+    try:
+        # Basic analytics
+        total_orders = Order.query.count()
+        new_orders = Order.query.filter_by(status="new").count()
+        in_progress_orders = Order.query.filter_by(status="in_progress").count()
+        delivered_orders = Order.query.filter_by(status="delivered").count()
+        completed_orders = Order.query.filter_by(status="completed").count()
+
+        # Revenue calculation
+        total_revenue = (
+            db.session.query(db.func.sum(Order.payment_amount_cents)).scalar() or 0
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "analytics": {
+                    "total_orders": total_orders,
+                    "orders_by_status": {
+                        "new": new_orders,
+                        "in_progress": in_progress_orders,
+                        "delivered": delivered_orders,
+                        "completed": completed_orders,
+                    },
+                    "total_revenue_cents": total_revenue,
+                    "total_revenue_dollars": total_revenue / 100,
+                },
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching analytics: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================================================
+# FULFILLMENT API ROUTES
+# ============================================================================
+
+
+# Bridge Selection Routes
+@app.route("/api/admin/orders/<int:order_id>/available-bridges", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_available_bridges_for_order(order_id):
+    """Get all available bridges that can be used as welcome videos"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        # Get all bridges owned by admin user (or we could get all bridges for flexibility)
+        bridges = Brdge.query.filter_by(user_id=admin_user.id).all()
+
+        return jsonify(
+            {
+                "success": True,
+                "bridges": [bridge.to_dict() for bridge in bridges],
+                "current_bridge_id": order.welcome_bridge_id,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching available bridges for order {order_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>/welcome-bridge", methods=["PUT"])
+@jwt_required()
+@cross_origin()
+def update_order_welcome_bridge(order_id):
+    """Update the welcome bridge for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        data = request.get_json()
+        bridge_id = data.get("bridge_id")
+        bridge = None  # <-- FIX: Initialize bridge to avoid NameError
+
+        if bridge_id is not None:
+            # Verify bridge exists and belongs to admin user
+            bridge = Brdge.query.filter_by(id=bridge_id, user_id=admin_user.id).first()
+            if not bridge:
+                return (
+                    jsonify(
+                        {"success": False, "error": "Bridge not found or access denied"}
+                    ),
+                    404,
+                )
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        # Update welcome bridge
+        old_bridge_id = order.welcome_bridge_id
+        order.welcome_bridge_id = bridge_id
+
+        # Log the action
+        log = FulfillmentLog(
+            order_id=order_id,
+            admin_user_id=admin_user.id,
+            action_type="bridge_selected",
+            action_data={
+                "old_bridge_id": old_bridge_id,
+                "new_bridge_id": bridge_id,
+                "bridge_name": (
+                    bridge.name if bridge else None
+                ),  # <-- FIX: Safely access bridge name
+            },
+        )
+        db.session.add(log)
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "order": order.to_dict(include_fulfillment=True),
+                "message": f"Welcome bridge {'updated' if bridge_id else 'removed'} successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating welcome bridge for order {order_id}: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Intelligence CSV Routes
+@app.route(
+    "/api/admin/orders/<int:order_id>/intelligence/analyze-csv", methods=["POST"]
+)
+@jwt_required()
+@cross_origin()
+def analyze_intelligence_csv(order_id):
+    """Analyze uploaded CSV for intelligence data using Gemini AI"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"success": False, "error": "No file selected"}), 400
+
+        if not file.filename.lower().endswith(".csv"):
+            return jsonify({"success": False, "error": "File must be a CSV"}), 400
+
+        try:
+            # Read CSV content
+            csv_content = file.read().decode("utf-8")
+            lines = csv_content.strip().split("\n")
+
+            if len(lines) < 2:
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "CSV must have headers and at least one data row",
+                        }
+                    ),
+                    400,
+                )
+
+            # Get headers and sample data
+            headers = lines[0].split(",")
+            sample_rows = lines[1 : min(6, len(lines))]  # Up to 5 sample rows
+
+            # Use Gemini to analyze the CSV structure
+            analysis_data = gemini.generate_csv_structure(
+                headers=headers, sample_rows=sample_rows, filename=file.filename
+            )
+
+            # Update with correct row count
+            analysis_data["row_count"] = len(lines) - 1
+
+            # Create preview data for frontend
+            preview_data = {
+                "headers": headers,
+                "rows": [],
+                "total_rows": len(lines) - 1,
+            }
+
+            # Add sample rows for preview (first 5 rows)
+            for i, line in enumerate(sample_rows[:5]):
+                try:
+                    values = [v.strip().strip('"') for v in line.split(",")]
+                    row_dict = {}
+                    for j, header in enumerate(headers):
+                        if j < len(values):
+                            row_dict[header] = values[j]
+                        else:
+                            row_dict[header] = ""
+                    preview_data["rows"].append(row_dict)
+                except Exception as e:
+                    logger.warning(f"Error processing preview row {i}: {e}")
+                    continue
+
+            return jsonify(
+                {
+                    "success": True,
+                    "analysis": analysis_data,
+                    "preview": preview_data,
+                    "file_info": {
+                        "filename": file.filename,
+                        "size": len(csv_content),
+                        "headers": headers,
+                        "row_count": len(lines) - 1,
+                    },
+                }
+            )
+
+        except Exception as e:
+            logger.error(f"Error analyzing CSV: {e}")
+            return (
+                jsonify(
+                    {"success": False, "error": f"Failed to analyze CSV: {str(e)}"}
+                ),
+                500,
+            )
+
+    except Exception as e:
+        logger.error(f"Error in analyze_intelligence_csv: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/intelligence/create-from-csv", methods=["POST"]
+)
+@jwt_required()
+@cross_origin()
+def create_intelligence_from_csv(order_id):
+    """Create intelligence template and records from analyzed CSV"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        if "file" not in request.files:
+            return jsonify({"success": False, "error": "No file provided"}), 400
+
+        file = request.files["file"]
+        template_name = request.form.get("template_name")
+        columns_json = request.form.get("columns")
+
+        if not template_name or not columns_json:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Template name and columns are required",
+                    }
+                ),
+                400,
+            )
+
+        try:
+            columns = json.loads(columns_json)
+        except json.JSONDecodeError:
+            return jsonify({"success": False, "error": "Invalid columns JSON"}), 400
+
+        # Read and process CSV
+        csv_content = file.read().decode("utf-8")
+        lines = csv_content.strip().split("\n")
+        headers = [h.strip() for h in lines[0].split(",")]
+
+        # Create intelligence template
+        template = IntelligenceTemplate(
+            order_id=order_id,
+            name=template_name,
+            columns=columns,
+            source_files=[
+                {
+                    "filename": file.filename,
+                    "uploaded_at": datetime.utcnow().isoformat(),
+                    "row_count": len(lines) - 1,
+                }
+            ],
+            analysis_metadata={
+                "processed_by": admin_user.id,
+                "processed_at": datetime.utcnow().isoformat(),
+                "original_headers": headers,
+            },
+        )
+        db.session.add(template)
+        db.session.flush()  # Get the template ID
+
+        # Process CSV rows and create records
+        records_created = 0
+        for i, line in enumerate(lines[1:], 1):  # Skip header row
+            try:
+                values = [v.strip() for v in line.split(",")]
+
+                # Map values to column names
+                data = {}
+                for j, column in enumerate(columns):
+                    if j < len(values):
+                        data[column["name"]] = values[j]
+                    else:
+                        data[column["name"]] = ""
+
+                # Create intelligence record
+                record = IntelligenceRecord(
+                    template_id=template.id,
+                    data=data,
+                    source_row=i,
+                    source_file=file.filename,
+                    confidence_score=0.8,  # Default confidence
+                    validation_status="pending",
+                )
+                db.session.add(record)
+                records_created += 1
+
+            except Exception as row_error:
+                logger.error(f"Error processing row {i}: {row_error}")
+                continue
+
+        # Log the action
+        log = FulfillmentLog(
+            order_id=order_id,
+            admin_user_id=admin_user.id,
+            action_type="intelligence_csv_uploaded",
+            action_data={
+                "template_name": template_name,
+                "filename": file.filename,
+                "records_created": records_created,
+                "columns_count": len(columns),
+            },
+        )
+        db.session.add(log)
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "template": template.to_dict(),
+                "records_created": records_created,
+                "message": f"Intelligence template '{template_name}' created with {records_created} records",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error creating intelligence from CSV: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>/intelligence/templates", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_order_intelligence_templates(order_id):
+    """Get all intelligence templates for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get the order first
+        order = Order.query.get_or_404(order_id)
+
+        # Check if user is admin OR if user is the client for this order
+        admin_record = AdminUser.query.filter_by(
+            user_id=user.id, is_active=True
+        ).first()
+
+        is_admin = admin_record is not None
+        is_client = order.client_id == user.id
+
+        if not is_admin and not is_client:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Access denied. You can only view your own order data.",
+                    }
+                ),
+                403,
+            )
+
+        # Get all intelligence templates for this order
+        templates = IntelligenceTemplate.query.filter_by(
+            order_id=order_id, is_active=True
+        ).all()
+
+        # Add record count to each template
+        templates_data = []
+        for template in templates:
+            template_dict = template.to_dict()
+            template_dict["record_count"] = IntelligenceRecord.query.filter_by(
+                template_id=template.id
+            ).count()
+            templates_data.append(template_dict)
+
+        return jsonify({"success": True, "templates": templates_data})
+
+    except Exception as e:
+        logger.error(f"Error fetching intelligence templates for order {order_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/intelligence/templates/<int:template_id>/records",
+    methods=["GET"],
+)
+@jwt_required()
+@cross_origin()
+def get_intelligence_records(order_id, template_id):
+    """Get intelligence records for a specific template"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get the order first
+        order = Order.query.get_or_404(order_id)
+
+        # Check if user is admin OR if user is the client for this order
+        admin_record = AdminUser.query.filter_by(
+            user_id=user.id, is_active=True
+        ).first()
+
+        is_admin = admin_record is not None
+        is_client = order.client_id == user.id
+
+        if not is_admin and not is_client:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Access denied. You can only view your own order data.",
+                    }
+                ),
+                403,
+            )
+
+        # Verify template belongs to the order
+        template = IntelligenceTemplate.query.filter_by(
+            id=template_id, order_id=order_id
+        ).first_or_404()
+
+        # Get records with pagination
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 50))
+
+        records_query = IntelligenceRecord.query.filter_by(template_id=template_id)
+        records_paginated = records_query.paginate(
+            page=page, per_page=limit, error_out=False
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "template": template.to_dict(),
+                "records": [record.to_dict() for record in records_paginated.items],
+                "pagination": {
+                    "page": page,
+                    "pages": records_paginated.pages,
+                    "per_page": limit,
+                    "total": records_paginated.total,
+                    "has_next": records_paginated.has_next,
+                    "has_prev": records_paginated.has_prev,
+                },
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching intelligence records: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Fulfillment Update Routes
+@app.route("/api/admin/orders/<int:order_id>/fulfillment", methods=["PUT"])
+@jwt_required()
+@cross_origin()
+def update_order_fulfillment(order_id):
+    """Update fulfillment metadata for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        data = request.get_json()
+        order = Order.query.get_or_404(order_id)
+
+        # Update fulfillment metadata
+        if "fulfillment_metadata" in data:
+            order.fulfillment_metadata = data["fulfillment_metadata"]
+
+        # Update intelligence data summary if provided
+        if "intelligence_data" in data:
+            order.intelligence_data = data["intelligence_data"]
+
+        # Log the action
+        log = FulfillmentLog(
+            order_id=order_id,
+            admin_user_id=admin_user.id,
+            action_type="fulfillment_updated",
+            action_data={
+                "updated_fields": list(data.keys()),
+                "timestamp": datetime.utcnow().isoformat(),
+            },
+        )
+        db.session.add(log)
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "order": order.to_dict(include_fulfillment=True),
+                "message": "Fulfillment data updated successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating fulfillment for order {order_id}: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>/fulfillment/logs", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_fulfillment_logs(order_id):
+    """Get fulfillment action logs for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get fulfillment logs for this order
+        logs = (
+            FulfillmentLog.query.filter_by(order_id=order_id)
+            .order_by(FulfillmentLog.timestamp.desc())
+            .limit(50)
+            .all()
+        )
+
+        return jsonify({"success": True, "logs": [log.to_dict() for log in logs]})
+
+    except Exception as e:
+        logger.error(f"Error fetching fulfillment logs for order {order_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Outreach Template Routes
+@app.route("/api/admin/orders/<int:order_id>/outreach-templates", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_order_outreach_templates(order_id):
+    """Get all outreach templates for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get the order first
+        order = Order.query.get_or_404(order_id)
+
+        # Check if user is admin OR if user is the client for this order
+        admin_record = AdminUser.query.filter_by(
+            user_id=user.id, is_active=True
+        ).first()
+
+        is_admin = admin_record is not None
+        is_client = order.client_id == user.id
+
+        if not is_admin and not is_client:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Access denied. You can only view your own order data.",
+                    }
+                ),
+                403,
+            )
+
+        # Get all outreach templates for this order
+        templates = (
+            OutreachTemplate.query.filter_by(order_id=order_id, is_active=True)
+            .order_by(OutreachTemplate.position, OutreachTemplate.id)
+            .all()
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "templates": [template.to_dict() for template in templates],
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching outreach templates for order {order_id}: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/orders/<int:order_id>/outreach-templates", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_order_outreach_templates_client(order_id):
+    """Client endpoint to get outreach templates for an order"""
+    try:
+        return get_order_outreach_templates(order_id)
+    except Exception as e:
+        logger.error(
+            f"Error fetching outreach templates for client order {order_id}: {e}"
+        )
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>/outreach-templates", methods=["POST"])
+@jwt_required()
+@cross_origin()
+def create_outreach_template(order_id):
+    """Create a new outreach template for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "JSON data required"}), 400
+
+        # Validate required fields
+        if not data.get("title") or not data.get("content"):
+            return (
+                jsonify({"success": False, "error": "Title and content are required"}),
+                400,
+            )
+
+        # Get the next position
+        max_position = (
+            db.session.query(func.max(OutreachTemplate.position))
+            .filter_by(order_id=order_id, is_active=True)
+            .scalar()
+            or 0
+        )
+
+        # Create new template
+        template = OutreachTemplate(
+            order_id=order_id,
+            title=data["title"],
+            subject=data.get("subject", ""),
+            content=data["content"],
+            template_type=data.get("template_type", "email"),
+            position=max_position + 1,
+        )
+
+        db.session.add(template)
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "template": template.to_dict(),
+                "message": "Outreach template created successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error creating outreach template for order {order_id}: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/outreach-templates/<int:template_id>",
+    methods=["PUT"],
+)
+@jwt_required()
+@cross_origin()
+def update_outreach_template(order_id, template_id):
+    """Update an outreach template"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the template
+        template = OutreachTemplate.query.filter_by(
+            id=template_id, order_id=order_id, is_active=True
+        ).first_or_404()
+
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "JSON data required"}), 400
+
+        # Update fields
+        if "title" in data:
+            template.title = data["title"]
+        if "subject" in data:
+            template.subject = data["subject"]
+        if "content" in data:
+            template.content = data["content"]
+        if "template_type" in data:
+            template.template_type = data["template_type"]
+        if "position" in data:
+            template.position = data["position"]
+
+        template.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "template": template.to_dict(),
+                "message": "Outreach template updated successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error updating outreach template {template_id} for order {order_id}: {e}"
+        )
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/outreach-templates/<int:template_id>",
+    methods=["DELETE"],
+)
+@jwt_required()
+@cross_origin()
+def delete_outreach_template(order_id, template_id):
+    """Delete an outreach template (soft delete)"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the template
+        template = OutreachTemplate.query.filter_by(
+            id=template_id, order_id=order_id, is_active=True
+        ).first_or_404()
+
+        # Soft delete
+        template.is_active = False
+        template.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify(
+            {"success": True, "message": "Outreach template deleted successfully"}
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error deleting outreach template {template_id} for order {order_id}: {e}"
+        )
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/outreach-templates/bulk-update", methods=["PUT"]
+)
+@jwt_required()
+@cross_origin()
+def bulk_update_outreach_templates(order_id):
+    """Bulk update multiple outreach templates"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        data = request.get_json()
+        if not data or "templates" not in data:
+            return jsonify({"success": False, "error": "Templates data required"}), 400
+
+        templates_data = data["templates"]
+        updated_templates = []
+
+        for template_data in templates_data:
+            template_id = template_data.get("id")
+
+            if template_id:
+                # Update existing template
+                template = OutreachTemplate.query.filter_by(
+                    id=template_id, order_id=order_id, is_active=True
+                ).first()
+
+                if template:
+                    if "title" in template_data:
+                        template.title = template_data["title"]
+                    if "subject" in template_data:
+                        template.subject = template_data["subject"]
+                    if "content" in template_data:
+                        template.content = template_data["content"]
+                    if "template_type" in template_data:
+                        template.template_type = template_data["template_type"]
+                    if "position" in template_data:
+                        template.position = template_data["position"]
+
+                    template.updated_at = datetime.utcnow()
+                    updated_templates.append(template)
+            else:
+                # Create new template
+                if template_data.get("title") and template_data.get("content"):
+                    max_position = (
+                        db.session.query(func.max(OutreachTemplate.position))
+                        .filter_by(order_id=order_id, is_active=True)
+                        .scalar()
+                        or 0
+                    )
+
+                    template = OutreachTemplate(
+                        order_id=order_id,
+                        title=template_data["title"],
+                        subject=template_data.get("subject", ""),
+                        content=template_data["content"],
+                        template_type=template_data.get("template_type", "email"),
+                        position=template_data.get("position", max_position + 1),
+                    )
+
+                    db.session.add(template)
+                    updated_templates.append(template)
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "templates": [template.to_dict() for template in updated_templates],
+                "message": f"Updated {len(updated_templates)} outreach templates successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error bulk updating outreach templates for order {order_id}: {e}"
+        )
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ============================================================================
+# SECURE FILE DOWNLOAD ROUTES
+# ============================================================================
+
+
+@app.route(
+    "/api/deliverables/<int:deliverable_id>/download", methods=["GET", "OPTIONS"]
+)
+@jwt_required()
+@cross_origin()
+def download_deliverable(deliverable_id):
+    """Securely download a deliverable file without exposing S3 paths"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get the deliverable
+        deliverable = OrderDeliverable.query.get_or_404(deliverable_id)
+
+        # Get the order to check permissions
+        order = Order.query.get(deliverable.order_id)
+        if not order:
+            return jsonify({"success": False, "error": "Order not found"}), 404
+
+        # Check if user is the client OR an admin
+        admin_record = AdminUser.query.filter_by(
+            user_id=user.id, is_active=True
+        ).first()
+
+        is_admin = admin_record is not None
+        is_client = order.client_id == user.id
+
+        if not is_admin and not is_client:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        # Download file from S3
+        try:
+            # Use the correct S3 bucket name
+            bucket_name = S3_BUCKET_NAME or S3_BUCKET
+
+            # Get the file from S3
+            s3_response = s3_client.get_object(
+                Bucket=bucket_name, Key=deliverable.s3_key
+            )
+
+            # Determine content type
+            content_type = "application/octet-stream"  # Default
+            if deliverable.file_name:
+                file_extension = deliverable.file_name.lower().split(".")[-1]
+                content_type_mapping = {
+                    "pdf": "application/pdf",
+                    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "doc": "application/msword",
+                    "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "xls": "application/vnd.ms-excel",
+                    "csv": "text/csv",
+                    "txt": "text/plain",
+                    "png": "image/png",
+                    "jpg": "image/jpeg",
+                    "jpeg": "image/jpeg",
+                    "gif": "image/gif",
+                }
+                content_type = content_type_mapping.get(file_extension, content_type)
+
+            # Create response with file content
+            file_data = s3_response["Body"].read()
+
+            response = Response(
+                file_data,
+                mimetype=content_type,
+                headers={
+                    "Content-Disposition": f'attachment; filename="{deliverable.file_name}"',
+                    "Content-Length": str(len(file_data)),
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
+            )
+
+            logger.info(
+                f"Successfully served download for deliverable {deliverable_id} to user {user.id}"
+            )
+            return response
+
+        except s3_client.exceptions.NoSuchKey:
+            logger.error(
+                f"File not found in S3 for deliverable {deliverable_id}: {deliverable.s3_key}"
+            )
+            return jsonify({"success": False, "error": "File not found"}), 404
+
+        except Exception as s3_error:
+            logger.error(
+                f"S3 error downloading deliverable {deliverable_id}: {str(s3_error)}"
+            )
+            return jsonify({"success": False, "error": "File download failed"}), 500
+
+    except Exception as e:
+        logger.error(f"Error downloading deliverable {deliverable_id}: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500

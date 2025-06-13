@@ -3924,6 +3924,248 @@ def analyze_resume_for_career(resume_path: str) -> Dict[str, Any]:
         }
 
 
+def analyze_resume_for_career_with_text(resume_path: str) -> Dict[str, Any]:
+    """
+    Analyze a resume to provide career insights AND extract the raw text in one unified call
+
+    This function combines text extraction and career analysis using a single Gemini prompt
+    to ensure we get both the structured analysis AND the raw resume text reliably.
+
+    Args:
+        resume_path: Path to the resume file (PDF or DOCX)
+
+    Returns:
+        Dictionary containing analysis results with career insights AND raw_resume_text
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        # Upload the resume file
+        resume_file = genai.upload_file(path=resume_path)
+
+        # Wait for processing
+        while resume_file.state.name == "PROCESSING":
+            time.sleep(1)
+            resume_file = genai.get_file(name=resume_file.name)
+
+        # Create the unified analysis + text extraction prompt
+        prompt = """
+        Analyze this resume to provide comprehensive career insights AND extract the full text content.
+        
+        I need BOTH:
+        1. Complete raw text extraction from the resume
+        2. Career analysis and recommendations
+        
+        Extract and analyze:
+        1. Full text content of the resume (exactly as written)
+        2. Candidate information and experience level
+        3. Best-fit target roles based on skills and experience
+        4. Key strengths that stand out
+        5. Specific improvements needed for better ATS performance and impact
+        6. Strategic career advice
+        
+        Be specific, actionable, and encouraging. Focus on high-value insights that will help the candidate succeed.
+        
+        Return ONLY a JSON object with this EXACT structure (no additional fields):
+        {
+            "raw_resume_text": "str (COMPLETE text content extracted from the resume, preserving formatting where possible)",
+            "overallScore": float (0-10, based on resume quality, clarity, and impact),
+            "candidateName": "str (extracted name or 'Not Found')",
+            "potentialTitles": ["str (3-5 best-fit job titles based on experience)"],
+            "strengths": ["str (3-4 key strengths with specific evidence from resume)"],
+            "improvements": [
+                {
+                    "category": "str (Keywords|Quantification|Format|Skills|Experience)",
+                    "suggestion": "str (specific, actionable improvement)",
+                    "impact": "high|medium|low"
+                }
+            ],
+            "targetRoleMatch": {
+                "Role Title 1": int (match percentage 0-100),
+                "Role Title 2": int,
+                "Role Title 3": int
+            },
+            "strategy": "str (2-3 sentences of personalized strategic career advice)",
+            "keywordGaps": ["str (5-10 important keywords missing for target roles)"],
+            "industryInsights": "str (1-2 sentences about relevant industry trends)",
+            "suggestedJobTitles": ["str (5-8 specific job titles to search for)"],
+            "targetCompanies": ["str (5-10 company names or types that would be good fits)"]
+        }
+        
+        CRITICAL: The "raw_resume_text" field must contain the COMPLETE text from the resume.
+        Extract every word, preserving the structure as much as possible. This is essential for
+        AI agents to reference specific details from the user's actual resume.
+        
+        EXAMPLE OUTPUT for a Software Engineer:
+        {
+            "raw_resume_text": "Sarah Chen\\nSoftware Engineer\\nEmail: sarah.chen@email.com\\nPhone: (555) 123-4567\\n\\nEXPERIENCE\\nSenior Software Engineer at TechCorp (2020-2023)\\n• Developed full-stack applications using React, Node.js, and Python\\n• Led cross-functional team of 8 engineers on major product launch\\n• Reduced API response time by 45% through optimization efforts\\n\\nSOFTWARE ENGINEER at StartupXYZ (2018-2020)\\n• Built scalable microservices architecture\\n• Implemented CI/CD pipelines\\n\\nEDUCATION\\nBS Computer Science, University of Technology (2018)\\n\\nSKILLS\\nJavaScript, Python, React, Node.js, AWS, Docker",
+            "overallScore": 7.5,
+            "candidateName": "Sarah Chen",
+            "potentialTitles": ["Senior Software Engineer", "Full Stack Developer", "Technical Lead", "Software Architect"],
+            "strengths": [
+                "Strong full-stack experience with React, Node.js, and Python demonstrated across 3 major projects",
+                "Led cross-functional team of 8 engineers, showing leadership potential",
+                "Quantified achievements: 'Reduced API response time by 45%' shows impact focus",
+                "Active open-source contributor with 2.5k GitHub stars on personal projects"
+            ],
+            "improvements": [
+                {
+                    "category": "Keywords",
+                    "suggestion": "Add cloud platform keywords like 'AWS', 'Docker', 'Kubernetes' which appear in 78% of senior roles",
+                    "impact": "high"
+                },
+                {
+                    "category": "Quantification",
+                    "suggestion": "Quantify team leadership impact - add metrics like team velocity improvement or project delivery time",
+                    "impact": "high"
+                },
+                {
+                    "category": "Skills",
+                    "suggestion": "Add a dedicated 'Technical Skills' section with categorized skills (Languages, Frameworks, Tools, Cloud)",
+                    "impact": "medium"
+                }
+            ],
+            "targetRoleMatch": {
+                "Senior Software Engineer": 85,
+                "Full Stack Developer": 78,
+                "Technical Lead": 72
+            },
+            "strategy": "Your combination of technical depth and emerging leadership experience positions you well for senior IC or team lead roles. Focus on highlighting your mentorship experience and architectural decisions to stand out for technical lead positions.",
+            "keywordGaps": ["Microservices", "CI/CD", "Agile", "System Design", "AWS/GCP", "Docker", "REST API", "Unit Testing"],
+            "industryInsights": "The market for senior engineers with full-stack expertise is strong, with 23% YoY growth. Companies are especially seeking engineers who can mentor others and make architectural decisions.",
+            "suggestedJobTitles": [
+                "Senior Software Engineer",
+                "Senior Full Stack Developer", 
+                "Staff Software Engineer",
+                "Technical Lead - Full Stack",
+                "Principal Software Engineer",
+                "Software Architect",
+                "Engineering Manager",
+                "Senior Backend Engineer"
+            ],
+            "targetCompanies": [
+                "Mid-size tech companies (Series B-D startups)",
+                "Fintech companies like Stripe, Square, Plaid",
+                "Enterprise SaaS companies",
+                "Remote-first companies like GitLab, Zapier",
+                "Tech consultancies like Thoughtworks",
+                "Major tech companies' product teams"
+            ]
+        }
+        
+        Scoring guidelines:
+        - 9-10: Exceptional resume with strong quantification, keywords, and clear value proposition
+        - 7-8: Good resume with minor improvements needed
+        - 5-6: Average resume needing significant optimization
+        - 3-4: Weak resume requiring major overhaul
+        - 0-2: Very poor or incomplete resume
+        
+        IMPORTANT: 
+        - ALWAYS include the complete raw_resume_text - this is critical!
+        - Be generous with scores - most resumes should be 5-8
+        - Provide specific, actionable suggestions
+        - Include actual keywords and job titles relevant to their field
+        - targetRoleMatch should use the exact titles from potentialTitles
+        - Keep all text concise and valuable
+        """
+
+        # Generate analysis with text extraction
+        response = model.generate_content([prompt, resume_file])
+        analysis_results = json.loads(response.text)
+
+        # Validate the response structure
+        required_keys = [
+            "raw_resume_text",  # This is the key addition!
+            "overallScore",
+            "candidateName",
+            "potentialTitles",
+            "strengths",
+            "improvements",
+            "targetRoleMatch",
+            "strategy",
+            "keywordGaps",
+            "industryInsights",
+            "suggestedJobTitles",
+            "targetCompanies",
+        ]
+
+        for key in required_keys:
+            if key not in analysis_results:
+                logger.warning(f"Missing key in resume analysis: {key}")
+                # Provide defaults for missing keys
+                if key == "raw_resume_text":
+                    analysis_results[key] = "Text extraction failed"
+                elif key == "overallScore":
+                    analysis_results[key] = 5.0
+                elif key == "candidateName":
+                    analysis_results[key] = "Not Found"
+                elif key in [
+                    "potentialTitles",
+                    "strengths",
+                    "keywordGaps",
+                    "suggestedJobTitles",
+                    "targetCompanies",
+                ]:
+                    analysis_results[key] = []
+                elif key == "improvements":
+                    analysis_results[key] = [
+                        {
+                            "category": "General",
+                            "suggestion": "Resume could not be fully analyzed",
+                            "impact": "high",
+                        }
+                    ]
+                elif key == "targetRoleMatch":
+                    analysis_results[key] = {}
+                elif key == "strategy":
+                    analysis_results[key] = (
+                        "Focus on highlighting your key achievements and skills relevant to your target roles."
+                    )
+                elif key == "industryInsights":
+                    analysis_results[key] = (
+                        "The job market is competitive. Focus on showcasing your unique value proposition."
+                    )
+
+        # Ensure score is within range
+        analysis_results["overallScore"] = max(
+            0, min(10, float(analysis_results["overallScore"]))
+        )
+
+        # Log successful extraction
+        text_length = len(analysis_results.get("raw_resume_text", ""))
+        logger.info(
+            f"Successfully analyzed resume with score: {analysis_results['overallScore']}, extracted text length: {text_length} characters"
+        )
+
+        return analysis_results
+
+    except Exception as e:
+        logger.error(f"Error analyzing resume with text extraction: {str(e)}")
+        # Return a default error response with empty text
+        return {
+            "raw_resume_text": "",
+            "overallScore": 0,
+            "candidateName": "Error",
+            "potentialTitles": [],
+            "strengths": [],
+            "improvements": [
+                {
+                    "category": "Error",
+                    "suggestion": f"Unable to analyze resume: {str(e)}",
+                    "impact": "high",
+                }
+            ],
+            "targetRoleMatch": {},
+            "strategy": "Please try uploading your resume again.",
+            "keywordGaps": [],
+            "industryInsights": "Unable to provide insights due to analysis error.",
+            "suggestedJobTitles": [],
+            "targetCompanies": [],
+            "error": str(e),
+        }
+
+
 def generate_career_strategy_ticket(
     resume_analysis_json: Dict[str, Any],
     raw_resume_text: str,
@@ -3967,7 +4209,7 @@ Your response must be a valid JSON object matching this exact schema:
 {
   "client_info": {
     "name": "First Last",
-    "target_role": "Specific Job Title",
+    "target_roles": ["Primary Job Title", "Secondary Job Title", "Alternative Job Title"],
     "target_locations": ["City, State", "Remote"],
     "salary_goal": "$XX,000+",
     "suggested_salary_range": "$XX,000-$XX,000",
@@ -3993,7 +4235,7 @@ Your response must be a valid JSON object matching this exact schema:
 
 ## client_info
 - **name**: Extract from resume or chat. If unclear, use "Career Accelerator Client"
-- **target_role**: Be specific (e.g., "Senior Product Manager" not just "Product Manager")
+- **target_roles**: Generate 2-4 specific, well-matched job titles based on resume analysis and chat conversation. Prioritize by fit (e.g., ["Senior Product Manager", "Product Manager", "Associate Product Manager"]). Use the suggestedJobTitles from resume analysis and conversation insights
 - **target_locations**: Include 1-3 realistic locations from resume/chat. Always include "Remote" as an option
 - **salary_goal**: Provide a realistic range based on role/experience (e.g., "$120,000+")
 - **suggested_salary_range**: More specific range for negotiation (e.g., "$115,000-$135,000")
@@ -4034,7 +4276,8 @@ Every field must feel custom-built for this specific person:
 - Mention their experience level appropriately
 - Address their unique challenges and goals
 - Use language that matches their professional level
-- Include realistic salary ranges for their market/role"""
+- Include realistic salary ranges for their market/role
+- **CRITICAL**: Use the `suggestedJobTitles` from the resume analysis as a foundation for generating target_roles, but also consider insights from the chat conversation to refine and prioritize the roles"""
 
         # Format the input data for the prompt
         input_data = f"""
@@ -4064,7 +4307,9 @@ chatTranscript: {json.dumps(chat_transcript, indent=2)}
             return {
                 "client_info": {
                     "name": resume_analysis_json.get("candidateName", "Candidate"),
-                    "target_role": "Professional Role",
+                    "target_roles": resume_analysis_json.get(
+                        "suggestedJobTitles", ["Professional Role"]
+                    )[:3],
                     "target_locations": ["Location TBD"],
                     "salary_goal": None,
                     "suggested_salary_range": "$50,000-$80,000",
@@ -4105,7 +4350,12 @@ chatTranscript: {json.dumps(chat_transcript, indent=2)}
             raise ValueError("Invalid ticket structure generated")
 
         # Validate client_info structure
-        client_info_keys = ["name", "target_role", "target_locations", "key_challenges"]
+        client_info_keys = [
+            "name",
+            "target_roles",
+            "target_locations",
+            "key_challenges",
+        ]
         if not all(key in ticket_data["client_info"] for key in client_info_keys):
             logger.error("Generated ticket client_info missing required keys")
 
@@ -4124,6 +4374,9 @@ chatTranscript: {json.dumps(chat_transcript, indent=2)}
         logger.info(
             f"Successfully generated career strategy ticket for: {ticket_data['client_info'].get('name', 'Unknown')}"
         )
+        logger.info(
+            f"Generated {len(ticket_data['client_info'].get('target_roles', []))} target roles: {ticket_data['client_info'].get('target_roles', [])}"
+        )
         return ticket_data
 
     except Exception as e:
@@ -4132,7 +4385,9 @@ chatTranscript: {json.dumps(chat_transcript, indent=2)}
         return {
             "client_info": {
                 "name": resume_analysis_json.get("candidateName", "Candidate"),
-                "target_role": "Professional Role",
+                "target_roles": resume_analysis_json.get(
+                    "suggestedJobTitles", ["Professional Role"]
+                )[:3],
                 "target_locations": ["Location TBD"],
                 "salary_goal": None,
                 "suggested_salary_range": "$50,000-$80,000",
@@ -4159,4 +4414,117 @@ chatTranscript: {json.dumps(chat_transcript, indent=2)}
                     "Initial outreach",
                 ],
             },
+        }
+
+
+def generate_csv_structure(headers, sample_rows, filename="uploaded_file.csv"):
+    """
+    Analyze CSV headers and sample data to generate intelligent field descriptions for sales intelligence
+
+    Args:
+        headers: List of column headers from the CSV
+        sample_rows: List of sample data rows (first few rows of CSV)
+        filename: Name of the uploaded file
+
+    Returns:
+        Dictionary with suggested template structure and AI-generated field descriptions
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        # Create analysis prompt for sales intelligence
+        analysis_prompt = f"""
+        You are analyzing a CSV file for B2B sales intelligence data. Based on the headers and sample data, provide insights about the data structure and suggest how to use this information for lead qualification, personalization, and outreach strategy.
+
+        Filename: {filename}
+        Headers: {', '.join(headers)}
+        
+        Sample rows:
+        {chr(10).join(sample_rows[:3])}  # First 3 rows for analysis
+        
+        Analyze this data and provide a JSON response with the following structure:
+        {{
+            "suggested_template_name": "A descriptive name for this intelligence data",
+            "row_count": {len(sample_rows)},
+            "analysis_summary": "Brief description of what this data represents and its sales intelligence value",
+            "columns": [
+                {{
+                    "name": "column_name",
+                    "usage_note": "How this data can be used for sales intelligence, lead qualification, and personalization",
+                    "data_type": "text|number|email|phone|company|person|url|date",
+                    "example": "sample value from the data",
+                    "confidence": 0.9,
+                    "intelligence_value": "high|medium|low"
+                }}
+            ],
+            "recommendations": [
+                "List of specific recommendations for using this intelligence data in sales outreach"
+            ]
+        }}
+        
+        Focus on sales intelligence value:
+        - How can this data help with lead qualification?
+        - What personalization opportunities does it provide?
+        - How can it improve outreach strategy and conversion rates?
+        - What fields are most valuable for sales teams?
+        
+        Provide specific, actionable insights for each column based on the actual data patterns you observe.
+        """
+
+        # Get analysis from Gemini
+        response = model.generate_content(analysis_prompt)
+        analysis = json.loads(response.text)
+
+        # Validate the response structure
+        required_keys = ["suggested_template_name", "columns", "analysis_summary"]
+        if not all(key in analysis for key in required_keys):
+            raise ValueError("Invalid analysis response structure")
+
+        # Validate columns structure
+        for col in analysis["columns"]:
+            required_col_keys = [
+                "name",
+                "usage_note",
+                "data_type",
+                "intelligence_value",
+            ]
+            if not all(key in col for key in required_col_keys):
+                raise ValueError(
+                    f"Invalid column structure for {col.get('name', 'unknown')}"
+                )
+
+        logger.info(
+            f"Successfully analyzed CSV intelligence data with {len(headers)} columns"
+        )
+        return analysis
+
+    except Exception as e:
+        logger.error(f"Error analyzing CSV for intelligence: {str(e)}")
+        # Return fallback analysis if Gemini fails
+        return {
+            "suggested_template_name": f"Intelligence Data - {datetime.now().strftime('%Y%m%d')}",
+            "row_count": len(sample_rows),
+            "analysis_summary": f"CSV file with {len(headers)} columns containing sales intelligence data",
+            "columns": [
+                {
+                    "name": header.strip(),
+                    "usage_note": f"Sales intelligence field: {header.strip()}. Review and customize usage for your specific outreach strategy.",
+                    "data_type": "text",
+                    "example": (
+                        sample_rows[0].split(",")[i]
+                        if i < len(sample_rows[0].split(","))
+                        else ""
+                    ),
+                    "confidence": 0.7,
+                    "intelligence_value": "medium",
+                }
+                for i, header in enumerate(headers)
+            ],
+            "recommendations": [
+                "Review and verify data accuracy before using for outreach",
+                "Map fields to your CRM system for better tracking",
+                "Create personalized outreach campaigns using the available data",
+                "Segment leads based on company size, industry, or other relevant fields",
+            ],
         }

@@ -265,6 +265,16 @@ class Assistant(Agent):
                 "personalization_record_id"
             )
 
+            # Initialize resume analysis data
+            self.resume_analysis_data = None
+
+            # If we have personalization data with resume_analysis_id, fetch the full analysis
+            if self.personalization_data and self.personalization_data.get(
+                "resume_analysis_id"
+            ):
+                resume_analysis_id = self.personalization_data.get("resume_analysis_id")
+                self._fetch_resume_analysis(resume_analysis_id)
+
             default_voice = "95f07ec4-376e-40bc-a9f6-074beefb2f15"
             self.voice_id = self.brdge.get("voice_id", default_voice)
             if not self.voice_id:
@@ -290,6 +300,41 @@ class Assistant(Agent):
                 "general", "You are a helpful AI assistant."
             )
             return False
+
+    def _fetch_resume_analysis(self, resume_analysis_id):
+        """Fetch resume analysis data including extracted text"""
+        try:
+            logger.info(
+                f"🔍 Agent: Fetching resume analysis data for ID {resume_analysis_id}"
+            )
+            response = requests.get(
+                f"{self.api_base_url}/resume-analysis/{resume_analysis_id}"
+            )
+
+            if response.ok:
+                analysis_data = response.json()
+                self.resume_analysis_data = analysis_data.get("analysis_results", {})
+                logger.info(
+                    f"✅ Agent: Loaded resume analysis data for ID {resume_analysis_id}"
+                )
+
+                # Log what we got (without logging the full text for brevity)
+                if self.resume_analysis_data.get("raw_resume_text"):
+                    text_length = len(self.resume_analysis_data["raw_resume_text"])
+                    logger.info(
+                        f"📄 Agent: Resume text extracted, length: {text_length} characters"
+                    )
+                else:
+                    logger.warning(f"⚠️ Agent: No resume text found in analysis data")
+
+            else:
+                logger.warning(
+                    f"⚠️ Agent: Could not fetch resume analysis {resume_analysis_id}: {response.status_code}"
+                )
+
+        except Exception as e:
+            logger.error(f"❌ Agent: Error fetching resume analysis: {e}")
+            self.resume_analysis_data = None
 
     def build_personalized_context(self):
         """Build a rich, natural personalization context from viewer data"""
@@ -411,6 +456,36 @@ class Assistant(Agent):
                 else:
                     # Generic handling
                     context_parts.append(f"{field.replace('_', ' ').title()}: {value}")
+
+        # Add resume content if available
+        if hasattr(self, "resume_analysis_data") and self.resume_analysis_data:
+            raw_resume_text = self.resume_analysis_data.get("raw_resume_text")
+            if raw_resume_text and len(raw_resume_text.strip()) > 0:
+                # Truncate resume text if it's very long (keep first 3000 chars to avoid token limits)
+                if len(raw_resume_text) > 3000:
+                    resume_text_to_use = (
+                        raw_resume_text[:3000] + "... [resume continues]"
+                    )
+                else:
+                    resume_text_to_use = raw_resume_text
+
+                context_parts.append(
+                    f"""
+
+RESUME CONTENT:
+The following is the user's actual resume text:
+---
+{resume_text_to_use}
+---
+
+INSTRUCTIONS FOR USING RESUME CONTENT:
+- Reference specific companies, roles, and achievements from their resume
+- Quote exact phrases when relevant (e.g., "I see you mentioned '[specific achievement]' in your experience")
+- Use their actual job titles and company names in examples
+- Build on the specific skills and experiences they've listed
+- Make references feel natural and conversational
+- Connect their resume details to career advice and opportunities"""
+                )
 
         # Join all parts into a coherent context
         if context_parts:
@@ -1433,8 +1508,11 @@ async def entrypoint(ctx: JobContext):
         logger.info(f"Using realtime mode with model: {realtime_model}")
 
         if realtime_model == "gemini-2.0-flash-live-001":
+            # realtime_model = "gemini-2.5-flash-preview-native-audio-dialog"
             session = AgentSession(
-                llm=google.beta.realtime.RealtimeModel(),
+                llm=google.beta.realtime.RealtimeModel(
+                    model=realtime_model, voice="Orus"
+                ),
                 # Note: Realtime models handle voice internally, no separate TTS needed
             )
         else:

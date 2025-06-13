@@ -12,106 +12,105 @@ const palette = {
     inkLight: '#3A4553',
     inkFaded: '#7B8794',
     text: {
-        primary: '#0A0D1C',
-        secondary: '#5B6B7A',
-        disabled: '#B8C5D1',
+        primary: '#1A202C',
+        secondary: '#64748B',
+        disabled: '#CBD5E1',
     },
 
-    // Enhanced Brand Colors - More vibrant and sophisticated
+    // Clean Azure Blue Brand Colors - Minimalist and Professional
     primary: {
-        main: '#0066FF', // Bright Azure
-        light: '#4D8CFF', // Lighter shade
-        lighter: '#E8F2FF', // Very light blue for backgrounds
-        dark: '#0052DD', // Darker shade
-        darker: '#003DB8', // Even darker
+        main: '#0066FF', // Pure Azure Blue
+        light: '#3385FF', // Lighter azure
+        lighter: '#E6F0FF', // Very light blue for backgrounds
+        lightest: '#F0F7FF', // Ultra light blue
+        dark: '#0052CC', // Darker azure
+        darker: '#003D99', // Even darker
         contrastText: '#FFFFFF',
-        // Add gradient variants
-        gradientStart: '#0066FF',
-        gradientEnd: '#0052DD',
-        shadow: 'rgba(0, 102, 255, 0.3)',
+        // Remove gradients for cleaner look
+        shadow: 'rgba(0, 102, 255, 0.15)',
     },
 
-    // Enhanced Neutrals with more sophisticated grays
+    // Enhanced Neutrals with cleaner grays
     grey: {
         25: '#FCFCFD',   // Ultra light
-        50: '#F9FAFB',   // Almost white
-        100: '#F2F4F7',  // Light gray
-        200: '#E4E7EC',  // Border gray
-        300: '#D0D5DD',  // Light mid gray
-        400: '#98A2B3',  // Mid gray
-        500: '#667085',  // True mid gray
-        600: '#475467',  // Dark gray
-        700: '#344054',  // Darker gray
-        800: '#1D2939',  // Very dark
-        900: '#101828',  // Near black
-        950: '#0C111D',  // Ultra dark
+        50: '#F8FAFC',   // Almost white
+        100: '#F1F5F9',  // Light gray
+        200: '#E2E8F0',  // Border gray
+        300: '#CBD5E1',  // Light mid gray
+        400: '#94A3B8',  // Mid gray
+        500: '#64748B',  // True mid gray
+        600: '#475569',  // Dark gray
+        700: '#334155',  // Darker gray
+        800: '#1E293B',  // Very dark
+        900: '#0F172A',  // Near black
+        950: '#020617',  // Ultra dark
     },
     neutral: {
         lightest: '#FCFCFD',
-        light: '#F9FAFB',
-        mid: '#D0D5DD',
-        dark: '#475467',
+        light: '#F8FAFC',
+        mid: '#CBD5E1',
+        dark: '#475569',
     },
 
-    // Enhanced Backgrounds with subtle variations
+    // Clean Backgrounds - Pure whites
     background: {
         default: '#FFFFFF',
         paper: '#FFFFFF',
-        subtle: '#F9FAFB',
-        elevated: '#FCFCFD',
-        glass: 'rgba(255, 255, 255, 0.8)',
+        subtle: '#F8FAFC',
+        elevated: '#FFFFFF',
+        glass: 'rgba(255, 255, 255, 0.95)',
     },
 
-    // Enhanced Feedback Colors
+    // Clean Feedback Colors - Muted for professional look
     success: {
-        main: '#00D084',
-        light: '#E7FDF4',
-        lighter: '#F0FDF9',
-        dark: '#00B872',
-        darker: '#059669',
+        main: '#10B981',
+        light: '#D1FAE5',
+        lighter: '#ECFDF5',
+        dark: '#059669',
+        darker: '#047857',
         contrastText: '#FFFFFF',
-        shadow: 'rgba(0, 208, 132, 0.3)',
+        shadow: 'rgba(16, 185, 129, 0.15)',
     },
     error: {
-        main: '#FF4444',
-        light: '#FEF2F2',
-        lighter: '#FFF5F5',
-        dark: '#E53E3E',
-        darker: '#C53030',
+        main: '#EF4444',
+        light: '#FEE2E2',
+        lighter: '#FEF2F2',
+        dark: '#DC2626',
+        darker: '#B91C1C',
         contrastText: '#FFFFFF',
-        shadow: 'rgba(255, 68, 68, 0.3)',
+        shadow: 'rgba(239, 68, 68, 0.15)',
     },
     warning: {
-        main: '#FF9500',
-        light: '#FFFBEB',
-        lighter: '#FFFCF0',
-        dark: '#F59E0B',
-        darker: '#D97706',
+        main: '#F59E0B',
+        light: '#FEF3C7',
+        lighter: '#FFFBEB',
+        dark: '#D97706',
+        darker: '#B45309',
         contrastText: '#FFFFFF',
-        shadow: 'rgba(255, 149, 0, 0.3)',
+        shadow: 'rgba(245, 158, 11, 0.15)',
     },
     info: {
-        main: '#0EA5E9',
-        light: '#F0F9FF',
-        lighter: '#F7FBFF',
-        dark: '#0284C7',
-        darker: '#0369A1',
+        main: '#3B82F6',
+        light: '#DBEAFE',
+        lighter: '#EFF6FF',
+        dark: '#2563EB',
+        darker: '#1D4ED8',
         contrastText: '#FFFFFF',
-        shadow: 'rgba(14, 165, 233, 0.3)',
+        shadow: 'rgba(59, 130, 246, 0.15)',
     },
 
-    // Enhanced Secondary
+    // Clean Secondary
     secondary: {
-        main: '#667085',
-        light: '#98A2B3',
-        lighter: '#F2F4F7',
-        dark: '#475467',
-        darker: '#344054',
+        main: '#64748B',
+        light: '#94A3B8',
+        lighter: '#F1F5F9',
+        dark: '#475569',
+        darker: '#334155',
         contrastText: '#FFFFFF',
     },
 
-    // Enhanced Divider
-    divider: '#E4E7EC',
+    // Clean Divider
+    divider: '#E2E8F0',
 };
 
 // 3. Enhanced Typography System with better hierarchy and spacing
@@ -284,18 +283,18 @@ const shape = {
 // 5. Enhanced Shadows with more depth and sophistication
 const shadows = [
     'none',
-    '0 1px 2px rgba(16, 24, 40, 0.05)', // xs - subtle
-    '0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06)', // sm - layered
-    '0 4px 8px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.03)', // md - layered
-    '0 8px 16px rgba(16, 24, 40, 0.1), 0 4px 6px rgba(16, 24, 40, 0.05)', // lg - layered
-    '0 12px 24px rgba(16, 24, 40, 0.12), 0 4px 8px rgba(16, 24, 40, 0.06)', // xl - layered
-    '0 16px 32px rgba(16, 24, 40, 0.14), 0 6px 12px rgba(16, 24, 40, 0.08)', // 2xl - dramatic
-    '0 24px 48px rgba(16, 24, 40, 0.16), 0 12px 24px rgba(16, 24, 40, 0.1)', // 3xl - very dramatic
-    // Colored shadows for interactive elements
-    '0 8px 24px rgba(0, 102, 255, 0.2), 0 4px 8px rgba(0, 102, 255, 0.1)', // primary shadow
-    '0 8px 24px rgba(0, 208, 132, 0.2), 0 4px 8px rgba(0, 208, 132, 0.1)', // success shadow
+    '0 1px 2px rgba(0, 0, 0, 0.05)', // xs - subtle
+    '0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)', // sm - layered
+    '0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05)', // md - layered
+    '0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)', // lg - layered
+    '0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04)', // xl - layered
+    '0 25px 50px rgba(0, 0, 0, 0.12)', // 2xl - dramatic
+    '0 35px 60px rgba(0, 0, 0, 0.15)', // 3xl - very dramatic
+    // Clean shadows for interactive elements
+    '0 4px 20px rgba(0, 102, 255, 0.15)', // primary shadow
+    '0 4px 20px rgba(16, 185, 129, 0.15)', // success shadow
     // Fill the rest
-    ...Array(14).fill('0 32px 64px rgba(16, 24, 40, 0.18), 0 16px 32px rgba(16, 24, 40, 0.12)'),
+    ...Array(14).fill('0 35px 60px rgba(0, 0, 0, 0.15)'),
 ];
 
 // 6. Enhanced Components with premium styling
@@ -376,15 +375,14 @@ const components = {
                 backgroundColor: palette.primary.main,
                 color: palette.primary.contrastText,
                 border: 'none',
-                background: `linear-gradient(135deg, ${palette.primary.main} 0%, ${palette.primary.dark} 100%)`,
                 '&:hover': {
-                    background: `linear-gradient(135deg, ${palette.primary.dark} 0%, ${palette.primary.darker} 100%)`,
-                    boxShadow: `0 8px 24px ${palette.primary.shadow}`,
+                    backgroundColor: palette.primary.dark,
+                    boxShadow: `0 4px 20px ${palette.primary.shadow}`,
                     transform: 'translateY(-2px)',
                 },
                 '&:active': {
                     transform: 'translateY(-1px) scale(0.98)',
-                    boxShadow: `0 4px 12px ${palette.primary.shadow}`,
+                    boxShadow: `0 2px 10px ${palette.primary.shadow}`,
                 },
             },
             outlinedPrimary: {
@@ -405,9 +403,6 @@ const components = {
                 color: palette.text.primary,
                 '&:hover': {
                     backgroundColor: palette.grey[50],
-                    '&::before': {
-                        background: `linear-gradient(135deg, ${palette.primary.main}08 0%, ${palette.primary.light}08 100%)`,
-                    },
                 },
             },
             sizeLarge: {
