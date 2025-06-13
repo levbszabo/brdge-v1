@@ -630,6 +630,53 @@ const CareerAcceleratorPage = () => {
         setIsProcessingPayment(true);
 
         try {
+            // Generate stripe client reference ID
+            const stripeClientReferenceId = `dotbridge_${Date.now()}`;
+
+            // First, create the order in our system
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+            // Extract email - check multiple sources (optional)
+            const customerEmail = ctaEmail ||
+                (careerTicket?.client_info?.email) ||
+                (localStorage.getItem('customer_email')) ||
+                '';
+
+            // Extract name from ticket if available
+            const customerName = careerTicket?.client_info?.name || '';
+
+            const orderData = {
+                email: customerEmail,
+                name: customerName,
+                resume_analysis_id: resumeAnalysisId,
+                personalization_id: personalizationId,
+                finalized_goals: editableTicketData,
+                career_ticket_data: careerTicket ? {
+                    strategy_summary: careerTicket.strategy_summary,
+                    client_info: careerTicket.client_info,
+                    generated_at: new Date().toISOString()
+                } : null,
+                stripe_client_reference_id: stripeClientReferenceId
+            };
+
+            console.log('Creating order with data:', orderData);
+
+            const orderResponse = await fetch(`${apiUrl}/career-accelerator/create-order`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            const orderResult = await orderResponse.json();
+
+            if (!orderResponse.ok) {
+                throw new Error(orderResult.error || 'Failed to create order');
+            }
+
+            console.log('Order created successfully:', orderResult);
+
             // Track conversion event for analytics
             if (typeof window.gtag !== 'undefined') {
                 window.gtag('event', 'begin_checkout', {
@@ -645,20 +692,19 @@ const CareerAcceleratorPage = () => {
                 });
             }
 
-            // Prepare user data for post-purchase fulfillment
+            // Store order info for post-purchase tracking
             const purchaseData = {
-                resume_analysis_id: resumeAnalysisId,
-                personalization_id: personalizationId,
-                finalized_goals: editableTicketData,
-                career_ticket_data: careerTicket ? {
-                    strategy_summary: careerTicket.strategy_summary,
-                    client_info: careerTicket.client_info,
-                    generated_at: new Date().toISOString()
-                } : null,
+                order_id: orderResult.order_id,
+                user_id: orderResult.user_id,
+                ...orderData,
                 timestamp: Date.now()
             };
 
-            // Store in localStorage for post-purchase retrieval
+            // Only include email if we have one
+            if (customerEmail) {
+                purchaseData.email = customerEmail;
+            }
+
             localStorage.setItem('dotbridge_purchase_data', JSON.stringify(purchaseData));
 
             // Get the payment link from environment variables
@@ -668,23 +714,26 @@ const CareerAcceleratorPage = () => {
                 throw new Error('Payment link not configured');
             }
 
-            // Build URL with metadata
+            // Build URL with metadata - use the same reference ID for tracking
             const urlParams = new URLSearchParams({
-                'client_reference_id': `dotbridge_${Date.now()}`,
-                'prefilled_email': ctaEmail || ''
+                'client_reference_id': stripeClientReferenceId
             });
+
+            // Only add email if we have one
+            if (customerEmail) {
+                urlParams.set('prefilled_email', customerEmail);
+            }
 
             const fullPaymentUrl = `${paymentLink}?${urlParams.toString()}`;
 
-            // OPTION 1: Always redirect in same tab (more reliable)
-            // window.location.href = fullPaymentUrl;
+            console.log('Redirecting to Stripe:', fullPaymentUrl);
 
-            // OPTION 2: Always open in new tab (preserves funnel page)
+            // Redirect to Stripe (you can change this to open in new tab if preferred)
             window.open(fullPaymentUrl, '_blank', 'noopener,noreferrer');
 
         } catch (error) {
-            console.error('Error initiating payment:', error);
-            alert('Unable to open payment page. Please try again.');
+            console.error('Error creating order or initiating payment:', error);
+            alert(`Error: ${error.message}`);
         } finally {
             setIsProcessingPayment(false);
         }

@@ -4162,6 +4162,141 @@ def submit_career_lead():
         )
 
 
+@app.route("/api/career-accelerator/create-order", methods=["POST"])
+@cross_origin()
+def create_career_accelerator_order():
+    """Create an order when user clicks 'Activate Strategy' - before payment"""
+    try:
+        data = request.get_json()
+
+        # Extract user data
+        email = data.get("email", "").strip().lower()
+        name = data.get("name", "").strip()
+
+        # Generate anonymous email if none provided
+        if not email:
+            email = f"anonymous_{uuid.uuid4().hex[:8]}@dotbridge.temp"
+
+        # Extract career data
+        resume_analysis_id = data.get("resume_analysis_id")
+        personalization_id = data.get("personalization_id")
+        finalized_goals = data.get("finalized_goals", {})
+        career_ticket_data = data.get("career_ticket_data")
+
+        # Stripe metadata for tracking
+        stripe_client_reference_id = data.get("stripe_client_reference_id")
+
+        logger.info(f"Creating career accelerator order for email: {email}")
+
+        # Check if user exists, create if not
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            # Create anonymous user account
+            user = User(email=email)
+            user.set_password(
+                "temp_password_" + str(uuid.uuid4())[:8]
+            )  # Temporary password
+            db.session.add(user)
+            db.session.flush()  # Get user ID
+
+            # Create user account record
+            user_account = UserAccount(
+                user_id=user.id, account_type="free", total_brdges=0, storage_used=0.0
+            )
+            db.session.add(user_account)
+            logger.info(f"Created new user account for {email}")
+
+        # Get the career accelerator offer
+        offer = Offer.query.filter_by(slug="career-accelerator").first()
+        if not offer:
+            logger.error("Career accelerator offer not found")
+            return jsonify({"error": "Service offer not found"}), 500
+
+        # Create service ticket data
+        service_ticket = {
+            "resume_analysis_id": resume_analysis_id,
+            "personalization_id": personalization_id,
+            "finalized_goals": finalized_goals,
+            "career_ticket_data": career_ticket_data,
+            "client_info": {
+                "name": name,
+                "email": email,
+                "submission_date": datetime.utcnow().isoformat(),
+            },
+            "stripe_metadata": {"client_reference_id": stripe_client_reference_id},
+        }
+
+        # Calculate due date
+        from datetime import timedelta
+
+        due_date = datetime.utcnow() + timedelta(days=offer.timeline_days)
+
+        # Create the order
+        order = Order(
+            client_id=user.id,
+            offer_id=offer.id,
+            status="pending_payment",  # Will update to "new" after payment confirmation
+            order_date=datetime.utcnow(),
+            due_date=due_date,
+            payment_status="pending",
+            payment_amount_cents=offer.price_cents,
+            service_ticket=service_ticket,
+            stripe_payment_id=stripe_client_reference_id,  # For tracking
+        )
+
+        db.session.add(order)
+        db.session.commit()
+
+        logger.info(f"Created order #{order.id} for user {user.id} ({email})")
+
+        # Send admin notification email
+        email_content = {
+            "name": name or "Not provided",
+            "email": email,
+            "order_id": order.id,
+            "offer_name": offer.name,
+            "offer_price": f"${offer.price_cents / 100:.0f}",
+            "resume_analysis_id": resume_analysis_id,
+            "personalization_id": personalization_id,
+            "finalized_goals": finalized_goals,
+            "career_ticket_data": career_ticket_data,
+            "stripe_client_reference_id": stripe_client_reference_id,
+            "due_date": due_date.strftime("%Y-%m-%d"),
+            "source": "career_accelerator_order_creation",
+        }
+
+        email_sent = send_notification_email(
+            subject=f"🚀 New Career Accelerator Order #{order.id} - {name or email}",
+            content=email_content,
+            template_type="career_order",
+        )
+
+        if email_sent:
+            logger.info(f"Admin notification email sent for order #{order.id}")
+        else:
+            logger.warning(f"Failed to send admin notification for order #{order.id}")
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "order_id": order.id,
+                    "message": "Order created successfully. You can now proceed to payment.",
+                    "user_id": user.id,
+                    "email_sent": email_sent,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Error creating career accelerator order: {str(e)}", exc_info=True
+        )
+        db.session.rollback()
+        return jsonify({"error": "Failed to create order", "detail": str(e)}), 500
+
+
 def send_notification_email(
     subject,
     content,
@@ -4284,6 +4419,77 @@ def send_notification_email(
                         <p><strong>Submitted at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
                         <p><em>This lead has gone through the complete AI career strategist flow and is ready for follow-up.</em></p>
                         {f'<p><em>📎 Resume was uploaded and {"analyzed" if content.get("resume_analysis_id") else "stored"} for follow-up.</em></p>' if resume_uploaded else ''}
+                    </div>
+                </body>
+            </html>
+            """
+        elif template_type == "career_order":
+            # New template for career accelerator order creation
+            finalized_goals = content.get("finalized_goals", {})
+            target_roles = finalized_goals.get("target_roles", [])
+            target_locations = finalized_goals.get("target_locations", [])
+            salary_goal = finalized_goals.get("salary_goal", "")
+            notes = finalized_goals.get("notes", "")
+
+            career_ticket = content.get("career_ticket_data", {})
+            has_ticket = bool(career_ticket)
+
+            html_content = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h2>🚀 NEW CAREER ACCELERATOR ORDER #{content['order_id']}</h2>
+                    <h3 style="color: #d32f2f;">⚠️ PAYMENT STATUS: PENDING - MANUAL STRIPE CHECK REQUIRED</h3>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📋 Order Information</h3>
+                        <p><strong>Order ID:</strong> #{content['order_id']}</p>
+                        <p><strong>Offer:</strong> {content['offer_name']}</p>
+                        <p><strong>Price:</strong> {content['offer_price']}</p>
+                        <p><strong>Due Date:</strong> {content['due_date']}</p>
+                        <p><strong>Stripe Reference:</strong> {content.get('stripe_client_reference_id', 'Not provided')}</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>👤 Client Information</h3>
+                        <p><strong>Name:</strong> {content['name']}</p>
+                        <p><strong>Email:</strong> <a href="mailto:{content['email']}">{content['email']}</a></p>
+                        <p><strong>Source:</strong> {content['source']}</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📄 AI Analysis Data</h3>
+                        <p><strong>Resume Analysis ID:</strong> {content['resume_analysis_id'] or 'None'}</p>
+                        <p><strong>Personalization ID:</strong> {content['personalization_id'] or 'None'}</p>
+                    </div>
+                    
+                    <div style="background-color: #f0f8e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>🎯 Client Goals</h3>
+                        <p><strong>Target Roles:</strong> {', '.join(target_roles) if target_roles else 'Not specified'}</p>
+                        <p><strong>Target Locations:</strong> {', '.join(target_locations) if target_locations else 'Not specified'}</p>
+                        <p><strong>Salary Goal:</strong> {salary_goal or 'Not specified'}</p>
+                        <p><strong>Additional Notes:</strong> {notes or 'None'}</p>
+                    </div>
+                    
+                    <div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>🎫 Career Strategy Ticket</h3>
+                        <p><strong>Generated:</strong> {'Yes' if has_ticket else 'No'}</p>
+                        {f'<p><strong>Strategy Summary Available:</strong> {"Yes" if career_ticket.get("strategy_summary") else "No"}</p>' if has_ticket else ''}
+                        {f'<p><strong>Client Info Available:</strong> {"Yes" if career_ticket.get("client_info") else "No"}</p>' if has_ticket else ''}
+                    </div>
+                    
+                    <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d32f2f;">
+                        <h3 style="color: #d32f2f;">⚠️ NEXT STEPS FOR ADMIN</h3>
+                        <ol>
+                            <li><strong>Check Stripe:</strong> Search for reference ID "{content.get('stripe_client_reference_id', 'N/A')}" to confirm payment</li>
+                            <li><strong>If Payment Successful:</strong> Update order status to "new" and begin fulfillment</li>
+                            <li><strong>If Payment Failed:</strong> Contact client at {content['email']} to resolve payment</li>
+                            <li><strong>Timeline:</strong> Delivery expected by {content['due_date']}</li>
+                        </ol>
+                    </div>
+                    
+                    <div style="margin: 30px 0; padding: 20px; border-left: 4px solid #007AFF;">
+                        <p><strong>Order Created:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+                        <p><em>This order was created when the user clicked 'Activate Strategy' and will need manual payment verification.</em></p>
                     </div>
                 </body>
             </html>

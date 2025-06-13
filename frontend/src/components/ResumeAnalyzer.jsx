@@ -179,7 +179,7 @@ const ResumeAnalyzer = ({
     const [analysisResults, setAnalysisResults] = useState(null);
 
     // Rate limiting configuration
-    const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 requests
+    const RATE_LIMIT_MAX_REQUESTS = 20; // Max 5 requests
     const RATE_LIMIT_WINDOW_HOURS = 24; // Per 24 hours
     const RATE_LIMIT_KEY = 'resumeAnalysisRateLimit';
 
