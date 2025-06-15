@@ -9,6 +9,8 @@ const PaymentSuccessCareer = () => {
     const [purchaseData, setPurchaseData] = useState(null);
 
     useEffect(() => {
+        const transactionId = `dotbridge_${Date.now()}`;
+
         // Retrieve stored purchase data
         const storedData = localStorage.getItem('dotbridge_purchase_data');
         if (storedData) {
@@ -19,8 +21,9 @@ const PaymentSuccessCareer = () => {
 
         // Track successful purchase
         if (typeof window.gtag !== 'undefined') {
+            // GA4 Purchase tracking
             window.gtag('event', 'purchase', {
-                transaction_id: `dotbridge_${Date.now()}`,
+                transaction_id: transactionId,
                 value: 299,
                 currency: 'USD',
                 items: [{
@@ -29,6 +32,14 @@ const PaymentSuccessCareer = () => {
                     quantity: 1,
                     price: 299
                 }]
+            });
+
+            // Google Ads conversion tracking
+            window.gtag('event', 'conversion', {
+                send_to: 'AW-11258450970/2lmaCL-GyNsaEJgoufgp',
+                value: 299.00,
+                currency: 'USD',
+                transaction_id: transactionId
             });
         }
     }, []);
