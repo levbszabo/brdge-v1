@@ -341,6 +341,8 @@ const CareerAcceleratorPage = () => {
 
     // State for editable ticket fields
     const [editableTicketData, setEditableTicketData] = useState({
+        email: '',
+        linkedin_url: '',
         target_roles: [],
         target_locations: [],
         salary_goal: '',
@@ -554,12 +556,12 @@ const CareerAcceleratorPage = () => {
     const handleFileSelect = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Validate file type (PDF, DOC, DOCX)
-            const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            // Validate file type (PDF only)
+            const allowedTypes = ['application/pdf'];
             const maxSize = 5 * 1024 * 1024; // 5MB
 
             if (!allowedTypes.includes(file.type)) {
-                alert('Please upload a PDF, DOC, or DOCX file.');
+                alert('Please upload a PDF file only.');
                 return;
             }
 
@@ -627,6 +629,17 @@ const CareerAcceleratorPage = () => {
 
     // Stripe Payment Handler
     const handleActivateStrategy = async () => {
+        // Validate that we have required information before proceeding
+        if (!editableTicketData.email) {
+            alert('Please enter your email address before activating your strategy.');
+            return;
+        }
+
+        if (!editableTicketData.linkedin_url) {
+            alert('Please enter your LinkedIn profile URL before activating your strategy.');
+            return;
+        }
+
         setIsProcessingPayment(true);
 
         try {
@@ -636,18 +649,18 @@ const CareerAcceleratorPage = () => {
             // First, create the order in our system
             const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-            // Extract email - check multiple sources (optional)
-            const customerEmail = ctaEmail ||
-                (careerTicket?.client_info?.email) ||
-                (localStorage.getItem('customer_email')) ||
-                '';
+            // Extract email - prioritize the form data we just collected
+            const customerEmail = editableTicketData.email.trim().toLowerCase();
 
-            // Extract name from ticket if available
-            const customerName = careerTicket?.client_info?.name || '';
+            // Extract name from ticket if available, otherwise use email prefix
+            const customerName = careerTicket?.client_info?.name ||
+                editableTicketData.email.split('@')[0] ||
+                'Career Accelerator Client';
 
             const orderData = {
                 email: customerEmail,
                 name: customerName,
+                linkedin_url: editableTicketData.linkedin_url,
                 resume_analysis_id: resumeAnalysisId,
                 personalization_id: personalizationId,
                 finalized_goals: editableTicketData,
@@ -738,7 +751,16 @@ const CareerAcceleratorPage = () => {
 
         } catch (error) {
             console.error('Error creating order or initiating payment:', error);
-            alert(`Error: ${error.message}`);
+
+            // Try to extract error message from response
+            let errorMessage = 'An error occurred while processing your request.';
+            if (error.response && error.response.data && error.response.data.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            alert(`Error: ${errorMessage}`);
         } finally {
             setIsProcessingPayment(false);
         }
@@ -855,6 +877,8 @@ const CareerAcceleratorPage = () => {
 
                 // Initialize editable fields with ticket data
                 setEditableTicketData({
+                    email: data.ticket.client_info?.email || '',
+                    linkedin_url: data.ticket.client_info?.linkedin_url || '',
                     target_roles: data.ticket.client_info?.target_roles || [],
                     target_locations: data.ticket.client_info?.target_locations || [],
                     salary_goal: data.ticket.client_info?.suggested_salary_range || data.ticket.client_info?.salary_goal || '',
@@ -1006,22 +1030,6 @@ const CareerAcceleratorPage = () => {
                                         '&:hover': {
                                             transform: 'translateY(-3px)',
                                             boxShadow: '0 15px 40px rgba(0, 102, 255, 0.4)'
-                                        },
-                                        '&::before': {
-                                            content: '"START HERE"',
-                                            position: 'absolute',
-                                            top: -12,
-                                            left: '50%',
-                                            transform: 'translateX(-50%)',
-                                            background: theme.palette.success.main,
-                                            color: 'white',
-                                            fontSize: '0.65rem',
-                                            fontWeight: 700,
-                                            letterSpacing: '0.1em',
-                                            px: 1.5,
-                                            py: 0.25,
-                                            borderRadius: 1,
-                                            boxShadow: `0 4px 12px ${theme.palette.success.main}40`
                                         }
                                     }}
                                     onClick={() => document.getElementById('ai-resume-analyzer-section')?.scrollIntoView({ behavior: 'smooth' })}
@@ -1371,7 +1379,7 @@ const CareerAcceleratorPage = () => {
                 )}
 
                 {/* CTA Button after demo - Show for mobile after resume analysis or desktop after strategist */}
-                {((isMobile && resumeAnalysisId) || (!isMobile && (resumeAnalysisId || showPersonalizedStrategist))) && (
+                {((!isMobile && (resumeAnalysisId || showPersonalizedStrategist))) && (
                     <Box sx={{
                         textAlign: 'center',
                         mb: { xs: 6, md: 10 },
@@ -1643,6 +1651,55 @@ const CareerAcceleratorPage = () => {
                                                 px: { xs: 1.5, sm: 2 }
                                             }
                                         }}>
+                                            {/* Email and LinkedIn */}
+                                            <Box sx={{ mb: { xs: 2, md: 3 } }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    mb: 1,
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                                }}>
+                                                    Confirm Your Email *
+                                                </Typography>
+                                                <TextField
+                                                    size="small"
+                                                    placeholder="Enter your email address..."
+                                                    fullWidth
+                                                    type="email"
+                                                    required
+                                                    value={editableTicketData.email}
+                                                    onChange={(e) => handleTicketFieldChange('email', e.target.value)}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                                                            padding: { xs: '8px 12px', sm: '10px 14px' }
+                                                        }
+                                                    }}
+                                                />
+                                            </Box>
+                                            <Box sx={{ mb: { xs: 2, md: 3 } }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{
+                                                    mb: 1,
+                                                    fontWeight: 600,
+                                                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                                                }}>
+                                                    LinkedIn Profile URL *
+                                                </Typography>
+                                                <TextField
+                                                    size="small"
+                                                    placeholder="https://linkedin.com/in/your-profile"
+                                                    fullWidth
+                                                    required
+                                                    value={editableTicketData.linkedin_url}
+                                                    onChange={(e) => handleTicketFieldChange('linkedin_url', e.target.value)}
+                                                    sx={{
+                                                        '& .MuiInputBase-input': {
+                                                            fontSize: { xs: '0.875rem', sm: '1rem' },
+                                                            padding: { xs: '8px 12px', sm: '10px 14px' }
+                                                        }
+                                                    }}
+                                                />
+                                            </Box>
+
                                             {/* Target Roles */}
                                             <Box sx={{ mb: { xs: 2, md: 3 } }}>
                                                 <Typography variant="body2" color="text.secondary" sx={{
@@ -1997,7 +2054,7 @@ const CareerAcceleratorPage = () => {
                                                 size="large"
                                                 endIcon={!isProcessingPayment && <ArrowRight size={20} />}
                                                 onClick={handleCtaOpen}
-                                                disabled={isProcessingPayment}
+                                                disabled={isProcessingPayment || !editableTicketData.email || !editableTicketData.linkedin_url}
                                                 sx={{
                                                     background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                                                     color: 'white',
@@ -2053,6 +2110,19 @@ const CareerAcceleratorPage = () => {
                                                     'Activate Strategy - $299'
                                                 )}
                                             </DotBridgeButton>
+
+                                            {/* Helper text for required fields */}
+                                            {(!editableTicketData.email || !editableTicketData.linkedin_url) && (
+                                                <Typography variant="caption" sx={{
+                                                    display: 'block',
+                                                    textAlign: 'center',
+                                                    mt: 1,
+                                                    color: theme.palette.warning.main,
+                                                    fontSize: '0.75rem'
+                                                }}>
+                                                    ⚠️ Please fill in your email and LinkedIn URL above to activate your strategy
+                                                </Typography>
+                                            )}
                                         </Box>
 
                                         {/* Subtle glow effect */}
@@ -3239,7 +3309,7 @@ const CareerAcceleratorPage = () => {
                                                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem', mb: 2 }}>
                                                             Optional - helps us provide more targeted recommendations
                                                             <br />
-                                                            Supports PDF, DOC, or DOCX files (max 5MB)
+                                                            Supports PDF files only (max 5MB)
                                                         </Typography>
                                                         <DotBridgeButton
                                                             variant="outlined"
@@ -3256,7 +3326,7 @@ const CareerAcceleratorPage = () => {
                                                     ref={fileInputRef}
                                                     style={{ display: 'none' }}
                                                     onChange={handleFileSelect}
-                                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                    accept=".pdf,application/pdf"
                                                 />
                                             </Box>
                                         </Grid>

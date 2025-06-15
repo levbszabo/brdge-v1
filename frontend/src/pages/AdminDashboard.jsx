@@ -28,7 +28,17 @@ import {
     Tooltip,
     Tabs,
     Tab,
-    AppBar
+    AppBar,
+    Checkbox,
+    Toolbar,
+    Paper,
+    Card,
+    CardContent,
+    Snackbar,
+    Fade,
+    Slide,
+    Button,
+    Stack
 } from '@mui/material';
 import {
     Refresh,
@@ -44,11 +54,19 @@ import {
     Assignment,
     Analytics,
     Settings,
-    ViewList
+    ViewList,
+    Delete,
+    DeleteOutline,
+    Email,
+    Save,
+    Cancel,
+    Warning,
+    SelectAll,
+    Deselect
 } from '@mui/icons-material';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import { api } from '../api';
-import DotBridgeCard, { CardContent, CardHeader } from '../components/DotBridgeCard';
+
 import DotBridgeButton from '../components/DotBridgeButton';
 import DotBrdgeListPage from './DotBrdgeListPage';
 
@@ -67,12 +85,30 @@ const AdminDashboard = () => {
     const [analytics, setAnalytics] = useState(null);
     const [offers, setOffers] = useState([]);
 
+    // New state for bulk operations
+    const [selectedOrders, setSelectedOrders] = useState(new Set());
+    const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+    const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
+    const [deleteTargetId, setDeleteTargetId] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
+    // Client editing state
+    const [editingClient, setEditingClient] = useState(null);
+    const [newClientEmail, setNewClientEmail] = useState('');
+    const [savingClient, setSavingClient] = useState(false);
+
+    // Notification state
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
     useEffect(() => {
         fetchOrders();
         fetchAnalytics();
         fetchOffers();
     }, [filters]);
+
+    const showNotification = (message, severity = 'success') => {
+        setNotification({ open: true, message, severity });
+    };
 
     const fetchOrders = async () => {
         try {
@@ -85,6 +121,7 @@ const AdminDashboard = () => {
             setOrders(response.data.orders || []);
         } catch (error) {
             console.error('Error fetching orders:', error);
+            showNotification('Failed to fetch orders', 'error');
         } finally {
             setLoading(false);
         }
@@ -115,6 +152,7 @@ const AdminDashboard = () => {
             setOrderDetailOpen(true);
         } catch (error) {
             console.error('Error fetching order detail:', error);
+            showNotification('Failed to fetch order details', 'error');
         }
     };
 
@@ -133,12 +171,115 @@ const AdminDashboard = () => {
             if (selectedOrder && selectedOrder.id === orderId) {
                 setSelectedOrder(response.data.order);
             }
+
+            showNotification('Order updated successfully');
         } catch (error) {
             console.error('Error updating order:', error);
+            showNotification('Failed to update order', 'error');
         }
     };
 
+    // Bulk selection handlers
+    const handleSelectAll = () => {
+        if (selectedOrders.size === orders.length) {
+            setSelectedOrders(new Set());
+        } else {
+            setSelectedOrders(new Set(orders.map(order => order.id)));
+        }
+    };
 
+    const handleSelectOrder = (orderId) => {
+        const newSelected = new Set(selectedOrders);
+        if (newSelected.has(orderId)) {
+            newSelected.delete(orderId);
+        } else {
+            newSelected.add(orderId);
+        }
+        setSelectedOrders(newSelected);
+    };
+
+    // Delete handlers
+    const handleSingleDelete = (orderId) => {
+        setDeleteTargetId(orderId);
+        setSingleDeleteOpen(true);
+    };
+
+    const handleBulkDelete = () => {
+        setBulkDeleteOpen(true);
+    };
+
+    const confirmSingleDelete = async () => {
+        try {
+            setDeleting(true);
+            await api.delete(`/admin/orders/${deleteTargetId}`);
+
+            setOrders(orders.filter(order => order.id !== deleteTargetId));
+            setSingleDeleteOpen(false);
+            setDeleteTargetId(null);
+            showNotification('Order deleted successfully');
+        } catch (error) {
+            console.error('Error deleting order:', error);
+            showNotification('Failed to delete order', 'error');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const confirmBulkDelete = async () => {
+        try {
+            setDeleting(true);
+            await api.delete('/admin/orders/bulk-delete', {
+                data: { order_ids: Array.from(selectedOrders) }
+            });
+
+            setOrders(orders.filter(order => !selectedOrders.has(order.id)));
+            setSelectedOrders(new Set());
+            setBulkDeleteOpen(false);
+            showNotification(`Successfully deleted ${selectedOrders.size} orders`);
+        } catch (error) {
+            console.error('Error bulk deleting orders:', error);
+            showNotification('Failed to delete orders', 'error');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    // Client editing handlers
+    const handleEditClient = (order) => {
+        setEditingClient(order.id);
+        setNewClientEmail(order.client?.email || '');
+    };
+
+    const handleSaveClient = async (orderId) => {
+        try {
+            setSavingClient(true);
+            const response = await api.put(`/admin/orders/${orderId}/client`, {
+                email: newClientEmail
+            });
+
+            // Update local state
+            setOrders(orders.map(order =>
+                order.id === orderId ? response.data.order : order
+            ));
+
+            if (selectedOrder && selectedOrder.id === orderId) {
+                setSelectedOrder(response.data.order);
+            }
+
+            setEditingClient(null);
+            showNotification('Client email updated successfully');
+        } catch (error) {
+            console.error('Error updating client:', error);
+            showNotification('Failed to update client email', 'error');
+        } finally {
+            setSavingClient(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingClient(null);
+        setNewClientEmail('');
+    };
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -187,58 +328,74 @@ const AdminDashboard = () => {
                     {analytics && (
                         <Grid container spacing={3} sx={{ mb: 4 }}>
                             <Grid item xs={12} sm={6} md={3}>
-                                <DotBridgeCard variant="elevated">
-                                    <CardContent sx={{ textAlign: 'center' }}>
-                                        <Typography variant="h4" color="primary.main" sx={{ mb: 1 }}>
+                                <Card sx={{
+                                    background: `linear-gradient(135deg, ${theme.palette.primary.main}15, ${theme.palette.primary.main}05)`,
+                                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                                    height: '100%'
+                                }}>
+                                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                        <Typography variant="h3" color="primary.main" sx={{ mb: 1, fontWeight: 700 }}>
                                             {analytics.total_orders}
                                         </Typography>
-                                        <Typography color="text.secondary" variant="body2">
+                                        <Typography color="text.secondary" variant="body1" fontWeight={500}>
                                             Total Orders
                                         </Typography>
                                     </CardContent>
-                                </DotBridgeCard>
+                                </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <DotBridgeCard variant="elevated">
-                                    <CardContent sx={{ textAlign: 'center' }}>
-                                        <Typography variant="h4" color="error.main" sx={{ mb: 1 }}>
+                                <Card sx={{
+                                    background: `linear-gradient(135deg, ${theme.palette.error.main}15, ${theme.palette.error.main}05)`,
+                                    border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`,
+                                    height: '100%'
+                                }}>
+                                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                        <Typography variant="h3" color="error.main" sx={{ mb: 1, fontWeight: 700 }}>
                                             {analytics.orders_by_status.new}
                                         </Typography>
-                                        <Typography color="text.secondary" variant="body2">
+                                        <Typography color="text.secondary" variant="body1" fontWeight={500}>
                                             New Orders
                                         </Typography>
                                     </CardContent>
-                                </DotBridgeCard>
+                                </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <DotBridgeCard variant="elevated">
-                                    <CardContent sx={{ textAlign: 'center' }}>
-                                        <Typography variant="h4" color="warning.main" sx={{ mb: 1 }}>
+                                <Card sx={{
+                                    background: `linear-gradient(135deg, ${theme.palette.warning.main}15, ${theme.palette.warning.main}05)`,
+                                    border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+                                    height: '100%'
+                                }}>
+                                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                        <Typography variant="h3" color="warning.main" sx={{ mb: 1, fontWeight: 700 }}>
                                             {analytics.orders_by_status.in_progress}
                                         </Typography>
-                                        <Typography color="text.secondary" variant="body2">
+                                        <Typography color="text.secondary" variant="body1" fontWeight={500}>
                                             In Progress
                                         </Typography>
                                     </CardContent>
-                                </DotBridgeCard>
+                                </Card>
                             </Grid>
                             <Grid item xs={12} sm={6} md={3}>
-                                <DotBridgeCard variant="elevated">
-                                    <CardContent sx={{ textAlign: 'center' }}>
-                                        <Typography variant="h4" color="success.main" sx={{ mb: 1 }}>
+                                <Card sx={{
+                                    background: `linear-gradient(135deg, ${theme.palette.success.main}15, ${theme.palette.success.main}05)`,
+                                    border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                                    height: '100%'
+                                }}>
+                                    <CardContent sx={{ textAlign: 'center', p: 3 }}>
+                                        <Typography variant="h3" color="success.main" sx={{ mb: 1, fontWeight: 700 }}>
                                             ${analytics.total_revenue_dollars.toLocaleString()}
                                         </Typography>
-                                        <Typography color="text.secondary" variant="body2">
+                                        <Typography color="text.secondary" variant="body1" fontWeight={500}>
                                             Total Revenue
                                         </Typography>
                                     </CardContent>
-                                </DotBridgeCard>
+                                </Card>
                             </Grid>
                         </Grid>
                     )}
 
-                    {/* Filters */}
-                    <DotBridgeCard sx={{ mb: 3 }}>
+                    {/* Filters and Bulk Actions */}
+                    <Card sx={{ mb: 3, overflow: 'visible' }}>
                         <CardContent>
                             <Grid container spacing={2} alignItems="center">
                                 <Grid item xs={12} sm={6} md={3}>
@@ -280,59 +437,157 @@ const AdminDashboard = () => {
                                         startIcon={<Refresh />}
                                         onClick={fetchOrders}
                                         fullWidth
+                                        disabled={loading}
                                     >
                                         Refresh
                                     </DotBridgeButton>
                                 </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    {selectedOrders.size > 0 && (
+                                        <DotBridgeButton
+                                            variant="contained"
+                                            color="error"
+                                            startIcon={<Delete />}
+                                            onClick={handleBulkDelete}
+                                            fullWidth
+                                        >
+                                            Delete Selected ({selectedOrders.size})
+                                        </DotBridgeButton>
+                                    )}
+                                </Grid>
                             </Grid>
                         </CardContent>
-                    </DotBridgeCard>
+                    </Card>
 
                     {/* Orders Table */}
-                    <DotBridgeCard>
+                    <Card sx={{ overflow: 'hidden' }}>
+                        {selectedOrders.size > 0 && (
+                            <Toolbar
+                                sx={{
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                    borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`
+                                }}
+                            >
+                                <Typography variant="h6" component="div" sx={{ flex: '1 1 100%' }}>
+                                    {selectedOrders.size} selected
+                                </Typography>
+                                <Tooltip title="Delete selected">
+                                    <IconButton onClick={handleBulkDelete} color="error">
+                                        <Delete />
+                                    </IconButton>
+                                </Tooltip>
+                            </Toolbar>
+                        )}
                         <TableContainer>
                             <Table>
                                 <TableHead>
-                                    <TableRow>
-                                        <TableCell sx={{ fontWeight: 600 }}>Client</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Offer</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Order Date</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
-                                        <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                                    <TableRow sx={{ bgcolor: alpha(theme.palette.grey[500], 0.03) }}>
+                                        <TableCell padding="checkbox">
+                                            <Checkbox
+                                                indeterminate={selectedOrders.size > 0 && selectedOrders.size < orders.length}
+                                                checked={orders.length > 0 && selectedOrders.size === orders.length}
+                                                onChange={handleSelectAll}
+                                                color="primary"
+                                            />
+                                        </TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Client</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Offer</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Order Date</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Status</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Due Date</TableCell>
+                                        <TableCell sx={{ fontWeight: 600, fontSize: '0.9rem' }}>Actions</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
                                     {loading ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                            <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                                 <CircularProgress />
                                             </TableCell>
                                         </TableRow>
                                     ) : orders.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                                            <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                                 <Typography color="text.secondary">No orders found</Typography>
                                             </TableCell>
                                         </TableRow>
                                     ) : (
                                         orders.map((order) => {
                                             const daysUntilDue = calculateDaysUntilDue(order.due_date);
+                                            const isSelected = selectedOrders.has(order.id);
+
                                             return (
-                                                <TableRow key={order.id} hover>
+                                                <TableRow
+                                                    key={order.id}
+                                                    hover
+                                                    selected={isSelected}
+                                                    sx={{
+                                                        '&:hover': {
+                                                            bgcolor: alpha(theme.palette.primary.main, 0.04)
+                                                        },
+                                                        ...(isSelected && {
+                                                            bgcolor: alpha(theme.palette.primary.main, 0.08)
+                                                        })
+                                                    }}
+                                                >
+                                                    <TableCell padding="checkbox">
+                                                        <Checkbox
+                                                            checked={isSelected}
+                                                            onChange={() => handleSelectOrder(order.id)}
+                                                            color="primary"
+                                                        />
+                                                    </TableCell>
                                                     <TableCell>
                                                         <Box>
-                                                            <Typography variant="body2" fontWeight="medium">
-                                                                {order.client?.email || 'Unknown'}
-                                                            </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                ID: {order.client_id}
-                                                            </Typography>
+                                                            {editingClient === order.id ? (
+                                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                                    <TextField
+                                                                        size="small"
+                                                                        value={newClientEmail}
+                                                                        onChange={(e) => setNewClientEmail(e.target.value)}
+                                                                        placeholder="Enter email"
+                                                                        sx={{ minWidth: 200 }}
+                                                                    />
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => handleSaveClient(order.id)}
+                                                                        disabled={savingClient}
+                                                                        color="primary"
+                                                                    >
+                                                                        <Save />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={handleCancelEdit}
+                                                                        disabled={savingClient}
+                                                                    >
+                                                                        <Cancel />
+                                                                    </IconButton>
+                                                                </Stack>
+                                                            ) : (
+                                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                                    <Box>
+                                                                        <Typography variant="body2" fontWeight="medium">
+                                                                            {order.client?.email || 'Unknown'}
+                                                                        </Typography>
+                                                                        <Typography variant="caption" color="text.secondary">
+                                                                            ID: {order.client_id}
+                                                                        </Typography>
+                                                                    </Box>
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => handleEditClient(order)}
+                                                                        sx={{ ml: 1 }}
+                                                                    >
+                                                                        <Email fontSize="small" />
+                                                                    </IconButton>
+                                                                </Stack>
+                                                            )}
                                                         </Box>
                                                     </TableCell>
                                                     <TableCell>
                                                         <Box>
-                                                            <Typography variant="body2">
+                                                            <Typography variant="body2" fontWeight="medium">
                                                                 {order.offer?.name || 'Unknown'}
                                                             </Typography>
                                                             <Typography variant="caption" color="text.secondary">
@@ -378,24 +633,37 @@ const AdminDashboard = () => {
                                                         )}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                                            <DotBridgeButton
-                                                                variant="contained"
-                                                                size="small"
-                                                                startIcon={<Edit />}
-                                                                onClick={() => navigate(`/admin/client/${order.client_id}/dashboard`)}
-                                                            >
-                                                                Manage Client
-                                                            </DotBridgeButton>
-                                                            <DotBridgeButton
-                                                                variant="outlined"
-                                                                size="small"
-                                                                startIcon={<Visibility />}
-                                                                onClick={() => fetchOrderDetail(order.id)}
-                                                            >
-                                                                Quick View
-                                                            </DotBridgeButton>
-                                                        </Box>
+                                                        <Stack direction="row" spacing={1}>
+                                                            <Tooltip title="Manage Client">
+                                                                <DotBridgeButton
+                                                                    variant="contained"
+                                                                    size="small"
+                                                                    startIcon={<Edit />}
+                                                                    onClick={() => navigate(`/admin/client/${order.client_id}/dashboard`)}
+                                                                >
+                                                                    Manage
+                                                                </DotBridgeButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Quick View">
+                                                                <DotBridgeButton
+                                                                    variant="outlined"
+                                                                    size="small"
+                                                                    startIcon={<Visibility />}
+                                                                    onClick={() => fetchOrderDetail(order.id)}
+                                                                >
+                                                                    View
+                                                                </DotBridgeButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Delete Order">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={() => handleSingleDelete(order.id)}
+                                                                    color="error"
+                                                                >
+                                                                    <DeleteOutline />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Stack>
                                                     </TableCell>
                                                 </TableRow>
                                             );
@@ -404,7 +672,7 @@ const AdminDashboard = () => {
                                 </TableBody>
                             </Table>
                         </TableContainer>
-                    </DotBridgeCard>
+                    </Card>
                 </Box>
             )
         },
@@ -463,7 +731,7 @@ const AdminDashboard = () => {
                 </Box>
 
                 {/* Navigation Tabs */}
-                <DotBridgeCard sx={{ mb: 3 }}>
+                <Card sx={{ mb: 3, overflow: 'visible' }}>
                     <AppBar position="static" color="transparent" elevation={0} sx={{ bgcolor: 'transparent' }}>
                         <Tabs
                             value={activeTab}
@@ -492,7 +760,7 @@ const AdminDashboard = () => {
                             ))}
                         </Tabs>
                     </AppBar>
-                </DotBridgeCard>
+                </Card>
 
                 {/* Tab Content */}
                 <Box>
@@ -522,7 +790,7 @@ const AdminDashboard = () => {
                             <Grid container spacing={3}>
                                 {/* Client & Order Info */}
                                 <Grid item xs={12}>
-                                    <DotBridgeCard variant="elevated" sx={{ mb: 2 }}>
+                                    <Card variant="outlined" sx={{ mb: 2 }}>
                                         <CardContent>
                                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                                                 Client Information
@@ -557,15 +825,15 @@ const AdminDashboard = () => {
                                                 </Grid>
                                             </Grid>
                                         </CardContent>
-                                    </DotBridgeCard>
+                                    </Card>
 
                                     {/* Quick Actions */}
-                                    <DotBridgeCard variant="elevated">
+                                    <Card variant="outlined">
                                         <CardContent>
                                             <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                                                 Quick Actions
                                             </Typography>
-                                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                            <Stack direction="row" spacing={2} flexWrap="wrap">
                                                 <DotBridgeButton
                                                     variant="contained"
                                                     startIcon={<Edit />}
@@ -590,9 +858,21 @@ const AdminDashboard = () => {
                                                         <MenuItem value="completed">Completed</MenuItem>
                                                     </Select>
                                                 </FormControl>
-                                            </Box>
+
+                                                <DotBridgeButton
+                                                    variant="outlined"
+                                                    color="error"
+                                                    startIcon={<Delete />}
+                                                    onClick={() => {
+                                                        setOrderDetailOpen(false);
+                                                        handleSingleDelete(selectedOrder.id);
+                                                    }}
+                                                >
+                                                    Delete Order
+                                                </DotBridgeButton>
+                                            </Stack>
                                         </CardContent>
-                                    </DotBridgeCard>
+                                    </Card>
                                 </Grid>
                             </Grid>
                         )}
@@ -616,6 +896,87 @@ const AdminDashboard = () => {
                         </DotBridgeButton>
                     </DialogActions>
                 </Dialog>
+
+                {/* Single Delete Confirmation Dialog */}
+                <Dialog
+                    open={singleDeleteOpen}
+                    onClose={() => setSingleDeleteOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Warning color="error" />
+                        Confirm Delete
+                    </DialogTitle>
+                    <DialogContent>
+                        <Typography>
+                            Are you sure you want to delete this order? This action cannot be undone.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setSingleDeleteOpen(false)} disabled={deleting}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmSingleDelete}
+                            color="error"
+                            variant="contained"
+                            disabled={deleting}
+                            startIcon={deleting ? <CircularProgress size={16} /> : <Delete />}
+                        >
+                            Delete
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Bulk Delete Confirmation Dialog */}
+                <Dialog
+                    open={bulkDeleteOpen}
+                    onClose={() => setBulkDeleteOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Warning color="error" />
+                        Confirm Bulk Delete
+                    </DialogTitle>
+                    <DialogContent>
+                        <Typography>
+                            Are you sure you want to delete {selectedOrders.size} orders? This action cannot be undone.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setBulkDeleteOpen(false)} disabled={deleting}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmBulkDelete}
+                            color="error"
+                            variant="contained"
+                            disabled={deleting}
+                            startIcon={deleting ? <CircularProgress size={16} /> : <Delete />}
+                        >
+                            Delete {selectedOrders.size} Orders
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Notification Snackbar */}
+                <Snackbar
+                    open={notification.open}
+                    autoHideDuration={4000}
+                    onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+                    TransitionComponent={Slide}
+                    TransitionProps={{ direction: 'up' }}
+                >
+                    <Alert
+                        onClose={() => setNotification(prev => ({ ...prev, open: false }))}
+                        severity={notification.severity}
+                        sx={{ width: '100%' }}
+                    >
+                        {notification.message}
+                    </Alert>
+                </Snackbar>
             </Container>
         </Box>
     );

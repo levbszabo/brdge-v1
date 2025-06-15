@@ -1292,11 +1292,13 @@ class FulfillmentLog(db.Model):
     __tablename__ = "fulfillment_logs"
 
     id = db.Column(db.Integer, primary_key=True)
-    order_id = db.Column(db.Integer, db.ForeignKey("orders.id"), nullable=False)
+    order_id = db.Column(
+        db.Integer, db.ForeignKey("orders.id"), nullable=True
+    )  # Allow NULL for deletion logs
     admin_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     action_type = db.Column(
         db.String(100), nullable=False
-    )  # bridge_selected, csv_uploaded, intelligence_processed
+    )  # bridge_selected, csv_uploaded, intelligence_processed, order_deleted
     action_data = db.Column(db.JSON, nullable=True)  # Details of the action
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 

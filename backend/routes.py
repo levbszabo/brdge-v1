@@ -4172,10 +4172,16 @@ def create_career_accelerator_order():
         # Extract user data
         email = data.get("email", "").strip().lower()
         name = data.get("name", "").strip()
+        linkedin_url = data.get("linkedin_url", "").strip()
 
-        # Generate anonymous email if none provided
+        # Validate required email
         if not email:
-            email = f"anonymous_{uuid.uuid4().hex[:8]}@dotbridge.temp"
+            return jsonify({"error": "Email is required for order creation"}), 400
+
+        # Validate email format
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_regex, email):
+            return jsonify({"error": "Invalid email format"}), 400
 
         # Extract career data
         resume_analysis_id = data.get("resume_analysis_id")
@@ -4186,7 +4192,9 @@ def create_career_accelerator_order():
         # Stripe metadata for tracking
         stripe_client_reference_id = data.get("stripe_client_reference_id")
 
-        logger.info(f"Creating career accelerator order for email: {email}")
+        logger.info(
+            f"Creating career accelerator order for email: {email}, LinkedIn: {linkedin_url[:50] if linkedin_url else 'Not provided'}"
+        )
 
         # Check if user exists, create if not
         user = User.query.filter_by(email=email).first()
@@ -4221,6 +4229,7 @@ def create_career_accelerator_order():
             "client_info": {
                 "name": name,
                 "email": email,
+                "linkedin_url": linkedin_url,
                 "submission_date": datetime.utcnow().isoformat(),
             },
             "stripe_metadata": {"client_reference_id": stripe_client_reference_id},
@@ -4253,6 +4262,7 @@ def create_career_accelerator_order():
         email_content = {
             "name": name or "Not provided",
             "email": email,
+            "linkedin_url": linkedin_url or "Not provided",
             "order_id": order.id,
             "offer_name": offer.name,
             "offer_price": f"${offer.price_cents / 100:.0f}",
@@ -4453,6 +4463,7 @@ def send_notification_email(
                         <h3>👤 Client Information</h3>
                         <p><strong>Name:</strong> {content['name']}</p>
                         <p><strong>Email:</strong> <a href="mailto:{content['email']}">{content['email']}</a></p>
+                        <p><strong>LinkedIn:</strong> {content.get('linkedin_url', 'Not provided')}</p>
                         <p><strong>Source:</strong> {content['source']}</p>
                     </div>
                     
@@ -6956,6 +6967,223 @@ def update_admin_order(order_id):
 
     except Exception as e:
         logger.error(f"Error updating order: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>", methods=["DELETE"])
+@jwt_required()
+@cross_origin()
+def delete_admin_order(order_id):
+    """Delete a single order"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        order = Order.query.get_or_404(order_id)
+
+        # Get order info before deletion for logging
+        order_info = {
+            "order_id": order_id,
+            "client_email": order.client.email if order.client else None,
+            "client_id": order.client_id,
+            "offer_name": order.offer.name if order.offer else None,
+            "payment_amount": order.payment_amount_cents,
+            "status": order.status,
+            "deleted_at": datetime.utcnow().isoformat(),
+        }
+
+        # Delete the order first (this will cascade delete related records)
+        db.session.delete(order)
+
+        # Log the deletion action with order_id=None since order no longer exists
+        log = FulfillmentLog(
+            order_id=None,  # Set to None since order is deleted
+            admin_user_id=admin_user.id,
+            action_type="order_deleted",
+            action_data=order_info,
+        )
+        db.session.add(log)
+
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Order deleted successfully"})
+
+    except Exception as e:
+        logger.error(f"Error deleting order {order_id}: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/bulk-delete", methods=["DELETE"])
+@jwt_required()
+@cross_origin()
+def bulk_delete_admin_orders():
+    """Delete multiple orders"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        data = request.get_json()
+        order_ids = data.get("order_ids", [])
+
+        if not order_ids or not isinstance(order_ids, list):
+            return jsonify({"success": False, "error": "Order IDs required"}), 400
+
+        # Get all orders to delete
+        orders = Order.query.filter(Order.id.in_(order_ids)).all()
+
+        if not orders:
+            return jsonify({"success": False, "error": "No orders found"}), 404
+
+        # Collect order info before deletion for logging
+        orders_info = []
+        for order in orders:
+            order_info = {
+                "order_id": order.id,
+                "client_email": order.client.email if order.client else None,
+                "client_id": order.client_id,
+                "offer_name": order.offer.name if order.offer else None,
+                "payment_amount": order.payment_amount_cents,
+                "status": order.status,
+                "deleted_at": datetime.utcnow().isoformat(),
+            }
+            orders_info.append(order_info)
+            db.session.delete(order)
+
+        # Log the bulk deletion action with order_id=None since orders are deleted
+        bulk_log = FulfillmentLog(
+            order_id=None,  # Set to None since orders are deleted
+            admin_user_id=admin_user.id,
+            action_type="order_bulk_deleted",
+            action_data={
+                "deleted_orders": orders_info,
+                "bulk_delete_count": len(orders_info),
+                "deleted_at": datetime.utcnow().isoformat(),
+            },
+        )
+        db.session.add(bulk_log)
+
+        deleted_count = len(orders_info)
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Successfully deleted {deleted_count} orders",
+                "deleted_count": deleted_count,
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error bulk deleting orders: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/admin/orders/<int:order_id>/client", methods=["PUT"])
+@jwt_required()
+@cross_origin()
+def update_order_client(order_id):
+    """Update the client email/user for an order"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        order = Order.query.get_or_404(order_id)
+        data = request.get_json()
+        new_email = data.get("email", "").strip().lower()
+
+        if not new_email:
+            return jsonify({"success": False, "error": "Email is required"}), 400
+
+        # Validate email format
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_regex, new_email):
+            return jsonify({"success": False, "error": "Invalid email format"}), 400
+
+        # Get old client info for logging
+        old_client_email = order.client.email if order.client else None
+
+        # Find or create user with new email
+        new_user = User.query.filter_by(email=new_email).first()
+        if not new_user:
+            # Create new user
+            new_user = User(email=new_email)
+            new_user.set_password("temp_password_" + str(uuid.uuid4())[:8])
+            db.session.add(new_user)
+            db.session.flush()
+
+            # Create user account
+            user_account = UserAccount(
+                user_id=new_user.id,
+                account_type="free",
+                total_brdges=0,
+                storage_used=0.0,
+            )
+            db.session.add(user_account)
+
+        # Update order client
+        order.client_id = new_user.id
+
+        # Log the action
+        log = FulfillmentLog(
+            order_id=order_id,
+            admin_user_id=admin_user.id,
+            action_type="client_updated",
+            action_data={
+                "old_client_email": old_client_email,
+                "new_client_email": new_email,
+                "updated_at": datetime.utcnow().isoformat(),
+            },
+        )
+        db.session.add(log)
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "order": order.to_dict(include_client=True),
+                "message": f"Client updated from {old_client_email} to {new_email}",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating client for order {order_id}: {e}")
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
