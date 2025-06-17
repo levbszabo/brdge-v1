@@ -604,6 +604,9 @@ class ConversationLogs(db.Model):
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     viewer_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     anonymous_id = db.Column(db.String(255), nullable=True)
+    session_id = db.Column(
+        db.String(255), nullable=True, index=True
+    )  # For funnel sessions
     role = db.Column(
         db.Enum("agent", "user", name="conv_role_enum"), nullable=False
     )  # Added name for enum type
@@ -642,6 +645,7 @@ class ConversationLogs(db.Model):
             "owner_id": self.owner_id,
             "viewer_user_id": self.viewer_user_id,
             "anonymous_id": self.anonymous_id,
+            "session_id": self.session_id,
             "role": self.role,
             "message": self.message,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,

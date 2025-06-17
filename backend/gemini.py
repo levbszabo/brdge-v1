@@ -4528,3 +4528,1075 @@ def generate_csv_structure(headers, sample_rows, filename="uploaded_file.csv"):
                 "Segment leads based on company size, industry, or other relevant fields",
             ],
         }
+
+
+def generate_ai_consulting_proposal(
+    session_id: str, chat_history: List[Dict[str, Any]], context: Dict[str, Any] = None
+) -> Dict[str, Any]:
+    """
+    Generate a structured AI consulting proposal based on chat conversation
+    with multiple package options and accurate pricing/timeline estimates
+
+    Args:
+        session_id: Unique session identifier
+        chat_history: List of chat messages between user and AI strategist
+        context: Optional additional context for proposal generation
+
+    Returns:
+        Dictionary containing structured proposal data with multiple packages
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        # Build conversation transcript
+        transcript = ""
+        for msg in chat_history:
+            role = "Client" if msg["role"] == "user" else "AI Strategist"
+            content = msg.get("content", "")
+            transcript += f"{role}: {content}\n\n"
+
+        # Enhanced proposal generation prompt
+        proposal_prompt = f"""
+        You are an elite AI consultant and solution architect with expertise in cutting-edge AI implementations. Analyze this discovery conversation to craft a compelling, value-driven proposal with multiple package options.
+
+        CONVERSATION TRANSCRIPT:
+        {transcript}
+
+        Generate a HIGHLY CUSTOMIZED proposal that speaks directly to the client's unique situation, challenges, and opportunities.
+
+        Return ONLY valid JSON with these exact fields:
+
+        {{
+            "summary": "A compelling 2-3 sentence summary that captures their SPECIFIC problem, YOUR unique solution approach, and the MEASURABLE business impact",
+            "packages": [
+                {{
+                    "name": "Discovery & Strategy",
+                    "description": "Perfect for validating ideas and creating a roadmap",
+                    "priceRange": {{
+                        "min": 50000,  // in cents ($500)
+                        "max": 150000  // in cents ($1,500)
+                    }},
+                    "timelineRange": {{
+                        "min": 3,  // days
+                        "max": 7   // days
+                    }},
+                    "deliverables": [
+                        "Feasibility assessment and technical validation",
+                        "Strategic roadmap with prioritized initiatives",
+                        "Architecture recommendations",
+                        "Risk analysis and mitigation strategies"
+                    ],
+                    "ideal_for": "Companies exploring AI adoption or validating specific use cases"
+                }},
+                {{
+                    "name": "MVP & Proof of Concept",
+                    "description": "Build a working prototype to test with real users",
+                    "priceRange": {{
+                        "min": 500000,  // in cents ($5,000)
+                        "max": 1500000  // in cents ($15,000)
+                    }},
+                    "timelineRange": {{
+                        "min": 14,  // days
+                        "max": 30   // days
+                    }},
+                    "deliverables": [
+                        "Functional MVP with core AI features",
+                        "Basic user interface and experience",
+                        "Integration with 1-2 key systems",
+                        "Testing results and performance metrics",
+                        "Deployment guide and documentation"
+                    ],
+                    "ideal_for": "Teams ready to build and test their AI solution quickly"
+                }},
+                {{
+                    "name": "Production-Ready Solution",
+                    "description": "Enterprise-grade implementation with full support",
+                    "priceRange": {{
+                        "min": 2500000,  // in cents ($25,000)
+                        "max": 10000000  // in cents ($100,000)
+                    }},
+                    "timelineRange": {{
+                        "min": 30,  // days
+                        "max": 90   // days
+                    }},
+                    "deliverables": [
+                        "Scalable production system with monitoring",
+                        "Complete API and integration layer",
+                        "Advanced AI model optimization",
+                        "Security and compliance implementation",
+                        "Team training and knowledge transfer",
+                        "90-day post-launch support"
+                    ],
+                    "ideal_for": "Organizations ready for full-scale AI deployment"
+                }}
+            ],
+            "recommendedPackage": 0,  // Index of recommended package based on conversation (0, 1, or 2)
+            "customizationNotes": "Specific adjustments we'd make to the package based on their needs",
+            "projectScope": {{
+                "technical_requirements": ["List of 3-4 SPECIFIC technical requirements based on their stack/needs"],
+                "business_objectives": ["List of 3-4 MEASURABLE business goals they mentioned"],
+                "success_metrics": ["List of 3-4 QUANTIFIABLE success criteria tied to their KPIs"],
+                "key_challenges": ["List of 2-3 main challenges to address"]
+            }},
+            "valueProposition": "A compelling 2-3 sentence explanation of ROI using their specific metrics/pain points",
+            "nextSteps": [
+                "Submit your contact information and any additional context",
+                "We'll review your requirements and send a detailed proposal within 24 hours",
+                "Schedule a follow-up call to discuss the proposal and answer questions"
+            ],
+            "riskMitigation": ["List of 2-3 specific risks they might worry about and how we'll address them"],
+            "uniqueInsights": ["List of 2-3 strategic insights or opportunities they might not have considered"],
+            "technicalApproach": "Brief overview of the technical approach/architecture we'd recommend",
+            "clientContext": {{
+                "industry": "Their industry/domain",
+                "companySize": "Startup/SMB/Enterprise",
+                "technicalMaturity": "Low/Medium/High",
+                "urgency": "Low/Medium/High",
+                "budget_indicators": "Notes about budget constraints or expectations mentioned"
+            }}
+        }}
+
+        PACKAGE SELECTION CRITERIA:
+
+        **Discovery & Strategy** - Recommend when:
+        - They're exploring possibilities or need validation
+        - Unclear requirements or multiple potential approaches
+        - Need to build internal buy-in
+        - Limited technical experience with AI
+        - Budget conscious or testing the waters
+
+        **MVP & Proof of Concept** - Recommend when:
+        - Clear use case identified
+        - Need to validate with real users/data
+        - Have some technical capability
+        - Ready to invest but want to minimize risk
+        - 1-3 month timeline mentioned
+
+        **Production-Ready Solution** - Recommend when:
+        - Clear requirements and strong business case
+        - Need enterprise features (scale, security, compliance)
+        - Have technical team to maintain
+        - Mentioned significant budget or ROI expectations
+        - Need comprehensive solution quickly
+
+        PRICING PHILOSOPHY:
+        - Price based on value delivered, not just time
+        - Consider complexity, risk, and business impact
+        - Account for industry standards and client size
+        - Be transparent about what drives cost
+
+        IMPORTANT: 
+        - Every field should feel custom-written for THIS specific client
+        - Price ranges should reflect the actual scope discussed
+        - Timelines should be realistic based on complexity
+        - Package names can be customized if needed
+        """
+
+        response = model.generate_content(proposal_prompt)
+        proposal_text = response.text.strip()
+
+        # Clean up the response to ensure valid JSON
+        if proposal_text.startswith("```json"):
+            proposal_text = proposal_text[7:]
+        elif proposal_text.startswith("```"):
+            proposal_text = proposal_text[3:]
+
+        if proposal_text.endswith("```"):
+            proposal_text = proposal_text[:-3]
+
+        proposal_text = proposal_text.strip()
+
+        # Parse JSON response
+        try:
+            proposal_data = json.loads(proposal_text)
+
+            # Validate and provide defaults for required fields
+            if "packages" not in proposal_data or not proposal_data["packages"]:
+                # Provide default packages if missing
+                proposal_data["packages"] = [
+                    {
+                        "name": "Discovery & Strategy",
+                        "description": "Perfect for validating ideas and creating a roadmap",
+                        "priceRange": {"min": 50000, "max": 150000},
+                        "timelineRange": {"min": 3, "max": 7},
+                        "deliverables": [
+                            "Feasibility assessment and technical validation",
+                            "Strategic roadmap with prioritized initiatives",
+                            "Architecture recommendations",
+                            "Risk analysis and mitigation strategies",
+                        ],
+                        "ideal_for": "Companies exploring AI adoption",
+                    },
+                    {
+                        "name": "MVP & Proof of Concept",
+                        "description": "Build a working prototype to test with real users",
+                        "priceRange": {"min": 500000, "max": 1500000},
+                        "timelineRange": {"min": 14, "max": 30},
+                        "deliverables": [
+                            "Functional MVP with core AI features",
+                            "Basic user interface",
+                            "Integration with key systems",
+                            "Testing results and metrics",
+                        ],
+                        "ideal_for": "Teams ready to build and test",
+                    },
+                    {
+                        "name": "Production-Ready Solution",
+                        "description": "Enterprise-grade implementation",
+                        "priceRange": {"min": 2500000, "max": 10000000},
+                        "timelineRange": {"min": 30, "max": 90},
+                        "deliverables": [
+                            "Scalable production system",
+                            "Complete API layer",
+                            "Security implementation",
+                            "Team training and support",
+                        ],
+                        "ideal_for": "Organizations ready for deployment",
+                    },
+                ]
+
+            # Ensure numeric fields in packages are correct type
+            for package in proposal_data["packages"]:
+                if "priceRange" in package:
+                    package["priceRange"]["min"] = int(package["priceRange"]["min"])
+                    package["priceRange"]["max"] = int(package["priceRange"]["max"])
+                if "timelineRange" in package:
+                    package["timelineRange"]["min"] = int(
+                        package["timelineRange"]["min"]
+                    )
+                    package["timelineRange"]["max"] = int(
+                        package["timelineRange"]["max"]
+                    )
+
+            # Set recommendedPackage to valid index
+            if "recommendedPackage" not in proposal_data:
+                proposal_data["recommendedPackage"] = 1  # Default to MVP
+            else:
+                # Ensure it's a valid index
+                proposal_data["recommendedPackage"] = max(
+                    0,
+                    min(
+                        int(proposal_data["recommendedPackage"]),
+                        len(proposal_data["packages"]) - 1,
+                    ),
+                )
+
+            # Ensure other required fields
+            required_fields = {
+                "summary": "Custom AI consulting engagement to address your specific project requirements and strategic objectives.",
+                "customizationNotes": "We'll tailor this package to your specific needs and constraints.",
+                "valueProposition": "Strategic guidance to accelerate your AI project with expert insights and proven methodologies.",
+                "nextSteps": [
+                    "Submit your contact information",
+                    "Receive detailed proposal within 24 hours",
+                    "Schedule follow-up discussion",
+                ],
+            }
+
+            for field, default_value in required_fields.items():
+                if field not in proposal_data:
+                    proposal_data[field] = default_value
+
+            # Add metadata
+            proposal_data["sessionId"] = session_id
+            proposal_data["generatedAt"] = datetime.now().isoformat()
+            proposal_data["conversationLength"] = len(chat_history)
+
+            logger.info(
+                f"Successfully generated multi-package proposal for session {session_id}"
+            )
+            return proposal_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error for session {session_id}: {e}")
+            logger.error(f"Raw response: {proposal_text}")
+            raise ValueError("Failed to parse AI response as valid JSON")
+
+    except Exception as e:
+        logger.error(
+            f"Error generating AI consulting proposal for session {session_id}: {str(e)}"
+        )
+
+        # Return fallback proposal structure with packages
+        fallback_proposal = {
+            "summary": "Custom AI consulting engagement to address your project requirements and strategic objectives.",
+            "packages": [
+                {
+                    "name": "Discovery & Strategy",
+                    "description": "Perfect for validating ideas and creating a roadmap",
+                    "priceRange": {"min": 50000, "max": 150000},
+                    "timelineRange": {"min": 3, "max": 7},
+                    "deliverables": [
+                        "Feasibility assessment",
+                        "Strategic roadmap",
+                        "Architecture recommendations",
+                        "Risk analysis",
+                    ],
+                    "ideal_for": "Companies exploring AI adoption",
+                },
+                {
+                    "name": "MVP & Proof of Concept",
+                    "description": "Build a working prototype",
+                    "priceRange": {"min": 500000, "max": 1500000},
+                    "timelineRange": {"min": 14, "max": 30},
+                    "deliverables": [
+                        "Functional MVP",
+                        "User interface",
+                        "System integration",
+                        "Testing results",
+                    ],
+                    "ideal_for": "Teams ready to build",
+                },
+                {
+                    "name": "Production-Ready Solution",
+                    "description": "Enterprise-grade implementation",
+                    "priceRange": {"min": 2500000, "max": 10000000},
+                    "timelineRange": {"min": 30, "max": 90},
+                    "deliverables": [
+                        "Production system",
+                        "API layer",
+                        "Security features",
+                        "Team training",
+                    ],
+                    "ideal_for": "Ready for deployment",
+                },
+            ],
+            "recommendedPackage": 1,
+            "customizationNotes": "We'll tailor this to your needs.",
+            "valueProposition": "Expert AI consulting to accelerate your project.",
+            "nextSteps": [
+                "Submit contact information",
+                "Receive proposal within 24 hours",
+                "Schedule discussion",
+            ],
+            "sessionId": session_id,
+            "generatedAt": datetime.now().isoformat(),
+            "conversationLength": len(chat_history),
+            "fallback": True,
+            "error": str(e),
+        }
+
+        return fallback_proposal
+
+
+def generate_funnel_chat_response(
+    session_id: str, agent_type: str, chat_history: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """
+    Generate AI chat response for funnel conversations
+
+    Args:
+        session_id: Unique session identifier
+        agent_type: Type of AI agent (e.g., 'ai_consulting_strategist')
+        chat_history: Complete conversation history
+
+    Returns:
+        Dictionary with AI response content
+    """
+    try:
+        configure_genai()
+        model = get_model()
+
+        # Define agent personas and prompts
+        AGENT_PROMPTS = {
+            "ai_consulting_strategist": """
+            You are an elite AI solutions architect with deep expertise across the entire AI stack - from LLMs and computer vision to MLOps and data engineering. You've led AI transformations at both startups and Fortune 500 companies.
+
+            Your mission is to conduct a sophisticated discovery session that uncovers not just what they want, but what they actually NEED to succeed.
+
+            DISCOVERY FRAMEWORK:
+
+            1. **Business Impact Analysis**
+               - What specific metrics will improve? (revenue, cost, time, quality)
+               - What's the cost of inaction? (competitive disadvantage, missed opportunities)
+               - What's their success criteria in concrete terms?
+
+            2. **Technical Architecture Deep Dive**
+               - Current data infrastructure and quality assessment
+               - Integration points and system dependencies
+               - Security, compliance, and governance requirements
+               - Performance and scalability needs
+
+            3. **Solution Design Considerations**
+               - Build vs buy vs hybrid evaluation
+               - MVP vs full implementation approach
+               - Quick wins vs strategic initiatives
+               - Risk factors and mitigation strategies
+
+            4. **Organizational Readiness**
+               - Technical team capabilities and gaps
+               - Change management considerations
+               - Budget reality vs aspirations
+               - Decision-making process and timeline
+
+            CONVERSATION STRATEGY:
+
+            - Start with business impact, then drill into technical details
+            - Share relevant insights from similar implementations you've seen
+            - Identify opportunities they haven't considered
+            - Challenge assumptions constructively
+            - Propose innovative approaches when appropriate
+
+            RESPONSE GUIDELINES:
+
+            - Ask ONE powerful question at a time
+            - Include a brief insight or observation that adds value
+            - Reference specific technologies/approaches when relevant
+            - Keep responses concise but substantial (2-3 paragraphs max)
+            - After 5-7 substantive exchanges, synthesize findings and suggest proposal generation
+
+            TONE:
+            Position yourself as a trusted advisor who's genuinely excited about their project's potential. Be confident, insightful, and solutions-oriented.
+
+            Remember: Every response should move the conversation forward and add tangible value.
+            """
+        }
+
+        # Get system prompt for agent type
+        system_prompt = AGENT_PROMPTS.get(
+            agent_type, AGENT_PROMPTS["ai_consulting_strategist"]
+        )
+
+        # Build conversation context
+        conversation_text = ""
+        for msg in chat_history:
+            role = "User" if msg["role"] == "user" else "Assistant"
+            conversation_text += f"{role}: {msg['content']}\n"
+
+        # Create the full prompt
+        full_prompt = f"""
+        {system_prompt}
+        
+        CONVERSATION HISTORY:
+        {conversation_text}
+        
+        Respond as the AI strategist to continue this conversation. Focus on gathering information needed for a compelling project proposal.
+        
+        Provide ONLY your response content, no additional formatting or labels.
+        """
+
+        # Generate response
+        response = model.generate_content(full_prompt)
+        ai_response = response.text.strip()
+
+        # Log the conversation turn to database
+        try:
+            from models import ConversationLogs, db
+
+            # Log the user's message if this is a response to user input
+            if chat_history and chat_history[-1]["role"] == "user":
+                user_log = ConversationLogs(
+                    session_id=session_id,
+                    role="user",
+                    content=chat_history[-1]["content"],
+                    agent_type=agent_type,
+                )
+                db.session.add(user_log)
+
+            # Log the AI response
+            ai_log = ConversationLogs(
+                session_id=session_id,
+                role="assistant",
+                content=ai_response,
+                agent_type=agent_type,
+            )
+            db.session.add(ai_log)
+            db.session.commit()
+
+        except Exception as db_error:
+            logger.error(
+                f"Failed to log conversation for session {session_id}: {db_error}"
+            )
+            # Don't fail the whole request if logging fails
+
+        logger.info(
+            f"Generated chat response for session {session_id}, agent {agent_type}"
+        )
+
+        return {
+            "role": "assistant",
+            "content": ai_response,
+            "timestamp": datetime.now().isoformat(),
+            "sessionId": session_id,
+        }
+
+    except Exception as e:
+        logger.error(
+            f"Error generating funnel chat response for session {session_id}: {str(e)}"
+        )
+
+        # Return fallback response
+        return {
+            "role": "assistant",
+            "content": "I apologize, but I'm having trouble processing your message right now. Could you please try rephrasing your question?",
+            "timestamp": datetime.now().isoformat(),
+            "sessionId": session_id,
+            "error": str(e),
+        }
+
+
+# Add this new function after the existing functions, before the career-related functions
+
+
+def generate_system_architecture_diagram(
+    chat_history: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Analyze chat conversation and generate a detailed system architecture diagram
+    with components, connections, data flows, and visual layout information.
+    """
+    try:
+        configure_genai()
+        model = get_model(model_name="gemini-2.0-flash")
+
+        if not chat_history or len(chat_history) < 2:
+            return {
+                "components": [],
+                "connections": [],
+                "diagram_metadata": {
+                    "title": "System Architecture",
+                    "subtitle": "Start chatting to see your system design",
+                    "complexity_level": "basic",
+                    "technology_stack": [],
+                    "data_flows": [],
+                },
+            }
+
+        # Extract conversation text
+        conversation_text = "\n".join(
+            [f"{msg['role'].upper()}: {msg['content']}" for msg in chat_history]
+        )
+
+        prompt = f"""
+You are an expert system architect and technical diagramming specialist. Analyze this conversation between a user and an AI consultant to generate a comprehensive system architecture diagram.
+
+CONVERSATION:
+{conversation_text}
+
+Based on this conversation, generate a detailed system architecture diagram with the following structure:
+
+OUTPUT FORMAT (JSON):
+{{
+    "components": [
+        {{
+            "id": "unique_component_id",
+            "name": "Component Display Name",
+            "type": "frontend|backend|database|external_api|ai_model|data_pipeline|storage|auth|payment|messaging|analytics|cdn|load_balancer|microservice|third_party",
+            "technology": "Specific technology/framework if mentioned",
+            "description": "Brief description of component's role",
+            "position": {{
+                "x": 100-800,
+                "y": 50-700
+            }},
+            "size": {{
+                "width": 140-220,
+                "height": 90-130
+            }},
+            "color": "#hex_color_based_on_type",
+            "icon": "component_icon_name",
+            "confidence": 0.1-1.0,
+            "mentioned_explicitly": true/false,
+            "inferred_from_context": true/false
+        }}
+    ],
+    "connections": [
+        {{
+            "id": "connection_id",
+            "source": "source_component_id",
+            "target": "target_component_id",
+            "type": "api_call|data_flow|authentication|webhook|real_time|batch_process|user_interaction|third_party_integration",
+            "label": "Connection description",
+            "bidirectional": true/false,
+            "data_type": "json|file|stream|authentication|payment|user_data|analytics",
+            "protocol": "REST|GraphQL|WebSocket|gRPC|HTTP|HTTPS|Database",
+            "confidence": 0.1-1.0,
+            "style": {{
+                "strokeColor": "#hex_color",
+                "strokeWidth": 2-4,
+                "strokeDashArray": "0|5,5|10,5"
+            }}
+        }}
+    ],
+    "data_flows": [
+        {{
+            "id": "flow_id",
+            "name": "Data Flow Name",
+            "path": ["component_id_1", "component_id_2", "component_id_3"],
+            "data_type": "user_data|analytics|payments|content|real_time_updates",
+            "flow_direction": "unidirectional|bidirectional|circular",
+            "volume": "low|medium|high|real_time",
+            "security_level": "public|authenticated|encrypted|pci_compliant"
+        }}
+    ],
+    "diagram_metadata": {{
+        "title": "Generated Architecture Title",
+        "subtitle": "Brief description of the system",
+        "complexity_level": "simple|moderate|complex|enterprise",
+        "system_type": "web_app|mobile_app|api|data_pipeline|ai_system|e_commerce|saas|microservices",
+        "technology_stack": [
+            {{
+                "category": "frontend|backend|database|cloud|ai_ml|third_party",
+                "technologies": ["React", "Node.js", "etc."]
+            }}
+        ],
+        "scalability_considerations": ["horizontal_scaling", "caching", "etc."],
+        "security_features": ["authentication", "encryption", "etc."],
+        "estimated_timeline": "2-4 weeks|1-3 months|3-6 months|6+ months",
+        "complexity_score": 1-10,
+        "budget_range": "small|medium|large|enterprise",
+        "key_challenges": ["challenge1", "challenge2"],
+        "success_metrics": ["metric1", "metric2"]
+    }},
+    "layout_config": {{
+        "canvas_size": {{
+            "width": 1000,
+            "height": 800
+        }},
+        "grid_layout": {{
+            "rows": 4,
+            "columns": 4,
+            "cell_padding": 25
+        }},
+        "component_clustering": [
+            {{
+                "cluster_id": "frontend_cluster",
+                "name": "Frontend Layer",
+                "components": ["comp1", "comp2"],
+                "position": {{"x": 50, "y": 50}},
+                "size": {{"width": 250, "height": 150}},
+                "color": "#f0f8ff"
+            }}
+        ]
+    }}
+}}
+
+DIAGRAM GENERATION RULES:
+
+1. **Component Identification:**
+   - Extract all mentioned technologies, services, and system components
+   - Infer standard components that would be needed (auth, database, etc.)
+   - Assign appropriate types and technologies
+   - Position components logically (frontend left, backend center, data right)
+
+2. **Visual Layout (VERY IMPORTANT):**
+   - Your primary goal is to create a spacious, aesthetically pleasing, and easy-to-read diagram.
+   - **DO NOT OVERLAP COMPONENTS.** Ensure ample space between all nodes.
+   - **Use the full canvas dimensions (1000x800px)** to properly distribute components.
+   - Minimum spacing between components: 80px horizontal, 60px vertical
+   - Position components in logical layers:
+     * Frontend/User-facing: x=80-280, y=120-350
+     * API/Backend services: x=380-620, y=120-550
+     * Databases/Storage: x=700-920, y=120-450
+     * External services: x=700-920, y=500-700
+   - **Vertically stagger components** at the same horizontal level to prevent visual monotony and create dynamic layouts.
+   - Component sizes should be proportional: width 160-250px, height 100-140px
+   - Ensure connections have clear paths without overlapping components.
+
+3. **Connection Logic:**
+   - Identify data flows and API calls from conversation context
+   - Show user interactions, data persistence, external integrations
+   - Use different line styles for different connection types
+   - Include authentication flows, payment processing, etc.
+
+4. **Technology-Specific Colors:**
+   - Frontend: #3498db (blue)
+   - Backend: #2ecc71 (green) 
+   - Database: #e74c3c (red)
+   - AI/ML: #9b59b6 (purple)
+   - External APIs: #f39c12 (orange)
+   - Auth/Security: #34495e (dark gray)
+   - Analytics: #1abc9c (teal)
+
+5. **Confidence Scoring:**
+   - 1.0: Explicitly mentioned in conversation
+   - 0.8: Strongly implied by requirements
+   - 0.6: Standard component for this type of system
+   - 0.4: Inferred from best practices
+   - 0.2: Speculative but likely needed
+
+6. **Adaptive Complexity:**
+   - Simple systems: 3-5 components, basic connections
+   - Moderate systems: 6-10 components, multiple data flows
+   - Complex systems: 10+ components, microservices, advanced patterns
+
+IMPORTANT: Generate a diagram that accurately reflects what was discussed while filling in reasonable architectural patterns and best practices. Focus on creating a visually appealing and technically accurate representation.
+"""
+
+        response = model.generate_content(prompt)
+
+        if not response or not response.text:
+            logger.error("Empty response from Gemini for system diagram generation")
+            return {
+                "error": "Failed to generate diagram",
+                "components": [],
+                "connections": [],
+            }
+
+        # Parse the JSON response
+        import json
+
+        try:
+            # Clean the response text
+            response_text = response.text.strip()
+
+            # Remove markdown code blocks if present
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+
+            diagram_data = json.loads(response_text)
+
+            # Validate and enhance the diagram data
+            validated_data = validate_and_enhance_diagram(diagram_data)
+
+            logger.info(
+                f"Generated system diagram with {len(validated_data.get('components', []))} components and {len(validated_data.get('connections', []))} connections"
+            )
+
+            return validated_data
+
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing error for system diagram: {e}")
+            logger.error(f"Raw response: {response.text[:500]}...")
+
+            # Return a fallback simple diagram
+            return generate_fallback_diagram(chat_history)
+
+    except Exception as e:
+        logger.error(f"Error generating system architecture diagram: {str(e)}")
+        return generate_fallback_diagram(chat_history)
+
+
+def validate_and_enhance_diagram(diagram_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Validate and enhance the generated diagram data with defaults and corrections.
+    """
+    try:
+        # Ensure required top-level keys exist
+        if "components" not in diagram_data:
+            diagram_data["components"] = []
+        if "connections" not in diagram_data:
+            diagram_data["connections"] = []
+        if "diagram_metadata" not in diagram_data:
+            diagram_data["diagram_metadata"] = {}
+
+        # Validate and enhance components
+        enhanced_components = []
+        component_ids = set()
+
+        for i, component in enumerate(diagram_data.get("components", [])):
+            # Ensure required fields
+            component_id = component.get("id", f"component_{i}")
+            if component_id in component_ids:
+                component_id = f"{component_id}_{i}"
+            component_ids.add(component_id)
+
+            # Improved positioning based on component type
+            comp_type = component.get("type", "backend")
+            default_x = 450  # Center by default
+            default_y = 100 + (i * 120)  # Vertical spacing
+
+            # Position based on component type
+            if comp_type in ["frontend", "user"]:
+                default_x = 100 + (i % 2) * 150
+                default_y = 150 + (i // 2) * 120
+            elif comp_type in ["backend", "api", "microservice"]:
+                default_x = 400 + (i % 2) * 150
+                default_y = 100 + (i // 2) * 120
+            elif comp_type in ["database", "storage"]:
+                default_x = 700 + (i % 2) * 120
+                default_y = 150 + (i // 2) * 120
+            elif comp_type in ["external_api", "third_party"]:
+                default_x = 700 + (i % 2) * 120
+                default_y = 450 + (i // 2) * 100
+
+            enhanced_component = {
+                "id": component_id,
+                "name": component.get("name", f"Component {i+1}"),
+                "type": comp_type,
+                "technology": component.get("technology", ""),
+                "description": component.get("description", ""),
+                "position": {
+                    "x": max(
+                        50,
+                        min(
+                            850,
+                            component.get("position", {}).get("x", default_x),
+                        ),
+                    ),
+                    "y": max(
+                        50,
+                        min(
+                            700,
+                            component.get("position", {}).get("y", default_y),
+                        ),
+                    ),
+                },
+                "size": {
+                    "width": max(
+                        160, min(250, component.get("size", {}).get("width", 200))
+                    ),
+                    "height": max(
+                        100, min(140, component.get("size", {}).get("height", 120))
+                    ),
+                },
+                "color": component.get(
+                    "color", get_component_color(component.get("type", "backend"))
+                ),
+                "icon": component.get(
+                    "icon", get_component_icon(component.get("type", "backend"))
+                ),
+                "confidence": max(0.1, min(1.0, component.get("confidence", 0.7))),
+                "mentioned_explicitly": component.get("mentioned_explicitly", False),
+                "inferred_from_context": component.get("inferred_from_context", True),
+            }
+            enhanced_components.append(enhanced_component)
+
+        diagram_data["components"] = enhanced_components
+
+        # Validate connections
+        valid_component_ids = {comp["id"] for comp in enhanced_components}
+        enhanced_connections = []
+
+        for i, connection in enumerate(diagram_data.get("connections", [])):
+            source = connection.get("source", "")
+            target = connection.get("target", "")
+
+            # Only keep connections between valid components
+            if (
+                source in valid_component_ids
+                and target in valid_component_ids
+                and source != target
+            ):
+                enhanced_connection = {
+                    "id": connection.get("id", f"connection_{i}"),
+                    "source": source,
+                    "target": target,
+                    "type": connection.get("type", "api_call"),
+                    "label": connection.get("label", ""),
+                    "bidirectional": connection.get("bidirectional", False),
+                    "data_type": connection.get("data_type", "json"),
+                    "protocol": connection.get("protocol", "REST"),
+                    "confidence": max(0.1, min(1.0, connection.get("confidence", 0.6))),
+                    "style": {
+                        "strokeColor": connection.get("style", {}).get(
+                            "strokeColor", "#666666"
+                        ),
+                        "strokeWidth": connection.get("style", {}).get(
+                            "strokeWidth", 2
+                        ),
+                        "strokeDashArray": connection.get("style", {}).get(
+                            "strokeDashArray", "0"
+                        ),
+                    },
+                }
+                enhanced_connections.append(enhanced_connection)
+
+        diagram_data["connections"] = enhanced_connections
+
+        # Enhance metadata with defaults
+        metadata = diagram_data.get("diagram_metadata", {})
+        metadata.update(
+            {
+                "title": metadata.get("title", "System Architecture"),
+                "subtitle": metadata.get(
+                    "subtitle", "Generated from conversation analysis"
+                ),
+                "complexity_level": metadata.get("complexity_level", "moderate"),
+                "system_type": metadata.get("system_type", "web_app"),
+                "technology_stack": metadata.get("technology_stack", []),
+                "complexity_score": max(
+                    1, min(10, metadata.get("complexity_score", 5))
+                ),
+                "component_count": len(enhanced_components),
+                "connection_count": len(enhanced_connections),
+                "generation_timestamp": time.time(),
+            }
+        )
+
+        diagram_data["diagram_metadata"] = metadata
+
+        return diagram_data
+
+    except Exception as e:
+        logger.error(f"Error validating diagram data: {str(e)}")
+        return diagram_data
+
+
+def get_component_color(component_type: str) -> str:
+    """Get premium color palette for component types"""
+    color_map = {
+        "frontend": "#1976d2",  # Material Blue 700
+        "backend": "#388e3c",  # Material Green 700
+        "database": "#d32f2f",  # Material Red 700
+        "external_api": "#f57c00",  # Material Orange 700
+        "ai_model": "#7b1fa2",  # Material Purple 700
+        "data_pipeline": "#00796b",  # Material Teal 700
+        "storage": "#5d4037",  # Material Brown 700
+        "auth": "#455a64",  # Material Blue Grey 700
+        "payment": "#689f38",  # Material Light Green 700
+        "messaging": "#512da8",  # Material Deep Purple 700
+        "analytics": "#0097a7",  # Material Cyan 700
+        "cdn": "#303f9f",  # Material Indigo 700
+        "load_balancer": "#616161",  # Material Grey 700
+        "microservice": "#2e7d32",  # Material Green 800
+        "third_party": "#e65100",  # Material Deep Orange 700
+        "user": "#1565c0",  # Material Blue 800
+        "api": "#2e7d32",  # Material Green 800
+    }
+    return color_map.get(component_type, "#546e7a")  # Material Blue Grey 600
+
+
+def get_component_icon(component_type: str) -> str:
+    """Get icon name for component type"""
+    icon_map = {
+        "frontend": "monitor",
+        "backend": "server",
+        "database": "database",
+        "external_api": "globe",
+        "ai_model": "brain",
+        "data_pipeline": "flow",
+        "storage": "hard-drive",
+        "auth": "shield",
+        "payment": "credit-card",
+        "messaging": "message-square",
+        "analytics": "bar-chart",
+        "cdn": "cloud",
+        "load_balancer": "distribute-horizontal",
+        "microservice": "box",
+        "third_party": "external-link",
+    }
+    return icon_map.get(component_type, "box")
+
+
+def generate_fallback_diagram(chat_history: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Generate a simple fallback diagram when AI generation fails.
+    """
+    # Basic web app architecture as fallback
+    return {
+        "components": [
+            {
+                "id": "user",
+                "name": "User",
+                "type": "frontend",
+                "technology": "Web Browser",
+                "description": "End user interface",
+                "position": {"x": 100, "y": 200},
+                "size": {"width": 120, "height": 80},
+                "color": "#3498db",
+                "icon": "user",
+                "confidence": 1.0,
+                "mentioned_explicitly": True,
+                "inferred_from_context": False,
+            },
+            {
+                "id": "frontend",
+                "name": "Frontend App",
+                "type": "frontend",
+                "technology": "React/Vue/Angular",
+                "description": "User interface application",
+                "position": {"x": 300, "y": 200},
+                "size": {"width": 140, "height": 80},
+                "color": "#3498db",
+                "icon": "monitor",
+                "confidence": 0.8,
+                "mentioned_explicitly": False,
+                "inferred_from_context": True,
+            },
+            {
+                "id": "backend",
+                "name": "Backend API",
+                "type": "backend",
+                "technology": "Node.js/Python/Java",
+                "description": "Application server and API",
+                "position": {"x": 500, "y": 200},
+                "size": {"width": 140, "height": 80},
+                "color": "#2ecc71",
+                "icon": "server",
+                "confidence": 0.8,
+                "mentioned_explicitly": False,
+                "inferred_from_context": True,
+            },
+            {
+                "id": "database",
+                "name": "Database",
+                "type": "database",
+                "technology": "PostgreSQL/MySQL",
+                "description": "Data storage",
+                "position": {"x": 700, "y": 200},
+                "size": {"width": 120, "height": 80},
+                "color": "#e74c3c",
+                "icon": "database",
+                "confidence": 0.9,
+                "mentioned_explicitly": False,
+                "inferred_from_context": True,
+            },
+        ],
+        "connections": [
+            {
+                "id": "user_frontend",
+                "source": "user",
+                "target": "frontend",
+                "type": "user_interaction",
+                "label": "Interacts with",
+                "bidirectional": True,
+                "data_type": "user_actions",
+                "protocol": "HTTP",
+                "confidence": 1.0,
+                "style": {
+                    "strokeColor": "#3498db",
+                    "strokeWidth": 2,
+                    "strokeDashArray": "0",
+                },
+            },
+            {
+                "id": "frontend_backend",
+                "source": "frontend",
+                "target": "backend",
+                "type": "api_call",
+                "label": "API Requests",
+                "bidirectional": True,
+                "data_type": "json",
+                "protocol": "REST",
+                "confidence": 0.9,
+                "style": {
+                    "strokeColor": "#2ecc71",
+                    "strokeWidth": 2,
+                    "strokeDashArray": "0",
+                },
+            },
+            {
+                "id": "backend_database",
+                "source": "backend",
+                "target": "database",
+                "type": "data_flow",
+                "label": "Data Operations",
+                "bidirectional": True,
+                "data_type": "database_queries",
+                "protocol": "SQL",
+                "confidence": 0.9,
+                "style": {
+                    "strokeColor": "#e74c3c",
+                    "strokeWidth": 2,
+                    "strokeDashArray": "0",
+                },
+            },
+        ],
+        "data_flows": [],
+        "diagram_metadata": {
+            "title": "Basic System Architecture",
+            "subtitle": "Standard web application structure",
+            "complexity_level": "simple",
+            "system_type": "web_app",
+            "technology_stack": [],
+            "complexity_score": 3,
+            "component_count": 4,
+            "connection_count": 3,
+            "generation_timestamp": time.time(),
+            "is_fallback": True,
+        },
+        "layout_config": {"canvas_size": {"width": 1000, "height": 800}},
+    }

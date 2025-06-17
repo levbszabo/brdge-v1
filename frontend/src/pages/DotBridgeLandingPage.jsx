@@ -240,7 +240,7 @@ const HeroSection = ({ lead, handleInputChange, handleLeadSubmit }) => {
                                     variant="contained"
                                     size="large"
                                     component={Link}
-                                    to="/services"
+                                    to="/ai-consulting"
                                     onClick={() => triggerHaptic('medium')}
                                     startIcon={<DotBridgeIcon name="Play" />}
                                     sx={{

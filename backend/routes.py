@@ -100,6 +100,7 @@ from email.mime.multipart import MIMEMultipart
 import gemini
 from email import encoders
 from email.mime.base import MIMEBase
+from chat_prompts import ai_consultant_prompt
 
 # If gemini.py is in the same package (e.g. backend folder is a package)
 # Or if gemini.py is at the root and backend is a package: from .. import gemini
@@ -129,6 +130,8 @@ STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")  # Add this to your .env file
 STRIPE_PRODUCT_PRICE = 14900  # Price in cents ($149.00) - Premium tier price
 STRIPE_PRODUCT_CURRENCY = "usd"
 STRIPE_STANDARD_PRICE = 4900  # Price in cents ($49.00) - Standard tier price
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -3903,6 +3906,102 @@ def submit_service_lead():
         )
 
 
+@app.route("/api/ai-consulting/leads", methods=["POST"])
+@cross_origin()
+def submit_ai_consulting_lead():
+    """Handle AI consulting lead submissions"""
+    try:
+        data = request.get_json()
+
+        # Extract data
+        session_id = data.get("sessionId")
+        name = data.get("name")
+        email = data.get("email")
+        additional_notes = data.get("additionalNotes", "")
+        proposal_data = data.get("proposalData", {})
+        chat_history = data.get("chatHistory", [])
+        source = data.get("source", "ai_consulting")
+
+        # Validate required fields
+        if not name or not email:
+            return jsonify({"error": "Name and email are required"}), 400
+
+        # Validate email format
+        email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+        if not re.match(email_regex, email):
+            return jsonify({"error": "Invalid email format"}), 400
+
+        # Create service lead with metadata stored in notes field
+        metadata = {
+            "session_id": session_id,
+            "source": source,
+            "additional_notes": additional_notes,
+            "proposal_data": proposal_data,
+            "chat_history_length": len(chat_history),
+            "recommended_package": proposal_data.get("recommendedPackage"),
+            "packages": proposal_data.get("packages", []),
+            "client_context": proposal_data.get("clientContext", {}),
+            "submitted_at": datetime.utcnow().isoformat(),
+        }
+
+        lead = ServiceLead(
+            name=name,
+            email=email,
+            has_existing_course=False,  # N/A for AI consulting
+            course_topic=f"AI Consulting - {proposal_data.get('summary', 'Custom AI Solution')}",
+            status="new",
+            notes=json.dumps(metadata),  # Store metadata as JSON in notes field
+        )
+
+        db.session.add(lead)
+        db.session.commit()
+
+        # Send enhanced email notification
+        email_content = {
+            "name": name,
+            "email": email,
+            "additional_notes": additional_notes,
+            "proposal_summary": proposal_data.get("summary", ""),
+            "recommended_package_index": proposal_data.get("recommendedPackage", 0),
+            "packages": proposal_data.get("packages", []),
+            "value_proposition": proposal_data.get("valueProposition", ""),
+            "client_context": proposal_data.get("clientContext", {}),
+            "conversation_length": len(chat_history),
+            "session_id": session_id,
+            "lead_id": lead.id,
+        }
+
+        send_notification_email(
+            subject=f"🤖 New AI Consulting Lead - {name}",
+            content=email_content,
+            template_type="ai_consulting_lead",
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Thank you for your interest! Our team will review your requirements and send you a detailed proposal within 24 hours.",
+                    "lead_id": lead.id,
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error submitting AI consulting lead: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Failed to submit your information. Please try again.",
+                }
+            ),
+            500,
+        )
+
+
 @app.route("/api/leads", methods=["POST"])
 @cross_origin()
 def submit_career_lead():
@@ -4429,6 +4528,91 @@ def send_notification_email(
                         <p><strong>Submitted at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
                         <p><em>This lead has gone through the complete AI career strategist flow and is ready for follow-up.</em></p>
                         {f'<p><em>📎 Resume was uploaded and {"analyzed" if content.get("resume_analysis_id") else "stored"} for follow-up.</em></p>' if resume_uploaded else ''}
+                    </div>
+                </body>
+            </html>
+            """
+        elif template_type == "ai_consulting_lead":
+            # Create comprehensive AI consulting lead email template
+            packages = content.get("packages", [])
+            recommended_index = content.get("recommended_package_index", 0)
+            recommended_package = (
+                packages[recommended_index]
+                if packages and recommended_index < len(packages)
+                else None
+            )
+
+            html_content = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+                    <h2>🤖 New AI Consulting Lead</h2>
+                    
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📋 Contact Information</h3>
+                        <p><strong>Name:</strong> {content['name']}</p>
+                        <p><strong>Email:</strong> <a href="mailto:{content['email']}">{content['email']}</a></p>
+                        <p><strong>Session ID:</strong> {content.get('session_id', 'N/A')}</p>
+                        <p><strong>Lead ID:</strong> {content.get('lead_id', 'N/A')}</p>
+                    </div>
+                    
+                    <div style="background-color: #e8f4f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>💡 Project Summary</h3>
+                        <p>{content.get('proposal_summary', 'No summary provided')}</p>
+                        <p><strong>Value Proposition:</strong> {content.get('value_proposition', 'Not specified')}</p>
+                    </div>
+                    
+                    <div style="background-color: #f0f8e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📦 Recommended Package</h3>
+                        {f'''
+                        <p><strong>Package:</strong> {recommended_package['name']}</p>
+                        <p><strong>Price Range:</strong> ${recommended_package['priceRange']['min'] / 100:,.0f} - ${recommended_package['priceRange']['max'] / 100:,.0f}</p>
+                        <p><strong>Timeline:</strong> {recommended_package['timelineRange']['min']}-{recommended_package['timelineRange']['max']} days</p>
+                        <p><strong>Description:</strong> {recommended_package['description']}</p>
+                        ''' if recommended_package else '<p>No package recommendation available</p>'}
+                    </div>
+                    
+                    <div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>🎯 Client Context</h3>
+                        {f'''
+                        <p><strong>Industry:</strong> {content.get('client_context', {}).get('industry', 'Not specified')}</p>
+                        <p><strong>Company Size:</strong> {content.get('client_context', {}).get('companySize', 'Not specified')}</p>
+                        <p><strong>Technical Maturity:</strong> {content.get('client_context', {}).get('technicalMaturity', 'Not specified')}</p>
+                        <p><strong>Urgency:</strong> {content.get('client_context', {}).get('urgency', 'Not specified')}</p>
+                        <p><strong>Budget Indicators:</strong> {content.get('client_context', {}).get('budget_indicators', 'None mentioned')}</p>
+                        ''' if content.get('client_context') else '<p>No context data available</p>'}
+                    </div>
+                    
+                    <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>💬 Additional Notes</h3>
+                        <p>{content.get('additional_notes', 'No additional notes provided') or 'No additional notes provided'}</p>
+                    </div>
+                    
+                    <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3>📊 Session Metrics</h3>
+                        <p><strong>Conversation Length:</strong> {content.get('conversation_length', 0)} messages</p>
+                        <p><strong>Submitted at:</strong> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}</p>
+                    </div>
+                    
+                    <div style="margin: 30px 0; padding: 20px; border-left: 4px solid #007AFF;">
+                        <h4>📋 Available Packages Overview</h4>
+                        <ol>
+                        {"".join([f'''
+                            <li>
+                                <strong>{pkg['name']}</strong> - ${pkg['priceRange']['min'] / 100:,.0f} to ${pkg['priceRange']['max'] / 100:,.0f}<br/>
+                                <em>{pkg['description']}</em>
+                            </li>
+                        ''' for pkg in packages])}
+                        </ol>
+                    </div>
+                    
+                    <div style="background-color: #ffebee; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #d32f2f;">
+                        <h3 style="color: #d32f2f;">⚠️ NEXT STEPS</h3>
+                        <ol>
+                            <li>Review the conversation and proposal details</li>
+                            <li>Prepare a customized proposal based on recommended package</li>
+                            <li>Send proposal within 24 hours to {content['email']}</li>
+                            <li>Schedule follow-up call if needed</li>
+                        </ol>
                     </div>
                 </body>
             </html>
@@ -7492,6 +7676,100 @@ def get_offers():
     except Exception as e:
         logger.error(f"Error fetching offers: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/funnels/chat", methods=["POST"])
+@cross_origin()
+def funnel_chat():
+    """Generic endpoint for all AI chat interactions in funnels, now with OpenAI streaming."""
+    try:
+        data = request.get_json()
+        agent_type = data.get("agentType")
+        history = data.get("history", [])
+
+        if not agent_type or not history:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Define system prompt based on agent type
+        if agent_type == "ai_consultant":
+            system_prompt = ai_consultant_prompt
+        elif agent_type == "career_coach":
+            system_prompt = "You are an expert career coach. Your goal is to help the user with their career goals and job search. Be supportive and provide actionable advice."
+        else:
+            system_prompt = "You are a helpful assistant."
+
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Filter out timestamps from history
+        for message in history:
+            messages.append({"role": message["role"], "content": message["content"]})
+
+        def generate():
+            try:
+                stream = openai.chat.completions.create(
+                    model="o4-mini",  # Using a powerful model
+                    messages=messages,
+                    stream=True,
+                )
+                for chunk in stream:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+            except Exception as e:
+                logger.error(f"OpenAI stream error: {e}")
+                # Yield a JSON error string that the frontend can parse
+                yield json.dumps({"error": "An error occurred with the AI service."})
+
+        return Response(stream_with_context(generate()), mimetype="text/plain")
+
+    except Exception as e:
+        logger.error(f"Funnel chat setup error: {str(e)}")
+        return jsonify({"error": "Failed to set up chat stream"}), 500
+
+
+@app.route("/api/funnels/generate-proposal", methods=["POST"])
+@cross_origin()
+def generate_funnel_proposal():
+    """Generates a proposal from a chat history"""
+    try:
+        data = request.get_json()
+        session_id = data.get("sessionId")
+        chat_history = data.get("chatHistory", [])
+
+        if not session_id or not chat_history:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Use the new enhanced Gemini proposal function
+        proposal_data = gemini.generate_ai_consulting_proposal(
+            session_id=session_id, chat_history=chat_history
+        )
+
+        return jsonify(proposal_data)
+
+    except Exception as e:
+        logger.error(f"Proposal generation error: {str(e)}")
+        return jsonify({"error": "Failed to generate proposal"}), 500
+
+
+@app.route("/api/generate-system-diagram", methods=["POST"])
+@cross_origin()
+def generate_system_diagram():
+    """Generate a system architecture diagram from chat history using AI"""
+    try:
+        data = request.get_json()
+        chat_history = data.get("chat_history", [])
+
+        if not chat_history:
+            return jsonify({"error": "Chat history is required"}), 400
+
+        # Use the new Gemini function to generate the diagram
+        diagram_data = gemini.generate_system_architecture_diagram(chat_history)
+
+        return jsonify(diagram_data), 200
+
+    except Exception as e:
+        logger.error(f"Error generating system diagram: {str(e)}")
+        return jsonify({"error": "Failed to generate system diagram"}), 500
 
 
 @app.route("/api/admin/analytics/overview", methods=["GET"])

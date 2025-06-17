@@ -166,7 +166,7 @@ function Header() {
 
     // Services dropdown items
     const servicesMenuItems = [
-        { text: 'B2B Sales', link: '/services' },
+        { text: 'AI Consulting', link: '/ai-consulting' },
         { text: 'Career Growth', link: '/career-accelerator' }
     ];
 
