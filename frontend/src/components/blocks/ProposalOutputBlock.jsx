@@ -10,13 +10,14 @@ import {
     Divider
 } from '@mui/material';
 import { motion } from 'framer-motion';
-import { FileText, Clock, DollarSign, CheckCircle } from 'lucide-react';
+import { FileText, Clock, DollarSign, CheckCircle, ArrowRight } from 'lucide-react';
 import DotBridgeCard from '../DotBridgeCard';
 import { useFunnel } from '../../contexts/FunnelContext';
+import DotBridgeButton from '../DotBridgeButton';
 
-const ProposalOutputBlock = () => {
+const ProposalOutputBlock = ({ leadFormRef }) => {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isLgDown = useMediaQuery(theme.breakpoints.down('lg'));
     const { proposalData } = useFunnel();
     const [selectedPackageIndex, setSelectedPackageIndex] = React.useState(null);
 
@@ -25,6 +26,10 @@ const ProposalOutputBlock = () => {
             setSelectedPackageIndex(proposalData.recommendedPackage);
         }
     }, [proposalData]);
+
+    const handleScrollToForm = () => {
+        leadFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     if (!proposalData) {
         return null;
@@ -104,6 +109,23 @@ const ProposalOutputBlock = () => {
                     }}>
                         Your Custom AI Strategy
                     </Typography>
+                    {isLgDown && (
+                        <DotBridgeButton
+                            variant="contained"
+                            onClick={handleScrollToForm}
+                            endIcon={<ArrowRight size={20} />}
+                            sx={{
+                                mt: 2,
+                                background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
+                                '&:hover': {
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 8px 24px rgba(76, 175, 80, 0.3)'
+                                }
+                            }}
+                        >
+                            Proceed with a Package
+                        </DotBridgeButton>
+                    )}
                 </Box>
 
                 {/* Summary Section */}
@@ -158,7 +180,7 @@ const ProposalOutputBlock = () => {
                                             height: '100%',
                                             cursor: 'pointer',
                                             position: 'relative',
-                                            border: `2px solid ${selectedPackageIndex === index ? theme.palette.primary.main : theme.palette.divider}`,
+                                            border: `2px solid ${selectedPackageIndex === index ? theme.palette.primary.main : 'transparent'}`,
                                             borderRadius: 2,
                                             transition: 'all 0.3s ease',
                                             background: selectedPackageIndex === index
@@ -179,8 +201,8 @@ const ProposalOutputBlock = () => {
                                                     position: 'absolute',
                                                     top: -10,
                                                     right: 16,
-                                                    backgroundColor: theme.palette.primary.main,
-                                                    color: 'white',
+                                                    backgroundColor: theme.palette.success.light,
+                                                    color: theme.palette.success.contrastText,
                                                     fontWeight: 700,
                                                     fontSize: '0.75rem'
                                                 }}

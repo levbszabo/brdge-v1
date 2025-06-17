@@ -197,7 +197,10 @@ const AIChatBlock = ({
             p: { xs: 2, sm: 2.5, md: 3 },
             background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.lighter}10 100%)`,
             border: `1px solid ${theme.palette.primary.light}`,
-            borderRadius: { xs: 2, md: 3 }
+            borderRadius: { xs: 2, md: 3 },
+            height: { xs: '75vh', sm: 830 },
+            display: 'flex',
+            flexDirection: 'column'
         }}>
             {/* Header */}
             <Box sx={{
@@ -205,7 +208,8 @@ const AIChatBlock = ({
                 alignItems: 'center',
                 mb: 3,
                 pb: 2,
-                borderBottom: `1px solid ${theme.palette.divider}`
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                flexShrink: 0
             }}>
                 <Chip
                     icon={<Sparkles size={16} />}
@@ -224,9 +228,9 @@ const AIChatBlock = ({
 
             {/* Chat Messages */}
             <Box sx={{
-                height: { xs: 500, sm: 600, md: 700 },
+                flex: 1,
                 overflowY: 'auto',
-                mb: 3,
+                mb: 2,
                 px: { xs: 1, sm: 2 },
                 '&::-webkit-scrollbar': {
                     width: '8px',
@@ -321,7 +325,7 @@ const AIChatBlock = ({
 
             {/* Error Alert */}
             {error && (
-                <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+                <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }} onClose={() => setError(null)}>
                     {error}
                 </Alert>
             )}
@@ -330,7 +334,8 @@ const AIChatBlock = ({
             <Box sx={{
                 display: 'flex',
                 gap: 1,
-                alignItems: 'flex-end'
+                alignItems: 'flex-end',
+                flexShrink: 0
             }}>
                 <TextField
                     fullWidth
@@ -379,7 +384,8 @@ const AIChatBlock = ({
                     p: 2,
                     background: theme.palette.grey[50],
                     borderRadius: 2,
-                    border: `1px solid ${theme.palette.divider}`
+                    border: `1px solid ${theme.palette.divider}`,
+                    flexShrink: 0
                 }}>
                     <Typography variant="body2" sx={{
                         fontWeight: 600,
@@ -410,7 +416,7 @@ const AIChatBlock = ({
 
             {/* Generate Proposal Button */}
             {chatHistory.length > 4 && (
-                <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Box sx={{ mt: 3, textAlign: 'center', flexShrink: 0 }}>
                     <DotBridgeButton
                         variant="contained"
                         size="large"

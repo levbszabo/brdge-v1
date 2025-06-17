@@ -60,7 +60,8 @@ const SystemDiagramPanel = ({ chatHistory = [] }) => {
     const [zoom, setZoom] = useState(0.75); // Start at 75% zoom for better overview
     const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const panStartRef = useRef({ x: 0, y: 0 });
+    const pinchStateRef = useRef({ initialDist: 0, initialZoom: 1, isPinching: false });
     const svgRef = useRef(null);
     const containerRef = useRef(null);
 
@@ -158,30 +159,94 @@ const SystemDiagramPanel = ({ chatHistory = [] }) => {
         setPanOffset({ x: 0, y: 0 });
     };
 
-    const handleMouseDown = (e) => {
-        if (e.button === 0) { // Left click only
-            setIsPanning(true);
-            setDragStart({
-                x: e.clientX - panOffset.x,
-                y: e.clientY - panOffset.y
-            });
-        }
+    const handlePanStart = (clientX, clientY) => {
+        if (pinchStateRef.current.isPinching) return;
+        setIsPanning(true);
+        panStartRef.current = { x: clientX - panOffset.x, y: clientY - panOffset.y };
+        if (navigator.vibrate) navigator.vibrate(20);
     };
 
-    const handleMouseMove = (e) => {
-        if (isPanning) {
-            setPanOffset({
-                x: e.clientX - dragStart.x,
-                y: e.clientY - dragStart.y
-            });
-        }
+    const handlePanMove = (clientX, clientY) => {
+        if (!isPanning || pinchStateRef.current.isPinching) return;
+        setPanOffset({
+            x: clientX - panStartRef.current.x,
+            y: clientY - panStartRef.current.y
+        });
     };
 
-    const handleMouseUp = () => {
+    const handlePanEnd = () => {
         setIsPanning(false);
     };
 
-    const handleWheel = (e) => {
+    const handlePinchStart = (touch1, touch2) => {
+        setIsPanning(false); // Stop panning when pinch starts
+        const initialDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+        pinchStateRef.current = {
+            initialDist: initialDist,
+            initialZoom: zoom,
+            isPinching: true,
+        };
+        if (navigator.vibrate) navigator.vibrate([20, 20]);
+    };
+
+    const handlePinchMove = (touch1, touch2) => {
+        if (!pinchStateRef.current.isPinching) return;
+        const newDist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+        if (pinchStateRef.current.initialDist === 0) return; // avoid division by zero
+        const zoomFactor = newDist / pinchStateRef.current.initialDist;
+        const newZoom = pinchStateRef.current.initialZoom * zoomFactor;
+        setZoom(Math.max(0.25, Math.min(3, newZoom)));
+    };
+
+    const handlePinchEnd = () => {
+        pinchStateRef.current.isPinching = false;
+    };
+
+    // Event handlers that will be attached to the element
+    const onMouseDown = (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        handlePanStart(e.clientX, e.clientY);
+    };
+
+    const onMouseMove = (e) => {
+        e.preventDefault();
+        handlePanMove(e.clientX, e.clientY);
+    };
+
+    const onMouseUp = () => {
+        handlePanEnd();
+    };
+
+    const onTouchStart = (e) => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+            handlePinchStart(e.touches[0], e.touches[1]);
+        } else if (e.touches.length === 1) {
+            handlePanStart(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    };
+
+    const onTouchMove = (e) => {
+        e.preventDefault();
+        if (e.touches.length === 2) {
+            handlePinchMove(e.touches[0], e.touches[1]);
+        } else if (e.touches.length === 1) {
+            handlePanMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    };
+
+    const onTouchEnd = (e) => {
+        if (e.touches.length < 2) {
+            handlePinchEnd();
+        }
+        if (e.touches.length < 1) {
+            handlePanEnd();
+        }
+    };
+
+    const onWheel = (e) => {
+        // We call preventDefault to stop the page from scrolling
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         setZoom(prev => Math.max(0.25, Math.min(3, prev + delta)));
@@ -530,11 +595,14 @@ const SystemDiagramPanel = ({ chatHistory = [] }) => {
                     minHeight: '400px',
                     boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.06)'
                 }}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-                onWheel={handleWheel}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={onMouseUp}
+                onMouseLeave={onMouseUp}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                onWheel={onWheel}
             >
                 <div
                     style={{
@@ -664,7 +732,7 @@ const SystemDiagramPanel = ({ chatHistory = [] }) => {
         return (
             <Paper sx={{
                 height: '100%',
-                minHeight: { xs: 500, sm: 650, md: 800 },
+                minHeight: { xs: '75vh', sm: 830 },
                 p: 3,
                 background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
                 border: `1px solid ${theme.palette.divider}`,
@@ -684,7 +752,7 @@ const SystemDiagramPanel = ({ chatHistory = [] }) => {
         <>
             <Paper sx={{
                 height: '100%',
-                minHeight: { xs: 500, sm: 650, md: 800 },
+                minHeight: { xs: '75vh', sm: 830 },
                 p: 3,
                 background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
                 border: `1px solid ${theme.palette.divider}`,

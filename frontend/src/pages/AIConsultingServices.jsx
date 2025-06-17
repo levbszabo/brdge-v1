@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Box,
     Container,
@@ -8,11 +8,14 @@ import {
     Chip,
     styled,
     useTheme,
-    useMediaQuery
+    useMediaQuery,
+    Tabs,
+    Tab,
+    Paper
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { CheckCircle, ArrowRight, Sparkles, Smartphone, Bot, BarChart3, Zap, Lightbulb, Rocket } from 'lucide-react';
+import { CheckCircle, ArrowRight, Sparkles, Smartphone, Bot, BarChart3, Zap, Lightbulb, Rocket, Share2 } from 'lucide-react';
 import { FunnelProvider, useFunnel } from '../contexts/FunnelContext';
 import AIChatBlock from '../components/blocks/AIChatBlock';
 import SystemDiagramPanel from '../components/blocks/SystemDiagramPanel';
@@ -91,13 +94,19 @@ const ExpertiseCard = ({ icon, title, description }) => {
 // Inner component that uses the funnel context
 const AIConsultingServicesContent = () => {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const isLgDown = useMediaQuery(theme.breakpoints.down('lg'));
     const { proposalData, chatHistory } = useFunnel();
 
     const [email, setEmail] = useState('');
     const [emailError, setEmailError] = useState('');
     const [sessionStarted, setSessionStarted] = useState(false);
     const [headerRef, headerInView] = useInView({ triggerOnce: true, threshold: 0.1 });
+    const [activeTab, setActiveTab] = useState(0);
+    const leadFormRef = useRef(null);
+
+    const handleTabChange = (event, newValue) => {
+        setActiveTab(newValue);
+    };
 
     const expertiseAreas = [
         { icon: <Rocket size={24} />, title: 'MVP & Proof of Concept', description: 'Quickly validate your AI ideas with a functional prototype. We build lean, effective MVPs to test assumptions and demonstrate value to stakeholders.' },
@@ -203,9 +212,9 @@ Your tone should be that of a trusted advisor - confident, insightful, and genui
                                 variant="h1"
                                 sx={{
                                     mb: { xs: 2, sm: 3 },
-                                    fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.75rem', lg: '3.5rem' },
+                                    fontSize: { xs: '2.5rem', sm: '3rem', md: '3.75rem', lg: '4.5rem' },
                                     fontWeight: 800,
-                                    lineHeight: { xs: 1.3, md: 1.1 },
+                                    lineHeight: { xs: 1.2, md: 1.1 },
                                     letterSpacing: '-0.02em',
                                     px: { xs: 1, sm: 0 }
                                 }}
@@ -315,7 +324,7 @@ Your tone should be that of a trusted advisor - confident, insightful, and genui
                             transition={{ duration: 0.7 }}
                         >
                             <Box>
-                                <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', mb: 1, fontWeight: 700 }}>
+                                <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', mb: 1, fontWeight: 700, fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' } }}>
                                     Our Expertise, Your Advantage
                                 </DotBridgeTypography>
                                 <DotBridgeTypography variant="h6" color="text.secondary" sx={{ textAlign: 'center', mb: { xs: 4, md: 6 }, fontWeight: 400, maxWidth: '700px', mx: 'auto' }}>
@@ -337,43 +346,46 @@ Your tone should be that of a trusted advisor - confident, insightful, and genui
                             transition={{ duration: 0.7 }}
                         >
                             <Box sx={{ px: { xs: 0, sm: 1, md: 3 }, py: { xs: 2, md: 4 } }}>
-                                <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', mb: 1, fontWeight: 700 }}>
+                                <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', mb: 1, fontWeight: 700, fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' } }}>
                                     AI Strategy Session
                                 </DotBridgeTypography>
                                 <DotBridgeTypography variant="h6" color="text.secondary" sx={{ textAlign: 'center', mb: 4, fontWeight: 400 }}>
                                     Chat with our AI strategist to define your project scope and goals.
                                 </DotBridgeTypography>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12} lg={6}>
-                                        <AIChatBlock
-                                            agentType={AI_STRATEGIST_CONFIG.agentType}
-                                            systemPrompt={AI_STRATEGIST_CONFIG.systemPrompt}
-                                            initialMessage={AI_STRATEGIST_CONFIG.initialMessage}
-                                            endConversationCtaText={AI_STRATEGIST_CONFIG.endConversationCtaText}
-                                        />
-                                    </Grid>
-                                    <Grid item xs={12} lg={6}>
-                                        <Box sx={{ position: 'sticky', top: { lg: 20 }, height: 'fit-content' }}>
-                                            <SystemDiagramPanel chatHistory={chatHistory} />
+                                {isLgDown ? (
+                                    <>
+                                        <Paper square sx={{
+                                            borderBottom: 1, borderColor: 'divider', mb: 2, background: 'transparent',
+                                            position: 'sticky', top: 0, zIndex: 10,
+                                            backdropFilter: 'blur(8px)',
+                                            backgroundColor: `${theme.palette.background.paper}99`
+                                        }}>
+                                            <Tabs
+                                                value={activeTab}
+                                                onChange={handleTabChange}
+                                                variant="fullWidth"
+                                                indicatorColor="primary"
+                                                textColor="primary"
+                                            >
+                                                <Tab icon={<Bot size={18} />} iconPosition="start" label="AI Strategist" />
+                                                <Tab icon={<Share2 size={18} />} iconPosition="start" label="Live Architecture" />
+                                            </Tabs>
+                                        </Paper>
+                                        <Box>
+                                            <Box hidden={activeTab !== 0}>
+                                                <AIChatBlock
+                                                    agentType={AI_STRATEGIST_CONFIG.agentType}
+                                                    systemPrompt={AI_STRATEGIST_CONFIG.systemPrompt}
+                                                    initialMessage={AI_STRATEGIST_CONFIG.initialMessage}
+                                                    endConversationCtaText={AI_STRATEGIST_CONFIG.endConversationCtaText}
+                                                />
+                                            </Box>
+                                            <Box hidden={activeTab !== 1}>
+                                                <SystemDiagramPanel chatHistory={chatHistory} />
+                                            </Box>
                                         </Box>
-                                    </Grid>
-                                </Grid>
-                            </Box>
-                        </motion.div>
-                    ) : (
-                        <>
-                            <motion.div
-                                initial={{ opacity: 0, y: 30 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.7 }}
-                            >
-                                <Box sx={{ px: { xs: 0, sm: 1, md: 3 }, py: { xs: 2, md: 4 } }}>
-                                    <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', mb: 1, fontWeight: 700 }}>
-                                        AI Strategy Session
-                                    </DotBridgeTypography>
-                                    <DotBridgeTypography variant="h6" color="text.secondary" sx={{ textAlign: 'center', mb: 4, fontWeight: 400 }}>
-                                        Chat with our AI strategist to define your project scope and goals.
-                                    </DotBridgeTypography>
+                                    </>
+                                ) : (
                                     <Grid container spacing={3}>
                                         <Grid item xs={12} lg={6}>
                                             <AIChatBlock
@@ -389,6 +401,73 @@ Your tone should be that of a trusted advisor - confident, insightful, and genui
                                             </Box>
                                         </Grid>
                                     </Grid>
+                                )}
+                            </Box>
+                        </motion.div>
+                    ) : (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.7 }}
+                            >
+                                <Box sx={{ px: { xs: 0, sm: 1, md: 3 }, py: { xs: 2, md: 4 } }}>
+                                    <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', mb: 1, fontWeight: 700, fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' } }}>
+                                        AI Strategy Session
+                                    </DotBridgeTypography>
+                                    <DotBridgeTypography variant="h6" color="text.secondary" sx={{ textAlign: 'center', mb: 4, fontWeight: 400 }}>
+                                        Chat with our AI strategist to define your project scope and goals.
+                                    </DotBridgeTypography>
+                                    {isLgDown ? (
+                                        <>
+                                            <Paper square sx={{
+                                                borderBottom: 1, borderColor: 'divider', mb: 2, background: 'transparent',
+                                                position: 'sticky', top: 0, zIndex: 10,
+                                                backdropFilter: 'blur(8px)',
+                                                backgroundColor: `${theme.palette.background.paper}99`
+                                            }}>
+                                                <Tabs
+                                                    value={activeTab}
+                                                    onChange={handleTabChange}
+                                                    variant="fullWidth"
+                                                    indicatorColor="primary"
+                                                    textColor="primary"
+                                                >
+                                                    <Tab icon={<Bot size={18} />} iconPosition="start" label="AI Strategist" />
+                                                    <Tab icon={<Share2 size={18} />} iconPosition="start" label="Live Architecture" />
+                                                </Tabs>
+                                            </Paper>
+                                            <Box>
+                                                <Box hidden={activeTab !== 0}>
+                                                    <AIChatBlock
+                                                        agentType={AI_STRATEGIST_CONFIG.agentType}
+                                                        systemPrompt={AI_STRATEGIST_CONFIG.systemPrompt}
+                                                        initialMessage={AI_STRATEGIST_CONFIG.initialMessage}
+                                                        endConversationCtaText={AI_STRATEGIST_CONFIG.endConversationCtaText}
+                                                    />
+                                                </Box>
+                                                <Box hidden={activeTab !== 1}>
+                                                    <SystemDiagramPanel chatHistory={chatHistory} />
+                                                </Box>
+                                            </Box>
+                                        </>
+                                    ) : (
+                                        <Grid container spacing={3}>
+                                            <Grid item xs={12} lg={6}>
+                                                <AIChatBlock
+                                                    agentType={AI_STRATEGIST_CONFIG.agentType}
+                                                    systemPrompt={AI_STRATEGIST_CONFIG.systemPrompt}
+                                                    initialMessage={AI_STRATEGIST_CONFIG.initialMessage}
+                                                    endConversationCtaText={AI_STRATEGIST_CONFIG.endConversationCtaText}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} lg={6}>
+                                                <Box sx={{ position: 'sticky', top: { lg: 20 }, height: 'fit-content' }}>
+                                                    <SystemDiagramPanel chatHistory={chatHistory} />
+                                                </Box>
+                                            </Grid>
+                                        </Grid>
+                                    )}
                                 </Box>
                             </motion.div>
                             {proposalData && (
@@ -397,14 +476,14 @@ Your tone should be that of a trusted advisor - confident, insightful, and genui
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.7 }}
                                 >
-                                    <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', my: 4, fontWeight: 700 }}>
+                                    <DotBridgeTypography variant="h2" sx={{ textAlign: 'center', my: 4, fontWeight: 700, fontSize: { xs: '1.75rem', sm: '2rem', md: '2.25rem' } }}>
                                         Your Custom Proposal
                                     </DotBridgeTypography>
                                     <Grid container spacing={3} sx={{ alignItems: 'flex-start' }}>
                                         <Grid item xs={12} lg={8}>
-                                            <ProposalOutputBlock />
+                                            <ProposalOutputBlock leadFormRef={leadFormRef} />
                                         </Grid>
-                                        <Grid item xs={12} lg={4}>
+                                        <Grid item xs={12} lg={4} ref={leadFormRef}>
                                             <Box sx={{ position: 'sticky', top: { lg: 20 }, height: 'fit-content' }}>
                                                 <AsyncTicketBlock />
                                             </Box>
