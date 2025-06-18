@@ -31,7 +31,7 @@ const AIChatBlock = ({
     const [isLoading, setIsLoading] = useState(false);
     const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
     const [error, setError] = useState(null);
-    const chatEndRef = useRef(null);
+    const chatContainerRef = useRef(null);
 
     // Debug logging and fallback for agentType
     const effectiveAgentType = agentType || 'ai_consultant';
@@ -54,9 +54,19 @@ const AIChatBlock = ({
         }
     }, []);
 
-    // Auto-scroll to bottom
+    // Auto-scroll chat container to bottom when new messages are added
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (chatContainerRef.current) {
+            const container = chatContainerRef.current;
+            // Use a small delay to ensure content is rendered
+            const timeoutId = setTimeout(() => {
+                container.scrollTo({
+                    top: container.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+            return () => clearTimeout(timeoutId);
+        }
     }, [chatHistory]);
 
     const handleSendMessage = async () => {
@@ -194,7 +204,7 @@ const AIChatBlock = ({
         <DotBridgeCard sx={{
             maxWidth: '100%',
             mx: 'auto',
-            p: { xs: 2, sm: 2.5, md: 3 },
+            p: { xs: 1.5, sm: 2.5, md: 3 },
             background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.primary.lighter}10 100%)`,
             border: `1px solid ${theme.palette.primary.light}`,
             borderRadius: { xs: 2, md: 3 },
@@ -206,47 +216,55 @@ const AIChatBlock = ({
             <Box sx={{
                 display: 'flex',
                 alignItems: 'center',
-                mb: 3,
-                pb: 2,
+                mb: { xs: 2, sm: 3 },
+                pb: { xs: 1.5, sm: 2 },
                 borderBottom: `1px solid ${theme.palette.divider}`,
                 flexShrink: 0
             }}>
                 <Chip
-                    icon={<Sparkles size={16} />}
+                    icon={<Sparkles size={isMobile ? 14 : 16} />}
                     label="AI STRATEGIST"
                     sx={{
                         background: `linear-gradient(135deg, ${theme.palette.primary.main}20 0%, ${theme.palette.primary.light}30 100%)`,
                         color: theme.palette.primary.dark,
                         fontWeight: 600,
-                        fontSize: '0.75rem',
+                        fontSize: { xs: '0.65rem', sm: '0.75rem' },
                         letterSpacing: '0.05em',
                         border: '1px solid',
-                        borderColor: theme.palette.primary.light
+                        borderColor: theme.palette.primary.light,
+                        height: { xs: 28, sm: 32 }
                     }}
                 />
             </Box>
 
             {/* Chat Messages */}
-            <Box sx={{
-                flex: 1,
-                overflowY: 'auto',
-                mb: 2,
-                px: { xs: 1, sm: 2 },
-                '&::-webkit-scrollbar': {
-                    width: '8px',
-                },
-                '&::-webkit-scrollbar-track': {
-                    background: theme.palette.grey[100],
-                    borderRadius: '4px',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                    background: theme.palette.grey[400],
-                    borderRadius: '4px',
-                    '&:hover': {
-                        background: theme.palette.grey[600],
+            <Box
+                ref={chatContainerRef}
+                sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    mb: { xs: 1.5, sm: 2 },
+                    px: { xs: 0.5, sm: 2 },
+                    position: 'relative',
+                    contain: 'layout style paint',
+                    scrollBehavior: 'auto',
+                    '&::-webkit-scrollbar': {
+                        width: { xs: '4px', sm: '8px' },
+                    },
+                    '&::-webkit-scrollbar-track': {
+                        background: theme.palette.grey[100],
+                        borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                        background: theme.palette.grey[400],
+                        borderRadius: '4px',
+                        '&:hover': {
+                            background: theme.palette.grey[600],
+                        }
                     }
-                }
-            }}>
+                }}
+            >
                 <AnimatePresence>
                     {chatHistory.map((message, index) => (
                         <motion.div
@@ -258,18 +276,18 @@ const AIChatBlock = ({
                             <Box sx={{
                                 display: 'flex',
                                 justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                                mb: 2
+                                mb: { xs: 1.5, sm: 2 }
                             }}>
                                 <Box sx={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
-                                    gap: 1.5,
-                                    maxWidth: '85%',
+                                    gap: { xs: 1, sm: 1.5 },
+                                    maxWidth: { xs: '95%', sm: '85%' },
                                     flexDirection: message.role === 'user' ? 'row-reverse' : 'row'
                                 }}>
                                     <Box sx={{
-                                        width: 32,
-                                        height: 32,
+                                        width: { xs: 28, sm: 32 },
+                                        height: { xs: 28, sm: 32 },
                                         borderRadius: '50%',
                                         display: 'flex',
                                         alignItems: 'center',
@@ -280,23 +298,23 @@ const AIChatBlock = ({
                                         color: 'white',
                                         flexShrink: 0
                                     }}>
-                                        {message.role === 'user' ? <User size={18} /> : <Bot size={18} />}
+                                        {message.role === 'user' ? <User size={isMobile ? 14 : 18} /> : <Bot size={isMobile ? 14 : 18} />}
                                     </Box>
 
                                     <Paper sx={{
-                                        p: { xs: 1.5, sm: 2 },
+                                        p: { xs: 1.25, sm: 2 },
                                         background: message.role === 'user'
                                             ? theme.palette.primary.lighter
                                             : theme.palette.background.paper,
                                         border: `1px solid ${message.role === 'user'
                                             ? theme.palette.primary.light
                                             : theme.palette.divider}`,
-                                        borderRadius: 2,
+                                        borderRadius: { xs: 1.5, sm: 2 },
                                         boxShadow: 1
                                     }}>
                                         <Typography variant="body1" sx={{
-                                            fontSize: { xs: '0.9rem', sm: '1rem' },
-                                            lineHeight: 1.6,
+                                            fontSize: { xs: '0.85rem', sm: '1rem' },
+                                            lineHeight: { xs: 1.5, sm: 1.6 },
                                             whiteSpace: 'pre-wrap'
                                         }}>
                                             {message.content}
@@ -313,19 +331,18 @@ const AIChatBlock = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1,
-                        color: theme.palette.text.secondary
+                        color: theme.palette.text.secondary,
+                        px: { xs: 1, sm: 0 }
                     }}>
-                        <CircularProgress size={16} />
-                        <Typography variant="body2">AI is thinking...</Typography>
+                        <CircularProgress size={isMobile ? 14 : 16} />
+                        <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>AI is thinking...</Typography>
                     </Box>
                 )}
-
-                <div ref={chatEndRef} />
             </Box>
 
             {/* Error Alert */}
             {error && (
-                <Alert severity="error" sx={{ mb: 2, flexShrink: 0 }} onClose={() => setError(null)}>
+                <Alert severity="error" sx={{ mb: { xs: 1.5, sm: 2 }, flexShrink: 0, mx: { xs: 0.5, sm: 0 } }} onClose={() => setError(null)}>
                     {error}
                 </Alert>
             )}
@@ -333,14 +350,15 @@ const AIChatBlock = ({
             {/* Input Area */}
             <Box sx={{
                 display: 'flex',
-                gap: 1,
+                gap: { xs: 0.75, sm: 1 },
                 alignItems: 'flex-end',
-                flexShrink: 0
+                flexShrink: 0,
+                px: { xs: 0.5, sm: 0 }
             }}>
                 <TextField
                     fullWidth
                     multiline
-                    maxRows={4}
+                    maxRows={isMobile ? 3 : 4}
                     value={currentMessage}
                     onChange={(e) => setCurrentMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -348,7 +366,12 @@ const AIChatBlock = ({
                     disabled={isLoading || isGeneratingProposal}
                     sx={{
                         '& .MuiOutlinedInput-root': {
-                            borderRadius: 2,
+                            borderRadius: { xs: 1.5, sm: 2 },
+                            fontSize: { xs: '0.85rem', sm: '1rem' },
+                            '& .MuiOutlinedInput-input': {
+                                py: { xs: 1, sm: 1.5 },
+                                px: { xs: 1.25, sm: 1.5 }
+                            },
                             '&:hover fieldset': {
                                 borderColor: theme.palette.primary.main,
                             },
@@ -365,6 +388,8 @@ const AIChatBlock = ({
                     sx={{
                         background: theme.palette.primary.main,
                         color: 'white',
+                        width: { xs: 36, sm: 48 },
+                        height: { xs: 36, sm: 48 },
                         '&:hover': {
                             background: theme.palette.primary.dark,
                         },
@@ -373,28 +398,30 @@ const AIChatBlock = ({
                         }
                     }}
                 >
-                    <Send size={20} />
+                    <Send size={isMobile ? 16 : 20} />
                 </IconButton>
             </Box>
 
             {/* Conversation Progress */}
             {chatHistory.length > 1 && (
                 <Box sx={{
-                    mt: 2,
-                    p: 2,
+                    mt: { xs: 1.5, sm: 2 },
+                    p: { xs: 1.5, sm: 2 },
+                    mx: { xs: 0.5, sm: 0 },
                     background: theme.palette.grey[50],
-                    borderRadius: 2,
+                    borderRadius: { xs: 1.5, sm: 2 },
                     border: `1px solid ${theme.palette.divider}`,
                     flexShrink: 0
                 }}>
                     <Typography variant="body2" sx={{
                         fontWeight: 600,
-                        mb: 1,
-                        color: theme.palette.text.secondary
+                        mb: { xs: 0.75, sm: 1 },
+                        color: theme.palette.text.secondary,
+                        fontSize: { xs: '0.75rem', sm: '0.875rem' }
                     }}>
                         Discovery Progress
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 }, flexWrap: 'wrap' }}>
                         {[
                             { label: 'Business Goals', threshold: 2 },
                             { label: 'Technical Stack', threshold: 4 },
@@ -407,7 +434,10 @@ const AIChatBlock = ({
                                 size="small"
                                 color={chatHistory.length >= item.threshold ? 'primary' : 'default'}
                                 variant={chatHistory.length >= item.threshold ? 'filled' : 'outlined'}
-                                sx={{ fontSize: '0.75rem' }}
+                                sx={{
+                                    fontSize: { xs: '0.65rem', sm: '0.75rem' },
+                                    height: { xs: 22, sm: 24 }
+                                }}
                             />
                         ))}
                     </Box>
@@ -416,17 +446,17 @@ const AIChatBlock = ({
 
             {/* Generate Proposal Button */}
             {chatHistory.length > 4 && (
-                <Box sx={{ mt: 3, textAlign: 'center', flexShrink: 0 }}>
+                <Box sx={{ mt: { xs: 2, sm: 3 }, textAlign: 'center', flexShrink: 0, px: { xs: 0.5, sm: 0 } }}>
                     <DotBridgeButton
                         variant="contained"
-                        size="large"
+                        size={isMobile ? "medium" : "large"}
                         onClick={handleGenerateProposal}
                         disabled={isGeneratingProposal}
                         sx={{
                             background: `linear-gradient(135deg, ${theme.palette.success.main} 0%, ${theme.palette.success.dark} 100%)`,
-                            px: 4,
-                            py: 1.5,
-                            fontSize: '1rem',
+                            px: { xs: 3, sm: 4 },
+                            py: { xs: 1.25, sm: 1.5 },
+                            fontSize: { xs: '0.875rem', sm: '1rem' },
                             fontWeight: 600,
                             '&:hover': {
                                 transform: 'translateY(-2px)',
@@ -436,11 +466,11 @@ const AIChatBlock = ({
                     >
                         {isGeneratingProposal ? (
                             <>
-                                <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                                Generating Proposal...
+                                <CircularProgress size={isMobile ? 16 : 20} color="inherit" sx={{ mr: 1 }} />
+                                {isMobile ? 'Generating...' : 'Generating Proposal...'}
                             </>
                         ) : (
-                            endConversationCtaText
+                            isMobile ? 'Generate Proposal' : endConversationCtaText
                         )}
                     </DotBridgeButton>
                 </Box>

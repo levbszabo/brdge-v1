@@ -44,6 +44,8 @@ const HeroSectionWrapper = styled(Box)(({ theme }) => ({
         borderRadius: '50%',
         background: `radial-gradient(circle, ${theme.palette.primary.main}15 0%, transparent 70%)`,
         filter: 'blur(80px)',
+        zIndex: 0,
+        pointerEvents: 'none',
     },
     '&::after': {
         content: '""',
@@ -55,6 +57,8 @@ const HeroSectionWrapper = styled(Box)(({ theme }) => ({
         borderRadius: '50%',
         background: `radial-gradient(circle, ${theme.palette.secondary.main}10 0%, transparent 70%)`,
         filter: 'blur(100px)',
+        zIndex: 0,
+        pointerEvents: 'none',
     }
 }));
 
@@ -182,7 +186,7 @@ Your tone should be that of a trusted advisor - confident, insightful, and genui
         }}>
             <Box component="main" sx={{ flex: '1 0 auto' }}>
                 <HeroSectionWrapper ref={headerRef}>
-                    <Container maxWidth="lg" sx={{ textAlign: 'center' }}>
+                    <Container maxWidth="lg" sx={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
                             animate={headerInView ? { opacity: 1, y: 0 } : {}}
