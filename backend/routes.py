@@ -7448,6 +7448,195 @@ def upload_order_deliverable(order_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/admin/orders/<int:order_id>/comprehensive", methods=["GET"])
+@jwt_required()
+@cross_origin()
+def get_comprehensive_order_details(order_id):
+    """Get comprehensive order details including all career accelerator data"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the order
+        order = Order.query.get_or_404(order_id)
+
+        # Build comprehensive data
+        comprehensive_data = {
+            "order": order.to_dict(
+                include_client=True,
+                include_service_ticket=True,
+                include_fulfillment=True,
+            ),
+            "career_lead": None,
+            "resume_analysis": None,
+            "conversation_logs": [],
+            "personalization_data": None,
+            "resume_download_info": None,
+        }
+
+        # Get service ticket data
+        service_ticket = order.service_ticket or {}
+
+        # Extract IDs from service ticket
+        resume_analysis_id = service_ticket.get("resume_analysis_id")
+        personalization_id = service_ticket.get("personalization_id")
+        client_email = order.client.email if order.client else None
+
+        # 1. Find associated CareerLead
+        if client_email:
+            career_lead = (
+                CareerLead.query.filter_by(email=client_email)
+                .order_by(CareerLead.created_at.desc())
+                .first()
+            )
+            if career_lead:
+                comprehensive_data["career_lead"] = career_lead.to_dict()
+
+        # 2. Get Resume Analysis data
+        if resume_analysis_id:
+            resume_analysis = ResumeAnalysis.query.get(resume_analysis_id)
+            if resume_analysis:
+                analysis_data = resume_analysis.to_dict()
+
+                # Add secure download URL for the resume
+                if resume_analysis.s3_key:
+                    try:
+                        # Generate presigned URL for resume download (valid for 1 hour)
+                        presigned_url = s3_client.generate_presigned_url(
+                            "get_object",
+                            Params={
+                                "Bucket": S3_BUCKET_NAME,
+                                "Key": resume_analysis.s3_key,
+                            },
+                            ExpiresIn=3600,  # 1 hour
+                        )
+                        analysis_data["resume_download_url"] = presigned_url
+                        comprehensive_data["resume_download_info"] = {
+                            "filename": resume_analysis.filename,
+                            "file_size": resume_analysis.file_size,
+                            "download_url": presigned_url,
+                            "s3_key": resume_analysis.s3_key,
+                        }
+                    except Exception as e:
+                        logger.error(f"Error generating presigned URL for resume: {e}")
+                        analysis_data["resume_download_url"] = None
+
+                comprehensive_data["resume_analysis"] = analysis_data
+
+        # 3. Get Personalization data and conversation logs
+        if personalization_id:
+            # Find personalization record
+            personalization_record = PersonalizationRecord.query.filter_by(
+                unique_id=personalization_id
+            ).first()
+            if personalization_record:
+                comprehensive_data["personalization_data"] = (
+                    personalization_record.to_dict()
+                )
+
+                # Get conversation logs for this personalization
+                conversation_logs = (
+                    ConversationLogs.query.filter_by(
+                        personalization_record_id=personalization_record.id
+                    )
+                    .order_by(ConversationLogs.timestamp.asc())
+                    .all()
+                )
+
+                comprehensive_data["conversation_logs"] = [
+                    log.to_dict() for log in conversation_logs
+                ]
+
+        # 4. Also check for conversation logs by session_id if available
+        if not comprehensive_data["conversation_logs"] and personalization_id:
+            # Try to find logs by session_id or anonymous_id patterns
+            session_logs = (
+                ConversationLogs.query.filter(
+                    ConversationLogs.session_id.like(f"%{personalization_id}%")
+                )
+                .order_by(ConversationLogs.timestamp.asc())
+                .all()
+            )
+
+            if session_logs:
+                comprehensive_data["conversation_logs"] = [
+                    log.to_dict() for log in session_logs
+                ]
+
+        # 5. If we found a career lead, also get its resume data
+        if comprehensive_data["career_lead"] and comprehensive_data["career_lead"].get(
+            "resume_s3_key"
+        ):
+            try:
+                presigned_url = s3_client.generate_presigned_url(
+                    "get_object",
+                    Params={
+                        "Bucket": S3_BUCKET_NAME,
+                        "Key": comprehensive_data["career_lead"]["resume_s3_key"],
+                    },
+                    ExpiresIn=3600,  # 1 hour
+                )
+                comprehensive_data["career_lead"]["resume_download_url"] = presigned_url
+            except Exception as e:
+                logger.error(
+                    f"Error generating presigned URL for career lead resume: {e}"
+                )
+
+        # 6. Get order deliverables with download URLs
+        deliverables = []
+        for deliverable in order.order_deliverables:
+            deliverable_data = deliverable.to_dict()
+            deliverable_data["download_url"] = (
+                f"/api/deliverables/{deliverable.id}/download"
+            )
+            deliverables.append(deliverable_data)
+
+        comprehensive_data["order"]["deliverables"] = deliverables
+
+        # 7. Get outreach templates
+        outreach_templates = [
+            template.to_dict() for template in order.outreach_templates
+        ]
+        comprehensive_data["outreach_templates"] = outreach_templates
+
+        # 8. Get intelligence data if available
+        intelligence_templates = []
+        for template in order.intelligence_templates:
+            template_data = template.to_dict()
+            # Get record count
+            template_data["record_count"] = len(template.records)
+            intelligence_templates.append(template_data)
+
+        comprehensive_data["intelligence_templates"] = intelligence_templates
+
+        # 9. Get client progress
+        progress_records = [progress.to_dict() for progress in order.client_progress]
+        comprehensive_data["client_progress"] = progress_records
+
+        # 10. Get fulfillment logs
+        fulfillment_logs = [log.to_dict() for log in order.fulfillment_logs]
+        comprehensive_data["fulfillment_logs"] = fulfillment_logs
+
+        logger.info(f"Retrieved comprehensive data for order {order_id}")
+
+        return jsonify({"success": True, "data": comprehensive_data})
+
+    except Exception as e:
+        logger.error(f"Error fetching comprehensive order details: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Client Dashboard Routes
 @app.route("/api/dashboard/data", methods=["GET"])
 @jwt_required()
@@ -7969,9 +8158,15 @@ def analyze_intelligence_csv(order_id):
         try:
             # Read CSV content
             csv_content = file.read().decode("utf-8")
-            lines = csv_content.strip().split("\n")
 
-            if len(lines) < 2:
+            # Use csv module to properly parse CSV
+            import csv
+            from io import StringIO
+
+            csv_reader = csv.reader(StringIO(csv_content))
+            rows = list(csv_reader)
+
+            if len(rows) < 2:
                 return (
                     jsonify(
                         {
@@ -7983,32 +8178,40 @@ def analyze_intelligence_csv(order_id):
                 )
 
             # Get headers and sample data
-            headers = lines[0].split(",")
-            sample_rows = lines[1 : min(6, len(lines))]  # Up to 5 sample rows
+            headers = rows[0]
+            sample_rows = rows[1 : min(6, len(rows))]  # Up to 5 sample rows
+
+            # Convert sample rows back to CSV strings for Gemini analysis
+            sample_rows_str = []
+            for row in sample_rows:
+                # Use csv writer to properly format the row
+                output = StringIO()
+                csv_writer = csv.writer(output)
+                csv_writer.writerow(row)
+                sample_rows_str.append(output.getvalue().strip())
 
             # Use Gemini to analyze the CSV structure
             analysis_data = gemini.generate_csv_structure(
-                headers=headers, sample_rows=sample_rows, filename=file.filename
+                headers=headers, sample_rows=sample_rows_str, filename=file.filename
             )
 
             # Update with correct row count
-            analysis_data["row_count"] = len(lines) - 1
+            analysis_data["row_count"] = len(rows) - 1
 
             # Create preview data for frontend
             preview_data = {
                 "headers": headers,
                 "rows": [],
-                "total_rows": len(lines) - 1,
+                "total_rows": len(rows) - 1,
             }
 
             # Add sample rows for preview (first 5 rows)
-            for i, line in enumerate(sample_rows[:5]):
+            for i, row in enumerate(sample_rows[:5]):
                 try:
-                    values = [v.strip().strip('"') for v in line.split(",")]
                     row_dict = {}
                     for j, header in enumerate(headers):
-                        if j < len(values):
-                            row_dict[header] = values[j]
+                        if j < len(row):
+                            row_dict[header] = row[j]
                         else:
                             row_dict[header] = ""
                     preview_data["rows"].append(row_dict)
@@ -8025,7 +8228,7 @@ def analyze_intelligence_csv(order_id):
                         "filename": file.filename,
                         "size": len(csv_content),
                         "headers": headers,
-                        "row_count": len(lines) - 1,
+                        "row_count": len(rows) - 1,
                     },
                 }
             )
@@ -8094,8 +8297,18 @@ def create_intelligence_from_csv(order_id):
 
         # Read and process CSV
         csv_content = file.read().decode("utf-8")
-        lines = csv_content.strip().split("\n")
-        headers = [h.strip() for h in lines[0].split(",")]
+
+        # Use csv module to properly parse CSV
+        import csv
+        from io import StringIO
+
+        csv_reader = csv.reader(StringIO(csv_content))
+        rows = list(csv_reader)
+
+        if len(rows) < 1:
+            return jsonify({"success": False, "error": "CSV file is empty"}), 400
+
+        headers = rows[0]
 
         # Create intelligence template
         template = IntelligenceTemplate(
@@ -8106,7 +8319,7 @@ def create_intelligence_from_csv(order_id):
                 {
                     "filename": file.filename,
                     "uploaded_at": datetime.utcnow().isoformat(),
-                    "row_count": len(lines) - 1,
+                    "row_count": len(rows) - 1,
                 }
             ],
             analysis_metadata={
@@ -8120,17 +8333,23 @@ def create_intelligence_from_csv(order_id):
 
         # Process CSV rows and create records
         records_created = 0
-        for i, line in enumerate(lines[1:], 1):  # Skip header row
+        for i, row in enumerate(rows[1:], 1):  # Skip header row
             try:
-                values = [v.strip() for v in line.split(",")]
-
                 # Map values to column names
                 data = {}
-                for j, column in enumerate(columns):
-                    if j < len(values):
-                        data[column["name"]] = values[j]
-                    else:
-                        data[column["name"]] = ""
+                # Map by header position, not by column order
+                for j, header in enumerate(headers):
+                    # Find the matching column definition
+                    matching_column = None
+                    for column in columns:
+                        if column["name"] == header:
+                            matching_column = column
+                            break
+
+                    if matching_column and j < len(row):
+                        data[matching_column["name"]] = row[j]
+                    elif matching_column:
+                        data[matching_column["name"]] = ""
 
                 # Create intelligence record
                 record = IntelligenceRecord(
@@ -8280,6 +8499,11 @@ def get_intelligence_records(order_id, template_id):
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 50))
 
+        # Allow a higher limit for intelligence records (up to 10000)
+        # This ensures users can see all their CSV data at once
+        if limit > 10000:
+            limit = 10000  # Safety cap to prevent memory issues
+
         records_query = IntelligenceRecord.query.filter_by(template_id=template_id)
         records_paginated = records_query.paginate(
             page=page, per_page=limit, error_out=False
@@ -8303,6 +8527,260 @@ def get_intelligence_records(order_id, template_id):
 
     except Exception as e:
         logger.error(f"Error fetching intelligence records: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Intelligence Record Management Routes
+@app.route("/api/admin/orders/<int:order_id>/intelligence/records", methods=["POST"])
+@jwt_required()
+@cross_origin()
+def create_intelligence_record(order_id):
+    """Create a new intelligence record"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        data = request.get_json()
+        template_id = data.get("template_id")
+        record_data = data.get("data", {})
+
+        if not template_id:
+            return jsonify({"success": False, "error": "Template ID is required"}), 400
+
+        # Verify template exists and belongs to this order
+        template = IntelligenceTemplate.query.filter_by(
+            id=template_id, order_id=order_id
+        ).first_or_404()
+
+        # Create new record
+        new_record = IntelligenceRecord(
+            template_id=template_id, data=record_data, validation_status="pending"
+        )
+
+        db.session.add(new_record)
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "record": new_record.to_dict(),
+                "message": "Intelligence record created successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error creating intelligence record: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/intelligence/records/<int:record_id>",
+    methods=["PUT"],
+)
+@jwt_required()
+@cross_origin()
+def update_intelligence_record(order_id, record_id):
+    """Update an intelligence record"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        data = request.get_json()
+
+        # Get the record and verify it belongs to the order
+        record = (
+            IntelligenceRecord.query.join(IntelligenceTemplate)
+            .filter(
+                IntelligenceRecord.id == record_id,
+                IntelligenceTemplate.order_id == order_id,
+            )
+            .first_or_404()
+        )
+
+        # Update record data
+        if "data" in data:
+            record.data = data["data"]
+
+        if "validation_status" in data:
+            record.validation_status = data["validation_status"]
+
+        record.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify(
+            {
+                "success": True,
+                "record": record.to_dict(),
+                "message": "Intelligence record updated successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating intelligence record: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route(
+    "/api/admin/orders/<int:order_id>/intelligence/records/<int:record_id>",
+    methods=["DELETE"],
+)
+@jwt_required()
+@cross_origin()
+def delete_intelligence_record(order_id, record_id):
+    """Delete an intelligence record"""
+    try:
+        current_user_id = get_jwt_identity()
+        admin_user = User.query.get(current_user_id)
+
+        if not admin_user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Check admin status
+        admin_record = AdminUser.query.filter_by(
+            user_id=admin_user.id, is_active=True
+        ).first()
+
+        if not admin_record:
+            return jsonify({"success": False, "error": "Admin access required"}), 403
+
+        # Get the record and verify it belongs to the order
+        record = (
+            IntelligenceRecord.query.join(IntelligenceTemplate)
+            .filter(
+                IntelligenceRecord.id == record_id,
+                IntelligenceTemplate.order_id == order_id,
+            )
+            .first_or_404()
+        )
+
+        db.session.delete(record)
+        db.session.commit()
+
+        return jsonify(
+            {"success": True, "message": "Intelligence record deleted successfully"}
+        )
+
+    except Exception as e:
+        logger.error(f"Error deleting intelligence record: {e}")
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Client-accessible intelligence record update (for status changes)
+@app.route(
+    "/api/orders/<int:order_id>/intelligence/records/<int:record_id>", methods=["PUT"]
+)
+@jwt_required()
+@cross_origin()
+def update_intelligence_record_client(order_id, record_id):
+    """Client endpoint to update intelligence record status"""
+    try:
+        current_user_id = get_jwt_identity()
+        user = User.query.get(current_user_id)
+
+        if not user:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        # Get the order and verify user access
+        order = Order.query.get_or_404(order_id)
+
+        # Check if user is admin OR if user is the client for this order
+        admin_record = AdminUser.query.filter_by(
+            user_id=user.id, is_active=True
+        ).first()
+
+        is_admin = admin_record is not None
+        is_client = order.client_id == user.id
+
+        if not is_admin and not is_client:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Access denied. You can only update your own order data.",
+                    }
+                ),
+                403,
+            )
+
+        data = request.get_json()
+
+        # Get the record and verify it belongs to the order
+        record = (
+            IntelligenceRecord.query.join(IntelligenceTemplate)
+            .filter(
+                IntelligenceRecord.id == record_id,
+                IntelligenceTemplate.order_id == order_id,
+            )
+            .first_or_404()
+        )
+
+        # Clients can only update certain fields
+        if not is_admin:
+            # Restrict client updates to status only
+            allowed_statuses = ["pending", "contacted", "responded", "qualified"]
+            if "data" in data and "status" in data["data"]:
+                new_status = data["data"]["status"]
+                if new_status in allowed_statuses:
+                    if record.data is None:
+                        record.data = {}
+                    record.data["status"] = new_status
+                    # Also update validation_status to keep them in sync
+                    record.validation_status = new_status
+                    record.updated_at = datetime.utcnow()
+        else:
+            # Admins can update everything
+            if "data" in data:
+                record.data = data["data"]
+
+            if "validation_status" in data:
+                record.validation_status = data["validation_status"]
+
+            record.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Debug logging
+        logger.info(
+            f"Updated intelligence record {record_id}: data={record.data}, validation_status={record.validation_status}"
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "record": record.to_dict(),
+                "message": "Intelligence record updated successfully",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating intelligence record (client): {e}")
+        db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
 
@@ -8387,10 +8865,15 @@ def get_fulfillment_logs(order_id):
             return jsonify({"success": False, "error": "Admin access required"}), 403
 
         # Get fulfillment logs for this order
+        # Get limit from query params with default of 50
+        limit = int(request.args.get("limit", 50))
+        if limit > 1000:
+            limit = 1000  # Safety cap for logs
+
         logs = (
             FulfillmentLog.query.filter_by(order_id=order_id)
             .order_by(FulfillmentLog.timestamp.desc())
-            .limit(50)
+            .limit(limit)
             .all()
         )
 

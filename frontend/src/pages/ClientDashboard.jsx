@@ -36,7 +36,21 @@ import {
     TableRow,
     TableCell,
     TextField,
-    Backdrop
+    Backdrop,
+    Menu,
+    ListItemButton,
+    Switch,
+    Collapse,
+    Fab,
+    SpeedDial,
+    SpeedDialAction,
+    SpeedDialIcon,
+    ButtonGroup,
+    Card,
+    CardActions,
+    Popover,
+    Paper,
+    Stack
 } from '@mui/material';
 import {
     CheckCircle,
@@ -62,7 +76,19 @@ import {
     ManageAccounts,
     Edit,
     Delete,
-    Add
+    Add,
+    FilterList,
+    MoreVert,
+    Visibility,
+    VisibilityOff,
+    CheckBox,
+    CheckBoxOutlineBlank,
+    Settings,
+    SaveAlt,
+    Refresh,
+    Close,
+    ExpandMore,
+    ExpandLess
 } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api';
@@ -405,6 +431,15 @@ Best regards,
     const [editableOutreachTemplates, setEditableOutreachTemplates] = useState([]);
     const [outreachTemplates, setOutreachTemplates] = useState([]);
     const [loadingOutreachTemplates, setLoadingOutreachTemplates] = useState(false);
+
+    // Intelligence data management state
+    const [selectedRecords, setSelectedRecords] = useState(new Set());
+    const [showIntelligenceActions, setShowIntelligenceActions] = useState(false);
+    const [editingRecord, setEditingRecord] = useState(null);
+    const [showColumnManager, setShowColumnManager] = useState(false);
+    const [visibleColumns, setVisibleColumns] = useState(new Set());
+    const [showAddRecordDialog, setShowAddRecordDialog] = useState(false);
+    const [newRecordData, setNewRecordData] = useState({});
 
     useEffect(() => {
         if (adminViewData) {
@@ -842,17 +877,22 @@ Best regards,
     const fetchIntelligenceRecords = async (templateId) => {
         try {
             let response;
+            // Request a very high limit to get all records
+            const params = new URLSearchParams({
+                limit: '10000' // High limit to effectively get all records
+            });
+
             if (adminViewData?.admin_view) {
                 // Admin view - use admin endpoint
-                response = await api.get(`/admin/orders/${dashboardData.order.id}/intelligence/templates/${templateId}/records`);
+                response = await api.get(`/admin/orders/${dashboardData.order.id}/intelligence/templates/${templateId}/records?${params}`);
             } else {
                 // Client view - try client endpoint first, fallback to admin if needed
                 try {
-                    response = await api.get(`/orders/${dashboardData.order.id}/intelligence/templates/${templateId}/records`);
+                    response = await api.get(`/orders/${dashboardData.order.id}/intelligence/templates/${templateId}/records?${params}`);
                 } catch (clientError) {
                     if (clientError.response?.status === 404) {
                         // Client endpoint doesn't exist, try admin endpoint with client's own data
-                        response = await api.get(`/admin/orders/${dashboardData.order.id}/intelligence/templates/${templateId}/records`);
+                        response = await api.get(`/admin/orders/${dashboardData.order.id}/intelligence/templates/${templateId}/records?${params}`);
                     } else {
                         throw clientError;
                     }
@@ -861,6 +901,19 @@ Best regards,
 
             setIntelligenceRecords(response.data.records || []);
             setSelectedTemplate(response.data.template);
+
+            // Debug: Log the fetched records to see their status structure
+            console.log('🔍 Fetched intelligence records:', response.data.records?.slice(0, 3).map(r => ({
+                id: r.id,
+                data: r.data,
+                validation_status: r.validation_status,
+                effective_status: r.data?.status || r.validation_status
+            })));
+
+            // Log if we might have hit a limit
+            if (response.data.pagination && response.data.pagination.has_next) {
+                console.warn(`⚠️ There are more records than the current limit. Total records: ${response.data.pagination.total}`);
+            }
         } catch (error) {
             console.error('Error fetching intelligence records:', error);
             // Set empty array on error
@@ -1134,6 +1187,180 @@ Best regards,
         setShowOutreachEditor(false);
         setEditableOutreachTemplates([...outreachTemplates]); // Reset to original loaded templates
     };
+
+    // Intelligence Data Management Functions
+    const handleSelectRecord = (recordId) => {
+        const newSelected = new Set(selectedRecords);
+        if (newSelected.has(recordId)) {
+            newSelected.delete(recordId);
+        } else {
+            newSelected.add(recordId);
+        }
+        setSelectedRecords(newSelected);
+    };
+
+    const handleSelectAllRecords = () => {
+        if (selectedRecords.size === intelligenceRecords.length) {
+            setSelectedRecords(new Set());
+        } else {
+            setSelectedRecords(new Set(intelligenceRecords.map(r => r.id)));
+        }
+    };
+
+    const handleDeleteSelectedRecords = async () => {
+        if (!adminViewData?.admin_view || selectedRecords.size === 0) return;
+
+        const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedRecords.size} record(s)? This action cannot be undone.`);
+        if (!confirmDelete) return;
+
+        try {
+            // Delete records one by one (could be optimized with bulk delete endpoint)
+            const deletePromises = Array.from(selectedRecords).map(recordId =>
+                api.delete(`/admin/orders/${dashboardData.order.id}/intelligence/records/${recordId}`)
+            );
+
+            await Promise.all(deletePromises);
+
+            // Refresh records
+            if (selectedTemplate) {
+                await fetchIntelligenceRecords(selectedTemplate.id);
+            }
+
+            setSelectedRecords(new Set());
+            alert(`✅ Successfully deleted ${selectedRecords.size} record(s)`);
+        } catch (error) {
+            console.error('Error deleting records:', error);
+            const errorMessage = error.response?.data?.error || error.message || 'Failed to delete records';
+            alert(`❌ ${errorMessage}`);
+        }
+    };
+
+    const handleUpdateRecordStatus = async (recordId, newStatus) => {
+        try {
+            let endpoint;
+            let payload;
+
+            if (adminViewData?.admin_view) {
+                // Admin endpoint - can update both data.status and validation_status
+                endpoint = `/admin/orders/${dashboardData.order.id}/intelligence/records/${recordId}`;
+                payload = {
+                    data: {
+                        ...intelligenceRecords.find(r => r.id === recordId)?.data,
+                        status: newStatus
+                    },
+                    validation_status: newStatus
+                };
+            } else {
+                // Client endpoint - update data.status
+                endpoint = `/orders/${dashboardData.order.id}/intelligence/records/${recordId}`;
+                payload = {
+                    data: {
+                        ...intelligenceRecords.find(r => r.id === recordId)?.data,
+                        status: newStatus
+                    }
+                };
+            }
+
+            const response = await api.put(endpoint, payload);
+
+            // Update local state with the response data to ensure consistency
+            if (response.data.success && response.data.record) {
+                setIntelligenceRecords(prev => prev.map(record =>
+                    record.id === recordId
+                        ? response.data.record
+                        : record
+                ));
+            } else {
+                // Fallback to manual update
+                setIntelligenceRecords(prev => prev.map(record =>
+                    record.id === recordId
+                        ? {
+                            ...record,
+                            data: { ...record.data, status: newStatus },
+                            validation_status: newStatus
+                        }
+                        : record
+                ));
+            }
+
+            console.log(`✅ Updated record ${recordId} status to: ${newStatus}`);
+        } catch (error) {
+            console.error('Error updating record status:', error);
+            const errorMessage = error.response?.data?.error || error.message || 'Failed to update record status';
+            alert(`❌ ${errorMessage}`);
+        }
+    };
+
+    const handleBulkStatusUpdate = async (newStatus) => {
+        if (selectedRecords.size === 0) return;
+
+        // For clients, validate the status is allowed
+        if (!adminViewData?.admin_view) {
+            const allowedStatuses = ['pending', 'contacted', 'responded', 'qualified'];
+            if (!allowedStatuses.includes(newStatus)) {
+                alert('❌ You can only update records to: Pending, Contacted, Responded, or Qualified');
+                return;
+            }
+        }
+
+        try {
+            const updatePromises = Array.from(selectedRecords).map(recordId =>
+                handleUpdateRecordStatus(recordId, newStatus)
+            );
+
+            await Promise.all(updatePromises);
+            setSelectedRecords(new Set());
+            alert(`✅ Updated ${selectedRecords.size} record(s) to status: ${newStatus}`);
+        } catch (error) {
+            console.error('Error bulk updating status:', error);
+            const errorMessage = error.response?.data?.error || error.message || 'Failed to update record statuses';
+            alert(`❌ ${errorMessage}`);
+        }
+    };
+
+    const handleAddNewRecord = async () => {
+        if (!adminViewData?.admin_view || !selectedTemplate) return;
+
+        try {
+            const response = await api.post(`/admin/orders/${dashboardData.order.id}/intelligence/records`, {
+                template_id: selectedTemplate.id,
+                data: newRecordData
+            });
+
+            // Refresh records
+            await fetchIntelligenceRecords(selectedTemplate.id);
+
+            setShowAddRecordDialog(false);
+            setNewRecordData({});
+            alert('✅ New record added successfully');
+        } catch (error) {
+            console.error('Error adding new record:', error);
+            alert('❌ Failed to add new record');
+        }
+    };
+
+    const initializeVisibleColumns = (template) => {
+        if (template?.columns) {
+            setVisibleColumns(new Set(template.columns.map(col => col.name)));
+        }
+    };
+
+    const toggleColumnVisibility = (columnName) => {
+        const newVisible = new Set(visibleColumns);
+        if (newVisible.has(columnName)) {
+            newVisible.delete(columnName);
+        } else {
+            newVisible.add(columnName);
+        }
+        setVisibleColumns(newVisible);
+    };
+
+    // Initialize visible columns when template changes
+    useEffect(() => {
+        if (selectedTemplate) {
+            initializeVisibleColumns(selectedTemplate);
+        }
+    }, [selectedTemplate]);
 
     if (loading) {
         return (
@@ -2847,6 +3074,52 @@ ${mockActionPlan.map(week =>
                                             </Box>
 
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                                {/* Selection Info */}
+                                                {selectedRecords.size > 0 && (
+                                                    <Chip
+                                                        label={`${selectedRecords.size} selected`}
+                                                        size="small"
+                                                        color="primary"
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            backgroundColor: '#EFF6FF',
+                                                            color: '#1D4ED8'
+                                                        }}
+                                                    />
+                                                )}
+
+                                                {/* Column Visibility Toggle */}
+                                                <Tooltip title="Column Settings">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => setShowColumnManager(!showColumnManager)}
+                                                        sx={{
+                                                            backgroundColor: showColumnManager ? '#0066FF' : 'transparent',
+                                                            color: showColumnManager ? 'white' : '#64748B',
+                                                            '&:hover': {
+                                                                backgroundColor: showColumnManager ? '#0052CC' : '#F8FAFC'
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Settings />
+                                                    </IconButton>
+                                                </Tooltip>
+
+                                                {/* Refresh Data */}
+                                                <Tooltip title="Refresh Data">
+                                                    <IconButton
+                                                        size="small"
+                                                        onClick={() => selectedTemplate && fetchIntelligenceRecords(selectedTemplate.id)}
+                                                        sx={{
+                                                            color: '#64748B',
+                                                            '&:hover': { backgroundColor: '#F8FAFC' }
+                                                        }}
+                                                    >
+                                                        <Refresh />
+                                                    </IconButton>
+                                                </Tooltip>
+
+                                                {/* Export Button */}
                                                 <DotBridgeButton
                                                     variant="outlined"
                                                     size="small"
@@ -2870,8 +3143,179 @@ ${mockActionPlan.map(week =>
                                                 >
                                                     Export
                                                 </DotBridgeButton>
+
+                                                {/* Admin Add Record Button */}
+                                                {adminViewData?.admin_view && (
+                                                    <DotBridgeButton
+                                                        variant="contained"
+                                                        size="small"
+                                                        startIcon={<Add />}
+                                                        onClick={() => setShowAddRecordDialog(true)}
+                                                        sx={{
+                                                            borderRadius: 2,
+                                                            textTransform: 'none',
+                                                            fontWeight: 600,
+                                                            fontSize: '0.8rem',
+                                                            px: 2,
+                                                            py: 1,
+                                                            ml: 1
+                                                        }}
+                                                    >
+                                                        Add Record
+                                                    </DotBridgeButton>
+                                                )}
                                             </Box>
                                         </Box>
+
+                                        {/* Column Manager Panel */}
+                                        <Collapse in={showColumnManager}>
+                                            <Paper sx={{
+                                                mx: 3,
+                                                mb: 2,
+                                                p: 2,
+                                                backgroundColor: '#F8FAFC',
+                                                border: '1px solid #E2E8F0',
+                                                borderRadius: 2
+                                            }}>
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#1A202C' }}>
+                                                    Column Visibility
+                                                </Typography>
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                                    {selectedTemplate?.columns.map((col) => (
+                                                        <Chip
+                                                            key={col.name}
+                                                            label={col.name}
+                                                            variant={visibleColumns.has(col.name) ? "filled" : "outlined"}
+                                                            color={visibleColumns.has(col.name) ? "primary" : "default"}
+                                                            onClick={() => toggleColumnVisibility(col.name)}
+                                                            icon={visibleColumns.has(col.name) ? <Visibility /> : <VisibilityOff />}
+                                                            sx={{
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.2s ease',
+                                                                fontWeight: 600,
+                                                                '&:hover': {
+                                                                    transform: 'translateY(-1px)',
+                                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                                                                }
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </Box>
+                                            </Paper>
+                                        </Collapse>
+
+                                        {/* Bulk Actions Bar */}
+                                        <Collapse in={selectedRecords.size > 0}>
+                                            <Paper sx={{
+                                                mx: 3,
+                                                mb: 2,
+                                                p: 2,
+                                                backgroundColor: '#FFF8E1',
+                                                border: '1px solid #FFE082',
+                                                borderRadius: 2,
+                                                animation: `${fadeInUp} 0.3s ease-out`
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#92400E' }}>
+                                                        {selectedRecords.size} record(s) selected
+                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                                        <ButtonGroup size="small" variant="outlined">
+                                                            <DotBridgeButton
+                                                                onClick={() => handleBulkStatusUpdate('pending')}
+                                                                sx={{
+                                                                    backgroundColor: '#F3F4F6',
+                                                                    color: '#374151',
+                                                                    borderColor: '#D1D5DB',
+                                                                    '&:hover': { backgroundColor: '#E5E7EB' }
+                                                                }}
+                                                            >
+                                                                Pending
+                                                            </DotBridgeButton>
+                                                            <DotBridgeButton
+                                                                onClick={() => handleBulkStatusUpdate('contacted')}
+                                                                sx={{
+                                                                    backgroundColor: '#E0E7FF',
+                                                                    color: '#3730A3',
+                                                                    borderColor: '#C7D2FE',
+                                                                    '&:hover': { backgroundColor: '#C7D2FE' }
+                                                                }}
+                                                            >
+                                                                Contacted
+                                                            </DotBridgeButton>
+                                                            <DotBridgeButton
+                                                                onClick={() => handleBulkStatusUpdate('responded')}
+                                                                sx={{
+                                                                    backgroundColor: '#ECFDF5',
+                                                                    color: '#14532D',
+                                                                    borderColor: '#BBF7D0',
+                                                                    '&:hover': { backgroundColor: '#BBF7D0' }
+                                                                }}
+                                                            >
+                                                                Responded
+                                                            </DotBridgeButton>
+                                                            <DotBridgeButton
+                                                                onClick={() => handleBulkStatusUpdate('qualified')}
+                                                                sx={{
+                                                                    backgroundColor: '#FEF3C7',
+                                                                    color: '#92400E',
+                                                                    borderColor: '#FDE68A',
+                                                                    '&:hover': { backgroundColor: '#FDE68A' }
+                                                                }}
+                                                            >
+                                                                Qualified
+                                                            </DotBridgeButton>
+                                                            {/* Admin-only status options */}
+                                                            {adminViewData?.admin_view && (
+                                                                <>
+                                                                    <DotBridgeButton
+                                                                        onClick={() => handleBulkStatusUpdate('validated')}
+                                                                        sx={{
+                                                                            backgroundColor: '#D1FAE5',
+                                                                            color: '#065F46',
+                                                                            borderColor: '#A7F3D0',
+                                                                            '&:hover': { backgroundColor: '#A7F3D0' }
+                                                                        }}
+                                                                    >
+                                                                        Validated
+                                                                    </DotBridgeButton>
+                                                                    <DotBridgeButton
+                                                                        onClick={() => handleBulkStatusUpdate('flagged')}
+                                                                        sx={{
+                                                                            backgroundColor: '#FEE2E2',
+                                                                            color: '#991B1B',
+                                                                            borderColor: '#FECACA',
+                                                                            '&:hover': { backgroundColor: '#FECACA' }
+                                                                        }}
+                                                                    >
+                                                                        Flagged
+                                                                    </DotBridgeButton>
+                                                                </>
+                                                            )}
+                                                        </ButtonGroup>
+                                                        {/* Delete button only for admins */}
+                                                        {adminViewData?.admin_view && (
+                                                            <DotBridgeButton
+                                                                variant="outlined"
+                                                                color="error"
+                                                                startIcon={<Delete />}
+                                                                onClick={handleDeleteSelectedRecords}
+                                                                sx={{
+                                                                    borderColor: '#FCA5A5',
+                                                                    color: '#DC2626',
+                                                                    '&:hover': {
+                                                                        backgroundColor: '#FEE2E2',
+                                                                        borderColor: '#F87171'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Delete Selected
+                                                            </DotBridgeButton>
+                                                        )}
+                                                    </Box>
+                                                </Box>
+                                            </Paper>
+                                        </Collapse>
 
                                         {/* Spreadsheet Table */}
                                         {intelligenceRecords.length === 0 ? (
@@ -2912,6 +3356,39 @@ ${mockActionPlan.map(week =>
                                                     {/* Enhanced Header */}
                                                     <TableHead>
                                                         <TableRow>
+                                                            {/* Selection Column */}
+                                                            {(
+                                                                <TableCell
+                                                                    sx={{
+                                                                        background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
+                                                                        borderBottom: '2px solid #E2E8F0',
+                                                                        borderRight: '1px solid #F1F5F9',
+                                                                        fontWeight: 700,
+                                                                        fontSize: '0.75rem',
+                                                                        color: '#64748B',
+                                                                        py: 2,
+                                                                        px: 2,
+                                                                        width: 60,
+                                                                        textAlign: 'center',
+                                                                        position: 'sticky',
+                                                                        top: 0,
+                                                                        zIndex: 10
+                                                                    }}
+                                                                >
+                                                                    <Checkbox
+                                                                        size="small"
+                                                                        checked={selectedRecords.size === intelligenceRecords.length && intelligenceRecords.length > 0}
+                                                                        indeterminate={selectedRecords.size > 0 && selectedRecords.size < intelligenceRecords.length}
+                                                                        onChange={handleSelectAllRecords}
+                                                                        sx={{
+                                                                            color: '#64748B',
+                                                                            '&.Mui-checked': { color: '#0066FF' },
+                                                                            '&.MuiCheckbox-indeterminate': { color: '#0066FF' }
+                                                                        }}
+                                                                    />
+                                                                </TableCell>
+                                                            )}
+
                                                             <TableCell
                                                                 sx={{
                                                                     background: 'linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%)',
@@ -2925,7 +3402,10 @@ ${mockActionPlan.map(week =>
                                                                     py: 2,
                                                                     px: 2,
                                                                     width: 60,
-                                                                    textAlign: 'center'
+                                                                    textAlign: 'center',
+                                                                    position: 'sticky',
+                                                                    top: 0,
+                                                                    zIndex: 10
                                                                 }}
                                                             >
                                                                 #
@@ -3009,9 +3489,39 @@ ${mockActionPlan.map(week =>
                                                                             borderColor: '#E6F0FF'
                                                                         }
                                                                     },
-                                                                    transition: 'all 0.2s ease'
+                                                                    transition: 'all 0.2s ease',
+                                                                    ...(selectedRecords.has(record.id) && {
+                                                                        backgroundColor: '#EFF6FF',
+                                                                        '& .MuiTableCell-root': {
+                                                                            borderColor: '#BFDBFE'
+                                                                        }
+                                                                    })
                                                                 }}
                                                             >
+                                                                {/* Selection Checkbox */}
+                                                                {(
+                                                                    <TableCell
+                                                                        sx={{
+                                                                            borderBottom: '1px solid #F1F5F9',
+                                                                            borderRight: '1px solid #F1F5F9',
+                                                                            textAlign: 'center',
+                                                                            py: 2,
+                                                                            px: 2,
+                                                                            backgroundColor: '#FAFBFC'
+                                                                        }}
+                                                                    >
+                                                                        <Checkbox
+                                                                            size="small"
+                                                                            checked={selectedRecords.has(record.id)}
+                                                                            onChange={() => handleSelectRecord(record.id)}
+                                                                            sx={{
+                                                                                color: '#64748B',
+                                                                                '&.Mui-checked': { color: '#0066FF' }
+                                                                            }}
+                                                                        />
+                                                                    </TableCell>
+                                                                )}
+
                                                                 <TableCell
                                                                     sx={{
                                                                         borderBottom: '1px solid #F1F5F9',
@@ -3044,21 +3554,142 @@ ${mockActionPlan.map(week =>
                                                                             whiteSpace: 'nowrap'
                                                                         }}
                                                                     >
-                                                                        <Typography variant="body2" sx={{
-                                                                            fontSize: '0.85rem',
-                                                                            fontWeight: 500,
-                                                                            lineHeight: 1.4
-                                                                        }}>
-                                                                            {record.data[col.name] || (
-                                                                                <span style={{
-                                                                                    color: '#CBD5E1',
-                                                                                    fontStyle: 'italic',
-                                                                                    fontSize: '0.8rem'
+                                                                        {(() => {
+                                                                            const cellValue = record.data[col.name];
+
+                                                                            // Check if the value is a URL
+                                                                            const isUrl = cellValue && (
+                                                                                cellValue.startsWith('http://') ||
+                                                                                cellValue.startsWith('https://') ||
+                                                                                cellValue.startsWith('www.')
+                                                                            );
+
+                                                                            // Check if the value is an email
+                                                                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                                                            const isEmail = cellValue && emailRegex.test(cellValue);
+
+                                                                            if (!cellValue) {
+                                                                                return (
+                                                                                    <span style={{
+                                                                                        color: '#CBD5E1',
+                                                                                        fontStyle: 'italic',
+                                                                                        fontSize: '0.8rem'
+                                                                                    }}>
+                                                                                        —
+                                                                                    </span>
+                                                                                );
+                                                                            }
+
+                                                                            if (isUrl) {
+                                                                                // Ensure the URL has a protocol
+                                                                                const href = cellValue.startsWith('http')
+                                                                                    ? cellValue
+                                                                                    : `https://${cellValue}`;
+
+                                                                                return (
+                                                                                    <a
+                                                                                        href={href}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        style={{
+                                                                                            color: '#0066FF',
+                                                                                            textDecoration: 'none',
+                                                                                            fontSize: '0.85rem',
+                                                                                            fontWeight: 500,
+                                                                                            lineHeight: 1.4,
+                                                                                            display: 'inline-flex',
+                                                                                            alignItems: 'center',
+                                                                                            gap: '4px',
+                                                                                            maxWidth: '100%',
+                                                                                            overflow: 'hidden',
+                                                                                            textOverflow: 'ellipsis',
+                                                                                            whiteSpace: 'nowrap',
+                                                                                            transition: 'all 0.2s ease',
+                                                                                        }}
+                                                                                        onMouseEnter={(e) => {
+                                                                                            e.target.style.textDecoration = 'underline';
+                                                                                            e.target.style.color = '#0052CC';
+                                                                                        }}
+                                                                                        onMouseLeave={(e) => {
+                                                                                            e.target.style.textDecoration = 'none';
+                                                                                            e.target.style.color = '#0066FF';
+                                                                                        }}
+                                                                                        onClick={(e) => e.stopPropagation()}
+                                                                                    >
+                                                                                        {cellValue}
+                                                                                        <svg
+                                                                                            width="12"
+                                                                                            height="12"
+                                                                                            viewBox="0 0 24 24"
+                                                                                            fill="none"
+                                                                                            stroke="currentColor"
+                                                                                            strokeWidth="2"
+                                                                                            strokeLinecap="round"
+                                                                                            strokeLinejoin="round"
+                                                                                            style={{ flexShrink: 0 }}
+                                                                                        >
+                                                                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                                                                            <polyline points="15 3 21 3 21 9" />
+                                                                                            <line x1="10" y1="14" x2="21" y2="3" />
+                                                                                        </svg>
+                                                                                    </a>
+                                                                                );
+                                                                            }
+
+                                                                            if (isEmail) {
+                                                                                return (
+                                                                                    <a
+                                                                                        href={`mailto:${cellValue}`}
+                                                                                        style={{
+                                                                                            color: '#0066FF',
+                                                                                            textDecoration: 'none',
+                                                                                            fontSize: '0.85rem',
+                                                                                            fontWeight: 500,
+                                                                                            lineHeight: 1.4,
+                                                                                            display: 'inline-flex',
+                                                                                            alignItems: 'center',
+                                                                                            gap: '4px',
+                                                                                            transition: 'all 0.2s ease',
+                                                                                        }}
+                                                                                        onMouseEnter={(e) => {
+                                                                                            e.target.style.textDecoration = 'underline';
+                                                                                            e.target.style.color = '#0052CC';
+                                                                                        }}
+                                                                                        onMouseLeave={(e) => {
+                                                                                            e.target.style.textDecoration = 'none';
+                                                                                            e.target.style.color = '#0066FF';
+                                                                                        }}
+                                                                                        onClick={(e) => e.stopPropagation()}
+                                                                                    >
+                                                                                        {cellValue}
+                                                                                        <svg
+                                                                                            width="12"
+                                                                                            height="12"
+                                                                                            viewBox="0 0 24 24"
+                                                                                            fill="none"
+                                                                                            stroke="currentColor"
+                                                                                            strokeWidth="2"
+                                                                                            strokeLinecap="round"
+                                                                                            strokeLinejoin="round"
+                                                                                            style={{ flexShrink: 0 }}
+                                                                                        >
+                                                                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                                                                            <polyline points="22,6 12,13 2,6" />
+                                                                                        </svg>
+                                                                                    </a>
+                                                                                );
+                                                                            }
+
+                                                                            return (
+                                                                                <Typography variant="body2" sx={{
+                                                                                    fontSize: '0.85rem',
+                                                                                    fontWeight: 500,
+                                                                                    lineHeight: 1.4
                                                                                 }}>
-                                                                                    —
-                                                                                </span>
-                                                                            )}
-                                                                        </Typography>
+                                                                                    {cellValue}
+                                                                                </Typography>
+                                                                            );
+                                                                        })()}
                                                                     </TableCell>
                                                                 ))}
                                                                 <TableCell
@@ -3068,31 +3699,132 @@ ${mockActionPlan.map(week =>
                                                                         px: 3
                                                                     }}
                                                                 >
-                                                                    <Chip
-                                                                        label={record.validation_status}
-                                                                        size="small"
-                                                                        sx={{
-                                                                            fontWeight: 600,
-                                                                            fontSize: '0.7rem',
-                                                                            height: 26,
-                                                                            borderRadius: 2,
-                                                                            ...(record.validation_status === 'validated' && {
-                                                                                backgroundColor: '#D1FAE5',
-                                                                                color: '#065F46',
-                                                                                border: '1px solid #A7F3D0'
-                                                                            }),
-                                                                            ...(record.validation_status === 'flagged' && {
-                                                                                backgroundColor: '#FEE2E2',
-                                                                                color: '#991B1B',
-                                                                                border: '1px solid #FECACA'
-                                                                            }),
-                                                                            ...(record.validation_status === 'pending' && {
-                                                                                backgroundColor: '#FEF3C7',
-                                                                                color: '#92400E',
-                                                                                border: '1px solid #FDE68A'
-                                                                            })
-                                                                        }}
-                                                                    />
+                                                                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                                                                        <Select
+                                                                            value={record.data?.status || record.validation_status || 'pending'}
+                                                                            onChange={(e) => handleUpdateRecordStatus(record.id, e.target.value)}
+                                                                            variant="outlined"
+                                                                            sx={{
+                                                                                fontSize: '0.8rem',
+                                                                                height: 32,
+                                                                                '& .MuiSelect-select': {
+                                                                                    py: 0.5,
+                                                                                    px: 1.5
+                                                                                },
+                                                                                '& .MuiOutlinedInput-notchedOutline': {
+                                                                                    borderColor: 'transparent'
+                                                                                },
+                                                                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                                                    borderColor: '#0066FF'
+                                                                                },
+                                                                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                                                                    borderColor: '#0066FF',
+                                                                                    borderWidth: '2px'
+                                                                                },
+                                                                                backgroundColor: (() => {
+                                                                                    const status = record.data?.status || record.validation_status || 'pending';
+                                                                                    switch (status) {
+                                                                                        case 'validated': return '#D1FAE5';
+                                                                                        case 'flagged': return '#FEE2E2';
+                                                                                        case 'contacted': return '#E0E7FF';
+                                                                                        case 'responded': return '#ECFDF5';
+                                                                                        case 'qualified': return '#FEF3C7';
+                                                                                        default: return '#F3F4F6';
+                                                                                    }
+                                                                                })(),
+                                                                                color: (() => {
+                                                                                    const status = record.data?.status || record.validation_status || 'pending';
+                                                                                    switch (status) {
+                                                                                        case 'validated': return '#065F46';
+                                                                                        case 'flagged': return '#991B1B';
+                                                                                        case 'contacted': return '#3730A3';
+                                                                                        case 'responded': return '#14532D';
+                                                                                        case 'qualified': return '#92400E';
+                                                                                        default: return '#374151';
+                                                                                    }
+                                                                                })(),
+                                                                                borderRadius: 2,
+                                                                                fontWeight: 600,
+                                                                                transition: 'all 0.2s ease',
+                                                                                '&:hover': {
+                                                                                    transform: 'translateY(-1px)',
+                                                                                    boxShadow: '0 4px 12px rgba(0, 102, 255, 0.15)'
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <MenuItem value="pending">
+                                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                    <Box sx={{
+                                                                                        width: 8,
+                                                                                        height: 8,
+                                                                                        borderRadius: '50%',
+                                                                                        backgroundColor: '#6B7280'
+                                                                                    }} />
+                                                                                    Pending
+                                                                                </Box>
+                                                                            </MenuItem>
+                                                                            <MenuItem value="contacted">
+                                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                    <Box sx={{
+                                                                                        width: 8,
+                                                                                        height: 8,
+                                                                                        borderRadius: '50%',
+                                                                                        backgroundColor: '#3730A3'
+                                                                                    }} />
+                                                                                    Contacted
+                                                                                </Box>
+                                                                            </MenuItem>
+                                                                            <MenuItem value="responded">
+                                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                    <Box sx={{
+                                                                                        width: 8,
+                                                                                        height: 8,
+                                                                                        borderRadius: '50%',
+                                                                                        backgroundColor: '#14532D'
+                                                                                    }} />
+                                                                                    Responded
+                                                                                </Box>
+                                                                            </MenuItem>
+                                                                            <MenuItem value="qualified">
+                                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                    <Box sx={{
+                                                                                        width: 8,
+                                                                                        height: 8,
+                                                                                        borderRadius: '50%',
+                                                                                        backgroundColor: '#92400E'
+                                                                                    }} />
+                                                                                    Qualified
+                                                                                </Box>
+                                                                            </MenuItem>
+                                                                            {/* Admin-only options */}
+                                                                            {adminViewData?.admin_view && (
+                                                                                <>
+                                                                                    <MenuItem value="validated">
+                                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                            <Box sx={{
+                                                                                                width: 8,
+                                                                                                height: 8,
+                                                                                                borderRadius: '50%',
+                                                                                                backgroundColor: '#065F46'
+                                                                                            }} />
+                                                                                            Validated
+                                                                                        </Box>
+                                                                                    </MenuItem>
+                                                                                    <MenuItem value="flagged">
+                                                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                                            <Box sx={{
+                                                                                                width: 8,
+                                                                                                height: 8,
+                                                                                                borderRadius: '50%',
+                                                                                                backgroundColor: '#991B1B'
+                                                                                            }} />
+                                                                                            Flagged
+                                                                                        </Box>
+                                                                                    </MenuItem>
+                                                                                </>
+                                                                            )}
+                                                                        </Select>
+                                                                    </FormControl>
                                                                 </TableCell>
                                                             </TableRow>
                                                         ))}
@@ -4105,6 +4837,95 @@ ${mockActionPlan.map(week =>
                     <DialogActions>
                         <DotBridgeButton onClick={() => setShowEditDayDialog(false)}>Cancel</DotBridgeButton>
                         <DotBridgeButton variant="contained" onClick={() => setShowEditDayDialog(false)}>Save Changes</DotBridgeButton>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Add Record Dialog */}
+                <Dialog open={showAddRecordDialog} onClose={() => setShowAddRecordDialog(false)} maxWidth="md" fullWidth>
+                    <DialogTitle sx={{
+                        background: 'linear-gradient(135deg, #0066FF 0%, #0052CC 100%)',
+                        color: 'white',
+                        fontWeight: 700
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Add />
+                            Add New Record to {selectedTemplate?.name}
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent sx={{ pt: 3 }}>
+                        {selectedTemplate && (
+                            <Grid container spacing={3}>
+                                {selectedTemplate.columns.map((column) => (
+                                    <Grid item xs={12} sm={6} key={column.name}>
+                                        <TextField
+                                            fullWidth
+                                            label={column.name}
+                                            value={newRecordData[column.name] || ''}
+                                            onChange={(e) => setNewRecordData(prev => ({
+                                                ...prev,
+                                                [column.name]: e.target.value
+                                            }))}
+                                            variant="outlined"
+                                            helperText={column.data_type && `Type: ${column.data_type}`}
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: 2,
+                                                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                                                        borderColor: '#0066FF'
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                    </Grid>
+                                ))}
+                                <Grid item xs={12} sm={6}>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Status</InputLabel>
+                                        <Select
+                                            value={newRecordData.status || 'pending'}
+                                            label="Status"
+                                            onChange={(e) => setNewRecordData(prev => ({
+                                                ...prev,
+                                                status: e.target.value
+                                            }))}
+                                            sx={{ borderRadius: 2 }}
+                                        >
+                                            <MenuItem value="pending">Pending</MenuItem>
+                                            <MenuItem value="validated">Validated</MenuItem>
+                                            <MenuItem value="contacted">Contacted</MenuItem>
+                                            <MenuItem value="responded">Responded</MenuItem>
+                                            <MenuItem value="qualified">Qualified</MenuItem>
+                                            <MenuItem value="flagged">Flagged</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 3, gap: 1 }}>
+                        <DotBridgeButton
+                            onClick={() => {
+                                setShowAddRecordDialog(false);
+                                setNewRecordData({});
+                            }}
+                            variant="outlined"
+                            sx={{ borderRadius: 2 }}
+                        >
+                            Cancel
+                        </DotBridgeButton>
+                        <DotBridgeButton
+                            variant="contained"
+                            onClick={handleAddNewRecord}
+                            sx={{
+                                borderRadius: 2,
+                                background: 'linear-gradient(135deg, #0066FF 0%, #0052CC 100%)',
+                                '&:hover': {
+                                    background: 'linear-gradient(135deg, #0052CC 0%, #003D99 100%)'
+                                }
+                            }}
+                        >
+                            Add Record
+                        </DotBridgeButton>
                     </DialogActions>
                 </Dialog>
             </Container>

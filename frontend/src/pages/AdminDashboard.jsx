@@ -38,7 +38,16 @@ import {
     Fade,
     Slide,
     Button,
-    Stack
+    Stack,
+    List,
+    ListItem,
+    ListItemText,
+    ListItemIcon,
+    Badge,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Link
 } from '@mui/material';
 import {
     Refresh,
@@ -62,7 +71,20 @@ import {
     Cancel,
     Warning,
     SelectAll,
-    Deselect
+    Deselect,
+    ExpandMore,
+    Description,
+    Message,
+    Person,
+    Work,
+    LocationOn,
+    AttachMoney,
+    Notes,
+    Chat,
+    FilePresent,
+    Timeline,
+    Assessment,
+    Business
 } from '@mui/icons-material';
 import { useTheme, alpha } from '@mui/material/styles';
 import { api } from '../api';
@@ -99,6 +121,11 @@ const AdminDashboard = () => {
 
     // Notification state
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+    // State for comprehensive order view
+    const [comprehensiveDetailOpen, setComprehensiveDetailOpen] = useState(false);
+    const [comprehensiveData, setComprehensiveData] = useState(null);
+    const [loadingComprehensive, setLoadingComprehensive] = useState(false);
 
     useEffect(() => {
         fetchOrders();
@@ -279,6 +306,26 @@ const AdminDashboard = () => {
     const handleCancelEdit = () => {
         setEditingClient(null);
         setNewClientEmail('');
+    };
+
+    // Comprehensive order details handlers
+    const fetchComprehensiveOrderDetails = async (orderId) => {
+        try {
+            setLoadingComprehensive(true);
+            const response = await api.get(`/admin/orders/${orderId}/comprehensive`);
+            setComprehensiveData(response.data.data);
+            setComprehensiveDetailOpen(true);
+        } catch (error) {
+            console.error('Error fetching comprehensive order details:', error);
+            showNotification('Failed to fetch comprehensive order details', 'error');
+        } finally {
+            setLoadingComprehensive(false);
+        }
+    };
+
+    const handleCloseComprehensiveDetails = () => {
+        setComprehensiveDetailOpen(false);
+        setComprehensiveData(null);
     };
 
     const getStatusColor = (status) => {
@@ -633,7 +680,7 @@ const AdminDashboard = () => {
                                                         )}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Stack direction="row" spacing={1}>
+                                                        <Stack direction="row" spacing={1} flexWrap="wrap">
                                                             <Tooltip title="Manage Client">
                                                                 <DotBridgeButton
                                                                     variant="contained"
@@ -644,6 +691,26 @@ const AdminDashboard = () => {
                                                                     Manage
                                                                 </DotBridgeButton>
                                                             </Tooltip>
+                                                            {/* Show Career Details button for Career Accelerator orders */}
+                                                            {order.offer?.slug === 'career-accelerator' && (
+                                                                <Tooltip title="Career Details - Resume, Conversations & Ticket">
+                                                                    <DotBridgeButton
+                                                                        variant="contained"
+                                                                        size="small"
+                                                                        startIcon={<Assessment />}
+                                                                        onClick={() => fetchComprehensiveOrderDetails(order.id)}
+                                                                        disabled={loadingComprehensive}
+                                                                        sx={{
+                                                                            background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+                                                                            '&:hover': {
+                                                                                background: 'linear-gradient(135deg, #FF5722 0%, #FF9800 100%)'
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        Career Details
+                                                                    </DotBridgeButton>
+                                                                </Tooltip>
+                                                            )}
                                                             <Tooltip title="Quick View">
                                                                 <DotBridgeButton
                                                                     variant="outlined"
@@ -958,6 +1025,382 @@ const AdminDashboard = () => {
                         >
                             Delete {selectedOrders.size} Orders
                         </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Comprehensive Career Details Dialog */}
+                <Dialog
+                    open={comprehensiveDetailOpen}
+                    onClose={handleCloseComprehensiveDetails}
+                    maxWidth="xl"
+                    fullWidth
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 3,
+                            height: '90vh',
+                            maxHeight: '900px'
+                        }
+                    }}
+                >
+                    <DialogTitle sx={{
+                        background: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 100%)',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2
+                    }}>
+                        <Assessment />
+                        <Box>
+                            <Typography variant="h5" component="div" fontWeight={700}>
+                                Career Accelerator - Comprehensive Details
+                            </Typography>
+                            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                Order #{comprehensiveData?.order?.id} • Complete Career Strategy Overview
+                            </Typography>
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent sx={{ p: 0, overflow: 'hidden' }}>
+                        {loadingComprehensive ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '400px' }}>
+                                <CircularProgress size={40} />
+                                <Typography sx={{ ml: 2 }}>Loading comprehensive details...</Typography>
+                            </Box>
+                        ) : comprehensiveData ? (
+                            <Box sx={{ height: '100%', overflow: 'auto', p: 3 }}>
+                                <Grid container spacing={3}>
+                                    {/* Left Column - Resume & Analysis */}
+                                    <Grid item xs={12} lg={6}>
+                                        {/* Resume Section */}
+                                        <Accordion defaultExpanded sx={{ mb: 2 }}>
+                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{
+                                                bgcolor: alpha(theme.palette.primary.main, 0.05),
+                                                '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.1) }
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Description color="primary" />
+                                                    <Typography variant="h6" fontWeight={600}>
+                                                        Resume & Analysis
+                                                    </Typography>
+                                                    {comprehensiveData.resume_download_info && (
+                                                        <Badge badgeContent="PDF" color="success" />
+                                                    )}
+                                                </Box>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                {comprehensiveData.resume_download_info ? (
+                                                    <Box>
+                                                        <Card variant="outlined" sx={{ mb: 2, p: 2 }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                                <Box>
+                                                                    <Typography variant="subtitle1" fontWeight={600}>
+                                                                        {comprehensiveData.resume_download_info.filename}
+                                                                    </Typography>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        Size: {(comprehensiveData.resume_download_info.file_size / 1024 / 1024).toFixed(2)} MB
+                                                                    </Typography>
+                                                                </Box>
+                                                                <Link
+                                                                    href={comprehensiveData.resume_download_info.download_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    sx={{ textDecoration: 'none' }}
+                                                                >
+                                                                    <DotBridgeButton
+                                                                        variant="contained"
+                                                                        size="small"
+                                                                        startIcon={<Download />}
+                                                                    >
+                                                                        Download Resume
+                                                                    </DotBridgeButton>
+                                                                </Link>
+                                                            </Box>
+                                                        </Card>
+
+                                                        {comprehensiveData.resume_analysis?.analysis_results && (
+                                                            <Card variant="outlined" sx={{ p: 2 }}>
+                                                                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                                                                    AI Analysis Results
+                                                                </Typography>
+                                                                <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                                                                    <pre style={{
+                                                                        whiteSpace: 'pre-wrap',
+                                                                        fontSize: '0.875rem',
+                                                                        margin: 0,
+                                                                        fontFamily: 'inherit'
+                                                                    }}>
+                                                                        {JSON.stringify(comprehensiveData.resume_analysis.analysis_results, null, 2)}
+                                                                    </pre>
+                                                                </Box>
+                                                            </Card>
+                                                        )}
+                                                    </Box>
+                                                ) : (
+                                                    <Alert severity="info">No resume file available for this order</Alert>
+                                                )}
+                                            </AccordionDetails>
+                                        </Accordion>
+
+                                        {/* Career Lead Information */}
+                                        <Accordion defaultExpanded sx={{ mb: 2 }}>
+                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{
+                                                bgcolor: alpha(theme.palette.secondary.main, 0.05),
+                                                '&:hover': { bgcolor: alpha(theme.palette.secondary.main, 0.1) }
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Person color="secondary" />
+                                                    <Typography variant="h6" fontWeight={600}>
+                                                        Lead Information
+                                                    </Typography>
+                                                </Box>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                {comprehensiveData.career_lead ? (
+                                                    <Grid container spacing={2}>
+                                                        <Grid item xs={12} sm={6}>
+                                                            <Typography variant="body2" color="text.secondary">Name</Typography>
+                                                            <Typography variant="body1" fontWeight={500}>
+                                                                {comprehensiveData.career_lead.name || 'Not provided'}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12} sm={6}>
+                                                            <Typography variant="body2" color="text.secondary">Phone</Typography>
+                                                            <Typography variant="body1" fontWeight={500}>
+                                                                {comprehensiveData.career_lead.phone || 'Not provided'}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12}>
+                                                            <Typography variant="body2" color="text.secondary">LinkedIn URL</Typography>
+                                                            <Typography variant="body1" fontWeight={500}>
+                                                                {comprehensiveData.career_lead.linkedin_url ? (
+                                                                    <Link href={comprehensiveData.career_lead.linkedin_url} target="_blank" rel="noopener noreferrer">
+                                                                        {comprehensiveData.career_lead.linkedin_url}
+                                                                    </Link>
+                                                                ) : 'Not provided'}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12} sm={6}>
+                                                            <Typography variant="body2" color="text.secondary">Target Job Title</Typography>
+                                                            <Typography variant="body1" fontWeight={500}>
+                                                                {comprehensiveData.career_lead.target_job_title || 'Not specified'}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12} sm={6}>
+                                                            <Typography variant="body2" color="text.secondary">Urgency</Typography>
+                                                            <Typography variant="body1" fontWeight={500}>
+                                                                {comprehensiveData.career_lead.urgency || 'Not specified'}
+                                                            </Typography>
+                                                        </Grid>
+                                                        <Grid item xs={12}>
+                                                            <Typography variant="body2" color="text.secondary">Biggest Challenge</Typography>
+                                                            <Typography variant="body1" sx={{ mt: 0.5 }}>
+                                                                {comprehensiveData.career_lead.biggest_challenge || 'Not specified'}
+                                                            </Typography>
+                                                        </Grid>
+                                                    </Grid>
+                                                ) : (
+                                                    <Alert severity="info">No lead information available</Alert>
+                                                )}
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    </Grid>
+
+                                    {/* Right Column - Career Strategy & Conversations */}
+                                    <Grid item xs={12} lg={6}>
+                                        {/* Career Strategy Ticket */}
+                                        <Accordion defaultExpanded sx={{ mb: 2 }}>
+                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{
+                                                bgcolor: alpha(theme.palette.success.main, 0.05),
+                                                '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.1) }
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Business color="success" />
+                                                    <Typography variant="h6" fontWeight={600}>
+                                                        Career Strategy Ticket
+                                                    </Typography>
+                                                </Box>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                {comprehensiveData.order?.service_ticket?.career_ticket_data ? (
+                                                    <Box>
+                                                        <Card variant="outlined" sx={{ p: 2, mb: 2 }}>
+                                                            <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                                                                Strategy Summary
+                                                            </Typography>
+                                                            <Typography variant="body1" sx={{ mb: 2 }}>
+                                                                {comprehensiveData.order.service_ticket.career_ticket_data.strategy_summary}
+                                                            </Typography>
+
+                                                            {comprehensiveData.order.service_ticket.career_ticket_data.client_info && (
+                                                                <>
+                                                                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                                                                        Key Challenges
+                                                                    </Typography>
+                                                                    <List dense>
+                                                                        {comprehensiveData.order.service_ticket.career_ticket_data.client_info.key_challenges?.map((challenge, index) => (
+                                                                            <ListItem key={index} sx={{ pl: 0 }}>
+                                                                                <ListItemIcon sx={{ minWidth: 32 }}>
+                                                                                    <Chip label={index + 1} size="small" color="error" />
+                                                                                </ListItemIcon>
+                                                                                <ListItemText primary={challenge} />
+                                                                            </ListItem>
+                                                                        ))}
+                                                                    </List>
+                                                                </>
+                                                            )}
+                                                        </Card>
+
+                                                        {/* Finalized Goals */}
+                                                        {comprehensiveData.order.service_ticket.finalized_goals && (
+                                                            <Card variant="outlined" sx={{ p: 2 }}>
+                                                                <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                                                                    Finalized Goals
+                                                                </Typography>
+                                                                <Grid container spacing={2}>
+                                                                    <Grid item xs={12}>
+                                                                        <Typography variant="body2" color="text.secondary">Target Roles</Typography>
+                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                                                            {comprehensiveData.order.service_ticket.finalized_goals.target_roles?.map((role, index) => (
+                                                                                <Chip key={index} label={role} size="small" variant="outlined" />
+                                                                            )) || <Typography variant="body2" color="text.secondary">None specified</Typography>}
+                                                                        </Box>
+                                                                    </Grid>
+                                                                    <Grid item xs={12}>
+                                                                        <Typography variant="body2" color="text.secondary">Target Locations</Typography>
+                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                                                            {comprehensiveData.order.service_ticket.finalized_goals.target_locations?.map((location, index) => (
+                                                                                <Chip key={index} label={location} size="small" variant="outlined" color="secondary" />
+                                                                            )) || <Typography variant="body2" color="text.secondary">None specified</Typography>}
+                                                                        </Box>
+                                                                    </Grid>
+                                                                    <Grid item xs={12} sm={6}>
+                                                                        <Typography variant="body2" color="text.secondary">Salary Goal</Typography>
+                                                                        <Typography variant="body1" fontWeight={500}>
+                                                                            {comprehensiveData.order.service_ticket.finalized_goals.salary_goal || 'Not specified'}
+                                                                        </Typography>
+                                                                    </Grid>
+                                                                    <Grid item xs={12}>
+                                                                        <Typography variant="body2" color="text.secondary">Additional Notes</Typography>
+                                                                        <Typography variant="body1">
+                                                                            {comprehensiveData.order.service_ticket.finalized_goals.notes || 'No additional notes'}
+                                                                        </Typography>
+                                                                    </Grid>
+                                                                </Grid>
+                                                            </Card>
+                                                        )}
+                                                    </Box>
+                                                ) : (
+                                                    <Alert severity="info">No career strategy ticket available</Alert>
+                                                )}
+                                            </AccordionDetails>
+                                        </Accordion>
+
+                                        {/* Conversation Logs */}
+                                        <Accordion sx={{ mb: 2 }}>
+                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{
+                                                bgcolor: alpha(theme.palette.warning.main, 0.05),
+                                                '&:hover': { bgcolor: alpha(theme.palette.warning.main, 0.1) }
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Chat color="warning" />
+                                                    <Typography variant="h6" fontWeight={600}>
+                                                        AI Conversation Logs
+                                                    </Typography>
+                                                    <Badge badgeContent={comprehensiveData.conversation_logs?.length || 0} color="warning" />
+                                                </Box>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                {comprehensiveData.conversation_logs && comprehensiveData.conversation_logs.length > 0 ? (
+                                                    <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                                                        {comprehensiveData.conversation_logs.map((log, index) => (
+                                                            <Card key={index} variant="outlined" sx={{ mb: 1, p: 2 }}>
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                                    <Chip
+                                                                        label={log.role}
+                                                                        size="small"
+                                                                        color={log.role === 'agent' ? 'primary' : 'secondary'}
+                                                                        sx={{ mr: 1 }}
+                                                                    />
+                                                                    <Typography variant="caption" color="text.secondary">
+                                                                        {new Date(log.timestamp).toLocaleString()}
+                                                                    </Typography>
+                                                                </Box>
+                                                                <Typography variant="body2" sx={{
+                                                                    whiteSpace: 'pre-wrap',
+                                                                    maxHeight: 100,
+                                                                    overflow: 'auto'
+                                                                }}>
+                                                                    {log.message}
+                                                                </Typography>
+                                                            </Card>
+                                                        ))}
+                                                    </Box>
+                                                ) : (
+                                                    <Alert severity="info">No conversation logs available</Alert>
+                                                )}
+                                            </AccordionDetails>
+                                        </Accordion>
+                                    </Grid>
+
+                                    {/* Full Width - Order Summary */}
+                                    <Grid item xs={12}>
+                                        <Card variant="outlined" sx={{ p: 3, background: alpha(theme.palette.primary.main, 0.02) }}>
+                                            <Typography variant="h6" fontWeight={600} gutterBottom>
+                                                Order Summary
+                                            </Typography>
+                                            <Grid container spacing={2}>
+                                                <Grid item xs={12} sm={6} md={3}>
+                                                    <Typography variant="body2" color="text.secondary">Order ID</Typography>
+                                                    <Typography variant="h6" fontWeight={600}>#{comprehensiveData.order.id}</Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={6} md={3}>
+                                                    <Typography variant="body2" color="text.secondary">Amount</Typography>
+                                                    <Typography variant="h6" fontWeight={600} color="success.main">
+                                                        ${comprehensiveData.order.payment_amount_dollars}
+                                                    </Typography>
+                                                </Grid>
+                                                <Grid item xs={12} sm={6} md={3}>
+                                                    <Typography variant="body2" color="text.secondary">Status</Typography>
+                                                    <Chip
+                                                        label={comprehensiveData.order.status.replace('_', ' ').toUpperCase()}
+                                                        color={getStatusColor(comprehensiveData.order.status)}
+                                                        size="small"
+                                                        sx={{ mt: 0.5 }}
+                                                    />
+                                                </Grid>
+                                                <Grid item xs={12} sm={6} md={3}>
+                                                    <Typography variant="body2" color="text.secondary">Due Date</Typography>
+                                                    <Typography variant="body1" fontWeight={500}>
+                                                        {comprehensiveData.order.due_date ? formatDate(comprehensiveData.order.due_date) : 'Not set'}
+                                                    </Typography>
+                                                </Grid>
+                                            </Grid>
+                                        </Card>
+                                    </Grid>
+                                </Grid>
+                            </Box>
+                        ) : (
+                            <Alert severity="error">Failed to load comprehensive details</Alert>
+                        )}
+                    </DialogContent>
+                    <DialogActions sx={{ p: 3, background: alpha(theme.palette.grey[100], 0.5) }}>
+                        <DotBridgeButton
+                            variant="outlined"
+                            onClick={handleCloseComprehensiveDetails}
+                        >
+                            Close
+                        </DotBridgeButton>
+                        {comprehensiveData?.order && (
+                            <DotBridgeButton
+                                variant="contained"
+                                startIcon={<Edit />}
+                                onClick={() => {
+                                    handleCloseComprehensiveDetails();
+                                    navigate(`/admin/client/${comprehensiveData.order.client_id}/dashboard`);
+                                }}
+                            >
+                                Manage Client
+                            </DotBridgeButton>
+                        )}
                     </DialogActions>
                 </Dialog>
 
