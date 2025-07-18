@@ -30,6 +30,9 @@ import { api } from '../api';
 import PersonIcon from '@mui/icons-material/Person';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Demo bridge ID for navigation
+const DEMO_BRIDGE_ID = '447';
+
 function HideOnScroll(props) {
     const { children } = props;
     const trigger = useScrollTrigger();
@@ -150,57 +153,56 @@ function Header() {
         setServicesAnchorEl(null);
     };
 
-    // Updated menu items with better structure
+    // Updated menu items for open source project
     const menuItems = isAuthenticated
         ? [
             {
-                text: userRole === 'admin' ? 'Admin Dashboard' : 'Dashboard',
+                text: userRole === 'admin' ? 'Admin Dashboard' : 'Research Dashboard',
                 link: userRole === 'admin' ? '/admin' : '/dashboard'
             },
-            { text: 'Contact', link: '/contact' }
+            { text: 'GitHub', link: 'https://github.com/your-username/dotbridge', external: true }
         ]
         : [
-            { text: 'Resources', link: '/blog' },
-            { text: 'Contact', link: '/contact' }
+            { text: 'Demo', link: `/viewBridge/${DEMO_BRIDGE_ID || '447'}` },
+            { text: 'GitHub', link: 'https://github.com/your-username/dotbridge', external: true },
+            { text: 'Principal Investigator', link: 'https://journeymanai.io', external: true }
         ];
 
-    // Services dropdown items
-    const servicesMenuItems = [
-        { text: 'AI Consulting', link: '/ai-consulting' },
-        { text: 'Career Growth', link: '/career-accelerator' }
-    ];
+    // Remove services dropdown for open source version
+    const servicesMenuItems = [];
 
-    // Improved menu button styles
+    // Academic menu button styles
     const menuItemStyle = {
-        color: theme.palette.text.secondary,
-        fontWeight: 500,
-        fontFamily: theme.typography.fontFamily,
+        color: '#4a5568',
+        fontWeight: 400,
+        fontFamily: '"Georgia", "Times New Roman", serif',
         textTransform: 'none',
         fontSize: '0.9375rem',
         padding: '6px 16px',
         borderRadius: theme.shape.borderRadius,
         transition: 'all 0.2s ease',
         '&:hover': {
-            color: theme.palette.primary.main,
-            backgroundColor: theme.palette.action.hover
+            color: '#2d3748',
+            backgroundColor: 'rgba(45, 55, 72, 0.05)'
         }
     };
 
-    // Enhanced Sign Up button style
+    // Academic Sign Up button style
     const signUpButtonStyle = {
-        backgroundColor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
+        backgroundColor: '#2d3748',
+        color: 'white',
         padding: '8px 24px',
         fontSize: '0.875rem',
-        fontWeight: 600,
+        fontWeight: 400,
         marginLeft: '8px',
         borderRadius: theme.shape.borderRadius,
         textTransform: 'none',
         boxShadow: 'none',
+        fontFamily: '"Georgia", "Times New Roman", serif',
         transition: 'all 0.2s ease',
         '&:hover': {
-            backgroundColor: theme.palette.primary.dark,
-            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.25)',
+            backgroundColor: '#4a5568',
+            boxShadow: '0 4px 12px rgba(45, 55, 72, 0.25)',
             transform: 'translateY(-1px)',
         },
         '&:active': {
@@ -286,10 +288,10 @@ function Header() {
                             onClick={() => setDrawerOpen(false)}
                             sx={{
                                 ...drawerItemStyle,
-                                backgroundColor: theme.palette.action.selected + '30',
+                                backgroundColor: 'rgba(45, 55, 72, 0.08)',
                             }}
                         >
-                            <ListItemText primary={userRole === 'admin' ? 'Admin Dashboard' : 'Dashboard'} />
+                            <ListItemText primary={userRole === 'admin' ? 'Admin Dashboard' : 'Research Dashboard'} />
                         </ListItemButton>
                     </ListItem>
                 )}
@@ -349,52 +351,6 @@ function Header() {
                         <ListItemText primary="Careers" />
                     </ListItemButton>
                 </ListItem>
-
-                {/* Services section (only for non-authenticated users) */}
-                {!isAuthenticated && (
-                    <>
-                        <ListItem disablePadding>
-                            <ListItemButton
-                                component={RouterLink}
-                                to="/services"
-                                onClick={() => setDrawerOpen(false)}
-                                sx={{
-                                    ...drawerItemStyle,
-                                }}
-                            >
-                                <ListItemText primary="B2B Sales" />
-                            </ListItemButton>
-                        </ListItem>
-                        <ListItem disablePadding>
-                            <ListItemButton
-                                component={RouterLink}
-                                to="/career-accelerator"
-                                onClick={() => setDrawerOpen(false)}
-                                sx={{
-                                    ...drawerItemStyle,
-                                }}
-                            >
-                                <ListItemText primary="Career Growth" />
-                            </ListItemButton>
-                        </ListItem>
-                    </>
-                )}
-
-                {/* Pricing (only for non-authenticated users) */}
-                {!isAuthenticated && (
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            component={RouterLink}
-                            to="/pricing"
-                            onClick={() => setDrawerOpen(false)}
-                            sx={{
-                                ...drawerItemStyle,
-                            }}
-                        >
-                            <ListItemText primary="Pricing" />
-                        </ListItemButton>
-                    </ListItem>
-                )}
 
                 {/* Contact (for all users) */}
                 <ListItem disablePadding>
@@ -532,16 +488,19 @@ function Header() {
             <AppBar
                 position="fixed"
                 sx={{
-                    backgroundColor: transparentMode ? 'transparent' : theme.palette.background.paper,
-                    boxShadow: transparentMode ? 'none' : theme.shadows[1],
-                    color: transparentMode ? (theme.palette.mode === 'dark' ? '#fff' : '#101017') : theme.palette.text.primary,
-                    transition: 'background-color 0.3s ease, box-shadow 0.3s ease',
+                    backgroundColor: transparentMode ? 'transparent' : '#fefefe',
+                    boxShadow: transparentMode ? 'none' : '0 1px 2px rgba(45, 55, 72, 0.08)',
+                    color: transparentMode ? '#2d3748' : '#2d3748',
+                    transition: 'all 0.3s ease',
                     backdropFilter: !transparentMode ? 'blur(10px)' : 'none',
-                    borderBottom: !transparentMode ? `1px solid ${theme.palette.divider}` : 'none',
+                    borderBottom: !transparentMode ? '1px solid #e2e8f0' : 'none',
                 }}
             >
                 <Container maxWidth="lg">
-                    <Toolbar disableGutters sx={{ height: { xs: 56, sm: 64 } }}>
+                    <Toolbar disableGutters sx={{
+                        height: { xs: 56, sm: 64 },
+                        transition: 'height 0.3s ease'
+                    }}>
                         {/* Logo/brand for larger screens */}
                         <motion.div
                             initial="initial"
@@ -570,6 +529,7 @@ function Header() {
                                         '&:hover': {
                                             opacity: 0.85,
                                         },
+                                        fontFamily: '"Georgia", "Times New Roman", serif',
                                     }}
                                 >
                                     DotBridge
@@ -660,36 +620,6 @@ function Header() {
                                         </motion.div>
                                     ))}
 
-                                    {/* Services items for non-authenticated users in mobile menu */}
-                                    {!isAuthenticated && servicesMenuItems.map((item, index) => (
-                                        <motion.div
-                                            key={item.text}
-                                            initial="initial"
-                                            animate="animate"
-                                            exit="exit"
-                                            variants={menuItemVariants}
-                                            custom={menuItems.length + index}
-                                        >
-                                            <MenuItem
-                                                onClick={handleCloseNavMenu}
-                                                component={RouterLink}
-                                                to={item.link}
-                                                sx={{
-                                                    my: 0.5,
-                                                    mx: 1,
-                                                    borderRadius: '6px',
-                                                    color: location.pathname === item.link ? 'primary.main' : 'text.primary',
-                                                    fontWeight: location.pathname === item.link ? 600 : 400,
-                                                    transition: 'background-color 0.2s, color 0.2s, font-weight 0.2s',
-                                                    '&:hover': {
-                                                        backgroundColor: theme.palette.action.hover,
-                                                    },
-                                                }}
-                                            >
-                                                <Typography textAlign="center">{item.text}</Typography>
-                                            </MenuItem>
-                                        </motion.div>
-                                    ))}
 
                                     {isAuthenticated ? (
                                         <motion.div
@@ -778,9 +708,18 @@ function Header() {
                                 color: 'inherit',
                                 textDecoration: 'none',
                                 fontSize: '1.25rem',
+                                fontFamily: '"Georgia", "Times New Roman", serif',
                             }}
                         >
-                            .bridge
+                            DotBridge
+                            <Box component="span" sx={{
+                                fontSize: '0.7rem',
+                                ml: 1,
+                                opacity: 0.7,
+                                fontWeight: 400
+                            }}>
+                                [Open Source]
+                            </Box>
                         </Typography>
 
                         {/* Desktop navigation */}
@@ -804,10 +743,11 @@ function Header() {
                                                 mx: 1,
                                                 color: location.pathname === item.link ? 'primary.main' : 'inherit',
                                                 display: 'block',
-                                                fontWeight: location.pathname === item.link ? 600 : 500,
+                                                fontWeight: location.pathname === item.link ? 600 : 400,
                                                 fontSize: '0.95rem',
                                                 textTransform: 'none',
                                                 position: 'relative',
+                                                fontFamily: '"Georgia", "Times New Roman", serif',
                                                 '&::after': {
                                                     content: '""',
                                                     position: 'absolute',
@@ -815,7 +755,7 @@ function Header() {
                                                     height: '2px',
                                                     bottom: 0,
                                                     left: 0,
-                                                    backgroundColor: 'primary.main',
+                                                    backgroundColor: '#2d3748',
                                                     transition: 'width 0.3s ease-in-out',
                                                     borderRadius: '2px',
                                                     opacity: location.pathname === item.link ? 1 : 0,
@@ -833,134 +773,6 @@ function Header() {
                                         </Button>
                                     </motion.div>
                                 ))}
-
-                                {/* Services dropdown for non-authenticated users */}
-                                {!isAuthenticated && (
-                                    <motion.div
-                                        initial="initial"
-                                        animate="animate"
-                                        exit="exit"
-                                        variants={menuItemVariants}
-                                        custom={menuItems.length}
-                                    >
-                                        <Box
-                                            onMouseEnter={handleServicesMenuEnter}
-                                            onMouseLeave={handleServicesMenuLeave}
-                                            sx={{ position: 'relative' }}
-                                        >
-                                            <Button
-                                                sx={{
-                                                    my: 2,
-                                                    mx: 1,
-                                                    color: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? 'primary.main' : 'inherit',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    fontWeight: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? 600 : 500,
-                                                    fontSize: '0.95rem',
-                                                    textTransform: 'none',
-                                                    position: 'relative',
-                                                    '&::after': {
-                                                        content: '""',
-                                                        position: 'absolute',
-                                                        width: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? '100%' : '0%',
-                                                        height: '2px',
-                                                        bottom: 0,
-                                                        left: 0,
-                                                        backgroundColor: 'primary.main',
-                                                        transition: 'width 0.3s ease-in-out',
-                                                        borderRadius: '2px',
-                                                        opacity: (location.pathname === '/services' || location.pathname === '/career-accelerator') ? 1 : 0,
-                                                    },
-                                                    '&:hover': {
-                                                        backgroundColor: 'transparent',
-                                                        '&::after': {
-                                                            width: '100%',
-                                                            opacity: 0.7,
-                                                        },
-                                                    },
-                                                }}
-                                            >
-                                                Services
-                                                <Box
-                                                    component="span"
-                                                    sx={{
-                                                        ml: 0.5,
-                                                        transition: 'transform 0.2s ease',
-                                                        transform: servicesMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                                                    }}
-                                                >
-                                                    ▼
-                                                </Box>
-                                            </Button>
-                                            <Menu
-                                                anchorEl={servicesAnchorEl}
-                                                open={servicesMenuOpen}
-                                                onClose={handleServicesMenuClose}
-                                                disableAutoFocus={true}
-                                                disableEnforceFocus={true}
-                                                disableRestoreFocus={true}
-                                                disableScrollLock={true}
-                                                MenuListProps={{
-                                                    'aria-labelledby': 'services-button',
-                                                    onMouseLeave: handleServicesMenuLeave,
-                                                    sx: {
-                                                        '&:focus': {
-                                                            outline: 'none',
-                                                        },
-                                                    },
-                                                }}
-                                                PaperProps={{
-                                                    sx: {
-                                                        mt: 1,
-                                                        minWidth: 180,
-                                                        borderRadius: theme.shape.borderRadius,
-                                                        boxShadow: theme.shadows[3],
-                                                        border: `1px solid ${theme.palette.divider}`,
-                                                        '& .MuiMenu-list': {
-                                                            padding: '8px 0',
-                                                        },
-                                                    },
-                                                    onMouseLeave: handleServicesMenuLeave,
-                                                }}
-                                                anchorOrigin={{
-                                                    vertical: 'bottom',
-                                                    horizontal: 'left',
-                                                }}
-                                                transformOrigin={{
-                                                    vertical: 'top',
-                                                    horizontal: 'left',
-                                                }}
-                                                slotProps={{
-                                                    backdrop: {
-                                                        invisible: true,
-                                                    },
-                                                }}
-                                            >
-                                                {servicesMenuItems.map((item) => (
-                                                    <MenuItem
-                                                        key={item.text}
-                                                        component={RouterLink}
-                                                        to={item.link}
-                                                        onClick={handleServicesMenuClose}
-                                                        sx={{
-                                                            my: 0.5,
-                                                            mx: 1,
-                                                            borderRadius: '6px',
-                                                            color: location.pathname === item.link ? 'primary.main' : 'text.primary',
-                                                            fontWeight: location.pathname === item.link ? 600 : 400,
-                                                            transition: 'background-color 0.2s, color 0.2s, font-weight 0.2s',
-                                                            '&:hover': {
-                                                                backgroundColor: theme.palette.action.hover,
-                                                            },
-                                                        }}
-                                                    >
-                                                        <Typography>{item.text}</Typography>
-                                                    </MenuItem>
-                                                ))}
-                                            </Menu>
-                                        </Box>
-                                    </motion.div>
-                                )}
                             </AnimatePresence>
                         </Box>
 
@@ -980,6 +792,8 @@ function Header() {
                                             sx={{
                                                 color: 'inherit',
                                                 borderColor: transparentMode ? 'rgba(16, 16, 23, 0.2)' : theme.palette.divider,
+                                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                                fontWeight: 400,
                                                 '&:hover': {
                                                     borderColor: transparentMode ? 'rgba(16, 16, 23, 0.5)' : theme.palette.text.primary,
                                                     backgroundColor: 'transparent',
@@ -1011,13 +825,14 @@ function Header() {
                                                 sx={{
                                                     width: 36,
                                                     height: 36,
-                                                    bgcolor: transparentMode ? 'rgba(255, 255, 255, 0.9)' : theme.palette.primary.light,
-                                                    color: theme.palette.primary.main,
+                                                    bgcolor: transparentMode ? 'rgba(255, 255, 255, 0.9)' : '#f7fafc',
+                                                    color: '#2d3748',
                                                     fontWeight: 'bold',
                                                     fontSize: '1rem',
-                                                    border: `2px solid ${theme.palette.primary.main}`,
+                                                    border: '2px solid #2d3748',
                                                     boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                                                     transition: 'all 0.2s ease',
+                                                    fontFamily: '"Georgia", "Times New Roman", serif',
                                                     '&:hover': {
                                                         boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
                                                     }
@@ -1043,6 +858,7 @@ function Header() {
                                             sx={{
                                                 color: 'inherit',
                                                 fontWeight: 500,
+                                                fontFamily: '"Georgia", "Times New Roman", serif',
                                                 '&:hover': {
                                                     backgroundColor: 'transparent',
                                                     opacity: 0.8,
@@ -1065,8 +881,13 @@ function Header() {
                                             color="primary"
                                             sx={{
                                                 fontWeight: 500,
+                                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                                backgroundColor: '#2d3748',
+                                                color: 'white',
                                                 '&:hover': {
                                                     transform: 'translateY(-2px)',
+                                                    backgroundColor: '#4a5568',
+                                                    boxShadow: '0 4px 12px rgba(45, 55, 72, 0.25)',
                                                 },
                                             }}
                                         >

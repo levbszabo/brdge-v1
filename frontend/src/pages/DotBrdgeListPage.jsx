@@ -283,37 +283,37 @@ const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate, theme }) 
                 <Box sx={styles.content}>
                     {/* Welcome Section */}
                     <Box sx={{ mb: 4, textAlign: 'center' }}>
-                        <Typography variant="h6" sx={{ color: theme.palette.primary.main, fontWeight: 600, mb: 1 }}>
-                            🚀 Welcome to DotBridge!
+                        <Typography variant="h6" sx={{ color: '#2d3748', fontWeight: 400, mb: 1, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                            Research Dashboard
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                            Your hub for creating interactive AI experiences from your video content. Let's get started!
+                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                            Manage your multimodal knowledge extraction experiments and research artifacts.
                         </Typography>
                     </Box>
 
                     <Divider sx={{ my: 2 }} />
 
                     {/* Key Sections Explained */}
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
-                        Dashboard Overview
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 400, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                        Research Components
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
                         {/* My Flows */}
                         <Box>
-                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <BookOpen size={16} color={theme.palette.secondary.main} /> My Flows ({totalCourses})
+                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 400, display: 'flex', alignItems: 'center', gap: 1, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                                <BookOpen size={16} color="#2d3748" /> Research Flows ({totalCourses})
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
-                                Organize your interactive 'Bridges' into logical sequences or learning paths. Think of them as chapters or topics.
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                                Organize knowledge extraction experiments into structured research workflows and methodological sequences.
                             </Typography>
                         </Box>
                         {/* My Bridges */}
                         <Box>
-                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Zap size={16} color={theme.palette.secondary.main} /> My Bridges ({totalBridges} / {userStats?.brdges_limit ?? 'N/A'})
+                            <Typography variant="body1" sx={{ mb: 0.5, fontWeight: 400, display: 'flex', alignItems: 'center', gap: 1, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                                <Zap size={16} color="#2d3748" /> Knowledge Bridges ({totalBridges} / {userStats?.brdges_limit ?? 'N/A'})
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5 }}>
-                                These are your individual AI agents created from videos. Drag them into 'Flows' above!
+                            <Typography variant="caption" color="text.secondary" sx={{ pl: 3.5, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                                Individual multimodal extraction experiments. Each represents a completed knowledge graph construction from source material.
                             </Typography>
                         </Box>
                         {/* Marketplace */}
@@ -339,8 +339,8 @@ const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate, theme }) 
                     <Divider sx={{ my: 3 }} />
 
                     {/* Quick Actions */}
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 500 }}>
-                        Quick Actions
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 400, fontFamily: '"Georgia", "Times New Roman", serif' }}>
+                        Research Actions
                     </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         <Button
@@ -348,9 +348,20 @@ const InfoSidebar = ({ isOpen, onToggle, userStats, courses, navigate, theme }) 
                             startIcon={<Plus size={16} />}
                             onClick={() => navigate('/create')}
                             size="small"
-                            sx={{ justifyContent: 'flex-start', textTransform: 'none' }}
+                            sx={{
+                                justifyContent: 'flex-start',
+                                textTransform: 'none',
+                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                fontWeight: 400,
+                                borderColor: '#2d3748',
+                                color: '#2d3748',
+                                '&:hover': {
+                                    borderColor: '#4a5568',
+                                    backgroundColor: 'rgba(45, 55, 72, 0.05)'
+                                }
+                            }}
                         >
-                            Create New Bridge
+                            New Extraction Experiment
                         </Button>
                         {/* Add "Create Flow" button later if needed */}
                     </Box>
@@ -574,23 +585,13 @@ function DotBrdgeListPage() {
     }, [navigate]);
 
     const getBridgeLimit = (accountType) => {
-        // Accept both 'premium' and 'pro' for the highest tier
-        switch (accountType?.toLowerCase()) {
-            case 'premium':
-            case 'pro': return 'Unlimited'; // Added 'pro'
-            case 'standard': return 10;
-            default: return 1;
-        }
+        // Open source version - generous limits for all users
+        return 100;
     };
 
     const getMinutesLimit = (accountType) => {
-        // Accept both 'premium' and 'pro' for the highest tier
-        switch (accountType?.toLowerCase()) {
-            case 'premium':
-            case 'pro': return 1000; // Added 'pro'
-            case 'standard': return 300;
-            default: return 30;
-        }
+        // Open source version - generous limits for all users
+        return 1000;
     };
 
     const fetchStats = async () => {
@@ -751,35 +752,18 @@ function DotBrdgeListPage() {
     };
 
     const isOverLimit = () => {
-        if (!userStats) return false;
-
-        // Only check for bridges being over limit since that's what matters for "Upgrade Plan" button
-        const isBridgesOverLimit =
-            userStats.brdges_limit !== 'Unlimited' &&
-            parseInt(userStats.brdges_created || 0) > parseInt(userStats.brdges_limit || 0);
-
-        return isBridgesOverLimit;
+        // Open source version - no limits
+        return false;
     };
 
     const getLimitExceededType = () => {
-        if (!userStats) return '';
-        if (userStats.brdges_limit !== 'Unlimited' && parseInt(userStats.brdges_created || 0) >= parseInt(userStats.brdges_limit || 0)) {
-            return 'Bridge';
-        }
-        if (parseInt(userStats.minutes_used || 0) >= parseInt(userStats.minutes_limit || 0)) {
-            return 'AI interaction minutes';
-        }
+        // Open source version - no limits
         return '';
     };
 
     const canCreateBridge = () => {
-        if (!userStats) return false;
-        if (userStats.brdges_limit === 'Unlimited') return true;
-
-        const currentLimit = parseInt(userStats.brdges_limit || 0);
-        const currentCount = parseInt(userStats.brdges_created || 0);
-        const underBridgeLimit = currentCount < currentLimit;
-        return underBridgeLimit;
+        // Open source version - always allow bridge creation
+        return true;
     };
 
     const handleCopyLink = () => {

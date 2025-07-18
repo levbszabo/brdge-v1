@@ -35,24 +35,11 @@ class UserAccount(db.Model):
         db.Integer, db.ForeignKey("user.id"), nullable=False, unique=True
     )
 
-    # Account Details
-    account_type = db.Column(db.String(20), default="free")
+    # Simplified Account Details for Open Source
+    account_type = db.Column(db.String(20), default="open_source")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    allow_overage = db.Column(
-        db.Boolean, default=True
-    )  # New column for overage control
 
-    # Stripe Integration
-    stripe_customer_id = db.Column(db.String(255))
-    stripe_subscription_id = db.Column(db.String(255))
-
-    # Billing Details
-    next_billing_date = db.Column(db.DateTime)
-    subscription_status = db.Column(
-        db.String(50)
-    )  # 'active', 'canceled', 'past_due', etc.
-
-    # Usage Stats
+    # Usage Stats (for analytics, no restrictions)
     total_brdges = db.Column(db.Integer, default=0)
     storage_used = db.Column(db.Float, default=0.0)  # in MB
     last_activity = db.Column(db.DateTime)
@@ -61,13 +48,6 @@ class UserAccount(db.Model):
         return {
             "account_type": self.account_type,
             "created_at": self.created_at.isoformat() if self.created_at else None,
-            "subscription_status": self.subscription_status,
-            "next_billing_date": (
-                self.next_billing_date.isoformat() if self.next_billing_date else None
-            ),
-            "stripe_customer_id": self.stripe_customer_id,
-            "stripe_subscription_id": self.stripe_subscription_id,
-            "allow_overage": self.allow_overage,
             "usage_stats": {
                 "total_brdges": self.total_brdges,
                 "storage_used": self.storage_used,

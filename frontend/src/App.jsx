@@ -6,7 +6,7 @@ import { Box, CircularProgress, GlobalStyles } from '@mui/material';
 import dotbridgeTheme from './dotbridgeTheme';
 import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header'; // Make sure you have this component
-import DotBridgeLandingPage from './pages/DotBridgeLandingPage'; // Import the new landing page
+import TechShowcaseLandingPage from './pages/TechShowcaseLandingPage'; // Import the new landing page
 import DotBrdgeListPage from './pages/DotBrdgeListPage'; // <-- Import the new page
 import CreateBrdgePage from './pages/CreateBrdgePage';
 import EditBrdgePage from './pages/EditBrdgePage';
@@ -233,7 +233,7 @@ function App() {
             <Layout>
               <Routes>
                 {/* Use the new Landing Page for the root route */}
-                <Route path="/" element={<DotBridgeLandingPage />} />
+                <Route path="/" element={<TechShowcaseLandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/viewBridge/:id" element={<ViewBrdgePage />} />
@@ -268,7 +268,7 @@ function App() {
                   path="/dashboard"
                   element={
                     <ProtectedRoute>
-                      <ClientDashboard />
+                      <DotBrdgeListPage />
                     </ProtectedRoute>
                   }
                 />
