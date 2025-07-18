@@ -712,14 +712,7 @@ function Header() {
                             }}
                         >
                             DotBridge
-                            <Box component="span" sx={{
-                                fontSize: '0.7rem',
-                                ml: 1,
-                                opacity: 0.7,
-                                fontWeight: 400
-                            }}>
-                                [Open Source]
-                            </Box>
+
                         </Typography>
 
                         {/* Desktop navigation */}

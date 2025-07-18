@@ -51,12 +51,13 @@ const HeroSection = () => {
                             align="center"
                             sx={{
                                 mb: 3,
-                                fontSize: { xs: '2.5rem', sm: '3.5rem', md: '4.5rem' },
+                                fontSize: { xs: '2rem', sm: '3.5rem', md: '4.5rem' },
                                 fontWeight: 300,
-                                lineHeight: 1.2,
+                                lineHeight: { xs: 1.3, md: 1.2 },
                                 color: '#2d3748',
                                 fontFamily: '"Georgia", "Times New Roman", serif',
-                                letterSpacing: '-0.02em'
+                                letterSpacing: '-0.02em',
+                                px: { xs: 1, sm: 0 }
                             }}
                         >
                             DotBridge Research Framework
@@ -73,10 +74,11 @@ const HeroSection = () => {
                                 mb: 2,
                                 maxWidth: '800px',
                                 mx: 'auto',
-                                fontSize: { xs: '1.1rem', sm: '1.25rem', md: '1.5rem' },
+                                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
                                 lineHeight: 1.6,
                                 fontWeight: 300,
-                                fontFamily: '"Georgia", "Times New Roman", serif'
+                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                px: { xs: 2, sm: 0 }
                             }}
                         >
                             A research framework for multipass knowledge extraction and structured knowledge graph construction from multimodal content
@@ -85,7 +87,7 @@ const HeroSection = () => {
 
                     {/* Tech Stack */}
                     <motion.div variants={fadeInUp}>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4, flexWrap: 'wrap', gap: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4, flexWrap: 'wrap', gap: 1, px: { xs: 2, sm: 0 } }}>
                             {['Multipass NLP', 'Knowledge Graphs', 'Structured Extraction', 'Python', 'React', 'Real-time Agents'].map((tech) => (
                                 <Chip
                                     key={tech}
@@ -112,6 +114,7 @@ const HeroSection = () => {
                             gap: 3,
                             justifyContent: 'center',
                             alignItems: 'center',
+                            px: { xs: 2, sm: 0 }
                         }}>
                             <DotBridgeButton
                                 variant="contained"
@@ -220,10 +223,11 @@ const TechnologySection = () => {
                             align="center"
                             sx={{
                                 mb: 2,
-                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' },
                                 fontWeight: 300,
                                 color: '#2d3748',
-                                fontFamily: '"Georgia", "Times New Roman", serif'
+                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                px: { xs: 2, sm: 0 }
                             }}
                         >
                             Research Methodology: Structured Knowledge Extraction
@@ -238,7 +242,8 @@ const TechnologySection = () => {
                                 mx: 'auto',
                                 fontWeight: 300,
                                 fontFamily: '"Georgia", "Times New Roman", serif',
-                                fontStyle: 'italic'
+                                fontStyle: 'italic',
+                                px: { xs: 2, sm: 0 }
                             }}
                         >
                             A systematic approach to multipass content analysis and knowledge graph construction from multimodal sources
@@ -334,10 +339,11 @@ const ApplicationsSection = () => {
                             align="center"
                             sx={{
                                 mb: 8,
-                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' },
                                 fontWeight: 300,
                                 color: '#2d3748',
-                                fontFamily: '"Georgia", "Times New Roman", serif'
+                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                px: { xs: 2, sm: 0 }
                             }}
                         >
                             Research Applications
@@ -419,7 +425,7 @@ const DemoSection = () => {
                             align="center"
                             sx={{
                                 mb: 3,
-                                fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' },
                                 fontWeight: 300,
                                 color: '#2d3748',
                                 fontFamily: '"Georgia", "Times New Roman", serif'
@@ -437,7 +443,8 @@ const DemoSection = () => {
                                 mx: 'auto',
                                 fontWeight: 300,
                                 fontFamily: '"Georgia", "Times New Roman", serif',
-                                fontStyle: 'italic'
+                                fontStyle: 'italic',
+                                px: { xs: 2, sm: 0 }
                             }}
                         >
                             Experience the multimodal knowledge extraction framework in operation
@@ -445,7 +452,9 @@ const DemoSection = () => {
                     </motion.div>
 
                     <motion.div variants={fadeInUp}>
+                        {/* Desktop Demo */}
                         <Box sx={{
+                            display: { xs: 'none', md: 'block' },
                             maxWidth: '1000px',
                             mx: 'auto',
                             borderRadius: 3,
@@ -489,6 +498,54 @@ const DemoSection = () => {
                                 />
                             </Box>
                         </Box>
+
+                        {/* Mobile Demo Link */}
+                        <Box sx={{
+                            display: { xs: 'block', md: 'none' },
+                            textAlign: 'center',
+                            px: 2
+                        }}>
+                            <Paper sx={{
+                                p: 4,
+                                bgcolor: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: 3
+                            }}>
+                                <Typography variant="h6" sx={{
+                                    mb: 2,
+                                    color: '#2d3748',
+                                    fontFamily: '"Georgia", "Times New Roman", serif',
+                                    fontWeight: 400
+                                }}>
+                                    Interactive Demo Available
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{
+                                    mb: 3,
+                                    fontFamily: '"Georgia", "Times New Roman", serif',
+                                    lineHeight: 1.6
+                                }}>
+                                    Experience the full interactive demo on desktop for the best experience
+                                </Typography>
+                                <DotBridgeButton
+                                    variant="contained"
+                                    size="large"
+                                    component={Link}
+                                    to={`/viewBridge/${DEMO_BRIDGE_ID}`}
+                                    startIcon={<DotBridgeIcon name="Play" />}
+                                    sx={{
+                                        px: 4,
+                                        py: 2,
+                                        fontSize: '1rem',
+                                        fontWeight: 400,
+                                        backgroundColor: '#2d3748',
+                                        fontFamily: '"Georgia", "Times New Roman", serif',
+                                        '&:hover': { backgroundColor: '#4a5568' }
+                                    }}
+                                >
+                                    Try Interactive Demo
+                                </DotBridgeButton>
+                            </Paper>
+                        </Box>
                     </motion.div>
                 </motion.div>
             </Container>
@@ -513,18 +570,21 @@ const AboutSection = () => {
                             <motion.div variants={fadeInUp}>
                                 <Typography variant="h3" sx={{
                                     mb: 4,
+                                    fontSize: { xs: '1.6rem', sm: '2rem', md: '2.5rem' },
                                     fontWeight: 300,
                                     color: '#2d3748',
-                                    fontFamily: '"Georgia", "Times New Roman", serif'
+                                    fontFamily: '"Georgia", "Times New Roman", serif',
+                                    px: { xs: 2, sm: 0 }
                                 }}>
                                     Research Background
                                 </Typography>
                                 <Typography variant="body1" sx={{
                                     mb: 4,
-                                    fontSize: '1.125rem',
+                                    fontSize: { xs: '1rem', sm: '1.125rem' },
                                     lineHeight: 1.7,
                                     color: '#4a5568',
-                                    fontFamily: '"Georgia", "Times New Roman", serif'
+                                    fontFamily: '"Georgia", "Times New Roman", serif',
+                                    px: { xs: 2, sm: 0 }
                                 }}>
                                     DotBridge was developed to explore systematic approaches to multimodal knowledge extraction,
                                     real-time agent architectures, and structured content analysis. Originally conceived as a commercial
@@ -533,16 +593,17 @@ const AboutSection = () => {
                                 </Typography>
                                 <Typography variant="body1" sx={{
                                     mb: 4,
-                                    fontSize: '1.125rem',
+                                    fontSize: { xs: '1rem', sm: '1.125rem' },
                                     lineHeight: 1.7,
                                     color: '#4a5568',
-                                    fontFamily: '"Georgia", "Times New Roman", serif'
+                                    fontFamily: '"Georgia", "Times New Roman", serif',
+                                    px: { xs: 2, sm: 0 }
                                 }}>
                                     The system demonstrates novel techniques for production-scale multimodal AI deployment,
                                     with particular relevance to alternative data processing in quantitative finance,
                                     automated research workflows, and conversational AI systems.
                                 </Typography>
-                                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', px: { xs: 2, sm: 0 } }}>
                                     <Button
                                         variant="outlined"
                                         href="https://journeymanai.io"

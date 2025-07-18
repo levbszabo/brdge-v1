@@ -2,11 +2,11 @@
 
 **A research framework for multipass knowledge extraction and structured knowledge graph construction from multimodal content**
 
-![DotBridge Demo](https://img.shields.io/badge/demo-live-brightgreen) ![Python](https://img.shields.io/badge/python-3.8+-blue) ![React](https://img.shields.io/badge/react-18+-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.8+-blue) ![React](https://img.shields.io/badge/react-18+-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 🚀 Quick Start
 
-[**Try the Live Demo**](https://your-demo-url.com) | [**Creator Portfolio**](https://journeymanai.io)
+[**View Repository**](https://github.com/levbszabo/brdge-v1) | [**Creator Portfolio**](https://journeymanai.io)
 
 ## What is DotBridge?
 
