@@ -163,7 +163,7 @@ python3 app.py
 # Terminal 3 - brdge-v1: Backend (LiveKit Agent)
 cd brdge-v1/backend
 source venv/bin/activate # On Windows: venv\Scripts\activate
-python3 agent_realtime.py dev
+python3 agent.py dev
 
 # Terminal 4 - livekit-agents: Frontend (Next.js Playground)
 # See the livekit-agents repo for specific setup instructions.
