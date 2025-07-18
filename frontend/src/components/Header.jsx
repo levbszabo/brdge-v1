@@ -160,11 +160,11 @@ function Header() {
                 text: userRole === 'admin' ? 'Admin Dashboard' : 'Research Dashboard',
                 link: userRole === 'admin' ? '/admin' : '/dashboard'
             },
-            { text: 'GitHub', link: 'https://github.com/your-username/dotbridge', external: true }
+            { text: 'GitHub', link: 'https://github.com/levbszabo/brdge-v1', external: true }
         ]
         : [
             { text: 'Demo', link: `/viewBridge/${DEMO_BRIDGE_ID || '447'}` },
-            { text: 'GitHub', link: 'https://github.com/your-username/dotbridge', external: true },
+            { text: 'GitHub', link: 'https://github.com/levbszabo/brdge-v1', external: true },
             { text: 'Principal Investigator', link: 'https://journeymanai.io', external: true }
         ];
 

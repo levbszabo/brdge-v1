@@ -1,6 +1,6 @@
-# DotBridge - Open Source Multimodal AI Framework
+# DotBridge Research Framework
 
-**Transform any video or document into an intelligent, interactive AI agent**
+**A research framework for multipass knowledge extraction and structured knowledge graph construction from multimodal content**
 
 ![DotBridge Demo](https://img.shields.io/badge/demo-live-brightgreen) ![Python](https://img.shields.io/badge/python-3.8+-blue) ![React](https://img.shields.io/badge/react-18+-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -10,26 +10,26 @@
 
 ## What is DotBridge?
 
-DotBridge is an open-source framework that demonstrates advanced multimodal AI techniques for transforming static content into intelligent, interactive experiences. Originally developed as a commercial product, it's now open-sourced to advance research in:
+DotBridge is an open-source research framework that demonstrates advanced multimodal AI techniques for systematic knowledge extraction and interactive agent construction. Originally developed as a commercial product, it's now open-sourced to advance research in:
 
-- **Systematic knowledge extraction** from unstructured content
-- **Real-time AI agent architectures** with memory and context
-- **Vector database optimization** for conversational AI
-- **Production deployment** of multimodal AI systems
+- **Systematic knowledge extraction** from unstructured multimodal content
+- **Structured knowledge graph construction** from diverse content sources
+- **Real-time AI agent architectures** with contextual awareness
+- **Production deployment** of multimodal AI research systems
 
-## 🧠 Core Innovation: The "Bridge" System
+## 🧠 Core Innovation: Research Methodology
 
-### 1. **Multipass Extraction**
-Systematically extract knowledge from video, audio, and documents using advanced NLP and content analysis pipelines.
+### 1. **Multipass Content Analysis**
+Sequential extraction pipeline analyzing content structure, temporal components, and semantic relationships across modalities.
 
-### 2. **Vector Knowledge Base**
-Store and retrieve information using semantic search with optimized vector databases (FAISS, Pinecone, etc.).
+### 2. **Knowledge Graph Construction**
+Structured representation including teaching personas, engagement opportunities, timeline mappings, and Q&A derivations.
 
-### 3. **Real-time AI Agents**
-Interactive voice and text agents with memory, context awareness, and personalized conversation flows.
+### 3. **Agent Instantiation Framework**
+Dynamic agent configuration utilizing extracted knowledge graphs for contextually-aware conversational interfaces.
 
-### 4. **Personalization Engine**
-Adapt interactions based on user profiles, conversation history, and contextual data.
+### 4. **Temporal Engagement Mapping**
+Time-synchronized interaction opportunities derived from content analysis and embedded within agent response patterns.
 
 ## 🏗️ Architecture
 
@@ -37,7 +37,7 @@ Adapt interactions based on user profiles, conversation history, and contextual 
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Content       │    │   Extraction     │    │   Knowledge     │
 │   Input         │───▶│   Pipeline       │───▶│   Base          │
-│   (Video/Docs)  │    │   (Multi-pass)   │    │   (Vector DB)   │
+│   (Video/Docs)  │    │   (Multi-pass)   │    │   (Knowledge Graph)   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                                          │
 ┌─────────────────┐    ┌──────────────────┐             │
@@ -74,7 +74,6 @@ Adapt interactions based on user profiles, conversation history, and contextual 
 - **Flask** - Web framework
 - **OpenAI API** - Language model integration
 - **LiveKit** - Real-time communication
-- **Vector Databases** - FAISS, Pinecone, PGVector
 - **AWS Services** - S3, Lambda, CloudWatch
 
 ### Frontend
@@ -89,6 +88,11 @@ Adapt interactions based on user profiles, conversation history, and contextual 
 - **Whisper** - Speech-to-text
 - **TTS Services** - Text-to-speech (Cartesia, OpenAI)
 
+### Real-time Communication
+- **LiveKit Agents** - Real-time voice AI agents ([separate repo](https://github.com/levbszabo/livekit-agents))
+- **WebRTC** - Real-time communication protocol
+- **Voice Activity Detection** - Intelligent conversation flow
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -96,17 +100,30 @@ Adapt interactions based on user profiles, conversation history, and contextual 
 - Node.js 16+
 - PostgreSQL (optional, for vector storage)
 
+### Required Repositories
+This project requires two repositories to run the complete system:
+
+1. **Main Application** (this repo): [https://github.com/levbszabo/brdge-v1](https://github.com/levbszabo/brdge-v1)
+2. **LiveKit Agents Framework**: [https://github.com/levbszabo/livekit-agents](https://github.com/levbszabo/livekit-agents)
+
+The LiveKit agents repository contains the real-time voice AI system built on the LiveKit agents framework. You'll need to set up both repositories for full functionality.
+
 ### Installation
 
-1. **Clone the repository**
+1. **Clone the repositories**
    ```bash
-   git clone https://github.com/your-username/dotbridge.git
-   cd dotbridge
+   # Main application
+   git clone https://github.com/levbszabo/brdge-v1.git
+   cd brdge-v1
+   
+   # LiveKit agents (in a separate directory)
+   cd ..
+   git clone https://github.com/levbszabo/livekit-agents.git
    ```
 
 2. **Backend Setup**
    ```bash
-   cd backend
+   cd brdge-v1/backend
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
@@ -114,7 +131,7 @@ Adapt interactions based on user profiles, conversation history, and contextual 
 
 3. **Frontend Setup**
    ```bash
-   cd frontend
+   cd ../frontend
    npm install
    ```
 
@@ -130,16 +147,29 @@ Adapt interactions based on user profiles, conversation history, and contextual 
    NEXT_PUBLIC_LIVEKIT_URL=wss://your-livekit-url
    ```
 
-5. **Run the Application**
-   ```bash
-   # Terminal 1 - Backend
-   cd backend
-   python app.py
-   
-   # Terminal 2 - Frontend
-   cd frontend
-   npm start
-   ```
+### Run the Application
+To run the full application, you will need to run four separate services across the `brdge-v1` and `livekit-agents` repositories.
+
+```bash
+# Terminal 1 - brdge-v1: Frontend (React)
+cd brdge-v1/frontend
+npm start
+
+# Terminal 2 - brdge-v1: Backend (Flask)
+cd brdge-v1/backend
+source venv/bin/activate # On Windows: venv\Scripts\activate
+python3 app.py
+
+# Terminal 3 - brdge-v1: Backend (LiveKit Agent)
+cd brdge-v1/backend
+source venv/bin/activate # On Windows: venv\Scripts\activate
+python3 agent_realtime.py dev
+
+# Terminal 4 - livekit-agents: Frontend (Next.js Playground)
+# See the livekit-agents repo for specific setup instructions.
+cd livekit-agents
+npm run dev
+```
 
 Visit `http://localhost:3000` to see the application.
 
@@ -149,7 +179,7 @@ Visit `http://localhost:3000` to see the application.
 
 - **Bridges**: Interactive AI agents created from source content
 - **Extraction Pipeline**: Multi-pass content analysis system
-- **Knowledge Base**: Vector-stored information with semantic search
+- **Knowledge Graph**: Structured representation of content with concepts, timelines, and relationships to power the AI.
 - **Personalization**: User-specific conversation customization
 
 ### API Endpoints
@@ -188,7 +218,7 @@ This system demonstrates techniques directly applicable to:
 ### AI Engineering
 - Production ML system design
 - Real-time conversation systems
-- Vector database optimization
+- Knowledge graph construction from multimodal data
 - Multimodal AI architectures
 
 ## 🤝 Contributing
@@ -208,12 +238,12 @@ We welcome contributions! This project is ideal for:
 4. Add tests and documentation
 5. Submit a pull request
 
-## 📊 Performance & Scalability
+## 📊 Performance & Research Metrics
 
 - **Extraction Speed**: ~30 seconds per 10-minute video
 - **Response Latency**: <200ms for typical queries
 - **Concurrent Users**: 100+ (with proper scaling)
-- **Storage**: Optimized vector compression
+- **Knowledge Graph**: Optimized structured representation
 
 ## 🛡️ Security & Privacy
 
@@ -238,22 +268,23 @@ Built by [Levente Szabo](https://journeymanai.io), an AI engineer with experienc
 
 ## 🔗 Links
 
-- **Live Demo**: [Try DotBridge](https://your-demo-url.com)
+- **Main Repository**: [https://github.com/levbszabo/brdge-v1](https://github.com/levbszabo/brdge-v1)
+- **LiveKit Agents**: [https://github.com/levbszabo/livekit-agents](https://github.com/levbszabo/livekit-agents)
 - **Creator Portfolio**: [journeymanai.io](https://journeymanai.io)
 - **Documentation**: [Coming Soon]
 - **Research Papers**: [Coming Soon]
 
-## 📈 Roadmap
+## 📈 Research Roadmap
 
-- [ ] Enhanced vector database integrations
-- [ ] Multi-language support
-- [ ] Advanced analytics dashboard
-- [ ] Plugin architecture
+- [ ] Enhanced knowledge graph construction algorithms
+- [ ] Multi-language content analysis
+- [ ] Advanced analytics dashboard for research insights
+- [ ] Plugin architecture for extensibility
 - [ ] Cloud deployment templates
-- [ ] Performance optimization guides
+- [ ] Performance optimization guides for large-scale research
 
 ---
 
 **Star this repo if you find it useful for your research or projects!** ⭐
 
-*This project represents the evolution from a commercial product to an open-source research contribution. The techniques demonstrated here are applicable to a wide range of AI engineering challenges, particularly in financial technology and alternative data processing.*
+*This project represents the evolution from a commercial product to an open-source research contribution. The techniques demonstrated here are applicable to a wide range of AI engineering challenges, particularly in multimodal content analysis and structured knowledge extraction.*

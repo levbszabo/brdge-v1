@@ -136,7 +136,7 @@ const HeroSection = () => {
                             <DotBridgeButton
                                 variant="outlined"
                                 size="large"
-                                href="https://github.com/your-username/dotbridge"
+                                href="https://github.com/levbszabo/brdge-v1"
                                 target="_blank"
                                 startIcon={<DotBridgeIcon name="Github" />}
                                 sx={{
@@ -562,7 +562,7 @@ const AboutSection = () => {
                                     </Button>
                                     <Button
                                         variant="outlined"
-                                        href="https://github.com/your-username/dotbridge"
+                                        href="https://github.com/levbszabo/brdge-v1"
                                         target="_blank"
                                         sx={{
                                             borderColor: '#2d3748',
