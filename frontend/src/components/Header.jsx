@@ -12,37 +12,21 @@ import {
     ListItemButton,
     ListItemText,
     Avatar,
-    useScrollTrigger,
-    Divider,
-    Menu,
-    MenuItem,
     Container,
-    Slide,
     useMediaQuery
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import CloseIcon from '@mui/icons-material/Close';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../App';
 import { logout } from '../utils/auth';
 import { useTheme } from '@mui/material/styles';
 import { api } from '../api';
-import PersonIcon from '@mui/icons-material/Person';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Demo bridge ID for navigation
 const DEMO_BRIDGE_ID = '447';
 
-function HideOnScroll(props) {
-    const { children } = props;
-    const trigger = useScrollTrigger();
 
-    return (
-        <Slide appear={false} direction="down" in={!trigger}>
-            {children}
-        </Slide>
-    );
-}
 
 function Header() {
     const { isAuthenticated, setIsAuthenticated, userRole } = useContext(AuthContext);
@@ -52,21 +36,15 @@ function Header() {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
     const location = useLocation();
-    const [anchorElNav, setAnchorElNav] = useState(null);
-    const [servicesAnchorEl, setServicesAnchorEl] = useState(null);
-    const [servicesMenuOpen, setServicesMenuOpen] = useState(false);
 
     // Determine if we're on the landing page
     const isLandingPage = location.pathname === '/';
 
-    // Track scroll position for transparent to solid transition
-    const scrollTrigger = useScrollTrigger({
-        disableHysteresis: true,
-        threshold: 20,
-    });
-
     // State for scroll position to handle transparency
     const [scrollPosition, setScrollPosition] = useState(0);
+
+    // Use scroll position for transparent to solid transition
+    const scrollTrigger = scrollPosition > 20;
 
     // Track scroll position
     useEffect(() => {
@@ -122,92 +100,63 @@ function Header() {
         if (isMobile) setDrawerOpen(false);
     }, [navigate, isMobile]);
 
-    const handleOpenNavMenu = (event) => {
-        setAnchorElNav(event.currentTarget);
-    };
 
-    const handleCloseNavMenu = () => {
-        setAnchorElNav(null);
-    };
 
-    const handleServicesMenuEnter = (event) => {
-        setServicesAnchorEl(event.currentTarget);
-        setServicesMenuOpen(true);
-    };
 
-    const handleServicesMenuLeave = () => {
-        // Blur any focused element before closing to prevent aria-hidden warnings
-        if (document.activeElement && document.activeElement.blur) {
-            document.activeElement.blur();
-        }
-        setServicesMenuOpen(false);
-        setServicesAnchorEl(null);
-    };
 
-    const handleServicesMenuClose = () => {
-        // Blur any focused element before closing to prevent aria-hidden warnings
-        if (document.activeElement && document.activeElement.blur) {
-            document.activeElement.blur();
-        }
-        setServicesMenuOpen(false);
-        setServicesAnchorEl(null);
-    };
-
-    // Updated menu items for open source project
+    // Updated menu items for academic research project
     const menuItems = isAuthenticated
         ? [
             {
                 text: userRole === 'admin' ? 'Admin Dashboard' : 'Research Dashboard',
                 link: userRole === 'admin' ? '/admin' : '/dashboard'
             },
-            { text: 'GitHub', link: 'https://github.com/levbszabo/brdge-v1', external: true }
+            { text: 'Repository', link: 'https://github.com/levbszabo/brdge-v1', external: true }
         ]
         : [
             { text: 'Demo', link: `/viewBridge/${DEMO_BRIDGE_ID || '447'}` },
-            { text: 'GitHub', link: 'https://github.com/levbszabo/brdge-v1', external: true },
-            { text: 'Principal Investigator', link: 'https://journeymanai.io', external: true }
+            { text: 'Repository', link: 'https://github.com/levbszabo/brdge-v1', external: true },
+            { text: 'Contact Researcher', link: 'https://journeymanai.io', external: true }
         ];
 
-    // Remove services dropdown for open source version
+    // Remove services dropdown for research version
     const servicesMenuItems = [];
 
-    // Academic menu button styles
+    // Academic menu button styles - cleaner and more minimal
     const menuItemStyle = {
-        color: '#4a5568',
+        color: '#1a1a2e',
         fontWeight: 400,
-        fontFamily: '"Georgia", "Times New Roman", serif',
+        fontFamily: '"Inter", sans-serif',
         textTransform: 'none',
         fontSize: '0.9375rem',
-        padding: '6px 16px',
-        borderRadius: theme.shape.borderRadius,
+        padding: '8px 16px',
+        borderRadius: '2px',
         transition: 'all 0.2s ease',
         '&:hover': {
-            color: '#2d3748',
-            backgroundColor: 'rgba(45, 55, 72, 0.05)'
+            color: '#0f172a',
+            backgroundColor: 'rgba(26, 26, 46, 0.04)'
         }
     };
 
-    // Academic Sign Up button style
-    const signUpButtonStyle = {
-        backgroundColor: '#2d3748',
+    // Academic button style - minimal and clean
+    const academicButtonStyle = {
+        backgroundColor: '#1a1a2e',
         color: 'white',
-        padding: '8px 24px',
+        padding: '8px 20px',
         fontSize: '0.875rem',
-        fontWeight: 400,
-        marginLeft: '8px',
-        borderRadius: theme.shape.borderRadius,
+        fontWeight: 500,
+        marginLeft: '12px',
+        borderRadius: '2px',
         textTransform: 'none',
         boxShadow: 'none',
-        fontFamily: '"Georgia", "Times New Roman", serif',
+        fontFamily: '"Inter", sans-serif',
         transition: 'all 0.2s ease',
         '&:hover': {
-            backgroundColor: '#4a5568',
-            boxShadow: '0 4px 12px rgba(45, 55, 72, 0.25)',
-            transform: 'translateY(-1px)',
+            backgroundColor: '#0f172a',
+            boxShadow: '0 2px 4px rgba(26, 26, 46, 0.15)',
         },
         '&:active': {
-            transform: 'translateY(0)',
-            boxShadow: 'none',
+            transform: 'scale(0.98)',
         }
     };
 
@@ -220,7 +169,7 @@ function Header() {
                         component={RouterLink}
                         to={item.link}
                         size="small"
-                        sx={signUpButtonStyle}
+                        sx={academicButtonStyle}
                     >
                         {item.text}
                     </Button>
@@ -268,190 +217,229 @@ function Header() {
         }
     };
 
+    // Enhanced mobile menu with better styling
     const renderMobileMenu = () => (
         <Box
             sx={{
                 width: 'auto',
-                pt: { xs: 6, sm: 7 },
+                pt: { xs: 7, sm: 8 },
                 pb: 3,
-                px: { xs: 1, sm: 2 },
+                px: { xs: 2, sm: 3 },
+                minHeight: '100vh',
+                backgroundColor: 'rgba(253, 253, 253, 0.98)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
             }}
             role="presentation"
         >
-            <List>
+            <List sx={{ pt: 2 }}>
                 {/* Dashboard (only for authenticated users) */}
                 {isAuthenticated && (
-                    <ListItem disablePadding>
+                    <ListItem disablePadding sx={{ mb: 1 }}>
                         <ListItemButton
                             component={RouterLink}
                             to={userRole === 'admin' ? '/admin' : '/dashboard'}
                             onClick={() => setDrawerOpen(false)}
                             sx={{
-                                ...drawerItemStyle,
-                                backgroundColor: 'rgba(45, 55, 72, 0.08)',
-                            }}
-                        >
-                            <ListItemText primary={userRole === 'admin' ? 'Admin Dashboard' : 'Research Dashboard'} />
-                        </ListItemButton>
-                    </ListItem>
-                )}
-
-                {/* Bridge Builder (only for authenticated non-admin users) */}
-                {isAuthenticated && userRole !== 'admin' && (
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            component={RouterLink}
-                            to="/bridges"
-                            onClick={() => setDrawerOpen(false)}
-                            sx={drawerItemStyle}
-                        >
-                            <ListItemText primary="Bridge Builder" />
-                        </ListItemButton>
-                    </ListItem>
-                )}
-
-                {/* Marketplace (for all users) */}
-                <ListItem disablePadding>
-                    <ListItemButton
-                        component={RouterLink}
-                        to="/demos"
-                        onClick={() => setDrawerOpen(false)}
-                        sx={{
-                            ...drawerItemStyle,
-                        }}
-                    >
-                        <ListItemText primary="Demos" />
-                    </ListItemButton>
-                </ListItem>
-
-                {/* Blog (for all users) */}
-                <ListItem disablePadding>
-                    <ListItemButton
-                        component={RouterLink}
-                        to="/blog"
-                        onClick={() => setDrawerOpen(false)}
-                        sx={{
-                            ...drawerItemStyle,
-                        }}
-                    >
-                        <ListItemText primary="Blog" />
-                    </ListItemButton>
-                </ListItem>
-
-                {/* Careers (for all users) */}
-                <ListItem disablePadding>
-                    <ListItemButton
-                        component={RouterLink}
-                        to="/careers"
-                        onClick={() => setDrawerOpen(false)}
-                        sx={{
-                            ...drawerItemStyle,
-                        }}
-                    >
-                        <ListItemText primary="Careers" />
-                    </ListItemButton>
-                </ListItem>
-
-                {/* Contact (for all users) */}
-                <ListItem disablePadding>
-                    <ListItemButton
-                        component={RouterLink}
-                        to="/contact"
-                        onClick={() => setDrawerOpen(false)}
-                        sx={{
-                            ...drawerItemStyle,
-                        }}
-                    >
-                        <ListItemText primary="Contact" />
-                    </ListItemButton>
-                </ListItem>
-
-                {/* Handling Login/Logout */}
-                {isAuthenticated ? (
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            onClick={() => {
-                                handleLogout();
-                                setDrawerOpen(false);
-                            }}
-                            sx={{
-                                ...drawerItemStyle,
-                            }}
-                        >
-                            <ListItemText primary="Logout" />
-                        </ListItemButton>
-                    </ListItem>
-                ) : (
-                    <>
-                        <ListItem disablePadding>
-                            <ListItemButton
-                                component={RouterLink}
-                                to="/login"
-                                onClick={() => setDrawerOpen(false)}
-                                sx={{
-                                    ...drawerItemStyle,
-                                }}
-                            >
-                                <ListItemText primary="Login" />
-                            </ListItemButton>
-                        </ListItem>
-                        <ListItem disablePadding sx={{ mt: 1, px: 2 }}>
-                            <ListItemButton
-                                component={RouterLink}
-                                to="/signup"
-                                onClick={() => setDrawerOpen(false)}
-                                sx={{
-                                    ...drawerSignUpStyle,
-                                    py: 1,
-                                }}
-                            >
-                                <ListItemText primary="Sign Up" />
-                            </ListItemButton>
-                        </ListItem>
-                    </>
-                )}
-            </List>
-
-            {/* Profile Link (only for authenticated users) */}
-            {isAuthenticated && (
-                <>
-                    <Divider sx={{ my: 1.5, borderColor: theme.palette.divider + '60' }} />
-                    <ListItem disablePadding>
-                        <ListItemButton
-                            onClick={() => {
-                                handleProfileClick();
-                                setDrawerOpen(false);
-                            }}
-                            sx={{
-                                ...drawerItemStyle,
+                                borderRadius: '8px',
                                 py: 1.5,
+                                px: 2,
+                                backgroundColor: 'rgba(26, 26, 46, 0.06)',
+                                '&:hover': {
+                                    backgroundColor: 'rgba(26, 26, 46, 0.1)',
+                                },
                             }}
                         >
-                            <Avatar
-                                sx={{
-                                    width: 32,
-                                    height: 32,
-                                    mr: 2,
-                                    bgcolor: theme.palette.primary.light,
-                                    color: theme.palette.primary.main,
-                                    border: `2px solid ${theme.palette.primary.main}`,
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.9rem',
-                                }}
-                            >
-                                {avatarLetter}
-                            </Avatar>
                             <ListItemText
-                                primary="Profile"
+                                primary={userRole === 'admin' ? 'Admin Dashboard' : 'Research Dashboard'}
                                 primaryTypographyProps={{
+                                    fontFamily: '"Inter", sans-serif',
                                     fontWeight: 500,
-                                    fontSize: '1rem',
+                                    color: '#1a1a2e',
                                 }}
                             />
                         </ListItemButton>
                     </ListItem>
-                </>
+                )}
+
+                {/* Main menu items */}
+                {menuItems.map((item, index) => (
+                    <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                        <ListItemButton
+                            component={item.link?.startsWith('http') ? 'a' : RouterLink}
+                            to={!item.link?.startsWith('http') ? item.link : undefined}
+                            href={item.link?.startsWith('http') ? item.link : undefined}
+                            target={item.link?.startsWith('http') ? '_blank' : undefined}
+                            onClick={() => setDrawerOpen(false)}
+                            sx={{
+                                borderRadius: '6px',
+                                py: 1.5,
+                                px: 2,
+                                '&:hover': {
+                                    backgroundColor: 'rgba(26, 26, 46, 0.04)',
+                                },
+                            }}
+                        >
+                            <ListItemText
+                                primary={item.text}
+                                primaryTypographyProps={{
+                                    fontFamily: '"Inter", sans-serif',
+                                    fontWeight: 400,
+                                    color: '#4b5563',
+                                    fontSize: '0.9375rem',
+                                }}
+                            />
+                        </ListItemButton>
+                    </ListItem>
+                ))}
+
+                {/* Contact (for all users) */}
+                <ListItem disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                        component="a"
+                        href="https://journeymanai.io"
+                        target="_blank"
+                        onClick={() => setDrawerOpen(false)}
+                        sx={{
+                            borderRadius: '6px',
+                            py: 1.5,
+                            px: 2,
+                            '&:hover': {
+                                backgroundColor: 'rgba(26, 26, 46, 0.04)',
+                            },
+                        }}
+                    >
+                        <ListItemText
+                            primary="Contact"
+                            primaryTypographyProps={{
+                                fontFamily: '"Inter", sans-serif',
+                                fontWeight: 400,
+                                color: '#4b5563',
+                                fontSize: '0.9375rem',
+                            }}
+                        />
+                    </ListItemButton>
+                </ListItem>
+
+                {/* Auth section */}
+                <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid rgba(229, 231, 235, 0.5)' }}>
+                    {isAuthenticated ? (
+                        <ListItem disablePadding>
+                            <ListItemButton
+                                onClick={() => {
+                                    handleLogout();
+                                    setDrawerOpen(false);
+                                }}
+                                sx={{
+                                    borderRadius: '6px',
+                                    py: 1.5,
+                                    px: 2,
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(239, 68, 68, 0.04)',
+                                    },
+                                }}
+                            >
+                                <ListItemText
+                                    primary="Logout"
+                                    primaryTypographyProps={{
+                                        fontFamily: '"Inter", sans-serif',
+                                        fontWeight: 400,
+                                        color: '#ef4444',
+                                        fontSize: '0.9375rem',
+                                    }}
+                                />
+                            </ListItemButton>
+                        </ListItem>
+                    ) : (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            <Button
+                                component={RouterLink}
+                                to="/login"
+                                variant="outlined"
+                                fullWidth
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    py: 1.5,
+                                    fontFamily: '"Inter", sans-serif',
+                                    fontWeight: 400,
+                                    borderRadius: '6px',
+                                }}
+                            >
+                                Login
+                            </Button>
+                            <Button
+                                component={RouterLink}
+                                to="/signup"
+                                variant="contained"
+                                fullWidth
+                                onClick={() => setDrawerOpen(false)}
+                                sx={{
+                                    py: 1.5,
+                                    fontFamily: '"Inter", sans-serif',
+                                    fontWeight: 500,
+                                    borderRadius: '6px',
+                                }}
+                            >
+                                Sign Up
+                            </Button>
+                        </Box>
+                    )}
+                </Box>
+            </List>
+
+            {/* Profile section for authenticated users */}
+            {isAuthenticated && (
+                <Box sx={{
+                    mt: 3,
+                    pt: 3,
+                    borderTop: '1px solid rgba(229, 231, 235, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    px: 2
+                }}>
+                    <Avatar
+                        sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: '#f8fafc',
+                            color: '#1a1a2e',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            border: '1px solid #e5e7eb',
+                            fontFamily: '"Inter", sans-serif',
+                        }}
+                        onClick={() => {
+                            handleProfileClick();
+                            setDrawerOpen(false);
+                        }}
+                    >
+                        {avatarLetter}
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 500,
+                                color: '#1a1a2e',
+                                fontFamily: '"Inter", sans-serif',
+                                fontSize: '0.875rem'
+                            }}
+                        >
+                            Profile
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: '#6b7280',
+                                fontFamily: '"Inter", sans-serif',
+                                fontSize: '0.75rem'
+                            }}
+                        >
+                            {userEmail}
+                        </Typography>
+                    </Box>
+                </Box>
             )}
         </Box>
     );
@@ -484,24 +472,33 @@ function Header() {
     };
 
     return (
-        <HideOnScroll>
+        <>
             <AppBar
                 position="fixed"
                 sx={{
-                    backgroundColor: transparentMode ? 'transparent' : '#fefefe',
-                    boxShadow: transparentMode ? 'none' : '0 1px 2px rgba(45, 55, 72, 0.08)',
-                    color: transparentMode ? '#2d3748' : '#2d3748',
-                    transition: 'all 0.3s ease',
-                    backdropFilter: !transparentMode ? 'blur(10px)' : 'none',
-                    borderBottom: !transparentMode ? '1px solid #e2e8f0' : 'none',
+                    backgroundColor: transparentMode ? 'transparent' : 'background.glass',
+                    boxShadow: transparentMode ? 'none' : '0 1px 2px rgba(26, 26, 46, 0.06)',
+                    color: '#1a1a2e',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    backdropFilter: !transparentMode ? 'blur(16px)' : 'none',
+                    WebkitBackdropFilter: !transparentMode ? 'blur(16px)' : 'none',
+                    borderBottom: !transparentMode ? '1px solid rgba(229, 231, 235, 0.3)' : 'none',
+                    // Enhanced mobile styling
+                    '@media (max-width: 768px)': {
+                        backgroundColor: transparentMode ? 'rgba(253, 253, 253, 0.8)' : 'rgba(253, 253, 253, 0.95)',
+                        backdropFilter: 'blur(20px)',
+                        WebkitBackdropFilter: 'blur(20px)',
+                        borderBottom: '1px solid rgba(229, 231, 235, 0.2)',
+                    },
                 }}
             >
                 <Container maxWidth="lg">
                     <Toolbar disableGutters sx={{
                         height: { xs: 56, sm: 64 },
-                        transition: 'height 0.3s ease'
+                        transition: 'height 0.3s ease',
+                        px: { xs: 1, sm: 0 }
                     }}>
-                        {/* Logo/brand for larger screens */}
+                        {/* Logo for larger screens */}
                         <motion.div
                             initial="initial"
                             animate="animate"
@@ -517,19 +514,21 @@ function Header() {
                                     textDecoration: 'none',
                                 }}
                             >
-
                                 <Typography
                                     variant="h6"
                                     noWrap
                                     sx={{
-                                        fontWeight: 700,
-                                        letterSpacing: '-0.02em',
+                                        fontWeight: 400,
+                                        letterSpacing: '-0.01em',
                                         color: 'inherit',
-                                        fontSize: '1.25rem',
+                                        fontSize: '1.375rem',
+                                        textDecoration: 'none',
+                                        fontFamily: '"Merriweather", serif',
+                                        transition: 'all 0.2s ease',
                                         '&:hover': {
                                             opacity: 0.85,
+                                            transform: 'translateY(-1px)',
                                         },
-                                        fontFamily: '"Georgia", "Times New Roman", serif',
                                     }}
                                 >
                                     DotBridge
@@ -537,183 +536,56 @@ function Header() {
                             </Box>
                         </motion.div>
 
-                        {/* Mobile menu */}
-                        <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+                        {/* Mobile menu button */}
+                        <Box sx={{ display: { xs: 'flex', md: 'none' }, width: '48px' }}>
                             <IconButton
                                 size="large"
                                 aria-label="menu"
-                                aria-controls="menu-appbar"
-                                aria-haspopup="true"
-                                onClick={handleOpenNavMenu}
+                                onClick={() => setDrawerOpen(true)}
                                 color="inherit"
                                 sx={{
-                                    transition: 'all 0.2s',
+                                    transition: 'all 0.2s ease',
                                     '&:hover': {
-                                        transform: 'scale(1.05)'
+                                        transform: 'scale(1.05)',
+                                        backgroundColor: 'rgba(26, 26, 46, 0.04)',
                                     }
                                 }}
                             >
-                                {anchorElNav ? <CloseIcon /> : <MenuIcon />}
+                                <MenuIcon />
                             </IconButton>
-                            <Menu
-                                id="menu-appbar"
-                                anchorEl={anchorElNav}
-                                anchorOrigin={{
-                                    vertical: 'bottom',
-                                    horizontal: 'left',
-                                }}
-                                keepMounted
-                                transformOrigin={{
-                                    vertical: 'top',
-                                    horizontal: 'left',
-                                }}
-                                open={Boolean(anchorElNav)}
-                                onClose={handleCloseNavMenu}
-                                disableAutoFocus={true}
-                                disableEnforceFocus={true}
-                                disableRestoreFocus={true}
-                                PaperProps={{
-                                    sx: {
-                                        mt: 1.5,
-                                        width: '100%',
-                                        maxWidth: '300px',
-                                        borderRadius: theme.shape.borderRadius,
-                                        boxShadow: theme.shadows[3],
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        '& .MuiMenu-list': {
-                                            padding: '8px 0',
-                                        },
-                                    },
-                                }}
-                                sx={{
-                                    display: { xs: 'block', md: 'none' },
-                                }}
-                            >
-                                <AnimatePresence>
-                                    {menuItems.map((item, index) => (
-                                        <motion.div
-                                            key={item.text}
-                                            initial="initial"
-                                            animate="animate"
-                                            exit="exit"
-                                            variants={menuItemVariants}
-                                            custom={index}
-                                        >
-                                            <MenuItem
-                                                onClick={handleCloseNavMenu}
-                                                component={RouterLink}
-                                                to={item.link}
-                                                sx={{
-                                                    my: 0.5,
-                                                    mx: 1,
-                                                    borderRadius: '6px',
-                                                    color: location.pathname === item.link ? 'primary.main' : 'text.primary',
-                                                    fontWeight: location.pathname === item.link ? 600 : 400,
-                                                    transition: 'background-color 0.2s, color 0.2s, font-weight 0.2s',
-                                                    '&:hover': {
-                                                        backgroundColor: theme.palette.action.hover,
-                                                    },
-                                                }}
-                                            >
-                                                <Typography textAlign="center">{item.text}</Typography>
-                                            </MenuItem>
-                                        </motion.div>
-                                    ))}
-
-
-                                    {isAuthenticated ? (
-                                        <motion.div
-                                            initial="initial"
-                                            animate="animate"
-                                            exit="exit"
-                                            variants={menuItemVariants}
-                                            custom={menuItems.length + 1}
-                                        >
-                                            <MenuItem
-                                                onClick={() => {
-                                                    handleCloseNavMenu();
-                                                    handleLogout();
-                                                }}
-                                                sx={{
-                                                    my: 0.5,
-                                                    mx: 1,
-                                                    borderRadius: '6px',
-                                                    color: 'text.primary',
-                                                    transition: 'background-color 0.2s',
-                                                    '&:hover': {
-                                                        backgroundColor: theme.palette.action.hover,
-                                                    },
-                                                }}
-                                            >
-                                                <Typography textAlign="center">Logout</Typography>
-                                            </MenuItem>
-                                        </motion.div>
-                                    ) : (
-                                        <>
-                                            <Divider sx={{ my: 1 }} />
-                                            <Box sx={{ px: 2, py: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                                <motion.div
-                                                    initial="initial"
-                                                    animate="animate"
-                                                    exit="exit"
-                                                    variants={menuItemVariants}
-                                                    custom={menuItems.length + 1}
-                                                >
-                                                    <Button
-                                                        component={RouterLink}
-                                                        to="/login"
-                                                        variant="outlined"
-                                                        color="primary"
-                                                        fullWidth
-                                                        sx={{ mb: 1 }}
-                                                    >
-                                                        Login
-                                                    </Button>
-                                                </motion.div>
-                                                <motion.div
-                                                    initial="initial"
-                                                    animate="animate"
-                                                    exit="exit"
-                                                    variants={menuItemVariants}
-                                                    custom={menuItems.length + 2}
-                                                >
-                                                    <Button
-                                                        component={RouterLink}
-                                                        to="/signup"
-                                                        variant="contained"
-                                                        color="primary"
-                                                        fullWidth
-                                                    >
-                                                        Sign Up
-                                                    </Button>
-                                                </motion.div>
-                                            </Box>
-                                        </>
-                                    )}
-                                </AnimatePresence>
-                            </Menu>
                         </Box>
 
-                        {/* Logo/brand for mobile screens */}
-                        <Typography
-                            variant="h6"
-                            noWrap
-                            component={RouterLink}
-                            to="/"
-                            sx={{
-                                display: { xs: 'flex', md: 'none' },
-                                flexGrow: 1,
-                                fontWeight: 700,
-                                letterSpacing: '.01rem',
-                                color: 'inherit',
-                                textDecoration: 'none',
-                                fontSize: '1.25rem',
-                                fontFamily: '"Georgia", "Times New Roman", serif',
-                            }}
-                        >
-                            DotBridge
+                        {/* Logo for mobile screens - centered */}
+                        <Box sx={{
+                            display: { xs: 'flex', md: 'none' },
+                            flexGrow: 1,
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                        }}>
+                            <Typography
+                                variant="h6"
+                                noWrap
+                                component={RouterLink}
+                                to="/"
+                                sx={{
+                                    fontWeight: 400,
+                                    letterSpacing: '-0.01em',
+                                    color: 'inherit',
+                                    textDecoration: 'none',
+                                    fontSize: { xs: '1.125rem', sm: '1.25rem' },
+                                    fontFamily: '"Merriweather", serif',
+                                    transition: 'all 0.2s ease',
+                                    '&:hover': {
+                                        opacity: 0.85,
+                                    },
+                                }}
+                            >
+                                DOTBRIDGE
+                            </Typography>
+                        </Box>
 
-                        </Typography>
+                        {/* Spacer for mobile to balance the menu button */}
+                        <Box sx={{ display: { xs: 'flex', md: 'none' }, width: '48px' }} />
 
                         {/* Desktop navigation */}
                         <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
@@ -728,19 +600,24 @@ function Header() {
                                         custom={index}
                                     >
                                         <Button
-                                            component={RouterLink}
-                                            to={item.link}
-                                            onClick={handleCloseNavMenu}
+                                            component={item.link?.startsWith('http') ? 'a' : RouterLink}
+                                            to={!item.link?.startsWith('http') ? item.link : undefined}
+                                            href={item.link?.startsWith('http') ? item.link : undefined}
+                                            target={item.link?.startsWith('http') ? '_blank' : undefined}
                                             sx={{
                                                 my: 2,
                                                 mx: 1,
                                                 color: location.pathname === item.link ? 'primary.main' : 'inherit',
                                                 display: 'block',
                                                 fontWeight: location.pathname === item.link ? 600 : 400,
-                                                fontSize: '0.95rem',
+                                                fontSize: '0.9375rem',
                                                 textTransform: 'none',
                                                 position: 'relative',
-                                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                                fontFamily: '"Inter", sans-serif',
+                                                borderRadius: '6px',
+                                                px: 2,
+                                                py: 1,
+                                                transition: 'all 0.2s ease',
                                                 '&::after': {
                                                     content: '""',
                                                     position: 'absolute',
@@ -748,13 +625,13 @@ function Header() {
                                                     height: '2px',
                                                     bottom: 0,
                                                     left: 0,
-                                                    backgroundColor: '#2d3748',
+                                                    backgroundColor: '#1a1a2e',
                                                     transition: 'width 0.3s ease-in-out',
                                                     borderRadius: '2px',
                                                     opacity: location.pathname === item.link ? 1 : 0,
                                                 },
                                                 '&:hover': {
-                                                    backgroundColor: 'transparent',
+                                                    backgroundColor: 'rgba(26, 26, 46, 0.04)',
                                                     '&::after': {
                                                         width: '100%',
                                                         opacity: 0.7,
@@ -769,7 +646,7 @@ function Header() {
                             </AnimatePresence>
                         </Box>
 
-                        {/* Login/Signup or Logout for desktop */}
+                        {/* Desktop Auth Section */}
                         <Box sx={{ display: { xs: 'none', md: 'flex' }, ml: 2, gap: 1, alignItems: 'center' }}>
                             {isAuthenticated ? (
                                 <>
@@ -783,13 +660,15 @@ function Header() {
                                             onClick={handleLogout}
                                             variant="outlined"
                                             sx={{
-                                                color: 'inherit',
-                                                borderColor: transparentMode ? 'rgba(16, 16, 23, 0.2)' : theme.palette.divider,
-                                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                                fontFamily: '"Inter", sans-serif',
                                                 fontWeight: 400,
+                                                fontSize: '0.875rem',
+                                                borderRadius: '6px',
+                                                px: 3,
+                                                py: 1,
+                                                transition: 'all 0.2s ease',
                                                 '&:hover': {
-                                                    borderColor: transparentMode ? 'rgba(16, 16, 23, 0.5)' : theme.palette.text.primary,
-                                                    backgroundColor: 'transparent',
+                                                    transform: 'translateY(-1px)',
                                                 },
                                             }}
                                         >
@@ -806,11 +685,11 @@ function Header() {
                                             onClick={handleProfileClick}
                                             sx={{
                                                 p: 0.5,
-                                                ml: 0.5,
+                                                ml: 1,
                                                 transition: 'all 0.2s ease',
                                                 '&:hover': {
                                                     backgroundColor: 'transparent',
-                                                    transform: 'scale(1.08)',
+                                                    transform: 'scale(1.05)',
                                                 },
                                             }}
                                         >
@@ -818,16 +697,16 @@ function Header() {
                                                 sx={{
                                                     width: 36,
                                                     height: 36,
-                                                    bgcolor: transparentMode ? 'rgba(255, 255, 255, 0.9)' : '#f7fafc',
-                                                    color: '#2d3748',
-                                                    fontWeight: 'bold',
-                                                    fontSize: '1rem',
-                                                    border: '2px solid #2d3748',
-                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                                                    bgcolor: transparentMode ? 'rgba(255, 255, 255, 0.9)' : '#f8fafc',
+                                                    color: '#1a1a2e',
+                                                    fontWeight: 500,
+                                                    fontSize: '0.875rem',
+                                                    border: '1px solid #e5e7eb',
+                                                    fontFamily: '"Inter", sans-serif',
+                                                    boxShadow: '0 2px 8px rgba(26, 26, 46, 0.08)',
                                                     transition: 'all 0.2s ease',
-                                                    fontFamily: '"Georgia", "Times New Roman", serif',
                                                     '&:hover': {
-                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                                                        boxShadow: '0 4px 16px rgba(26, 26, 46, 0.12)',
                                                     }
                                                 }}
                                             >
@@ -850,11 +729,15 @@ function Header() {
                                             variant="text"
                                             sx={{
                                                 color: 'inherit',
-                                                fontWeight: 500,
-                                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                                fontWeight: 400,
+                                                fontFamily: '"Inter", sans-serif',
+                                                fontSize: '0.875rem',
+                                                px: 2,
+                                                py: 1,
+                                                borderRadius: '6px',
+                                                transition: 'all 0.2s ease',
                                                 '&:hover': {
-                                                    backgroundColor: 'transparent',
-                                                    opacity: 0.8,
+                                                    backgroundColor: 'rgba(26, 26, 46, 0.04)',
                                                 },
                                             }}
                                         >
@@ -871,16 +754,17 @@ function Header() {
                                             component={RouterLink}
                                             to="/signup"
                                             variant="contained"
-                                            color="primary"
                                             sx={{
                                                 fontWeight: 500,
-                                                fontFamily: '"Georgia", "Times New Roman", serif',
-                                                backgroundColor: '#2d3748',
-                                                color: 'white',
+                                                fontFamily: '"Inter", sans-serif',
+                                                fontSize: '0.875rem',
+                                                px: 3,
+                                                py: 1,
+                                                borderRadius: '6px',
+                                                ml: 1,
+                                                transition: 'all 0.3s ease',
                                                 '&:hover': {
                                                     transform: 'translateY(-2px)',
-                                                    backgroundColor: '#4a5568',
-                                                    boxShadow: '0 4px 12px rgba(45, 55, 72, 0.25)',
                                                 },
                                             }}
                                         >
@@ -893,7 +777,28 @@ function Header() {
                     </Toolbar>
                 </Container>
             </AppBar>
-        </HideOnScroll>
+
+            {/* Enhanced Mobile Drawer */}
+            <Drawer
+                anchor="left"
+                open={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+                PaperProps={{
+                    sx: {
+                        width: { xs: '100%', sm: '320px' },
+                        maxWidth: '100vw',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        boxShadow: 'none',
+                    }
+                }}
+                ModalProps={{
+                    keepMounted: true, // Better mobile performance
+                }}
+            >
+                {renderMobileMenu()}
+            </Drawer>
+        </>
     );
 }
 

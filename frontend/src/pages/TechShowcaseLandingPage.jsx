@@ -1,13 +1,9 @@
 import React from 'react';
-import { Box, Container, Grid, Typography, Button, Paper, Chip } from '@mui/material';
+import { Box, Container, Typography, Button, Paper, Chip } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 
-import DotBridgeButton from '../components/DotBridgeButton';
-import DotBridgeTypography from '../components/DotBridgeTypography';
-import DotBridgeCard from '../components/DotBridgeCard';
-import DotBridgeIcon from '../components/DotBridgeIcon';
 import AgentConnector from '../components/AgentConnector';
 import Footer from '../components/Footer';
 
@@ -25,155 +21,155 @@ const staggerChildren = {
     visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
 };
 
-// Hero Section
+// Hero Section - Enhanced with better mobile layout
 const HeroSection = () => {
     return (
         <Box sx={{
-            minHeight: '90vh',
+            minHeight: { xs: '100vh', md: '85vh' },
             display: 'flex',
             alignItems: 'center',
-            pt: { xs: 8, sm: 10, md: 12 },
-            pb: { xs: 6, sm: 8, md: 10 },
-            background: 'linear-gradient(180deg, #fefefe 0%, #f8fafc 100%)',
-            borderBottom: '1px solid #e2e8f0'
+            pt: { xs: 8, sm: 14, md: 16 },
+            pb: { xs: 8, sm: 10, md: 12 },
+            background: 'linear-gradient(180deg, #fdfdfd 0%, #f8fafc 100%)',
+            position: 'relative',
+            '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'radial-gradient(ellipse at center top, rgba(26, 26, 46, 0.03) 0%, transparent 70%)',
+                pointerEvents: 'none',
+            }
         }}>
-            <Container maxWidth="lg">
+            <Container maxWidth="md">
                 <motion.div
                     initial="hidden"
                     animate="visible"
                     variants={staggerChildren}
                 >
-                    {/* Main Headline */}
-                    <motion.div variants={fadeInUp}>
-                        <DotBridgeTypography
-                            variant="h1"
-                            component="h1"
-                            align="center"
-                            sx={{
-                                mb: 3,
-                                fontSize: { xs: '2rem', sm: '3.5rem', md: '4.5rem' },
-                                fontWeight: 300,
-                                lineHeight: { xs: 1.3, md: 1.2 },
-                                color: '#2d3748',
-                                fontFamily: '"Georgia", "Times New Roman", serif',
-                                letterSpacing: '-0.02em',
-                                px: { xs: 1, sm: 0 }
-                            }}
-                        >
-                            DotBridge Research Framework
-                        </DotBridgeTypography>
-                    </motion.div>
-
-                    {/* Subheadline */}
+                    {/* Research Paper Title */}
                     <motion.div variants={fadeInUp}>
                         <Typography
-                            variant="h5"
-                            align="center"
-                            color="text.secondary"
+                            variant="h1"
+                            component="h1"
+                            align="left"
                             sx={{
-                                mb: 2,
-                                maxWidth: '800px',
-                                mx: 'auto',
-                                fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
-                                lineHeight: 1.6,
+                                mb: { xs: 3, md: 4 },
+                                fontSize: { xs: '1.875rem', sm: '2.5rem', md: '3rem' },
                                 fontWeight: 300,
-                                fontFamily: '"Georgia", "Times New Roman", serif',
-                                px: { xs: 2, sm: 0 }
+                                lineHeight: { xs: 1.2, md: 1.25 },
+                                color: '#1a1a2e',
+                                fontFamily: '"Merriweather", serif',
+                                letterSpacing: '-0.01em',
+                                maxWidth: '100%',
+                                textAlign: { xs: 'center', sm: 'center', md: 'left' },
+                                textShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                             }}
                         >
-                            A research framework for multipass knowledge extraction and structured knowledge graph construction from multimodal content
+                            DotBridge: A Framework for Multimodal Knowledge Extraction and Structured Agent Configuration
                         </Typography>
                     </motion.div>
 
-                    {/* Tech Stack */}
+                    {/* Research Abstract */}
                     <motion.div variants={fadeInUp}>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4, flexWrap: 'wrap', gap: 1, px: { xs: 2, sm: 0 } }}>
-                            {['Multipass NLP', 'Knowledge Graphs', 'Structured Extraction', 'Python', 'React', 'Real-time Agents'].map((tech) => (
+                        <Typography
+                            variant="subtitle1"
+                            align="left"
+                            sx={{
+                                mb: { xs: 3, md: 4 },
+                                maxWidth: '100%',
+                                fontSize: { xs: '1rem', sm: '1.125rem', md: '1.25rem' },
+                                lineHeight: { xs: 1.6, md: 1.7 },
+                                fontWeight: 400,
+                                fontFamily: '"Inter", sans-serif',
+                                color: '#4b5563',
+                                fontStyle: 'normal',
+                                textAlign: { xs: 'center', md: 'left' },
+                                textShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+                            }}
+                        >
+                            An open-source system for converting video, transcripts, and documents into structured knowledge graphs for research agents and quantitative workflows. This framework demonstrates novel techniques for production-scale multimodal AI deployment.
+                        </Typography>
+                    </motion.div>
+
+                    {/* Research Keywords/Tags */}
+                    <motion.div variants={fadeInUp}>
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: { xs: 'center', md: 'flex-start' },
+                            mb: { xs: 4, md: 5 },
+                            flexWrap: 'wrap',
+                            gap: { xs: 1, sm: 1.5 },
+                            px: { xs: 1, sm: 0 }
+                        }}>
+                            {['Multimodal AI', 'Knowledge Graphs', 'Agent Systems', 'NLP', 'Production ML'].map((tech) => (
                                 <Chip
                                     key={tech}
                                     label={tech}
                                     variant="outlined"
                                     sx={{
                                         fontWeight: 400,
-                                        borderColor: '#2d3748',
-                                        color: '#2d3748',
-                                        backgroundColor: 'rgba(45, 55, 72, 0.04)',
-                                        fontFamily: '"Georgia", "Times New Roman", serif',
-                                        fontSize: '0.875rem'
+                                        fontSize: { xs: '0.75rem', sm: '0.8125rem' },
+                                        height: { xs: '26px', sm: '28px' },
                                     }}
                                 />
                             ))}
                         </Box>
                     </motion.div>
 
-                    {/* CTA Buttons */}
+                    {/* Academic Action Buttons */}
                     <motion.div variants={fadeInUp}>
                         <Box sx={{
                             display: 'flex',
                             flexDirection: { xs: 'column', sm: 'row' },
-                            gap: 3,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            px: { xs: 2, sm: 0 }
+                            gap: { xs: 2, sm: 2 },
+                            justifyContent: { xs: 'center', md: 'flex-start' },
+                            alignItems: { xs: 'stretch', sm: 'flex-start' },
+                            maxWidth: { xs: '100%', sm: 'none' },
+                            px: { xs: 1, sm: 0 }
                         }}>
-                            <DotBridgeButton
+                            <Button
                                 variant="contained"
                                 size="large"
                                 component={Link}
                                 to={`/viewBridge/${DEMO_BRIDGE_ID}`}
-                                startIcon={<DotBridgeIcon name="Play" />}
                                 sx={{
-                                    px: 4,
-                                    py: 2,
-                                    fontSize: '1.125rem',
-                                    fontWeight: 400,
-                                    minWidth: { xs: '100%', sm: '200px' },
-                                    backgroundColor: '#2d3748',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    '&:hover': { backgroundColor: '#4a5568' }
+                                    minWidth: { xs: '100%', sm: '180px' },
+                                    order: { xs: 1, sm: 0 },
                                 }}
                             >
                                 Interactive Demo
-                            </DotBridgeButton>
+                            </Button>
 
-                            <DotBridgeButton
+                            <Button
                                 variant="outlined"
                                 size="large"
                                 href="https://github.com/levbszabo/brdge-v1"
                                 target="_blank"
-                                startIcon={<DotBridgeIcon name="Github" />}
                                 sx={{
-                                    px: 4,
-                                    py: 2,
-                                    fontSize: '1.125rem',
-                                    fontWeight: 400,
-                                    minWidth: { xs: '100%', sm: '200px' },
-                                    borderColor: '#2d3748',
-                                    color: '#2d3748',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    '&:hover': { borderColor: '#4a5568', backgroundColor: 'rgba(45, 55, 72, 0.05)' }
+                                    minWidth: { xs: '100%', sm: '180px' },
+                                    order: { xs: 2, sm: 0 },
                                 }}
                             >
-                                Research Code
-                            </DotBridgeButton>
+                                Code Repository
+                            </Button>
 
-                            <DotBridgeButton
+                            <Button
                                 variant="text"
                                 size="large"
                                 href="https://journeymanai.io"
                                 target="_blank"
                                 sx={{
-                                    px: 4,
-                                    py: 2,
-                                    fontSize: '1.125rem',
-                                    fontWeight: 300,
-                                    color: '#2d3748',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    '&:hover': { backgroundColor: 'rgba(45, 55, 72, 0.05)' }
+                                    minWidth: { xs: '100%', sm: 'auto' },
+                                    order: { xs: 3, sm: 0 },
+                                    display: { xs: 'flex', sm: 'inline-flex' },
+                                    justifyContent: { xs: 'center', sm: 'flex-start' },
                                 }}
                             >
-                                Principal Investigator →
-                            </DotBridgeButton>
+                                Contact Author →
+                            </Button>
                         </Box>
                     </motion.div>
                 </motion.div>
@@ -182,35 +178,35 @@ const HeroSection = () => {
     );
 };
 
-// Technology Overview Section
+// Enhanced Methodology Section with glassmorphism cards
 const TechnologySection = () => {
     const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
     const features = [
         {
-            icon: 'FileText',
             title: 'Multipass Content Analysis',
-            description: 'Sequential extraction pipeline analyzing content structure, temporal components, and semantic relationships across modalities'
+            description: 'Sequential extraction pipeline analyzing content structure, temporal components, and semantic relationships across modalities.'
         },
         {
-            icon: 'Share2',
             title: 'Knowledge Graph Construction',
-            description: 'Structured representation including teaching personas, engagement opportunities, timeline mappings, and Q&A derivations'
+            description: 'Structured representation including teaching personas, engagement opportunities, timeline mappings, and Q&A derivations.'
         },
         {
-            icon: 'MessageSquare',
             title: 'Agent Instantiation Framework',
-            description: 'Dynamic agent configuration utilizing extracted knowledge graphs for contextually-aware conversational interfaces'
+            description: 'Dynamic agent configuration utilizing extracted knowledge graphs for contextually-aware conversational interfaces.'
         },
         {
-            icon: 'Target',
             title: 'Temporal Engagement Mapping',
-            description: 'Time-synchronized interaction opportunities derived from content analysis and embedded within agent response patterns'
+            description: 'Time-synchronized interaction opportunities derived from content analysis and embedded within agent response patterns.'
         }
     ];
 
     return (
-        <Box ref={ref} sx={{ py: { xs: 8, md: 12 }, bgcolor: '#fefefe', borderBottom: '1px solid #e2e8f0' }}>
+        <Box ref={ref} sx={{
+            py: { xs: 8, md: 10 },
+            bgcolor: 'background.default',
+            position: 'relative',
+        }}>
             <Container maxWidth="lg">
                 <motion.div
                     initial="hidden"
@@ -220,113 +216,102 @@ const TechnologySection = () => {
                     <motion.div variants={fadeInUp}>
                         <Typography
                             variant="h2"
-                            align="center"
+                            component="h2"
                             sx={{
                                 mb: 2,
-                                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' },
-                                fontWeight: 300,
-                                color: '#2d3748',
-                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                textAlign: { xs: 'center', md: 'left' },
                                 px: { xs: 2, sm: 0 }
                             }}
                         >
-                            Research Methodology: Structured Knowledge Extraction
+                            Methodology
                         </Typography>
                         <Typography
-                            variant="h6"
-                            align="center"
-                            color="text.secondary"
+                            variant="body1"
                             sx={{
-                                mb: 8,
-                                maxWidth: '800px',
-                                mx: 'auto',
-                                fontWeight: 300,
-                                fontFamily: '"Georgia", "Times New Roman", serif',
-                                fontStyle: 'italic',
+                                mb: 6,
+                                maxWidth: '700px',
+                                mx: { xs: 'auto', md: 0 },
+                                textAlign: { xs: 'center', md: 'left' },
                                 px: { xs: 2, sm: 0 }
                             }}
                         >
-                            A systematic approach to multipass content analysis and knowledge graph construction from multimodal sources
+                            Systematic approach to multipass content analysis and knowledge graph construction from multimodal sources.
                         </Typography>
                     </motion.div>
 
-                    <Grid container spacing={4}>
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, 1fr)' },
+                        gap: { xs: 3, md: 4 },
+                        mt: 4,
+                        px: { xs: 1, sm: 0 }
+                    }}>
                         {features.map((feature, index) => (
-                            <Grid item xs={12} sm={6} md={3} key={index}>
-                                <motion.div variants={fadeInUp}>
-                                    <DotBridgeCard sx={{
-                                        p: 4,
-                                        height: '100%',
-                                        textAlign: 'center',
-                                        transition: 'all 0.3s ease',
-                                        border: '1px solid #e2e8f0',
-                                        backgroundColor: '#fefefe',
-                                        '&:hover': {
-                                            transform: 'translateY(-2px)',
-                                            boxShadow: '0 8px 25px rgba(45, 55, 72, 0.08)',
-                                            borderColor: '#cbd5e0'
-                                        }
+                            <motion.div key={index} variants={fadeInUp}>
+                                <Box sx={{
+                                    p: { xs: 3, md: 4 },
+                                    height: '100%',
+                                    borderRadius: '6px',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    cursor: 'pointer',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                    }
+                                }}>
+                                    <Typography variant="h6" sx={{
+                                        mb: { xs: 1.5, md: 2 },
+                                        fontWeight: 600,
+                                        fontFamily: '"Inter", sans-serif',
+                                        color: '#1a1a2e',
+                                        fontSize: { xs: '1rem', md: '1.125rem' },
                                     }}>
-                                        <Box sx={{
-                                            width: 64,
-                                            height: 64,
-                                            borderRadius: 2,
-                                            bgcolor: '#f7fafc',
-                                            border: '1px solid #e2e8f0',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            mx: 'auto',
-                                            mb: 3,
-                                        }}>
-                                            <DotBridgeIcon name={feature.icon} size={32} color="#2d3748" />
-                                        </Box>
-                                        <Typography variant="h6" sx={{
-                                            mb: 2,
-                                            fontWeight: 400,
-                                            fontFamily: '"Georgia", "Times New Roman", serif',
-                                            color: '#2d3748'
-                                        }}>
-                                            {feature.title}
-                                        </Typography>
-                                        <Typography variant="body2" color="text.secondary" sx={{
-                                            lineHeight: 1.6,
-                                            fontFamily: '"Georgia", "Times New Roman", serif'
-                                        }}>
-                                            {feature.description}
-                                        </Typography>
-                                    </DotBridgeCard>
-                                </motion.div>
-                            </Grid>
+                                        {feature.title}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{
+                                        lineHeight: 1.65,
+                                        fontFamily: '"Inter", sans-serif',
+                                        color: '#6b7280',
+                                        fontSize: { xs: '0.875rem', md: '0.9375rem' },
+                                    }}>
+                                        {feature.description}
+                                    </Typography>
+                                </Box>
+                            </motion.div>
                         ))}
-                    </Grid>
+                    </Box>
                 </motion.div>
             </Container>
         </Box>
     );
 };
 
-// Applications Section
+// Enhanced Applications Section with improved mobile layout
 const ApplicationsSection = () => {
     const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
     const applications = [
         {
-            title: 'Financial Services',
-            items: ['Earnings call analysis and Q&A', 'SEC filing interrogation', 'Investment research automation', 'Risk assessment conversations']
+            title: 'Financial Research',
+            items: ['Earnings call analysis', 'SEC filing interrogation', 'Investment research automation', 'Risk assessment workflows']
         },
         {
-            title: 'Research & Education',
-            items: ['Academic paper interaction', 'Documentation Q&A systems', 'Training content delivery', 'Knowledge base creation']
+            title: 'Academic Research',
+            items: ['Literature review automation', 'Citation analysis', 'Research methodology extraction', 'Cross-reference validation']
         },
         {
-            title: 'Enterprise',
-            items: ['Internal knowledge systems', 'Customer support automation', 'Training and onboarding', 'Document analysis workflows']
+            title: 'Enterprise Knowledge',
+            items: ['Document analysis pipelines', 'Training content structuring', 'Knowledge base construction', 'Information retrieval systems']
         }
     ];
 
     return (
-        <Box ref={ref} sx={{ py: { xs: 8, md: 12 }, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+        <Box ref={ref} sx={{
+            py: { xs: 8, md: 10 },
+            bgcolor: 'background.subtle',
+            position: 'relative',
+        }}>
             <Container maxWidth="lg">
                 <motion.div
                     initial="hidden"
@@ -336,13 +321,10 @@ const ApplicationsSection = () => {
                     <motion.div variants={fadeInUp}>
                         <Typography
                             variant="h2"
-                            align="center"
+                            component="h2"
                             sx={{
-                                mb: 8,
-                                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' },
-                                fontWeight: 300,
-                                color: '#2d3748',
-                                fontFamily: '"Georgia", "Times New Roman", serif',
+                                mb: 6,
+                                textAlign: { xs: 'center', md: 'left' },
                                 px: { xs: 2, sm: 0 }
                             }}
                         >
@@ -350,69 +332,83 @@ const ApplicationsSection = () => {
                         </Typography>
                     </motion.div>
 
-                    <Grid container spacing={4}>
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+                        gap: { xs: 3, md: 4 },
+                        px: { xs: 1, sm: 0 }
+                    }}>
                         {applications.map((app, index) => (
-                            <Grid item xs={12} md={4} key={index}>
-                                <motion.div variants={fadeInUp} style={{ height: '100%' }}>
-                                    <Paper sx={{
-                                        p: 4,
-                                        height: '100%',
+                            <motion.div key={index} variants={fadeInUp}>
+                                <Paper elevation={0} sx={{
+                                    p: { xs: 3, md: 4 },
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        transform: 'translateY(-4px)',
+                                    }
+                                }}>
+                                    <Typography variant="h5" sx={{
+                                        mb: 3,
+                                        fontWeight: 600,
+                                        color: '#1a1a2e',
+                                        fontFamily: '"Inter", sans-serif',
+                                        fontSize: { xs: '1rem', md: '1.125rem' },
+                                    }}>
+                                        {app.title}
+                                    </Typography>
+                                    <Box component="ul" sx={{
+                                        pl: 0,
+                                        listStyle: 'none',
+                                        flex: 1,
                                         display: 'flex',
                                         flexDirection: 'column',
-                                        bgcolor: '#fefefe',
-                                        border: '1px solid #e2e8f0',
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            boxShadow: '0 8px 25px rgba(45, 55, 72, 0.08)',
-                                            borderColor: '#cbd5e0'
-                                        }
+                                        gap: { xs: 1, md: 1.5 }
                                     }}>
-                                        <Typography variant="h5" sx={{
-                                            mb: 3,
-                                            fontWeight: 400,
-                                            color: '#2d3748',
-                                            fontFamily: '"Georgia", "Times New Roman", serif'
-                                        }}>
-                                            {app.title}
-                                        </Typography>
-                                        <Box component="ul" sx={{
-                                            pl: 0,
-                                            listStyle: 'none',
-                                            flex: 1,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: 2
-                                        }}>
-                                            {app.items.map((item, idx) => (
-                                                <Box component="li" key={idx} sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'flex-start'
-                                                }}>
-                                                    <DotBridgeIcon name="ArrowRight" size={16} color="#2d3748" sx={{ mt: 0.5, mr: 2, flexShrink: 0 }} />
-                                                    <Typography variant="body2" sx={{
-                                                        fontFamily: '"Georgia", "Times New Roman", serif',
-                                                        lineHeight: 1.6
-                                                    }}>{item}</Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    </Paper>
-                                </motion.div>
-                            </Grid>
+                                        {app.items.map((item, idx) => (
+                                            <Box component="li" key={idx} sx={{
+                                                display: 'flex',
+                                                alignItems: 'flex-start',
+                                                '&::before': {
+                                                    content: '"•"',
+                                                    color: '#9ca3af',
+                                                    marginRight: '12px',
+                                                    fontSize: '1rem',
+                                                    lineHeight: '1.5',
+                                                    flexShrink: 0,
+                                                }
+                                            }}>
+                                                <Typography variant="body2" sx={{
+                                                    fontFamily: '"Inter", sans-serif',
+                                                    lineHeight: 1.6,
+                                                    color: '#6b7280',
+                                                    fontSize: { xs: '0.875rem', md: '0.9375rem' },
+                                                }}>{item}</Typography>
+                                            </Box>
+                                        ))}
+                                    </Box>
+                                </Paper>
+                            </motion.div>
                         ))}
-                    </Grid>
+                    </Box>
                 </motion.div>
             </Container>
         </Box>
     );
 };
 
-// Demo Section
+// Enhanced Demo Section with better mobile experience
 const DemoSection = () => {
     const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
     return (
-        <Box ref={ref} sx={{ py: { xs: 8, md: 12 }, bgcolor: '#fefefe', borderBottom: '1px solid #e2e8f0' }}>
+        <Box ref={ref} sx={{
+            py: { xs: 8, md: 10 },
+            bgcolor: 'background.default',
+        }}>
             <Container maxWidth="lg">
                 <motion.div
                     initial="hidden"
@@ -422,32 +418,26 @@ const DemoSection = () => {
                     <motion.div variants={fadeInUp}>
                         <Typography
                             variant="h2"
-                            align="center"
+                            component="h2"
                             sx={{
                                 mb: 3,
-                                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' },
-                                fontWeight: 300,
-                                color: '#2d3748',
-                                fontFamily: '"Georgia", "Times New Roman", serif'
-                            }}
-                        >
-                            Interactive System Demonstration
-                        </Typography>
-                        <Typography
-                            variant="h6"
-                            align="center"
-                            color="text.secondary"
-                            sx={{
-                                mb: 6,
-                                maxWidth: '600px',
-                                mx: 'auto',
-                                fontWeight: 300,
-                                fontFamily: '"Georgia", "Times New Roman", serif',
-                                fontStyle: 'italic',
+                                textAlign: { xs: 'center', md: 'left' },
                                 px: { xs: 2, sm: 0 }
                             }}
                         >
-                            Experience the multimodal knowledge extraction framework in operation
+                            Implementation
+                        </Typography>
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                mb: 6,
+                                maxWidth: '600px',
+                                mx: { xs: 'auto', md: 0 },
+                                textAlign: { xs: 'center', md: 'left' },
+                                px: { xs: 2, sm: 0 }
+                            }}
+                        >
+                            Interactive demonstration of the multimodal knowledge extraction framework in operation.
                         </Typography>
                     </motion.div>
 
@@ -455,35 +445,43 @@ const DemoSection = () => {
                         {/* Desktop Demo */}
                         <Box sx={{
                             display: { xs: 'none', md: 'block' },
-                            maxWidth: '1000px',
+                            maxWidth: '900px',
                             mx: 'auto',
-                            borderRadius: 3,
+                            borderRadius: '8px',
                             overflow: 'hidden',
-                            boxShadow: '0 20px 60px rgba(26, 54, 93, 0.15)',
+                            border: '1px solid #e5e7eb',
                             bgcolor: '#ffffff',
-                            aspectRatio: '16 / 10'
+                            aspectRatio: '16 / 10',
+                            boxShadow: '0 20px 60px rgba(26, 26, 46, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04)',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 24px 80px rgba(26, 26, 46, 0.12), 0 12px 40px rgba(0, 0, 0, 0.06)',
+                            }
                         }}>
-                            {/* Browser chrome */}
+                            {/* Browser chrome with enhanced styling */}
                             <Box sx={{
                                 p: 1.5,
-                                borderBottom: '1px solid #e2e8f0',
-                                bgcolor: '#f8fafc',
+                                borderBottom: '1px solid #f3f4f6',
+                                background: 'linear-gradient(180deg, #fafafc 0%, #f8fafc 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 1
                             }}>
                                 <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ff5f57' }} />
-                                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#ffbd2e' }} />
-                                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#28ca42' }} />
+                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#ef4444' }} />
+                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#f59e0b' }} />
+                                    <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#10b981' }} />
                                 </Box>
-                                <Typography variant="caption" color="text.secondary" sx={{
+                                <Typography variant="caption" sx={{
                                     flex: 1,
                                     textAlign: 'center',
                                     fontWeight: 400,
-                                    fontFamily: '"Georgia", "Times New Roman", serif'
+                                    fontFamily: '"Inter", sans-serif',
+                                    color: '#9ca3af',
+                                    fontSize: '0.75rem',
                                 }}>
-                                    DotBridge Research Framework - Interactive Demo
+                                    DotBridge Framework - Interactive Demo
                                 </Typography>
                             </Box>
 
@@ -499,51 +497,48 @@ const DemoSection = () => {
                             </Box>
                         </Box>
 
-                        {/* Mobile Demo Link */}
+                        {/* Mobile Demo Card */}
                         <Box sx={{
                             display: { xs: 'block', md: 'none' },
                             textAlign: 'center',
-                            px: 2
+                            px: { xs: 2, sm: 0 }
                         }}>
-                            <Paper sx={{
-                                p: 4,
-                                bgcolor: '#f8fafc',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: 3
+                            <Paper elevation={1} sx={{
+                                p: { xs: 3, sm: 4 },
+                                borderRadius: '8px',
+                                maxWidth: '400px',
+                                mx: 'auto',
                             }}>
                                 <Typography variant="h6" sx={{
                                     mb: 2,
-                                    color: '#2d3748',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    fontWeight: 400
+                                    color: '#1a1a2e',
+                                    fontFamily: '"Inter", sans-serif',
+                                    fontWeight: 600,
+                                    fontSize: { xs: '1rem', sm: '1.125rem' },
                                 }}>
-                                    Interactive Demo Available
+                                    Interactive Demo
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{
+                                <Typography variant="body2" sx={{
                                     mb: 3,
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    lineHeight: 1.6
+                                    fontFamily: '"Inter", sans-serif',
+                                    lineHeight: 1.6,
+                                    color: '#6b7280',
+                                    fontSize: { xs: '0.875rem', sm: '0.9375rem' },
                                 }}>
-                                    Experience the full interactive demo on desktop for the best experience
+                                    Experience the framework on desktop for optimal interaction
                                 </Typography>
-                                <DotBridgeButton
+                                <Button
                                     variant="contained"
                                     size="large"
                                     component={Link}
                                     to={`/viewBridge/${DEMO_BRIDGE_ID}`}
-                                    startIcon={<DotBridgeIcon name="Play" />}
+                                    fullWidth
                                     sx={{
-                                        px: 4,
-                                        py: 2,
-                                        fontSize: '1rem',
-                                        fontWeight: 400,
-                                        backgroundColor: '#2d3748',
-                                        fontFamily: '"Georgia", "Times New Roman", serif',
-                                        '&:hover': { backgroundColor: '#4a5568' }
+                                        fontSize: { xs: '0.875rem', sm: '0.9375rem' },
                                     }}
                                 >
-                                    Try Interactive Demo
-                                </DotBridgeButton>
+                                    Launch Demo
+                                </Button>
                             </Paper>
                         </Box>
                     </motion.div>
@@ -553,136 +548,112 @@ const DemoSection = () => {
     );
 };
 
-// About Section
+// Enhanced About Section with better mobile layout
 const AboutSection = () => {
     const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
     return (
-        <Box ref={ref} sx={{ py: { xs: 8, md: 12 }, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
+        <Box ref={ref} sx={{
+            py: { xs: 8, md: 10 },
+            bgcolor: 'background.subtle',
+        }}>
             <Container maxWidth="lg">
                 <motion.div
                     initial="hidden"
                     animate={inView ? "visible" : "hidden"}
                     variants={staggerChildren}
                 >
-                    <Grid container spacing={6} alignItems="center">
-                        <Grid item xs={12} md={8}>
-                            <motion.div variants={fadeInUp}>
-                                <Typography variant="h3" sx={{
-                                    mb: 4,
-                                    fontSize: { xs: '1.6rem', sm: '2rem', md: '2.5rem' },
-                                    fontWeight: 300,
-                                    color: '#2d3748',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    px: { xs: 2, sm: 0 }
-                                }}>
-                                    Research Background
-                                </Typography>
-                                <Typography variant="body1" sx={{
-                                    mb: 4,
-                                    fontSize: { xs: '1rem', sm: '1.125rem' },
-                                    lineHeight: 1.7,
-                                    color: '#4a5568',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    px: { xs: 2, sm: 0 }
-                                }}>
+                    <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' },
+                        gap: { xs: 4, lg: 6 },
+                        alignItems: 'start',
+                        px: { xs: 1, sm: 0 }
+                    }}>
+                        <motion.div variants={fadeInUp}>
+                            <Typography variant="h3" sx={{
+                                mb: 4,
+                                textAlign: { xs: 'center', lg: 'left' },
+                                px: { xs: 1, sm: 0 }
+                            }}>
+                                Research Background
+                            </Typography>
+                            <Box sx={{ px: { xs: 1, sm: 0 } }}>
+                                <Typography variant="body1" sx={{ mb: 4 }}>
                                     DotBridge was developed to explore systematic approaches to multimodal knowledge extraction,
                                     real-time agent architectures, and structured content analysis. Originally conceived as a commercial
                                     application, the framework is now open-sourced to advance academic research in knowledge graph
                                     construction from unstructured multimodal sources.
                                 </Typography>
-                                <Typography variant="body1" sx={{
-                                    mb: 4,
-                                    fontSize: { xs: '1rem', sm: '1.125rem' },
-                                    lineHeight: 1.7,
-                                    color: '#4a5568',
-                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                    px: { xs: 2, sm: 0 }
-                                }}>
+                                <Typography variant="body1" sx={{ mb: 4 }}>
                                     The system demonstrates novel techniques for production-scale multimodal AI deployment,
                                     with particular relevance to alternative data processing in quantitative finance,
                                     automated research workflows, and conversational AI systems.
                                 </Typography>
-                                <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', px: { xs: 2, sm: 0 } }}>
-                                    <Button
-                                        variant="outlined"
-                                        href="https://journeymanai.io"
-                                        target="_blank"
-                                        sx={{
-                                            borderColor: '#2d3748',
-                                            color: '#2d3748',
-                                            fontFamily: '"Georgia", "Times New Roman", serif',
-                                            fontWeight: 400,
-                                            '&:hover': {
-                                                borderColor: '#4a5568',
-                                                backgroundColor: 'rgba(45, 55, 72, 0.05)'
-                                            }
-                                        }}
-                                    >
-                                        Principal Investigator
+                                <Box sx={{
+                                    display: 'flex',
+                                    gap: 2,
+                                    flexWrap: 'wrap',
+                                    justifyContent: { xs: 'center', lg: 'flex-start' }
+                                }}>
+                                    <Button variant="outlined" href="https://journeymanai.io" target="_blank">
+                                        Author Profile
                                     </Button>
-                                    <Button
-                                        variant="outlined"
-                                        href="https://github.com/levbszabo/brdge-v1"
-                                        target="_blank"
-                                        sx={{
-                                            borderColor: '#2d3748',
-                                            color: '#2d3748',
-                                            fontFamily: '"Georgia", "Times New Roman", serif',
-                                            fontWeight: 400,
-                                            '&:hover': {
-                                                borderColor: '#4a5568',
-                                                backgroundColor: 'rgba(45, 55, 72, 0.05)'
-                                            }
-                                        }}
-                                    >
-                                        Research Repository
+                                    <Button variant="outlined" href="https://github.com/levbszabo/brdge-v1" target="_blank">
+                                        Source Code
                                     </Button>
                                 </Box>
-                            </motion.div>
-                        </Grid>
-                        <Grid item xs={12} md={4}>
-                            <motion.div variants={fadeInUp}>
-                                <Paper sx={{
-                                    p: 4,
-                                    bgcolor: '#fefefe',
-                                    border: '1px solid #e2e8f0',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                        boxShadow: '0 8px 25px rgba(45, 55, 72, 0.08)',
-                                        borderColor: '#cbd5e0'
-                                    }
+                            </Box>
+                        </motion.div>
+                        <motion.div variants={fadeInUp}>
+                            <Paper elevation={0} sx={{
+                                p: { xs: 3, md: 4 },
+                                borderRadius: '8px',
+                                maxWidth: { xs: '400px', lg: 'none' },
+                                mx: { xs: 'auto', lg: 0 },
+                            }}>
+                                <Typography variant="h6" sx={{
+                                    mb: 3,
+                                    color: '#1a1a2e',
+                                    fontWeight: 600,
+                                    fontFamily: '"Inter", sans-serif',
+                                    fontSize: { xs: '1rem', md: '1.125rem' },
+                                    textAlign: { xs: 'center', lg: 'left' }
                                 }}>
-                                    <Typography variant="h6" sx={{
-                                        mb: 3,
-                                        color: '#2d3748',
-                                        fontWeight: 400,
-                                        fontFamily: '"Georgia", "Times New Roman", serif'
-                                    }}>
-                                        Research Focus Areas
-                                    </Typography>
-                                    <Box component="ul" sx={{ pl: 0, listStyle: 'none' }}>
-                                        {[
-                                            'Multimodal content analysis',
-                                            'Knowledge graph construction',
-                                            'Real-time agent systems',
-                                            'Structured data extraction',
-                                            'Production ML frameworks'
-                                        ].map((item, idx) => (
-                                            <Box component="li" key={idx} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                                <DotBridgeIcon name="Check" size={16} sx={{ mr: 2, color: '#2d3748' }} />
-                                                <Typography variant="body2" sx={{
-                                                    color: '#4a5568',
-                                                    fontFamily: '"Georgia", "Times New Roman", serif',
-                                                    lineHeight: 1.6
-                                                }}>{item}</Typography>
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                </Paper>
-                            </motion.div>
-                        </Grid>
-                    </Grid>
+                                    Technical Focus Areas
+                                </Typography>
+                                <Box component="ul" sx={{ pl: 0, listStyle: 'none' }}>
+                                    {[
+                                        'Multimodal content analysis',
+                                        'Knowledge graph construction',
+                                        'Real-time agent systems',
+                                        'Structured data extraction',
+                                        'Production ML frameworks'
+                                    ].map((item, idx) => (
+                                        <Box component="li" key={idx} sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            mb: 2,
+                                            '&::before': {
+                                                content: '"•"',
+                                                color: '#9ca3af',
+                                                marginRight: '12px',
+                                                fontSize: '1rem',
+                                                flexShrink: 0,
+                                            }
+                                        }}>
+                                            <Typography variant="body2" sx={{
+                                                color: '#6b7280',
+                                                fontFamily: '"Inter", sans-serif',
+                                                lineHeight: 1.6,
+                                                fontSize: { xs: '0.875rem', md: '0.9375rem' },
+                                            }}>{item}</Typography>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            </Paper>
+                        </motion.div>
+                    </Box>
                 </motion.div>
             </Container>
         </Box>
