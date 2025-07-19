@@ -39,18 +39,18 @@ Time-synchronized interaction opportunities derived from content analysis and em
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Content       │    │   Extraction     │    │   Knowledge     │
-│   Input         │───▶│   Pipeline       │───▶│   Base          │
-│   (Video/Docs)  │    │   (Multi-pass)   │    │   (Knowledge Graph)   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                         │
-┌─────────────────┐    ┌──────────────────┐             │
-│   User          │    │   Real-time      │             │
-│   Interface     │◀───│   AI Agent       │◀────────────┘
-│   (Web/Voice)   │    │   (LiveKit)      │
-└─────────────────┘    └──────────────────┘
+```mermaid
+graph LR
+    A["📁 Content Input<br/>(Video/Docs)"] --> B["⚙️ Extraction Pipeline<br/>(Multi-pass)"]
+    B --> C["🧠 Knowledge Base<br/>(Knowledge Graph)"]
+    C --> D["🤖 Real-time AI Agent<br/>(LiveKit)"]
+    D --> E["👤 User Interface<br/>(Web/Voice)"]
+    
+    style A fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style B fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style C fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    style D fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style E fill:#fce4ec,stroke:#c2185b,stroke-width:2px
 ```
 
 **📋 For Complete System Design**: See our detailed [**System Design Document**](SYSTEM_DESIGN.md) which includes:
