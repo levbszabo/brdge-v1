@@ -1,0 +1,40 @@
+# DotBridge Configuration Template
+# Copy this file to backend/.env and fill in your API keys
+
+# REQUIRED: Core AI Services
+GOOGLE_API_KEY=your_gemini_api_key_here
+# Get from: https://aistudio.google.com/app/apikey
+
+# OPTIONAL: Additional AI Models  
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_ORG_ID=your_openai_org_id_here
+# Get from: https://platform.openai.com/api-keys
+
+# OPTIONAL: Real-time Voice Features (only needed for agent system)
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_secret
+LIVEKIT_URL=wss://your_livekit_url
+# Get from: https://livekit.io/
+
+DEEPGRAM_API_KEY=your_deepgram_api_key
+# Get from: https://console.deepgram.com/
+
+CARTESIA_API_KEY=your_cartesia_api_key  
+# Get from: https://cartesia.ai/
+
+# OPTIONAL: Database (defaults to SQLite if not specified)
+DATABASE_URL=sqlite:///./instance/brdges.db
+# For PostgreSQL: postgresql://username:password@localhost:5432/database_name
+
+# OPTIONAL: Application Settings
+SECRET_KEY=your_secret_key_for_flask_sessions
+JWT_SECRET_KEY=your_jwt_secret_key
+API_BASE_URL=http://localhost:5000/api
+FLASK_ENV=development
+FLASK_DEBUG=true
+
+# OPTIONAL: Cloud Storage (for production deployments)
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=your_s3_bucket_name 
