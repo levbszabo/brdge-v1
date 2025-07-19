@@ -20,51 +20,51 @@ graph TB
     User[👤 User]
     
     %% DotBridge Main Application
-    subgraph DotBridge["DotBridge Main Application"]
-        subgraph Frontend["Frontend (React)"]
-            WebUI["🌐 Web Interface<br/>Bridge Creation<br/>File Upload<br/>User Management"]
-            AgentConn["🔗 AgentConnector<br/>Iframe Embedding<br/>Token Passing<br/>Authentication"]
+    subgraph DotBridge["🏢 DotBridge Main Application"]
+        subgraph Frontend["Frontend - React"]
+            WebUI["🌐 Web Interface<br/>Bridge Management"]
+            AgentConn["🔗 Agent Connector<br/>Iframe Integration"]
         end
         
-        subgraph Backend["Backend (Flask API)"]
-            API["🔌 REST API<br/>User Auth JWT<br/>CRUD Operations<br/>File Processing"]
-            KnowledgeEngine["🧠 Knowledge Engine<br/>gemini.py 5600 lines<br/>Multipass Analysis<br/>Knowledge Graph Construction"]
-            FileProcessor["📁 File Processor<br/>Video Processing<br/>PDF Processing<br/>S3 Integration"]
+        subgraph Backend["Backend - Flask API"]
+            API["🔌 REST API<br/>Authentication & CRUD"]
+            KnowledgeEngine["🧠 Knowledge Engine<br/>5,600 lines - gemini.py"]
+            FileProcessor["📁 File Processor<br/>Video & PDF Processing"]
         end
         
         subgraph Database["Database Layer"]
-            DB[("🗄️ Database<br/>MySQL/PostgreSQL<br/>Users & Bridges<br/>Knowledge Graphs<br/>Usage Logs")]
+            DB[("🗄️ Database<br/>PostgreSQL/MySQL")]
         end
     end
     
     %% Agents Playground
-    subgraph Playground["Agents Playground (Next.js)"]
-        PlaygroundUI["🎮 Playground Interface<br/>Real-time Chat UI<br/>Voice Controls<br/>LiveKit Components"]
-        TokenAPI["🎫 Token Service<br/>LiveKit Token Generation<br/>Identity Management<br/>Room Creation"]
-        ConfigProvider["⚙️ Configuration<br/>Connection Management<br/>Toast Notifications"]
+    subgraph Playground["🎮 Agents Playground - Next.js"]
+        PlaygroundUI["🎯 Chat Interface<br/>Real-time UI"]
+        TokenAPI["🎫 Token Service<br/>LiveKit Auth"]
+        ConfigProvider["⚙️ Configuration<br/>Connection Management"]
     end
     
     %% LiveKit Infrastructure
-    subgraph LiveKitInfra["LiveKit Infrastructure"]
-        LiveKitCloud["☁️ LiveKit Cloud<br/>WebRTC Signaling<br/>Media Relay<br/>Room Management"]
+    subgraph LiveKitInfra["☁️ LiveKit Infrastructure"]
+        LiveKitCloud["🌐 LiveKit Cloud<br/>WebRTC Platform"]
         
-        subgraph AgentService["AI Agent Service (Python)"]
-            Agent["🤖 Assistant Agent<br/>agent.py 1800 lines<br/>Multi-LLM Support<br/>Conversation State"]
-            VoiceEngine["🎙️ Voice Processing<br/>Deepgram STT<br/>Cartesia TTS<br/>Voice Cloning"]
-            AIOrchestrator["🧩 AI Orchestrator<br/>Gemini 2.0 Flash<br/>OpenAI Integration<br/>Context Management"]
+        subgraph AgentService["🤖 AI Agent Service - Python"]
+            Agent["🎭 Assistant Agent<br/>1,800 lines - agent.py"]
+            VoiceEngine["🎙️ Voice Engine<br/>STT + TTS"]
+            AIOrchestrator["🧩 AI Orchestrator<br/>Multi-LLM Support"]
         end
     end
     
     %% External Services
-    subgraph ExternalAI["External AI Services"]
-        Gemini["🟦 Google Gemini<br/>Primary LLM<br/>Multimodal Analysis"]
-        OpenAI["🟢 OpenAI<br/>Secondary LLM<br/>Realtime API"]
-        Deepgram["🔊 Deepgram<br/>Speech-to-Text<br/>Real-time STT"]
-        Cartesia["🗣️ Cartesia<br/>Text-to-Speech<br/>Voice Synthesis"]
+    subgraph ExternalAI["🔌 External AI Services"]
+        Gemini["🟦 Google Gemini<br/>Primary Analysis"]
+        OpenAI["🟢 OpenAI<br/>Secondary LLM"]
+        Deepgram["🔊 Deepgram<br/>Speech-to-Text"]
+        Cartesia["🗣️ Cartesia<br/>Text-to-Speech"]
     end
     
-    subgraph Storage["Storage & Infrastructure"]
-        S3["📦 AWS S3<br/>File Storage<br/>Media Assets"]
+    subgraph Storage["📦 Storage Layer"]
+        S3["☁️ AWS S3<br/>File Storage"]
     end
     
     %% User Interactions
@@ -99,20 +99,20 @@ graph TB
     VoiceEngine --> Cartesia
     
     %% Data Flow Annotations
-    WebUI -.->|"HTTP/REST"| API
-    AgentConn -.->|"iframe + JWT token"| PlaygroundUI
-    PlaygroundUI -.->|"WebRTC"| LiveKitCloud
-    Agent -.->|"Knowledge retrieval"| DB
-    KnowledgeEngine -.->|"Multimodal analysis"| Gemini
+    WebUI -.->|HTTP/REST| API
+    AgentConn -.->|iframe + JWT| PlaygroundUI
+    PlaygroundUI -.->|WebRTC| LiveKitCloud
+    Agent -.->|Knowledge Query| DB
+    KnowledgeEngine -.->|Analysis| Gemini
     
     %% Styling
-    classDef userClass fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef frontendClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef backendClass fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef databaseClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef aiClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef infraClass fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    classDef externalClass fill:#eceff1,stroke:#263238,stroke-width:2px
+    classDef userClass fill:#e3f2fd,stroke:#1976d2,stroke-width:3px,color:#000
+    classDef frontendClass fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    classDef backendClass fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    classDef databaseClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef aiClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef infraClass fill:#e0f2f1,stroke:#00796b,stroke-width:2px,color:#000
+    classDef externalClass fill:#f5f5f5,stroke:#424242,stroke-width:2px,color:#000
     
     class User userClass
     class WebUI,AgentConn,PlaygroundUI frontendClass
