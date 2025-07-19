@@ -45,7 +45,7 @@ This document summarizes the comprehensive review and updates made to ensure all
 ### 5. **Installation Path Clarity**
 **Problem**: Unclear directory structure and setup steps  
 **Fixed**:
-- ✅ Clear project structure: `brdge-v1/backend/`, `brdge-v1/quickstart_*.py`
+- ✅ Clear project structure: `dotbridge/backend/`, `dotbridge/quickstart_*.py`
 - ✅ Proper virtual environment setup instructions
 - ✅ Consistent `.env` file paths (`backend/.env`)
 
@@ -99,8 +99,8 @@ This document summarizes the comprehensive review and updates made to ensure all
 ### Current Experience
 ```bash
 # 8-step setup process
-git clone https://github.com/levbszabo/brdge-v1.git
-cd brdge-v1
+git clone https://github.com/levbszabo/dotbridge.git
+cd dotbridge
 python -m venv venv
 source venv/bin/activate
 pip install -r backend/requirements.txt

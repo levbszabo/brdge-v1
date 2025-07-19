@@ -8,31 +8,31 @@
 
 ## 🚀 Quick Start
 
-[**View Repository**](https://github.com/levbszabo/brdge-v1) | [**Creator Portfolio**](https://journeymanai.io)
+[**View Repository**](https://github.com/levbszabo/dotbridge) | [**Creator Portfolio**](https://journeymanai.io)
 
 ## What is DotBridge?
 
 DotBridge is an open-source research framework that demonstrates advanced multimodal AI techniques for systematic knowledge extraction and interactive agent construction. Originally developed as a commercial product, it's now open-sourced to advance research in:
 
 - **Systematic knowledge extraction** from unstructured multimodal content
-- **Structured knowledge graph construction** from diverse content sources  
+- **Structured knowledge graph construction** from diverse content sources
 - **Real-time AI agent architectures** with contextual awareness
 - **Production deployment** of multimodal AI research systems
 
 > **🔧 Simplification Roadmap**: Future versions will provide simpler entry points while preserving the sophisticated underlying analysis capabilities.
 
-## 🧠 Core Innovation: Research Methodology
+## 🧠 Core Innovation
 
-### 1. **Multipass Content Analysis**
+### **Multipass Content Analysis**
 Sequential extraction pipeline analyzing content structure, temporal components, and semantic relationships across modalities.
 
-### 2. **Knowledge Graph Construction** 
+### **Knowledge Graph Construction** 
 Structured representation including teaching personas, engagement opportunities, timeline mappings, and Q&A derivations.
 
-### 3. **Agent Instantiation Framework**
+### **Agent Instantiation Framework**
 Dynamic agent configuration utilizing extracted knowledge graphs for contextually-aware conversational interfaces.
 
-### 4. **Temporal Engagement Mapping**
+### **Temporal Engagement Mapping**
 Time-synchronized interaction opportunities derived from content analysis and embedded within agent response patterns.
 
 > **📊 Current State**: The system contains ~7,400 lines of sophisticated AI logic. We're identifying opportunities to create simplified interfaces while maintaining production capabilities.
@@ -53,118 +53,73 @@ Time-synchronized interaction opportunities derived from content analysis and em
 └─────────────────┘    └──────────────────┘
 ```
 
-## 💡 Use Cases & Applications
+**📋 For Complete System Design**: See our detailed [**System Design Document**](SYSTEM_DESIGN.md) which includes:
+- Comprehensive microservices architecture diagram
+- Data flow analysis across all components  
+- Production deployment configurations
+- Performance characteristics and scaling considerations
 
-### Financial Services
-- **Earnings call analysis and Q&A**: Interactive analysis of quarterly earnings calls
-- **SEC filing interrogation**: Query complex financial documents  
-- **Investment research automation**: Automated research workflows
-- **Risk assessment conversations**: Interactive risk modeling
+## 💡 Applications
 
-### Research & Education
-- **Academic paper interaction**: Query and discuss research papers
-- **Documentation Q&A systems**: Internal knowledge systems
-- **Training content delivery**: Interactive learning experiences
-- **Knowledge base creation**: Automated knowledge extraction
+**Financial Services** • **Research & Education** • **Enterprise Knowledge Systems**
 
-### Enterprise
-- **Internal knowledge systems**: Company-wide knowledge repositories
-- **Customer support automation**: AI-powered support agents
-- **Training and onboarding**: Interactive employee training
-- **Document analysis workflows**: Automated document processing
+- Interactive earnings call analysis and Q&A
+- Academic paper interaction and discussion  
+- Real-time document interrogation and insights
+- Automated knowledge base creation from multimodal content
 
 ## 🛠️ Tech Stack
 
-### Backend Core
-- **Python 3.8+** - Core application logic
-- **Flask** - Web framework with SQLAlchemy ORM
-- **Google Gemini 2.0/2.5** - Primary multimodal AI models
-- **OpenAI GPT-4** - Secondary language model support
-- **Custom Knowledge Extraction** - Sophisticated multipass analysis pipeline
+**Core:** Python 3.8+ • Flask • Google Gemini 2.0/2.5 • OpenAI GPT-4 • Custom Knowledge Extraction Pipeline  
+**Real-time:** LiveKit • Deepgram STT • Cartesia TTS • WebRTC  
+**Frontend:** React 18+ • LiveKit Components  
+**Infrastructure:** PostgreSQL/SQLite • AWS S3 • Docker
 
-### Real-time Communication  
-- **LiveKit** - WebRTC infrastructure for real-time communication
-- **LiveKit Agents Framework** - Custom voice AI agent implementation
-- **Deepgram** - High-performance speech-to-text
-- **Cartesia** - Neural voice synthesis and voice cloning
-
-### Frontend
-- **React 18+** - User interface
-- **LiveKit Components** - Real-time UI components
-- **WebRTC** - Browser-based real-time communication
-
-### Infrastructure
-- **AWS Services** - S3 for storage, optional cloud deployment
-- **PostgreSQL/SQLite** - Structured data storage
-- **Docker** - Containerized deployment
-
-> **⚡ Performance Note**: Current system processes 10-minute videos in ~30 seconds. Optimization opportunities exist for faster processing.
+> **⚡ Performance**: Processes 10-minute videos in ~30 seconds with sophisticated multimodal analysis.
 
 ## 🚀 Quick Start Options
 
-> **💡 Start Simple**: We recommend beginning with Option A to understand the core capabilities before exploring the full system.
+> **💡 Start Simple**: We recommend beginning with Option A to understand the core capabilities.
 
-### Option A: Knowledge Extraction Pipeline
-**Perfect for:** Data scientists, researchers working with multimodal content analysis  
-**Time:** 5 minutes
+### Option A: Knowledge Extraction (5 minutes)
+**Perfect for:** Data scientists, researchers, developers
 
-```bash
-# Clone and navigate to project
-git clone https://github.com/levbszabo/brdge-v1.git
-cd brdge-v1
-
-# Setup Python environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```bash
+# Clone and setup
+git clone https://github.com/levbszabo/dotbridge.git
+cd dotbridge
+python -m venv venv && source venv/bin/activate
 pip install -r backend/requirements.txt
 
-# Configure environment (see SETUP.md for details)
-cp backend/.env.example backend/.env
+# Configure (see SETUP.md for details)
+cp config.txt backend/.env
 # Edit backend/.env with your GOOGLE_API_KEY
 
-# Test with demo content
-python quickstart_extraction.py --demo
+# Extract knowledge from your content
+python quickstart_extraction.py --video /path/to/your/video.mp4 --document /path/to/your/document.pdf
 ```
 
-[📖 **Detailed Knowledge Extraction Guide**](#knowledge-extraction-quickstart)
+### Option B: Real-time Voice AI Agent (15 minutes)
+**Perfect for:** ML engineers, conversational AI developers
 
-### Option B: Real-time Voice AI Agent
-**Perfect for:** ML engineers, conversational AI developers  
-**Time:** 15 minutes (requires multiple API keys)
-
-```bash
-# Complete Option A first, then add real-time services
-# Edit backend/.env with LIVEKIT_*, DEEPGRAM_*, CARTESIA_* keys
+   ```bash
+# Complete Option A first, then add real-time services to backend/.env:
+# LIVEKIT_*, DEEPGRAM_*, CARTESIA_* keys (see config.txt template)
 
 # Test interactive agent
 python quickstart_agent.py --demo
 ```
 
-[📖 **Detailed Real-time Agent Guide**](#real-time-agent-quickstart)
-
-### Option C: Full Production System
-**Perfect for:** System architects, full-stack developers  
-**Time:** 30+ minutes
+### Option C: Full Production System (30+ minutes)
+**Perfect for:** System architects, full-stack developers
 
 See the complete [SETUP.md](SETUP.md) guide for full system deployment.
 
-## 📚 Core Component Guides
-
-## Knowledge Extraction Quickstart
+## 📚 Knowledge Extraction Quickstart
 
 > **🔍 Core Innovation**: This 5,600-line system (`gemini.py`) demonstrates sophisticated multimodal content analysis with applications across research, finance, and enterprise domains.
 
-The knowledge extraction system demonstrates sophisticated multimodal content analysis techniques with applications across research, finance, and enterprise domains.
-
-### Key Features
-- **Multipass Analysis**: Sequential extraction of structure, content, and relationships
-- **Temporal Synchronization**: Timeline mapping across video and document content  
-- **Knowledge Graph Construction**: Structured representation for downstream applications
-- **Production-Ready**: Handles large files, rate limiting, error recovery
-
 ### Content Types Supported
-
-The system supports four content types, each with specialized extraction algorithms:
 
 - **`course`** (default): Educational content - extracts concepts, definitions, frameworks
 - **`vsl`**: Video Sales Letters - extracts features, benefits, pricing, CTAs
@@ -187,290 +142,120 @@ knowledge_graph = create_brdge_knowledge(
     additional_instructions="Focus on risk factors and forward guidance"
 )
 
-# Knowledge graph contains:
-# - timeline_data: Temporal structure and key moments
-# - knowledge_data: Core concepts and relationships
-# - persona_data: Communication patterns and expertise areas  
-# - engagement_data: Interactive opportunities and Q&A potential
+# Output: Comprehensive knowledge graph with timeline, concepts, personas, and engagement data
 ```
 
-### Advanced Applications
+### Advanced Examples
 
 ```python
-# Financial earnings call analysis (educational approach)
+# Financial earnings call analysis
 earnings_knowledge = create_brdge_knowledge(
     video_path="./q3_earnings_call.mp4",
     document_path="./q3_earnings_slides.pdf",
-    bridge_type="course",  # Treat as educational content
-    additional_instructions="""
-    Focus on:
-    - Forward guidance and outlook statements
-    - Management confidence indicators  
-    - Risk factor discussions
-    - Competitive positioning
-    """
+    bridge_type="course", 
+    additional_instructions="Focus on forward guidance, risk factors, and competitive positioning"
 )
 
 # Sales presentation analysis  
 sales_knowledge = create_brdge_knowledge(
     video_path="./product_demo.mp4",
     document_path="./sales_deck.pdf",
-    bridge_type="vsl",  # Video sales letter analysis
+    bridge_type="vsl",
     additional_instructions="Extract value propositions and competitive advantages"
 )
-
-# Research paper interaction system
-research_knowledge = create_brdge_knowledge(
-    video_path="./conference_presentation.mp4", 
-    document_path="./research_paper.pdf",
-    bridge_type="course",  # Educational content
-    additional_instructions="Extract methodology, findings, and limitations"
-)
-```
-
-### Output Structure
-
-The system produces a comprehensive knowledge graph:
-
-```json
-{
-  "timeline_data": {
-    "video_segments": [...],
-    "document_sections": [...], 
-    "synchronized_timeline": [...]
-  },
-  "knowledge_data": {
-    "core_concepts": [...],
-    "relationships": [...],
-    "key_insights": [...]
-  },
-  "persona_data": {
-    "expertise_areas": [...],
-    "communication_style": {...},
-    "teaching_approach": {...}
-  },
-  "engagement_data": {
-    "interaction_opportunities": [...],
-    "q_and_a_potential": [...],
-    "follow_up_topics": [...]
-  }
-}
 ```
 
 > **📈 Optimization Note**: Current extraction generates comprehensive data. Future versions will offer lightweight extraction modes for specific use cases.
 
-## Real-time Agent Quickstart
+## 🎙️ Real-time Agent Quickstart
 
 > **🎯 Production Ready**: This 1,800-line system (`agent.py`) demonstrates production-ready conversational AI with sophisticated state management and multi-LLM support.
 
-The real-time agent system demonstrates production-ready conversational AI with sophisticated state management, multi-LLM support, and real-time voice interaction.
-
-### Key Features
-- **Multi-LLM Support**: Gemini 2.0 Flash Live, OpenAI Realtime, with dynamic switching
+### Features
+- **Multi-LLM Support**: Gemini 2.0 Flash Live, OpenAI Realtime with dynamic switching
 - **Voice AI Integration**: Deepgram STT, Cartesia TTS with voice cloning
 - **Production Architecture**: Rate limiting, error recovery, usage tracking
-- **LiveKit Framework**: WebRTC-based real-time communication
 
-### Basic Usage (Text Demo)
+### Usage
 
 ```python
-# Run the interactive demo
+# Run interactive demo
 python quickstart_agent.py --demo
 
-# The demo provides:
-# - Text-based conversation interface  
-# - Sample financial knowledge base
-# - Interactive Q&A about financial concepts
-# - Demonstration of context awareness
-```
-
-### Advanced Configuration (Production)
-
-```python
+# Production deployment
 from backend.agent import Assistant
 
-# Create agent with custom knowledge
-assistant = Assistant(
-    brdge_id="financial_analyst",
-    personalization_id="portfolio_manager_001"
-)
-
-# Initialize with knowledge base
+assistant = Assistant(brdge_id="financial_analyst", personalization_id="user_001")
 await assistant.initialize()
-
-# The agent handles:
-# - Real-time voice conversation
-# - Context-aware responses
-# - Knowledge base integration
-# - Multi-turn conversation state
-```
-
-### Production Features
-
-```python
-# Usage tracking and analytics
-await assistant._log_conversation(
-    message_content="What are the key risks mentioned?",
-    role="user",
-    interrupted=False
-)
-
-# Dynamic engagement opportunities  
-await assistant.check_engagement_opportunities(current_time_seconds=120)
-
-# Voice customization
-assistant.voice_id = "custom_cloned_voice_id"
+# Handles real-time voice conversation, context-aware responses, knowledge integration
 ```
 
 > **🔧 Complexity Note**: The current agent system is highly sophisticated. We're working on simplified deployment options for common use cases.
 
-## Full System Setup
-
-For complete development environment setup including frontend, database, and all services, see the comprehensive [SETUP.md](SETUP.md) guide.
-
-Key components:
-- **Backend API** (Flask) - Knowledge management and processing
-- **Frontend Interface** (React) - User interaction and file uploads  
-- **Real-time Agents** (LiveKit) - Voice AI conversations
-- **Database** (PostgreSQL/SQLite) - Structured data storage
-
 ## 🔧 Environment Setup
 
-### Required Environment Variables
-
-Create a `backend/.env` file:
-
 ```bash
-# Core AI Services (Required)
-GOOGLE_API_KEY=your_gemini_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Real-time Services (Optional, for voice features)
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_secret
-LIVEKIT_URL=wss://your_livekit_url
-DEEPGRAM_API_KEY=your_deepgram_api_key
-CARTESIA_API_KEY=your_cartesia_api_key
-
-# Database (Optional, defaults to SQLite)
-DATABASE_URL=sqlite:///./instance/brdges.db
+# Copy template and configure
+cp config.txt backend/.env
+# Edit backend/.env with your API keys (minimum: GOOGLE_API_KEY)
 ```
 
-### Service Setup
+**Service Setup:**
+- **Google Gemini**: [Get API key](https://aistudio.google.com/app/apikey)
+- **LiveKit**: [Sign up](https://livekit.io/) for real-time features
+- **Deepgram**: [Get API key](https://console.deepgram.com/) for speech-to-text
+- **Cartesia**: [Get API key](https://cartesia.ai/) for voice synthesis
 
-1. **Google Gemini**: Get API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. **LiveKit**: Sign up at [LiveKit Cloud](https://livekit.io/) for real-time features
-3. **Deepgram**: Get API key from [Deepgram Console](https://console.deepgram.com/) for speech-to-text
-4. **Cartesia**: Get API key from [Cartesia](https://cartesia.ai/) for voice synthesis
+See `config.txt` for complete template with all options.
 
-### Dependencies
-
-```bash
-# Install core dependencies  
-pip install google-generativeai>=0.8.0  # Gemini AI models
-pip install livekit-agents>=0.8.0       # Real-time agent framework
-pip install deepgram-sdk>=3.0.0         # Speech-to-text
-pip install openai>=1.0.0               # OpenAI models
-pip install flask>=3.0.0                # Web framework
-```
-
-> **📦 Dependency Note**: Current system has 90+ dependencies. We're working to reduce this for simpler deployments.
+> **📦 Dependencies**: Current system has 90+ dependencies. We're working to reduce this for simpler deployments.
 
 ## 🔬 Research Applications
 
-> **🎯 Target Application**: These techniques are particularly valuable for financial analysis, research automation, and alternative data processing.
+> **🎯 Target Applications**: Particularly valuable for financial analysis, research automation, and alternative data processing.
 
-This system demonstrates techniques directly applicable to:
+**Alternative Data Processing** • **Financial Analysis** • **AI Engineering**
 
-### Alternative Data Processing
-- Earnings call sentiment analysis and key insight extraction
-- News article impact scoring and relationship mapping
-- Social media signal extraction from multimodal content
-- Document classification pipelines for financial documents
-
-### Financial Analysis  
-- Real-time market signal generation from earnings calls
+- Earnings call sentiment analysis and insight extraction
+- Real-time market signal generation from multimodal content
 - Research automation workflows for investment analysis
-- Risk model development from multimodal data sources
-- Portfolio optimization research with interactive analysis
-
-### AI Engineering
-- Production ML system design patterns
-- Real-time conversation system architecture
-- Knowledge graph construction from multimodal data
-- Multimodal AI pipeline optimization
+- Production ML system design patterns and architectures
 
 ## 🤝 Contributing
 
-> **🚀 Contribution Focus**: We welcome contributions that help simplify the system while maintaining its sophisticated capabilities.
+> **🚀 Contribution Focus**: We welcome contributions that help simplify the system while maintaining sophisticated capabilities.
 
-We welcome contributions! This project is ideal for:
+**Ideal for:** Researchers exploring multimodal AI • Financial developers building data systems • ML engineers working on conversational AI • System architects designing real-time applications
 
-- **Researchers** exploring multimodal AI and knowledge extraction
-- **Financial Developers** building data processing systems  
-- **ML Engineers** working on production conversational AI
-- **System Architects** designing real-time AI applications
-
-### Development Setup
-
-1. Fork the repository
-2. Create a feature branch
-3. Set up development environment:
-   ```bash
-   cd brdge-v1
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r backend/requirements.txt
-   ```
-4. Make your changes with tests
-5. Submit a pull request
-
-### Priority Areas for Contribution
+**Priority Areas:**
 - **Simplification**: Reducing complexity while maintaining functionality
-- **Documentation**: Clearer setup and usage guides
 - **Performance**: Optimization of extraction and agent systems
+- **Documentation**: Clearer setup and usage guides
 - **Testing**: Comprehensive test coverage for reliability
 
-## 📊 Performance & Research Metrics
+## 📊 Performance Metrics
 
 - **Knowledge Extraction**: ~30 seconds per 10-minute video with document
-- **Agent Response Latency**: <200ms for typical queries via Gemini 2.0 Flash
+- **Agent Response**: <200ms latency via Gemini 2.0 Flash
 - **Concurrent Users**: 100+ with proper LiveKit scaling
-- **Memory Efficiency**: Optimized for large document processing (up to 50MB PDFs)
-- **Real-time Performance**: <50ms audio latency with Cartesia + Deepgram
+- **Memory Efficiency**: Optimized for large documents (up to 50MB PDFs)
+- **Real-time Performance**: <50ms audio latency
 
 > **⚡ Performance Goals**: Working toward sub-10-second extraction for common use cases and simplified deployment options.
 
-## 🛡️ Security & Privacy
+## 🙋‍♂️ About
 
-- Environment-based configuration for all sensitive keys
-- No data persistence in demo mode
-- Configurable data retention policies
-- Rate limiting and usage tracking
-- User authentication and session management
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙋‍♂️ About the Creator
-
-Built by [Levente Szabo](https://journeymanai.io), an AI engineer with experience in:
-- Production ML systems and real-time AI architectures
-- Financial analysis and data processing
-- Multimodal AI and knowledge extraction systems
-- Full-stack AI application development
+Built by [Levente Szabo](https://journeymanai.io), an AI engineer with experience in production ML systems, real-time AI architectures, financial analysis and data processing, and multimodal AI systems.
 
 **Current Focus**: Applying these multimodal AI techniques to alternative data analysis and financial research.
 
 ## 🔗 Links
 
-- **Main Repository**: [https://github.com/levbszabo/brdge-v1](https://github.com/levbszabo/brdge-v1)
+- **Main Repository**: [https://github.com/levbszabo/dotbridge](https://github.com/levbszabo/dotbridge)
 - **Creator Portfolio**: [journeymanai.io](https://journeymanai.io)
 - **Setup Guide**: [SETUP.md](SETUP.md)
-- **Technical Deep Dive**: [Coming Soon]
 
-## 📈 Research Roadmap
+## 📈 Roadmap
 
 ### Immediate (Simplification Focus)
 - [ ] **Lightweight extraction modes** for specific use cases

@@ -36,8 +36,8 @@ Perfect for exploring the multimodal analysis capabilities:
 
 ### 1. Clone and Setup
 ```bash
-git clone https://github.com/levbszabo/brdge-v1.git
-cd brdge-v1
+git clone https://github.com/levbszabo/dotbridge.git
+cd dotbridge
 
 # Create virtual environment
 python -m venv venv
@@ -54,10 +54,10 @@ pip install -r backend/requirements.txt
 
 ### 2. Environment Configuration
 ```bash
-# Copy environment template
-cp backend/.env.example backend/.env
+# Copy configuration template  
+cp config.txt backend/.env
 
-# Edit the .env file and add your Google API key:
+# Edit backend/.env and add your Google API key:
 # GOOGLE_API_KEY=your_api_key_here
 ```
 
@@ -65,16 +65,88 @@ cp backend/.env.example backend/.env
 1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Sign in with your Google account
 3. Click "Create API Key"
-4. Copy the key to your `.env` file
+4. Copy the key to your `backend/.env` file
 
 ### 3. Test the System
 ```bash
-# Run the knowledge extraction quickstart
-python quickstart_extraction.py --demo
+# Extract knowledge from your content:
+python quickstart_extraction.py --video /path/to/video.mp4 --document /path/to/document.pdf
 
-# Or with your own content:
-python quickstart_extraction.py --video your_video.mp4 --document your_doc.pdf
+# Basic usage (video only):
+python quickstart_extraction.py --video /path/to/video.mp4
+
+# With custom analysis type and instructions:
+python quickstart_extraction.py \
+  --video /path/to/video.mp4 \
+  --document /path/to/document.pdf \
+  --type course \
+  --instructions "Focus on key concepts and learning objectives"
 ```
+
+## 🔧 Configuration Guide
+
+### Understanding the config.txt Template
+
+The `config.txt` file contains all possible configuration options. Here's how to use it:
+
+#### 1. **Copy the Template**
+```bash
+cp config.txt backend/.env
+```
+
+#### 2. **Required Configuration (Minimum)**
+```bash
+# Only this is required for basic knowledge extraction:
+GOOGLE_API_KEY=your_actual_api_key_here
+```
+
+#### 3. **Optional Configurations**
+
+**Additional AI Models:**
+```bash
+# For backup/alternative language models
+OPENAI_API_KEY=your_openai_key
+OPENAI_ORG_ID=your_org_id
+```
+
+**Real-time Voice Features:**
+```bash
+# Only needed if you want voice AI agents
+LIVEKIT_API_KEY=your_livekit_key
+LIVEKIT_API_SECRET=your_livekit_secret  
+LIVEKIT_URL=wss://your_livekit_url
+DEEPGRAM_API_KEY=your_deepgram_key
+CARTESIA_API_KEY=your_cartesia_key
+```
+
+**Database (defaults to SQLite):**
+```bash
+# For production, use PostgreSQL:
+DATABASE_URL=postgresql://user:pass@localhost/dbname
+```
+
+#### 4. **Validation**
+Test your configuration:
+```bash
+# This will show you if your API key works
+python quickstart_extraction.py --video /path/to/any/video.mp4
+```
+
+### Common Configuration Issues
+
+**API Key Not Working:**
+- Check for extra spaces or quotes in your `.env` file
+- Ensure you copied the complete key from Google AI Studio
+- Verify the key has the correct permissions
+
+**File Not Found:**
+- Make sure your `.env` file is in the `backend/` directory
+- Check that you copied `config.txt` correctly
+
+**Import Errors:**
+- Ensure you're in the correct directory (`dotbridge/`)
+- Activate your virtual environment
+- Reinstall requirements: `pip install -r backend/requirements.txt`
 
 ## 🎙️ Real-time Agent Setup (Path B)
 
@@ -85,7 +157,7 @@ Follow all steps in Path A above.
 
 ### 2. Additional API Keys Required
 
-Add these to your `backend/.env` file:
+Add these to your `backend/.env` file (see `config.txt` for the complete template):
 
 ```bash
 # LiveKit (Real-time infrastructure)
@@ -237,10 +309,10 @@ S3_BUCKET_NAME=your_bucket
 
 ### 1. Knowledge Extraction Test
 ```bash
-# Test with sample content
-python quickstart_extraction.py --demo
+# Test with your own content
+python quickstart_extraction.py --video /path/to/test_video.mp4
 
-# Expected output: JSON knowledge graph
+# Expected output: JSON knowledge graph saved to extraction_results.json
 ```
 
 ### 2. Agent Interaction Test
@@ -269,7 +341,7 @@ curl http://localhost:5000/api/health
 #### ImportError: Module not found
 ```bash
 # Make sure you're in the right directory and virtual environment is activated
-cd brdge-v1
+cd dotbridge
 source venv/bin/activate  # or venv\Scripts\activate
 pip install -r backend/requirements.txt
 ```
@@ -357,7 +429,7 @@ After successful setup:
 
 The system supports four content types, each optimized for different extraction focuses:
 
-- **`course`** (default): Educational content - extracts concepts, definitions, frameworks, learning objectives
+- **`course`** (default): Educational content - extracts concepts, definitions, frameworks
 - **`vsl`**: Video Sales Letters - extracts product features, benefits, USPs, pricing, calls-to-action  
 - **`webinar`**: Presentation/discussion content - extracts key points, audience questions, qualification insights
 - **`onboarding`**: User training - extracts procedural steps, UI elements, troubleshooting, task sequences
