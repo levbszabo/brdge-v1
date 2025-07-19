@@ -14,9 +14,114 @@ DotBridge is a sophisticated multimodal AI research framework consisting of mult
 
 ## 📊 System Architecture Diagram
 
-The complete system architecture is visualized in the following diagram:
-
-![DotBridge System Architecture](https://github.com/user-attachments/assets/dotbridge-system-diagram)
+```mermaid
+graph TB
+    %% User Layer
+    User[👤 User]
+    
+    %% DotBridge Main Application
+    subgraph DotBridge["DotBridge Main Application"]
+        subgraph Frontend["Frontend (React)"]
+            WebUI["🌐 Web Interface<br/>Bridge Creation<br/>File Upload<br/>User Management"]
+            AgentConn["🔗 AgentConnector<br/>Iframe Embedding<br/>Token Passing<br/>Authentication"]
+        end
+        
+        subgraph Backend["Backend (Flask API)"]
+            API["🔌 REST API<br/>User Auth JWT<br/>CRUD Operations<br/>File Processing"]
+            KnowledgeEngine["🧠 Knowledge Engine<br/>gemini.py 5600 lines<br/>Multipass Analysis<br/>Knowledge Graph Construction"]
+            FileProcessor["📁 File Processor<br/>Video Processing<br/>PDF Processing<br/>S3 Integration"]
+        end
+        
+        subgraph Database["Database Layer"]
+            DB[("🗄️ Database<br/>MySQL/PostgreSQL<br/>Users & Bridges<br/>Knowledge Graphs<br/>Usage Logs")]
+        end
+    end
+    
+    %% Agents Playground
+    subgraph Playground["Agents Playground (Next.js)"]
+        PlaygroundUI["🎮 Playground Interface<br/>Real-time Chat UI<br/>Voice Controls<br/>LiveKit Components"]
+        TokenAPI["🎫 Token Service<br/>LiveKit Token Generation<br/>Identity Management<br/>Room Creation"]
+        ConfigProvider["⚙️ Configuration<br/>Connection Management<br/>Toast Notifications"]
+    end
+    
+    %% LiveKit Infrastructure
+    subgraph LiveKitInfra["LiveKit Infrastructure"]
+        LiveKitCloud["☁️ LiveKit Cloud<br/>WebRTC Signaling<br/>Media Relay<br/>Room Management"]
+        
+        subgraph AgentService["AI Agent Service (Python)"]
+            Agent["🤖 Assistant Agent<br/>agent.py 1800 lines<br/>Multi-LLM Support<br/>Conversation State"]
+            VoiceEngine["🎙️ Voice Processing<br/>Deepgram STT<br/>Cartesia TTS<br/>Voice Cloning"]
+            AIOrchestrator["🧩 AI Orchestrator<br/>Gemini 2.0 Flash<br/>OpenAI Integration<br/>Context Management"]
+        end
+    end
+    
+    %% External Services
+    subgraph ExternalAI["External AI Services"]
+        Gemini["🟦 Google Gemini<br/>Primary LLM<br/>Multimodal Analysis"]
+        OpenAI["🟢 OpenAI<br/>Secondary LLM<br/>Realtime API"]
+        Deepgram["🔊 Deepgram<br/>Speech-to-Text<br/>Real-time STT"]
+        Cartesia["🗣️ Cartesia<br/>Text-to-Speech<br/>Voice Synthesis"]
+    end
+    
+    subgraph Storage["Storage & Infrastructure"]
+        S3["📦 AWS S3<br/>File Storage<br/>Media Assets"]
+    end
+    
+    %% User Interactions
+    User --> WebUI
+    User --> PlaygroundUI
+    
+    %% Main Application Flow
+    WebUI --> API
+    AgentConn --> PlaygroundUI
+    API --> DB
+    API --> KnowledgeEngine
+    API --> FileProcessor
+    FileProcessor --> S3
+    KnowledgeEngine --> Gemini
+    
+    %% Playground Flow
+    PlaygroundUI --> TokenAPI
+    PlaygroundUI --> ConfigProvider
+    TokenAPI --> LiveKitCloud
+    PlaygroundUI --> LiveKitCloud
+    
+    %% Agent Integration
+    LiveKitCloud --> Agent
+    Agent --> DB
+    Agent --> AIOrchestrator
+    Agent --> VoiceEngine
+    
+    %% AI Service Connections
+    AIOrchestrator --> Gemini
+    AIOrchestrator --> OpenAI
+    VoiceEngine --> Deepgram
+    VoiceEngine --> Cartesia
+    
+    %% Data Flow Annotations
+    WebUI -.->|"HTTP/REST"| API
+    AgentConn -.->|"iframe + JWT token"| PlaygroundUI
+    PlaygroundUI -.->|"WebRTC"| LiveKitCloud
+    Agent -.->|"Knowledge retrieval"| DB
+    KnowledgeEngine -.->|"Multimodal analysis"| Gemini
+    
+    %% Styling
+    classDef userClass fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef frontendClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef backendClass fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef databaseClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef aiClass fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef infraClass fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    classDef externalClass fill:#eceff1,stroke:#263238,stroke-width:2px
+    
+    class User userClass
+    class WebUI,AgentConn,PlaygroundUI frontendClass
+    class API,KnowledgeEngine,FileProcessor,Agent,VoiceEngine,AIOrchestrator,TokenAPI,ConfigProvider backendClass
+    class DB databaseClass
+    class Gemini,OpenAI,Deepgram,Cartesia aiClass
+    class LiveKitCloud infraClass
+    class S3 externalClass
+```
 
 > **Note**: This diagram shows the complete microservices architecture with all major components and data flows. The system demonstrates enterprise-grade design with proper separation of concerns and scalable real-time communication.
 
