@@ -8,7 +8,7 @@
 
 ## 🚀 Quick Start
 
-[**View Repository**](https://github.com/levbszabo/dotbridge) | [**Creator Portfolio**](https://journeymanai.io)
+[**View Repository**](https://github.com/levbszabo/dotbridge) | [**Creator Portfolio**](https://journeymanai.io) | [**Blog Post**](https://www.linkedin.com/pulse/dotbridge-multipass-prompt-chaining-multimodal-data-fast-szabo-rwqae/?trackingId=%2Fj80GtlMRYaSsligQ9XO9w%3D%3D) 
 
 ## What is DotBridge?
 
